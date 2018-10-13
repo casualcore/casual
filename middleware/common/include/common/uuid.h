@@ -11,7 +11,6 @@
 #include <uuid/uuid.h>
 
 #include "common/platform.h"
-#include "common/transcode.h"
 #include "common/view/string.h"
 
 #include <string>

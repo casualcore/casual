@@ -25,25 +25,38 @@ namespace casual
          {
             namespace detail
             {
-               std::string encode( const void* data, platform::size::type bytes);
+               struct Data 
+               {
+                  void* memory;
+                  platform::size::type bytes;
+               };
+
+               template< typename C> 
+               auto data( C& container)
+               {
+                  return Data{ (void*)( container.data()), static_cast< platform::size::type>( container.size())};
+               }
+
+               platform::size::type encode( const Data source, Data target);
             } // detail
 
-
-            //!
-            //! @return Base64-encoded binary data of [first, last)
-            //!
-            //! @pre @p Iter has to be a random access iterator
-            //!
-            //! @throw exception::Casual on failure
-            //!
-            template< typename Iter>
-            std::string encode( Iter first, Iter last)
+            namespace capacity
             {
-               static_assert( std::is_same<
-                     typename std::iterator_traits< Iter>::iterator_category,
-                     std::random_access_iterator_tag>::value, "first/last has to be random access iterators");
+               constexpr platform::size::type encoded( platform::size::type bytes) 
+               {
+                  return ( ( bytes + 2) / 3) * 4 + 1;
+               }
+            } // size
 
-               return detail::encode( &(*first), std::distance( first , last) * sizeof( decltype( *first)));
+
+            template< typename C1, typename C2>
+            auto encode( C1&& source, C2& target) -> std::enable_if_t< traits::has::resize< decltype( target)>::value>
+            {
+               static_assert( sizeof( traits::iterable::value_t< C1>) == sizeof( traits::iterable::value_t< C2>), "not the same value type size");
+
+               target.resize( capacity::encoded( source.size()));
+
+               target.resize( detail::encode( detail::data( source), detail::data( target)));
             }
 
             //!
@@ -54,7 +67,23 @@ namespace casual
             template< typename C>
             std::string encode( C&& container)
             {
-               return encode( std::begin( container), std::end( container));
+               std::string result;
+               encode( container, result);
+               return result;
+            }
+
+            //!
+            //! @return Base64-encoded binary data of [first, last)
+            //!
+            //! @pre @p Iter has to be a random access iterator
+            //!
+            //! @throw exception::Casual on failure
+            //!
+            template< typename Iter>
+            auto encode( Iter first, Iter last) -> 
+               std::enable_if_t< traits::is::iterator< Iter>::value, std::string>
+            {
+               return encode( range::make( first, last));
             }
 
             //!

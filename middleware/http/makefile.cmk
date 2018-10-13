@@ -34,33 +34,37 @@ common_archive = LinkArchive( 'bin/casual-http-common',
 common_outbound_archive = LinkArchive( 'bin/casual-http-outbound-common',
     [
        Compile( 'source/outbound/configuration.cpp'),
+       Compile( 'source/outbound/curl.cpp'),
+       Compile( 'source/outbound/transform.cpp'),
+       Compile( 'source/outbound/state.cpp'),
        Compile( 'source/outbound/request.cpp'),
      ])
         
 common_inbound_library = LinkLibrary( 'bin/casual-http-inbound-common',
-       [
+   [
        Compile( 'source/inbound/caller.cpp')
-       ],
-       [
+   ],
+   [
        'casual-buffer', 
        'casual-xatmi',
        'casual-common',
        common_archive
-       ])
+   ])
 
 install_lib.append( common_inbound_library)
 
 target = LinkExecutable( 'bin/casual-http-outbound',
-    [
-     Compile( 'source/outbound/main.cpp'),
-    ],
-    [ 
-     common_outbound_archive,
-     common_archive,
-     'casual-serviceframework', 
-     'casual-common', 
-     'curl'
-     ])
+   [
+      Compile( 'source/outbound/main.cpp'),
+      Compile( 'source/outbound/manager.cpp'),
+   ],
+   [ 
+      common_outbound_archive,
+      common_archive,
+      'casual-serviceframework', 
+      'casual-common', 
+      'curl'
+   ])
 
 install_bin.append( target)
 

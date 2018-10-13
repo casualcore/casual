@@ -94,7 +94,7 @@ namespace casual
 
 
 
-               struct Local : base_instance
+               struct Sequential : base_instance
                {
                   enum class State : char
                   {
@@ -138,7 +138,7 @@ namespace casual
                   //! @}
 
                   friend std::ostream& operator << ( std::ostream& out, State value);
-                  friend std::ostream& operator << ( std::ostream& out, const Local& value);
+                  friend std::ostream& operator << ( std::ostream& out, const Sequential& value);
 
                private:
                   common::platform::time::point::type m_last = common::platform::time::point::type::min();
@@ -150,15 +150,15 @@ namespace casual
                   std::vector< service_view> m_services;
                };
 
-               struct Remote : base_instance
+               struct Concurrent : base_instance
                {
                   using base_instance::base_instance;
 
                   size_type order;
 
-                  friend bool operator < ( const Remote& lhs, const Remote& rhs);
+                  friend bool operator < ( const Concurrent& lhs, const Concurrent& rhs);
 
-                  friend std::ostream& operator << ( std::ostream& out, const Remote& value);
+                  friend std::ostream& operator << ( std::ostream& out, const Concurrent& value);
                };
 
             } // instance
@@ -202,12 +202,12 @@ namespace casual
                namespace instance
                {
 
-                  using local_base = std::reference_wrapper< state::instance::Local>;
+                  using local_base = std::reference_wrapper< state::instance::Sequential>;
 
                   //!
                   //! Just a helper to simplify usage of the reference
                   //!
-                  struct Local : local_base
+                  struct Sequential : local_base
                   {
                      using local_base::local_base;
 
@@ -226,24 +226,24 @@ namespace casual
                      inline auto state() const { return get().state();}
 
 
-                     inline friend bool operator == ( const Local& lhs, common::strong::process::id rhs) { return lhs.process().pid == rhs;}
+                     inline friend bool operator == ( const Sequential& lhs, common::strong::process::id rhs) { return lhs.process().pid == rhs;}
                   };
 
-                  using remote_base = std::reference_wrapper< state::instance::Remote>;
+                  using remote_base = std::reference_wrapper< state::instance::Concurrent>;
 
                   //!
                   //! Just a helper to simplify usage of the reference
                   //!
-                  struct Remote : remote_base
+                  struct Concurrent : remote_base
                   {
-                     Remote( state::instance::Remote& instance, size_type hops) : remote_base{ instance}, m_hops{ hops} {}
+                     Concurrent( state::instance::Concurrent& instance, size_type hops) : remote_base{ instance}, m_hops{ hops} {}
 
                      inline const common::process::Handle& process() const { return get().process;}
 
                      inline size_type hops() const { return m_hops;}
 
-                     inline friend bool operator == ( const Remote& lhs, common::strong::process::id rhs) { return lhs.process().pid == rhs;}
-                     friend bool operator < ( const Remote& lhs, const Remote& rhs);
+                     inline friend bool operator == ( const Concurrent& lhs, common::strong::process::id rhs) { return lhs.process().pid == rhs;}
+                     friend bool operator < ( const Concurrent& lhs, const Concurrent& rhs);
 
                   private:
                      size_type m_hops = 0;
@@ -263,10 +263,10 @@ namespace casual
 
                struct Instances
                {
-                  instances_type< state::service::instance::Local> local;
-                  instances_type< state::service::instance::Remote> remote;
+                  instances_type< state::service::instance::Sequential> sequential;
+                  instances_type< state::service::instance::Concurrent> concurrent;
 
-                  inline bool empty() const { return local.empty() && remote.empty();}
+                  inline bool empty() const { return sequential.empty() && concurrent.empty();}
 
                   //!
                   //! @return true if any of the instances is active (not exiting).
@@ -297,12 +297,12 @@ namespace casual
                   const common::Uuid& correlation);
 
 
-               void add( state::instance::Local& instance);
-               void add( state::instance::Remote& instance, size_type hops);
+               void add( state::instance::Sequential& instance);
+               void add( state::instance::Concurrent& instance, size_type hops);
 
                void remove( common::strong::process::id instance);
 
-               state::instance::Local& local( common::strong::process::id instance);
+               state::instance::Sequential& local( common::strong::process::id instance);
 
 
                friend bool operator == ( const Service& lhs, const Service& rhs) { return lhs.information.name == rhs.information.name;}
@@ -318,7 +318,7 @@ namespace casual
 
             private:
 
-               friend struct state::instance::Local;
+               friend struct state::instance::Sequential;
                void unreserve( const common::platform::time::point::type& now, const common::platform::time::point::type& then);
 
 
@@ -332,11 +332,8 @@ namespace casual
 
 
 
-
-
          struct State
          {
-
 
             State() = default;
 
@@ -354,8 +351,8 @@ namespace casual
 
             struct
             {
-               instance_mapping_type< state::instance::Local> local;
-               instance_mapping_type< state::instance::Remote> remote;
+               instance_mapping_type< state::instance::Sequential> sequential;
+               instance_mapping_type< state::instance::Concurrent> concurrent;
 
             } instances;
 
@@ -385,7 +382,7 @@ namespace casual
 
 
             void update( common::message::service::Advertise& message);
-            void update( common::message::gateway::domain::Advertise& mesage);
+            void update( common::message::service::concurrent::Advertise& message);
 
 
             //!
@@ -405,7 +402,7 @@ namespace casual
             //!
             state::Service* find_service( const std::string& name);
 
-            state::instance::Local& local( common::strong::process::id pid);
+            state::instance::Sequential& local( common::strong::process::id pid);
 
             void connect_manager( std::vector< common::server::Service> services);
 

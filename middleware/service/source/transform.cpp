@@ -36,11 +36,10 @@ namespace casual
          }
 
 
-         common::process::Handle Instance::operator () ( const manager::state::instance::Local& value) const
+         common::process::Handle Instance::operator () ( const manager::state::instance::Sequential& value) const
          {
             return value.process;
          }
-
 
          namespace local
          {
@@ -48,19 +47,19 @@ namespace casual
             {
                struct Instance
                {
-                  manager::admin::instance::LocalVO operator() ( const manager::state::instance::Local& instance) const
+                  manager::admin::instance::SequentialVO operator() ( const manager::state::instance::Sequential& instance) const
                   {
-                     manager::admin::instance::LocalVO result;
+                     manager::admin::instance::SequentialVO result;
 
                      result.process = instance.process;
-                     result.state = static_cast< manager::admin::instance::LocalVO::State>( instance.state());
+                     result.state = static_cast< manager::admin::instance::SequentialVO::State>( instance.state());
 
                      return result;
                   }
 
-                  manager::admin::instance::RemoteVO operator() ( const manager::state::instance::Remote& instance) const
+                  manager::admin::instance::ConcurrentVO operator() ( const manager::state::instance::Concurrent& instance) const
                   {
-                     manager::admin::instance::RemoteVO result;
+                     manager::admin::instance::ConcurrentVO result;
 
                      result.process = instance.process;
 
@@ -122,24 +121,24 @@ namespace casual
                               };
                            };
 
-                     common::algorithm::transform( value.instances.local, result.instances.local, transform_local);
-                     common::algorithm::transform( value.instances.remote, result.instances.remote, transform_remote);
+                     common::algorithm::transform( value.instances.sequential, result.instances.sequential, transform_local);
+                     common::algorithm::transform( value.instances.concurrent, result.instances.concurrent, transform_remote);
 
                      return result;
                   }
                };
-
             } // <unnamed>
          } // local
+
 
          manager::admin::StateVO state( const manager::State& state)
          {
             manager::admin::StateVO result;
 
-            common::algorithm::transform( state.instances.local, result.instances.local,
+            common::algorithm::transform( state.instances.sequential, result.instances.sequential,
                   common::predicate::make_nested( local::Instance{}, common::extract::Second{}));
 
-            common::algorithm::transform( state.instances.remote, result.instances.remote,
+            common::algorithm::transform( state.instances.concurrent, result.instances.concurrent,
                   common::predicate::make_nested( local::Instance{}, common::extract::Second{}));
 
             common::algorithm::transform( state.pending.requests, result.pending, local::Pending{});

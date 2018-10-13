@@ -47,8 +47,6 @@ namespace casual
          }
 
 
-
-
       } // normalize
 
       namespace call
@@ -180,19 +178,14 @@ namespace casual
          {
             auto queues( const manager::admin::State& state)
             {
-               auto format_domain_id = [&]( const auto& q){
-                  return uuid::string( algorithm::find_if( state.remote.domains, [&]( const auto& d){ return d.process.pid == q.pid;}).front().id.id);
-               };
-   
-               auto format_domain_name = [&]( const auto& q){
-                  return algorithm::find_if( state.remote.domains, [&]( const auto& d){ return d.process.pid == q.pid;}).front().id.name;
+               auto format_pid = [&]( const auto& q){
+                  return q.pid;
                };
    
    
                return terminal::format::formatter< manager::admin::remote::Queue>::construct(
                   terminal::format::column( "name", std::mem_fn( &manager::admin::remote::Queue::name), terminal::color::yellow),
-                  terminal::format::column( "domain name", format_domain_name, common::terminal::color::blue),
-                  terminal::format::column( "domain id", format_domain_id, common::terminal::color::blue)
+                  terminal::format::column( "pid", format_pid, common::terminal::color::blue)
                );
             }
             

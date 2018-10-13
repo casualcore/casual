@@ -47,10 +47,8 @@ namespace casual
 
             using config_domain = common::message::domain::configuration::Domain;
 
-
             struct Manager
             {
-
                Manager()
                     : m_process{ "./bin/casual-queue-manager", {
                         "-g", "./bin/casual-queue-group",
@@ -342,7 +340,7 @@ namespace casual
 
          // make sure casual-manager-queue knows about a "remote queue"
          {
-            common::message::gateway::domain::Advertise remote;
+            common::message::queue::concurrent::Advertise remote;
 
             remote.process.pid = common::strong::process::id{ 666};
             remote.process.ipc = common::strong::ipc::id{ common::uuid::make()};

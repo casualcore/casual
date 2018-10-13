@@ -81,6 +81,53 @@ namespace casual
             }
 
 
+            namespace concurrent
+            {
+               namespace advertise
+               {
+                  std::ostream& operator << ( std::ostream& out, const Service& value)
+                  {
+                     out << "{ ";
+                     local::output::base_service( out, value);
+                     return out << ", timeout: " << value.timeout.count() 
+                        << ", hops: " << value.hops
+                        << '}';
+                  }
+
+               } // advertise
+               std::ostream& operator << ( std::ostream& out, Advertise::Directive value)
+               {
+                  switch( value)
+                  {
+                     case Advertise::Directive::add: return out << "add";
+                     case Advertise::Directive::remove: return out << "remove";
+                  }
+                  return out << "unknown";
+               }
+
+               std::ostream& operator << ( std::ostream& out, const Advertise& message)
+               {
+                  return out << "{ process: " << message.process
+                        << ", directive: " << message.directive
+                        << ", services: " << range::make( message.services)
+                        << '}';
+               }
+
+               std::ostream& operator << ( std::ostream& out, const Metric::Service& value)
+               {
+                  return out << "{ name: " << value.name
+                     << ", duration: " << chronology::duration( value.duration)
+                     << '}';
+               }
+
+               std::ostream& operator << ( std::ostream& out, const Metric& value)
+               {
+                  return out << "{ process: " << value.process
+                     << ", services: " << range::make( value.services)
+                     << '}';
+               }
+            } // concurrent
+
             std::ostream& operator << ( std::ostream& out, Advertise::Directive value)
             {
                switch( value)
@@ -138,6 +185,9 @@ namespace casual
 
             } // lookup
 
+
+
+
             namespace call
             {
 
@@ -171,25 +221,6 @@ namespace casual
 
             } // call
 
-            namespace remote
-            {
-
-               std::ostream& operator << ( std::ostream& out, const Metric::Service& value)
-               {
-                  return out << "{ name: " << value.name
-                     << ", duration: " << chronology::duration( value.duration)
-                     << '}';
-               }
-
-               std::ostream& operator << ( std::ostream& out, const Metric& value)
-               {
-                  return out << "{ process: " << value.process
-                     << ", services: " << range::make( value.services)
-                     << '}';
-               }
-
-      
-            } // remote
          } // service
       } // message
    } // common

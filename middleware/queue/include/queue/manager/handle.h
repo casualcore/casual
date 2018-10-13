@@ -26,7 +26,6 @@ namespace casual
       {
          namespace handle
          {
-
             struct Base
             {
                Base( State& state) : m_state( state) {}
@@ -34,7 +33,6 @@ namespace casual
             protected:
                State& m_state;
             };
-
          }
 
          namespace ipc
@@ -109,8 +107,7 @@ namespace casual
 
             } // connect
 
-
-            namespace domain
+            namespace concurrent
             {
                //!
                //! Handles remote advertise
@@ -120,12 +117,15 @@ namespace casual
                //!
                struct Advertise : Base
                {
-                  using message_type = common::message::gateway::domain::Advertise;
+                  using message_type = common::message::queue::concurrent::Advertise;
                   using Base::Base;
 
                   void operator () ( message_type& message);
                };
+            } // concurrent
 
+            namespace domain
+            {
                namespace discover
                {
                   struct Request : Base

@@ -24,8 +24,6 @@ namespace casual
          Protocol::Protocol( Protocol&&) = default;
          Protocol& Protocol::operator = ( Protocol&&) = default;
 
-
-
          namespace protocol
          {
             namespace local

@@ -116,6 +116,26 @@ namespace casual
                   void operator () ( message_type& message);
                };
 
+               //! services (instances rather) that are concurrent, hence does not block
+               //! the instance.
+               namespace concurrent
+               {
+                  struct Advertise : Base
+                  {
+                     using message_type = common::message::service::concurrent::Advertise;
+
+                     using Base::Base;
+
+                     void operator () ( message_type& message);
+                  };
+
+                  struct Metric : Base
+                  {
+                     using Base::Base;
+                     void operator () ( common::message::service::concurrent::Metric& message);
+                  };
+               } // concurrent
+
 
                //!
                //! Looks up a service-name
@@ -130,35 +150,12 @@ namespace casual
 
                };
 
-               namespace remote
-               {
-                  struct Metric : Base
-                  {
-                     using Base::Base;
-                     void operator () ( common::message::service::remote::Metric& message);
-                  };
 
-               } // remote
 
             } // service
 
             namespace domain
             {
-               //!
-               //! Handles remote advertise
-               //!  - add  0..* services
-               //!  - remove 0..* services
-               //!  - replace == remove all services for instance and then add 0..* services
-               //!
-               struct Advertise : Base
-               {
-                  using message_type = common::message::gateway::domain::Advertise;
-
-                  using Base::Base;
-
-                  void operator () ( message_type& message);
-               };
-
                namespace discover
                {
                   struct Request : Base

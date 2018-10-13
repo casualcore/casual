@@ -15,15 +15,12 @@ namespace casual
 {
    namespace queue
    {
-
       namespace transform
       {
-
          namespace local
          {
             namespace
             {
-
                struct Group
                {
                   manager::admin::Group operator () ( const manager::State::Group& group) const
@@ -103,7 +100,6 @@ namespace casual
             common::algorithm::transform( state.remotes, result.domains, []( auto& r){
                manager::admin::remote::Domain domain;
                
-               domain.id = r.id;
                domain.process = r.process;
                domain.order = r.order;
 

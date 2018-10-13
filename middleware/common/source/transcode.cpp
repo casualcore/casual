@@ -40,29 +40,22 @@ namespace casual
          {
             namespace detail
             {
-               std::string encode( const void* data, platform::size::type bytes)
-               {
-                  //
-                  // b64_ntop requires one extra char of some reason
-                  //
-                  std::string result( ( ( bytes + 2) / 3) * 4 + 1, 0);
 
+               platform::size::type encode( const Data source, Data target)
+               {
                   const auto length =
                      b64_ntop(
-                        static_cast<const unsigned char*>( data),
-                        bytes,
-                        &result[0],
-                        result.size());
+                        static_cast<const unsigned char*>( source.memory),
+                        source.bytes,
+                        static_cast< char*>( target.memory),
+                        target.bytes);
 
                   if( length < 0)
                   {
                      throw exception::system::invalid::Argument( "Base64-encode failed");
                   }
 
-                  result.resize( length);
-
-                  return result;
-
+                  return length;
                }
 
             } // detail

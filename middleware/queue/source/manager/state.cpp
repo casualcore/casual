@@ -21,24 +21,22 @@ namespace casual
 
          State::State() = default;
 
-
          State::Group::Group() = default;
          State::Group::Group( std::string name, common::process::Handle process) 
             : name( std::move( name)), process( std::move( process)) {}
-
 
          bool operator == ( const State::Group& lhs, common::strong::process::id pid) { return lhs.process.pid == pid;}
 
          static_assert( common::traits::is_movable< State::Group>::value, "not movable");
 
          State::Remote::Remote() = default;
-         State::Remote::Remote( common::domain::Identity id, common::process::Handle process)
-            : id{ std::move( id)}, process{ std::move( process)} {}
+         State::Remote::Remote( common::process::Handle process)
+            : process{ std::move( process)} {}
 
 
-         bool operator == ( const State::Remote& lhs, const common::domain::Identity& rhs)
+         bool operator == ( const State::Remote& lhs, const common::process::Handle& rhs)
          {
-            return lhs.id == rhs;
+            return lhs.process == rhs;
          }
 
          static_assert( common::traits::is_movable< State::Remote>::value, "not movable");
@@ -114,7 +112,7 @@ namespace casual
 
          }
 
-         void State::update( common::message::gateway::domain::Advertise& message)
+         void State::update( common::message::queue::concurrent::Advertise& message)
          {
             Trace trace{ "queue::broker::State::update"};
 
@@ -126,40 +124,30 @@ namespace casual
                {
                   remove_queues( message.process.pid);
 
-                  //
                   // We fall through and add the queues, if any.
-                  //
                }
                // no break
                case directive_type::add:
                {
                   if( ! message.queues.empty())
                   {
-                     //
                      // We only add gateway and queues if there are any.
-                     //
-
-                     if( ! common::algorithm::find( remotes, message.domain))
+                     if( ! common::algorithm::find( remotes, message.process))
                      {
-                        remotes.emplace_back( message.domain, message.process);
+                        remotes.emplace_back( message.process);
                      }
 
                      for( const auto& queue : message.queues)
                      {
                         auto& instances = queues[ queue.name];
 
-                        //
                         // outbound order is zero-based, we add 1 to distinguish local from remote
-                        //
                         instances.emplace_back( message.process, common::strong::queue::id{}, message.order + 1);
 
-                        //
                         // Make sure we prioritize local queue
-                        //
                         common::algorithm::stable_sort( instances);
                      }
                   }
-
                   break;
                }
                case directive_type::remove:

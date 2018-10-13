@@ -123,9 +123,7 @@ namespace casual
 
             namespace advertise
             {
-               //!
                //! Represent service information in a 'advertise context'
-               //!
                using Service = message::service::Base;
 
                static_assert( traits::is_movable< Service>::value, "not movable");
@@ -135,7 +133,7 @@ namespace casual
 
             struct Advertise : basic_message< Type::service_advertise>
             {
-               enum class Directive : char
+               enum class Directive : short
                {
                   add,
                   remove,
@@ -151,15 +149,113 @@ namespace casual
                CASUAL_CONST_CORRECT_MARSHAL(
                {
                   base_type::marshal( archive);
-                  archive & directive;
-                  archive & process;
-                  archive & services;
+                  CASUAL_MARSHAL( directive);
+                  CASUAL_MARSHAL( process);
+                  CASUAL_MARSHAL( services);
                })
 
                friend std::ostream& operator << ( std::ostream& out, Directive value);
                friend std::ostream& operator << ( std::ostream& out, const Advertise& message);
             };
             static_assert( traits::is_movable< Advertise>::value, "not movable");
+
+            namespace concurrent
+            {
+               namespace advertise
+               {
+                  //! Represent service information in a 'advertise context'
+                  struct Service : message::Service
+                  {
+                     Service() = default;
+                     inline Service( std::string name, 
+                        std::string category, 
+                        common::service::transaction::Type transaction,
+                        platform::size::type hops = 0)
+                        : message::Service( std::move( name), std::move( category), transaction), hops( hops) {}
+
+                     inline Service( std::function<void(Service&)> foreign) { foreign( *this);}
+
+                     platform::size::type hops = 0;
+
+                     CASUAL_CONST_CORRECT_MARSHAL(
+                     {
+                        message::Service::marshal( archive);
+                        CASUAL_MARSHAL( hops);
+                     })
+
+                     friend std::ostream& operator << ( std::ostream& out, const Service& value);
+                  };
+
+                  static_assert( traits::is_movable< Service>::value, "not movable");
+
+               } // advertise
+
+
+               struct Advertise : basic_message< Type::service_concurrent_advertise>
+               {
+                  enum class Directive : short
+                  {
+                     add,
+                     remove
+                  };
+
+                  Directive directive = Directive::add;
+
+                  common::process::Handle process;
+                  platform::size::type order = 0;
+                  std::vector< advertise::Service> services;
+
+
+                  CASUAL_CONST_CORRECT_MARSHAL(
+                  {
+                     base_type::marshal( archive);
+                     CASUAL_MARSHAL( directive);
+                     CASUAL_MARSHAL( process);
+                     CASUAL_MARSHAL( order);
+                     CASUAL_MARSHAL( services);
+                  })
+
+                  friend std::ostream& operator << ( std::ostream& out, Directive value);
+                  friend std::ostream& operator << ( std::ostream& out, const Advertise& message);
+               };
+               static_assert( traits::is_movable< Advertise>::value, "not movable");
+
+
+ 
+               struct Metric : basic_message< Type::service_concurrent_metrics>
+               {
+                  struct Service
+                  {
+                     Service() = default;
+                     Service( std::string name, common::platform::time::unit duration)
+                      : name( std::move( name)), duration( std::move( duration)) {}
+
+                     std::string name;
+                     common::platform::time::unit duration;
+
+                     CASUAL_CONST_CORRECT_MARSHAL(
+                     {
+                        CASUAL_MARSHAL( name);
+                        CASUAL_MARSHAL( duration);
+                     })
+                     friend std::ostream& operator << ( std::ostream& out, const Service& value);
+                  };
+
+                  common::process::Handle process;
+                  std::vector< Service> services;
+
+                  CASUAL_CONST_CORRECT_MARSHAL(
+                  {
+                     base_type::marshal( archive);
+                     CASUAL_MARSHAL( process);
+                     CASUAL_MARSHAL( services);
+                  })
+                  friend std::ostream& operator << ( std::ostream& out, const Metric& value);
+
+               };
+               static_assert( traits::is_movable< Metric>::value, "not movable");
+               
+            } // concurrent   
 
 
             namespace lookup
@@ -349,41 +445,7 @@ namespace casual
 
             } // call
 
-            namespace remote
-            {
-               struct Metric : basic_message< Type::service_remote_metrics>
-               {
-                  struct Service
-                  {
-                     Service() = default;
-                     Service( std::string name, common::platform::time::unit duration)
-                      : name( std::move( name)), duration( std::move( duration)) {}
 
-                     std::string name;
-                     common::platform::time::unit duration;
-
-                     CASUAL_CONST_CORRECT_MARSHAL(
-                     {
-                        archive & name;
-                        archive & duration;
-                     })
-                     friend std::ostream& operator << ( std::ostream& out, const Service& value);
-                  };
-
-                  common::process::Handle process;
-                  std::vector< Service> services;
-
-                  CASUAL_CONST_CORRECT_MARSHAL(
-                  {
-                     base_type::marshal( archive);
-                     archive & process;
-                     archive & services;
-                  })
-                  friend std::ostream& operator << ( std::ostream& out, const Metric& value);
-
-               };
-               static_assert( traits::is_movable< Metric>::value, "not movable");
-            } // remote
 
          } // service
 

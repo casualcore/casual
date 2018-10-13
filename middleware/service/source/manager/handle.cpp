@@ -166,9 +166,9 @@ namespace casual
 
                   //
                   // we need to check if the dead process has anyone wating for a reply
-                  if( auto found = common::algorithm::find( m_state.instances.local, message.state.pid))
+                  if( auto found = common::algorithm::find( m_state.instances.sequential, message.state.pid))
                   {
-                     if( found->second.state() == state::instance::Local::State::busy)
+                     if( found->second.state() == state::instance::Sequential::State::busy)
                         local::service_call_error_reply( m_state, found->second);
                   }
 
@@ -232,12 +232,45 @@ namespace casual
             {
                void Advertise::operator () ( message_type& message)
                {
-                  Trace trace{ "service::manager::handle::Advertise"};
+                  Trace trace{ "service::manager::handle::service::Advertise"};
 
                   log::line( verbose::log, "message: ", message);
 
                   m_state.update( message);
                }
+
+               namespace concurrent
+               {
+                  void Advertise::operator () ( message_type& message)
+                  {
+                     Trace trace{ "service::manager::handle::service::concurrent::Advertise"};
+
+                     common::log::line( verbose::log, "message: ", message);
+
+                     m_state.update( message);
+                  }
+
+                  void Metric::operator () ( common::message::service::concurrent::Metric& message)
+                  {
+                     Trace trace{ "service::manager::handle::service::concurrent::Metric"};
+
+                     log::line( verbose::log, "message: ", message);
+
+                     auto now = platform::time::clock::type::now();
+
+                     for( auto& s : message.services)
+                     {
+                        auto service = m_state.find_service( s.name);
+                        if( service)
+                        {
+                           service->metric.add( s.duration);
+
+                           // TODO: do we need more accuracy?
+                           service->last( now);
+                        }
+                     }
+                  }
+               } // concurrent
 
 
                void Lookup::operator () ( message_type& message)
@@ -367,44 +400,11 @@ namespace casual
                      }
                   }
                }
-
-               namespace remote
-               {
-                  void Metric::operator () ( common::message::service::remote::Metric& message)
-                  {
-                     Trace trace{ "service::manager::handle::service::remote::Metric"};
-
-                     log::line( verbose::log, "message: ", message);
-
-                     auto now = platform::time::clock::type::now();
-
-                     for( auto& s : message.services)
-                     {
-                        auto service = m_state.find_service( s.name);
-                        if( service)
-                        {
-                           service->metric.add( s.duration);
-
-                           // TODO: do we need more accuracy?
-                           service->last( now);
-                        }
-                     }
-                  }
-               } // remote
-
             } // service
-
 
             namespace domain
             {
-               void Advertise::operator () ( message_type& message)
-               {
-                  Trace trace{ "service::manager::handle::gateway::Advertise"};
 
-                  common::log::line( verbose::log, "message: ", message);
-
-                  m_state.update( message);
-               }
 
                namespace discover
                {
@@ -423,13 +423,11 @@ namespace casual
                      {
                         auto&& service = m_state.find_service( s);
 
-                        //
                         // We don't allow other domains to access or know about our
                         // admin services.
-                        //
                         if( service && service->information.category != common::service::category::admin())
                         {
-                           if( ! service->instances.local.empty())
+                           if( ! service->instances.sequential.empty())
                            {
                               // Service is local
                               reply.services.emplace_back(
@@ -437,14 +435,13 @@ namespace casual
                                     service->information.category,
                                     service->information.transaction);
                            }
-                           else if( ! service->instances.remote.empty())
+                           else if( ! service->instances.concurrent.empty())
                            {
                               reply.services.emplace_back(
                                     service->information.name,
                                     service->information.category,
                                     service->information.transaction,
-                                    service->instances.remote.front().hops());
-
+                                    service->instances.concurrent.front().hops());
                            }
                         }
                      }
@@ -605,12 +602,12 @@ namespace casual
                handle::process::prepare::Shutdown{ state},
                handle::service::Advertise{ state},
                handle::service::Lookup{ state},
-               handle::service::remote::Metric{ state},
+               handle::service::concurrent::Advertise{ state},
+               handle::service::concurrent::Metric{ state},
                handle::ACK{ state},
                handle::event::subscription::Begin{ state},
                handle::event::subscription::End{ state},
                handle::Call{ admin::services( state), state},
-               handle::domain::Advertise{ state},
                handle::domain::discover::Request{ state},
                handle::domain::discover::Reply{ state},
                common::message::handle::Ping{},

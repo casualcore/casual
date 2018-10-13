@@ -116,7 +116,7 @@ namespace casual
 
                   route::Route route;
 
-                  common::message::service::remote::Metric metric;
+                  common::message::service::concurrent::Metric metric;
                   size_type order;
                };
 
@@ -424,26 +424,31 @@ namespace casual
                                  {
                                     Trace trace{ "gateway::outbound::handle::domain::discover::Reply advertise"};
 
-                                    common::message::gateway::domain::Advertise advertise;
-                                    advertise.execution = message.execution;
-                                    advertise.domain = message.domain;
-                                    advertise.process = common::process::handle();
-                                    advertise.order = state.order;
-                                    advertise.services = message.services;
-                                    advertise.queues = message.queues;
-
-                                    if( ! advertise.services.empty())
+                                    if( ! message.services.empty())
                                     {
+                                       common::message::service::concurrent::Advertise advertise;
+                                       advertise.execution = message.execution;
+                                       advertise.process = common::process::handle();
+                                       advertise.order = state.order;
+                                       advertise.services = message.services;
+
                                        // add one hop, since we now it has passed a domain boundary
                                        for( auto& service : advertise.services) { ++service.hops;}
+
 
                                        blocking::send( 
                                           common::communication::instance::outbound::service::manager::device(), 
                                           advertise);
                                     }
 
-                                    if( ! advertise.queues.empty())
+                                    if( ! message.queues.empty())
                                     {
+                                       common::message::queue::concurrent::Advertise advertise;
+                                       advertise.execution = message.execution;
+                                       advertise.process = common::process::handle();
+                                       advertise.order = state.order;
+                                       advertise.queues = message.queues;
+
                                        blocking::optional::send( 
                                           common::communication::instance::outbound::queue::manager::optional::device(),
                                           advertise);

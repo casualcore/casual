@@ -34,7 +34,6 @@ namespace casual
 
             struct Group
             {
-
                Group();
                Group( std::string name, common::process::Handle process);
 
@@ -55,13 +54,12 @@ namespace casual
             struct Remote
             {
                Remote();
-               Remote( common::domain::Identity id, common::process::Handle process);
+               Remote( common::process::Handle process);
 
-               common::domain::Identity id;
                common::process::Handle process;
                size_type order = 0;
 
-               friend bool operator == ( const Remote& lhs, const common::domain::Identity& rhs);
+               friend bool operator == ( const Remote& lhs, const common::process::Handle& rhs);
 
             };
 
@@ -109,7 +107,7 @@ namespace casual
             //!
             void remove( common::strong::process::id pid);
 
-            void update( common::message::gateway::domain::Advertise& message);
+            void update( common::message::queue::concurrent::Advertise& message);
 
             const common::message::domain::configuration::queue::Group* group_configuration( const std::string& name);
             common::message::domain::configuration::queue::Manager configuration;

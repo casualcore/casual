@@ -39,6 +39,17 @@ namespace casual
          EXPECT_TRUE( transcode::base64::encode( std::string( "ABCD")) == "QUJDRA==");
       }
 
+      TEST( casual_common_transcode_base64, encode_binary)
+      {
+         common::unittest::Trace trace;
+
+         EXPECT_TRUE( transcode::base64::encode( local::from_string( "")) == "");
+         EXPECT_TRUE( transcode::base64::encode( local::from_string( "A")) == "QQ==");
+         EXPECT_TRUE( transcode::base64::encode( local::from_string( "AB")) == "QUI=");
+         EXPECT_TRUE( transcode::base64::encode( local::from_string( "ABC")) == "QUJD");
+         EXPECT_TRUE( transcode::base64::encode( local::from_string( "ABCD")) == "QUJDRA==");
+      }
+
       TEST( casual_common_transcode_base64, decode)
       {
          common::unittest::Trace trace;

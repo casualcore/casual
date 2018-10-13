@@ -20,7 +20,6 @@ namespace casual
    {
       namespace manager
       {
-
          TEST( service_manager_state, admin_services)
          {
             common::unittest::Trace trace;
@@ -31,7 +30,6 @@ namespace casual
 
             EXPECT_TRUE( arguments.services.at( 0).name == admin::service::name::state());
          }
-
 
          TEST( service_manager_state, advertise_empty_invalid_local__expect_no_op)
          {
@@ -44,25 +42,24 @@ namespace casual
                state.update( message);
             }
 
-            EXPECT_TRUE( state.instances.local.empty()) << "state.instances.local.size(): "<< state.instances.local.begin()->second.process;
-            EXPECT_TRUE( state.instances.remote.empty());
+            EXPECT_TRUE( state.instances.sequential.empty()) << "state.instances.sequential.size(): "<< state.instances.sequential.begin()->second.process;
+            EXPECT_TRUE( state.instances.concurrent.empty());
          }
 
-         TEST( service_manager_state, advertise_empty_invalid_remote__expect_no_op)
+         TEST( service_manager_state, advertise_empty_invalid_concurrent__expect_no_op)
          {
             common::unittest::Trace trace;
 
             manager::State state;
 
             {
-               common::message::gateway::domain::Advertise message;
+               common::message::service::concurrent::Advertise message;
                state.update( message);
             }
 
-            EXPECT_TRUE( state.instances.local.empty());
-            EXPECT_TRUE( state.instances.remote.empty()) << "state.instances.remote.size(): "<< state.instances.remote.begin()->second.process;
+            EXPECT_TRUE( state.instances.sequential.empty());
+            EXPECT_TRUE( state.instances.concurrent.empty()) << "state.instances.concurrent.size(): "<< state.instances.concurrent.begin()->second.process;
          }
-
 
          TEST( service_manager_state, advertise_local_service__expect_service_and_instance_added)
          {
@@ -77,19 +74,19 @@ namespace casual
                state.update( message);
             }
 
-            EXPECT_TRUE( state.instances.local.size() == 1);
+            EXPECT_TRUE( state.instances.sequential.size() == 1);
             {
                auto service = state.find_service( "service1");
                ASSERT_TRUE( service);
                EXPECT_TRUE( service->information.name == "service1");
-               ASSERT_TRUE( service->instances.local.size() == 1);
-               auto& instance = service->instances.local.at( 0);
+               ASSERT_TRUE( service->instances.sequential.size() == 1);
+               auto& instance = service->instances.sequential.at( 0);
                EXPECT_TRUE( instance.process() == common::process::handle());
                EXPECT_TRUE( instance.idle());
                EXPECT_TRUE( instance.get().service( "service1"));
             }
 
-            EXPECT_TRUE( state.instances.remote.empty());
+            EXPECT_TRUE( state.instances.concurrent.empty());
          }
 
          TEST( service_manager_state, advertise_local_service__unadvertise___expect__service_instance_relation__removed)
@@ -115,12 +112,11 @@ namespace casual
                state.update( message);
             }
 
-
             {
                auto service = state.find_service( "service1");
                ASSERT_TRUE( service);
                EXPECT_TRUE( service->information.name == "service1");
-               EXPECT_TRUE( service->instances.local.size() == 0);
+               EXPECT_TRUE( service->instances.sequential.size() == 0);
             }
 
             {
@@ -198,10 +194,10 @@ namespace casual
             {
                auto service = state.find_service( "s4");
                ASSERT_TRUE( service);
-               EXPECT_TRUE( service->instances.local.empty());
+               EXPECT_TRUE( service->instances.sequential.empty());
                service = state.find_service( "s7");
                ASSERT_TRUE( service);
-               EXPECT_TRUE( service->instances.local.empty());
+               EXPECT_TRUE( service->instances.sequential.empty());
             }
 
             {

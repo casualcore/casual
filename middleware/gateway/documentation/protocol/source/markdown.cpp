@@ -733,9 +733,9 @@ Sent to and received from other domains when one domain wants discover informati
                   local::message_type( out, message_type{}) << "\n\n";
 
                   message_type message;
-
-                  message.services.push_back( std::string( 128, 0));
-                  message.queues.push_back( std::string( 128, 0));
+                  
+                  message.services.push_back( { []( auto& s){ s.name = std::string( 128, 0);}});
+                  message.queues.push_back( { []( auto& q){ q.name = std::string( 128, 0);}});
 
                   local::format::type( out, message, {
                            { "execution", "uuid of the current execution path"},

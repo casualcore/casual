@@ -167,6 +167,18 @@ namespace casual
                } // forward
             } // service
 
+            namespace http
+            {
+               namespace outbound
+               {
+                  namespace concurrent
+                  {
+                     //! max number of 'cached' metrics.
+                     constexpr size::type metrics = 100;
+                  } // concurrent
+               } // outbound
+            } // http
+
          } // batch
 
 

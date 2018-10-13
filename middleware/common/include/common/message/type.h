@@ -77,7 +77,9 @@ namespace casual
             service_call = SERVICE_BASE + 100,
             service_reply,
             service_acknowledge,
-            service_remote_metrics,
+
+            service_concurrent_advertise,
+            service_concurrent_metrics,
 
             service_conversation_connect_request = SERVICE_BASE + 200,
             service_conversation_connect_reply,
@@ -148,6 +150,7 @@ namespace casual
             QUEUE_BASE = 6000,
             queue_connect_request,
             queue_connect_reply,
+            queue_advertise,
             queue_enqueue_request = QUEUE_BASE + 100,
             queue_enqueue_reply,
             queue_dequeue_request = QUEUE_BASE + 200,

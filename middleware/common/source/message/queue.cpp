@@ -163,6 +163,40 @@ namespace casual
 
             } // peek
 
+            namespace concurrent
+            {
+               namespace advertise
+               {
+
+                  std::ostream& operator << ( std::ostream& out, const Queue& message)
+                  {
+                     return out << "{ name: " << message.name
+                           << ", retries: " << message.retries
+                           << '}';
+                  }
+               } // advertise
+
+               std::ostream& operator << ( std::ostream& out, Advertise::Directive value)
+               {
+                  switch( value)
+                  {
+                     case Advertise::Directive::add: return out << "add";
+                     case Advertise::Directive::remove: return out << "remove";
+                     case Advertise::Directive::replace: return out << "replace";
+                  }
+                  return out << "unknown";
+               }
+
+               std::ostream& operator << ( std::ostream& out, const Advertise& message)
+               {
+                  return out << "{ process: " << message.process
+                        << ", directive: " << message.directive
+                        << ", order: " << message.order
+                        << ", queues: " << range::make( message.queues)
+                        << '}';
+               }
+            } // concurrent
+
             std::ostream& operator << ( std::ostream& out, const Queue::Type& value)
             {
                switch( value)

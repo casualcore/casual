@@ -45,13 +45,11 @@ namespace casual
             {
                struct Domain
                {
-                  common::domain::Identity id;
                   common::process::Handle process;
                   size_type order = 0;
    
                   CASUAL_CONST_CORRECT_SERIALIZE(
                   {
-                     archive & CASUAL_MAKE_NVP( id);
                      archive & CASUAL_MAKE_NVP( process);
                      archive & CASUAL_MAKE_NVP( order);
                   })

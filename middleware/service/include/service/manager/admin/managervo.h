@@ -37,7 +37,7 @@ namespace casual
 
                };
 
-               struct LocalVO : Base
+               struct SequentialVO : Base
                {
 
                   enum class State : char
@@ -56,7 +56,7 @@ namespace casual
                   })
                };
 
-               struct RemoteVO : Base
+               struct ConcurrentVO : Base
                {
 
                };
@@ -125,13 +125,13 @@ namespace casual
 
                struct
                {
-                  std::vector< service::instance::Local> local;
-                  std::vector< service::instance::Remote> remote;
+                  std::vector< service::instance::Local> sequential;
+                  std::vector< service::instance::Remote> concurrent;
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
                   {
-                     archive & CASUAL_MAKE_NVP( local);
-                     archive & CASUAL_MAKE_NVP( remote);
+                     archive & CASUAL_MAKE_NVP( sequential);
+                     archive & CASUAL_MAKE_NVP( concurrent);
                   })
                } instances;
 
@@ -165,13 +165,13 @@ namespace casual
             {
                struct
                {
-                  std::vector< instance::LocalVO> local;
-                  std::vector< instance::RemoteVO> remote;
+                  std::vector< instance::SequentialVO> sequential;
+                  std::vector< instance::ConcurrentVO> concurrent;
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
                   {
-                     archive & CASUAL_MAKE_NVP( local);
-                     archive & CASUAL_MAKE_NVP( remote);
+                     archive & CASUAL_MAKE_NVP( sequential);
+                     archive & CASUAL_MAKE_NVP( concurrent);
                   })
 
                } instances;

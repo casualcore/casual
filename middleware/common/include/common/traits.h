@@ -396,16 +396,6 @@ namespace casual
          using underlying_type_t = typename underlying_type< T>::type;
          //! @}
 
-/*
-         namespace concrete
-         {
-            template< typename E>
-            constexpr auto type( E&& expression) -> remove_cvref_t< decltype( std::forward< E>( expression))>
-            {
-               return {};
-            }
-         } // expression
-         */
 
          template< typename T>
          struct is_by_value_friendly : bool_constant< 
@@ -419,11 +409,13 @@ namespace casual
          template< typename T>
          using by_value_or_const_ref_t = typename by_value_or_const_ref< T>::type;
 
+         template< typename T>
+         struct is_nothrow_movable : bool_constant<
+            std::is_nothrow_move_constructible< T>::value && std::is_nothrow_move_assignable< T>::value> {}; 
 
 #if __cplusplus > 201402L // vector will have nothrow move in c++17
          template< typename T>
-         struct is_movable : bool_constant<
-            std::is_nothrow_move_constructible< T>::value && std::is_nothrow_move_assignable< T>::value> {};
+         using is_movable = is_nothrow_movable;
          
 #else
          //!
@@ -432,9 +424,13 @@ namespace casual
          template< typename T>
          struct is_movable : bool_constant<
             std::is_move_constructible< T>::value && std::is_move_assignable< T>::value> {};
-
 #endif
 
+ 
+
+         template< typename T>
+         struct is_copyable : bool_constant< 
+            std::is_copy_constructible< T>::value && std::is_copy_assignable< T>::value> {};
 
 
 
@@ -513,6 +509,8 @@ namespace casual
             uncopyable( const uncopyable&) = delete;
             uncopyable& operator = ( const uncopyable&) = delete;
          };
+
+         struct unrelocatable : unmovable, uncopyable {};
 
 
          namespace has

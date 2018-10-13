@@ -518,6 +518,64 @@ namespace casual
                static_assert( traits::is_movable< Reply>::value, "not movable");
             } // connect
 
+            namespace concurrent
+            {
+               namespace advertise
+               {
+                  struct Queue
+                  {
+                     Queue() = default;
+
+                     Queue( std::string name, size_type retries) : name{ std::move( name)}, retries{ retries} {}
+                     Queue( std::string name) : name{ std::move( name)} {}
+
+                     Queue( std::function< void(Queue&)> foreign) { foreign( *this);}
+
+                     std::string name;
+                     size_type retries = 0;
+
+                     CASUAL_CONST_CORRECT_MARSHAL(
+                     {
+                        archive & name;
+                        archive & retries;
+                     })
+
+                     friend std::ostream& operator << ( std::ostream& out, const Queue& message);
+                  };
+                  static_assert( traits::is_movable< Queue>::value, "not movable");
+               } // advertise
+
+               struct Advertise : basic_message< Type::queue_advertise>
+               {
+                  enum class Directive : short
+                  {
+                     add,
+                     remove,
+                     replace
+                  };
+
+                  Directive directive = Directive::add;
+
+                  common::process::Handle process;
+                  platform::size::type order = 0;
+                  std::vector< advertise::Queue> queues;
+
+
+                  CASUAL_CONST_CORRECT_MARSHAL(
+                  {
+                     base_type::marshal( archive);
+                     CASUAL_MARSHAL( directive);
+                     CASUAL_MARSHAL( process);
+                     CASUAL_MARSHAL( order);
+                     CASUAL_MARSHAL( queues);
+                  })
+
+                  friend std::ostream& operator << ( std::ostream& out, Directive value);
+                  friend std::ostream& operator << ( std::ostream& out, const Advertise& message);
+               };
+               static_assert( traits::is_movable< Advertise>::value, "not movable");
+            } // concurrent
+
 
             namespace restore
             {

@@ -33,9 +33,6 @@ namespace casual
       {
          namespace
          {
-
-
-
             struct Manager
             {
                Manager() : process{ "./bin/casual-service-manager", { "--forward", "./bin/casual-service-forward"}}
@@ -95,9 +92,9 @@ namespace casual
 
             namespace instance
             {
-               const manager::admin::instance::LocalVO* find( const manager::admin::StateVO& state, common::strong::process::id pid)
+               const manager::admin::instance::SequentialVO* find( const manager::admin::StateVO& state, common::strong::process::id pid)
                {
-                  auto found = common::algorithm::find_if( state.instances.local, [pid]( auto& i){
+                  auto found = common::algorithm::find_if( state.instances.sequential, [pid]( auto& i){
                      return i.process.pid == pid;
                   });
 
@@ -161,18 +158,18 @@ namespace casual
          auto state = local::call::state();
 
          ASSERT_TRUE( local::has_services( state.services, { manager::admin::service::name::state(), "service1", "service2"}));
-
+         
          {
             auto service = local::service::find( state, "service1");
             ASSERT_TRUE( service);
-            ASSERT_TRUE( service->instances.local.size() == 1);
-            EXPECT_TRUE( service->instances.local.at( 0).pid == server.process().pid);
+            ASSERT_TRUE( service->instances.sequential.size() == 1);
+            EXPECT_TRUE( service->instances.sequential.at( 0).pid == server.process().pid);
          }
          {
             auto service = local::service::find( state, "service2");
             ASSERT_TRUE( service);
-            ASSERT_TRUE( service->instances.local.size() == 1);
-            EXPECT_TRUE( service->instances.local.at( 0).pid == server.process().pid);
+            ASSERT_TRUE( service->instances.sequential.size() == 1);
+            EXPECT_TRUE( service->instances.sequential.at( 0).pid == server.process().pid);
          }
       }
 
@@ -186,13 +183,13 @@ namespace casual
 
          auto state = local::call::state();
 
-         ASSERT_TRUE( state.instances.local.size() == 2);
-         ASSERT_TRUE( state.instances.remote.empty());
+         ASSERT_TRUE( state.instances.sequential.size() == 2);
+         ASSERT_TRUE( state.instances.concurrent.empty());
 
          {
             auto instance = local::instance::find( state, server.process().pid);
             ASSERT_TRUE( instance);
-            EXPECT_TRUE( instance->state == manager::admin::instance::LocalVO::State::idle);
+            EXPECT_TRUE( instance->state == manager::admin::instance::SequentialVO::State::idle);
          }
       }
 
@@ -221,7 +218,7 @@ namespace casual
          {
             auto instance = local::instance::find( state, server.process().pid);
             ASSERT_TRUE( instance);
-            EXPECT_TRUE( instance->state == manager::admin::instance::LocalVO::State::exiting);
+            EXPECT_TRUE( instance->state == manager::admin::instance::SequentialVO::State::exiting);
          }
       }
 

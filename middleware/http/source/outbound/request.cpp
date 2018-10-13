@@ -12,7 +12,10 @@
 #include "common/string.h"
 #include "common/algorithm.h"
 #include "common/transcode.h"
-#include "common/buffer/type.h"
+
+#include "common/memory.h"
+#include "common/communication/ipc.h"
+#include "common/message/handle.h"
 
 
 #include <curl/curl.h>
@@ -23,460 +26,278 @@ namespace casual
 
    namespace http
    {
-      namespace request
-      {
-         namespace local
+      namespace outbound
+      {     
+         namespace request
          {
-            namespace
+            namespace local
             {
-               namespace global
+               namespace
                {
-                  namespace error
+                  namespace send
                   {
-                     std::array< char, CURL_ERROR_SIZE> buffer = {};
-                  } // error
-
-
-               } // global
-
-
-               namespace curl
-               {
-                  namespace set
-                  {
-                     //using directive_type = decltype( CURLOPT_ERRORBUFFER);
-
-                     template< typename H, typename Directive, typename Data>
-                     void option( H&& handle, Directive directive, Data&& data)
+                     namespace callback
                      {
-                        log::line( http::verbose::log, "directive: ", directive, " - data: ", data);
-
-                        auto code = curl_easy_setopt( handle.get(), directive, std::forward< Data>( data));
-
-
-                        if( code != CURLE_OK)
+                        size_t read_payload( char* buffer, platform::size::type size, state::pending::Request::State& state)
                         {
-                           throw common::exception::system::invalid::Argument{ common::string::compose(
-                              "failed to set curl option - directive: ", directive, ", code: ", code, ", message: ", global::error::buffer.data())};
-                        }
-                     }
+                           auto source = state.range();
 
-                  } // set
+                           log::line( verbose::log, "size: ", size, " - source-size: ", source.size());
 
-                  struct Reply
-                  {
-                     http::Header header;
-                     std::string payload;
-                  };
-
-
-                  namespace callback
-                  {
-                     using payload_const_view = common::Range< const char*>;
-
-                     namespace reply
-                     {
-                        size_t payload( char* data, size_t size, size_t nmemb, curl::Reply* destination)
-                        {
-                           Trace trace{ "http::request::local::curl::callback::reply::payload"};
-
-                           if( destination == nullptr)
+                           if( source.size() <= size)
                            {
-                              return 0;
-                           }
+                              algorithm::copy( source, buffer);
+                              auto count = source.size();
 
-                           auto first = data;
-                           auto last = data + ( size * nmemb);
+                              // we're done and we clear the buffer so we can use it for the reply
+                              state.clear();
 
-                           destination->payload.insert( std::end( destination->payload), first, last);
-
-                           return size * nmemb;
-                        }
-                     } // reply
-
-
-                     namespace request
-                     {
-                        size_t read( char* buffer, common::platform::size::type size, payload_const_view& input)
-                        {
-
-                           if( input.size() < size)
-                           {
-                              common::algorithm::copy( input, buffer);
-                              auto count = input.size();
-                              input.advance( count);
                               return count;
                            }
                            else
                            {
-                              std::copy( std::begin( input), std::begin( input) + size, buffer);
-                              input.advance( size);
+                              std::copy( std::begin( source), std::begin( source) + size, buffer);
+                              state.offset += size;
                               return size;
                            }
                         }
 
-                        size_t payload( char* buffer, size_t size, size_t nitems, payload_const_view* input)
+                        size_t read( char* buffer, size_t size, size_t nitems, state::pending::Request::State* state)
                         {
-                           Trace trace{ "http::request::local::curl::callback::request::payload"};
+                           Trace trace{ "http::outbound::request::local::send::callback::read"};
 
-                           return read( buffer, size * nitems, *input);
+                           return read_payload( buffer, size * nitems, *state);
                         }
+                     } // callback
 
-                     } // request
-
-                     namespace local
+                     namespace transcode
                      {
-                        namespace 
+                        state::pending::Request payload( buffer::Payload&& payload)
                         {
-                           template< typename R>
-                           auto to_string( R&& range)
+                           Trace trace{ "http::outbound::request::local::send::transcode::payload"};
+
+                           state::pending::Request result;
+
+                           auto transcode_base64 = [&]( common::buffer::Payload&& payload){
+
+                              Trace trace{ "http::outbound::request::local::send::transcode::payload transcode_base64"};
+
+                              platform::binary::type buffer;
+                              std::swap( buffer, payload.memory);
+
+                              common::transcode::base64::encode( buffer, payload.memory);
+
+                              return payload;
+                           };
+
+                           auto transcode_none = [&]( common::buffer::Payload&& payload){
+
+                              Trace trace{ "http::outbound::request::local::send::transcode::payload transcode_none"};
+                              return payload;
+                           };
+
+                           const auto mapping = std::map< std::string, std::function< buffer::Payload( buffer::Payload&&)>>{
+                              {
+                                 "CFIELD/",
+                                 transcode_base64
+                              },
+                              {
+                                 common::buffer::type::binary(),
+                                 transcode_base64
+                              },
+                              {
+                                 common::buffer::type::x_octet(),
+                                 transcode_base64
+                              },
+                              {
+                                 common::buffer::type::json(),
+                                 transcode_none
+                              },
+                              {
+                                 common::buffer::type::xml(),
+                                 transcode_none
+                              }
+                           };
+
+                           auto found = common::algorithm::find( mapping, payload.type);
+
+                           if( found)
                            {
-                              range = common::string::trim( range);
-                              return std::string( std::begin( range), std::end( range));
-                           };
-                        }
-                     }
+                              log::line( verbose::log, "found transcoder for: ", found->first);
+                              result.state().payload = found->second( std::move( payload));
+                           }
+                           else
+                           {
+                              log::line( common::log::category::warning, "failed to find a transcoder for buffertype: ", payload.type);
+                              log::line( verbose::log, "payload: ", payload);
+                              result.state().payload = transcode_none( std::move( payload));
+                           }
 
-                     std::size_t header( char* buffer, size_t size, size_t nitems, http::Header* destination)
+                           // add content header
+                           {
+                              auto content = protocol::convert::from::buffer( payload.type);
+
+                              log::line( verbose::log, "content: ", content);
+
+                              if( ! content.empty())
+                              {
+                                 result.state().header.request.add( "content-type: " + content);
+                              }
+                           }
+
+                           return result;
+                        }
+                     } // transcode          
+                  } // send
+
+                  namespace receive
+                  {
+                     namespace callback
                      {
-                        Trace trace{ "http::request::local::curl::header"};
-
-                        if( destination == nullptr)
+                        auto write_payload( char* buffer, platform::size::type size, state::pending::Request::State& state)
                         {
-                          return 0;
+                           Trace trace{ "http::outbound::request::local::receive::callback::write_payload"};
+                           
+                           auto source = range::make( buffer, size);
+
+                           algorithm::append( source, state.payload.memory);
+
+                           return size;
                         }
 
-                        auto range = common::range::make( buffer, buffer + ( size * nitems));
-
-                        range = std::get< 0>( common::algorithm::divide_if( range, []( char c){
-                           return c == '\n' || c == '\r';
-                        }));
-
-
-                        if( range)
+                        size_t write( char* data, size_t size, size_t nmemb, state::pending::Request::State* state)
                         {
-                           auto split = common::algorithm::split( range, ':');
+                           Trace trace{ "http::outbound::request::local::receive::callback::write"};
 
-                           /* bug in gcc 5.4 can't use this lambda
-                           auto to_string = []( auto&& range){
-                              range = common::string::trim( range);
-                              return std::string( std::begin( range), std::end( range));
-                           };
-                           */
+                           if( state)
+                           {
+                              return write_payload( data, size * nmemb, *state);
+                           }
 
-                           destination->emplace_back(
-                              local::to_string( std::get< 0>( split)),
-                              local::to_string( std::get< 1>( split))
-                           );
+                           return 0;
                         }
-                        // else:
-                        // Think this is an "empty header" that we'll be invoked as the "last header"
-                        //  
 
-                        return size * nitems;
-                     }
+                        auto write_header( char* buffer, platform::size::type size, state::pending::Request::State& state)
+                        {
+                           Trace trace{ "http::outbound::request::local::receive::callback::header"};
 
-                  } // write
+                           auto range = range::make( buffer, buffer + size);
 
-                  using handle_type = std::unique_ptr< CURL, std::function< void(CURL*)>>;
-               } // curl
+                           range = std::get< 0>( common::algorithm::divide_if( range, []( char c){
+                              return c == '\n' || c == '\r';
+                           }));
 
-               struct Curl
+
+                           if( range)
+                           {
+                              auto split = common::algorithm::split( range, ':');
+
+                              
+                              auto to_string = []( auto range){
+                                 range = common::string::trim( range);
+                                 return std::string( std::begin( range), std::end( range));
+                              };
+                              
+                             state.header.reply.emplace_back(
+                                to_string( std::get< 0>( split)),
+                                to_string( std::get< 1>( split)));
+                           }
+                           // else:
+                           // Think this is an "empty header" that we'll be invoked as the "last header"
+                           //  
+
+                           return size;
+                        }
+
+                        std::size_t header( char* buffer, size_t size, size_t nitems, state::pending::Request::State* state)
+                        {
+                           if( state)
+                             return write_header( buffer, size * nitems, *state);
+                           
+                           return 0;
+                        }
+
+
+
+                     } // callback
+                  } // receive
+               } // <unnamed>
+            } // local
+
+
+            state::pending::Request prepare( const state::Node& node, common::message::service::call::callee::Request&& message)
+            {
+               Trace trace{ "http::outbound::request::prepare"};
+
+               log::line( http::verbose::log, "node: ", node);
+
+               auto now = platform::time::clock::type::now();
+
+               auto request = local::send::transcode::payload( std::move( message.buffer));
+
+               request.state().header.request.add( *node.headers);
+
+               request.state().destination = message.process;
+               request.state().correlation = message.correlation;
+               request.state().execution = message.execution;
+               request.state().service = std::move( message.service.name);
+               request.state().start = now;
+
+               auto& easy = request.easy();
+
+               curl::easy::set::option( easy, CURLOPT_ERRORBUFFER, curl::error::buffer().data());
+               curl::easy::set::option( easy, CURLOPT_URL, node.url.data());
+               curl::easy::set::option( easy, CURLOPT_FOLLOWLOCATION, 1L);
+               curl::easy::set::option( easy, CURLOPT_FAILONERROR, 1L);
+               
+               // always POST? probably...
+               curl::easy::set::option( easy, CURLOPT_POST, 1L);
+
+
+               // prepare the send stuff
                {
-                  static const Curl& instance()
-                  {
-                     static Curl singleton;
-                     return singleton;
-                  }
+                  curl::easy::set::option( easy, CURLOPT_POSTFIELDSIZE_LARGE , request.state().payload.memory.size());
+                  curl::easy::set::option( easy, CURLOPT_READFUNCTION, &local::send::callback::read);
+                  curl::easy::set::option( easy, CURLOPT_READDATA , &request.state());
 
+                  // headers
+                  if( request.state().header.request)
+                     curl::easy::set::option( easy, CURLOPT_HTTPHEADER, request.state().header.request.native());
+               }
 
-                  curl::handle_type handle() const
-                  {
-                     return { curl_easy_init(), &curl_easy_cleanup};
-                  }
-
-
-
-               private:
-                  Curl()
-                  {
-                     if( curl_global_init( CURL_GLOBAL_DEFAULT) != CURLE_OK)
-                     {
-                        throw std::runtime_error{ "failed to initialize curl"};
-                     }
-                  }
-               };
-
-               struct Connection
+               // prepare the receive stuff
                {
-                  using handle_type = curl::handle_type;
-                  using header_type = std::unique_ptr< curl_slist, std::function< void(curl_slist*)>>;
-                  using payload_const_view = local::curl::callback::payload_const_view;
+                  curl::easy::set::option( easy, CURLOPT_WRITEFUNCTION, &local::receive::callback::write);
+                  curl::easy::set::option( easy, CURLOPT_WRITEDATA, &request.state());
 
+                  // headers
+                  curl::easy::set::option( easy, CURLOPT_HEADERFUNCTION, &local::receive::callback::header);
+                  curl::easy::set::option( easy, CURLOPT_HEADERDATA, &request.state());
+               }
 
-                  Connection( const std::string& url, const http::Header& header)
-                    : m_handle( Curl::instance().handle())
+               log::line( http::verbose::log, "request: ", request);
+
+               return request;
+            }
+           
+
+            namespace code
+            {
+               common::code::xatmi transform( curl::type::code::easy code) noexcept
+               {
+                  using xatmi_c = common::code::xatmi;
+                  using curl_c = curl::type::code::easy;
+                  switch( code)
                   {
-                     Trace trace{ "http::request::local::Connection::Connection"};
+                     case curl_c::CURLE_OK: return xatmi_c::ok;
 
-                     if( ! m_handle)
-                     {
-                        throw std::runtime_error{ "failed to initialize curl connection"};
-                     }
-
-                     log::line( http::verbose::log, "handle @", m_handle.get());
-
-                     curl::set::option( m_handle, CURLOPT_ERRORBUFFER, global::error::buffer.data());
-                     curl::set::option( m_handle, CURLOPT_URL, url.data());
-                     curl::set::option( m_handle, CURLOPT_FOLLOWLOCATION, 1L);
-                     curl::set::option( m_handle, CURLOPT_FAILONERROR, 1L);
-
-
-                     log::line( http::verbose::log, "header: ", header);
-
-                     for( auto& field : header)
-                     {
-                        auto http = field.http();
-
-                        m_header.reset( curl_slist_append( m_header.release(), http.c_str()));
-                     }
+                     default: return xatmi_c::service_fail;
                   }
+               }
+            } // code
 
-
-                  request::Reply get() const
-                  {
-                     Trace trace{ "http::request::local::Connection::get"};
-
-                     local::curl::Reply reply;
-                     curl::set::option( m_handle, CURLOPT_WRITEFUNCTION, &curl::callback::reply::payload);
-                     curl::set::option( m_handle, CURLOPT_WRITEDATA, &reply);
-
-                     if( m_header)
-                     {
-                        curl::set::option( m_handle, CURLOPT_HTTPHEADER, m_header.get());
-                     }
-
-                     // Set reply-headers-stuff
-                     {
-                        curl::set::option( m_handle, CURLOPT_HEADERFUNCTION, &curl::callback::header);
-                        curl::set::option( m_handle, CURLOPT_HEADERDATA, &reply.header);
-                     }
-
-
-
-                     auto code = curl_easy_perform( m_handle.get());
-
-                     switch( code)
-                     {
-                        case CURLE_OK:
-                           break;
-                        case CURLE_COULDNT_CONNECT:
-                        {
-                           throw common::exception::system::communication::unavailable::no::Connect{ common::string::compose(
-                              "failed to connect - code: ", code, " - message: ", global::error::buffer.data())};
-                        }
-                        case CURLE_GOT_NOTHING:
-                        case CURLE_RECV_ERROR:
-                        {
-                           throw common::exception::system::communication::no::message::Absent{ common::string::compose(
-                              "failed to receive - code: ", code, " - message: ", global::error::buffer.data())};
-                        }
-                        default:
-                        {
-                           throw common::exception::system::invalid::Argument{ common::string::compose(
-                              "failed to connect - code: ", code, " - message: ", global::error::buffer.data())};
-                        }
-                     }
-
-                     return transform( std::move( reply));
-                  }
-
-
-                  request::Reply post( const payload::Request& payload)
-                  {
-                     Trace trace{ "http::request::local::Connection::post"};
-
-                     curl::set::option( m_handle, CURLOPT_POST, 1L);
-
-                     auto view = transcode( payload);
-
-                     // set read-payload-stuff
-                     {
-                        curl::set::option( m_handle, CURLOPT_POSTFIELDSIZE_LARGE , view.size());
-                        curl::set::option( m_handle, CURLOPT_READFUNCTION, &curl::callback::request::payload);
-                        curl::set::option( m_handle, CURLOPT_READDATA , &view);
-                     }
-
-                     return get();
-                  }
-               private:
-
-                  request::Reply transform( local::curl::Reply&& reply) const
-                  {
-                     Trace trace{ "http::request::local::Connection::transform"};
-
-                     auto transcode_base64 = [&]( local::curl::Reply&& reply, const std::string& type){
-
-                        request::Reply result;
-                        result.payload.type = std::move( type);
-                        result.header = std::move( reply.header);
-                        result.payload.memory = common::transcode::base64::decode( reply.payload);
-
-                        return result;
-                     };
-
-                     auto transcode_none = [&]( local::curl::Reply&& reply, const std::string& type){
-
-                        request::Reply result;
-                        result.payload.type = type;
-                        result.header = std::move( reply.header);
-                        common::algorithm::copy( reply.payload, result.payload.memory);
-
-                        return result;
-                     };
-
-
-                     const auto mapping = std::map< std::string, std::function< request::Reply( local::curl::Reply&&, const std::string&)>>{
-                        {
-                           "CFIELD/",
-                           transcode_base64
-                        },
-                        {
-                           common::buffer::type::binary(),
-                           transcode_base64
-                        },
-                        {
-                           common::buffer::type::x_octet(),
-                           transcode_base64
-                        },
-                        {
-                           common::buffer::type::json(),
-                           transcode_none
-                        },
-                        {
-                           common::buffer::type::xml(),
-                           transcode_none
-                        }
-                     };
-
-                     auto content = reply.header.at( "content-type", "");
-
-                     log::line( verbose::log, "content: ",  content);
-
-                     auto type = protocol::convert::to::buffer( content);
-
-                     auto found = common::algorithm::find( mapping, type);
-
-                     if( found)
-                     {
-                        return found->second( std::move( reply), type);
-                     }
-                     else
-                     {
-                        log::line( common::log::category::error, "failed to find a transcoder for buffertype: ", type);
-                        log::line( verbose::log, "header: ", reply.header);
-                        return transcode_none( std::move( reply), common::buffer::type::x_octet());
-                     }
-                  }
-
-
-                  payload_const_view transcode( const payload::Request& payload)
-                  {
-                     Trace trace{ "http::request::local::Connection::transcode"};
-
-                     auto add_content_header = [&]( const std::string& buffertype){
-                        auto content = protocol::convert::from::buffer( buffertype);
-
-                        log::line( verbose::log, "content: ", content);
-
-                        if( ! content.empty())
-                        {
-                           auto header = "content-type: " + content;
-                           log::line( verbose::log, "header: ", header);
-                           m_header.reset( curl_slist_append( m_header.release(), header.c_str()));
-                        }
-                     };
-
-
-                     auto transcode_base64 = [&]( const payload::Request& payload){
-
-                        Trace trace{ "http::request::local::Connection::transcode transcode_base64"};
-
-                        add_content_header( payload.payload().type);
-
-                        m_transcoded_payload = common::transcode::base64::encode( payload.payload().memory);
-                        return payload_const_view( m_transcoded_payload.data(), m_transcoded_payload.size());
-                     };
-
-                     auto transcode_none = [&]( const payload::Request& payload){
-
-                        Trace trace{ "http::request::local::Connection::transcode transcode_none"};
-
-                        add_content_header( payload.payload().type);
-                        return payload_const_view( payload.payload().memory.data(), payload.payload().memory.size());
-                     };
-
-                     const auto mapping = std::map< std::string, std::function<payload_const_view(const payload::Request&)>>{
-                        {
-                           "CFIELD/",
-                           transcode_base64
-                        },
-                        {
-                           common::buffer::type::binary(),
-                           transcode_base64
-                        },
-                        {
-                           common::buffer::type::x_octet(),
-                           transcode_base64
-                        },
-                        {
-                           common::buffer::type::json(),
-                           transcode_none
-                        },
-                        {
-                           common::buffer::type::xml(),
-                           transcode_none
-                        }
-                     };
-
-                     auto found = common::algorithm::find( mapping, payload.payload().type);
-
-                     if( found)
-                     {
-                        log::line( verbose::log, "found transcoder for: ", found->first);
-                        return found->second( payload);
-                     }
-                     else
-                     {
-                        log::line( common::log::category::warning, "failed to find a transcoder for buffertype: ", payload.payload().type);
-                        log::line( verbose::log, "payload: ", payload.payload());
-                        return transcode_none( payload);
-                     }
-                  }
-
-                  handle_type m_handle;
-                  header_type m_header = header_type{ nullptr, &curl_slist_free_all};
-                  std::string m_transcoded_payload;
-               };
-            } // <unnamed>
-         } // local
-
-         Reply post( const std::string& url, const payload::Request& payload)
-         {
-            return post( url, payload, {});
-         }
-
-         Reply post( const std::string& url, const payload::Request& payload, const http::Header& header)
-         {
-            Trace trace{ "http::request::post"};
-
-            local::Connection connection( url, header);
-
-            return connection.post( payload);
-         }
-
-
-      } // request
+         } // request
+      } // outbound
    } // http
 } // casual
 

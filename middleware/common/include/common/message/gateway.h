@@ -10,6 +10,7 @@
 
 
 #include "common/message/service.h"
+#include "common/message/queue.h"
 
 #include "common/process.h"
 #include "common/domain.h"
@@ -38,95 +39,6 @@ namespace casual
                      version_1 = 1000,
                   };
                } // protocol
-
-
-               namespace advertise
-               {
-                  //!
-                  //! Represent service information in a 'remote advertise context'
-                  //!
-                  struct Service : message::Service
-                  {
-                     Service() = default;
-                     Service( std::string name,
-                           std::string category = {},
-                           common::service::transaction::Type transaction = common::service::transaction::Type::automatic,
-                           size_type hops = 0)
-                      : message::Service{ std::move( name), std::move( category), transaction}, hops{ hops} {}
-
-                      Service( std::function<void(Service&)> foreign) { foreign( *this);}
-
-                     size_type hops = 0;
-
-                     CASUAL_CONST_CORRECT_MARSHAL(
-                     {
-                        message::Service::marshal( archive);
-                        archive & hops;
-                     })
-
-                     friend std::ostream& operator << ( std::ostream& out, const Service& message);
-                  };
-                  static_assert( traits::is_movable< Service>::value, "not movable");
-
-                  struct Queue
-                  {
-                     Queue() = default;
-
-                     Queue( std::string name, size_type retries) : name{ std::move( name)}, retries{ retries} {}
-                     Queue( std::string name) : name{ std::move( name)} {}
-
-                     Queue( std::function< void(Queue&)> foreign) { foreign( *this);}
-
-                     std::string name;
-                     size_type retries = 0;
-
-                     CASUAL_CONST_CORRECT_MARSHAL(
-                     {
-                        archive & name;
-                        archive & retries;
-                     })
-
-                     friend std::ostream& operator << ( std::ostream& out, const Queue& message);
-                  };
-                  static_assert( traits::is_movable< Queue>::value, "not movable");
-
-               } // advertise
-
-
-               struct Advertise : basic_message< Type::gateway_domain_advertise>
-               {
-                  enum class Directive : char
-                  {
-                     add,
-                     remove,
-                     replace
-                  };
-
-                  Directive directive = Directive::add;
-
-                  common::process::Handle process;
-                  common::domain::Identity domain;
-                  platform::size::type order = 0;
-                  std::vector< advertise::Service> services;
-                  std::vector< advertise::Queue> queues;
-
-
-                  CASUAL_CONST_CORRECT_MARSHAL(
-                  {
-                     base_type::marshal( archive);
-                     archive & directive;
-                     archive & process;
-                     archive & domain;
-                     archive & order;
-                     archive & services;
-                     archive & queues;
-                  })
-
-                  friend std::ostream& operator << ( std::ostream& out, Directive message);
-                  friend std::ostream& operator << ( std::ostream& out, const Advertise& message);
-               };
-               static_assert( traits::is_movable< Advertise>::value, "not movable");
-
 
                namespace connect
                {
@@ -200,8 +112,8 @@ namespace casual
                   //!
                   struct Reply : basic_message< Type::gateway_domain_discover_reply>
                   {
-                     using Service = domain::advertise::Service;
-                     using Queue = domain::advertise::Queue;
+                     using Service = service::concurrent::advertise::Service;
+                     using Queue = queue::concurrent::advertise::Queue;
 
                      common::process::Handle process;
                      common::domain::Identity domain;

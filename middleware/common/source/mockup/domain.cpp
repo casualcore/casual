@@ -340,7 +340,7 @@ namespace casual
                            Trace trace{ "mockup service::call::ACK"};
 
                         },
-                        [&]( message::service::remote::Metric& m)
+                        [&]( message::service::concurrent::Metric& m)
                         {
                            Trace trace{ "mockup service::remote::Metric"};
 
@@ -370,7 +370,7 @@ namespace casual
                            }
                            //log, "services: ", range::make( m_state.services));
                         },
-                        [&]( message::gateway::domain::Advertise& m)
+                        [&]( message::service::Advertise& m)
                         {
                            Trace trace{ "mockup gateway::domain::service::Advertise"};
 
@@ -997,7 +997,6 @@ namespace casual
                {
                   return m_replier.process();
                }
-
 
             } // echo
 

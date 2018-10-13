@@ -61,7 +61,7 @@ namespace casual
                return {
                   manager::handle::connect::Request{ state.state},
                   manager::handle::lookup::Request{ state.state},
-                  manager::handle::domain::Advertise{ state.state},
+                  manager::handle::concurrent::Advertise{ state.state},
                   manager::handle::domain::discover::Request{ state.state},
                   //manager::handle::peek::queue::Request{ state.state},
                   common::message::handle::Shutdown{},
@@ -169,15 +169,12 @@ namespace casual
 
          common::mockup::ipc::Collector requester;
 
-         common::domain::Identity remote{ "remote-domain"};
-
          {
             //
             // Send Advertise
             //
-            common::message::gateway::domain::Advertise advertise;
+            common::message::queue::concurrent::Advertise advertise;
             advertise.process = requester.process();
-            advertise.domain = remote;
             advertise.order = 1;
             advertise.queues = { { "queueX" }};;
 
@@ -201,7 +198,7 @@ namespace casual
             });
 
             ASSERT_TRUE( ! found.empty());
-            EXPECT_TRUE( found->id == remote);
+            EXPECT_TRUE( found->process == requester.process());
          }
       }
 
@@ -214,7 +211,6 @@ namespace casual
 
 
          common::mockup::ipc::Collector requester;
-         common::domain::Identity remote{ "remote-domain"};
 
 
          // prepare request
@@ -232,9 +228,8 @@ namespace casual
             //
             // Send Advertise
             //
-            common::message::gateway::domain::Advertise advertise;
+            common::message::queue::concurrent::Advertise advertise;
             advertise.process = requester.process();
-            advertise.domain = remote;
             advertise.order = 1;
             advertise.queues = { { "queueX" }};;
 

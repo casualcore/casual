@@ -65,7 +65,7 @@ namespace casual
 
             namespace instance
             {
-               void Local::reserve(
+               void Sequential::reserve(
                   const common::platform::time::point::type& when, 
                   state::Service* service,
                   const common::process::Handle& caller,
@@ -79,7 +79,7 @@ namespace casual
                   m_correlation = correlation;
                }
 
-               state::Service* Local::unreserve( const common::platform::time::point::type& now)
+               state::Service* Sequential::unreserve( const common::platform::time::point::type& now)
                {
                   assert( m_service != nullptr);
 
@@ -102,7 +102,7 @@ namespace casual
                   } // <unnamed>
                } // local
 
-               Local::State Local::state() const
+               Sequential::State Sequential::state() const
                {
                   if( m_service == nullptr)
                      return State::idle;
@@ -110,25 +110,25 @@ namespace casual
                   return m_service == local::exiting_address() ? State::exiting : State::busy;
                }
 
-               void Local::exiting()
+               void Sequential::exiting()
                {
                   m_service = local::exiting_address();
                }
 
 
-               bool Local::service( const std::string& name) const
+               bool Sequential::service( const std::string& name) const
                {
                   return algorithm::sorted::search( m_services, name, std::less< const std::string>());
                }
 
 
-               void Local::add( const state::Service& service)
+               void Sequential::add( const state::Service& service)
                {
                   m_services.emplace_back( service.information.name);
                   algorithm::sort( m_services, std::less< const std::string>());
                }
 
-               void Local::remove( const std::string& service)
+               void Sequential::remove( const std::string& service)
                {
                   auto found = algorithm::find_if( m_services, [&service]( auto& s){ return s.get() == service;});
 
@@ -137,37 +137,37 @@ namespace casual
                }
 
 
-               bool operator < ( const Remote& lhs, const Remote& rhs)
+               bool operator < ( const Concurrent& lhs, const Concurrent& rhs)
                {
                   return lhs.order < rhs.order;
                }
 
-               std::ostream& operator << ( std::ostream& out, const Remote& value)
+               std::ostream& operator << ( std::ostream& out, const Concurrent& value)
                {
                   return out << "{ process: " << value.process
                      << ", order: " << value.order
                      << '}';
                }
 
-               std::ostream& operator << ( std::ostream& out, Local::State value)
+               std::ostream& operator << ( std::ostream& out, Sequential::State value)
                {
                   switch( value)
                   {
-                     case Local::State::busy: return out << "busy";
-                     case Local::State::idle: return out << "idle";
-                     case Local::State::exiting: return out << "exiting";
+                     case Sequential::State::busy: return out << "busy";
+                     case Sequential::State::idle: return out << "idle";
+                     case Sequential::State::exiting: return out << "exiting";
                   }
                   return out << "unknown";
                }
 
-               std::ostream& operator << ( std::ostream& out, const Local& value)
+               std::ostream& operator << ( std::ostream& out, const Sequential& value)
                {
                   auto state = value.state();
 
                   out << "{ state: " << state
                      << ", process: " << value.process;
 
-                  if( state == Local::State::busy)
+                  if( state == Sequential::State::busy)
                   {
                      out  << ", service: " << *value.m_service
                         << ", correlation: " << value.correlation()
@@ -205,7 +205,7 @@ namespace casual
 
                namespace instance
                {
-                  bool operator < ( const Remote& lhs, const Remote& rhs)
+                  bool operator < ( const Concurrent& lhs, const Concurrent& rhs)
                   {
                      return std::make_tuple( lhs.get(), lhs.hops()) < std::make_tuple( rhs.get(), rhs.hops());
                   }
@@ -217,42 +217,42 @@ namespace casual
             void Service::remove( common::strong::process::id instance)
             {
                {
-                  auto found = algorithm::find( instances.local, instance);
+                  auto found = algorithm::find( instances.sequential, instance);
 
                   if( found)
                   {
                      found->get().remove( information.name);
-                     instances.local.erase( std::begin( found));
+                     instances.sequential.erase( std::begin( found));
                   }
                }
 
                {
-                  auto found = algorithm::find( instances.remote, instance);
+                  auto found = algorithm::find( instances.concurrent, instance);
 
                   if( found)
                   {
-                     instances.remote.erase( std::begin( found));
+                     instances.concurrent.erase( std::begin( found));
                      partition_remote_instances();
                   }
                }
             }
 
-            state::instance::Local& Service::local( common::strong::process::id instance)
+            state::instance::Sequential& Service::local( common::strong::process::id instance)
             {
-               return local::get( instances.local, instance);
+               return local::get( instances.sequential, instance);
             }
 
 
 
-            void Service::add( state::instance::Local& instance)
+            void Service::add( state::instance::Sequential& instance)
             {
-               instances.local.emplace_back( instance);
+               instances.sequential.emplace_back( instance);
                instance.add( *this);
             }
 
-            void Service::add( state::instance::Remote& instance, size_type hops)
+            void Service::add( state::instance::Concurrent& instance, size_type hops)
             {
-               instances.remote.emplace_back( instance, hops);
+               instances.concurrent.emplace_back( instance, hops);
                partition_remote_instances();
             }
 
@@ -265,14 +265,14 @@ namespace casual
 
             void Service::partition_remote_instances()
             {
-               algorithm::stable_sort( instances.remote);
+               algorithm::stable_sort( instances.concurrent);
             }
 
 
             bool Service::Instances::active() const
             {
-               return ! remote.empty() || algorithm::any_of( local, []( const auto& i){
-                  return i.state() != instance::Local::State::exiting;
+               return ! concurrent.empty() || algorithm::any_of( sequential, []( const auto& i){
+                  return i.state() != instance::Sequential::State::exiting;
                });
             }
 
@@ -282,13 +282,12 @@ namespace casual
                pending.reset();
             }
 
-
             common::process::Handle Service::reserve( 
                const common::platform::time::point::type& now, 
                const common::process::Handle& caller, 
                const common::Uuid& correlation)
             {
-               auto found = algorithm::find_if( instances.local, std::mem_fn( &service::instance::Local::idle));
+               auto found = algorithm::find_if( instances.sequential, std::mem_fn( &service::instance::Sequential::idle));
 
                if( found)
                {
@@ -296,10 +295,10 @@ namespace casual
                   return found->process();
                }
 
-               if( instances.local.empty() && ! instances.remote.empty())
+               if( instances.sequential.empty() && ! instances.concurrent.empty())
                {
                   ++m_remote_invocations;
-                  return instances.remote.front().process();
+                  return instances.concurrent.front().process();
                }
                return {};
             }
@@ -458,15 +457,15 @@ namespace casual
 
             events.remove( pid);
 
-            local::remove_process( instances.local, services, pid);
-            local::remove_process( instances.remote, services, pid);
+            local::remove_process( instances.sequential, services, pid);
+            local::remove_process( instances.concurrent, services, pid);
          }
 
          void State::prepare_shutdown( common::strong::process::id pid)
          {
             Trace trace{ "service::manager::State::prepare_shutdown"};
 
-            auto found = common::algorithm::find( instances.local, pid);
+            auto found = common::algorithm::find( instances.sequential, pid);
 
             if( found)
             {
@@ -477,10 +476,9 @@ namespace casual
                //
                // Assume that it's a remote instances
                //
-               local::remove_process( instances.remote, services, pid);
+               local::remove_process( instances.concurrent, services, pid);
             }
          }
-
 
          void State::update( common::message::service::Advertise& message)
          {
@@ -497,7 +495,7 @@ namespace casual
             {
                case common::message::service::Advertise::Directive::add:
                {
-                  auto& instance = local::find_or_add( instances.local, message.process);
+                  auto& instance = local::find_or_add( instances.sequential, message.process);
 
                   for( auto& s : message.services)
                   {
@@ -509,7 +507,7 @@ namespace casual
                }
                case common::message::service::Advertise::Directive::remove:
                {
-                  local::remove_services( *this, instances.local, message.services, message.process);
+                  local::remove_services( *this, instances.sequential, message.services, message.process);
                   break;
                }
                case common::message::service::Advertise::Directive::replace:
@@ -527,7 +525,7 @@ namespace casual
          }
 
 
-         void State::update( common::message::gateway::domain::Advertise& message)
+         void State::update( common::message::service::concurrent::Advertise& message)
          {
             Trace trace{ "service::manager::State::update remote"};
 
@@ -538,12 +536,14 @@ namespace casual
                return;
             }
 
+            using Directive = common::message::service::concurrent::Advertise::Directive;
+
             switch( message.directive)
             {
-               case common::message::gateway::domain::Advertise::Directive::add:
+               case Directive::add:
                {
 
-                  auto& instance = local::find_or_add( instances.remote, message.process);
+                  auto& instance = local::find_or_add( instances.concurrent, message.process);
                   instance.order = message.order;
 
                   for( auto& s : message.services)
@@ -555,14 +555,9 @@ namespace casual
 
                   break;
                }
-               case common::message::gateway::domain::Advertise::Directive::remove:
+               case Directive::remove:
                {
-                  local::remove_services( *this, instances.remote, message.services, message.process);
-                  break;
-               }
-               case common::message::gateway::domain::Advertise::Directive::replace:
-               {
-
+                  local::remove_services( *this, instances.concurrent, message.services, message.process);
                   break;
                }
                default:
@@ -603,9 +598,9 @@ namespace casual
             return result;
          }
 
-         state::instance::Local& State::local( common::strong::process::id pid)
+         state::instance::Sequential& State::local( common::strong::process::id pid)
          {
-            return local::get( instances.local, pid);
+            return local::get( instances.sequential, pid);
          }
 
          state::Service* State::find_service( const std::string& name)

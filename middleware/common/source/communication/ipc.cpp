@@ -190,6 +190,9 @@ namespace casual
                            case code::system::no_buffer_space:
                            {
                               // try again...
+                              // We flush inbound
+                              ipc::inbound::device().flush();
+                              //std::this_thread::sleep_for( std::chrono::microseconds{ 10});
                               break;
                            }
                            case code::system::no_such_file_or_directory:
@@ -207,6 +210,10 @@ namespace casual
                   bool receive( const Handle& handle, message::Transport& transport)
                   {
                      Trace trace{ "common::communication::ipc::native::blocking::receive"};
+
+                     // first we try non-blocking
+                     if( non::blocking::receive( handle, transport))
+                        return true;
 
                      select::block::read( handle.socket().descriptor());
 

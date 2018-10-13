@@ -50,13 +50,10 @@ namespace casual
       namespace manager
       {
 
-
          namespace global
          {
             bool admin_services = false;
          } // global
-
-
 
          namespace call
          {
@@ -99,8 +96,6 @@ namespace casual
                return state;
             }
 
-
-
          } // call
 
          namespace normalized
@@ -114,19 +109,18 @@ namespace casual
                   remote,
                };
 
-               Instance( const admin::instance::LocalVO& local) : admin::instance::Base{ local}, state{ static_cast< State>( local.state)} {}
-               Instance( const admin::instance::RemoteVO& remote) : admin::instance::Base{ remote}, state{ State::remote} {}
+               Instance( const admin::instance::SequentialVO& sequential) : admin::instance::Base{ sequential}, state{ static_cast< State>( sequential.state)} {}
+               Instance( const admin::instance::ConcurrentVO& concurrent) : admin::instance::Base{ concurrent}, state{ State::remote} {}
 
                State state;
             };
-
 
             std::vector< Instance> instances( const admin::StateVO& state)
             {
                std::vector< Instance> result;
 
-               algorithm::append( state.instances.local, result);
-               algorithm::append( state.instances.remote, result);
+               algorithm::append( state.instances.sequential, result);
+               algorithm::append( state.instances.concurrent, result);
 
                return result;
             }
@@ -187,17 +181,17 @@ namespace casual
 
                   for( auto& service : state.service.services)
                   {
-                     for( auto& i : service.instances.local)
+                     for( auto& i : service.instances.sequential)
                      {
-                        auto local = algorithm::find( state.service.instances.local, i.pid);
+                        auto local = algorithm::find( state.service.instances.sequential, i.pid);
                         Instance instance{ service};
-                        instance.state = local->state == admin::instance::LocalVO::State::idle ? Instance::State::idle : Instance::State::busy;
+                        instance.state = local->state == admin::instance::SequentialVO::State::idle ? Instance::State::idle : Instance::State::busy;
                         instance.process.pid = i.pid;
                         instance.executable = local::lookup::executable( state, i.pid);
                         result.push_back( std::move( instance));
                      }
 
-                     for( auto& i : service.instances.remote)
+                     for( auto& i : service.instances.concurrent)
                      {
                         Instance instance{ service};
                         instance.process.pid = i.pid;
@@ -258,7 +252,7 @@ namespace casual
                   {
                      std::size_t operator () ( const admin::ServiceVO& value) const
                      {
-                        return value.instances.local.size();
+                        return value.instances.sequential.size();
                      }
                   };
 
@@ -269,7 +263,7 @@ namespace casual
 
                      std::size_t operator () ( const admin::ServiceVO& value) const
                      {
-                        auto instances = base_instances::instances( value.instances.local);
+                        auto instances = base_instances::instances( value.instances.sequential);
 
                         return algorithm::count_if( instances, []( const normalized::Instance& i){
                            return i.state == normalized::Instance::State::busy;
@@ -308,7 +302,7 @@ namespace casual
                   {
                      std::size_t operator () ( const admin::ServiceVO& value) const
                      {
-                        return value.instances.remote.size();
+                        return value.instances.concurrent.size();
                      }
                   };
 
@@ -480,7 +474,6 @@ namespace casual
                auto format_hops = []( const value_type& value){
                   return value.hops;
                };
-
 
 
                return terminal::format::formatter< normalized::service::Instance>::construct(

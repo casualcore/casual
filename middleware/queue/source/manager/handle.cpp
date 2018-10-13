@@ -272,15 +272,10 @@ namespace casual
                      //
                      m_state.groups.emplace_back( message.name, message.process);
                   }
-
                }
-
-
-
             } // connect
 
-
-            namespace domain
+            namespace concurrent
             {
                void Advertise::operator () ( message_type& message)
                {
@@ -315,9 +310,12 @@ namespace casual
                         lookup::Request{ m_state}( pending);
                      });
                   }
-               }
+               } 
+            } // concurrent
 
 
+            namespace domain
+            {
                namespace discover
                {
                   void Request::operator () ( message_type& message)
@@ -395,7 +393,7 @@ namespace casual
                manager::handle::shutdown::Request{ state},
                manager::handle::lookup::Request{ state},
                //manager::handle::peek::queue::Request{ m_state},
-               manager::handle::domain::Advertise{ state},
+               manager::handle::concurrent::Advertise{ state},
                manager::handle::domain::discover::Request{ state},
                manager::handle::domain::discover::Reply{ state},
 
