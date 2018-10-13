@@ -524,7 +524,7 @@ namespace casual
                               {
                                  common::message::service::call::Reply reply;
                                  reply.correlation = message.correlation;
-                                 reply.status = common::code::xatmi::service_error;
+                                 reply.code.result = common::code::xatmi::service_error;
                                  m_state.external.send( reply);
                               }
                            };

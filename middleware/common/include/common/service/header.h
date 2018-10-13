@@ -93,6 +93,8 @@ namespace casual
                      return from_string< T>( at( key, default_value));
                   }
 
+                  optional< const std::string&> find( const std::string& key) const;
+
                   //!
                   //! Same semantics as std::map[]  
                   //!
@@ -110,6 +112,9 @@ namespace casual
 
                   inline fields_type& container() { return *this;}
                   inline const fields_type& container() const { return *this;}
+
+                  friend Fields operator + ( const Fields& lhs, const Fields& rhs);
+                  friend Fields& operator += ( Fields& lhs, const Fields& rhs);
                };
 
 

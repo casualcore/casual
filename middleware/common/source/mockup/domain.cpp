@@ -122,10 +122,10 @@ namespace casual
 
                         if( algorithm::search( request.service.name, std::string{ "urcode"}))
                         {
-                           reply.code = 42;
+                           reply.code.user = 42;
                         }
 
-                        reply.status = local::reply_error( request.service.name);
+                        reply.code.result = local::reply_error( request.service.name);
 
                         ipc::eventually::send( request.process.ipc, reply);
                      }

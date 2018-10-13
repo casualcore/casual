@@ -28,7 +28,7 @@ namespace casual
 
                      result.correlation = message.correlation;
                      result.buffer = buffer::Payload{ nullptr};
-                     result.status = code::xatmi::service_error;
+                     result.code.result = code::xatmi::service_error;
 
                      return result;
                   }
@@ -85,18 +85,18 @@ namespace casual
 
                      log::line( log::debug, "result: ", result);
 
-                     reply.code = result.code;
+                     reply.code.user = result.code;
                      reply.buffer = std::move( result.payload);
 
                      if( result.transaction == common::service::invoke::Result::Transaction::commit)
                      {
                         reply.transaction.state = message::service::Transaction::State::active;
-                        reply.status = code::xatmi::ok;
+                        reply.code.result = code::xatmi::ok;
                      }
                      else
                      {
                         reply.transaction.state = message::service::Transaction::State::rollback;
-                        reply.status = code::xatmi::service_fail;
+                        reply.code.result = code::xatmi::service_fail;
                      }
 
                      log::line( log::debug, "reply: ", reply);

@@ -9,6 +9,7 @@
 
 
 #include "common/log/trace.h"
+#include "common/code/xatmi.h"
 
 namespace casual
 {
@@ -31,6 +32,38 @@ namespace casual
          template< typename T>
          Trace( T&& value) : common::log::Trace( std::forward< T>( value), trace::log) {}
       };
+
+      namespace header
+      {
+         namespace name
+         {
+            namespace result
+            {
+               constexpr auto code = "casual-result-code";
+
+               namespace user
+               {
+                  constexpr auto code = "casual-result-user-code";
+               } // user
+
+            } // result
+         } // name
+
+         namespace value
+         {
+            namespace result
+            {
+               common::code::xatmi code( const std::string& value);
+               const char* code( common::code::xatmi code);
+
+               namespace user
+               {
+                  long code( const std::string& value);
+                  std::string code( long code);
+               } // user
+            } // result            
+         } // value
+      } // header
 
       namespace protocol
       {

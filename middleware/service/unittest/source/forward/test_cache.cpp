@@ -54,18 +54,14 @@ namespace casual
             request.flags = message::service::call::request::Flag::no_transaction;
          }
 
-         //
          // Start the cache, witch will receive the request, and forward it to server
-         //
          std::thread cache_thread{[](){
             forward::Cache cache;
             cache.start();
          }};
 
 
-         //
          // Send it to our forward
-         //
          auto correlation = communication::ipc::blocking::send( communication::ipc::inbound::ipc(), request);
 
          {
@@ -75,7 +71,7 @@ namespace casual
 
             EXPECT_TRUE( reply.correlation == correlation);
             EXPECT_TRUE( reply.transaction.trid == request.trid);
-            EXPECT_TRUE( reply.status == common::code::xatmi::ok);
+            EXPECT_TRUE( reply.code.result == common::code::xatmi::ok);
          }
 
          // make sure we quit
@@ -127,7 +123,7 @@ namespace casual
 
             EXPECT_TRUE( reply.correlation == correlation);
             EXPECT_TRUE( reply.transaction.trid == request.trid);
-            EXPECT_TRUE( reply.status == common::code::xatmi::service_error);
+            EXPECT_TRUE( reply.code.result == common::code::xatmi::service_error);
 
          }
 

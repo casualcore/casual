@@ -31,7 +31,7 @@ namespace casual
 
             namespace code
             {
-               common::code::xatmi transform( curl::type::code::easy code) noexcept;
+               common::message::service::call::Reply::Code transform( const common::service::header::Fields& header, curl::type::code::easy code) noexcept;
             } // code
  
             namespace detail

@@ -404,15 +404,24 @@ namespace casual
                //!
                struct Reply :  basic_message< Type::service_reply>
                {
-                  code::xatmi status = code::xatmi::ok;
-                  long code = 0;
+                  struct Code 
+                  {
+                     code::xatmi result = code::xatmi::ok;
+                     long user = 0;
+
+                     CASUAL_CONST_CORRECT_MARSHAL(
+                     {
+                        archive & result;
+                        archive & user;
+                     })
+                  } code;
+
                   Transaction transaction;
                   common::buffer::Payload buffer;
 
                   CASUAL_CONST_CORRECT_MARSHAL(
                   {
                      base_type::marshal( archive);
-                     archive & status;
                      archive & code;
                      archive & transaction;
                      archive & buffer;

@@ -129,7 +129,7 @@ namespace casual
                      common::message::service::call::Reply message;
 
                      message.correlation = point.correlation;
-                     message.status = common::code::xatmi::system;
+                     message.code.result = common::code::xatmi::system;
 
                      blocking::optional::send( point.destination.ipc, message);
                   }

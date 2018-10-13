@@ -386,7 +386,7 @@ transaction.trid.xid.bqual_length | uint64        |            8 | length of the
 transaction.trid.xid.payload      | dynamic array |           32 | byte array with the size of gtrid_length + bqual_length (max 128)  
 flags                             | uint64        |            8 | xatmi flag                                                         
 recording.nodes.size              | uint64        |            8 | size of the recording of 'passed nodes'                            
-recording.nodes.element.address   | uint64        |            8 | 'address' of a node'                                               
+recording.nodes.element.address   | fixed array   |           16 | 'address' of a node'                                               
 buffer.type.size                  | uint64        |            8 | buffer type name size                                              
 buffer.type.data                  | dynamic array |           25 | byte array with buffer type in the form 'type/subtype'             
 buffer.payload.size               | uint64        |            8 | buffer payload size (could be very big)                            
@@ -402,9 +402,9 @@ role name                       | network type | network size | description
 ------------------------------- | ------------ | ------------ | ---------------------------------------
 execution                       | fixed array  |           16 | uuid of the current execution path     
 route.nodes.size                | uint64       |            8 | size of the established route          
-route.nodes.element.address     | uint64       |            8 | 'address' of a 'node' in the route     
+route.nodes.element.address     | fixed array  |           16 | 'address' of a 'node' in the route     
 recording.nodes.size            | uint64       |            8 | size of the recording of 'passed nodes'
-recording.nodes.element.address | uint64       |            8 | 'address' of a node'                   
+recording.nodes.element.address | fixed array  |           16 | 'address' of a node'                   
 status                          | uint32       |            4 | status of the connection               
 
 ### send
@@ -419,7 +419,7 @@ role name                   | network type  | network size | description
 --------------------------- | ------------- | ------------ | ----------------------------------------------------------
 execution                   | fixed array   |           16 | uuid of the current execution path                        
 route.nodes.size            | uint64        |            8 | size of the established route                             
-route.nodes.element.address | uint64        |            8 | 'address' of a 'node' in the route                        
+route.nodes.element.address | fixed array   |           16 | 'address' of a 'node' in the route                        
 events                      | uint64        |            8 | events                                                    
 status                      | uint32        |            4 | status of the connection                                  
 buffer.type.size            | uint64        |            8 | buffer type name size                                     
@@ -439,5 +439,5 @@ role name                   | network type | network size | description
 --------------------------- | ------------ | ------------ | ----------------------------------
 execution                   | fixed array  |           16 | uuid of the current execution path
 route.nodes.size            | uint64       |            8 | size of the established route     
-route.nodes.element.address | uint64       |            8 | 'address' of a 'node' in the route
+route.nodes.element.address | fixed array  |           16 | 'address' of a 'node' in the route
 events                      | uint64       |            8 | events                            

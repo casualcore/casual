@@ -14,19 +14,104 @@
 
 namespace casual
 {
+   using namespace common;
+
    namespace http
    {
-      common::log::Stream log{ "casual.http"};
+      log::Stream log{ "casual.http"};
 
       namespace verbose
       {
-         common::log::Stream log{ "casual.http.verbose"};
+         log::Stream log{ "casual.http.verbose"};
       } // verbose
 
       namespace trace
       {
-         common::log::Stream log{ "casual.http.trace"};
+         log::Stream log{ "casual.http.trace"};
       } // trace
+
+
+      namespace header
+      {
+         namespace value
+         {
+            namespace result
+            {
+               code::xatmi code( const std::string& value)
+               {
+                  using code::xatmi;
+                  static const std::map< std::string, xatmi> mapping{
+                     { "", xatmi::ok},
+                     { "OK", xatmi::ok},
+                     { "TPEBADDESC" , xatmi::descriptor},
+                     { "TPEBLOCK", xatmi::no_message},
+                     { "TPEINVAL", xatmi::argument},
+                     { "TPELIMIT", xatmi::limit},
+                     { "TPENOENT", xatmi::no_entry},
+                     { "TPEOS", xatmi::os},
+                     { "TPEPROTO", xatmi::protocol},
+                     { "TPESVCERR", xatmi::service_error},
+                     { "TPESVCFAIL", xatmi::service_fail},
+                     { "TPESYSTEM", xatmi::system},
+                     { "TPETIME", xatmi::timeout},
+                     { "TPETRAN", xatmi::transaction},
+                     { "TPGOTSIG", xatmi::signal},
+                     { "TPEITYPE", xatmi::buffer_input},
+                     { "TPEOTYPE", xatmi::buffer_output},
+                     { "TPEEVENT", xatmi::event},
+                     { "TPEMATCH", xatmi::service_advertised},
+                  };
+
+                  auto found = algorithm::find( mapping, value);
+
+                  if( found)
+                     return found->second;
+
+                  log::line( log::category::error, "unknown result code: ", value, " - protocol error");
+                  return xatmi::protocol;
+               }
+
+               const char* code( common::code::xatmi code)
+               {
+                  using code::xatmi;
+                  switch( code)
+                  {
+                     case xatmi::ok: return "OK";
+                     case xatmi::descriptor: return "TPEBADDESC";
+                     case xatmi::no_message: return "TPEBLOCK";
+                     case xatmi::argument: return "TPEINVAL";
+                     case xatmi::limit: return "TPELIMIT";
+                     case xatmi::no_entry: return "TPENOENT";
+                     case xatmi::os: return "TPEOS";
+                     case xatmi::protocol: return "TPEPROTO";
+                     case xatmi::service_error: return "TPESVCERR";
+                     case xatmi::service_fail: return "TPESVCFAIL";
+                     case xatmi::system: return "TPESYSTEM";
+                     case xatmi::timeout: return "TPETIME";
+                     case xatmi::transaction: return "TPETRAN";
+                     case xatmi::signal: return "TPGOTSIG";
+                     case xatmi::buffer_input: return "TPEITYPE";
+                     case xatmi::buffer_output: return "TPEOTYPE";
+                     case xatmi::event: return "TPEEVENT";
+                     case xatmi::service_advertised: return "TPEMATCH";
+                     default: return "unknown";
+                  }
+               }
+
+               namespace user
+               {
+                  long code( const std::string& value) 
+                  { 
+                     if( value.empty()) 
+                        return 0;
+                     return std::stol( value);
+                  }
+                  std::string code( long code) { return std::to_string( code);}
+                  
+               } // user
+            } // result            
+         } // value
+      } // header
 
       namespace protocol
       {
@@ -98,8 +183,6 @@ namespace casual
                }
             } // to
          } // convert
-
-
       } // protocol
    } // http
 } // casual

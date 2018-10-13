@@ -46,6 +46,15 @@ namespace casual
                   } // <unnamed>
                } // local
 
+               bool operator == (  const Field& lhs, const Field& rhs)
+               {
+                  return lhs.equal( rhs.key);
+               }
+
+               std::ostream& operator << ( std::ostream& out, const Field& value)
+               {
+                  return out << "{ key: " << value.key << ", value: " << value.value << '}';
+               }
 
                bool Field::equal( const std::string& value) const
                {
@@ -79,6 +88,16 @@ namespace casual
                   return default_value;
                }
 
+               optional< const std::string&> Fields::find( const std::string& key) const
+               {
+                  auto found = local::find( *this, key);
+
+                  if( found)
+                     return { found->value};
+
+                  return {};
+               }
+
                std::string& Fields::operator[] ( const std::string& key )
                {
                   auto found = local::find( *this, key);
@@ -97,15 +116,19 @@ namespace casual
                   return at( key);
                }
 
-               bool operator == (  const Field& lhs, const Field& rhs)
+               Fields operator + ( const Fields& lhs, const Fields& rhs)
                {
-                  return lhs.equal( rhs.key);
+                  auto result = lhs;
+                  algorithm::append( rhs, result);
+                  return result;
                }
 
-               std::ostream& operator << ( std::ostream& out, const Field& value)
+               Fields& operator += ( Fields& lhs, const Fields& rhs)
                {
-                  return out << "{ key: " << value.key << ", value: " << value.value << '}';
+                  algorithm::append( rhs, lhs);
+                  return lhs;
                }
+
 
                header::Fields& fields()
                {

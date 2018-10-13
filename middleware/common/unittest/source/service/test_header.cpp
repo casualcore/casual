@@ -81,6 +81,58 @@ namespace casual
             EXPECT_TRUE( fields.at( "non-existent-key", "poop") == "poop");
          }
 
+         TEST( common_service_header, empty_find__expect_absent)
+         {
+            common::unittest::Trace trace;
+
+            header::Fields fields;
+
+            EXPECT_TRUE( ! fields.find( "casual.key.test").has_value());
+         }
+
+         TEST( common_service_header, one_field___find__expect_found)
+         {
+            common::unittest::Trace trace;
+
+            header::Fields fields;
+            fields[ "casual.key.test"] = "42";
+
+            ASSERT_TRUE( fields.find( "casual.key.test").has_value());
+            EXPECT_TRUE( fields.find( "casual.key.test").value() == "42");
+         }
+
+         TEST( common_service_header, add_2_empty___expect_empty)
+         {
+            common::unittest::Trace trace;
+
+            auto fields = header::Fields{} + header::Fields{};
+
+            EXPECT_TRUE( fields.empty());
+         }
+
+         TEST( common_service_header, add_2_fields___expect_appended)
+         {
+            common::unittest::Trace trace;
+
+            auto fields = header::Fields{ { "key1", "42"}} + header::Fields{ { "key2", "43"}};
+
+            ASSERT_TRUE( fields.size() == 2);
+            EXPECT_TRUE( fields.front().key == "key1");
+            EXPECT_TRUE( fields.front().value == "42");
+         }
+
+         TEST( common_service_header, add_assing_fields___expect_appended)
+         {
+            common::unittest::Trace trace;
+
+            auto fields = header::Fields{ { "key1", "42"}};
+            fields += header::Fields{ { "key2", "43"}};
+
+            ASSERT_TRUE( fields.size() == 2);
+            EXPECT_TRUE( fields.front().key == "key1");
+            EXPECT_TRUE( fields.front().value == "42");
+         }
+
       } // service
    } // common
 } // casual

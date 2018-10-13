@@ -150,7 +150,7 @@ namespace casual
 
                         common::message::service::call::Reply message;
                         message.correlation = instance.correlation();
-                        message.status = common::code::xatmi::service_error; 
+                        message.code.result = common::code::xatmi::service_error; 
 
                         handle::local::eventually::send( state, instance.caller(), std::move( message));
                      }

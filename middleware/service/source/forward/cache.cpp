@@ -53,7 +53,7 @@ namespace casual
                            reply.correlation = message.correlation;
                            reply.execution = message.execution;
                            reply.transaction.trid = message.trid;
-                           reply.status = common::code::xatmi::service_error;
+                           reply.code.result = common::code::xatmi::service_error;
                            reply.buffer = buffer::Payload{ nullptr};
 
                            try

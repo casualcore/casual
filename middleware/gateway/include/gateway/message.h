@@ -266,8 +266,8 @@ namespace casual
                CASUAL_CUSTOMIZATION_POINT_MARSHAL( Reply,
                {
                      archive & value.execution;
-                     archive & value.status;
-                     archive & value.code;
+                     archive & value.code.result;
+                     archive & value.code.user;
                      archive & value.transaction.trid.xid;
                      archive & value.transaction.state;
                      archive & value.buffer;

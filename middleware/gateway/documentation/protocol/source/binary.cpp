@@ -146,8 +146,8 @@ namespace casual
                      common::message::service::call::Reply message;
                      set_general( message);
 
-                     message.status = common::code::xatmi::service_fail;
-                     message.code = 42;
+                     message.code.result = common::code::xatmi::service_fail;
+                     message.code.user = 42;
                      message.transaction.trid = trid();
                      message.transaction.state = common::message::service::Transaction::State::active;
 

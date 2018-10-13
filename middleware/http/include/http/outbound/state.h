@@ -48,8 +48,6 @@ namespace casual
             {
                struct Request 
                {
-                  using Header = common::service::header::Fields;
-
                   Request();
 
                   struct State
@@ -62,12 +60,12 @@ namespace casual
                      common::platform::time::point::type start = common::platform::time::point::type::min();
                      std::string service;
 
-                     struct header_t
+                     struct Header
                      {
                         //! Take care of adding headers the curl way for the request.
-                        struct request_t
+                        struct Request
                         {
-                           void add( const Header& header);
+                           void add( const common::service::header::Fields& header);
                            void add( const std::string& value);
                            
                            inline auto native() { return m_header.get();}

@@ -283,16 +283,38 @@ namespace casual
 
             namespace code
             {
-               common::code::xatmi transform( curl::type::code::easy code) noexcept
+               common::message::service::call::Reply::Code transform( const common::service::header::Fields& header, curl::type::code::easy code) noexcept
                {
-                  using xatmi_c = common::code::xatmi;
-                  using curl_c = curl::type::code::easy;
+                  common::message::service::call::Reply::Code result;
+
+                  using common::code::xatmi;
+                  using curl::type::code::easy;
                   switch( code)
                   {
-                     case curl_c::CURLE_OK: return xatmi_c::ok;
+                     case easy::CURLE_OK:
+                     {
+                        // the call went ok from curls point of view, lets check 
+                        // from casuals point of view.
 
-                     default: return xatmi_c::service_fail;
+                        {
+                           auto value = header.find( http::header::name::result::code);
+                           if( value)
+                              result.result = http::header::value::result::code( *value);
+                        }
+                     
+                        {
+                           auto value = header.find( http::header::name::result::user::code);
+                           if( value)
+                              result.user = http::header::value::result::user::code( *value);
+                        }
+                     }
+
+                     default: 
+                        result.result = xatmi::service_error;
+                        break;
+                     
                   }
+                  return result;
                }
             } // code
 

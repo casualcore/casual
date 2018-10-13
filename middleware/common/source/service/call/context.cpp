@@ -324,7 +324,7 @@ namespace casual
                auto prepared = get_reply();
                auto& reply = std::get< 0>( prepared);
                result.descriptor = std::get< 1>( prepared);
-               result.user = reply.code;
+               result.user = reply.code.user;
                result.buffer = std::move( reply.buffer);
 
 
@@ -342,7 +342,7 @@ namespace casual
                //
                // Check any errors
                //
-               switch( reply.status)
+               switch( reply.code.result)
                {
                   case code::xatmi::ok:
                      break;
@@ -354,7 +354,7 @@ namespace casual
                   }
                   default: 
                   {
-                     throw exception::xatmi::exception{ reply.status};
+                     throw exception::xatmi::exception{ reply.code.result};
                   }
                }
                return result;

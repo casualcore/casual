@@ -128,7 +128,7 @@ namespace casual
                                  log::line( log::category::verbose::error, code, " - message: ", message);
 
                                  auto reply = message::reverse::type( message);
-                                 reply.status = code;
+                                 reply.code.result = code;
 
                                  if( ! message.flags.exist( message::service::call::request::Flag::no_reply))
                                  {
@@ -151,19 +151,18 @@ namespace casual
                            log::line( verbose::log, "code: ", code);
                            
                            // take care of metrics
-                           {
-                              state.metric.services.emplace_back(
-                                 request.state().service,
-                                 platform::time::clock::type::now() - request.state().start);
-                           }
+                           state.metric.services.emplace_back(
+                              request.state().service,
+                              platform::time::clock::type::now() - request.state().start);
                            
 
                            auto destination = request.state().destination;
 
                            message::service::call::Reply message;
+                           message.buffer = std::move( request.state().payload);
                            message.correlation = request.state().correlation;
                            message.execution = request.state().execution;
-                           message.status = request::code::transform( code);
+                           message.code = request::code::transform( request.state().header.reply, code);
 
                            manager::local::ipc::optional::send( state, destination, message);
 
@@ -244,7 +243,7 @@ namespace casual
                   message::service::call::Reply message;
                   message.correlation = pending.state().correlation;
                   message.execution = pending.state().execution;
-                  message.status = code::xatmi::service_error;
+                  message.code.result = code::xatmi::service_error;
 
                   manager::local::ipc::send( pending.state().destination, message);               
                };

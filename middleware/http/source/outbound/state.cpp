@@ -31,7 +31,7 @@ namespace casual
 
             namespace pending
             {
-               void Request::State::header_t::request_t::add( const Header& header)
+               void Request::State::Header::Request::add( const common::service::header::Fields& header)
                {
                   Trace trace{ "http::outbound::state::pending::Request::header_t::request_t::add Header"};
 
@@ -41,7 +41,7 @@ namespace casual
                   }
                }
 
-               void Request::State::header_t::request_t::add( const std::string& value)
+               void Request::State::Header::Request::add( const std::string& value)
                {
                   log::line( verbose::log, "header: ", value);
 

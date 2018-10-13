@@ -37,9 +37,7 @@ namespace casual
             {
                Manager() : process{ "./bin/casual-service-manager", { "--forward", "./bin/casual-service-forward"}}
                {
-                  //
                   // Wait for manager to get online
-                  //
                   EXPECT_TRUE( process.handle() != common::process::handle());
                }
 
@@ -412,7 +410,7 @@ namespace casual
                common::communication::ipc::inbound::device(),
                message);
             
-            EXPECT_TRUE( message.status == decltype( message.status)::service_error);
+            EXPECT_TRUE( message.code.result == decltype( message.code.result)::service_error);
             EXPECT_TRUE( message.correlation == correlation);
          }
 

@@ -25,6 +25,7 @@ namespace casual
                {
                   switch( code)
                   {
+                     case xatmi::ok: return "";
                      case xatmi::descriptor: return "TPEBADDESC: invalid descriptor was given";
                      case xatmi::no_message: return "TPEBLOCK: no message ready to consume";
                      case xatmi::argument: return "TPEINVAL: invalid arguments was given";

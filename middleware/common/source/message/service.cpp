@@ -203,11 +203,16 @@ namespace casual
                      << '}';
                }
 
+               std::ostream& operator << ( std::ostream& out, const Reply::Code& code)
+               {
+                  return out << "{ result: " << code.result
+                        << ", user: " << code.user
+                        << '}';
+               }
 
                std::ostream& operator << ( std::ostream& out, const Reply& message)
                {
                   return out << "{ transaction: " << message.transaction
-                        << ", status: " << message.status
                         << ", code: " << message.code
                         << ", buffer: " << message.buffer
                         << '}';
