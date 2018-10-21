@@ -1,6 +1,6 @@
 ---
-Checks:          'clang-diagnostic-*,clang-analyzer-*'
-#Checks:           '-*,modernize-*'
+#Checks:          'clang-diagnostic-*,clang-analyzer-*'
+Checks:           '-*,modernize-*'
 WarningsAsErrors: '*'
 HeaderFilterRegex: 'casual[/]middleware.*[.]h'
 AnalyzeTemporaryDtors: false

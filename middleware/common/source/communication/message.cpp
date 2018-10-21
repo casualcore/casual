@@ -86,8 +86,7 @@ namespace casual
 
             Complete& Complete::operator = ( Complete&& rhs) noexcept
             {
-               Complete temp{ std::move( rhs)};
-               swap( *this, temp);
+               swap( *this, rhs);
                return *this;
             }
 
