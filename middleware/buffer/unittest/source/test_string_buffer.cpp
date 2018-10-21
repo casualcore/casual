@@ -31,7 +31,7 @@ TEST( casual_string_buffer, raw_set_to_allocated_buffer__expecting_correct_parse
    auto buffer = tpalloc( CASUAL_STRING, "", 16);
 
    const char* source = "Hello";
-   std::strcpy( buffer, source);
+   std::strncpy( buffer, source, 16);
 
    const char* value = "";
 

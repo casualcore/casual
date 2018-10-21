@@ -1,9 +1,7 @@
 
 
-#
-# Unittest lib, probably only work for gtest.
-#
-
+# make sure we use bash
+SHELL = bash
 
 ISOLATED_UNITTEST_DIRECTIVES += --gtest_color=yes
 

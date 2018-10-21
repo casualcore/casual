@@ -65,7 +65,7 @@ def handleArguments():
     if args and args[0] in ("make"):
         options.FORCE_MAKEMAKE=1
         
-    if args and args[0] in ("clean" , "prep" , "compile" , "export" , "export_headers" ,"cross", "make"):
+    if args and args[0] in ("clean" , "prep" , "compile" , "export" , "export_headers" ,"cross", "make", 'lint'):
         options.FORCE_PARALLEL=True
     
     if args and args[0] in ("test") and not options.FORCE_PARALLEL:
@@ -143,8 +143,10 @@ reformat.filters = [
      lambda match: color.blue( 'build-rm-proxy: ') + color.white( match.group(1)) +'\n' ],
     [ re.compile(r'^ln -s (.*?) (.*)'),  
      lambda match: color.blue( 'symlink: ') + color.white( match.group(2)) + ' --> ' + color.white( match.group(1)) + '\n' ],
-
-];
+    [ re.compile(r'^[^ ]*clang-tidy (.*?) (.*)'),  
+     lambda match: color.green( 'lint: ') + color.white( match.group(1)) + '\n' ],
+    
+]
     
     
 

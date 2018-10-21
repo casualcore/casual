@@ -41,10 +41,12 @@ def_casual_make='casual-make-generate'
 
 global_build_targets = [ 
           'link',
-          'cross', 
+          'cross',
+          'lint',
           'clean_exe',
           'clean_object',
-          'clean_dependency', 
+          'clean_dependency',
+          'clean_lint',
           'compile', 
           'install',
           'test', 
@@ -73,7 +75,7 @@ class State:
         
         self.parallel_make = None
         self.object_paths_to_clean = set()
-        self.files_to_Remove=set()
+        self.files_to_remove=set()
         self.paths_to_create = set()
         
         self.pre_make_statements = list()
@@ -144,10 +146,7 @@ def add_pre_make_statement( statement):
 
 def add_comment( comments, indent = ''):
     if( comments):
-        print( indent + '#')
         print( indent + '# ' + ( '\n' + indent + '# ').join( comments.splitlines()))
-        print( indent + '#')
-
 
 def add_local_variable( dependencies, name = 'dependencies', comments = None):
     
@@ -193,7 +192,7 @@ def add_includes( includes):
             print( '-include ' + include)
       
 
-def add_rule( targets, prerequisites = None, recipes = None, ordered_prerequisites = None, comments = None):
+def internal_add_rule( targets, prerequisites = None, recipes = None, ordered_prerequisites = None, comments = None, early_fail = False):
   
         
     add_comment( comments)
@@ -217,15 +216,22 @@ def add_rule( targets, prerequisites = None, recipes = None, ordered_prerequisit
         target = ' '.join( targets)
     else:
         target = targets
-        
 
     print( target + ': ' + prereq) 
-    
-    for recipe in recipes:
-       print( '\t' + str( recipe)); 
+
+    if( early_fail):
+        print( '\t' + ' && '.join( recipes))
+    else:    
+        for recipe in recipes:
+            print( '\t' + str( recipe)); 
          
     print( '')
 
+def add_rule( targets, prerequisites = None, recipes = None, ordered_prerequisites = None, comments = None):
+    return internal_add_rule( targets, prerequisites, recipes, ordered_prerequisites, comments, False);
+
+def add_rule_strict( targets, prerequisites = None, recipes = None, ordered_prerequisites = None, comments = None):
+    return internal_add_rule( targets, prerequisites, recipes, ordered_prerequisites, comments, True);
 
 def add_sequential_ordering( targets, parents = None, comments = None):
     '''
@@ -432,7 +438,7 @@ def post_make_rules():
     # Targets for clean
     #
     
-    add_dependency( ['clean'], [ 'clean_object', 'clean_dependency', 'clean_exe'])
+    add_dependency( ['clean'], [ 'clean_object', 'clean_dependency', 'clean_lint', 'clean_exe'])
     
     add_rule( targets='clean_object', 
               recipes= map(lambda p: _platform.remove( p + "/*.o" ), [p for p in state().object_paths_to_clean]))
@@ -440,8 +446,12 @@ def post_make_rules():
     add_rule( targets='clean_dependency', 
           recipes= map(lambda p: _platform.remove( p + "/*.d" ), [p for p in state().object_paths_to_clean]))
     
+
+    add_rule( targets='clean_lint', 
+          recipes= map(lambda p: _platform.remove( p + "/*.lint" ), [p for p in state().object_paths_to_clean]))
+
     add_rule( targets='clean_exe', 
-              recipes= map(  _platform.remove, state().files_to_Remove))
+              recipes= map(  _platform.remove, state().files_to_remove))
 
 #
 # Registration of files that will be removed with clean
@@ -466,7 +476,7 @@ def register_object_path_for_clean( objectpath):
 
 def register_file_for_clean( filename):
     ''' '''
-    state().files_to_Remove.add( filename)
+    state().files_to_remove.add( filename)
 
 
 def register_path_for_create( path):
@@ -550,11 +560,12 @@ def target(output, source = '', name = None, operation = None):
     
     return internal.Target( output, source, name, operation)
 
+def change_extension( file, extension):
+    return os.path.splitext( file)[0] + extension
 
 
-def dependency_file_name(objectfile):
-    
-    return objectfile.replace(".o", "") + ".d"
+def dependency_file_name( objectfile):
+    return change_extension( objectfile, ".d")
 
 def set_ld_path():
     

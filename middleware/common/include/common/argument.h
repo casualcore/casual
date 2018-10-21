@@ -560,7 +560,7 @@ namespace casual
                inline friend Holder operator + ( Holder&& lhs,  O&& option)
                {
                   lhs.m_handlers.emplace_back( std::forward< O>( option));
-                  return lhs;
+                  return std::move( lhs);
                }
 
             private:

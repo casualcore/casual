@@ -87,13 +87,13 @@ namespace casual
 
                               common::transcode::base64::encode( buffer, payload.memory);
 
-                              return payload;
+                              return std::move( payload);
                            };
 
                            auto transcode_none = [&]( common::buffer::Payload&& payload){
 
                               Trace trace{ "http::outbound::request::local::send::transcode::payload transcode_none"};
-                              return payload;
+                              return std::move( payload);
                            };
 
                            const auto mapping = std::map< std::string, std::function< buffer::Payload( buffer::Payload&&)>>{

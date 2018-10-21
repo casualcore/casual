@@ -18,22 +18,24 @@ COMPILER = $(CXX)
 WARNING_DIRECTIVE = -Wall -Wextra -Werror -Wsign-compare -Wuninitialized  -Winit-self -Woverloaded-virtual -Wno-missing-declarations -Wno-unused-parameter -Wno-exceptions
 
 
-#
+
 # Linkers
-#
 LIBRARY_LINKER = $(CXX)
 ARCHIVE_LINKER = ar rcs
 
 STD_DIRECTIVE = -std=c++14
 
-#
-# We make sure we use bash
-#
-SHELL = bash
+# lint stuff
+ifndef LINT_COMMAND
+LINT_COMMAND = clang-tidy
+endif 
 
-#
+ifndef LINT_PRE_DIRECTIVES
+LINT_PRE_DIRECTIVES = -quiet -config '' --
+endif
+
+
 # Check if option is valid for compiler
-#
 COMPILER_PATTERN = int main(){return 0;}
 export COMPILER_PATTERN
 define check_supported_option

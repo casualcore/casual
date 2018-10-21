@@ -319,7 +319,7 @@ namespace casual
 
                namespace C
                {
-                  constexpr auto string_data = []( auto& v){ return v.data();};
+                  auto string_data = []( auto& v){ return v.data();};
 
                   std::vector< const char*> environment( std::vector< std::string>& environment)
                   {

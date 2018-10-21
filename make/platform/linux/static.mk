@@ -17,17 +17,18 @@ WARNING_DIRECTIVE = -Wall -Wextra -Werror -Wsign-compare -Wuninitialized  -Winit
 
 STD_DIRECTIVE = -std=c++14
 
-#
 # Linkers
-#
 LIBRARY_LINKER = $(CXX)
 ARCHIVE_LINKER = ar rcs
 
+# lint stuff
+ifndef LINT_COMMAND
+LINT_COMMAND = clang-tidy
+endif 
 
-#
-# We make sure we use bash
-#
-SHELL = bash
+ifndef LINT_PRE_DIRECTIVES
+LINT_PRE_DIRECTIVES = -quiet -config '' --
+endif
 
 
 ifndef EXECUTABLE_LINKER
