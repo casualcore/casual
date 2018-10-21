@@ -17,7 +17,7 @@ TEST( casual_string_buffer, allocate_with_normal_size__expecting_success)
 {
    auto buffer = tpalloc( CASUAL_STRING, "", 32);
 
-   EXPECT_TRUE( buffer != nullptr);
+   ASSERT_TRUE( buffer != nullptr);
 
    EXPECT_TRUE( tptypes( buffer, nullptr, nullptr) == 32);
 
