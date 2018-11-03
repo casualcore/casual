@@ -18,7 +18,7 @@
 #include "common/string.h"
 
 #include <array>
-#include <stdarg.h>
+#include <cstdarg>
 
 
 

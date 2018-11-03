@@ -36,7 +36,7 @@
 
 #include <unistd.h>
 #include <sys/wait.h>
-#include <signal.h>
+#include <csignal>
 //#include <fcntl.h>
 
 #include <spawn.h>
@@ -319,7 +319,7 @@ namespace casual
 
                namespace C
                {
-                  constexpr auto string_data = []( auto& v){ return v.data();};
+                  auto string_data = []( auto& v){ return v.data();};
 
                   std::vector< const char*> environment( std::vector< std::string>& environment)
                   {

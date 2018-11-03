@@ -48,8 +48,7 @@ namespace casual
 
 
          Context::Context()
-         {
-         }
+         = default;
 
 
          Transaction& Context::current()
@@ -894,7 +893,7 @@ namespace casual
             //
             // Push a null-xid to indicate suspended transaction
             //
-            m_transactions.push_back( Transaction{});
+            m_transactions.emplace_back();
          }
 
 

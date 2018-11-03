@@ -12,8 +12,8 @@
  */
 
 
-#include <stddef.h>
-#include <stdio.h>
+#include <cstddef>
+#include <cstdio>
 
 #include <xatmi.h>
 #include <buffer/field.h>
@@ -43,7 +43,7 @@ int call_with_field()
 
    length = 0;
 
-   buffer = tpalloc( CASUAL_FIELD, NULL, length);
+   buffer = tpalloc( CASUAL_FIELD, nullptr, length);
 
    result = CASUAL_FIELD_SUCCESS;
 

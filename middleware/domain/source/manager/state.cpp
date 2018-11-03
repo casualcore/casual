@@ -5,6 +5,8 @@
 //!
 
 
+#include <utility>
+
 #include "domain/manager/state.h"
 #include "domain/common.h"
 
@@ -321,7 +323,7 @@ namespace casual
             }
 
 
-            Batch::Batch( Group::id_type group) : group( group) {}
+            Batch::Batch( Group::id_type group) : group(std::move( group)) {}
 
             void Batch::log( std::ostream& out, const State& state) const
             {

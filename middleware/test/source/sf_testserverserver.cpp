@@ -61,7 +61,7 @@ namespace casual
             {
                auto protocol = serviceframework::service::protocol::deduce( std::move( parameter));
 
-               bool someValue;
+               bool someValue = false;
                protocol >> CASUAL_MAKE_NVP( someValue);
 
                serviceframework::service::user( protocol, &implementation::casual_sf_test2, someValue);

@@ -12,9 +12,9 @@
 
 #include "cobol/xatmi.h"
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 #include <xatmi.h>
 
 /*
@@ -43,7 +43,7 @@ extern "C" void TPACALL(struct TPSVCDEF_REC_s *TPSVCDEF_REC,
    /* Allocate typed buffers */
    if ((data_rec = (char *)tpalloc(rec_type,
                                    sub_type,
-                                   TPTYPE_REC->LEN)) == NULL) {
+                                   TPTYPE_REC->LEN)) == nullptr) {
       TPSTATUS_REC->TP_STATUS = (int32_t)tperrno;
       /* printf("error TPACALL --> tpalloc: %d\n", tperrno); */
       return;
@@ -133,14 +133,14 @@ extern "C" void TPCALL(struct TPSVCDEF_REC_s *TPSVCDEF_REC,
    /* Allocate typed buffers */
    if ((idata_rec = (char *)tpalloc(rec_type,
                                     sub_type,
-                                    ITPTYPE_REC->LEN)) == NULL) {
+                                    ITPTYPE_REC->LEN)) == nullptr) {
       TPSTATUS_REC->TP_STATUS = (int32_t)tperrno;
       /* printf("error TPCALL --> idata_rec = tpalloc: %d\n", tperrno); */
       return;
    }
    if ((odata_rec = (char *)tpalloc(rec_type,
                                     sub_type,
-                                    OTPTYPE_REC->LEN)) == NULL) {
+                                    OTPTYPE_REC->LEN)) == nullptr) {
       TPSTATUS_REC->TP_STATUS = (int32_t)tperrno;
       /* printf("error TPCALL --> odata_rec = tpalloc: %d\n", tperrno); */
       tpfree(idata_rec);
@@ -238,7 +238,7 @@ extern "C" void TPCONNECT(struct TPSVCDEF_REC_s *TPSVCDEF_REC,
    /* Allocate typed buffers */
    if ((data_rec = (char *)tpalloc(rec_type,
                                    sub_type,
-                                   TPTYPE_REC->LEN)) == NULL) {
+                                   TPTYPE_REC->LEN)) == nullptr) {
       TPSTATUS_REC->TP_STATUS = (int32_t)tperrno;
       /* printf("error TPCONNECT --> tpalloc: %d\n", tperrno); */
       return;
@@ -320,7 +320,7 @@ extern "C" void TPGETRPLY(struct TPSVCDEF_REC_s *TPSVCDEF_REC,
    /* Allocate typed buffers */
    if ((data_rec = (char *)tpalloc(rec_type,
                                    sub_type,
-                                   TPTYPE_REC->LEN)) == NULL) {
+                                   TPTYPE_REC->LEN)) == nullptr) {
       TPSTATUS_REC->TP_STATUS = (int32_t)tperrno;
       /* printf("error TPGETRPLY --> tpalloc: %d\n", tperrno); */
       return;
@@ -397,7 +397,7 @@ extern "C" void TPRECV(struct TPSVCDEF_REC_s *TPSVCDEF_REC,
    /* Allocate typed buffers */
    if ((data_rec = (char *)tpalloc(rec_type,
                                    sub_type,
-                                   TPTYPE_REC->LEN)) == NULL) {
+                                   TPTYPE_REC->LEN)) == nullptr) {
       TPSTATUS_REC->TP_STATUS = (int32_t)tperrno;
       /* printf("error TPGETRPLY --> tpalloc: %d\n", tperrno); */
       return;
@@ -493,7 +493,7 @@ extern "C" void TPRETURN(struct TPSVCRET_REC_s *TPSVCRET_REC,
    /* Allocate typed buffers */
    if ((data_rec = (char *)tpalloc(rec_type,
                                    sub_type,
-                                   TPTYPE_REC->LEN)) == NULL) {
+                                   TPTYPE_REC->LEN)) == nullptr) {
       TPSTATUS_REC->TP_STATUS = (int32_t)tperrno;
       /* printf("error TPCONNECT --> tpalloc: %d\n", tperrno); */
       return;

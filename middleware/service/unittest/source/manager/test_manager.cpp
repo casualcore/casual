@@ -42,8 +42,7 @@ namespace casual
                }
 
                ~Manager()
-               {
-               }
+               = default;
 
                common::mockup::Process process;
 

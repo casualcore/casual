@@ -345,7 +345,7 @@ namespace casual
             remote.process.pid = common::strong::process::id{ 666};
             remote.process.ipc = common::strong::ipc::id{ common::uuid::make()};
 
-            remote.queues.push_back( { "remote-queue"});
+            remote.queues.emplace_back( "remote-queue");
 
             common::communication::ipc::blocking::send( domain.queue_manager.process().ipc, remote);
          }

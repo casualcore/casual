@@ -70,7 +70,12 @@ class CommonUNIX( Platform):
     
     def compile(self, sourcefile, objectfile, directive):
         return '$(COMPILER) -o ' + objectfile + ' ' + sourcefile + ' $(INCLUDE_PATHS_DIRECTIVE) $(COMPILE_DIRECTIVES) ' +  directive
+
+    def lint(self, sourcefile, directive):
+        return '$(LINT_COMMAND) ' + sourcefile + ' $(LINT_PRE_DIRECTIVES) $(INCLUDE_PATHS_DIRECTIVE) $(COMPILE_DIRECTIVES) ' +  directive + ' $(LINT_POST_DIRECTIVES)'
     
+    def touch( self, source):
+        return 'touch ' + source
 
     def link_generic(self, linker, output, objectfiles, libs, directive, extraDirective):
         return linker + ' -o ' + output + ' ' + objectfiles + ' $(LIBRARY_PATHS_DIRECTIVE) ' + libs + ' $(DEFAULT_LIBS) ' + directive + ' ' + extraDirective

@@ -12,8 +12,8 @@
  */
 
 
-#include <stddef.h>
-#include <stdio.h>
+#include <cstddef>
+#include <cstdio>
 
 #include <xatmi.h>
 #include <buffer/order.h>
@@ -42,7 +42,7 @@ int call_with_order()
 
    length = 0;
 
-   buffer = tpalloc( CASUAL_ORDER, NULL, length);
+   buffer = tpalloc( CASUAL_ORDER, nullptr, length);
 
    result = CASUAL_ORDER_SUCCESS;
 

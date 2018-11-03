@@ -99,6 +99,11 @@ namespace casual
                      {
                         return &global;
                      }
+
+                     namespace view
+                     {
+                        auto compare = []( const std::string& lhs, const std::string& rhs){ return lhs < rhs;};
+                     } // view
                   } // <unnamed>
                } // local
 
@@ -118,14 +123,14 @@ namespace casual
 
                bool Sequential::service( const std::string& name) const
                {
-                  return algorithm::sorted::search( m_services, name, std::less< const std::string>());
+                  return algorithm::sorted::search( m_services, name, local::view::compare);
                }
 
 
                void Sequential::add( const state::Service& service)
                {
                   m_services.emplace_back( service.information.name);
-                  algorithm::sort( m_services, std::less< const std::string>());
+                  algorithm::sort( m_services, local::view::compare);
                }
 
                void Sequential::remove( const std::string& service)

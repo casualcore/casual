@@ -10,7 +10,6 @@ class OSX( CommonUNIX):
         path = os.path.dirname( os.path.realpath(__file__));
         
         print
-        print '#'
         print '# Common stuff'
         print 'include ' + path + '/../common.mk'
         print

@@ -5,6 +5,8 @@
 //!
 
 
+#include <utility>
+
 #include "transaction/manager/state.h"
 #include "transaction/common.h"
 
@@ -156,8 +158,8 @@ namespace casual
 
             namespace external
             {
-               Proxy::Proxy( const common::process::Handle& process, id::type id)
-                  : process{ process}, id{ id}
+               Proxy::Proxy( common::process::Handle  process, id::type id)
+                  : process{std::move( process)}, id{std::move( id)}
                {
                }
 

@@ -21,7 +21,7 @@
 
 #include <spawn.h>
 #include <sys/types.h>
-#include <signal.h>
+#include <csignal>
 
 
 //

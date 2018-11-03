@@ -67,7 +67,7 @@ namespace casual
 
          std::error_code make_error_code( xatmi code)
          {
-            return std::error_code( static_cast< int>( code), local::category);
+            return { static_cast< int>( code), local::category};
          }
 
          common::log::Stream& stream( code::xatmi code)

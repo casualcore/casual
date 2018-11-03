@@ -162,7 +162,7 @@ namespace casual
             {
                struct Proxy
                {
-                  Proxy( const common::process::Handle& process, id::type id);
+                  Proxy( common::process::Handle  process, id::type id);
 
 
                   common::process::Handle process;

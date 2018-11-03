@@ -16,10 +16,10 @@
 #include "cobol/tx.h"
 #include "tx.h"
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <stdint.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <cstdint>
 
 extern "C"
 {

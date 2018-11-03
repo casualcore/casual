@@ -62,7 +62,7 @@ namespace casual
                         // be the last node (for the route when the other server communicate
                         // with us, in the "reverse" order).
                         //
-                        message.recording.nodes.push_back( { communication::ipc::inbound::ipc()});
+                        message.recording.nodes.emplace_back( communication::ipc::inbound::ipc());
 
                         auto& transaction = common::transaction::context().current();
 

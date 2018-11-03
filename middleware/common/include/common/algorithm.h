@@ -182,6 +182,14 @@ namespace casual
             return std::is_sorted( std::begin( range), std::end( range), compare);
          }
 
+         //! fills the container with `value`
+         //! @returns the range
+         template< typename R, typename F>
+         decltype( auto) fill( R&& range, F&& value)
+         {
+            std::fill( std::begin( range), std::end( range), std::forward( value));
+            return range;
+         }
 
 
          template< typename R, typename OutIter, typename = std::enable_if_t< 

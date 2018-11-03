@@ -5,7 +5,7 @@ IncludePaths([
     'include',
     '../common/include',
     '../xatmi/include',
-    '../../thirdparty/rapidjson/include',
+    '$(CASUAL_REPOSITORY_ROOT)/thirdparty/rapidjson/include',
     '$(CASUAL_OPTIONAL_INCLUDE_PATHS)',
     ])
 	

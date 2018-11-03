@@ -20,6 +20,8 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
+#include <utility>
+
 
 namespace casual
 {
@@ -48,7 +50,7 @@ namespace casual
                }
             } // message
 
-            Handle::Handle( Socket&& socket, strong::ipc::id ipc) : m_socket( std::move( socket)), m_ipc( ipc)
+            Handle::Handle( Socket&& socket, strong::ipc::id ipc) : m_socket( std::move( socket)), m_ipc(std::move( ipc))
             {
                log::line( communication::verbose::log, "created handle: ", *this);
             }

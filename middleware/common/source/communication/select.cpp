@@ -2,6 +2,7 @@
 
 #include "common/signal.h"
 #include "common/result.h"
+#include "common/memory.h"
 
 namespace casual
 {
@@ -11,11 +12,27 @@ namespace casual
       {
          namespace select
          {
+            namespace local
+            {
+               namespace
+               {
+                  template< typename T> 
+                  void fd_zero( T& value)
+                  {
+#ifdef __APPLE__
+                     // error: The bzero() function is obsoleted by memset() [clang-analyzer-security.insecureAPI.bzero,-warnings-as-errors]
+                     memory::clear( value); 
+#else
+                     FD_ZERO( &value);
+#endif 
+                  }
+               } // <unnamed>
+            } // local
             namespace directive
             {
                Set::Set()
                {
-                  FD_ZERO( &m_set);
+                  local::fd_zero( m_set);
                }
           
                void Set::add( strong::file::descriptor::id descriptor)

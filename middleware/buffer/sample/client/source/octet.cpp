@@ -14,9 +14,9 @@
  */
 
 
-#include <stddef.h>
-#include <stdio.h>
-#include <string.h>
+#include <cstddef>
+#include <cstdio>
+#include <cstring>
 
 #include <xatmi.h>
 #include <buffer/octet.h>

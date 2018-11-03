@@ -143,7 +143,18 @@ def Compile( sourcefile, objectfile = None, directive = ''):
                             platform().header_dependency( target.source, [ target.file], dependency_file)
                         ])
 
-    
+    # create the lint target
+    lint_file = plumbing.change_extension( target.file, ".lint")
+    plumbing.add_dependency( [ 'lint'], [ lint_file])
+    plumbing.add_rule_strict( lint_file, [ target.source], 
+        ordered_prerequisites = [ object_directory],
+        comments = "linting file {0}".format( sourcefile),
+        recipes=[ 
+            platform().lint( target.source, directive),
+            platform().touch( lint_file)
+        ])
+
+    # make sure we can clean what we created
     plumbing.register_object_path_for_clean( object_directory)
     plumbing.register_path_for_create( object_directory)
 

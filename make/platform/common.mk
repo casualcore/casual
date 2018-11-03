@@ -1,15 +1,14 @@
 
 
-#
-# Unittest lib, probably only work for gtest.
-#
-
+# make sure we use bash
+SHELL = bash
 
 ISOLATED_UNITTEST_DIRECTIVES += --gtest_color=yes
 
 ifndef CASUAL_REPOSITORY_ROOT
 export CASUAL_REPOSITORY_ROOT = $(shell git rev-parse --show-toplevel)
 endif
+
 
 
 BUILDSERVER = casual-build-server -c $(EXECUTABLE_LINKER) 
