@@ -33,7 +33,6 @@
             "default": {
                 "listener": {},
                 "connection": {
-                    "type": "tcp",
                     "restart": true
                 }
             },

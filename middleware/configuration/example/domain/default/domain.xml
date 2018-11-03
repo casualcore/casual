@@ -33,7 +33,6 @@
   <default>
    <listener />
    <connection>
-    <type>tcp</type>
     <restart>true</restart>
    </connection>
   </default>

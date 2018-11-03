@@ -159,7 +159,6 @@ domain:
         {}
 
       connection:
-        type: tcp
         restart: true
 
 
