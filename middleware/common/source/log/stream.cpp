@@ -65,7 +65,7 @@ namespace casual
                         << '|' << execution::service::name()
                         << '|' << category
                         << '|' << message
-                        << '\n';
+                        << std::endl; // we need to flush the line.
                   }
 
                private:

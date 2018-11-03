@@ -97,6 +97,7 @@ namespace casual
 
             struct Base
             {
+               virtual ~Base() = default;
                virtual protocol::io::Input& input() = 0;
                virtual protocol::io::Output& output() = 0;
                virtual bool call() const = 0;

@@ -93,6 +93,7 @@ namespace casual
             private:
                struct base 
                {
+                  virtual ~base() = default;
                   virtual void invoke( const std::string& key, range_type values) = 0;
                   virtual std::vector< std::string> complete( range_type values, bool help) const = 0;
                   virtual Cardinality cardinality() const = 0;
@@ -193,6 +194,7 @@ namespace casual
             private:
                struct base 
                {
+                  virtual ~base() = default;
                   virtual bool has( const std::string& key) const = 0;
                   virtual bool next( const std::string& key) const = 0;
                   virtual void invoke( const std::string& key, range_type values) = 0;
