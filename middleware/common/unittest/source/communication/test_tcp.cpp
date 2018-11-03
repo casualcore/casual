@@ -390,10 +390,6 @@ namespace casual
                EXPECT_TRUE( common::algorithm::equal( receive_message.payload, send_message.payload));
             }
          }
-
-
       } // communication
    } // common
-
-
 } // casual
