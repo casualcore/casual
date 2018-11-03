@@ -5,6 +5,8 @@
 //!
 
 
+#include <utility>
+
 #include "queue/api/queue.h"
 #include "queue/common/log.h"
 #include "queue/common/queue.h"
@@ -314,8 +316,8 @@ namespace casual
                struct Payload
                {
                   template< typename T, typename Iter>
-                  Payload( T&& type, Iter first, Iter last)
-                    : type( type), data( first, last)
+                  Payload( T  type, Iter first, Iter last)
+                    : type(std::move( type)), data( first, last)
                   {
 
                   }

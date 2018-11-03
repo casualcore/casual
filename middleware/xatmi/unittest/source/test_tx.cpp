@@ -40,9 +40,7 @@ namespace casual
                   // Set up a tm
                   //
                   Domain()
-                  {
-
-                  }
+                  = default;
 
                   mockup::domain::Manager domain;
                   mockup::domain::transaction::Manager tm;

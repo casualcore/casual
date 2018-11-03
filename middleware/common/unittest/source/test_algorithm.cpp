@@ -199,7 +199,7 @@ namespace casual
          auto us = local::unsorted();
          auto s = local::sorted();
 
-         auto sorted = algorithm::sort( us, std::less< int>());
+         auto sorted = algorithm::sort( us, std::less<>());
 
          //EXPECT_TRUE( sorted);
          EXPECT_TRUE( ! sorted.empty());
@@ -229,7 +229,7 @@ namespace casual
          auto us = local::unsorted();
          auto s = local::sorted();
 
-         auto sorted = algorithm::sort( range::make_reverse( us), std::less< int>());
+         auto sorted = algorithm::sort( range::make_reverse( us), std::less<>());
 
          //EXPECT_TRUE( sorted);
          EXPECT_TRUE( ! sorted.empty());

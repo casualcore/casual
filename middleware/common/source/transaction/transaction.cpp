@@ -19,7 +19,7 @@ namespace casual
 
          Transaction::Transaction() = default;
 
-         Transaction::Transaction( ID trid) : trid( std::move( trid)), state( State::active) {}
+         Transaction::Transaction( ID trid) : trid( std::move( trid)) {}
 
 
 

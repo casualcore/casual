@@ -25,10 +25,9 @@ namespace vo
 
 struct TestVO::Implementation
 {
-    Implementation()
+    Implementation() // NOLINT
    //## initialization list protected section begin [200.40]
-         : someLong( 0)
-   //## initialization list protected section end   [200.40]
+         
    {
       //## ctor protected section begin [200.impl.ctor.10]
       //## ctor protected section end   [200.impl.ctor.10]
@@ -48,7 +47,7 @@ struct TestVO::Implementation
 
    //## additional attributes protected section begin [200.impl.attr.10]
    //## additional attributes protected section end   [200.impl.attr.10]
-   long someLong;
+   long someLong{ 0};
    std::string someString;
    //## additional attributes protected section begin [200.impl.attr.20]
    //## additional attributes protected section end   [200.impl.attr.20]

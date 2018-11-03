@@ -700,8 +700,8 @@ Sent to and received from other domains when one domain wants discover informati
                   message_type message;
                   message.domain.name = "domain-A";
 
-                  message.services.push_back( std::string( 128, 0));
-                  message.queues.push_back( std::string( 128, 0));
+                  message.services.emplace_back( 128, 0);
+                  message.queues.emplace_back( 128, 0);
 
                   local::format::type( out, message, {
                            { "execution", "uuid of the current execution path"},
@@ -734,8 +734,8 @@ Sent to and received from other domains when one domain wants discover informati
 
                   message_type message;
                   
-                  message.services.push_back( { []( auto& s){ s.name = std::string( 128, 0);}});
-                  message.queues.push_back( { []( auto& q){ q.name = std::string( 128, 0);}});
+                  message.services.emplace_back( []( auto& s){ s.name = std::string( 128, 0);});
+                  message.queues.emplace_back( []( auto& q){ q.name = std::string( 128, 0);});
 
                   local::format::type( out, message, {
                            { "execution", "uuid of the current execution path"},

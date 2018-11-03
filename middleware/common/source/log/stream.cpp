@@ -27,6 +27,7 @@
 #include <map>
 #include <iostream>
 
+#include <memory>
 #include <thread>
 
 
@@ -186,7 +187,7 @@ namespace casual
 
                   stream::buffer* activate( holder& holder)
                   {
-                     holder.buffer.reset( new stream::buffer{ holder.category});
+                     holder.buffer = std::make_unique<stream::buffer>( holder.category);
                      return holder.buffer.get();
                   }
 

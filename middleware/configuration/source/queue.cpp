@@ -193,9 +193,7 @@ namespace casual
          } // manager
 
          Manager::Manager()
-         {
-
-         }
+         = default;
 
          void Manager::finalize()
          {

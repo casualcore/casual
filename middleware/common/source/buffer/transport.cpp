@@ -35,9 +35,7 @@ namespace casual
             }
 
             Context::Context()
-            {
-
-            }
+            = default;
 
             void Context::registration( size_type order, std::vector< Lifecycle> lifecycles, std::vector< std::string> types, dispatch_type callback)
             {

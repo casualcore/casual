@@ -21,7 +21,7 @@ namespace casual
          class Simple::Implementation
          {
          public:
-            Implementation() {}
+            Implementation() = default;
 
             Implementation( long value) : m_long( value) {}
 

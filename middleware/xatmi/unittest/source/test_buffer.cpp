@@ -22,9 +22,9 @@ namespace casual
 
       TEST( casual_xatmi_buffer, X_OCTET_allocate)
       {
-         char* buffer = tpalloc( X_OCTET, 0, 2048);
+         char* buffer = tpalloc( X_OCTET, nullptr, 2048);
 
-         ASSERT_TRUE( buffer != 0);
+         ASSERT_TRUE( buffer != nullptr);
 
          tpfree( buffer);
 
@@ -33,14 +33,14 @@ namespace casual
 
       TEST( casual_xatmi_buffer, X_OCTET_reallocate)
       {
-         char* buffer = tpalloc( X_OCTET, 0, 2048);
+         char* buffer = tpalloc( X_OCTET, nullptr, 2048);
 
-         ASSERT_TRUE( buffer != 0);
+         ASSERT_TRUE( buffer != nullptr);
 
 
          buffer = tprealloc( buffer, 4096);
 
-         ASSERT_TRUE( buffer != 0);
+         ASSERT_TRUE( buffer != nullptr);
 
          tpfree( buffer);
 
@@ -49,8 +49,8 @@ namespace casual
 
       TEST( casual_xatmi_buffer, X_OCTET_tptypes)
       {
-         char* buffer = tpalloc( X_OCTET, 0, 666);
-         ASSERT_TRUE( buffer != 0);
+         char* buffer = tpalloc( X_OCTET, nullptr, 666);
+         ASSERT_TRUE( buffer != nullptr);
 
          std::array< char, 8> type;
          std::array< char, 16> subtype;

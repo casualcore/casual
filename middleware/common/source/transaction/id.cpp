@@ -121,12 +121,12 @@ namespace casual
 
          ID ID::create( const process::Handle& owner)
          {
-            return ID( uuid::make(), uuid::make(), owner);
+            return { uuid::make(), uuid::make(), owner};
          }
 
          ID ID::create()
          {
-            return ID( uuid::make(), uuid::make(), process::handle());
+            return { uuid::make(), uuid::make(), process::handle()};
          }
 
 

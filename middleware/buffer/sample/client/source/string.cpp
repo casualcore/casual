@@ -7,8 +7,8 @@
 
 
 
-#include <stddef.h>
-#include <stdio.h>
+#include <cstddef>
+#include <cstdio>
 
 #include <xatmi.h>
 #include <buffer/string.h>
@@ -27,7 +27,7 @@ int call_with_string()
 
    length = 0;
 
-   buffer = tpalloc( CASUAL_STRING, NULL, length);
+   buffer = tpalloc( CASUAL_STRING, nullptr, length);
 
    result = casual_string_set( &buffer, "Hello Casual");
 

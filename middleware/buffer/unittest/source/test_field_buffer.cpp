@@ -81,7 +81,7 @@ namespace casual
          common::unittest::Trace trace;
 
          char* buffer = tpalloc( CASUAL_FIELD, nullptr, 666);
-         ASSERT_TRUE( buffer != 0);
+         ASSERT_TRUE( buffer != nullptr);
 
          std::array< char, 8> type;
          std::array< char, 16> subtype;
@@ -777,7 +777,7 @@ namespace casual
          ASSERT_FALSE( casual_field_add_float( &buffer, FLD_FLOAT1, 3.14));
 
 
-         const void* regex = 0;
+         const void* regex = nullptr;
          ASSERT_FALSE( casual_field_make_expression( R"x(FLD_STRING1\[1\] = Other string)x", &regex));
 
          int match = 0;

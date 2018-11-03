@@ -5,6 +5,8 @@
 //!
 
 
+#include <utility>
+
 #include "common/transaction/resource.h"
 #include "common/transaction/id.h"
 #include "common/environment.h"
@@ -43,7 +45,7 @@ namespace casual
          } // resource
 
          Resource::Resource( resource::Link link, id_type id, std::string openinfo, std::string closeinfo)
-            : m_key( std::move( link.key)), m_xa( link.xa), m_id( id), m_openinfo( std::move( openinfo)), m_closeinfo( std::move( closeinfo))
+            : m_key( std::move( link.key)), m_xa( link.xa), m_id(std::move( id)), m_openinfo( std::move( openinfo)), m_closeinfo( std::move( closeinfo))
          {
             if( ! m_xa)
                throw common::exception::system::invalid::Argument( "xa-switch is null");

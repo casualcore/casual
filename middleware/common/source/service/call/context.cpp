@@ -395,9 +395,7 @@ namespace casual
             }
 
             Context::Context()
-            {
-
-            }
+            = default;
 
             bool Context::pending() const
             {

@@ -203,9 +203,7 @@ namespace casual
          }
 
          Cache::~Cache()
-         {
-
-         }
+         = default;
 
 
          void Cache::start()

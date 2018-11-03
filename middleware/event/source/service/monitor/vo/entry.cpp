@@ -30,7 +30,7 @@ namespace casual
 
                struct Entry::Implementation
                {
-                   Implementation()
+                   Implementation() // NOLINT
                   //## initialization list protected section begin [200.40]
                   //## initialization list protected section end   [200.40]
                   {
@@ -68,7 +68,7 @@ namespace casual
 
 
 
-               Entry::Entry()
+               Entry::Entry() // NOLINT
                {
                   //## base class protected section begin [200.ctor.10]
                   //## base class protected section end   [200.ctor.10]

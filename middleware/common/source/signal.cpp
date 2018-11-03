@@ -17,7 +17,7 @@
 
 
 
-#include <signal.h>
+#include <csignal>
 #include <cstring>
 
 
