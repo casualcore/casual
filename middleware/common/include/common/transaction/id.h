@@ -50,10 +50,13 @@ namespace casual
          {
          public:
 
-            enum Format
+            struct Format
             {
-               cNull = -1,
-               cCasual = 42
+               enum 
+               {
+                  null = -1,
+                  casual = 42
+               };
             };
 
             //!

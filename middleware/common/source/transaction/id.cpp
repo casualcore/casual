@@ -12,24 +12,24 @@
 #include "common/memory.h"
 
 
-
 #include <ios>
 #include <sstream>
 #include <iomanip>
 
+#include <cassert>
 
 
 bool operator == ( const XID& lhs, const XID& rhs)
 {
    if( lhs.formatID != rhs.formatID) return false;
-   if( lhs.formatID == casual::common::transaction::ID::Format::cNull) return true;
+   if( lhs.formatID == casual::common::transaction::ID::Format::null) return true;
    return std::memcmp( &lhs, &rhs, sizeof( XID) - ( XIDDATASIZE - ( lhs.gtrid_length + lhs.bqual_length))) == 0;
 }
 
 bool operator < ( const XID& lhs, const XID& rhs)
 {
    if( lhs.formatID != rhs.formatID) return lhs.formatID < rhs.formatID;
-   if( lhs.formatID == casual::common::transaction::ID::Format::cNull) return false;
+   if( lhs.formatID == casual::common::transaction::ID::Format::null) return false;
    return std::memcmp( &lhs, &rhs, sizeof( XID) - ( XIDDATASIZE - ( lhs.gtrid_length + lhs.bqual_length))) < 0;
 }
 
@@ -40,10 +40,13 @@ bool operator != ( const XID& lhs, const XID& rhs)
 
 std::ostream& operator << ( std::ostream& out, const XID& xid)
 {
-   if( out && ! casual::common::transaction::null( xid))
+   if( ! casual::common::transaction::null( xid))
    {
+      assert( xid.gtrid_length <= 64);
       casual::common::transcode::hex::encode( out, xid.data, xid.data + xid.gtrid_length);
       out  << ':';
+
+      assert( xid.bqual_length <= 64);
       casual::common::transcode::hex::encode( out, xid.data + xid.gtrid_length, xid.data + xid.gtrid_length + xid.bqual_length);
       out << ':' << xid.formatID;
 
@@ -67,13 +70,13 @@ namespace casual
 
                void casual_xid( Uuid gtrid, Uuid bqual, XID& xid )
                {
-                  xid.formatID = ID::Format::cCasual;
-
                   xid.gtrid_length = memory::size( bqual.get());
                   xid.bqual_length = xid.gtrid_length;
 
                   algorithm::copy( gtrid.get(), xid.data);
                   algorithm::copy( bqual.get(), xid.data + xid.gtrid_length);
+
+                  xid.formatID = ID::Format::casual;
                }
 
             } // <unnamed>
@@ -81,14 +84,14 @@ namespace casual
 
          ID::ID() noexcept
          {
-            xid.formatID = Format::cNull;
+            xid.formatID = Format::null;
          }
 
 
 
          ID::ID( const process::Handle& owner) : m_owner( std::move( owner))
          {
-            xid.formatID = Format::cNull;
+            xid.formatID = Format::null;
          }
 
          ID::ID( const xid_type& xid) : xid( xid)
@@ -106,14 +109,14 @@ namespace casual
          {
             xid = rhs.xid;
             m_owner = std::move( rhs.m_owner);
-            rhs.xid.formatID = Format::cNull;
+            rhs.xid.formatID = Format::null;
 
          }
          ID& ID::operator = ( ID&& rhs) noexcept
          {
             xid = rhs.xid;
             m_owner = std::move( rhs.m_owner);
-            rhs.xid.formatID = Format::cNull;
+            rhs.xid.formatID = Format::null;
 
             return *this;
          }
@@ -147,7 +150,7 @@ namespace casual
 
          bool ID::null() const
          {
-            return xid.formatID == Format::cNull;
+            return xid.formatID == Format::null;
          }
 
          ID::operator bool() const
@@ -223,7 +226,7 @@ namespace casual
 
          bool null( const xid_type& id)
          {
-            return id.formatID == ID::Format::cNull;
+            return id.formatID == ID::Format::null;
          }
 
          xid_range_type data( const ID& id)
