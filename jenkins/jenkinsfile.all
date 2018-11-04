@@ -58,6 +58,7 @@ def totalVersion()
 
 def common_backend_builder = '''
 umask 000
+mkdir -p /git/casual/dumps
 cd /git/casual
 find . -name "*.gcda" -print | xargs rm
 find . -name "report.xml" -print | xargs rm
@@ -85,10 +86,11 @@ casual-make --no-colors -d -a --use-valgrind make && \
    performCoverageMeasuring 
    returncode=$?
 
-   cd /git/casual/
-   find /git/casual -user root | xargs chmod 777
+cp -r /var/crash/* /git/casual/.
+cd /git/casual/
+find /git/casual -user root | xargs chmod 777
  
-   exit $returncode
+exit $returncode
 '''
 
 //
