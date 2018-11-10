@@ -124,8 +124,7 @@ namespace casual
 
                using return_type = std::tuple< platform::buffer::raw::type, platform::buffer::raw::size::type>;
 
-               log::line( log::category::buffer, "insert type: ", payload.type, " size: ", payload.memory.size(), 
-                  " @", static_cast< const void*>( payload.memory.data()));
+               log::line( log::category::buffer, "insert payload: ", payload);
 
                if( payload.null())
                {
@@ -133,11 +132,12 @@ namespace casual
                   //return { nullptr, 0};
                   return return_type{ nullptr, 0}; 
                }
-               auto size = payload.memory.size();
-
-               // This should work - doesn't on g++ 5.4
-               //return { find( payload.type).insert( std::move( payload)), size};
-               return return_type{ find( payload.type).insert( std::move( payload)), size};
+               else 
+               {
+                  auto size = payload.memory.size();
+                  auto& holder = find( payload.type);
+                  return return_type{ holder.insert( std::move( payload)), size};
+               }
             }
 
             payload::Send Holder::get( platform::buffer::raw::immutable::type handle, platform::binary::size::type user_size)

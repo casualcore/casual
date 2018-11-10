@@ -32,7 +32,7 @@ namespace casual
       } // local
 
 
-      TEST( common_move_pimpl, default_instansiation)
+      TEST( common_move_pimpl, default_instantiation)
       {
          common::unittest::Trace trace;
 
@@ -42,7 +42,7 @@ namespace casual
          EXPECT_TRUE( value->some_string == "42");
       }
 
-      TEST( common_move_pimpl, instansiation_ctor)
+      TEST( common_move_pimpl, instantiation_ctor)
       {
          common::unittest::Trace trace;
 
@@ -64,11 +64,11 @@ namespace casual
          EXPECT_TRUE( result->some_string == "666");
 
          EXPECT_TRUE( static_cast< bool>( result) == true);
-         EXPECT_TRUE( static_cast< bool>( source) == false);
+         EXPECT_TRUE( static_cast< bool>( source) == false);  // NOLINT
       }
 
 
-      TEST( common_pimpl, default_instansiation)
+      TEST( common_pimpl, default_instantiation)
       {
          common::unittest::Trace trace;
 
@@ -78,7 +78,7 @@ namespace casual
          EXPECT_TRUE( value->some_string == "42");
       }
 
-      TEST( common_pimpl, instansiation_ctor)
+      TEST( common_pimpl, instantiation_ctor)
       {
          common::unittest::Trace trace;
 
@@ -124,7 +124,7 @@ namespace casual
          EXPECT_TRUE( result->some_string == "666");
 
          EXPECT_TRUE( static_cast< bool>( result) == true);
-         EXPECT_TRUE( static_cast< bool>( source) == false);
+         EXPECT_TRUE( static_cast< bool>( source) == false);  // NOLINT
       }
 
    } // common

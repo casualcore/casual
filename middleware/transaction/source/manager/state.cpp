@@ -199,10 +199,9 @@ namespace casual
 
                for( auto& resource : resources)
                {
-                  if( ! state.resource_properties.emplace( resource.key, std::move( resource)).second)
-                  {
-                     throw common::exception::casual::invalid::Configuration( "multiple keys in resource config: " + resource.key);
-                  }
+                  auto result = state.resource_properties.emplace( resource.key, std::move( resource));
+                  if( ! result.second)
+                     throw common::exception::casual::invalid::Configuration( "multiple keys in resource config: " + result.first->first);
                }
             }
 
