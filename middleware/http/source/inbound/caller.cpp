@@ -78,11 +78,11 @@ namespace casual
                   for ( const auto& parameter : parameters)
                   {
                      buffer.push_back('"');
-                     std::copy( parameter.first.begin(), parameter.first.end(), std::back_inserter( buffer));
+                     algorithm::append( parameter.first, buffer);
                      buffer.push_back('"');
                      buffer.push_back(':');
                      buffer.push_back('"');
-                     std::copy( parameter.second.begin(), parameter.second.end(), std::back_inserter( buffer));
+                     algorithm::append( parameter.second, buffer);
                      buffer.push_back('"');
                      buffer.push_back(',');
                   }
@@ -104,12 +104,12 @@ namespace casual
                   for ( const auto& parameter : parameters)
                   {
                      buffer.push_back('<');
-                     std::copy( parameter.first.begin(), parameter.first.end(), std::back_inserter( buffer));
+                     algorithm::append( parameter.first, buffer);
                      buffer.push_back('>');
-                     std::copy( parameter.second.begin(), parameter.second.end(), std::back_inserter( buffer));
+                     algorithm::append( parameter.second, buffer);
                      buffer.push_back('<');
                      buffer.push_back('/');
-                     std::copy( parameter.first.begin(), parameter.first.end(), std::back_inserter( buffer));
+                     algorithm::append( parameter.first, buffer);
                      buffer.push_back('>');
                   }
                   buffer.push_back('<');
@@ -159,11 +159,13 @@ namespace casual
                      auto found = common::algorithm::find( mapping, protocol);
                      if( found)
                      {
-                        //
+                        log::line( verbose::log, "found protocol transcoder: ", found->first);
+
                         // Do the actual transforming
-                        //
                         return found->second( std::move( buffer));
                      }
+
+                     log::line( log::category::error, "failed to find transcoder for protocol: ", protocol);
                      return {};
                   }
                }

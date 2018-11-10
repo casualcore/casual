@@ -135,7 +135,7 @@ namespace casual
 
                            // add content header
                            {
-                              auto content = protocol::convert::from::buffer( payload.type);
+                              auto content = protocol::convert::from::buffer( result.state().payload.type);
 
                               log::line( verbose::log, "content: ", content);
 
@@ -307,8 +307,8 @@ namespace casual
                            if( value)
                               result.user = http::header::value::result::user::code( *value);
                         }
+                        break;
                      }
-
                      default: 
                         result.result = xatmi::service_error;
                         break;
