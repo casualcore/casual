@@ -116,6 +116,8 @@ namespace casual
          {
             inbound.m_wait.events = CURL_WAIT_POLLIN;
             inbound.m_wait.fd = communication::ipc::inbound::handle().socket().descriptor().value();
+
+            metric.process = process::handle();
          }
 
 

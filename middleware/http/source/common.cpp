@@ -135,6 +135,7 @@ namespace casual
                      if( found)
                         return found->second;
 
+                     log::line( verbose::log, "failed to find key: ", key);
                      return decltype( found->second){};
                   }
 
