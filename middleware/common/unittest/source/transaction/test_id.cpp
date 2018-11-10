@@ -124,8 +124,8 @@ namespace casual
 
          transaction::ID moved{ std::move( id)};
 
-         EXPECT_TRUE( id.null());
-         EXPECT_FALSE( moved.null());
+         EXPECT_TRUE( id.null()); // NOLINT
+         EXPECT_TRUE( ! moved.null());
       }
 
       TEST( casual_common_transaction_id, global_id)

@@ -1,7 +1,8 @@
 ---
-Checks:          'clang-diagnostic-*,clang-analyzer-*'
+#Checks:          'clang-diagnostic-*,clang-analyzer-*'
 #Checks:           '-*,modernize-*'
 #Checks:           '-*,cppcoreguidelines-*'
+Checks:	          'clang-diagnostic-*,clang-analyzer-*,bugprone-use-after-move'
 WarningsAsErrors: '*'
 HeaderFilterRegex: 'casual[/]middleware.*[.]h'
 AnalyzeTemporaryDtors: false

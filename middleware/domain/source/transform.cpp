@@ -334,19 +334,19 @@ namespace casual
             {
                manager::state::Group master{ ".casual.master", {}, "the master and (implicit) parent of all groups"};
                result.group_id.master = master.id;
-               result.groups.push_back( std::move( master));
-
-
+               
                manager::state::Group transaction{ ".casual.transaction", { result.group_id.master}};
                result.group_id.transaction = transaction.id;
-               result.groups.push_back( std::move( transaction));
-
+               
                manager::state::Group queue{ ".casual.queue", { transaction.id}};
                result.group_id.queue = queue.id;
-               result.groups.push_back( std::move( queue));
-
+               
                manager::state::Group global{ ".global", { queue.id, transaction.id}, "user global group"};
                result.group_id.global = global.id;
+
+               result.groups.push_back( std::move( master));
+               result.groups.push_back( std::move( transaction));
+               result.groups.push_back( std::move( queue));
                result.groups.push_back( std::move( global));
             }
 
