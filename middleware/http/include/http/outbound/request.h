@@ -66,12 +66,31 @@ namespace casual
                template< typename OD>
                bool perform( State& state, OD& outbound)
                {
-                  if( curl::multi::perform( state.pending.requests.multi()) < state.pending.requests.size())
-                  {
-                     // curl dispatch
-                     detail::dispath( state, outbound);
-                  }
-                  return ! state.pending.requests.empty();
+                  auto running = curl::multi::perform( state.pending.requests.multi());
+
+                  // we always do a dispatch, since it doesn't seem reliable to base it
+                  // on number of running _easy-handles_ from curl_multi_perform...
+                  // Though, it could easily be my misunderstanding of the API that is the reason...
+                  detail::dispath( state, outbound);
+
+                  return running != 0;
+               }
+
+               inline bool wait( State& state)
+               {
+                  Trace trace{ "http::outbound::request::detail::wait"};
+
+                  int count{};
+
+                  // we block
+                  curl::check( curl_multi_wait(
+                     state.pending.requests.multi().get(),
+                     state.inbound.first(),
+                     state.inbound.size(),
+                     curl::timeout,
+                     &count));
+
+                  return count != 0;
                }
 
             } // detail
@@ -81,7 +100,7 @@ namespace casual
                template< typename ID, typename OD>
                void dispath( State& state, ID&& inbound, OD&& outbound)
                {
-                  Trace trace{ "http::outbound::request::dispatch"};
+                  Trace trace{ "http::outbound::request::blocking::dispatch"};
                   
                   using inbound_non_blocking = common::communication::ipc::inbound::Connector::non_blocking_policy;
 
@@ -89,27 +108,21 @@ namespace casual
                   inbound( inbound_non_blocking{});
                   
 
-                  if( detail::perform( state, outbound))
+                  // perform, and if there are stuff to wait for, do a blocking wait.
+                  if( detail::perform( state, outbound) && detail::wait( state))
                   {
-                     Trace trace{ "http::outbound::request::dispatch - curl_multi_wait"};
+                     // check if the inbound is ready
+                     if( state.inbound.pending())
+                     {
+                        state.inbound.clear();
 
-                     // we block
-                     curl::check( curl_multi_wait(
-                        state.pending.requests.multi().get(),
-                        state.inbound.first(),
-                        state.inbound.size(),
-                        curl::timeout,
-                        nullptr));
-                  }
+                        // dispatch
+                        inbound( inbound_non_blocking{});
+                     }
 
-
-                  // check if the inbound is ready
-                  if( state.inbound.pending())
-                  {
-                     state.inbound.clear();
-
-                     // dispatch 
-                     inbound( inbound_non_blocking{});
+                     // It's a good chance that there are stuff ready for
+                     // perform, so we always do it...
+                     detail::perform( state, outbound);
                   }
                }
             } // blocking

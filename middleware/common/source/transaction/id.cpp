@@ -15,6 +15,7 @@
 #include <ios>
 #include <sstream>
 #include <iomanip>
+#include <iostream>
 
 #include <cassert>
 
@@ -42,11 +43,23 @@ std::ostream& operator << ( std::ostream& out, const XID& xid)
 {
    if( ! casual::common::transaction::null( xid))
    {
-      assert( xid.gtrid_length <= 64);
+      // TODO: hack to get rid of concurrent xid read/write in a
+      // unittest environment - We should get rid of threads in unittest also...
+      if( xid.gtrid_length > 64 || xid.bqual_length > 64)
+      {
+         // we can't really log to casual.log since this is probably what triggers this...
+         // ...although, the write should be done "soon" and the XID should be in a consistent state
+         // we'll logg to std::cerr so we at least get some indication still..
+         std::cerr << "XID is in an inconsistent state - discard output - XID: { xid.formatID: " << xid.formatID
+            << "xid.gtrid_length: " << xid.gtrid_length
+            << ", xid.bqual_length: " << xid.bqual_length
+            << "}\n";
+
+         return out;
+      }
+
       casual::common::transcode::hex::encode( out, xid.data, xid.data + xid.gtrid_length);
       out  << ':';
-
-      assert( xid.bqual_length <= 64);
       casual::common::transcode::hex::encode( out, xid.data + xid.gtrid_length, xid.data + xid.gtrid_length + xid.bqual_length);
       out << ':' << xid.formatID;
 
