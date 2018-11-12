@@ -61,6 +61,19 @@ namespace casual
                   }
                }
                
+
+               //! @returns true if there are stuff to block on
+               template< typename OD>
+               bool perform( State& state, OD& outbound)
+               {
+                  if( curl::multi::perform( state.pending.requests.multi()) < state.pending.requests.size())
+                  {
+                     // curl dispatch
+                     detail::dispath( state, outbound);
+                  }
+                  return ! state.pending.requests.empty();
+               }
+
             } // detail
 
             namespace blocking
@@ -70,26 +83,25 @@ namespace casual
                {
                   Trace trace{ "http::outbound::request::dispatch"};
                   
-                  auto& multi = state.pending.requests.multi();
-                  
-                  curl::multi::perform( multi);
-
                   using inbound_non_blocking = common::communication::ipc::inbound::Connector::non_blocking_policy;
 
                   // we consume any 'cached' inbound messages
                   inbound( inbound_non_blocking{});
                   
-                  // we block
-                  curl::check( curl_multi_wait( 
-                     multi.get(), 
-                     state.inbound.first(), 
-                     state.inbound.size(), 
-                     curl::timeout,
-                     nullptr));
 
+                  if( detail::perform( state, outbound))
+                  {
+                     Trace trace{ "http::outbound::request::dispatch - curl_multi_wait"};
 
-                  // curl dispatch
-                  detail::dispath( state, outbound);
+                     // we block
+                     curl::check( curl_multi_wait(
+                        state.pending.requests.multi().get(),
+                        state.inbound.first(),
+                        state.inbound.size(),
+                        curl::timeout,
+                        nullptr));
+                  }
+
 
                   // check if the inbound is ready
                   if( state.inbound.pending())
@@ -112,12 +124,9 @@ namespace casual
                   {
                      Trace trace{ "http::outbound::request::non::blocking::dispatch"};
                      
-                     curl::multi::perform( state.pending.requests.multi());
+                     detail::perform( state, outbound);
 
                      using inbound_non_blocking = common::communication::ipc::inbound::Connector::non_blocking_policy;
-
-                     // curl dispatch
-                     detail::dispath( state, outbound);
 
                      // take care of inbound
                      inbound( inbound_non_blocking{});

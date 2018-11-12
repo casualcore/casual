@@ -134,7 +134,7 @@ namespace casual
                inline auto end() const { return std::end( m_pending);}
                inline auto empty() const { return m_pending.empty();}
                explicit operator bool () const { return ! empty();}
-               inline auto size() const { return m_pending.size();}
+               inline common::platform::size::type size() const { return m_pending.size();}
                inline auto capacity() const { return m_pending.capacity();}
 
             private:

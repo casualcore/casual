@@ -289,7 +289,7 @@ namespace casual
 
                   if( m_state.pending.requests)
                   {
-                     log::line( verbose::log, "state.pending.size(): ", m_state.pending.requests.size());
+                     log::line( verbose::log, "state.pending.requests.size(): ", m_state.pending.requests.size());
                      request::blocking::dispath( m_state, inbound, outbound);
                   }
                   else

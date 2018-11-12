@@ -115,8 +115,8 @@ namespace casual
 
       namespace protocol
       {
-         const std::string& x_octet() { static const auto name = std::string("application/casual-binary"); return name;}
-         const std::string& binary() { static const auto name = std::string("application/casual-x-octet"); return name;}
+         const std::string& x_octet() { static const auto name = std::string("application/casual-x-octet"); return name;}
+         const std::string& binary() { static const auto name = std::string("application/casual-binary"); return name;}
          const std::string& json() { static const auto name = std::string("application/json"); return name;}
          const std::string& xml() { static const auto name = std::string("application/xml"); return name;}
          const std::string& field() { static const auto name = std::string("application/casual-field"); return name;}
