@@ -8,7 +8,7 @@ then
    export CASUAL_HOME=/tmp/casual/unittest
 fi
 
-export LD_LIBRARY_PATH=$GATEWAY/bin:$ROOT/middleware/common/bin:$ROOT/middleware/serviceframework/bin
+export LD_LIBRARY_PATH=$GATEWAY/bin:$REPOSITORY_ROOT/middleware/common/bin:$REPOSITORY_ROOT/middleware/serviceframework/bin
 
 echo "markdown"
 $GATEWAY/documentation/protocol/bin/markdown-protocol > $GATEWAY/documentation/protocol/protocol.md

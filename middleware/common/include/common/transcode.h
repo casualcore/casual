@@ -38,6 +38,8 @@ namespace casual
                }
 
                platform::size::type encode( const Data source, Data target);
+
+               platform::size::type decode( const char* first, const char* last, char* dest_first, char* dest_last);
             } // detail
 
             namespace capacity
@@ -47,6 +49,7 @@ namespace casual
                   return ( ( bytes + 2) / 3) * 4 + 1;
                }
             } // size
+
 
 
             template< typename C1, typename C2>
@@ -92,6 +95,26 @@ namespace casual
             //! @throw exception::Casual on failure
             //!
             platform::binary::type decode( const std::string& value);
+
+            //!
+            //! decode Base64 to a binary representation
+            //!
+            //!
+            template< typename Source, typename Iter>
+            std::enable_if_t<
+               traits::is::string::like< Source>::value
+               && traits::is::binary::iterator< Iter>::value,
+               Iter >
+            decode( Source&& source, Iter first, Iter last)
+            {
+               auto cast_source = []( auto&& i){ return reinterpret_cast< const char*>( &(*i));};
+               auto cast_target = []( auto&& i){ return reinterpret_cast< char*>( &(*i));};
+               auto size = detail::decode(
+                  cast_source( std::begin( source)), cast_source( std::end( source)),
+                  cast_target( first), cast_target( last));
+
+               return first + size;
+            }
 
          } // base64
 

@@ -17,6 +17,11 @@ namespace casual
    {
       extern common::log::Stream log;
 
+      namespace verbose
+      {
+         extern common::log::Stream log;
+      } // verbose
+
       struct Trace : common::log::Trace
       {
          template< typename T>

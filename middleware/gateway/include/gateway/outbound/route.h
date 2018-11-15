@@ -6,6 +6,9 @@
 
 #pragma once
 
+#include "gateway/common.h"
+
+
 #include "common/message/type.h"
 #include "common/exception/system.h"
 #include "common/string.h"
@@ -47,6 +50,7 @@ namespace casual
 
                   if( ! found)
                   {
+                     common::log::line( verbose::log, "routing: ", *this);
                      throw common::exception::system::invalid::Argument{ common::string::compose( "failed to find correlation: ", correlation)};
                   }
 

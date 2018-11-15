@@ -736,6 +736,9 @@ namespace casual
                      {
                         common::message::gateway::domain::discover::Request request;
 
+                        // make sure we have a correlation id.
+                        request.correlation = common::uuid::make();
+
                         // We make sure we get the reply (hence not forwarding to some other process)
                         request.process = common::process::handle();
                         request.domain = common::domain::identity();
@@ -809,3 +812,4 @@ int main( int argc, char* argv[])
 {
    return casual::gateway::outbound::local::main( argc, argv);
 } // main
+

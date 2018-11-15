@@ -58,6 +58,22 @@ namespace casual
                   return length;
                }
 
+               platform::size::type decode( const char* first, const char* last, char* dest_first, char* dest_last)
+               {
+                  const auto length =
+                     b64_pton(
+                        first,
+                        reinterpret_cast<unsigned char*>( dest_first),
+                        std::distance( dest_first, dest_last));
+
+                  if( length < 0)
+                  {
+                     throw exception::system::invalid::Argument( "Base64-decode failed");
+                  }
+
+                  return length;
+               }
+
             } // detail
 
 
@@ -65,18 +81,7 @@ namespace casual
             {
                std::vector<char> result( (value.size() / 4) * 3);
 
-               const auto length =
-                  b64_pton(
-                     value.data(),
-                     reinterpret_cast<unsigned char*>(result.data()),
-                     result.size());
-
-               if( length < 0)
-               {
-                  throw exception::system::invalid::Argument( "Base64-decode failed");
-               }
-
-               result.resize( length);
+               result.resize( detail::decode( value.data(), value.data() + value.size(), result.data(), result.data() + result.size()));
 
                return result;
             }

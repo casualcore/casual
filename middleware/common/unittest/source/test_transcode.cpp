@@ -61,6 +61,19 @@ namespace casual
          EXPECT_TRUE( transcode::base64::decode( "QUJDRA==") == local::from_string( "ABCD"));
       }
 
+      TEST( casual_common_transcode_base64, decode_to_same_as_source)
+      {
+         common::unittest::Trace trace;
+
+         std::string encoded{ "QUJDRA=="};
+
+         auto last = transcode::base64::decode( encoded, std::begin( encoded), std::end( encoded));
+         encoded.erase( last, std::end( encoded));
+
+         EXPECT_TRUE( encoded == "ABCD") << "decoded: " << encoded;
+         EXPECT_TRUE( encoded.size() == 4);
+      }
+
       TEST( casual_common_transcode_utf8, test_existene_of_bogus_codeset__expecting_false)
       {
          common::unittest::Trace trace;
