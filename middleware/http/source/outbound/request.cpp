@@ -163,6 +163,8 @@ namespace casual
 
                            algorithm::append( source, state.payload.memory);
 
+                           log::line( verbose::log, "wrote ", size, " bytes");
+
                            return size;
                         }
 
@@ -235,6 +237,8 @@ namespace casual
                      {
                         Trace trace{ "http::outbound::request::detail::receive::transcode::payload"};
 
+                        log::line( verbose::log, "request from wire: ", request);
+
 
                         auto& payload = request.state().payload;
 
@@ -261,6 +265,10 @@ namespace casual
                         auto transcode_base64 = []( common::buffer::Payload& payload)
                         {
                            Trace trace{ "http::outbound::request::local::send::transcode::payload transcode_base64"};
+
+                           // make sure we've got null termination on payload...
+                           payload.memory.push_back( '\0');
+
                            auto last = common::transcode::base64::decode( payload.memory, std::begin( payload.memory), std::end( payload.memory));
                            payload.memory.erase( last, std::end( payload.memory));
                         };
@@ -305,6 +313,8 @@ namespace casual
                            log::line( common::log::category::warning, "failed to find a transcoder for buffertype: ", payload.type);
                            log::line( verbose::log, "payload: ", payload);
                         }
+
+                        log::line( verbose::log, "request after transcoding: ", request);
 
                         return std::move( request);
                      }
