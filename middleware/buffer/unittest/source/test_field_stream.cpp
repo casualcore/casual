@@ -53,7 +53,7 @@ namespace casual
    };
 
 
-   TEST( casual_field_buffer_serialize, buffer_long_short)
+   TEST( casual_field_buffer_stream, buffer_long_short)
    {
       std::stringstream stream;
       {
@@ -63,16 +63,16 @@ namespace casual
          EXPECT_TRUE( casual_field_add_long( &buffer, field::FLD_LONG1, 42) == CASUAL_FIELD_SUCCESS);
          EXPECT_TRUE( casual_field_add_short( &buffer, field::FLD_SHORT1, 10) == CASUAL_FIELD_SUCCESS);
 
-         buffer::field::internal::serialize( buffer, stream, "json");
+         buffer::field::internal::stream( buffer, stream, "json");
 
          tpfree( buffer);
       }
       {
-         auto buffer = buffer::field::internal::serialize( stream, "json");
+         auto buffer = buffer::field::internal::stream( stream, "json");
          ASSERT_TRUE( buffer != nullptr);
 
-         short short_;
-         long long_;
+         short short_{};
+         long long_{};
          EXPECT_TRUE( casual_field_get_long( buffer, field::FLD_LONG1, 0, &long_) == CASUAL_FIELD_SUCCESS);
          EXPECT_TRUE( long_ == 42);
          EXPECT_TRUE( casual_field_get_short( buffer, field::FLD_SHORT1, 0, &short_) == CASUAL_FIELD_SUCCESS);
@@ -83,7 +83,7 @@ namespace casual
    }
 
 
-   TEST( casual_field_buffer_serialize, buffer_char_float_double)
+   TEST( casual_field_buffer_stream, buffer_char_float_double)
    {
       std::stringstream stream;
       {
@@ -94,23 +94,23 @@ namespace casual
          EXPECT_TRUE( casual_field_add_float( &buffer, field::FLD_FLOAT1, 0.42f) == CASUAL_FIELD_SUCCESS);
          EXPECT_TRUE( casual_field_add_double( &buffer, field::FLD_DOUBLE1, 0.99) == CASUAL_FIELD_SUCCESS);
 
-         buffer::field::internal::serialize( buffer, stream, "json");
+         buffer::field::internal::stream( buffer, stream, "json");
 
          tpfree( buffer);
       }
       {
-         auto buffer = buffer::field::internal::serialize( stream, "json");
+         auto buffer = buffer::field::internal::stream( stream, "json");
          ASSERT_TRUE( buffer != nullptr);
 
-         char chart_;
+         char chart_{};
          EXPECT_TRUE( casual_field_get_char( buffer, field::FLD_CHAR1, 0, &chart_) == CASUAL_FIELD_SUCCESS);
          EXPECT_TRUE( chart_ == 'A');
 
-         float float_;
+         float float_{};
          EXPECT_TRUE( casual_field_get_float( buffer, field::FLD_FLOAT1, 0, &float_) == CASUAL_FIELD_SUCCESS);
          EXPECT_TRUE( float_ > 0.419 && float_ < 0.429) << "float: " << float_ << " - stream: " << stream.str();
 
-         double double_;
+         double double_{};
          EXPECT_TRUE( casual_field_get_double( buffer, field::FLD_DOUBLE1, 0, &double_) == CASUAL_FIELD_SUCCESS);
          EXPECT_TRUE( double_ > 0.989 && double_ < 0.999) << "double: " << double_ << " - stream: " << stream.str();
 

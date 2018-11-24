@@ -25,29 +25,25 @@ namespace casual
       std::string format;
 
       {
+         auto complete_format = []( auto values, bool) -> std::vector< std::string>{
+            return { "json", "yaml", "xml", "ini"};
+         };
+
          common::argument::Parse parse{ R"(
 
-(xml|json|yaml|ini) --> casual-fielded-buffer
+human readable --> casual-fielded-buffer
 
 reads from stdin an assumes a human readable structure in the supplied format
 for a casual-fielded-buffer, and transform this to an actual casual-fielded-buffer,
 and prints this to stdout.)",
-            common::argument::Option( std::tie( format), { "--format"}, "which format to expect on stdin (xml|json|yaml|ini)")
+            common::argument::Option( std::tie( format), complete_format, { "--format"}, "which format to expect on stdin")
          };
          parse( argc, argv);
       }
 
-      auto buffer = buffer::field::internal::serialize( std::cin, format);
-
-      long used = 0;
-      casual_field_explore_buffer( buffer, nullptr, &used);
-
-      common::log::line( buffer::verbose::log, "buffer used: ", used);
-
-      std::cout.write( buffer, used);
-
-      tpfree( buffer);
-
+      common::buffer::payload::binary::stream( 
+         buffer::field::internal::payload::stream( std::cin, format), 
+         std::cout);
    }
 
 } // casual

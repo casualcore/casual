@@ -14,27 +14,37 @@
       -g, --list-groups  0..1
             list information of all groups in current domain
 
-      -m, --list-messages  0..1  (<value>) [1]
+      -m, --list-messages  0..1  (<queue>) [1]
             list information of all messages of a queue
 
-      --restore  0..1  (<value>...) [0..*]
+      --restore  0..1  (<queue>) [0..*]
             restores messages to queue
             
             that has been rolled back to error queue
               casual queue --restore <queue-name>
 
-      -e, --enqueue  0..1  (<value>) [1]
-            enqueue to a queue from stdin
+      -e, --enqueue  0..1  (<queue>) [1]
             
-              cat somefile.bin | casual queue --enqueue <queue-name>
-              note: operation is atomic
-
-      -d, --dequeue  0..1  (<value>) [1]
-            dequeue from a queue to stdout
+            enqueue buffer to a queue from stdin
             
-              casual queue --dequeue <queue-name> > somefile.bin
-              note: operation is atomic
+            Assumes a conformant buffer
+            
+            Example:
+            cat somefile.bin | casual queue --enqueue <queue-name>
+            
+            note: operation is atomic
 
-      --state  0..1  ([json,yaml,xml,ini]) [0..1]
+      -d, --dequeue  0..1  (<queue>) [1]
+            
+            dequeue buffer from a queue to stdout
+            
+            Example:
+            casual queue --dequeue <queue-name> > somefile.bin
+            
+            note: operation is atomic
+
+      --state  0..1  ([json, yaml, xml, ini]) [0..1]
             queue state
+
+mbp:doma
 ```

@@ -183,9 +183,8 @@ namespace casual
 
                         // try forever to connect to remote
                         communication::tcp::inbound::Device inbound( communication::tcp::retry::connect( address, {
-                           { std::chrono::milliseconds{ 100}, 100}, // 10s
-                           { std::chrono::seconds{ 1}, 3600}, // 1h
-                           { std::chrono::seconds{ 5}, 0} // forever
+                           { std::chrono::seconds{ 1}, 60}, // 1min
+                           { std::chrono::seconds{ 10}, 0} // forever
                         }));
 
                         // send connect request
