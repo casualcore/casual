@@ -236,6 +236,16 @@ namespace casual
       {
          namespace
          {
+            auto queues() 
+            {
+               auto state = call::state();
+
+               return algorithm::transform( state.queues, []( auto& q)
+               {
+                  return std::move( q.name);
+               });
+            }
+
             void enqueue( const std::string& queue)
             {
                tx_begin();
@@ -244,15 +254,17 @@ namespace casual
                   tx_rollback();
                });
 
-               queue::Message message;
-
-               message.attributes.reply = queue;
-               message.payload.type = common::buffer::type::binary();
-
-               while( std::cin)
+               auto message = [&queue]()
                {
-                  message.payload.data.push_back( std::cin.get());
-               }
+                  queue::Message message;
+
+                  message.attributes.reply = queue;
+                  auto payload = common::buffer::payload::binary::stream( std::cin);
+                  message.payload.data = std::move( payload.memory);
+                  message.payload.type = std::move( payload.type);
+
+                  return message;
+               }();
 
                auto id = queue::enqueue( queue, message);
 
@@ -280,23 +292,23 @@ namespace casual
                tx_commit();
                rollback.release();
 
-               if( message.empty())
+               if( ! message.empty())
                {
-                  throw Empty{ "queue is empty"};
+                  auto& payload = message.front().payload;
+                  common::buffer::payload::binary::stream( 
+                     common::buffer::Payload{ std::move( payload.type), std::move( payload.data)}, 
+                     std::cout);
                }
                else
                {
-                  std::cout.write(
-                        message.front().payload.data.data(),
-                        message.front().payload.data.size());
+                  throw Empty{ "queue is empty"};
                }
-               std::cout << '\n';
             }
 
 
-            void restore( const std::vector< std::string>& queueus)
+            void restore( const std::vector< std::string>& queues)
             {
-               auto affected = queue::restore::queue( queueus);
+               auto affected = queue::restore::queue( queues);
 
                auto formatter = format::restored();
                formatter.print( std::cout, affected);
@@ -324,17 +336,37 @@ namespace casual
                      return std::vector< std::string>{ "json", "yaml", "xml", "ini"};
                   };
 
+                  auto complete_queues = []( auto& values, bool help) -> std::vector< std::string>
+                  { 
+                     if( help) 
+                        return { "<queue>"};
+                        
+                     return local::queues();
+                  };
+
                   return common::argument::Group{ [](){}, { "queue"}, "queue related administration",
                      common::argument::Option( &queue::list_queues, { "-q", "--list-queues"}, "list information of all queues in current domain"),
                      common::argument::Option( &queue::list_remote_queues, { "-r", "--list-remote"}, "list all remote discovered queues"),
                      common::argument::Option( &queue::list_groups, { "-g", "--list-groups"}, "list information of all groups in current domain"),
-                     common::argument::Option( &queue::list_messages, { "-m", "--list-messages"}, "list information of all messages of a queue"),
-                     common::argument::Option( &queue::local::restore, { "--restore"}, 
+                     common::argument::Option( &queue::list_messages, complete_queues, { "-m", "--list-messages"}, "list information of all messages of a queue"),
+                     common::argument::Option( &queue::local::restore, complete_queues, { "--restore"}, 
                         "restores messages to queue\n\nthat has been rolled back to error queue\n  casual queue --restore <queue-name>"),
-                     common::argument::Option( &local::enqueue, { "-e", "--enqueue"}, 
-                        "enqueue to a queue from stdin\n\n  cat somefile.bin | casual queue --enqueue <queue-name>\n  note: operation is atomic"),
-                     common::argument::Option( &local::dequeue, { "-d", "--dequeue"}, 
-                        "dequeue from a queue to stdout\n\n  casual queue --dequeue <queue-name> > somefile.bin\n  note: operation is atomic"),
+                     common::argument::Option( &local::enqueue, complete_queues, { "-e", "--enqueue"}, R"(
+enqueue buffer to a queue from stdin
+
+Assumes a conformant buffer
+
+Example:
+cat somefile.bin | casual queue --enqueue <queue-name>
+
+note: operation is atomic)"),
+                     common::argument::Option( &local::dequeue, complete_queues, { "-d", "--dequeue"}, R"(
+dequeue buffer from a queue to stdout
+
+Example:
+casual queue --dequeue <queue-name> > somefile.bin
+
+note: operation is atomic)"),
                      common::argument::Option( &queue::local::state, complete_state, {"--state"}, "queue state"),
                   };
                }

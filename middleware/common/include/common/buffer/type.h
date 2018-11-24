@@ -84,6 +84,16 @@ namespace casual
 
          namespace payload
          {
+            namespace binary
+            {
+               //! stream in/out 
+               //! @{
+               void stream( const Payload& value, std::ostream& out);
+               Payload stream( std::istream& in);
+               //! @}
+
+            } // binary
+
             struct Send
             {
                Send( const Payload& payload, platform::binary::size::type transport, platform::binary::size::type reserved)

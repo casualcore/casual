@@ -18,53 +18,38 @@
 
 namespace casual
 {
-
-   std::vector< char> read( std::istream& in)
+   namespace local
    {
-      std::vector< char> result;
-      constexpr auto batch = 1024;
-      while( in)
+      namespace
       {
-         auto offset = result.size();
-         result.resize( offset + batch);
-         in.read( result.data() + offset, batch);
-      }
-      result.resize( result.size() - ( batch - in.gcount()));
+         void main(int argc, char **argv)
+         {
+            std::string format;
 
-      return result;
-   }
+            {
+               auto complete_format = []( auto values, bool) -> std::vector< std::string>{
+                  return { "json", "yaml", "xml", "ini"};
+               };
 
-   void main(int argc, char **argv)
-   {
-      std::string format;
+               common::argument::Parse parse{ R"(
 
-      {
-         common::argument::Parse parse{ R"(
-
-casual-fielded-buffer --> (xml|json|yaml|ini)
+casual-fielded-buffer --> human readable
 
 reads from stdin an assumes a casual-fielded-buffer,
 and transform this to a human readable structure in the supplied format,
 and prints this to stdout.)",
-            common::argument::Option( std::tie( format), { "--format"}, "which format to transform to (xml|json|yaml|ini)")
-         };
-         parse( argc, argv);
-      }
+                  common::argument::Option( std::tie( format), complete_format, { "--format"}, "which format to transform to")
+               };
+               parse( argc, argv);
+            }
 
-      auto binary = read( std::cin);
+            buffer::field::internal::payload::stream( 
+               common::buffer::payload::binary::stream( std::cin), 
+               std::cout, format);
 
-      common::log::line( buffer::verbose::log, "binary size: ", binary.size());
-
-      auto buffer = buffer::field::internal::add( std::move( binary));
-
-      assert( buffer);
-
-      buffer::field::internal::serialize( buffer, std::cout, format);
-
-      tpfree( buffer);
-
-   }
-
+         }
+      } // <unnamed>
+   } // local
 } // casual
 
 
@@ -73,7 +58,7 @@ int main(int argc, char **argv)
 {
    try
    {
-      casual::main( argc, argv);
+      casual::local::main( argc, argv);
       return 0;
    }
    catch( ...)

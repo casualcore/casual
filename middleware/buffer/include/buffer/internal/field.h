@@ -9,6 +9,7 @@
 
 
 #include "common/platform.h"
+#include "common/buffer/type.h"
 
 #include <unordered_map>
 #include <string>
@@ -38,11 +39,16 @@ namespace casual
             //!
             //! Export/Import
             //!
-            //! @todo Better names
-            //!
             //! @{
-            std::ostream& serialize( const char* buffer, std::ostream& stream, const std::string& protocol);
-            char* serialize( std::istream& stream, const std::string& protocol);
+            namespace payload
+            {
+               void stream( common::buffer::Payload buffer, std::ostream& stream, const std::string& protocol);
+               common::buffer::Payload stream( std::istream& stream, const std::string& protocol);
+            } // payload
+
+            void stream( const char* buffer, std::ostream& stream, const std::string& protocol);
+            char* stream( std::istream& stream, const std::string& protocol);
+
             //!@}
 
             //!
