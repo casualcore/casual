@@ -151,18 +151,12 @@ namespace casual
                   {
                      log::line( log, "prepare message dispatch handlers");
 
-                     //
                      // prepare message dispatch handlers...
-                     //
-
                      auto handler = handle::handlers( state);
 
                      log::line( log, "start message pump");
 
-
-                     //
                      // Connect to domain
-                     //
                      communication::instance::connect( communication::instance::identity::transaction::manager);
 
 
@@ -177,43 +171,27 @@ namespace casual
 
                            if( ! state.outstanding())
                            {
-                              //
                               // We can only block if our backlog is empty
-                              //
 
-                              //
                               // Removed transaction-timeout from TM, since the semantics are not clear
                               // see commit 559916d9b84e4f84717cead8f2ee7e3d9fd561cd for previous implementation.
-                              //
                               handler( ipc::device().blocking_next());
-
                            }
 
-
-                           //
                            // Consume until the queue is empty or we've got pending replies equal to batch::transaction
-                           // We also do a "busy wait" to try to get more done between each write.
-                           //
-
-                           auto count = common::platform::batch::transaction::persistence;
-
-                           while( ( handler( ipc::device().non_blocking_next()) || --count > 0 ) &&
+                           while( handler( ipc::device().non_blocking_next()) &&
                                  state.persistent.replies.size() < common::platform::batch::transaction::persistence)
                            {
-                              ;
+                              ; // no-op
                            }
                         }
 
-                        //
                         // Check if we have any persistent stuff to handle, if not we don't do persistent commit
-                        //
                         if( ! state.persistent.replies.empty() || ! state.persistent.requests.empty())
                         {
                            persist.commit();
 
-                           //
                            // Send persistent replies to clients
-                           //
                            {
 
                               log::line( log, "manager persistent replies: ", state.persistent.replies.size());;
@@ -227,9 +205,7 @@ namespace casual
                               log::line( log, "manager persistent replies: ", state.persistent.replies.size());
                            }
 
-                           //
                            // Send persistent resource requests
-                           //
                            {
                               log::line( log, "manager persistent request: ", state.persistent.requests.size());
 
@@ -237,9 +213,7 @@ namespace casual
                                     state.persistent.requests,
                                     common::predicate::negate( action::persistent::Send{ state}));
 
-                              //
                               // Move the ones that did not find an idle resource to pending requests
-                              //
                               common::algorithm::move( std::get< 0>( not_done), state.pending.requests);
 
                               state.persistent.requests.clear();
@@ -251,9 +225,7 @@ namespace casual
                   }
                   catch( const exception::casual::Shutdown&)
                   {
-                     //
                      // We do nothing
-                     //
                   }
                }
 
