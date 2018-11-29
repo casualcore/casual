@@ -6,7 +6,6 @@
 
 #pragma once
 
-
 #include <xatmi.h>
 
 #ifdef __cplusplus
@@ -16,46 +15,78 @@
 
 namespace std
 {
-   std::ostream& operator<<( std::ostream& stream, std::vector< std::pair< std::string, std::string >> input);
+   std::ostream &operator<<( std::ostream& stream, const std::vector< std::pair< std::string, std::string>>& input);
 }
 
-extern "C" {
+extern "C"
+{
 #endif
 
-   typedef struct CasualHeaderS
+   typedef struct header_data_s
    {
       char key[80];
       char value[80];
-   } CasualHeader;
+   } header_data_type;
 
-   typedef struct BufferS
+   typedef struct header_s
    {
-      char* data;
+      header_data_type *data;
       long size;
-   } Buffer;
+   } header_type;
 
-   typedef struct CasualBufferS
+   typedef struct buffer_s
    {
-      CasualHeader* header;
-      long headersize;
+      char *data;
+      long size;
+   } buffer_type;
+
+   typedef struct casual_buffer_s
+   {
+      //!
+      //! header information
+      //!
+      header_type header_in;
+      header_type header_out;
+
+      //!
+      //! actual data
+      //!
+      buffer_type payload;
+      buffer_type parameter;
+
+      //!
+      //! state
+      //!
       long context;
+
+      //!
+      //! misc
+      //!
       char service[XATMI_SERVICE_NAME_LENGTH];
-      long calldescriptor;
-      long errorcode;
-      long format;
       char protocol[80];
-      Buffer payload;
-      Buffer parameter;
-   } CasualBuffer;
 
-   long casual_xatmi_send( CasualBuffer* data);
-   long casual_xatmi_receive( CasualBuffer* data);
-   long casual_xatmi_cancel( CasualBuffer* data);
+      long descriptor;
+      long code;
+   } casual_buffer_type;
 
-   enum {OK, AGAIN, ERROR};
-   enum xatmi_context {cTPINIT, cTPALLOC, cTPACALL, cTPGETRPLY};
+   long casual_xatmi_send(casual_buffer_type *data);
+   long casual_xatmi_receive(casual_buffer_type *data);
+   long casual_xatmi_cancel(casual_buffer_type *data);
+
+   enum
+   {
+      OK,
+      AGAIN,
+      ERROR
+   };
+   enum xatmi_context
+   {
+      cTPINIT,
+      cTPALLOC,
+      cTPACALL,
+      cTPGETRPLY
+   };
 
 #ifdef __cplusplus
 }
 #endif
-
