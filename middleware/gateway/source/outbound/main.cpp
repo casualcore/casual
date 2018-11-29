@@ -183,9 +183,8 @@ namespace casual
 
                         // try forever to connect to remote
                         communication::tcp::inbound::Device inbound( communication::tcp::retry::connect( address, {
-                           { std::chrono::milliseconds{ 100}, 100}, // 10s
-                           { std::chrono::seconds{ 1}, 3600}, // 1h
-                           { std::chrono::seconds{ 5}, 0} // forever
+                           { std::chrono::seconds{ 1}, 60}, // 1min
+                           { std::chrono::seconds{ 10}, 0} // forever
                         }));
 
                         // send connect request
@@ -736,6 +735,9 @@ namespace casual
                      {
                         common::message::gateway::domain::discover::Request request;
 
+                        // make sure we have a correlation id.
+                        request.correlation = common::uuid::make();
+
                         // We make sure we get the reply (hence not forwarding to some other process)
                         request.process = common::process::handle();
                         request.domain = common::domain::identity();
@@ -809,3 +811,4 @@ int main( int argc, char* argv[])
 {
    return casual::gateway::outbound::local::main( argc, argv);
 } // main
+

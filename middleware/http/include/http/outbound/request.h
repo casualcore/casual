@@ -36,6 +36,15 @@ namespace casual
  
             namespace detail
             {
+
+               namespace receive
+               {
+                  namespace transcode
+                  {
+                     state::pending::Request payload( state::pending::Request&& request);
+                  } // transcode
+               } // receive
+
                template< typename OD>
                void dispath( State& state, OD& outbound)
                {
@@ -54,7 +63,7 @@ namespace casual
                         auto request = state.pending.requests.extract( message->easy_handle);
                         auto result = message->data.result;
 
-                        outbound( std::move( request), result);
+                        outbound( receive::transcode::payload( std::move( request)), result);
                      }
 
                      message = curl_multi_info_read( multi.get(), &messages);

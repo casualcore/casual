@@ -11,6 +11,16 @@ In general the semantics of the `casual` `CLI` is:
 casual <category group> <group specific options>...
 ```
 
+## unix friendly
+
+`casual` aims to be as _unix friendly_ as possible.
+
+What do we mean with _unix friendly_? 
+* every output to stdout should be parsable line by line, hence no composite information
+* users should be able to combine other _unix_ tools to achieve their goals (_grep, sort, cut, |, etc..._) 
+* `casual` cli commands should be as composable as possible
+  * example: `casual queue --dequeue q1 | casual call service1 | casual queue --enqueue q2` 
+
 ## help
 
 To get an overview help for what options is possible use:

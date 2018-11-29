@@ -7,6 +7,8 @@
 
 #include "common/buffer/type.h"
 #include "common/exception/xatmi.h"
+#include "common/marshal/network.h"
+#include "common/log.h"
 
 #include "xatmi/extended.h"
 #include "xatmi/defines.h"
@@ -84,7 +86,6 @@ namespace casual
             return type == "NULL";
          }
 
-
          std::ostream& operator << ( std::ostream& out, const Payload& value)
          {
             return out << "{ type: " << value.type << ", memory: " << static_cast< const void*>( value.memory.data()) << ", size: " << value.memory.size() << '}';
@@ -93,6 +94,46 @@ namespace casual
 
          namespace payload
          {
+            namespace binary
+            {
+               void stream( const Payload& value, std::ostream& out)
+               {
+                  Trace trace{ "common::buffer::payload::binary::stream ostream"};
+
+                  log::line( log::category::buffer, "payload: ", value);
+
+                  platform::binary::type binary;
+                  {
+                     common::marshal::binary::network::Output archive{ binary};
+                     archive << value;
+                  }
+                  out.write( binary.data(), binary.size());
+                  out.flush();
+               }
+
+               Payload stream( std::istream& in)
+               {
+                  Trace trace{ "common::buffer::payload::binary::stream istream"};
+
+                  platform::binary::type binary;
+
+                  while( in.peek() != std::istream::traits_type::eof())
+                     binary.push_back( in.get());
+
+                  if( binary.empty())
+                     throw exception::system::invalid::Argument{ "not a valid buffer on input stream"};
+
+                  common::marshal::binary::network::Input archive{ binary};
+
+                  Payload result;
+                  archive >> result;
+
+                  log::line( log::category::buffer, "payload: ", result);
+
+                  return result;
+               }
+            } // binary
+
             std::ostream& operator << ( std::ostream& out, const Send& value)
             {
                return out << "{ payload: " << value.payload() << ", transport: " << value.transport << ", reserved: " << value.reserved <<'}';

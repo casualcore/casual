@@ -68,7 +68,7 @@ LinkUnittest( 'bin/test-buffer',
     Compile( 'unittest/source/test_octet_buffer.cpp'),
     Compile( 'unittest/source/test_order_buffer.cpp'),
     Compile( 'unittest/source/test_string_buffer.cpp'),
-    Compile( 'unittest/source/test_field_serialize.cpp'),
+    Compile( 'unittest/source/test_field_stream.cpp'),
    ],
    [ 
     lib_buffer, 'casual-common', 'casual-xatmi', 'casual-unittest'

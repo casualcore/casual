@@ -1647,7 +1647,7 @@ namespace casual
 
                   auto release()
                   {
-                     return std::exchange( m_buffer, nullptr);
+                     return std::move( pool_type::pool.release( std::exchange( m_buffer, nullptr)).payload);
                   }
 
                   void operator() ( long id, char value) { casual_field_add_char( &m_buffer, id, value);}
@@ -1665,39 +1665,38 @@ namespace casual
 
             } // <unnamed>
 
-
-            std::ostream& serialize( const char* const handle, std::ostream& stream, const std::string& protocol)
+            namespace payload
             {
-               const Trace trace{ "field::internal::serialize out"};
-
-               const auto& buffer = pool_type::pool.get( handle);
-
-               common::log::line( verbose::log, "buffer.payload.type: ", buffer.payload.type, " - protocol: ", protocol);
-
-               auto archive = serviceframework::archive::create::writer::from( protocol, stream);
-
-               std::vector< write> fields;
-
-               for( const auto& field : buffer.index)
+               void stream( common::buffer::Payload payload, std::ostream& stream, const std::string& protocol)
                {
-                  for( const auto& occurrence : field.second)
+                  const Trace trace{ "field::internal::stream out"};
+
+                  const auto& buffer = pool_type::pool.get( pool_type::pool.insert( std::move( payload)));
+
+                  common::log::line( verbose::log, "buffer.payload.type: ", buffer.payload.type, " - protocol: ", protocol);
+
+                  auto archive = serviceframework::archive::create::writer::from( protocol, stream);
+
+                  std::vector< write> fields;
+
+                  for( const auto& field : buffer.index)
                   {
-                     fields.emplace_back( field.first, buffer.handle() + occurrence);
+                     for( const auto& occurrence : field.second)
+                     {
+                        fields.emplace_back( field.first, buffer.handle() + occurrence);
+                     }
                   }
+
+                  archive << CASUAL_MAKE_NVP( fields);
                }
 
-               archive << CASUAL_MAKE_NVP( fields);
-
-               return stream;
-            }
-
-            char* serialize( std::istream& stream, const std::string& protocol)
-            {
-               try
+               common::buffer::Payload stream( std::istream& stream, const std::string& protocol)
                {
-                  const Trace trace{ "field::internal::serialize in"};
+                  Trace trace{ "field::internal::stream in"};
 
-                  auto archive = serviceframework::archive::create::reader::consumed::from( protocol, stream);
+                  log::line( verbose::log, "protocol: ", protocol);
+
+                  auto archive = serviceframework::archive::create::reader::relaxed::from( protocol, stream);
 
                   std::vector< read> fields;
                   archive >> CASUAL_MAKE_NVP( fields);
@@ -1711,6 +1710,19 @@ namespace casual
                   }
 
                   return dispatch.release();
+               }
+            } // payload
+
+            void stream( const char* buffer, std::ostream& stream, const std::string& protocol)
+            {
+               payload::stream( pool_type::pool.get( buffer).payload, stream, protocol);
+            }
+
+            char* stream( std::istream& stream, const std::string& protocol)
+            {
+               try
+               {
+                  return pool_type::pool.insert( payload::stream( stream, protocol));
                }
                catch( ...)
                {

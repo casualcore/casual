@@ -78,8 +78,8 @@ namespace casual
 
                            state::pending::Request result;
 
-                           auto transcode_base64 = [&]( common::buffer::Payload&& payload){
-
+                           auto transcode_base64 = [&]( common::buffer::Payload&& payload)
+                           {
                               Trace trace{ "http::outbound::request::local::send::transcode::payload transcode_base64"};
 
                               platform::binary::type buffer;
@@ -90,13 +90,14 @@ namespace casual
                               return std::move( payload);
                            };
 
-                           auto transcode_none = [&]( common::buffer::Payload&& payload){
-
+                           auto transcode_none = [&]( common::buffer::Payload&& payload)
+                           {
                               Trace trace{ "http::outbound::request::local::send::transcode::payload transcode_none"};
                               return std::move( payload);
                            };
 
-                           const auto mapping = std::map< std::string, std::function< buffer::Payload( buffer::Payload&&)>>{
+                           static const auto mapping = std::map< std::string, std::function< buffer::Payload( buffer::Payload&&)>>
+                           {
                               {
                                  "CFIELD/",
                                  transcode_base64
@@ -162,6 +163,8 @@ namespace casual
 
                            algorithm::append( source, state.payload.memory);
 
+                           log::line( verbose::log, "wrote ", size, " bytes");
+
                            return size;
                         }
 
@@ -223,6 +226,102 @@ namespace casual
                   } // receive
                } // <unnamed>
             } // local
+
+            namespace detail
+            {
+               namespace receive
+               {
+                  namespace transcode
+                  {
+                     state::pending::Request payload( state::pending::Request&& request)
+                     {
+                        Trace trace{ "http::outbound::request::detail::receive::transcode::payload"};
+
+                        log::line( verbose::log, "request from wire: ", request);
+
+
+                        auto& payload = request.state().payload;
+
+                        // set buffer type
+                        {
+                           auto content = request.state().header.reply.find( "content-type");
+
+                           if( content)
+                           {
+                              auto type = protocol::convert::to::buffer( content.value());
+
+                              if( ! type.empty())
+                              {
+                                 payload.type = std::move( type);
+                              }
+                              else
+                              {
+                                 log::line( common::log::category::warning, "failed to deduce buffer type for content-type: ", content.value(), " - action: use same as call buffer");
+                              }
+                           }
+                        }
+
+
+                        auto transcode_base64 = []( common::buffer::Payload& payload)
+                        {
+                           Trace trace{ "http::outbound::request::local::send::transcode::payload transcode_base64"};
+
+                           // make sure we've got null termination on payload...
+                           payload.memory.push_back( '\0');
+
+                           auto last = common::transcode::base64::decode( payload.memory, std::begin( payload.memory), std::end( payload.memory));
+                           payload.memory.erase( last, std::end( payload.memory));
+                        };
+
+                        auto transcode_none = []( common::buffer::Payload& payload)
+                        {
+                        };
+
+                        static const auto mapping = std::map< std::string, std::function< void( buffer::Payload&)>>
+                        {
+                           {
+                              "CFIELD/",
+                              transcode_base64
+                           },
+                           {
+                              common::buffer::type::binary(),
+                              transcode_base64
+                           },
+                           {
+                              common::buffer::type::x_octet(),
+                              transcode_base64
+                           },
+                           {
+                              common::buffer::type::json(),
+                              transcode_none
+                           },
+                           {
+                              common::buffer::type::xml(),
+                              transcode_none
+                           }
+                        };
+
+                        auto found = common::algorithm::find( mapping, payload.type);
+
+                        if( found)
+                        {
+                           log::line( verbose::log, "found transcoder for: ", found->first);
+                           found->second( payload);
+                        }
+                        else
+                        {
+                           log::line( common::log::category::warning, "failed to find a transcoder for buffertype: ", payload.type);
+                           log::line( verbose::log, "payload: ", payload);
+                        }
+
+                        log::line( verbose::log, "request after transcoding: ", request);
+
+                        return std::move( request);
+                     }
+                  } // transcode
+               } // receive
+
+            } // detail
 
 
             state::pending::Request prepare( const state::Node& node, common::message::service::call::callee::Request&& message)

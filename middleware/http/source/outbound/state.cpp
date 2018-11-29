@@ -54,7 +54,7 @@ namespace casual
                std::ostream& operator << ( std::ostream& out, const Request::State& value)
                {
                   return out << "{ destination: " << value.destination
-                     << ", payload size: " << value.payload.memory.size() 
+                     << ", payload: " << value.payload
                      << '}';
                }
 
