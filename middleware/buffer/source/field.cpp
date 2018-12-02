@@ -96,6 +96,12 @@ namespace casual
 
                      std::advance( cursor, data_offset + size);
                   }
+
+                  if( cursor > end)
+                  {
+                     // Something is fishy
+                     throw common::exception::xatmi::invalid::Argument{"Buffer is comprised"};
+                  }
                }
 
                void shrink()
@@ -863,7 +869,6 @@ namespace casual
                   }
 
                   return CASUAL_FIELD_SUCCESS;
-
                }
 
                int memory( char** const handle, const void* const source, const common::platform::binary::size::type count)
@@ -881,7 +886,6 @@ namespace casual
                      const auto size = count;
 
                      buffer = common::buffer::Payload{ buffer.payload.type, { data, data + size}};
-
                   }
                   catch( ...)
                   {
@@ -889,13 +893,11 @@ namespace casual
                   }
 
                   return CASUAL_FIELD_SUCCESS;
-
                }
 
-            }
+            } // copy
 
          } // <unnamed>
-
 
       } // field
 
