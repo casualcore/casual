@@ -790,7 +790,6 @@ namespace casual
          tpfree( buffer);
       }
 
-
       TEST( casual_field_buffer, add_three_remove_two_field_and_then_iterate__expecting_third_as_first)
       {
          auto buffer = tpalloc( CASUAL_FIELD, "", 512);
@@ -1155,7 +1154,7 @@ namespace casual
 
          ASSERT_FALSE( casual_field_explore_buffer( source, nullptr, &memory_size));
 
-         std::vector<char> memory( source, source + memory_size);
+         const std::vector<char> memory( source, source + memory_size);
 
          tpfree( source);
 
@@ -1171,9 +1170,34 @@ namespace casual
 
          EXPECT_STREQ( string, "Casual");
 
+         tpfree( target);
+      }
+
+
+      TEST( casual_field_buffer, serialize_invalid_buffer__expecting_failure)
+      {
+         auto source = tpalloc( CASUAL_FIELD, "", 512);
+         ASSERT_TRUE( source != nullptr);
+
+         EXPECT_FALSE( casual_field_add_string( &source, FLD_STRING1, "Casual"));
+
+         long memory_size{};
+
+         ASSERT_FALSE( casual_field_explore_buffer( source, nullptr, &memory_size));
+
+         std::vector<char> memory( source, source + memory_size + 2);
+         // Somehow make the buffer invalid without asking for UB
+         memory.resize(memory.size() + 2);
+
+         tpfree( source);
+
+         auto target = tpalloc( CASUAL_FIELD, "", memory_size);
+
+         const auto result = casual_field_copy_memory( &target, memory.data(), memory.size());
 
          tpfree( target);
 
+         ASSERT_EQ( result, CASUAL_FIELD_INVALID_HANDLE);
       }
 
       TEST( casual_field_buffer, DISABLED_performance__expecting_good_enough_speed)
