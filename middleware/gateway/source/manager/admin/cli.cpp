@@ -65,18 +65,27 @@ namespace casual
 
       namespace format
       {
-         namespace connection
+         std::string dash_if_empty( std::string s)
          {
-
-
-         } // connection
+            if( s.empty())
+               return "-";
+            return s;
+         }
 
          auto connections()
          {
             using vo = manager::admin::vo::Connection;
 
-            auto format_domain_name = []( const vo& c) { return c.remote.name; };
-            auto format_domain_id = []( const vo& c) { return transcode::hex::encode( c.remote.id.get());};
+            auto format_domain_name = []( const vo& c) -> std::string
+            { 
+               return dash_if_empty( c.remote.name);
+            };
+            auto format_domain_id = []( const vo& c) -> std::string
+            {
+               if( c.remote.id) 
+                  return transcode::hex::encode( c.remote.id.get());
+               return "-";
+            };
 
             auto format_pid = []( const vo& c){ return c.process.pid;};
             auto format_ipc = []( const vo& c){ return c.process.ipc;};
@@ -105,12 +114,12 @@ namespace casual
 
             auto format_local_address = []( const vo& c)
             {
-               return c.address.local;
+               return dash_if_empty( c.address.local);
             };
 
             auto format_peer_address = []( const vo& c)
             {
-               return c.address.peer;
+               return dash_if_empty( c.address.peer);
             };
 
             return terminal::format::formatter<  manager::admin::vo::Connection>::construct( 
@@ -125,6 +134,35 @@ namespace casual
             );
          }
 
+         auto listeners() 
+         {
+            using vo = manager::admin::vo::Listener;
+
+            auto format_host = []( const vo& l){ return l.address.host;};
+            auto format_port = []( const vo& l){ return l.address.port;};
+
+            auto format_limit_size = []( const vo& l) -> std::string
+            { 
+               if( l.limit.size)
+                  return std::to_string( l.limit.size);
+               return "-";
+            };
+
+            auto format_limit_messages = []( const vo& l) -> std::string
+            { 
+               if( l.limit.messages)
+                  return std::to_string( l.limit.messages);
+               return "-";
+            };
+
+            return terminal::format::formatter< vo>::construct( 
+               terminal::format::column( "host", format_host, terminal::color::yellow),
+               terminal::format::column( "port", format_port, terminal::color::yellow),
+               terminal::format::column( "limit size", format_limit_size, terminal::color::magenta, terminal::format::Align::right),
+               terminal::format::column( "limit messages", format_limit_messages, terminal::color::magenta, terminal::format::Align::right)
+            );
+         }
+
       } // format
 
       namespace action
@@ -132,11 +170,12 @@ namespace casual
          
          void list_connections()
          {
-            auto state = call::state();
+            format::connections().print( std::cout, call::state().connections);
+         }
 
-            auto formatter = format::connections();
-
-            formatter.print( std::cout, state.connections);
+         void list_listeners()
+         {
+            format::listeners().print( std::cout, call::state().listeners);
          }
 
          void state( const common::optional< std::string>& format)
@@ -163,6 +202,7 @@ namespace casual
 
                   return common::argument::Group{ [](){}, { "gateway"}, "gateway related administration",
                      common::argument::Option( &gateway::action::list_connections, { "-c", "--list-connections"}, "list all connections"),
+                     common::argument::Option( &gateway::action::list_listeners, { "-l", "--list-listeners"}, "list all listeners"),
                      common::argument::Option( &gateway::action::state, complete_state, {"--state"}, "gateway state"),
                   };
                }

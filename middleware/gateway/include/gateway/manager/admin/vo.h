@@ -82,14 +82,53 @@ namespace casual
 
                   };
 
+                  struct Listener
+                  {
+                     struct Limit 
+                     {
+                        common::platform::binary::size::type size = 0;
+                        common::platform::binary::size::type messages = 0;
+                        
+                        CASUAL_CONST_CORRECT_SERIALIZE(
+                        {
+                           archive & CASUAL_MAKE_NVP( size);
+                           archive & CASUAL_MAKE_NVP( messages);
+                        })
+                     };
+
+                     struct Address
+                     {
+                        std::string host;
+                        std::string port;
+
+                        CASUAL_CONST_CORRECT_SERIALIZE(
+                        {
+                           archive & CASUAL_MAKE_NVP( host);
+                           archive & CASUAL_MAKE_NVP( port);
+                        })
+                     };
+
+                     Limit limit;
+                     Address address;
+
+                     CASUAL_CONST_CORRECT_SERIALIZE(
+                     {
+                        archive & CASUAL_MAKE_NVP( limit);
+                        archive & CASUAL_MAKE_NVP( address);
+                     })
+
+                  };
+
 
                   struct State
                   {
                      std::vector< Connection> connections;
+                     std::vector< Listener> listeners;
 
                      CASUAL_CONST_CORRECT_SERIALIZE(
                      {
                         archive & CASUAL_MAKE_NVP( connections);
+                        archive & CASUAL_MAKE_NVP( listeners);
                      })
 
                   };

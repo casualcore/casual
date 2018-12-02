@@ -54,7 +54,7 @@ namespace casual
                Address( Port port);
                Address( Host host, Port port);
 
-               inline operator std::string() { return host + ':' + port;} 
+               inline operator std::string() const { return host + ':' + port;} 
 
 
                friend std::ostream& operator << ( std::ostream& out, const Address& value);

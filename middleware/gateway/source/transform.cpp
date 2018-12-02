@@ -135,8 +135,20 @@ namespace casual
             algorithm::transform( state.connections.inbound, result.connections, local::vo::Connection{});
 
 
-            return result;
+            auto transform_listener = []( const manager::listen::Entry& entry)
+            {
+               manager::admin::vo::Listener result;
+               result.address.host = entry.address().host;
+               result.address.port = entry.address().port;
+               result.limit.size = entry.limit().size;
+               result.limit.messages = entry.limit().messages;
+               
+               return result;
+            };
 
+            algorithm::transform( state.listeners(), result.listeners, transform_listener);
+
+            return result;
          }
 
 
