@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include "configuration/build/resource.h"
 
 #include "serviceframework/namevaluepair.h"
 #include "serviceframework/platform.h"
@@ -57,9 +58,6 @@ namespace casual
 
             struct Service : service::Default
             {
-               Service();
-               Service( std::function< void(Service&)> foreign);
-
                std::string name;
                serviceframework::optional< std::string> function;
 
@@ -69,7 +67,6 @@ namespace casual
                   archive & CASUAL_MAKE_NVP( function);
                   service::Default::serialize( archive);
                )
-
             };
 
             namespace server
@@ -95,11 +92,13 @@ namespace casual
                //!
                server::Default server_default;
 
+               std::vector< Resource> resources;
                std::vector< Service> services;
 
                CASUAL_CONST_CORRECT_SERIALIZE
                (
                   archive & serviceframework::name::value::pair::make( "default", server_default);
+                  archive & CASUAL_MAKE_NVP( resources);
                   archive & CASUAL_MAKE_NVP( services);
                )
             };

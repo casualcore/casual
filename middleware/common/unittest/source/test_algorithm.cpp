@@ -665,6 +665,41 @@ namespace casual
          EXPECT_TRUE(( algorithm::remove( range::make( container), range::make( std::begin( container) + 1, 2)) == std::vector< int>{ 1, 4}));
       }
 
+      TEST( casual_common_algorithm_append_unique, empty__exepct_empty)
+      {
+         common::unittest::Trace trace;
+
+         const std::vector< int> source;
+         std::vector< int> target;
+
+         algorithm::append_unique( source, target);
+
+         EXPECT_TRUE( target.empty());
+      }
+
+      TEST( casual_common_algorithm_append_unique, unique_values__exepct_all)
+      {
+         common::unittest::Trace trace;
+
+         const std::vector< int> source{ 1, 2, 3, 4};
+         std::vector< int> target;
+
+         algorithm::append_unique( source, target);
+
+         EXPECT_TRUE( target == source);
+      }
+
+      TEST( casual_common_algorithm_append_unique, not_unique_values__exepct_some)
+      {
+         common::unittest::Trace trace;
+
+         const std::vector< int> source{ 1, 2, 4, 3, 1, 1, 3, 3, 4, 4, 4, 4, 4, 2, 2, 2, 2, 2, 2};
+         std::vector< int> target;
+
+         algorithm::append_unique( source, target);
+
+         EXPECT_TRUE(( target == std::vector< int>{ 1, 2, 4, 3}));
+      }
    } // common
 
 } // casual

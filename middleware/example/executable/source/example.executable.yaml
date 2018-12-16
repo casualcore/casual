@@ -1,0 +1,8 @@
+
+
+executable:
+  entrypoint: example_main
+
+  resources: 
+    - key: rm-mockup
+      name: mockup

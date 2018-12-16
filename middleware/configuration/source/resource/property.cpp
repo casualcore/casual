@@ -6,6 +6,7 @@
 
 
 #include "configuration/resource/property.h"
+#include "configuration/common.h"
 
 #include "serviceframework/archive/create.h"
 
@@ -20,29 +21,23 @@ namespace casual
    {
       namespace resource
       {
-         Property::Property() = default;
-         Property::Property( std::function< void(Property&)> foreign) { foreign( *this);}
-
          namespace property
          {
-
             std::vector< Property> get( const std::string& name)
             {
                std::vector< Property> resources;
 
-               //
                // Create the reader and deserialize configuration
-               //
                common::file::Input file{ name};
                auto reader = serviceframework::archive::create::reader::consumed::from( file.extension(), file);
 
                reader >> CASUAL_MAKE_NVP( resources);
                reader.validate();
 
-               //
                // Make sure we've got valid configuration
-               //
                validate( resources);
+
+               common::log::line( verbose::log, "resources: ", resources);
 
                return resources;
             }
@@ -69,9 +64,7 @@ namespace casual
 
             std::vector< Property> get()
             {
-               //
                // Try to find configuration file
-               //
                const auto file = local::file();
 
                if( ! file.empty())

@@ -106,35 +106,60 @@ namespace casual
             } // <unnamed>
          } // local
 
-         void Context::configure( const std::vector< resource::Link>& resources, std::vector< std::string> names)
+         void Context::configure( std::vector< resource::Link> resources, std::vector< std::string> names)
          {
             Trace trace{ "transaction::Context::configure"};
 
+
             if( ! resources.empty())
             {
+               // there are different semantics if the resource has a specific name
+               // if so, we strictly correlate to that name, if not we go with the more general key
 
-               auto reply = local::resource::configuration( std::move( names));
+               auto splitted = common::algorithm::stable_partition( resources, []( auto& r){ return ! r.name.empty();});
 
-               auto configuration = range::make( reply.resources);
+               auto named = std::get< 0>( splitted);
+               auto unnamed = std::get< 1>( splitted);
 
+               common::algorithm::for_each( named, [&names]( auto& r){ common::algorithm::push_back_unique( r.name, names);});
+               
+               auto configuration = local::resource::configuration( std::move( names)).resources;
 
-               for( auto& resource : resources)
+               // take care of named, if any
                {
+                  auto transform_named = [&configuration]( auto& resource)
+                  {
+                     auto found = algorithm::find_if( configuration, [&resource]( auto& c){ return c.name == resource.name;});
 
+                     if( ! found)
+                     {
+                        auto message = "missing configuration for linked named RM: " + resource.name + " - check domain configuration";
+                        common::event::error::send( message);
 
-                  using RM = decltype( range::front( configuration));
+                        throw exception::system::invalid::Argument( message);
+                     }
 
-                  //
+                     return Resource{
+                        resource,
+                        found->id,
+                        found->openinfo,
+                        found->closeinfo,
+                     };
+                  };
+
+                  algorithm::transform( named, m_resources.all, transform_named);
+               }
+
+               // take care of unnamed, if any
+               for( auto& resource : unnamed)
+               {
                   // It could be several RM-configuration for one linked RM.
-                  //
 
-                  auto splitted = algorithm::stable_partition( configuration, [&]( RM rm){ return resource.key == rm.key;});
-
-                  auto partition = std::get< 0>( splitted);
+                  auto partition = algorithm::filter( configuration, [&]( auto& rm){ return resource.key == rm.key;});
 
                   if( ! partition)
                   {
-                     auto message = "missing configuration for linked RM: " + resource.key + " - check group memberships";
+                     auto message = "missing configuration for linked RM: " + resource.key + " - check domain configuration";
                      common::event::error::send( message);
 
                      throw exception::system::invalid::Argument( message);
@@ -143,35 +168,23 @@ namespace casual
                   for( auto& rm : partition)
                   {
                      m_resources.all.emplace_back(
-                           resource,
-                           rm.id,
-                           std::move( rm.openinfo),
-                           std::move( rm.closeinfo));
+                        resource,
+                        rm.id,
+                        std::move( rm.openinfo),
+                        std::move( rm.closeinfo));
                   }
-
-
-
-                  //
-                  // Continue with the rest
-                  //
-                  configuration = std::get< 1>( splitted);
-               }
+               };
             }
 
-            //
             // create the views
-            //
             std::tie( m_resources.dynamic, m_resources.fixed) =
-                  algorithm::partition( m_resources.all, std::mem_fn( &Resource::dynamic));
+                  algorithm::partition( m_resources.all, []( auto& r){ return r.dynamic();});
 
             log::line( log::category::transaction, "static resources: ", m_resources.fixed);
             log::line( log::category::transaction, "dynamic resources: ", m_resources.dynamic);
 
-
-            //
             // Open the resources...
             // TODO: Not sure if we can do this, or if users has to call tx_open by them self...
-            //
             open();
 
          }

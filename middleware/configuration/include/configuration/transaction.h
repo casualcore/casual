@@ -37,9 +37,6 @@ namespace casual
 
          struct Resource : resource::Default
          {
-            Resource();
-            Resource( std::function< void(Resource&)> foreign);
-
             std::string name;
             std::string note;
 
@@ -82,10 +79,7 @@ namespace casual
             std::string log;
             std::vector< Resource> resources;
 
-
-            //!
             //! Complement with defaults and validates
-            //!
             void finalize();
 
             CASUAL_CONST_CORRECT_SERIALIZE

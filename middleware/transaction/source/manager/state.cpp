@@ -205,14 +205,11 @@ namespace casual
                }
             }
 
-            //
             // configure resources
-            //
             {
                Trace trace{ "transaction manager resource configuration"};
 
-
-               auto transform_resource = []( const common::message::domain::configuration::transaction::Resource& r){
+               auto transform_resource = []( const auto& r){
 
                   state::resource::Proxy proxy{ state::resource::Proxy::generate_id{}};
 

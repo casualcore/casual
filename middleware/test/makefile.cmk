@@ -69,22 +69,6 @@ LinkUnittest( 'unittest/bin/test-casual-basic',
 		'casual-unittest',
 	])
 	
-	
-#
-# Compile and link detoct-generated vo and server
-#
-
-
-LinkExecutable('bin/casual-serviceframework-test-server',
-    [ 
-	   Compile( 'source/sf_testserverserver.cpp'),
-	],
-    [
-	  archive_vo,
-     'casual-serviceframework',
-     'casual-common', 
-     'casual-xatmi'
-    ])
 
 #
 # Install

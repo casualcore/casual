@@ -319,18 +319,12 @@ namespace casual
          {
             std::string base( const std::string& path)
             {
-
-               //
                // Remove trailing '/'
-               //
                auto end = std::find_if( path.crbegin(), path.crend(), []( const char value) { return value != '/';});
-
 
                end = std::find( end, path.crend(), '/');
 
-               //
                // To be conformant to dirname, we have to return at least '/'
-               //
                if( end == path.crend())
                {
                   return "/";

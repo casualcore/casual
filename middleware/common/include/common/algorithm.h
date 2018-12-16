@@ -246,34 +246,7 @@ namespace casual
             return std::copy_if( std::begin( range), std::end( range), output, predicate);
          }
 
-
-         //!
-         //! appends `range` to `output`.
-         //! 
-         //! @return output
-         //! @{
-         template< typename R, typename Out, typename std::enable_if_t< 
-            detail::is_resize_copy< Out>
-            && common::traits::is::iterable< R>::value, int> = 0>
-         decltype( auto) append( R&& range, Out&& output)
-         {
-            auto size = std::distance( std::begin( range), std::end( range));
-            output.resize( output.size() + size);
-            std::copy( std::begin( range), std::end( range), std::end( output) - size);
-            return std::forward< Out>( output);
-         }
-
-         template< typename R, typename Out, typename std::enable_if_t< 
-            ! detail::is_resize_copy< Out> && traits::has::push_back< Out>::value
-            && common::traits::is::iterable< R>::value, int> = 0>
-         decltype( auto) append( R&& range, Out&& output)
-         {
-            std::copy( std::begin( range), std::end( range), std::back_inserter( output));
-            return std::forward< Out>( output);
-         }
-         //! @}
-
-
+      
 
          template< typename R, typename Iter>
          void copy_max( R&& range, platform::size::type size, Iter output)
@@ -596,33 +569,40 @@ namespace casual
          }
 
 
-         //!
          //! associate container specialization
-         //!
          template< typename R, typename T,
             std::enable_if_t< common::traits::container::is_associative< std::decay_t< R>>::value>* dummy = nullptr>
-         auto find( R&& range, T&& value)
+         auto find( R&& range, const T& value)
          {
             return range::make( range.find( value), std::end( range));
          }
 
-         //!
          //! non associate container specialization
-         //!
          template< typename R, typename T,
             std::enable_if_t< ! common::traits::container::is_associative< std::decay_t< R>>::value>* dummy = nullptr>
-         auto find( R&& range, T&& value)
+         auto find( R&& range, const T& value)
          {
-            return range::make( std::find( std::begin( range), std::end( range), std::forward< T>( value)), std::end( range));
+            return range::make( std::find( std::begin( range), std::end( range), value), std::end( range));
          }
-
-
 
          template< typename R, typename P>
          auto find_if( R&& range, P predicate)
          {
             return range::make( std::find_if( std::begin( range), std::end( range), predicate), std::end( range));
          }
+
+         template< typename R, typename T>
+         auto find_last( R&& range, const T& value) 
+         {
+            auto found = find( range, value);
+
+            while( found)
+            {
+
+            }
+            return found;
+         }
+
 
 
          template< typename R, typename P>
@@ -635,6 +615,50 @@ namespace casual
          auto adjacent_find( R&& range)
          {
             return range::make( std::adjacent_find( std::begin( range), std::end( range)), std::end( range));
+         }
+
+
+         //!
+         //! appends `range` to `output`.
+         //! 
+         //! @return output
+         //! @{
+         template< typename R, typename Out, typename std::enable_if_t< 
+            detail::is_resize_copy< Out>
+            && common::traits::is::iterable< R>::value, int> = 0>
+         decltype( auto) append( R&& range, Out&& output)
+         {
+            auto size = std::distance( std::begin( range), std::end( range));
+            output.resize( output.size() + size);
+            std::copy( std::begin( range), std::end( range), std::end( output) - size);
+            return std::forward< Out>( output);
+         }
+
+         template< typename R, typename Out, typename std::enable_if_t< 
+            ! detail::is_resize_copy< Out> && traits::has::push_back< Out>::value
+            && common::traits::is::iterable< R>::value, int> = 0>
+         decltype( auto) append( R&& range, Out&& output)
+         {
+            std::copy( std::begin( range), std::end( range), std::back_inserter( output));
+            return std::forward< Out>( output);
+         }
+         //! @}
+
+         template< typename T, typename Out> 
+         void push_back_unique( const T& value, Out& output)
+         {
+            if( ! algorithm::find( output, value))
+               output.push_back( value);
+         }
+
+
+         template< typename R, typename Out> 
+         void append_unique( R&& range, Out& output)
+         {
+            auto current = range::make( range);
+
+            while( current)
+               push_back_unique( *current++, output);
          }
 
 
@@ -671,12 +695,12 @@ namespace casual
          //!
          //! @return a tuple with the two ranges
          //!
-         template< typename R1, typename T>
-         auto divide( R1&& range, T&& value)
+         template< typename R, typename T>
+         auto divide( R&& range, const T& value)
          {
             auto divider = std::find(
                   std::begin( range), std::end( range),
-                  std::forward< T>( value));
+                  value);
 
             return std::make_tuple( range::make( std::begin( range), divider), range::make( divider, std::end( range)));
          }
@@ -690,9 +714,9 @@ namespace casual
          //! @return a tuple with the two ranges
          //!
          template< typename R, typename T>
-         auto split( R&& range, T&& value)
+         auto split( R&& range, const T& value)
          {
-            auto result = divide( std::forward< R>( range), std::forward< T>( value));
+            auto result = divide( std::forward< R>( range), value);
             if( ! std::get< 1>( result).empty())
             {
                ++std::get< 1>( result);

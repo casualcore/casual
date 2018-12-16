@@ -24,7 +24,8 @@ install_bin = []
 target = LinkServer( 'server/bin/casual-example-server',
     [ 
        Compile( 'server/source/example.cpp'),
-       Compile( 'server/source/example/work.cpp')],
+       Compile( 'server/source/example/work.cpp')
+    ],
     [ 
         'casual-xatmi',
         'casual-common',
@@ -34,6 +35,9 @@ target = LinkServer( 'server/bin/casual-example-server',
 
 install_bin.append( target)
 
+LinkArchive( 'executable/bin/dummy', 
+ [ Compile( 'executable/source/example.cpp') ]
+)
 
 
 

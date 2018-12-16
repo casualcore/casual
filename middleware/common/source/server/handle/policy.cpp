@@ -111,23 +111,15 @@ namespace casual
                   {
                      Trace trace{ "server::handle::policy::Default::configure"};
 
-                     //
                      // Connection to the domain has been done before...
-                     //
 
-                     //
                      // Ask domain-manager for our configuration
-                     //
                      auto configuration = policy::local::configuration();
 
-                     //
                      // Let the broker know about our services...
-                     //
                      policy::local::configure::services( arguments.services, configuration);
 
-                     //
                      // configure resources, if any.
-                     //
                      transaction::Context::instance().configure( arguments.resources, std::move( configuration.resources));
 
                   }
@@ -188,9 +180,7 @@ namespace casual
 
                            log::line( log::debug, "message: ", message, ", service: ", service);
 
-                           //
                            // We keep track of callers transaction (can be null-trid).
-                           //
                            transaction::context().caller = message.trid;
 
                            switch( service.transaction)
@@ -220,19 +210,15 @@ namespace casual
                               case service::transaction::Type::none:
                               default:
                               {
-                                 //
                                  // We don't start or join any transactions
                                  // (technically we join a null-trid)
-                                 //
                                  transaction::Context::instance().join( transaction::ID{ process::handle()});
                                  break;
                               }
 
                            }
 
-                           //
                            // Set 'global deadline'
-                           //
                            transaction::Context::instance().current().timout.set( now, message.service.timeout);
 
                         }
@@ -250,9 +236,7 @@ namespace casual
 
                      log::line( log::debug, "trid: ", trid, " - service: ", service);
 
-                     //
                      // We keep track of callers transaction (can be null-trid).
-                     //
                      transaction::context().caller = trid;
 
                      switch( service.transaction)
@@ -282,19 +266,15 @@ namespace casual
                         case service::transaction::Type::none:
                         default:
                         {
-                           //
                            // We don't start or join any transactions
                            // (technically we join a null-trid)
-                           //
                            transaction::Context::instance().join( transaction::ID{ process::handle()});
                            break;
                         }
 
                      }
 
-                     //
                      // Set 'global deadline'
-                     //
                      transaction::Context::instance().current().timout.set( now, timeout);
                   }
 
@@ -331,9 +311,7 @@ namespace casual
 
                            if( target.busy())
                            {
-                              //
                               // We wait for service to become idle
-                              //
                               target = lookup();
                            }
 
@@ -367,10 +345,7 @@ namespace casual
 
                   void Admin::configure( server::Arguments& arguments)
                   {
-                     //
                      // Connection to the domain has been done before...
-                     //
-
 
                      if( ! arguments.resources.empty())
                      {

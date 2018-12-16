@@ -6,6 +6,7 @@
 
 
 #include "configuration/build/server.h"
+#include "configuration/common.h"
 
 #include "serviceframework/archive/create.h"
 
@@ -38,12 +39,6 @@ namespace casual
                } // <unnamed>
             } // local
 
-
-
-            Service::Service() = default;
-            Service::Service( std::function< void(Service&)> foreign) { foreign( *this);}
-
-
             namespace server
             {
                Default::Default()
@@ -56,9 +51,7 @@ namespace casual
             {
                Server server;
 
-               //
                // Create the reader and deserialize configuration
-               //
                common::file::Input file{ name};
                auto reader = serviceframework::archive::create::reader::consumed::from( file.extension(), file);
 
@@ -66,11 +59,10 @@ namespace casual
 
                reader.validate();
 
-               //
                // Complement with default values
-               //
                local::complement::default_values( server);
 
+               common::log::line( verbose::log, "server: ", server);
 
                return server;
 

@@ -53,30 +53,30 @@ namespace casual
                domain.transaction.log = "/some/fast/disk/domain.A42/transaction.log";
 
                domain.transaction.resources = {
-                     {
-                           []( transaction::Resource& r){
-                              r.name = "customer-db";
-                              r.openinfo.emplace( "db=customer,uid=db2,pwd=db2");
-                              r.instances.emplace( 5);
-                              r.note = "this resource is named 'customer-db' - using the default rm-key (db_rm) - overrides the default rm-instances to 5";
-                           }
-                     },
-                     {
-                           []( transaction::Resource& r){
-                              r.name = "sales-db";
-                              r.openinfo.emplace( "db=sales,uid=db2,pwd=db2");
-                              r.note = "this resource is named 'sales-db' - using the default rm-key (db_rm) - using default rm-instances";
-                           }
-                     },
-                     {
-                           []( transaction::Resource& r){
-                              r.name = "event-queue";
-                              r.key.emplace( "mq_rm");
-                              r.openinfo.emplace( "some-mq-specific-stuff");
-                              r.closeinfo.emplace( "some-mq-specific-stuff");
-                              r.note = "this resource is named 'event-queue' - overrides rm-key - using default rm-instances";
-                           }
-                     }
+                     [](){
+                        transaction::Resource r;
+                        r.name = "customer-db";
+                        r.openinfo.emplace( "db=customer,uid=db2,pwd=db2");
+                        r.instances.emplace( 5);
+                        r.note = "this resource is named 'customer-db' - using the default rm-key (db_rm) - overrides the default rm-instances to 5";
+                        return r;
+                     }(),
+                     [](){
+                        transaction::Resource r;
+                        r.name = "sales-db";
+                        r.openinfo.emplace( "db=sales,uid=db2,pwd=db2");
+                        r.note = "this resource is named 'sales-db' - using the default rm-key (db_rm) - using default rm-instances";
+                        return r;
+                     }(),
+                     [](){
+                        transaction::Resource r;
+                        r.name = "event-queue";
+                        r.key.emplace( "mq_rm");
+                        r.openinfo.emplace( "some-mq-specific-stuff");
+                        r.closeinfo.emplace( "some-mq-specific-stuff");
+                        r.note = "this resource is named 'event-queue' - overrides rm-key - using default rm-instances";
+                        return r;
+                     }()
                };
             }
 
