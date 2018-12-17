@@ -17,9 +17,9 @@
 
 namespace std
 {
-   std::ostream& operator<<( std::ostream& stream, std::vector< std::pair< std::string, std::string >> input)
+   std::ostream& operator<<( std::ostream& stream, const std::vector< std::pair< std::string, std::string >>& input)
    {
-      for (const auto data : input)
+      for (const auto& data : input)
       {
          stream << "key: [" << data.first << "], value: [" << data.second << "]" << '\n';
       }
@@ -38,29 +38,66 @@ namespace casual
          {
             namespace header
             {
-               common::service::header::Fields copy( CasualHeader* headers, long length)
+               common::service::header::Fields copy( const header_type& headers)
                {
                   const http::Trace trace("casual::http::inbound::header::copy");
 
                   common::service::header::Fields result;
 
-                  for( auto& header : common::range::make( headers, length))
+                  for( auto& header : common::range::make( headers.data, headers.size))
                   {
                      result.emplace_back( header.key, header.value);
                   }
 
                   return result;
                }
+               header_type copy( const common::service::header::Fields& headers)
+               {
+                  const http::Trace trace("casual::http::inbound::header::copy");
+
+                  header_type result;
+
+                  result.size = headers.size();
+                  result.data = reinterpret_cast< header_data_type*>( malloc( result.size * sizeof (header_data_type)));
+
+                  auto index = 0;
+                  for( const auto& header : headers)
+                  {
+                     // key
+                     std::copy( header.key.begin(), header.key.end(), result.data[ index].key);
+                     result.data[ index].key[ std::min( header.key.size(), sizeof( result.data[index].key) - 1)] = '\0';
+
+                     // value
+                     std::copy( header.value.begin(), header.value.end(), result.data[ index].value);
+                     result.data[ index].value[ std::min( header.value.size(), sizeof( result.data[index].value) - 1)] = '\0';
+
+                     index++;
+                  }
+
+                  return result;
+               }
+               namespace codes
+               {
+                  void add( long code, long usercode)
+                  {
+                     const http::Trace trace("casual::http::inbound::header::codes::add");
+
+                     common::service::header::fields().emplace_back( 
+                        common::service::header::Field( http::header::name::result::code, std::to_string( code)));
+                     common::service::header::fields().emplace_back( 
+                        common::service::header::Field( http::header::name::result::user::code, std::to_string( usercode)));
+                  }
+               }
             }
 
             namespace parameter
             {
                using container = std::vector< std::pair< std::string, std::string> >;
-               container copy( const Buffer& buffer)
+               container copy( const buffer_type& buffer)
                {
                   container result;
-                  auto paramters = common::string::split( buffer.data, '&');
-                  for (const auto parameter : paramters)
+                  const auto parameters = common::string::split( buffer.data, '&');
+                  for (const auto& parameter : parameters)
                   {
                      const auto parts = common::string::split( parameter, '=');
                      if (parts.size() == 2)
@@ -216,16 +253,16 @@ namespace casual
                }
 
                template< typename Type>
-               Buffer copy( const Type& input)
+               buffer_type copy( const Type& input)
                {
-                  Buffer output;
+                  buffer_type output;
                   output.data = reinterpret_cast<char*>( malloc( input.size()));
                   output.size = input.size();
                   common::algorithm::copy( input, output.data);
                   return output;
                }
 
-               common::platform::binary::type assemble( CasualBuffer* transport, const parameter::container& parameters, const std::string& protocol)
+               common::platform::binary::type assemble( casual_buffer_type* transport, const parameter::container& parameters, const std::string& protocol)
                {
                   common::platform::binary::type buffer;
                   if ( protocol == http::protocol::json() && transport->payload.size < 1)
@@ -246,34 +283,47 @@ namespace casual
 
             namespace exception
             {
-               int handle( CasualBuffer* transport)
+               int handle( casual_buffer_type* transport)
                {
+                  auto usercode{0};
                   try
                   {
                      throw;
                   }
+                  catch ( const common::service::call::Fail& exception)
+                  {
+                     transport->code = cast::underlying( code::xatmi::service_fail);
+                     transport->payload = buffer::copy( exception.code().message());
+                     usercode = exception.result.user;
+                  }
                   catch ( const common::exception::xatmi::exception& exception)
-                   {
-                      transport->errorcode = exception.code().value();
-                      transport->payload = buffer::copy( exception.code().message());
-                   }
-                   catch ( const common::exception::system::invalid::Argument& exception)
-                   {
-                      transport->errorcode = exception.code().value();
-                      transport->payload = buffer::copy( std::string( exception.what()));
-                   }
-                   catch (...)
-                   {
-                      transport->errorcode = common::code::make_error_code( common::code::xatmi::os).value();
-                      transport->payload = buffer::copy( std::string( "unknown error"));
-                   }
+                  {
+                     transport->code = exception.code().value();
+                     transport->payload = buffer::copy( exception.code().message());
+                  }
+                  catch ( const common::exception::system::invalid::Argument& exception)
+                  {
+                     transport->code = exception.code().value();
+                     transport->payload = buffer::copy( std::string( exception.what()));
+                  }
+                  catch (...)
+                  {
+                     transport->code = common::code::make_error_code( common::code::xatmi::os).value();
+                     transport->payload = buffer::copy( std::string( "unknown error"));
+                  }
 
-                   return ERROR;
+                  //
+                  // Handle reply headers
+                  //
+                  header::codes::add( transport->code, usercode);
+                  transport->header_out = header::copy( common::service::header::fields());
+
+                  return ERROR;
                }
             }
 
 
-            long send( CasualBuffer* transport)
+            long send( casual_buffer_type* transport)
             {
                const http::Trace trace("casual::http::inbound::send");
                const auto& protocol = transport->protocol;
@@ -289,7 +339,7 @@ namespace casual
                   //
                   // Handle header
                   //
-                  const auto& header = header::copy( transport->header, transport->headersize);
+                  const auto& header = header::copy( transport->header_in);
                   common::service::header::fields( header);
 
                   //
@@ -309,23 +359,33 @@ namespace casual
                   // Call service
                   //
                   namespace call = common::service::call;
-                  transport->calldescriptor = call::context().async( service, common::buffer::payload::Send( payload), call::async::Flag::no_block);
+                  transport->descriptor = call::context().async( service, common::buffer::payload::Send( payload), call::async::Flag::no_block);
                }
                catch (...)
                {
+                  //
+                  // Header cleanup
+                  //
+                  common::service::header::fields().clear();
+
                   return exception::handle( transport);
                }
 
-               transport->errorcode = 0;
+               transport->code = cast::underlying( common::code::xatmi::ok);
+
+               //
+               // Header cleanup
+               //
+               common::service::header::fields().clear();
 
                return OK;
             }
 
-            long receive( CasualBuffer* transport)
+            long receive( casual_buffer_type* transport)
             {
                const http::Trace trace("casual::http::inbound::receive");
                const auto& protocol = transport->protocol;
-               const auto descriptor = transport->calldescriptor;
+               const auto& descriptor = transport->descriptor;
                const auto& service = transport->service;
 
                log::line( verbose::log, "protocol: ", protocol);
@@ -348,6 +408,17 @@ namespace casual
                   auto output = buffer::output::transform( std::move( reply.buffer), protocol);
                   transport->payload = buffer::copy( output.memory);
 
+                  //
+                  // Handle reply headers
+                  //
+                  header::codes::add( cast::underlying( common::code::xatmi::ok), reply.user);
+                  transport->header_out = inbound::header::copy( common::service::header::fields());
+
+                  //
+                  // Header cleanup
+                  //
+                  common::service::header::fields().clear();
+
                   return OK;
                }
                catch ( const common::exception::xatmi::no::Message&)
@@ -363,17 +434,16 @@ namespace casual
                }
             }
 
-            long cancel( CasualBuffer* transport)
+            long cancel( casual_buffer_type* transport)
             {
                const http::Trace trace("casual::http::inbound::cancel");
                const auto& protocol = transport->protocol;
-               const auto descriptor = transport->calldescriptor;
+               const auto& descriptor = transport->descriptor;
                const auto& service = transport->service;
 
                log::line( verbose::log, "protocol: ", protocol);
                log::line( verbose::log, "service: ", service);
                log::line( verbose::log, "descriptor: ", descriptor);
-
 
                transport->context = cTPGETRPLY;
 
@@ -397,17 +467,17 @@ namespace casual
    }
 }
 
-long casual_xatmi_send( CasualBuffer* data)
+long casual_xatmi_send( casual_buffer_type* data)
 {
    return casual::http::inbound::send(data);
 }
 
-long casual_xatmi_receive( CasualBuffer* data)
+long casual_xatmi_receive( casual_buffer_type* data)
 {
    return casual::http::inbound::receive(data);
 }
 
-long casual_xatmi_cancel( CasualBuffer* data)
+long casual_xatmi_cancel( casual_buffer_type* data)
 {
    return casual::http::inbound::cancel(data);
 }

@@ -86,7 +86,6 @@ casual-make --no-colors -d -a --use-valgrind make && \
    performCoverageMeasuring 
    returncode=$?
 
-cp -r /var/crash/* /git/casual/.
 cd /git/casual/
 find /git/casual -user root | xargs chmod 777
  

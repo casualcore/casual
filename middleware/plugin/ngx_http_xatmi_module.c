@@ -91,6 +91,7 @@ ngx_module_t ngx_http_xatmi_module = { NGX_MODULE_V1,
    NULL, /* exit master */
    NGX_MODULE_V1_PADDING };
 
+
 static ngx_int_t bufferhandler( ngx_http_request_t* r, ngx_str_t* body)
 {
    //
@@ -195,7 +196,7 @@ static ngx_int_t bufferhandler( ngx_http_request_t* r, ngx_str_t* body)
 static ngx_int_t call(ngx_http_request_t* r)
 {
    ngx_http_xatmi_ctx_t* client_context = ngx_http_get_module_ctx(r, ngx_http_xatmi_module);
-   ngx_log_debug1(NGX_LOG_DEBUG_ALL, r->connection->log, 0, "xatmi: call Allocating buffer with len=%d", client_context->call_buffer.len);
+   ngx_log_debug1(NGX_LOG_DEBUG_ALL, r->connection->log, 0, "xatmi: call Allocating buffer with len=%d", client_context->call.len);
    ngx_log_debug2(NGX_LOG_DEBUG_ALL, r->connection->log, 0, "xatmi: call protocol=%s, service=%s", client_context->protocol, client_context->service);
 
    return xatmi_call( client_context, r);
@@ -208,9 +209,9 @@ static ngx_int_t receive( ngx_http_request_t* r)
 {
    ngx_http_xatmi_ctx_t* client_context = ngx_http_get_module_ctx(r, ngx_http_xatmi_module);
 
-   ngx_log_debug1(NGX_LOG_DEBUG_ALL, r->connection->log, 0, "xatmi: Waiting for answer: calling_descriptor=%d", client_context->calling_descriptor);
-   ngx_log_debug1(NGX_LOG_DEBUG_ALL, r->connection->log, 0, "xatmi: Waiting for answer: numberOfCalls=%d", client_context->numberOfCalls);
-   ngx_log_debug1(NGX_LOG_DEBUG_ALL, r->connection->log, 0, "xatmi: Waiting for answer: Initial size of client_context->reply_buffer: [%d]", client_context->reply_buffer.len);
+   ngx_log_debug1(NGX_LOG_DEBUG_ALL, r->connection->log, 0, "xatmi: Waiting for answer: descriptor=%d", client_context->descriptor);
+   ngx_log_debug1(NGX_LOG_DEBUG_ALL, r->connection->log, 0, "xatmi: Waiting for answer: number_of_calls=%d", client_context->number_of_calls);
+   ngx_log_debug1(NGX_LOG_DEBUG_ALL, r->connection->log, 0, "xatmi: Waiting for answer: Initial size of client_context->reply: [%d]", client_context->reply.len);
 
    return xatmi_receive( client_context, r);
 
@@ -289,7 +290,7 @@ static ngx_int_t ngx_xatmi_backend_handler( ngx_http_request_t* r)
       }
       client_context->timeout = 1;
       client_context->state = NGX_OK;
-      ngx_str_null( &client_context->call_buffer);
+      ngx_str_null( &client_context->call);
 
       //
       // Set unique context for this request
@@ -300,7 +301,7 @@ static ngx_int_t ngx_xatmi_backend_handler( ngx_http_request_t* r)
       if ( rc != NGX_OK)
       {
          const char* message = "{\n   \"error\" : \"INPUT DATA ERROR\"\n}";
-         errorreporter(r, client_context, rc, message);
+         error_reporter(r, client_context, rc, message);
          goto produce_output;
       }
 
@@ -310,7 +311,7 @@ static ngx_int_t ngx_xatmi_backend_handler( ngx_http_request_t* r)
       if( !((r->method & NGX_HTTP_POST) || (r->method & NGX_HTTP_GET)))
       {
          const char* message = "{\n   \"error\" : \"INPUT DATA ERROR\"\n}";
-         errorreporter(r, client_context, NGX_HTTP_NOT_ALLOWED, message);
+         error_reporter(r, client_context, NGX_HTTP_NOT_ALLOWED, message);
          goto produce_output;
       }
 
@@ -322,19 +323,19 @@ static ngx_int_t ngx_xatmi_backend_handler( ngx_http_request_t* r)
    if (client_context->state != NGX_OK)
    {
       const char* message = "{\n   \"error\" : \"RESOURCE FAILIURE\"\n}";
-      errorreporter(r, client_context, NGX_HTTP_NOT_ALLOWED, message);
+      error_reporter(r, client_context, NGX_HTTP_NOT_ALLOWED, message);
       goto produce_output;
    }
 
    //
    // Check if this is a phase for handling the reply from xatmi
    //
-   if (client_context->calling_descriptor > 0)
+   if (client_context->descriptor > 0)
    {
       goto receive;
    }
 
-   if (client_context->call_buffer.data != NULL)
+   if (client_context->call.data != NULL)
    {
       goto send;
    }
@@ -351,7 +352,7 @@ static ngx_int_t ngx_xatmi_backend_handler( ngx_http_request_t* r)
       return NGX_DONE;
    }
 
-   rc = bufferhandler(r, &client_context->call_buffer);
+   rc = bufferhandler(r, &client_context->call);
    ngx_log_debug1(NGX_LOG_DEBUG_ALL, r->connection->log, 0, "xatmi: rc=%d", rc);
 
    if ( rc != NGX_OK && rc != NGX_DONE)
@@ -360,18 +361,17 @@ static ngx_int_t ngx_xatmi_backend_handler( ngx_http_request_t* r)
       return rc;
    }
 
-   ngx_log_debug1(NGX_LOG_DEBUG_ALL, r->connection->log, 0, "xatmi: client_context->call_buffer=%V", &client_context->call_buffer);
+   ngx_log_debug1(NGX_LOG_DEBUG_ALL, r->connection->log, 0, "xatmi: client_context->call=%V", &client_context->call);
 
    send:
 
    //
    // Make the call
    //
-   client_context->calling_descriptor = call( r);
-   if (client_context->calling_descriptor == NGX_ERROR)
+   if ( call( r) == NGX_ERROR)
    {
       //Errorhantering p.g.a. fel vid försök till tpacall eller bufferhantering m.a.a. detta
-      errorhandler(r, client_context);
+      error_handler(r, client_context);
       goto produce_output;
    }
    else
@@ -385,11 +385,11 @@ static ngx_int_t ngx_xatmi_backend_handler( ngx_http_request_t* r)
    rc = receive( r);
    if ( rc == NGX_AGAIN)
    {
-      if (client_context->numberOfCalls > 600)
+      if (client_context->number_of_calls > 600)
       {
          xatmi_cancel(client_context, r);
 
-         errorhandler(r, client_context);
+         error_handler(r, client_context);
          goto produce_output;
       }
 
@@ -400,7 +400,7 @@ static ngx_int_t ngx_xatmi_backend_handler( ngx_http_request_t* r)
    {
       xatmi_cancel(client_context, r);
       //Errorhantering p.g.a. fel vid försök till tpgetreply eller bufferhantering m.a.a. detta
-      errorhandler(r, client_context);
+      error_handler(r, client_context);
    }
 
    produce_output:
@@ -423,7 +423,7 @@ static ngx_int_t ngx_xatmi_backend_handler( ngx_http_request_t* r)
    //
    // Finish packaging the result
    //
-   r->headers_out.content_length_n = client_context->reply_buffer.len;
+   r->headers_out.content_length_n = client_context->reply.len;
 
    b = ngx_pcalloc(r->pool, sizeof(ngx_buf_t));
    if (b == NULL )
@@ -435,10 +435,10 @@ static ngx_int_t ngx_xatmi_backend_handler( ngx_http_request_t* r)
 
    out.buf = b;
    out.next = NULL;
-   ngx_log_debug1(NGX_LOG_DEBUG_ALL, r->connection->log, 0, "xatmi: client_context->reply_buffer=%V", &client_context->reply_buffer);
+   ngx_log_debug1(NGX_LOG_DEBUG_ALL, r->connection->log, 0, "xatmi: client_context->reply=%V", &client_context->reply);
 
-   b->pos = client_context->reply_buffer.data;
-   b->last = client_context->reply_buffer.data + r->headers_out.content_length_n;
+   b->pos = client_context->reply.data;
+   b->last = client_context->reply.data + r->headers_out.content_length_n;
 
    b->memory = 1;
    b->last_buf = 1;
@@ -528,15 +528,15 @@ static void restart_cycle( ngx_http_request_t* r)
    //
    // Adjust timeout
    //
-   if (client_context->numberOfCalls > 500)
+   if (client_context->number_of_calls > 500)
    {
       client_context->timeout = 500;
    }
-   else if (client_context->numberOfCalls > 100)
+   else if (client_context->number_of_calls > 100)
    {
       client_context->timeout = 100;
    }
-   else if (client_context->numberOfCalls > 50)
+   else if (client_context->number_of_calls > 50)
    {
       client_context->timeout = 50;
    }
@@ -549,7 +549,7 @@ static void restart_cycle( ngx_http_request_t* r)
    r->read_event_handler = ngx_http_core_run_phases;
    r->connection->read->log = r->connection->log;
    ngx_add_timer( r->connection->read, client_context->timeout );
-   client_context->numberOfCalls++;
+   client_context->number_of_calls++;
 
 }
 static void
@@ -580,3 +580,4 @@ ngx_http_xatmi_request_handler(ngx_event_t* ev)
 
    ngx_http_run_posted_requests(c);
 }
+
