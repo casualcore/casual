@@ -42,8 +42,6 @@ namespace casual
             } // <unnamed>
          } // local
 
-         Resource::Resource() = default;
-         Resource::Resource( std::function< void(Resource&)> foreign) { foreign( *this);}
 
          bool operator == ( const Resource& lhs, const Resource& rhs)
          {
@@ -66,17 +64,11 @@ namespace casual
 
          void Manager::finalize()
          {
-
-            //
             // Complement with default values
-            //
             local::complement::default_values( *this);
 
-            //
             // Make sure we've got valid configuration
-            //
             local::validate( *this);
-
          }
       } // transaction
    } // configuration

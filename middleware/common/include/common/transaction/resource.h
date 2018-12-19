@@ -9,14 +9,17 @@
 
 
 
+
 #include "tx.h"
 
+#include "common/transaction/resource/link.h"
 #include "common/strong/id.h"
 #include "common/code/xa.h"
 #include "common/flag/xa.h"
 
 #include <string>
 #include <ostream>
+
 
 namespace casual
 {
@@ -25,17 +28,6 @@ namespace casual
       namespace transaction
       {
          class ID;
-
-         namespace resource
-         {
-            struct Link
-            {
-               Link( std::string key, xa_switch_t* xa);
-
-               std::string key;
-               xa_switch_t* xa = nullptr;
-            };
-         } // resource
 
          struct Resource
          {

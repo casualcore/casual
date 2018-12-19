@@ -898,6 +898,20 @@ namespace casual
          };
 
          using Parse = basic_parse< policy::Default>;
+
+
+         namespace option
+         {
+            //! return a functor that toggles the boolean
+            //! usefull to set "flags", example: --verbose.
+            inline auto toggle( bool& value)
+            {
+               return [&value](){
+                  value = ! value;
+               };
+            }
+
+         } // option
          
       } // argument
    } // common 

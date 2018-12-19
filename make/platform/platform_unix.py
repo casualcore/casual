@@ -16,9 +16,9 @@ class CommonUNIX( Platform):
         result = []
         for lib in libs:
             if isinstance(lib, Output):
-                result.append( ' -l ' + lib.name )
+                result.append( ' -l' + lib.name )
             else:
-                result.append( ' -l ' + lib)
+                result.append( ' -l' + lib)
             
         return result
     

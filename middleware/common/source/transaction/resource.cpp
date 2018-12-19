@@ -39,11 +39,6 @@ namespace casual
             } // <unnamed>
          } // local
 
-         namespace resource
-         {
-            Link::Link( std::string key, xa_switch_t* xa) : key( std::move( key)), xa( xa) {}
-         } // resource
-
          Resource::Resource( resource::Link link, id_type id, std::string openinfo, std::string closeinfo)
             : m_key( std::move( link.key)), m_xa( link.xa), m_id(std::move( id)), m_openinfo( std::move( openinfo)), m_closeinfo( std::move( closeinfo))
          {

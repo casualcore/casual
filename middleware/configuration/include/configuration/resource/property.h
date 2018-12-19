@@ -22,12 +22,8 @@ namespace casual
    {
       namespace resource
       {
-
          struct Property
          {
-            Property();
-            Property( std::function< void(Property&)> foreign);
-
             std::string key;
             std::string server;
             std::string xa_struct_name;
@@ -73,7 +69,7 @@ namespace casual
          void validate( const std::vector< Property>& properties);
 
       } // resource
-   } // config
+   } // configuration
 } // casual
 
 

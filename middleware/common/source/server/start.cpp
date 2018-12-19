@@ -20,8 +20,6 @@ namespace casual
       {
          inline namespace v1
          {
-
-
             namespace local
             {
                namespace
@@ -55,17 +53,10 @@ namespace casual
                            S&& services,
                            std::vector< argument::transaction::Resource> resources)
                      {
-
                         common::server::Arguments result;
 
                         algorithm::transform( services, result.services, transform::Service{});
-
-                        algorithm::transform( resources, result.resources, [](argument::transaction::Resource& r){
-                           return transaction::resource::Link{
-                              std::move( r.key),
-                              r.xa_switch
-                           };
-                        });
+                        result.resources = std::move( resources);
 
                         return result;
                      }
@@ -76,10 +67,7 @@ namespace casual
                   {
                      Trace trace{ "common::server::start"};
 
-
-                     //
                      // Connect to domain
-                     //
                      common::communication::instance::connect();
 
                      auto handler = common::communication::ipc::inbound::device().handler(
@@ -91,10 +79,7 @@ namespace casual
                      if( connected)
                         connected();
 
-
-                     //
                      // Start the message-pump
-                     //
                      common::message::dispatch::pump(
                            handler,
                            common::communication::ipc::inbound::device(),
@@ -121,20 +106,6 @@ namespace casual
                   std::function<void()> connected)
             {
                local::start( std::move( services), std::move( resources), std::move( connected));
-            }
-
-
-            int main( int argc, char **argv, std::function< void( int, char**)> local_main)
-            {
-               try
-               {
-                  local_main( argc, argv);
-                  return 0;
-               }
-               catch( ...)
-               {
-                  return common::exception::handle();
-               }
             }
 
          } // v1

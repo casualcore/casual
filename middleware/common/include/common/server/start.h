@@ -11,6 +11,7 @@
 
 #include "common/service/type.h"
 #include "common/service/invoke.h"
+#include "common/executable/start.h"
 
 #include "xa.h"
 #include "xatmi/defines.h"
@@ -62,15 +63,7 @@ namespace casual
 
                namespace transaction
                {
-                  struct Resource
-                  {
-                     Resource( std::string key, xa_switch_t* xa_switch)
-                      : key( std::move( key)), xa_switch( xa_switch) {}
-
-                     std::string key;
-                     xa_switch_t* xa_switch = nullptr;
-                  };
-
+                  using Resource = executable::argument::transaction::Resource;
                } // transaction
 
             } // argument
@@ -90,8 +83,6 @@ namespace casual
                   std::vector< argument::transaction::Resource> resources,
                   std::function<void()> connected);
 
-
-            int main( int argc, char **argv, std::function< void( int, char**)> local_main);
 
          } // v1
 

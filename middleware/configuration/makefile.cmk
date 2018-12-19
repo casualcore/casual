@@ -34,6 +34,7 @@ lib_configuration = LinkLibrary( 'bin/casual-configuration',
         Compile( 'source/transaction.cpp'),
         
         Compile( 'source/build/server.cpp'),
+        Compile( 'source/build/executable.cpp'),
         
         Compile( 'source/resource/property.cpp'),
         

@@ -77,13 +77,22 @@ namespace casual
 
                   bool open( const std::string& file)
                   {
-                     m_output.open( file, std::ios::app | std::ios::out);
-
-                     if( m_output.fail())
+                     auto open_file = []( auto& stream, const auto& name)
                      {
-                        //
+                        stream.open( name, std::ios::app | std::ios::out);
+                        return ! stream.fail();
+                     };
+
+                     if( ! open_file( m_output, file))
+                     {
+                        // we try to create the directory
+                        auto base = directory::name::base( file);
+                        if( ! directory::exists( base) && directory::create( base) && open_file( m_output, file))
+                        {
+                           return true;
+                        }
+
                         // We don't want to throw... Or do we?
-                        //
                         std::cerr << process::path() << " - could not open log-file: " << file << '\n';
                         return false;
                      }

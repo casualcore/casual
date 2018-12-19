@@ -25,19 +25,30 @@ install_lib = []
 common_a = LinkArchive( 'bin/casual-tools-common',
   [
     Compile( 'source/common.cpp'),
-    Compile( 'source/service/describe/invoke.cpp')
+    Compile( 'source/service/describe/invoke.cpp'),
    ])
 
-
+build_task_a = LinkArchive( 'bin/casual-tools-build-task',
+  [
+    Compile( 'source/build/task.cpp'),
+    Compile( 'source/build/generate.cpp'),
+    Compile( 'source/build/resource.cpp'),
+   ])
 
 target = LinkExecutable( 'bin/casual-build-server',
-   [ Compile( 'build/server.cpp')],
-   [ 'casual-common', 'casual-serviceframework', 'casual-configuration'])
+   [ Compile( 'source/build/server/main.cpp')],
+   [ common_a, build_task_a, 'casual-common', 'casual-serviceframework', 'casual-configuration'])
+
+install_bin.append( target)
+
+target = LinkExecutable( 'bin/casual-build-executable',
+   [ Compile( 'source/build/executable/main.cpp')],
+   [ common_a, build_task_a, 'casual-common', 'casual-serviceframework', 'casual-configuration'])
 
 install_bin.append( target)
 
 target = LinkExecutable( 'bin/casual-build-resource-proxy',
-   [ Compile( 'build/resource/proxy.cpp')],
+   [ Compile( 'source/build/resource/proxy/main.cpp')],
    [ 
     common_a,
     'casual-common', 

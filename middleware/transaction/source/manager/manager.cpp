@@ -56,23 +56,15 @@ namespace casual
 
          log::line( log, "transaction manager start");
 
-
-         //
          // Set the process variables so children can communicate with us.
-         //
          common::environment::variable::process::set(
                common::environment::variable::name::ipc::transaction::manager(),
                common::process::handle());
 
-         //
          // get configuration from domain manager
-         //
          action::configure( m_state);
 
-
-         //
          // Start resource-proxies
-         //
          {
             Trace trace{ "start rm-proxy-servers"};
 
@@ -80,23 +72,17 @@ namespace casual
                m_state.resources,
                action::resource::Instances( m_state));
 
-            //
             // Make sure we wait for the resources to get ready
-            //
             auto handler = ipc::device().handler(
                common::message::handle::Shutdown{},
                handle::process::Exit{ m_state},
                handle::resource::reply::Connect{ m_state});
 
-
-
             while( ! m_state.booted())
             {
                handler( ipc::device().blocking_next( handler.types()));
             }
-
          }
-
 
          auto instances = common::algorithm::accumulate(
                m_state.resources, 0,

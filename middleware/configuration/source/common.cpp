@@ -11,7 +11,16 @@ namespace casual
 {
    namespace configuration
    {
-      common::log::Stream log{ "casual.config"};
+      common::log::Stream log{ "casual.configuration"};
 
+      namespace verbose
+      {
+         common::log::Stream log{ "casual.configuration.verbose"};
+      } // verbose
+
+      namespace trace
+      {
+         common::log::Stream log{ "casual.configuration.trace"};
+      } // trace
    } // gateway
 } // casual

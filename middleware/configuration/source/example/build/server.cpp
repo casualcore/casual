@@ -30,22 +30,30 @@ namespace casual
                   result.server_default.service.category.emplace( "some.category");
 
                   result.services = {
-                        { []( configuration::build::server::Service& v){
+                        [](){
+                           configuration::build::server::Service v;
                            v.name = "s1";
-                        }},
-                        { []( configuration::build::server::Service& v){
+                           return v;
+                        }(),
+                        [](){
+                           configuration::build::server::Service v;
                            v.name = "s2";
                            v.transaction.emplace( "auto");
-                        }},
-                        { []( configuration::build::server::Service& v){
+                           return v;
+                        }(),
+                        [](){
+                           configuration::build::server::Service v;
                            v.name = "s3";
                            v.function.emplace( "f3");
-                        }},
-                        { []( configuration::build::server::Service& v){
+                           return v;
+                        }(),
+                        [](){
+                           configuration::build::server::Service v;
                            v.name = "s4";
                            v.function.emplace( "f4");
                            v.category.emplace( "some.other.category");
-                        }}
+                           return v;
+                        }()
                   };
 
                   return result;
