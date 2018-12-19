@@ -48,7 +48,7 @@ target = LinkExecutable( 'bin/casual-build-executable',
 install_bin.append( target)
 
 target = LinkExecutable( 'bin/casual-build-resource-proxy',
-   [ Compile( 'build/resource/proxy.cpp')],
+   [ Compile( 'source/build/resource/proxy/main.cpp')],
    [ 
     common_a,
     'casual-common', 

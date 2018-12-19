@@ -125,16 +125,25 @@ int main( int argc, char** argv)
                      return path;
                   }
 
+
                   void build( Settings settings)
                   {
                      Trace trace{ "tools::build::executable::build"};
 
                      auto configuration = configuration::build::executable::get( settings.definition);
 
-                     auto resources = build::transform::resources( 
-                        std::move( configuration.resources), 
-                        configuration::resource::property::get());
-                     
+                     auto transform_resources = []( auto&& resources) -> std::vector< Resource>
+                     {
+                        if( resources.empty())
+                           return {};
+
+                        return build::transform::resources( 
+                           std::move( resources), 
+                           configuration::resource::property::get());
+                     };
+
+                     auto resources = transform_resources( std::move( configuration.resources));
+
                      settings.directive.add( resources);
 
                      auto path = generate( configuration, { build::generate::resources( resources)});

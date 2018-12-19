@@ -253,6 +253,19 @@ int main( int argc, char** argv)
                   build::task( c_file, settings.directive);
                }
 
+               std::vector< Resource> get_resources( const Settings& settings)
+               {
+                  if( settings.resources.empty())
+                     return {};
+
+                  auto properties = settings.properties_file.empty() ?
+                     configuration::resource::property::get() : configuration::resource::property::get( settings.properties_file);
+
+                  return build::transform::resources( 
+                     std::move( settings.resources), 
+                     std::move( properties));
+               }
+
                void main( int argc, char **argv)
                {
                   Settings settings;
@@ -280,16 +293,9 @@ int main( int argc, char** argv)
                      validate( settings);
                   }
 
-                  if( settings.directive.verbose) std::cout << "";
-
                   // Generate file
 
-                  auto properties = settings.properties_file.empty() ?
-                     configuration::resource::property::get() : configuration::resource::property::get( settings.properties_file);
-
-                  auto resources = build::transform::resources( 
-                     std::move( settings.resources), 
-                     std::move( properties));
+                  auto resources = get_resources( settings);
 
                   settings.directive.add( resources);
 
