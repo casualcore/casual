@@ -19,24 +19,26 @@ install_include = []
 
 lib_xatmi = LinkLibrary( 'bin/casual-xatmi',
 	[
-		Compile( 'source/xatmi.cpp'),
-		Compile( 'source/xatmi/server.cpp'),
-        Compile( 'source/xatmi/executable.cpp'),
-		Compile( 'source/xatmi/conversation.cpp'),
-		Compile( 'source/xatmi/call.cpp'),
-		Compile( 'source/xatmi/internal/code.cpp'),
-        Compile( 'source/xatmi/internal/log.cpp'),
-		Compile( 'source/xa.cpp'),
-		Compile( 'source/tx.cpp'),
+      Compile( 'source/xatmi.cpp'),
+      Compile( 'source/xatmi/server.cpp'),
+      Compile( 'source/xatmi/executable.cpp'),
+      Compile( 'source/xatmi/conversation.cpp'),
+      Compile( 'source/xatmi/call.cpp'),
+      Compile( 'source/xatmi/internal/code.cpp'),
+      Compile( 'source/xatmi/internal/log.cpp'),
+      Compile( 'source/xa.cpp'),
+      Compile( 'source/tx.cpp'),
 	],
 	['casual-common'])
 
 install_lib.append( lib_xatmi)
 install_include.append( ( 'include/xatmi/server.h', 'xatmi'))
+install_include.append( ( 'include/xatmi/executable.h', 'xatmi'))
 install_include.append( ( 'include/xatmi/defines.h', 'xatmi'))
 install_include.append( ( 'include/xatmi/extended.h', 'xatmi'))
 install_include.append( ( 'include/xatmi/flag.h', 'xatmi'))
 install_include.append( ( 'include/xatmi/code.h', 'xatmi'))
+install_include.append( ( 'include/xatmi/xa.h', 'xatmi'))
 install_include.append( 'include/xatmi.h')
 
 install_include.append( ( 'include/tx/code.h', 'tx'))
