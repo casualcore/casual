@@ -34,7 +34,20 @@ namespace casual
          {
             if( m_correlation != uuid::empty())
             {
-               communication::ipc::inbound::device().discard( m_correlation);
+               log::line( log::debug, "pending lookup - discard");
+
+               // we've got a pending lookup on the service, we need to tell
+               // service manager to discard our lookup.
+               message::service::lookup::discard::Request request;
+               {
+                  request.requested = m_service;
+                  request.process = process::handle();
+                  request.correlation = m_correlation;
+               }
+               auto reply = communication::ipc::call( communication::instance::outbound::service::manager::device(), request);
+
+               if( reply.state == decltype( reply.state)::replied)
+                  communication::ipc::inbound::device().discard( m_correlation);
             }
          }
 
@@ -42,7 +55,7 @@ namespace casual
          {
             Trace trace{ "common::service::Lookup::operator()"};
 
-            assert(  m_correlation != uuid::empty());
+            assert( ! uuid::empty( m_correlation));
 
             Reply result;
             communication::ipc::blocking::receive( communication::ipc::inbound::device(), result, m_correlation);

@@ -113,6 +113,9 @@ namespace casual
 
                   state::Service* unreserve( const common::platform::time::point::type& now);
 
+                  //! discards the reservation
+                  void discard();
+
 
                   inline const common::platform::time::point::type& last() const { return m_last;}
 
@@ -121,9 +124,7 @@ namespace casual
                   State state() const;
                   inline bool idle() const { return m_service == nullptr;}
 
-                  //!
                   //! Return true if this instance exposes the service
-                  //!
                   bool service( const std::string& name) const;
 
 
@@ -231,9 +232,7 @@ namespace casual
 
                   using remote_base = std::reference_wrapper< state::instance::Concurrent>;
 
-                  //!
                   //! Just a helper to simplify usage of the reference
-                  //!
                   struct Concurrent : remote_base
                   {
                      Concurrent( state::instance::Concurrent& instance, size_type hops) : remote_base{ instance}, m_hops{ hops} {}
@@ -268,9 +267,7 @@ namespace casual
 
                   inline bool empty() const { return sequential.empty() && concurrent.empty();}
 
-                  //!
                   //! @return true if any of the instances is active (not exiting).
-                  //!
                   bool active() const;
 
                } instances;
@@ -278,19 +275,13 @@ namespace casual
                common::message::service::call::Service information;
                service::Metric metric;
 
-               //!
                //! Keeps track of the pending metrics for this service
-               //!
                service::Metric pending;
 
-               //!
                //! Resets the metrics
-               //!
                void metric_reset();
 
-               //!
                //! @return a reserved instance or 'null-handle' if no one is found.
-               //!
                common::process::Handle reserve( 
                   const common::platform::time::point::type& now, 
                   const common::process::Handle& caller, 

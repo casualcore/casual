@@ -25,10 +25,8 @@ namespace casual
                      {
                         common::signal::handle( mask);
 
-                        //
                         // we got a signal we don't have a handle for
                         // We fall through
-                        //
                         common::log::line( common::log::category::warning, "no signal handler for signal - ", last_error);
 
                      } // @fallthrough

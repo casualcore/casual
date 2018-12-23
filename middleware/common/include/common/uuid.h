@@ -87,13 +87,10 @@ namespace casual
          Uuid make();
 
          const Uuid& empty();
-
-
+         bool empty( const Uuid& uuid);
       } // uuid
-
    } // common
-
-} // casaul
+} // casual
 
 
 

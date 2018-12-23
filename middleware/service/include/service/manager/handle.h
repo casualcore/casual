@@ -136,10 +136,7 @@ namespace casual
                   };
                } // concurrent
 
-
-               //!
                //! Looks up a service-name
-               //!
                struct Lookup : Base
                {
                   using message_type = common::message::service::lookup::Request;
@@ -147,10 +144,21 @@ namespace casual
                   using Base::Base;
 
                   void operator () ( message_type& message);
-
                };
 
+               namespace discard
+               {
+                  //! discards a previously pending lookup
+                  struct Lookup : Base
+                  {
+                     using message_type = common::message::service::lookup::discard::Request;
 
+                     using Base::Base;
+
+                     void operator () ( message_type& message);
+                  };
+
+               } // discard
 
             } // service
 
