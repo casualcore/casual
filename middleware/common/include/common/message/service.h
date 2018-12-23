@@ -260,12 +260,10 @@ namespace casual
 
             namespace lookup
             {
-               //!
                //! Represent "service-name-lookup" request.
-               //!
                struct Request : basic_message< Type::service_name_lookup_request>
                {
-                  enum class Context : char
+                  enum class Context : short
                   {
                      regular,
                      no_reply,
@@ -292,16 +290,13 @@ namespace casual
                static_assert( traits::is_movable< Request>::value, "not movable");
 
 
-
-               //!
                //! Represent "service-name-lookup" response.
-               //!
                struct Reply : basic_message< Type::service_name_lookup_reply>
                {
                   call::Service service;
                   common::process::Handle process;
 
-                  enum class State : char
+                  enum class State : short
                   {
                      absent,
                      busy,
@@ -324,6 +319,43 @@ namespace casual
                   friend std::ostream& operator << ( std::ostream& out, const Reply& value);
                };
                static_assert( traits::is_movable< Reply>::value, "not movable");
+
+               namespace discard
+               {
+                  struct Request : basic_message< Type::service_name_lookup_discard_request>
+                  {
+                     std::string requested;
+                     common::process::Handle process;
+
+                     CASUAL_CONST_CORRECT_MARSHAL(
+                     {
+                        base_type::marshal( archive);
+                        archive & requested;
+                        archive & process;
+                     })
+
+                     friend std::ostream& operator << ( std::ostream& out, const Request& value);
+                  };
+
+                  struct Reply : basic_message< Type::service_name_lookup_discard_reply>
+                  {
+                     enum class State : short
+                     {
+                        absent,
+                        discarded,
+                        replied
+                     };
+                     State state = State::absent;
+
+                     CASUAL_CONST_CORRECT_MARSHAL(
+                     {
+                        base_type::marshal( archive);
+                        archive & state;
+                     })
+
+                     friend std::ostream& operator << ( std::ostream& out, const Reply& value);
+                  };
+               } // discard
             } // lookup
 
 
@@ -379,9 +411,7 @@ namespace casual
 
                namespace caller
                {
-                  //!
                   //! Represents a service call. via tp(a)call, from the callers perspective
-                  //!
                   using Request = message::buffer::caller::basic_request< call::basic_request>;
 
                   static_assert( traits::is_movable< Request>::value, "not movable");
@@ -389,9 +419,7 @@ namespace casual
 
                namespace callee
                {
-                  //!
                   //! Represents a service call. via tp(a)call, from the callee's perspective
-                  //!
                   using Request = message::buffer::callee::basic_request< call::basic_request>;
 
                   static_assert( traits::is_movable< Request>::value, "not movable");
@@ -399,9 +427,7 @@ namespace casual
                } // callee
 
 
-               //!
                //! Represent service reply.
-               //!
                struct Reply :  basic_message< Type::service_reply>
                {
                   struct Code 
@@ -431,10 +457,8 @@ namespace casual
                };
                static_assert( traits::is_movable< Reply>::value, "not movable");
 
-               //!
                //! Represent the reply to the broker when a server is done handling
                //! a service-call and is ready for new calls
-               //!
                struct ACK : basic_message< Type::service_acknowledge>
                {
                   ACK() = default;
@@ -463,6 +487,9 @@ namespace casual
 
             template<>
             struct type_traits< service::lookup::Request> : detail::type< service::lookup::Reply> {};
+
+            template<>
+            struct type_traits< service::lookup::discard::Request> : detail::type< service::lookup::discard::Reply> {};
 
             template<>
             struct type_traits< service::call::caller::Request> : detail::type<  service::call::Reply> {};

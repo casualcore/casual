@@ -58,9 +58,7 @@ namespace casual
                            }
                         }
                      };
-
                   } // queue
-
 
                   namespace validate
                   {
@@ -76,16 +74,9 @@ namespace casual
                         return flags.exist( call::async::Flag::no_reply) ?
                               message::service::lookup::Request::Context::no_reply : message::service::lookup::Request::Context::regular;
                      }
-
                   } // validate
-
-
                } // <unnamed>
-
             } // local
-
-
-
 
             Context& Context::instance()
             {
@@ -126,16 +117,12 @@ namespace casual
                         message.flags = request_flags.convert( flags);
                         message.header = service::header::fields();
 
-                        //
                         // Check if we should associate descriptor with message-correlation and transaction
-                        //
                         if( flags.exist( async::Flag::no_reply))
                         {
                            log::line( log::debug, "no_reply - no descriptor reservation");
 
-                           //
                            // No reply, hence no descriptor and no transaction (we validated this before)
-                           //
                            return Reply{ 0, std::move( message) };
                         }
                         else
@@ -156,9 +143,7 @@ namespace casual
                               message.trid = transaction.trid;
                               transaction.associate( message.correlation);
 
-                              //
                               // We use the transaction deadline if it's earlier
-                              //
                               if( transaction.timout.deadline() < descriptor.timeout.deadline())
                               {
                                  descriptor.timeout.set( start, std::chrono::duration_cast< common::platform::time::unit>( transaction.timout.deadline() - start));
@@ -170,10 +155,7 @@ namespace casual
                            return Reply{ descriptor.descriptor, std::move( message) };
                         }
                      }
-
-
                   } // prepare
-
                } // <unnamed>
             } // local
 
@@ -186,52 +168,34 @@ namespace casual
 
                service::Lookup lookup( service, local::validate::flags( flags));
 
-               //
                // We do as much as possible while we wait for the service-lookup reply
-               //
 
                auto start = platform::time::clock::type::now();
 
-               //
                // TODO: Invoke pre-transport buffer modifiers
-               //
                //buffer::transport::Context::instance().dispatch( idata, ilen, service, buffer::transport::Lifecycle::pre_call);
 
 
-
-               //
                // Get a queue corresponding to the service
-               //
                auto target = lookup();
 
-               //
                // The service exists. Take care of reserving descriptor and determine timeout
-               //
                auto prepared = local::prepare::message( m_state, start, std::move( buffer), flags, target);
 
-               //
                // If some thing goes wrong we unreserve the descriptor
-               //
                auto unreserve = common::execute::scope( [&](){ m_state.pending.unreserve( prepared.descriptor);});
 
-
-               //
                // Make sure we timeout if we don't keep our deadline
-               //
                auto deadline = m_state.pending.deadline( prepared.descriptor, start);
 
 
                if( target.busy())
                {
-                  //
                   // We wait for an instance to become idle.
-                  //
                   target = lookup();
                }
 
-               //
                // Call the service
-               //
                {
                   prepared.message.service = target.service;
 
@@ -286,13 +250,11 @@ namespace casual
 
                   if( flags.exist( reply::Flag::any))
                   {
-                     //
                      // We fetch any
-                     //
-                    if( ! local::receive( reply, flags))
-                    {
-                       throw common::exception::xatmi::no::Message();
-                    }
+                     if( ! local::receive( reply, flags))
+                     {
+                        throw common::exception::xatmi::no::Message();
+                     }
 
                     return std::make_pair(
                           std::move( reply),
@@ -302,9 +264,7 @@ namespace casual
                   {
                      auto& pending = m_state.pending.get( descriptor);
 
-                     //
                      // Make sure we timeout if we don't keep our deadline
-                     //
                      signal::timer::Deadline deadline{ pending.timeout.deadline(), start};
 
                      if( ! local::receive( reply, flags, pending.correlation))
@@ -328,20 +288,13 @@ namespace casual
                result.buffer = std::move( reply.buffer);
 
 
-               //
                // We unreserve pending (at end of scope, regardless of outcome)
-               //
                auto discard = execute::scope( [&](){ m_state.pending.unreserve( result.descriptor);});
 
-               //
                // Update transaction state
-               //
                common::transaction::Context::instance().update( reply);
 
-
-               //
                // Check any errors
-               //
                switch( reply.code.result)
                {
                   case code::xatmi::ok:
@@ -363,9 +316,7 @@ namespace casual
 
             sync::Result Context::sync( const std::string& service, common::buffer::payload::Send buffer, sync::Flags flags)
             {
-               //
                // We can't have no-block when getting the reply
-               //
                flags -= sync::Flag::no_block;
 
                constexpr auto async_flags = ~async::Flags{};
@@ -387,11 +338,7 @@ namespace casual
 
             void Context::clean()
             {
-
-               //
                // TODO: Do some cleaning on buffers, pending replies and such...
-               //
-
             }
 
             Context::Context()
@@ -409,9 +356,7 @@ namespace casual
             {
                if( flags.exist( reply::Flag::any))
                {
-                  //
                   // We fetch any
-                  //
                   return local::receive( reply, flags);
                }
                else

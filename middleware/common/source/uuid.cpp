@@ -47,6 +47,11 @@ namespace casual
             return empty;
          }
 
+         bool empty( const Uuid& uuid)
+         {
+            return  uuid == uuid::empty();
+         }
+
       } // uuid
 
       Uuid::Uuid( const uuid_type& uuid)

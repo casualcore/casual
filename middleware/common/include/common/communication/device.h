@@ -398,27 +398,20 @@ namespace casual
 
                         while( ! found && ( found = policy.receive( m_connector, m_cache)))
                         {
-
-                           //
-                           // Check if should discard the message
-                           //
+                           // Check if we should discard the message
                            if( discard( *found))
                            {
                               m_cache.erase( std::begin( found));
                            }
 
-                           //
                            // Try to find a massage that matches the predicate
-                           //
                            found = algorithm::find_if( m_cache, predicate);
                         }
                         return found;
                      }
                      catch( ...)
                      {
-                        //
                         // Delegate the errors to the handler, if provided
-                        //
                         if( ! handler)
                         {
                            throw;

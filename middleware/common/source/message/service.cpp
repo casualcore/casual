@@ -183,6 +183,22 @@ namespace casual
                   return out << '}';
                }
 
+               namespace discard
+               {
+                  std::ostream& operator << ( std::ostream& out, const Request& value)
+                  {
+                     return out << "{ requested: " << value.requested
+                        << ", process: " << value.process
+                        << '}';
+                  }
+
+                  std::ostream& operator << ( std::ostream& out, const Reply& value)
+                  {
+                     return out << "{ state: " << value.state
+                        << '}';
+                  }
+               } // discard
+
             } // lookup
 
 

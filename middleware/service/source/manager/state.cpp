@@ -88,6 +88,13 @@ namespace casual
                   return std::exchange( m_service, nullptr);
                }
 
+               void Sequential::discard()
+               {
+                  m_service = nullptr;
+                  m_correlation = uuid::empty();
+                  m_caller = {};
+               }
+
                namespace local
                {
                   namespace

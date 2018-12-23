@@ -313,15 +313,11 @@ namespace casual
                            case common::message::service::lookup::Request::Context::no_reply:
                            case common::message::service::lookup::Request::Context::forward:
                            {
-                              //
                               // The intention is "send and forget", or a plain forward, we use our forward-cache for this
-                              //
                               reply.process = m_state.forward;
 
-                              //
                               // Caller will think that service is idle, that's the whole point
                               // with our forward.
-                              //
                               reply.state = decltype( reply.state)::idle;
 
                               local::optional::send( message.process.ipc, reply);
@@ -330,14 +326,12 @@ namespace casual
                            }
                            case common::message::service::lookup::Request::Context::gateway:
                            {
-                              //
                               // the request is from some other domain, we'll wait until
                               // the service is idle. That is, we don't need to send timeout and
                               // stuff to the gateway, since the other domain has provided this to
                               // the caller (which of course can differ from our timeouts, if operation
                               // has change the timeout, TODO: something we need to address? probably not,
                               // since we can't make it 100% any way...)
-                              //
                               m_state.pending.requests.emplace_back( std::move( message), now);
 
                               break;
@@ -365,10 +359,8 @@ namespace casual
 
                         log::line( log, "no instances found for service: ", message.requested);
 
-                        //
                         // Server (queue) that hosts the requested service is not found.
                         // We propagate this by having absent state
-                        //
                         auto reply = common::message::reverse::type( message);
                         reply.service.name = message.requested;
                         reply.state = decltype( reply.state)::absent;
@@ -400,6 +392,59 @@ namespace casual
                      }
                   }
                }
+
+               namespace discard
+               {
+                  void Lookup::operator () ( message_type& message)
+                  {
+                     Trace trace{ "service::manager::handle::service::discard::Lookup"};
+
+                     log::line( verbose::log, "message: ", message);
+
+                     auto found = algorithm::find_if( m_state.pending.requests, [&message]( auto& pending)
+                     {
+                        return message.correlation == pending.request.correlation;
+                     });
+
+                     auto reply = message::reverse::type( message);
+
+                     if( found)
+                     {
+                        log::line( log, "found pending to discard");
+                        log::line( verbose::log, "pending: ", *found);
+
+                        m_state.pending.requests.erase( std::begin( found));
+
+                        reply.state = decltype( reply.state)::discarded;
+                     }
+                     else 
+                     {
+                        log::line( log, "failed to find pending to discard - check if we have reserved the service already");
+
+                        // we need to go through all instances.
+
+                        auto found = algorithm::find_if( m_state.instances.sequential, [&message]( auto& tuple)
+                        {
+                           auto& instance = tuple.second;
+                           return ! instance.idle() && instance.correlation() == message.correlation;
+                        });
+
+                        if( found)
+                        {
+                           auto& instance = found->second;
+                           log::line( log, "found reserved instance");
+                           log::line( verbose::log, "instance: ", instance);
+
+                           instance.discard();
+
+                           reply.state = decltype( reply.state)::replied;
+                        }
+                     }
+
+                     // We allways send reply
+                     local::optional::send( message.process.ipc, reply);
+                  }
+               } // discard
             } // service
 
             namespace domain
@@ -602,6 +647,7 @@ namespace casual
                handle::process::prepare::Shutdown{ state},
                handle::service::Advertise{ state},
                handle::service::Lookup{ state},
+               handle::service::discard::Lookup{ state},
                handle::service::concurrent::Advertise{ state},
                handle::service::concurrent::Metric{ state},
                handle::ACK{ state},

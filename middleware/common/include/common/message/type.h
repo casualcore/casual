@@ -74,6 +74,8 @@ namespace casual
             service_advertise,
             service_name_lookup_request,
             service_name_lookup_reply,
+            service_name_lookup_discard_request,
+            service_name_lookup_discard_reply,
             service_call = SERVICE_BASE + 100,
             service_reply,
             service_acknowledge,
