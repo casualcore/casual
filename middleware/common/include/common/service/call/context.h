@@ -9,9 +9,9 @@
 
 
 #include "common/service/call/state.h"
-#include "common/flag/service/call.h"
+#include "common/service/lookup.h"
 
-//#include "common/flag/xa.h"
+#include "common/flag/service/call.h"
 
 #include "common/message/service.h"
 #include "common/exception/xatmi.h"
@@ -74,6 +74,8 @@ namespace casual
                static Context& instance();
 
                descriptor_type async( const std::string& service, common::buffer::payload::Send buffer, async::Flags flags);
+
+               descriptor_type async( service::Lookup&& lookup, common::buffer::payload::Send buffer, async::Flags flags);
 
                reply::Result reply( descriptor_type descriptor, reply::Flags flags);
 

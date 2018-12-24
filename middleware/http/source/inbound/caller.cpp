@@ -336,6 +336,7 @@ namespace casual
 
                try
                {
+                  common::service::non::blocking::Lookup lookup{ service};
                   //
                   // Handle header
                   //
@@ -359,7 +360,7 @@ namespace casual
                   // Call service
                   //
                   namespace call = common::service::call;
-                  transport->descriptor = call::context().async( service, common::buffer::payload::Send( payload), call::async::Flag::no_block);
+                  transport->descriptor = call::context().async( std::move( lookup), common::buffer::payload::Send( payload), call::async::Flag::no_block);
                }
                catch (...)
                {

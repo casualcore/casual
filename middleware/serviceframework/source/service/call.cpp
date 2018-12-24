@@ -18,21 +18,21 @@ namespace casual
       {
          namespace call
          {
-            Result invoke( const std::string& service, const payload_type& paylaod, Flags flags)
+            Result invoke( const std::string& service, const payload_type& payload, Flags flags)
             {
                Trace trace{ "sf::service::call::invoke"};
 
-               return common::service::call::context().sync( service, paylaod, flags);
+               return common::service::call::context().sync( service, payload, flags);
             }
          } // call
 
          namespace send
          {
-            descriptor_type invoke( const std::string& service, const payload_type& paylaod, Flags flags)
+            descriptor_type invoke( const std::string& service, const payload_type& payload, Flags flags)
             {
                Trace trace{ "sf::service::call::send"};
 
-               return common::service::call::context().async( service, paylaod, flags);
+               return common::service::call::context().async( service, payload, flags);
             }
 
          } // send
