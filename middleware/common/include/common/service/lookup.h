@@ -28,8 +28,12 @@ namespace casual
                using Reply = message::service::lookup::Reply;
                using State = Reply::State;
 
+               Lookup() noexcept = default;
+               
+               
                //! Lookup an entry point for the @p service
                Lookup( std::string service);
+
 
                //!
                //! Lookup an entry point for the @p service
@@ -46,10 +50,13 @@ namespace casual
                Lookup( Lookup&&) noexcept;
                Lookup& operator = ( Lookup&&) noexcept;
 
+
+               friend void swap( Lookup& lhs, Lookup& rhs);
                friend std::ostream& operator << ( std::ostream& out, const Lookup& value);
 
 
             protected:
+
                bool update( Reply&& reply) const;
 
                std::string m_service;
@@ -81,23 +88,25 @@ namespace casual
             {
                //! non-blocking lookup
                //! 
-               //! converts this non-blocking to a blocking lookup
-               //! usage:
-               //! void some_function( service::Lookup&& lookup);
-               //!
-               //! service::non::blocking::Lookup lookup( "someService");
-               //!
-               //! if( lookup)
-               //!   some_function( std::move( lookup));
-               //! 
-               struct Lookup : service::Lookup
+
+               struct Lookup : detail::Lookup
                {
-                  using service::Lookup::Lookup;
+                  using detail::Lookup::Lookup;
 
                   //! return true if the service is ready to be called
                   //! @throws common::exception::xatmi::service::no::Entry if the service is not present or discovered
                   explicit operator bool () const;
 
+                  //! converts this non-blocking to a blocking lookup
+                  //! usage:
+                  //! void some_function( service::Lookup&& lookup);
+                  //!
+                  //! service::non::blocking::Lookup lookup( "someService");
+                  //!
+                  //! if( lookup)
+                  //!   some_function( std::move( lookup));
+                  //! 
+                  operator service::Lookup () &&;
            
                };
             } // blocking

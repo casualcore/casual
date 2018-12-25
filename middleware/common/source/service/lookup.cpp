@@ -68,7 +68,12 @@ namespace casual
             Lookup::Lookup( Lookup&&) noexcept = default;
             Lookup& Lookup::operator = ( Lookup&&) noexcept = default;
 
-            
+            void swap( Lookup& lhs, Lookup& rhs)
+            {
+               std::swap( lhs.m_service, rhs.m_service);
+               std::swap( lhs.m_reply, rhs.m_reply);
+               std::swap( lhs.m_correlation, rhs.m_correlation);
+            }
 
             std::ostream& operator << ( std::ostream& out, const Lookup& value)
             {
@@ -130,24 +135,13 @@ namespace casual
                   }
                   return m_reply.has_value() && ! m_reply.value().busy();
                }
-   /*
+
                Lookup::operator service::Lookup () &&
-               {  
-                  if( ! m_reply)
-                  {
-                     Reply result;
-                     communication::ipc::blocking::receive( communication::ipc::inbound::device(), result, m_correlation);
-
-                     if( ! update( result))
-                     {
-                        communication::ipc::blocking::receive( communication::ipc::inbound::device(), result, m_correlation);
-                     }
-                     m_reply = std::move( result);
-                  }
-                  return m_reply.value();
+               {
+                  service::Lookup result;
+                  swap( result, *this);
+                  return result;
                }
-               */
-
             } // blocking
          } // non
       } // service
