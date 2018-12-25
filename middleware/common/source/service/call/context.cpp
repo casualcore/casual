@@ -100,6 +100,7 @@ namespace casual
                            State& state,
                            const platform::time::point::type& start,
                            common::buffer::payload::Send&& buffer,
+                           service::header::Fields header,
                            async::Flags flags,
                            const service::Lookup::Reply& lookup)
                      {
@@ -115,7 +116,7 @@ namespace casual
 
                         constexpr auto request_flags = ~message::service::call::request::Flags{};
                         message.flags = request_flags.convert( flags);
-                        message.header = service::header::fields();
+                        message.header = std::move( header);
 
                         // Check if we should associate descriptor with message-correlation and transaction
                         if( flags.exist( async::Flag::no_reply))
@@ -160,7 +161,9 @@ namespace casual
             } // local
 
 
-            descriptor_type Context::async( service::Lookup&& service, common::buffer::payload::Send buffer, async::Flags flags)
+
+            
+            descriptor_type Context::async( service::Lookup&& service, common::buffer::payload::Send buffer, service::header::Fields header, async::Flags flags)
             {
                Trace trace( "service::call::Context::async lookup");
 
@@ -175,7 +178,7 @@ namespace casual
                auto target = service();
 
                // The service exists. Take care of reserving descriptor and determine timeout
-               auto prepared = local::prepare::message( m_state, start, std::move( buffer), flags, target);
+               auto prepared = local::prepare::message( m_state, start, std::move( buffer), std::move( header), flags, target);
 
                // If some thing goes wrong we unreserve the descriptor
                auto unreserve = common::execute::scope( [&](){ m_state.pending.unreserve( prepared.descriptor);});
@@ -201,6 +204,11 @@ namespace casual
 
                unreserve.release();
                return prepared.descriptor;
+            }
+
+            descriptor_type Context::async( service::Lookup&& service, common::buffer::payload::Send buffer, async::Flags flags)
+            {
+               return async( std::move( service), std::move( buffer), service::header::fields(), flags);
             }
 
             descriptor_type Context::async( const std::string& service, common::buffer::payload::Send buffer, async::Flags flags)

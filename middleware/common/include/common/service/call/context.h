@@ -77,6 +77,8 @@ namespace casual
 
                descriptor_type async( service::Lookup&& lookup, common::buffer::payload::Send buffer, async::Flags flags);
 
+               descriptor_type async( service::Lookup&& lookup, common::buffer::payload::Send buffer, service::header::Fields header, async::Flags flags);
+
                reply::Result reply( descriptor_type descriptor, reply::Flags flags);
 
                sync::Result sync( const std::string& service, common::buffer::payload::Send buffer, sync::Flags flags);
