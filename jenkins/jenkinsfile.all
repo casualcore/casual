@@ -108,7 +108,7 @@ performCoverageMeasuring()
    gcovr -r . --html --html-details --gcov-exclude='.*thirdparty.*|.*test_.*' -o coverage/index.html
 }
 
-source scl_source enable devtoolset-4
+source scl_source enable devtoolset-6
 
 ''' + common_backend_builder
 
