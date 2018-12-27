@@ -13,7 +13,25 @@ endif
 
 COMPILER = $(CXX)
 
-WARNING_DIRECTIVE = -Wall -Wextra -Werror -Wsign-compare -Wuninitialized  -Winit-self -Woverloaded-virtual -Wmissing-declarations -Wno-unused-parameter -Wno-missing-declarations
+
+#
+# -Wno-noexcept-type  we can probably remove this on g++ 8
+# -Wno-implicit-fallthrough remove and add [[fallthrough]] attribute, when we're on c++17
+#
+WARNING_DIRECTIVE = -Wall \
+ -Wextra \
+ -Werror \
+ -Wsign-compare \
+ -Wuninitialized  \
+ -Winit-self \
+ -Woverloaded-virtual \
+ -Wno-unused-parameter \
+ -Wno-missing-declarations \
+ -Wno-noexcept-type \
+ -Wno-implicit-fallthrough
+
+
+
 
 STD_DIRECTIVE = -std=c++14
 

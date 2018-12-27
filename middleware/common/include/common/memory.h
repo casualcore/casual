@@ -116,7 +116,7 @@ namespace casual
          //! @return a guard that will apply deleter in dtor
          //!
          template< typename T, typename D>
-         auto guard( T* memory, D&& deleter)
+         auto guard( T* memory, D&& deleter) noexcept
          {
             return std::unique_ptr< T, D>( memory, std::forward< D>( deleter));
          }
