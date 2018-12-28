@@ -100,6 +100,7 @@ namespace casual
                            State& state,
                            const platform::time::point::type& start,
                            common::buffer::payload::Send&& buffer,
+                           service::header::Fields header,
                            async::Flags flags,
                            const service::Lookup::Reply& lookup)
                      {
@@ -115,7 +116,7 @@ namespace casual
 
                         constexpr auto request_flags = ~message::service::call::request::Flags{};
                         message.flags = request_flags.convert( flags);
-                        message.header = service::header::fields();
+                        message.header = std::move( header);
 
                         // Check if we should associate descriptor with message-correlation and transaction
                         if( flags.exist( async::Flag::no_reply))
@@ -160,27 +161,24 @@ namespace casual
             } // local
 
 
-            descriptor_type Context::async( const std::string& service, common::buffer::payload::Send buffer, async::Flags flags)
+
+            
+            descriptor_type Context::async( service::Lookup&& service, common::buffer::payload::Send buffer, service::header::Fields header, async::Flags flags)
             {
-               Trace trace( "service::call::Context::async");
+               Trace trace( "service::call::Context::async lookup");
 
                log::line( log::debug, "service: ", service, ", buffer: ", buffer, " flags: ", flags);
-
-               service::Lookup lookup( service, local::validate::flags( flags));
-
-               // We do as much as possible while we wait for the service-lookup reply
 
                auto start = platform::time::clock::type::now();
 
                // TODO: Invoke pre-transport buffer modifiers
                //buffer::transport::Context::instance().dispatch( idata, ilen, service, buffer::transport::Lifecycle::pre_call);
 
-
-               // Get a queue corresponding to the service
-               auto target = lookup();
+               // Get target corresponding to the service
+               auto target = service();
 
                // The service exists. Take care of reserving descriptor and determine timeout
-               auto prepared = local::prepare::message( m_state, start, std::move( buffer), flags, target);
+               auto prepared = local::prepare::message( m_state, start, std::move( buffer), std::move( header), flags, target);
 
                // If some thing goes wrong we unreserve the descriptor
                auto unreserve = common::execute::scope( [&](){ m_state.pending.unreserve( prepared.descriptor);});
@@ -192,7 +190,7 @@ namespace casual
                if( target.busy())
                {
                   // We wait for an instance to become idle.
-                  target = lookup();
+                  target = service();
                }
 
                // Call the service
@@ -206,6 +204,16 @@ namespace casual
 
                unreserve.release();
                return prepared.descriptor;
+            }
+
+            descriptor_type Context::async( service::Lookup&& service, common::buffer::payload::Send buffer, async::Flags flags)
+            {
+               return async( std::move( service), std::move( buffer), service::header::fields(), flags);
+            }
+
+            descriptor_type Context::async( const std::string& service, common::buffer::payload::Send buffer, async::Flags flags)
+            {
+               return async( service::Lookup{ service, local::validate::flags( flags)}, std::move( buffer), flags);
             }
 
             namespace local

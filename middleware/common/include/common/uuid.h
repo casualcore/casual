@@ -24,9 +24,10 @@ namespace casual
          using uuid_type = platform::uuid::type;
 
 
-         Uuid() = default;
-         Uuid( Uuid&&) noexcept = default;
-         Uuid& operator = ( Uuid&&) noexcept = default;
+         Uuid() noexcept = default;
+
+         Uuid( Uuid&& other) noexcept;
+         Uuid& operator = ( Uuid&& other) noexcept;
 
          Uuid( const Uuid&) = default;
          Uuid& operator = ( const Uuid&) = default;

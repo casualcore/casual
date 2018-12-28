@@ -176,10 +176,11 @@ namespace casual
                            log::line( verbose::log, "ipc ---> blocking send - socket: ", socket, ", destination: ", destination, ", transport: ", transport);
                            return true;
                         }
+
+                        log::line( verbose::log, "ipc ---> blocking send - error: ", error, ", destination: ", destination);
                      
                         switch( error.value())
                         {
-                           log::line( verbose::log, "ipc ---> blocking send - error: ", error, ", destination: ", destination);
 
                            case code::system::resource_unavailable_try_again:
 #if EAGAIN != EWOULDBLOCK

@@ -336,30 +336,28 @@ namespace casual
 
                try
                {
-                  //
+                  // use this in transport, and check if it's ready?
+                  // if( transport->lookup)
+                  //   ... do this stuff and make the call
+
+                  common::service::non::blocking::Lookup lookup{ service};
+
                   // Handle header
-                  //
                   const auto& header = header::copy( transport->header_in);
                   common::service::header::fields( header);
 
-                  //
                   // Handle parameter
-                  //
                   const auto& parameters = parameter::copy( transport->parameter);
                   log::line( verbose::log, "parameters: ", parameters);
 
-                  //
                   // Handle buffer
-                  //
                   auto buffer = buffer::assemble( transport, parameters, protocol);
                   common::buffer::Payload payload( protocol::convert::to::buffer( protocol), buffer);
                   payload = buffer::input::transform( std::move( payload), protocol);
 
-                  //
                   // Call service
-                  //
                   namespace call = common::service::call;
-                  transport->descriptor = call::context().async( service, common::buffer::payload::Send( payload), call::async::Flag::no_block);
+                  transport->descriptor = call::context().async( std::move( lookup), common::buffer::payload::Send( payload), call::async::Flag::no_block);
                }
                catch (...)
                {
