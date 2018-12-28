@@ -16,7 +16,6 @@
 #include "common/exception/system.h"
 #include "common/string.h"
 
-
 namespace std
 {
    std::ostream& operator<<( std::ostream& stream, const std::vector< std::pair< std::string, std::string >>& input)
@@ -391,7 +390,7 @@ namespace casual
                      {
                         uuid = lookup::add( std::move( local::Lookup{ service}));
                         std::copy( std::begin( uuid), std::end( uuid), transport->lookup_uuid);
-                        transport->lookup_uuid[ uuid_size] = '\0';
+                        transport->lookup_uuid[ UUID_SIZE] = '\0';
                      }
                      else
                      {

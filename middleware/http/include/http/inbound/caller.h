@@ -13,6 +13,7 @@
 #include <map>
 #include <iostream>
 
+
 namespace std
 {
    std::ostream &operator<<( std::ostream& stream, const std::vector< std::pair< std::string, std::string>>& input);
@@ -21,6 +22,8 @@ namespace std
 extern "C"
 {
 #endif
+
+   #define UUID_SIZE 32
 
    typedef struct header_data_s
    {
@@ -39,8 +42,6 @@ extern "C"
       char *data;
       long size;
    } buffer_type;
-
-   const long uuid_size = 32;
 
    typedef struct casual_buffer_s
    {
@@ -64,11 +65,11 @@ extern "C"
       //!
       //! misc
       //!
-      char service[XATMI_SERVICE_NAME_LENGTH];
+      char service[ XATMI_SERVICE_NAME_LENGTH];
       char protocol[80];
 
       long descriptor;
-      char lookup_uuid[ uuid_size + 1];
+      char lookup_uuid[ UUID_SIZE + 1];
       long code;
    } casual_buffer_type;
 
