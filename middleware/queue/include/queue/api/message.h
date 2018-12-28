@@ -10,7 +10,7 @@
 
 #include "serviceframework/namevaluepair.h"
 #include "serviceframework/platform.h"
-
+#include "serviceframework/log.h"
 
 #include <string>
 
@@ -46,8 +46,6 @@ namespace casual
             archive & CASUAL_MAKE_NVP( available);
          })
 
-         friend std::ostream& operator << ( std::ostream& out, const Attributes& value);
-
       };
 
       struct Selector
@@ -80,7 +78,6 @@ namespace casual
             archive & CASUAL_MAKE_NVP( type);
             archive & CASUAL_MAKE_NVP( data);
          })
-         friend std::ostream& operator << ( std::ostream& out, const Payload& value);
       };
 
 
@@ -108,14 +105,6 @@ namespace casual
             archive & CASUAL_MAKE_NVP( attributes);
             archive & CASUAL_MAKE_NVP( payload);
          })
-
-         friend std::ostream& operator << ( std::ostream& out, const basic_message& value)
-         {
-            return out << "{ id: " << value.id
-               << ", attributes: " << value.attributes
-               << ", payload: " << value.payload
-               << '}';
-         }
       };
 
 

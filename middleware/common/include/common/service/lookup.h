@@ -28,7 +28,7 @@ namespace casual
                using Reply = message::service::lookup::Reply;
                using State = Reply::State;
 
-               Lookup() noexcept = default;
+               Lookup() noexcept;
                
                
                //! Lookup an entry point for the @p service
@@ -57,15 +57,13 @@ namespace casual
 
             protected:
 
-               bool update( Reply&& reply) const;
+               bool update( Reply&& reply);
 
                std::string m_service;
-               mutable Uuid m_correlation;
-               mutable optional< Reply> m_reply;
+               Uuid m_correlation;
+               optional< Reply> m_reply;
             };
          } // detail
-
-         
 
          struct Lookup : detail::Lookup
          {
@@ -79,7 +77,7 @@ namespace casual
             //!
             //! @throws common::exception::xatmi::service::no::Entry if the service is not present or discovered
             //!
-            const Reply& operator () () const;
+            const Reply& operator () ();
          };
 
          namespace non
@@ -95,7 +93,7 @@ namespace casual
 
                   //! return true if the service is ready to be called
                   //! @throws common::exception::xatmi::service::no::Entry if the service is not present or discovered
-                  explicit operator bool () const;
+                  explicit operator bool ();
 
                   //! converts this non-blocking to a blocking lookup
                   //! usage:
