@@ -40,6 +40,8 @@ extern "C"
       long size;
    } buffer_type;
 
+   const long uuid_size = 32;
+
    typedef struct casual_buffer_s
    {
       //!
@@ -66,12 +68,26 @@ extern "C"
       char protocol[80];
 
       long descriptor;
+      char lookup_uuid[ uuid_size + 1];
       long code;
    } casual_buffer_type;
 
-   long casual_xatmi_send(casual_buffer_type *data);
-   long casual_xatmi_receive(casual_buffer_type *data);
-   long casual_xatmi_cancel(casual_buffer_type *data);
+   //!
+   //! Communicate with service manager
+   //!
+   long casual_xatmi_lookup( casual_buffer_type* data);
+   //!
+   //! Make the call
+   //!
+   long casual_xatmi_send( casual_buffer_type* data);
+   //!
+   //! Get the response
+   //!
+   long casual_xatmi_receive( casual_buffer_type* data);
+   //!
+   //! Abort the call
+   //!
+   long casual_xatmi_cancel( casual_buffer_type* data);
 
    enum
    {

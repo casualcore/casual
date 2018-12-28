@@ -5,6 +5,8 @@
 //!
 
 #include <vector>
+#include <unordered_map>
+#include <string>
 
 #include "http/common.h"
 #include "http/inbound/caller.h"
@@ -26,6 +28,34 @@ namespace std
       return stream;
    }
 }
+
+namespace local
+{
+namespace
+{
+   bool empty( const char* const content)
+   {
+      if ( content == nullptr )
+      {
+         return true;
+      }
+      return std::string( content).empty();
+   }
+
+   //!
+   //! Subclass to get protected correlationid to use as key in global storage
+   //!
+   struct Lookup : casual::common::service::non::blocking::Lookup
+   {
+      using casual::common::service::non::blocking::Lookup::Lookup;
+
+      std::string id() const
+      {
+         return casual::common::uuid::string( m_correlation);
+      }
+   };
+}
+}
 namespace casual
 {
    using namespace common;
@@ -35,7 +65,25 @@ namespace casual
       namespace inbound
       {
          namespace
-         {
+         { 
+            namespace lookup
+            {
+               //!
+               //! global store for Lookup-objects
+               //!
+               std::unordered_map< std::string, local::Lookup> store;
+
+               std::string add( local::Lookup&& lookup)
+               {
+                  const auto id = lookup.id(); 
+                  store.emplace( id, std::move( lookup));
+                  return id;
+               }
+               
+               void remove( const std::string& key) { store.erase( key); }
+               
+               local::Lookup& get( const std::string& key) { return store.at( key); }
+            }
             namespace header
             {
                common::service::header::Fields copy( const header_type& headers)
@@ -322,142 +370,183 @@ namespace casual
                }
             }
 
-
-            long send( casual_buffer_type* transport)
+            namespace service
             {
-               const http::Trace trace("casual::http::inbound::send");
-               const auto& protocol = transport->protocol;
-               const auto& service = transport->service;
-
-               log::line( verbose::log, "protocol: ", protocol);
-               log::line( verbose::log, "service: ", service);
-
-               transport->context = cTPACALL;
-
-               try
+               //!
+               //! Contacts service-manager and gets a lookup object.
+               //! When lookup object returns true, the service-manager is
+               //! ready to handle the actual call
+               //!
+               long lookup( casual_buffer_type* transport)
                {
-                  // use this in transport, and check if it's ready?
-                  // if( transport->lookup)
-                  //   ... do this stuff and make the call
+                  const http::Trace trace("casual::http::inbound::service::lookup");
+                  const auto& service = transport->service;
 
-                  common::service::non::blocking::Lookup lookup{ service};
+                  log::line( verbose::log, "service: ", service);
 
-                  // Handle header
-                  const auto& header = header::copy( transport->header_in);
-                  common::service::header::fields( header);
+                  try
+                  { 
+                     std::string uuid;
+                     if ( local::empty( transport->lookup_uuid))
+                     {
+                        uuid = lookup::add( std::move( local::Lookup{ service}));
+                        std::copy( std::begin( uuid), std::end( uuid), transport->lookup_uuid);
+                        transport->lookup_uuid[ uuid_size] = '\0';
+                     }
+                     else
+                     {
+                        uuid = transport->lookup_uuid;
+                     }
 
-                  // Handle parameter
-                  const auto& parameters = parameter::copy( transport->parameter);
-                  log::line( verbose::log, "parameters: ", parameters);
-
-                  // Handle buffer
-                  auto buffer = buffer::assemble( transport, parameters, protocol);
-                  common::buffer::Payload payload( protocol::convert::to::buffer( protocol), buffer);
-                  payload = buffer::input::transform( std::move( payload), protocol);
-
-                  // Call service
-                  namespace call = common::service::call;
-                  transport->descriptor = call::context().async( std::move( lookup), common::buffer::payload::Send( payload), call::async::Flag::no_block);
+                     log::line( verbose::log, "uuid: ", uuid);
+                     return lookup::get( uuid) ? OK : AGAIN;
+                  }
+                  catch ( ...)
+                  {
+                     return exception::handle( transport);
+                  }
                }
-               catch (...)
+
+               long send( casual_buffer_type* transport)
                {
+                  const http::Trace trace("casual::http::inbound::service::send");
+                  const auto& protocol = transport->protocol;
+                  const auto& service = transport->service;
+
+                  log::line( verbose::log, "protocol: ", protocol);
+                  log::line( verbose::log, "service: ", service);
+
+                  transport->context = cTPACALL;
+
+                  const auto uuid = transport->lookup_uuid;
+
+                  try
+                  {
+                     //
+                     // Lookup done, ready to call
+                     //
+                     log::line( verbose::log, "uuid: ", uuid);
+                     auto&& lookup = std::move( lookup::get( uuid));
+
+                     // Handle header
+                     const auto& header = header::copy( transport->header_in);
+                     common::service::header::fields( header);
+
+                     // Handle parameter
+                     const auto& parameters = parameter::copy( transport->parameter);
+                     log::line( verbose::log, "parameters: ", parameters);
+
+                     // Handle buffer
+                     auto buffer = buffer::assemble( transport, parameters, protocol);
+                     common::buffer::Payload payload( protocol::convert::to::buffer( protocol), buffer);
+                     payload = buffer::input::transform( std::move( payload), protocol);
+
+                     // Call service
+                     namespace call = common::service::call;
+                     transport->descriptor = call::context().async( std::move( lookup), common::buffer::payload::Send( payload), call::async::Flag::no_block);
+                  }
+                  catch (...)
+                  {
+                     //
+                     // Header cleanup
+                     //
+                     common::service::header::fields().clear();
+                     lookup::remove( uuid);
+                     return exception::handle( transport);
+                  }
+
+                  transport->code = cast::underlying( common::code::xatmi::ok);
+
                   //
                   // Header cleanup
                   //
                   common::service::header::fields().clear();
 
-                  return exception::handle( transport);
-               }
-
-               transport->code = cast::underlying( common::code::xatmi::ok);
-
-               //
-               // Header cleanup
-               //
-               common::service::header::fields().clear();
-
-               return OK;
-            }
-
-            long receive( casual_buffer_type* transport)
-            {
-               const http::Trace trace("casual::http::inbound::receive");
-               const auto& protocol = transport->protocol;
-               const auto& descriptor = transport->descriptor;
-               const auto& service = transport->service;
-
-               log::line( verbose::log, "protocol: ", protocol);
-               log::line( verbose::log, "service: ", service);
-               log::line( verbose::log, "descriptor: ", descriptor);
-
-               transport->context = cTPGETRPLY;
-
-               try
-               {
-                  //
-                  // Handle reply
-                  //
-                  namespace call = common::service::call;
-                  auto reply = call::context().reply( descriptor, call::reply::Flag::no_block);
-
-                  //
-                  // Handle buffer
-                  //
-                  auto output = buffer::output::transform( std::move( reply.buffer), protocol);
-                  transport->payload = buffer::copy( output.memory);
-
-                  //
-                  // Handle reply headers
-                  //
-                  header::codes::add( cast::underlying( common::code::xatmi::ok), reply.user);
-                  transport->header_out = inbound::header::copy( common::service::header::fields());
-
-                  //
-                  // Header cleanup
-                  //
-                  common::service::header::fields().clear();
+                  lookup::remove( uuid);
 
                   return OK;
                }
-               catch ( const common::exception::xatmi::no::Message&)
+
+               long receive( casual_buffer_type* transport)
                {
-                  //
-                  // No reply yet, try again later
-                  //
-                  return AGAIN;
+                  const http::Trace trace("casual::http::inbound::service::receive");
+                  const auto& protocol = transport->protocol;
+                  const auto& descriptor = transport->descriptor;
+                  const auto& service = transport->service;
+
+                  log::line( verbose::log, "protocol: ", protocol);
+                  log::line( verbose::log, "service: ", service);
+                  log::line( verbose::log, "descriptor: ", descriptor);
+
+                  transport->context = cTPGETRPLY;
+
+                  try
+                  {
+                     //
+                     // Handle reply
+                     //
+                     namespace call = common::service::call;
+                     auto reply = call::context().reply( descriptor, call::reply::Flag::no_block);
+
+                     //
+                     // Handle buffer
+                     //
+                     auto output = buffer::output::transform( std::move( reply.buffer), protocol);
+                     transport->payload = buffer::copy( output.memory);
+
+                     //
+                     // Handle reply headers
+                     //
+                     header::codes::add( cast::underlying( common::code::xatmi::ok), reply.user);
+                     transport->header_out = inbound::header::copy( common::service::header::fields());
+
+                     //
+                     // Header cleanup
+                     //
+                     common::service::header::fields().clear();
+
+                     return OK;
+                  }
+                  catch ( const common::exception::xatmi::no::Message&)
+                  {
+                     //
+                     // No reply yet, try again later
+                     //
+                     return AGAIN;
+                  }
+                  catch (...)
+                  {
+                     return exception::handle( transport);
+                  }
                }
-               catch (...)
+
+               long cancel( casual_buffer_type* transport)
                {
-                  return exception::handle( transport);
-               }
-            }
+                  const http::Trace trace("casual::http::inbound::service::cancel");
+                  const auto& protocol = transport->protocol;
+                  const auto& descriptor = transport->descriptor;
+                  const auto& service = transport->service;
 
-            long cancel( casual_buffer_type* transport)
-            {
-               const http::Trace trace("casual::http::inbound::cancel");
-               const auto& protocol = transport->protocol;
-               const auto& descriptor = transport->descriptor;
-               const auto& service = transport->service;
+                  log::line( verbose::log, "protocol: ", protocol);
+                  log::line( verbose::log, "service: ", service);
+                  log::line( verbose::log, "descriptor: ", descriptor);
 
-               log::line( verbose::log, "protocol: ", protocol);
-               log::line( verbose::log, "service: ", service);
-               log::line( verbose::log, "descriptor: ", descriptor);
+                  transport->context = cTPGETRPLY;
 
-               transport->context = cTPGETRPLY;
+                  try
+                  {
+                     //
+                     // Handle reply
+                     //
+                     namespace call = common::service::call;
+                     call::context().cancel( descriptor);
 
-               try
-               {
-                  //
-                  // Handle reply
-                  //
-                  namespace call = common::service::call;
-                  call::context().cancel( descriptor);
-
-                  return OK;
-               }
-               catch (...)
-               {
-                  return exception::handle( transport);
+                     return OK;
+                  }
+                  catch (...)
+                  {
+                     return exception::handle( transport);
+                  }
                }
             }
          }
@@ -465,18 +554,23 @@ namespace casual
    }
 }
 
+long casual_xatmi_lookup( casual_buffer_type* data)
+{
+   return casual::http::inbound::service::lookup( data);
+}
+
 long casual_xatmi_send( casual_buffer_type* data)
 {
-   return casual::http::inbound::send(data);
+   return casual::http::inbound::service::send( data);
 }
 
 long casual_xatmi_receive( casual_buffer_type* data)
 {
-   return casual::http::inbound::receive(data);
+   return casual::http::inbound::service::receive( data);
 }
 
 long casual_xatmi_cancel( casual_buffer_type* data)
 {
-   return casual::http::inbound::cancel(data);
+   return casual::http::inbound::service::cancel( data);
 }
 

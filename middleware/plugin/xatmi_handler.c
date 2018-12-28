@@ -8,6 +8,7 @@
 
 // Global representation av senaste xatmi errorkod
 long xatmi_tperrno;
+
 //Global representation av senaste context där fel uppstod.
 enum xatmi_context xatmi_error_context;
 
@@ -41,7 +42,6 @@ ngx_str_t copy_data( const char* const source, ngx_http_request_t* r)
    destination.data[size] = '\0';
    return destination;
 }
-
 
 ngx_int_t set_custom_header_in_headers_out(ngx_http_request_t* r, header_type header_out)
 {
@@ -79,12 +79,38 @@ ngx_int_t set_custom_header_in_headers_out(ngx_http_request_t* r, header_type he
     return NGX_OK;
 }
 
-
 ngx_int_t xatmi_call( ngx_http_xatmi_ctx_t* client_context, ngx_http_request_t* r)
 {
    ngx_log_debug1(NGX_LOG_DEBUG_ALL, r->connection->log, 0, "xatmi: calling service [%s]", client_context->service);
    ngx_log_debug1(NGX_LOG_DEBUG_ALL, r->connection->log, 0, "xatmi: call [%V]", &client_context->call);
 
+   casual_buffer_type transport;
+   strcpy( transport.protocol, (char*)client_context->protocol);
+   strcpy( transport.service, (char*)client_context->service);
+   strcpy( transport.lookup_uuid, (char*)client_context->lookup_uuid);
+   ngx_log_debug1(NGX_LOG_DEBUG_ALL, r->connection->log, 0, "xatmi: lookup_uuid [%s]", client_context->lookup_uuid);
+
+   long response = casual_xatmi_lookup( &transport);
+
+   if (response == AGAIN)
+   {
+      strcpy( (char*)client_context->lookup_uuid, transport.lookup_uuid);
+      return NGX_AGAIN;
+   }
+   else if ( response == ERROR)
+   {
+      xatmi_error_context = transport.context;
+      xatmi_tperrno = transport.code;
+      client_context->reply = copy_buffer( transport.payload,  r);
+      client_context->code = transport.code;
+      set_custom_header_in_headers_out( r, transport.header_out);
+      free( transport.payload.data);
+      return NGX_ERROR;
+   }
+
+   //
+   // Service manager ready, time to make the call
+   //
    ngx_int_t headersize = get_header_length(r);
    ngx_log_debug1(NGX_LOG_DEBUG_ALL, r->connection->log, 0, "xatmi: headerlength [%d]", headersize);
    header_data_type* header = NULL;
@@ -95,18 +121,17 @@ ngx_int_t xatmi_call( ngx_http_xatmi_ctx_t* client_context, ngx_http_request_t* 
       copy_headers(r, header);
    }
 
-   casual_buffer_type transport;
    transport.header_in.data = header;
    transport.header_in.size = headersize;
    transport.header_out.data = 0;
    transport.header_out.size = 0;
    transport.payload = copy( client_context->call);
    transport.parameter = copy( r->args);
-   strcpy( transport.protocol, (char*)client_context->protocol);
-   strcpy( transport.service, (char*)client_context->service);
 
-   long response = casual_xatmi_send( &transport);
-   set_custom_header_in_headers_out( r, transport.header_out);
+   //
+   // Make the call
+   //
+   response = casual_xatmi_send( &transport);
 
    if (response == ERROR)
    {
@@ -129,7 +154,6 @@ ngx_int_t xatmi_call( ngx_http_xatmi_ctx_t* client_context, ngx_http_request_t* 
 
    return transport.descriptor;
 }
-
 
 ngx_int_t xatmi_receive( ngx_http_xatmi_ctx_t* client_context, ngx_http_request_t* r)
 {
@@ -257,8 +281,6 @@ void xatmi_terminate( )
 {
    //tpterm();
 }
-
-
 
 void error_handler(ngx_http_request_t* r, ngx_http_xatmi_ctx_t* client_context)
 {
