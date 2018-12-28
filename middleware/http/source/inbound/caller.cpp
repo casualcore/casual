@@ -403,6 +403,11 @@ namespace casual
                   }
                   catch ( ...)
                   {
+                     //
+                     // Header cleanup
+                     //
+                     common::service::header::fields().clear();
+
                      return exception::handle( transport);
                   }
                }
@@ -458,10 +463,9 @@ namespace casual
                   transport->code = cast::underlying( common::code::xatmi::ok);
 
                   //
-                  // Header cleanup
+                  // Cleanup
                   //
                   common::service::header::fields().clear();
-
                   lookup::remove( uuid);
 
                   return OK;
@@ -516,6 +520,11 @@ namespace casual
                   }
                   catch (...)
                   {
+                     //
+                     // Header cleanup
+                     //
+                     common::service::header::fields().clear();
+
                      return exception::handle( transport);
                   }
                }
