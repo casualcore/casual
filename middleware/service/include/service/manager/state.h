@@ -16,6 +16,8 @@
 #include "common/message/service.h"
 #include "common/message/pending.h"
 
+#include "common/metric.h"
+
 #include "common/server/service.h"
 
 
@@ -167,26 +169,7 @@ namespace casual
 
             namespace service
             {
-               struct Metric
-               {
-                  inline size_type count() const { return m_count;}
-                  inline common::platform::time::unit total() const { return m_total;}
-
-                  void add( const common::platform::time::unit& duration);
-
-                  template< typename R, typename P>
-                  void add( const std::chrono::duration< R, P>& duration)
-                  {
-                     add( std::chrono::duration_cast< common::platform::time::unit>( duration));
-                  }
-
-                  void reset();
-
-               private:
-                  size_type m_count = 0;
-                  common::platform::time::unit m_total = common::platform::time::unit::zero();
-
-               };
+               using Metric = common::Metric;
 
                struct Pending
                {
@@ -205,9 +188,7 @@ namespace casual
 
                   using local_base = std::reference_wrapper< state::instance::Sequential>;
 
-                  //!
                   //! Just a helper to simplify usage of the reference
-                  //!
                   struct Sequential : local_base
                   {
                      using local_base::local_base;

@@ -142,7 +142,6 @@ casual_common_objectfiles = [
     Compile( 'source/transcode.cpp'),
     Compile( 'source/timeout.cpp'),
     
-    #Compile( 'source/arguments.cpp'),
     Compile( 'source/argument.cpp'),
     Compile( 'source/argument/cardinality.cpp'),
     Compile( 'source/terminal.cpp'),
@@ -292,6 +291,7 @@ unittest_objectfiles = [
     Compile( 'unittest/source/test_functional.cpp'),
 
     Compile( 'unittest/source/test_argument.cpp'),
+    Compile( 'unittest/source/test_metric.cpp'),
 
     #Compile( 'unittest/source/communication/test_pipe.cpp'),
 ]

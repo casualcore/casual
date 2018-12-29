@@ -357,10 +357,7 @@ namespace casual
 
             namespace size
             {
-
-               //!
                //! The common type used to represent sizes (especially in buffers)
-               //!
                using type = platform::size::type;
 
             } // size
@@ -397,9 +394,7 @@ namespace casual
          {
             namespace clock
             {
-               // 
                // If we need to_time_t, we need to use system_clock
-               //
                using type = std::chrono::system_clock;
             } // clock
 
@@ -409,15 +404,18 @@ namespace casual
             } // point
 
             using unit = point::type::duration;
-
+            namespace limit
+            {
+               constexpr auto zero() noexcept { return std::chrono::duration_cast< time::unit>( std::chrono::nanoseconds::zero());}
+               constexpr auto max() noexcept { return std::chrono::duration_cast< time::unit>( std::chrono::nanoseconds::max());}
+               constexpr auto min() noexcept { return std::chrono::duration_cast< time::unit>( std::chrono::nanoseconds::min());}
+            } // limit
          } // time
 
 
          namespace descriptor
          {
-            //!
             //! Call-descriptor type
-            //!
             using type = int;
          } // descriptor
 
@@ -426,9 +424,7 @@ namespace casual
       } // platform
    } // common
 
-   //!
    //! Overload for time_type
-   //!
    //! @{
 
    template< typename R, typename P, typename M>

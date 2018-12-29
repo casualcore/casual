@@ -114,18 +114,14 @@ namespace casual
 
                      }
                   } // eventually
-
-
                } // <unnamed>
             } // local
 
 
             void process_exit( const common::process::lifetime::Exit& exit)
             {
-               //
                // We put a dead process event on our own ipc device, that
                // will be handled later on.
-               //
                common::message::event::process::Exit event{ exit};
                communication::ipc::inbound::device().push( std::move( event));
             }
@@ -164,7 +160,6 @@ namespace casual
 
                   log::line( verbose::log, "message: ", message);
 
-                  //
                   // we need to check if the dead process has anyone wating for a reply
                   if( auto found = common::algorithm::find( m_state.instances.sequential, message.state.pid))
                   {
@@ -263,7 +258,7 @@ namespace casual
                         auto service = m_state.find_service( s.name);
                         if( service)
                         {
-                           service->metric.add( s.duration);
+                           service->metric += s.duration;
 
                            // TODO: do we need more accuracy?
                            service->last( now);
@@ -555,10 +550,8 @@ namespace casual
                   auto& instance = m_state.local( message.process.pid);
                   auto service = instance.unreserve( now);
 
-                  //
                   // Check if there are pending request for services that this
                   // instance has.
-                  //
 
                   {
                      auto pending = common::algorithm::find_if( m_state.pending.requests, [&]( const auto& p){
@@ -569,16 +562,14 @@ namespace casual
                      {
                         log::line( verbose::log, "found pendig: ", *pending);
 
-                        //
                         // We now know that there are one idle server that has advertised the
                         // requested service (we've just marked it as idle...).
                         // We can use the normal request to get the response
-                        //
                         service::Lookup lookup( m_state);
                         lookup( pending->request);
 
                         // add pending metrics
-                        service->pending.add( now - pending->when);
+                        service->pending += now - pending->when;
 
                         // Remove pending
                         m_state.pending.requests.erase( std::begin( pending));

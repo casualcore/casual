@@ -418,9 +418,7 @@ namespace casual
          using is_movable = is_nothrow_movable< T>;
          
 #else
-         //!
          //!  containers and std::string is not noexcept movable with gcc 4.9.x
-         //!
          template< typename T>
          struct is_movable : bool_constant<
             std::is_move_constructible< T>::value && std::is_move_assignable< T>::value> {};
@@ -435,9 +433,7 @@ namespace casual
 
 
 
-         //!
          //! Arbitrary number of types to compare if same
-         //!
          //! @{
          template< typename T1, typename T2, typename... Args>
          struct is_same : bool_constant< is_same< T1, T2>::value && is_same< T2, Args...>::value>
@@ -451,9 +447,7 @@ namespace casual
          };
          //! @}
 
-         //!
          //! Answer the question if T is the same type as any of the options
-         //! 
          //! @{
          template< typename T, typename Option, typename... Options>
          struct is_any : bool_constant< is_same< T, Option>::value || is_any< T, Options...>::value>

@@ -128,7 +128,6 @@ namespace casual
             };
          };
 
-
          namespace detail
          {
             template< typename S>
@@ -151,9 +150,10 @@ namespace casual
          } // detail
 
          template< typename S, typename... Args>
-         void write( S& stream, Args&&... args)
+         S& write( S& stream, Args&&... args)
          {
             detail::part( stream, std::forward< Args>( args)...);
+            return stream;
          }
          
       } // stream

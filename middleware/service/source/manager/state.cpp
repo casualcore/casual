@@ -194,18 +194,6 @@ namespace casual
             namespace service
             {
 
-               void Metric::add( const common::platform::time::unit& duration)
-               {
-                  ++m_count;
-                  m_total += duration;
-               }
-
-               void Metric::reset()
-               {
-                  m_count = 0;
-                  m_total = common::platform::time::unit::zero();
-               }
-
                std::ostream& operator << ( std::ostream& out, const Pending& value)
                {
                   return out << "{ request: " << value.request
@@ -272,7 +260,7 @@ namespace casual
             void Service::unreserve( const common::platform::time::point::type& now, const common::platform::time::point::type& then)
             {
                m_last = now;
-               metric.add( now - then);
+               metric += now - then;
             }
 
             void Service::partition_remote_instances()
@@ -290,8 +278,10 @@ namespace casual
 
             void Service::metric_reset()
             {
-               metric.reset();
-               pending.reset();
+               metric = {};
+               pending = {};
+               m_remote_invocations = 0;
+               m_last = common::platform::time::point::type::min();
             }
 
             common::process::Handle Service::reserve( 

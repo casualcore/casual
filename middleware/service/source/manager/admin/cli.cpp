@@ -363,15 +363,27 @@ namespace casual
                   return value.metrics.count;
                };
 
+               using time_type = std::chrono::duration< double>;
+
                auto format_avg_time = []( const admin::ServiceVO& value){
                   if( value.metrics.count == 0)
-                  {
                      return 0.0;
-                  }
 
-                  using second_t = std::chrono::duration< double>;
-                  return std::chrono::duration_cast< second_t>( value.metrics.total / value.metrics.count).count();
+                  return std::chrono::duration_cast< time_type>( value.metrics.total / value.metrics.count).count();
                };
+
+               
+
+               auto format_min_time = []( const admin::ServiceVO& value)
+               {
+                  return std::chrono::duration_cast< time_type>( value.metrics.limit.min).count();
+               };
+
+               auto format_max_time = []( const admin::ServiceVO& value)
+               {
+                  return std::chrono::duration_cast< time_type>( value.metrics.limit.max).count();
+               };
+
 
 
                auto format_pending_count = []( const admin::ServiceVO& value){
@@ -383,9 +395,7 @@ namespace casual
                   {
                      return 0.0;
                   }
-
-                  using second_t = std::chrono::duration< double>;
-                  return std::chrono::duration_cast< second_t>( value.pending.total / value.metrics.count).count();
+                  return std::chrono::duration_cast< time_type>( value.pending.total / value.metrics.count).count();
                };
 
                auto format_last = []( const admin::ServiceVO& value){
@@ -400,6 +410,8 @@ namespace casual
                   terminal::format::column( "I", format::instance::local::total{}, terminal::color::white, terminal::format::Align::right),
                   terminal::format::column( "C", format_invoked, terminal::color::white, terminal::format::Align::right),
                   terminal::format::column( "AT", format_avg_time, terminal::color::white, terminal::format::Align::right),
+                  terminal::format::column( "min", format_min_time, terminal::color::white, terminal::format::Align::right),
+                  terminal::format::column( "max", format_max_time, terminal::color::white, terminal::format::Align::right),
                   terminal::format::column( "P", format_pending_count, terminal::color::magenta, terminal::format::Align::right),
                   terminal::format::column( "PAT", format_avg_pending_time, terminal::color::magenta, terminal::format::Align::right),
                   terminal::format::column( "RI", format::instance::remote::total{}, terminal::color::cyan, terminal::format::Align::right),
@@ -599,11 +611,15 @@ namespace casual
     C:
        calls - number of calls to the service
     AT:
-       average-time - the average time of the service
+       average-time - the average time of the service (in seconds)
+    min:
+       minimum-time - the minimum time of the service (in seconds)
+    max:
+       maximum-time - the maximum time of the service (in seconds)
     P
        Pending - total number of pending request, over time.
     PAT
-       Pending-Average-Time - the average time request has waited for a service to be available, over time.
+       Pending-Average-Time - the average time request has waited for a service to be available, over time (in seconds)
     RI:
        Remote-Instances - number of remote instances
     RC:

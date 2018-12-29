@@ -40,7 +40,7 @@ namespace casual
                struct SequentialVO : Base
                {
 
-                  enum class State : char
+                  enum class State : short
                   {
                      idle,
                      busy,
@@ -70,13 +70,30 @@ namespace casual
                struct Metric
                {
                   serviceframework::platform::size::type count = 0;
-                  std::chrono::nanoseconds total;
+                  std::chrono::nanoseconds total = std::chrono::nanoseconds::zero();
+
+                  struct Limit 
+                  {
+                     std::chrono::nanoseconds min = std::chrono::nanoseconds::zero();
+                     std::chrono::nanoseconds max = std::chrono::nanoseconds::zero();
+
+
+                     CASUAL_CONST_CORRECT_SERIALIZE(
+                     {
+                        archive & CASUAL_MAKE_NVP( min);
+                        archive & CASUAL_MAKE_NVP( max);
+                     })
+
+                  } limit;
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
                   {
                      archive & CASUAL_MAKE_NVP( count);
                      archive & CASUAL_MAKE_NVP( total);
+                     archive & CASUAL_MAKE_NVP( limit);
                   })
+
+                  
                };
 
                namespace instance
