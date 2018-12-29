@@ -147,12 +147,11 @@ namespace casual
 
       namespace detail
       {
-         template< typename F, typename... Base> 
-         auto c_wrapper( view::String value, F&& function, Base... base)
+         auto c_wrapper = []( view::String value, auto&& function, auto... base) noexcept
          {
             char* end = nullptr;
-            return function( std::begin( value), &end, std::forward< Base>( base)...);
-         }
+            return function( std::begin( value), &end, base...);
+         };
 
          template< typename R, typename Enable = void>
          struct from_string;
@@ -160,19 +159,19 @@ namespace casual
          template< typename T >
          struct from_string< T, std::enable_if_t< std::is_integral< T>::value &&  std::is_signed< T>::value>>
          { 
-            static T get( view::String value) { return c_wrapper( value, ::strtol, 10);} 
+            static T get( view::String value) { return c_wrapper( value, &::strtol, 10);} 
          };
 
          template< typename T >
          struct from_string< T, std::enable_if_t< std::is_integral< T>::value &&  ! std::is_signed< T>::value>>
          { 
-            static T get( view::String value) { return c_wrapper( value, ::strtoul, 10);} 
+            static T get( view::String value) { return c_wrapper( value, &::strtoul, 10);} 
          };
 
          template< typename T >
          struct from_string< T, std::enable_if_t< std::is_floating_point< T>::value>>
          { 
-            static T get( view::String value) { return c_wrapper( value, ::strtod);} 
+            static T get( view::String value) { return c_wrapper( value, &::strtod);} 
          };
 
          template<>

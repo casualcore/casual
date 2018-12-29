@@ -24,7 +24,7 @@ namespace casual
          using uuid_type = platform::uuid::type;
 
 
-         Uuid() = default;
+         Uuid() noexcept = default;
 
          Uuid( Uuid&& other) noexcept;
          Uuid& operator = ( Uuid&& other) noexcept;

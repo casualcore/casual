@@ -60,7 +60,7 @@ def common_backend_builder = '''
 umask 000
 mkdir -p /git/casual/dumps
 cd /git/casual
-find . -name "*.gcda" -print | xargs rm
+find . -name "*.gc*" -print | xargs rm
 find . -name "report.xml" -print | xargs rm
 rm -rf middleware/.casual/unittest/.singleton/.domain-singleton
 casual-make --no-colors -d -a --use-valgrind make && \
@@ -103,12 +103,13 @@ BRANCH=''' + env.BRANCH_NAME + '''
 
 performCoverageMeasuring()
 {
-   cd /git/casual && \
-   mkdir -p /git/casual/coverage && \
-   gcovr -r . --html --html-details --gcov-exclude='.*thirdparty.*|.*test_.*' -o coverage/index.html
+   echo "Perform no coverage measuring"
+   # cd /git/casual && \
+   # mkdir -p /git/casual/coverage && \
+   # gcovr -r . --html --html-details --gcov-exclude='.*thirdparty.*|.*test_.*' -o coverage/index.html
 }
 
-source scl_source enable devtoolset-4
+source scl_source enable devtoolset-7
 
 ''' + common_backend_builder
 
@@ -298,7 +299,7 @@ try
                   archive includes: '**/casual-middleware*.rpm'
 
                   stash includes: '**/casual-middleware*.rpm', name: 'centos_backend'
-
+/*
                   publishHTML (target: [
                      allowMissing: false,
                      alwaysLinkToLastBuild: false,
@@ -307,6 +308,7 @@ try
                      reportFiles: '*.html',
                      reportName: "GCOV Report"
                   ])
+*/
                }
 
                if ( isPublishable() )

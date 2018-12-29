@@ -19,6 +19,8 @@ namespace casual
       {
          namespace detail
          {
+            Lookup::Lookup() noexcept {};
+
             Lookup::Lookup( std::string service, Context context) : m_service( std::move( service))
             {
                Trace trace{ "common::service::Lookup"};
@@ -66,7 +68,22 @@ namespace casual
             }
 
             Lookup::Lookup( Lookup&&) noexcept = default;
+
+// casual compiler compatible
+# if defined __GNUC__
+#  if (__GNUC__ == 7) && (__GNUC_MINOR__ == 3)
+
+            Lookup& Lookup::operator = ( Lookup&& other) noexcept
+            {
+               m_service = std::move( other.m_service);
+               m_correlation = std::move( other.m_correlation);
+               m_reply = std::move( other.m_reply);
+               return *this;
+            }
+#  else
             Lookup& Lookup::operator = ( Lookup&&) noexcept = default;
+#  endif
+#endif
 
             void swap( Lookup& lhs, Lookup& rhs)
             {
@@ -82,7 +99,7 @@ namespace casual
                   << '}';
             }
 
-            bool Lookup::update( Reply&& reply) const
+            bool Lookup::update( Reply&& reply)
             {
                log::line( verbose::log, "reply: ", reply);
 
@@ -105,7 +122,7 @@ namespace casual
             }
          } // detail
 
-         const Lookup::Reply& Lookup::operator () () const
+         const Lookup::Reply& Lookup::operator () ()
          {
             Trace trace{ "common::service::Lookup::operator()"};
 
@@ -123,7 +140,7 @@ namespace casual
          {
             namespace blocking
             {
-               Lookup::operator bool () const
+               Lookup::operator bool ()
                {
                   if( ! m_reply || ! uuid::empty( m_correlation))
                   {
