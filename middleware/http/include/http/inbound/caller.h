@@ -9,21 +9,9 @@
 #include <xatmi.h>
 
 #ifdef __cplusplus
-
-#include <map>
-#include <iostream>
-
-
-namespace std
-{
-   std::ostream &operator<<( std::ostream& stream, const std::vector< std::pair< std::string, std::string>>& input);
-}
-
 extern "C"
 {
 #endif
-
-   #define UUID_SIZE 32
 
    typedef struct header_data_s
    {
@@ -69,7 +57,7 @@ extern "C"
       char protocol[80];
 
       long descriptor;
-      char lookup_uuid[ UUID_SIZE + 1];
+      long lookup_key;
       long code;
    } casual_buffer_type;
 

@@ -85,16 +85,19 @@ ngx_int_t xatmi_call( ngx_http_xatmi_ctx_t* client_context, ngx_http_request_t* 
    ngx_log_debug1(NGX_LOG_DEBUG_ALL, r->connection->log, 0, "xatmi: call [%V]", &client_context->call);
 
    casual_buffer_type transport;
-   strcpy( transport.protocol, (char*)client_context->protocol);
    strcpy( transport.service, (char*)client_context->service);
-   strcpy( transport.lookup_uuid, (char*)client_context->lookup_uuid);
-   ngx_log_debug1(NGX_LOG_DEBUG_ALL, r->connection->log, 0, "xatmi: lookup_uuid [%s]", client_context->lookup_uuid);
+   strcpy( transport.protocol, (char*)client_context->protocol);
+
+   transport.lookup_key = client_context->lookup_key;
+
+   ngx_log_debug1(NGX_LOG_DEBUG_ALL, r->connection->log, 0, "xatmi: lookup_key [%d]", client_context->lookup_key);
 
    long response = casual_xatmi_lookup( &transport);
 
    if (response == AGAIN)
    {
-      strcpy( (char*)client_context->lookup_uuid, transport.lookup_uuid);
+      client_context->lookup_key = transport.lookup_key;
+      ngx_log_debug1(NGX_LOG_DEBUG_ALL, r->connection->log, 0, "xatmi: lookup_key [%d]", client_context->lookup_key);
       return NGX_AGAIN;
    }
    else if ( response == ERROR)
