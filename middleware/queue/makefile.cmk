@@ -107,7 +107,6 @@ install_bin.append( queue_manager)
 queue_api = LinkLibrary( 'bin/casual-queue-api', 
    [
        Compile( 'source/api/queue.cpp'),
-       Compile( 'source/api/message.cpp')
    ],
    [
     common, 
@@ -131,7 +130,7 @@ forward_service = LinkExecutable( 'bin/casual-queue-forward-service',
     [
         Compile( 'source/forward/service.cpp'),
     ],
-    [ forward_common, common, queue_api, 'casual-xatmi', 'casual-common', 'casual-buffer'])
+    [ forward_common, common, queue_api, 'casual-xatmi', 'casual-common', 'casual-buffer', 'casual-serviceframework'])
 
 forward_queue = LinkExecutable( 'bin/casual-queue-forward-queue',
     [
