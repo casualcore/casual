@@ -35,12 +35,12 @@ namespace casual
             namespace call
             {
 
-               vo::State state()
+               admin::State state()
                {
                   serviceframework::service::protocol::binary::Call call;
                   auto reply = call( service::name::state());
 
-                  vo::State result;
+                  admin::State result;
 
                   reply >> CASUAL_MAKE_NVP( result);
 
@@ -50,14 +50,14 @@ namespace casual
 
                namespace update
                {
-                  std::vector< vo::resource::Proxy> instances( const std::vector< vo::update::Instances>& instances)
+                  std::vector< admin::resource::Proxy> instances( const std::vector< admin::update::Instances>& instances)
                   {
                      serviceframework::service::protocol::binary::Call call;
 
                      call << CASUAL_MAKE_NVP( instances);
                      auto reply = call( service::name::update::instances());
 
-                     std::vector< vo::resource::Proxy> result;
+                     std::vector< admin::resource::Proxy> result;
 
                      reply >> CASUAL_MAKE_NVP( result);
 
@@ -68,16 +68,37 @@ namespace casual
             } // call
 
 
-            namespace format
-            {
 
-               vo::Stats accumulate_statistics( const vo::resource::Proxy& value)
+            namespace format
+            {  
+               using time_type = std::chrono::duration< double>;
+               
+               auto accumulate_statistics( const admin::resource::Proxy& value)
                {
-                  auto result = value.statistics;
+                  struct Metrics
+                  {
+                     common::Metric resource;
+                     common::Metric roundtrip;
+                  };
+
+                  auto transform_metric = []( auto& v)
+                  {  
+                     common::Metric result;
+                     result.count = v.count;
+                     result.total = v.total;
+                     result.limit.min = v.limit.min;
+                     result.limit.max = v.limit.max;
+                     return result;
+                  };
+
+                  Metrics result;
+                  result.resource = transform_metric( value.metrics.resource);
+                  result.roundtrip = transform_metric( value.metrics.roundtrip);
 
                   for( auto& instance : value.instances)
                   {
-                     result += instance.statistics;
+                     result.resource += transform_metric( instance.metrics.resource);
+                     result.roundtrip += transform_metric( instance.metrics.roundtrip);
                   }
                   return result;
                }
@@ -86,31 +107,31 @@ namespace casual
                {
                   struct format_global
                   {
-                     std::string operator () ( const vo::Transaction& value) const { return value.trid.global; }
+                     std::string operator () ( const admin::Transaction& value) const { return value.trid.global; }
                   };
 
                   struct format_branch
                   {
-                     std::string operator () ( const vo::Transaction& value) const { return value.trid.branch; }
+                     std::string operator () ( const admin::Transaction& value) const { return value.trid.branch; }
                   };
 
                   struct format_owner
                   {
-                     auto operator () ( const vo::Transaction& value) const { return value.trid.owner.pid;}
+                     auto operator () ( const admin::Transaction& value) const { return value.trid.owner.pid;}
                   };
 
-                  auto format_state = []( const vo::Transaction& value){
+                  auto format_state = []( const admin::Transaction& value){
                      return common::string::compose( static_cast< common::code::xa>( value.state));
                   };
 
                   struct format_resources
                   {
-                     std::string operator () ( const vo::Transaction& value)
+                     std::string operator () ( const admin::Transaction& value)
                      { std::ostringstream out;  out << common::range::make( value.resources); return out.str();}
                   };
 
 
-                  return common::terminal::format::formatter< vo::Transaction>::construct(
+                  return common::terminal::format::formatter< admin::Transaction>::construct(
                      common::terminal::format::column( "global", format_global{}, common::terminal::color::yellow),
                      common::terminal::format::column( "branch", format_branch{}, common::terminal::color::grey),
                      common::terminal::format::column( "owner", format_owner{}, common::terminal::color::white, common::terminal::format::Align::right),
@@ -124,65 +145,47 @@ namespace casual
 
                   struct format_number_of_instances
                   {
-                     std::size_t operator() ( const vo::resource::Proxy& value) const
+                     std::size_t operator() ( const admin::resource::Proxy& value) const
                      {
                         return value.instances.size();
                      }
                   };
 
-
-                  struct format_invoked
+                  auto format_invoked = []( const admin::resource::Proxy& value)
                   {
-                     std::size_t operator() ( const vo::resource::Proxy& value) const
-                     {
-                        auto result = accumulate_statistics( value);
-                        return result.roundtrip.invoked;
-                     }
+                     auto result = accumulate_statistics( value);
+                     return result.roundtrip.count;
+                  };
+
+                  auto format_min = []( const admin::resource::Proxy& value)
+                  {
+                     auto result = accumulate_statistics( value);
+                     return std::chrono::duration_cast< time_type>( result.roundtrip.limit.min).count();
+                  };
+
+                  auto format_max = []( const admin::resource::Proxy& value)
+                  {
+                     auto result = accumulate_statistics( value);
+                     return std::chrono::duration_cast< time_type>( result.roundtrip.limit.max).count(); 
+                  };
+
+                  auto format_avg = []( const admin::resource::Proxy& value)
+                  {
+                     auto result = accumulate_statistics( value);
+                     if( result.roundtrip.count == 0) return 0.0;
+                     return std::chrono::duration_cast< time_type>( result.roundtrip.total / result.roundtrip.count).count();
                   };
 
 
-
-                  struct format_min
-                  {
-                     std::size_t operator() ( const vo::resource::Proxy& value) const
-                     {
-                        auto result = accumulate_statistics( value);
-                        if( result.roundtrip.invoked == 0) return 0;
-                        return result.roundtrip.min.count();
-                     }
-                  };
-
-                  struct format_max
-                  {
-                     std::size_t operator() ( const vo::resource::Proxy& value) const
-                     {
-                        auto result = accumulate_statistics( value);
-                        if( result.roundtrip.invoked == 0) return 0;
-                        return result.roundtrip.max.count();
-                     }
-                  };
-
-                  struct format_avg
-                  {
-                     std::size_t operator() ( const vo::resource::Proxy& value) const
-                     {
-                        auto result = accumulate_statistics( value);
-
-                        if( result.roundtrip.invoked == 0) return 0;
-                        return ( result.roundtrip.total / result.roundtrip.invoked).count();
-                     }
-                  };
-
-
-                  return common::terminal::format::formatter< vo::resource::Proxy>::construct(
-                     common::terminal::format::column( "id", std::mem_fn( &vo::resource::Proxy::id), common::terminal::color::yellow, terminal::format::Align::right),
-                     common::terminal::format::column( "key", std::mem_fn( &vo::resource::Proxy::key), common::terminal::color::yellow),
-                     common::terminal::format::column( "openinfo", std::mem_fn( &vo::resource::Proxy::openinfo), common::terminal::color::no_color),
-                     common::terminal::format::column( "closeinfo", std::mem_fn( &vo::resource::Proxy::closeinfo), common::terminal::color::no_color),
-                     terminal::format::column( "invoked", format_invoked{}, terminal::color::blue, terminal::format::Align::right),
-                     terminal::format::column( "min (us)", format_min{}, terminal::color::blue, terminal::format::Align::right),
-                     terminal::format::column( "max (us)", format_max{}, terminal::color::blue, terminal::format::Align::right),
-                     terminal::format::column( "avg (us)", format_avg{}, terminal::color::blue, terminal::format::Align::right),
+                  return common::terminal::format::formatter< admin::resource::Proxy>::construct(
+                     common::terminal::format::column( "id", std::mem_fn( &admin::resource::Proxy::id), common::terminal::color::yellow, terminal::format::Align::right),
+                     common::terminal::format::column( "key", std::mem_fn( &admin::resource::Proxy::key), common::terminal::color::yellow),
+                     common::terminal::format::column( "openinfo", std::mem_fn( &admin::resource::Proxy::openinfo), common::terminal::color::no_color),
+                     common::terminal::format::column( "closeinfo", std::mem_fn( &admin::resource::Proxy::closeinfo), common::terminal::color::no_color),
+                     terminal::format::column( "invoked", format_invoked, terminal::color::blue, terminal::format::Align::right),
+                     terminal::format::column( "min (s)", format_min, terminal::color::blue, terminal::format::Align::right),
+                     terminal::format::column( "max (s)", format_max, terminal::color::blue, terminal::format::Align::right),
+                     terminal::format::column( "avg (s)", format_avg, terminal::color::blue, terminal::format::Align::right),
                      terminal::format::column( "#", format_number_of_instances{}, terminal::color::white, terminal::format::Align::right)
                   );
 
@@ -190,105 +193,71 @@ namespace casual
 
                auto resource_instance()
                {
-                  struct format_pid
+                  auto format_pid = []( const admin::resource::Instance& value) 
                   {
-                     strong::process::id operator() ( const vo::resource::Instance& value) const
-                     {
-                        return value.process.pid;
-                     }
+                     return value.process.pid;
                   };
 
-                  struct format_queue
+                  auto format_queue = []( const admin::resource::Instance& value) 
                   {
-                     auto operator() ( const vo::resource::Instance& value) const
-                     {
-                        return value.process.ipc;
-                     }
+                     return value.process.ipc;
+                  };
+
+                  auto format_invoked = []( const admin::resource::Instance& value) 
+                  {
+                     return value.metrics.roundtrip.count;
+                  };
+
+                  auto format_min = []( const admin::resource::Instance& value)
+                  {
+                     return std::chrono::duration_cast< time_type>( value.metrics.roundtrip.limit.min).count();
+                  };
+
+                  auto format_max = []( const admin::resource::Instance& value)
+                  {
+                     return std::chrono::duration_cast< time_type>( value.metrics.roundtrip.limit.max).count();
+                  };
+
+                  auto format_avg = []( const admin::resource::Instance& value)
+                  {
+                     if( value.metrics.roundtrip.count == 0) return 0.0;
+                     return std::chrono::duration_cast< time_type>( value.metrics.roundtrip.total / value.metrics.roundtrip.count).count();
+                  };
+
+                  auto format_rm_invoked = []( const admin::resource::Instance& value)
+                  {
+                     return value.metrics.resource.count;
+                  };
+
+                  auto format_rm_min = []( const admin::resource::Instance& value)
+                  {
+                     return std::chrono::duration_cast< time_type>( value.metrics.resource.limit.min).count();
+                  };
+
+                  auto format_rm_max= []( const admin::resource::Instance& value)
+                  {
+                     return std::chrono::duration_cast< time_type>( value.metrics.resource.limit.max).count();
+                  };
+
+                  auto format_rm_avg = []( const admin::resource::Instance& value)
+                  {
+                     if( value.metrics.resource.count == 0) return 0.0;
+                     return std::chrono::duration_cast< time_type>( value.metrics.resource.total / value.metrics.resource.count).count();
                   };
 
 
-                  struct format_invoked
-                  {
-                     std::size_t operator() ( const vo::resource::Instance& value) const
-                     {
-                        return value.statistics.roundtrip.invoked;
-                     }
-                  };
-
-                  struct format_min
-                  {
-                     std::size_t operator() ( const vo::resource::Instance& value) const
-                     {
-                        if( value.statistics.roundtrip.invoked == 0) return 0;
-                        return value.statistics.roundtrip.min.count();
-                     }
-                  };
-
-                  struct format_max
-                  {
-                     std::size_t operator() ( const vo::resource::Instance& value) const
-                     {
-                        if( value.statistics.roundtrip.invoked == 0) return 0;
-                        return value.statistics.roundtrip.max.count();
-                     }
-                  };
-
-                  struct format_avg
-                  {
-                     std::size_t operator() ( const vo::resource::Instance& value) const
-                     {
-                        if( value.statistics.roundtrip.invoked == 0) return 0;
-                        return ( value.statistics.roundtrip.total / value.statistics.roundtrip.invoked).count();
-                     }
-                  };
-
-                  struct format_rm_invoked
-                  {
-                     std::size_t operator() ( const vo::resource::Instance& value) const
-                     {
-                        return value.statistics.resource.invoked;
-                     }
-                  };
-
-                  struct format_rm_min
-                  {
-                     std::size_t operator() ( const vo::resource::Instance& value) const
-                     {
-                        if( value.statistics.resource.invoked == 0) return 0;
-                        return value.statistics.resource.min.count();
-                     }
-                  };
-
-                  struct format_rm_max
-                  {
-                     std::size_t operator() ( const vo::resource::Instance& value) const
-                     {
-                        if( value.statistics.resource.invoked == 0) return 0;
-                        return value.statistics.resource.max.count();
-                     }
-                  };
-
-                  struct format_rm_avg
-                  {
-                     std::size_t operator() ( const vo::resource::Instance& value) const
-                     {
-                        if( value.statistics.resource.invoked == 0) return 0;
-                        return ( value.statistics.resource.total / value.statistics.resource.invoked).count();
-                     }
-                  };
-
-                  return common::terminal::format::formatter< vo::resource::Instance>::construct(
-                     terminal::format::column( "id", std::mem_fn( &vo::resource::Instance::id), common::terminal::color::yellow, terminal::format::Align::right),
-                     terminal::format::column( "pid", format_pid{}, common::terminal::color::white, terminal::format::Align::right),
-                     terminal::format::column( "queue", format_queue{}, common::terminal::color::no_color, terminal::format::Align::right),
-                     terminal::format::column( "invoked", format_invoked{}, common::terminal::color::blue, terminal::format::Align::right),
-                     terminal::format::column( "min (us)", format_min{}, terminal::color::blue, terminal::format::Align::right),
-                     terminal::format::column( "max (us)", format_max{}, terminal::color::blue, terminal::format::Align::right),
-                     terminal::format::column( "avg (us)", format_avg{}, terminal::color::blue, terminal::format::Align::right),
-                     terminal::format::column( "rm-invoked", format_rm_invoked{}, common::terminal::color::blue, terminal::format::Align::right),
-                     terminal::format::column( "rm-min (us)", format_rm_min{}, terminal::color::blue, terminal::format::Align::right),
-                     terminal::format::column( "rm-max (us)", format_rm_max{}, terminal::color::blue, terminal::format::Align::right),
-                     terminal::format::column( "rm-avg (us)", format_rm_avg{}, terminal::color::blue, terminal::format::Align::right)
+                  return common::terminal::format::formatter< admin::resource::Instance>::construct(
+                     terminal::format::column( "id", std::mem_fn( &admin::resource::Instance::id), common::terminal::color::yellow, terminal::format::Align::right),
+                     terminal::format::column( "pid", format_pid, common::terminal::color::white, terminal::format::Align::right),
+                     terminal::format::column( "queue", format_queue, common::terminal::color::no_color, terminal::format::Align::right),
+                     terminal::format::column( "invoked", format_invoked, common::terminal::color::blue, terminal::format::Align::right),
+                     terminal::format::column( "min (s)", format_min, terminal::color::blue, terminal::format::Align::right),
+                     terminal::format::column( "max (s)", format_max, terminal::color::blue, terminal::format::Align::right),
+                     terminal::format::column( "avg (s)", format_avg, terminal::color::blue, terminal::format::Align::right),
+                     terminal::format::column( "rm-invoked", format_rm_invoked, common::terminal::color::blue, terminal::format::Align::right),
+                     terminal::format::column( "rm-min (s)", format_rm_min, terminal::color::blue, terminal::format::Align::right),
+                     terminal::format::column( "rm-max (s)", format_rm_max, terminal::color::blue, terminal::format::Align::right),
+                     terminal::format::column( "rm-avg (s)", format_rm_avg, terminal::color::blue, terminal::format::Align::right)
                   );
 
                }
@@ -334,9 +303,9 @@ namespace casual
                      namespace transform
                      {
 
-                        std::vector< vo::resource::Instance> instances( std::vector< vo::resource::Proxy> resources)
+                        std::vector< admin::resource::Instance> instances( std::vector< admin::resource::Proxy> resources)
                         {
-                           std::vector< vo::resource::Instance> result;
+                           std::vector< admin::resource::Instance> result;
 
                            for( auto& resource : resources)
                            {
@@ -362,7 +331,7 @@ namespace casual
                void update_instances( const std::vector< std::tuple< common::strong::resource::id::value_type, int>>& values)
                {
                   auto resources = call::update::instances( common::algorithm::transform( values, []( auto& value){
-                     vo::update::Instances instance;
+                     admin::update::Instances instance;
                      instance.id = common::strong::resource::id{ std::get< 0>( value)};
                      instance.instances = std::get< 1>( value);
                      return instance;

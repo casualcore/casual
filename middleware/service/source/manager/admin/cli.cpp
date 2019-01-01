@@ -372,8 +372,6 @@ namespace casual
                   return std::chrono::duration_cast< time_type>( value.metrics.total / value.metrics.count).count();
                };
 
-               
-
                auto format_min_time = []( const admin::ServiceVO& value)
                {
                   return std::chrono::duration_cast< time_type>( value.metrics.limit.min).count();
@@ -384,17 +382,14 @@ namespace casual
                   return std::chrono::duration_cast< time_type>( value.metrics.limit.max).count();
                };
 
-
-
                auto format_pending_count = []( const admin::ServiceVO& value){
                   return value.pending.count;
                };
 
                auto format_avg_pending_time = []( const admin::ServiceVO& value){
                   if( value.metrics.count == 0)
-                  {
                      return 0.0;
-                  }
+
                   return std::chrono::duration_cast< time_type>( value.pending.total / value.metrics.count).count();
                };
 

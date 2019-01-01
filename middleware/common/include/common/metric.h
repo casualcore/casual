@@ -9,10 +9,8 @@
 #include "common/platform.h"
 #include "common/marshal/marshal.h"
 
-#include "common/stream.h"
-#include "common/chronology.h"
 
-#include <ostream>
+#include <iosfwd>
 
 namespace casual
 {
@@ -25,18 +23,11 @@ namespace casual
             platform::time::unit min = platform::time::limit::zero();
             platform::time::unit max = platform::time::limit::zero();
 
-            template< typename D>
-            friend Limit& operator += ( Limit& value, D&& duration)
-            {
-               auto time = std::chrono::duration_cast< common::platform::time::unit>( duration);
-               if( value.min == platform::time::limit::zero())
-                  value.min = time;
-               else
-                  value.min = std::min( value.min, time);
-               
-               value.max = std::max( value.max, time);
-               return value;
-            }
+            Limit& operator += ( platform::time::unit duration);
+            Limit& operator += ( const Limit& rhs);
+
+            friend Limit operator + ( const Limit& lhs, const Limit& rhs);
+            
 
             CASUAL_CONST_CORRECT_MARSHAL(
             {
@@ -44,10 +35,7 @@ namespace casual
                CASUAL_MARSHAL( max);
             })
 
-            inline friend std::ostream& operator << ( std::ostream& out, const Limit& value)
-            {
-               return stream::write( out, "{ min: ", value.min, ", max: ", value.max, '}');
-            }
+            friend std::ostream& operator << ( std::ostream& out, const Limit& value);
 
          };
 
@@ -55,14 +43,19 @@ namespace casual
          platform::time::unit total = platform::time::limit::zero();
          Limit limit;
 
-         template< typename D>
-         friend Metric& operator += ( Metric& value, D&& duration)
+
+         Metric& operator += ( platform::time::unit duration);
+         Metric& operator += ( const Metric& rhs);
+         friend Metric operator + ( const Metric& lhs, const Metric& rhs);
+
+         template< typename R, typename P>
+         Metric& operator += ( std::chrono::duration< R, P> duration)
          {
-            ++value.count;
-            value.total += std::chrono::duration_cast< common::platform::time::unit>( duration);
-            value.limit += duration;
-            return value;
+            return *this += std::chrono::duration_cast< platform::time::unit>( duration);
          }
+
+         friend bool operator == ( const Metric& lhs, const Metric& rhs);
+         inline friend bool operator != ( const Metric& lhs, const Metric& rhs) { return ! ( lhs == rhs);}
 
 
          CASUAL_CONST_CORRECT_MARSHAL(
@@ -72,10 +65,7 @@ namespace casual
             CASUAL_MARSHAL( limit);
          })
 
-         inline friend std::ostream& operator << ( std::ostream& out, const Metric& value)
-         {
-            return stream::write( out, "{ count: ", value.count, ", total: ", value.total, ", limit: ", value.limit, '}');
-         }
+         friend std::ostream& operator << ( std::ostream& out, const Metric& value);
 
       };
    } // common

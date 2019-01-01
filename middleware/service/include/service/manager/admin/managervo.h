@@ -66,7 +66,6 @@ namespace casual
 
             namespace service
             {
-
                struct Metric
                {
                   serviceframework::platform::size::type count = 0;
@@ -77,13 +76,11 @@ namespace casual
                      std::chrono::nanoseconds min = std::chrono::nanoseconds::zero();
                      std::chrono::nanoseconds max = std::chrono::nanoseconds::zero();
 
-
                      CASUAL_CONST_CORRECT_SERIALIZE(
                      {
                         archive & CASUAL_MAKE_NVP( min);
                         archive & CASUAL_MAKE_NVP( max);
                      })
-
                   } limit;
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
@@ -92,8 +89,6 @@ namespace casual
                      archive & CASUAL_MAKE_NVP( total);
                      archive & CASUAL_MAKE_NVP( limit);
                   })
-
-                  
                };
 
                namespace instance

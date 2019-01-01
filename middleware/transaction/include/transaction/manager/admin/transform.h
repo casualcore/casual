@@ -15,43 +15,35 @@ namespace casual
 {
    namespace transaction
    {
-      namespace transform
+      namespace manager
       {
-
-         struct Statistics
-         {
-            vo::Statistics operator () ( const state::Statistics& value) const;
-         };
-
-         struct Stats
-         {
-            vo::Stats operator () ( const state::Stats& value) const;
-         };
-
-         namespace resource
-         {
-            struct Instance
+         namespace admin
+         {    
+            namespace transform
             {
-               vo::resource::Instance operator () ( const state::resource::Proxy::Instance& value) const;
-            };
+               admin::Metrics metrics( const state::Metrics& value);
+               state::Metrics metrics( const admin::Metrics& value);
 
-            struct Proxy
-            {
-               vo::resource::Proxy operator () ( const state::resource::Proxy& value) const;
+               namespace resource
+               {
+                  struct Instance
+                  {
+                     admin::resource::Instance operator () ( const state::resource::Proxy::Instance& value) const;
+                  };
 
-            };
+                  struct Proxy
+                  {
+                     admin::resource::Proxy operator () ( const state::resource::Proxy& value) const;
+                  };
 
-         } // resource
+               } // resource
 
-         vo::State state( const State& state);
+               admin::State state( const manager::State& state);
 
-
-      } // transform
-
+            } // transform
+         } // admin
+      } // manager
    } // transaction
-
-
-
 } // casual
 
 

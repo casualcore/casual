@@ -14,162 +14,184 @@ namespace casual
 {
    namespace transaction
    {
-      namespace transform
+      namespace manager
       {
-         vo::Statistics Statistics::operator () ( const state::Statistics& value) const
+         namespace admin
          {
-            vo::Statistics result;
-
-            result.min = value.min;
-            result.max = value.max;
-            result.total = value.total;
-            result.invoked = value.invoked;
-
-            return result;
-         }
-
-         vo::Stats Stats::operator () ( const state::Stats& value) const
-         {
-            vo::Stats result;
-
-            result.resource = Statistics{}( value.resource);
-            result.roundtrip = Statistics{}( value.roundtrip);
-
-            return result;
-         }
-
-         struct Transaction
-         {
-            struct ID
+            namespace transform
             {
-               vo::Transaction::ID operator () ( const common::transaction::ID& id) const
+               namespace local
                {
-                  vo::Transaction::ID result;
+                  namespace
+                  {
+                     template< typename R, typename T>
+                     R metrics( const T& value)
+                     {
+                        auto transform_metric = []( auto& value)
+                        {
+                           decltype( R{}.resource) result;
 
-                  result.owner = id.owner();
-                  result.type = id.xid.formatID;
-                  result.global = common::transcode::hex::encode( common::transaction::global( id));
-                  result.branch = common::transcode::hex::encode( common::transaction::branch( id));
+                           result.limit.min = value.limit.min;
+                           result.limit.max = value.limit.max;
+                           result.total = value.total;
+                           result.count = value.count;
+
+                           return result;
+
+                        };
+                        R result;
+
+                        result.resource = transform_metric( value.resource);
+                        result.roundtrip = transform_metric( value.roundtrip);
+
+                        return result;
+                     }
+                  } // <unnamed>
+               } // local
+
+
+               admin::Metrics metrics( const state::Metrics& value)
+               {
+                  return local::metrics< admin::Metrics>( value);
+               }
+
+               state::Metrics metrics( const admin::Metrics& value)
+               {
+                  return local::metrics< state::Metrics>( value);
+               }
+
+               struct Transaction
+               {
+                  struct ID
+                  {
+                     admin::Transaction::ID operator () ( const common::transaction::ID& id) const
+                     {
+                        admin::Transaction::ID result;
+
+                        result.owner = id.owner();
+                        result.type = id.xid.formatID;
+                        result.global = common::transcode::hex::encode( common::transaction::global( id));
+                        result.branch = common::transcode::hex::encode( common::transaction::branch( id));
+
+                        return result;
+                     }
+                  };
+
+                  admin::Transaction operator () ( const manager::Transaction& transaction) const
+                  {
+                     admin::Transaction result;
+
+                     common::algorithm::transform( transaction.resources, result.resources, []( const manager::Transaction::Resource& r){
+                        return r.id;
+                     });
+
+                     result.trid = ID{}( transaction.trid);
+                     result.state = static_cast< long>( transaction.results());
+
+                     return result;
+                  }
+               };
+
+
+               namespace resource
+               {
+
+                  admin::resource::Instance Instance::operator () ( const state::resource::Proxy::Instance& value) const
+                  {
+                     admin::resource::Instance result;
+
+                     result.id = value.id;
+                     result.process = value.process;
+                     result.state = static_cast< admin::resource::Instance::State>( value.state());
+                     result.metrics = transform::metrics( value.metrics);
+
+                     return result;
+                  }
+
+                  admin::resource::Proxy Proxy::operator () ( const state::resource::Proxy& value) const
+                  {
+                     admin::resource::Proxy result;
+
+                     result.id = value.id;
+                     result.name = value.name;
+                     result.key = value.key;
+                     result.openinfo = value.openinfo;
+                     result.closeinfo = value.closeinfo;
+                     result.metrics = transform::metrics( value.metrics);
+
+                     common::algorithm::transform( value.instances, result.instances, Instance{});
+
+                     return result;
+                  }
+
+               } // resource
+
+               namespace pending
+               {
+                  struct Request
+                  {
+                     admin::pending::Request operator () ( const state::pending::Request& value) const
+                     {
+                        admin::pending::Request result;
+
+                        result.resource = value.resource;
+                        result.correlation = value.message.correlation;
+                        result.type = common::message::convert::type( value.message.type);
+
+                        return result;
+                     }
+                  };
+
+                  struct Reply
+                  {
+                     admin::pending::Reply operator () ( const state::pending::Reply& value) const
+                     {
+                        admin::pending::Reply result;
+
+                        result.queue = value.target;
+                        result.type = common::message::convert::type( value.message.type);
+                        result.correlation = value.message.correlation;
+
+                        return result;
+                     }
+                  };
+
+               } // pending
+
+
+               admin::Log log( const manager::Log::Stats& log)
+               {
+                  admin::Log result;
+
+                  result.update.prepare = log.update.prepare;
+                  result.update.remove = log.update.remove;
+                  result.writes = log.writes;
 
                   return result;
                }
-            };
-
-            vo::Transaction operator () ( const transaction::Transaction& transaction) const
-            {
-               vo::Transaction result;
-
-               common::algorithm::transform( transaction.resources, result.resources, []( const transaction::Transaction::Resource& r){
-                  return r.id;
-               });
-
-               result.trid = ID{}( transaction.trid);
-               result.state = static_cast< long>( transaction.results());
-
-               return result;
-            }
-         };
 
 
-         namespace resource
-         {
 
-            vo::resource::Instance Instance::operator () ( const state::resource::Proxy::Instance& value) const
-            {
-               vo::resource::Instance result;
-
-               result.id = value.id;
-               result.process = value.process;
-               result.state = static_cast< vo::resource::Instance::State>( value.state());
-               result.statistics = transform::Stats{}( value.statistics);
-
-               return result;
-            }
-
-            vo::resource::Proxy Proxy::operator () ( const state::resource::Proxy& value) const
-            {
-               vo::resource::Proxy result;
-
-               result.id = value.id;
-               result.name = value.name;
-               result.key = value.key;
-               result.openinfo = value.openinfo;
-               result.closeinfo = value.closeinfo;
-               result.statistics = transform::Stats{}( value.statistics);
-
-               common::algorithm::transform( value.instances, result.instances, Instance{});
-
-               return result;
-            }
-
-         } // resource
-
-         namespace pending
-         {
-            struct Request
-            {
-               vo::pending::Request operator () ( const state::pending::Request& value) const
+               admin::State state( const manager::State& state)
                {
-                  vo::pending::Request result;
+                  admin::State result;
 
-                  result.resource = value.resource;
-                  result.correlation = value.message.correlation;
-                  result.type = common::message::convert::type( value.message.type);
+                  common::algorithm::transform( state.resources, result.resources, transform::resource::Proxy{});
+                  common::algorithm::transform( state.transactions, result.transactions, transform::Transaction{});
+
+                  common::algorithm::transform( state.pending.requests, result.pending.requests, transform::pending::Request{});
+                  common::algorithm::transform( state.persistent.requests, result.persistent.requests, transform::pending::Request{});
+                  common::algorithm::transform( state.persistent.replies, result.persistent.replies, transform::pending::Reply{});
+
+                  result.log = transform::log( state.persistent_log.stats());
 
                   return result;
                }
-            };
 
-            struct Reply
-            {
-               vo::pending::Reply operator () ( const state::pending::Reply& value) const
-               {
-                  vo::pending::Reply result;
+            } // transform
 
-                  result.queue = value.target;
-                  result.type = common::message::convert::type( value.message.type);
-                  result.correlation = value.message.correlation;
-
-                  return result;
-               }
-            };
-
-         } // pending
-
-
-         vo::Log log( const transaction::Log::Stats& log)
-         {
-            vo::Log result;
-
-            result.update.prepare = log.update.prepare;
-            result.update.remove = log.update.remove;
-            result.writes = log.writes;
-
-            return result;
-         }
-
-
-
-         vo::State state( const State& state)
-         {
-            vo::State result;
-
-            common::algorithm::transform( state.resources, result.resources, transform::resource::Proxy{});
-            common::algorithm::transform( state.transactions, result.transactions, transform::Transaction{});
-
-            common::algorithm::transform( state.pending.requests, result.pending.requests, transform::pending::Request{});
-            common::algorithm::transform( state.persistent.requests, result.persistent.requests, transform::pending::Request{});
-            common::algorithm::transform( state.persistent.replies, result.persistent.replies, transform::pending::Reply{});
-
-            result.log = transform::log( state.persistent_log.stats());
-
-            return result;
-         }
-
-      } // transform
-
+            
+         } // admin
+      } // manager
    } // transaction
-
-
-
 } // casual

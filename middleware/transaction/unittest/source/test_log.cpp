@@ -23,9 +23,9 @@ namespace casual
          namespace
          {
 
-            Transaction create_transaction()
+            manager::Transaction create_transaction()
             {
-               Transaction result;
+               manager::Transaction result;
 
                result.trid = common::transaction::ID::create( common::process::handle());
                result.started = common::platform::time::clock::type::now();
@@ -39,7 +39,6 @@ namespace casual
                return ":memory:";
             }
          }
-
       } // local
 
 
@@ -47,7 +46,7 @@ namespace casual
       {
          common::unittest::Trace trace;
 
-         Log log( local::transactionLogPath());
+         manager::Log log( local::transactionLogPath());
 
          auto trans = local::create_transaction();
 
@@ -57,7 +56,7 @@ namespace casual
 
          ASSERT_TRUE( rows.size() == 1);
          EXPECT_TRUE( rows.at( 0).trid == trans.trid);
-         EXPECT_TRUE( rows.at( 0).state == Log::State::prepared);
+         EXPECT_TRUE( rows.at( 0).state == manager::Log::State::prepared);
       }
 
 

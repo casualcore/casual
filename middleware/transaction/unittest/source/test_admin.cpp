@@ -19,115 +19,34 @@
 
 namespace casual
 {
-
    namespace transaction
    {
-      
-      TEST( casual_transaction_admin, statistics_start_end)
+      namespace manager
       {
-         common::unittest::Trace trace;
 
-         state::Statistics statistics;
+         
+         TEST( casual_transaction_admin, transform_metrics)
+         {
+            common::unittest::Trace trace;
 
-         auto now = common::platform::time::clock::type::now();
+            state::Metrics metrics;
+            {
+               metrics.resource += std::chrono::milliseconds{ 42};
+               metrics.resource += std::chrono::seconds{ 42};
 
-         statistics.start( now);
-         statistics.end( now + 100us);
+               metrics.roundtrip += std::chrono::milliseconds{ 142};
+               metrics.roundtrip += std::chrono::seconds{ 142};
+            }
 
-         EXPECT_TRUE( statistics.invoked == 1);
-         EXPECT_TRUE( statistics.min == 100us);
-         EXPECT_TRUE( statistics.max == 100us);
-         EXPECT_TRUE( statistics.total == 100us);
+            // transform to admin and back.
+            auto result = admin::transform::metrics( admin::transform::metrics( metrics));
 
-      }
+            EXPECT_TRUE( metrics.roundtrip == result.roundtrip);
+            EXPECT_TRUE( metrics.resource == result.resource);
 
-      TEST( casual_transaction_admin, transform_statistics)
-      {
-         common::unittest::Trace trace;
-
-         state::Statistics statistics;
-
-         auto now = common::platform::time::clock::type::now();
-
-         statistics.start( now);
-         statistics.end( now + 100us);
-
-         auto vo = transform::Statistics{}( statistics);
-
-         EXPECT_TRUE( vo.invoked == 1);
-         EXPECT_TRUE( vo.min == 100us);
-         EXPECT_TRUE( vo.max == 100us);
-         EXPECT_TRUE( vo.total == 100us);
-
-      }
-
-      TEST( casual_transaction_admin, vo_statistics__addition_assignment__rhs_defualt)
-      {
-         common::unittest::Trace trace;
-
-         state::Statistics statistics;
-
-         auto now = common::platform::time::clock::type::now();
-
-         statistics.start( now);
-         statistics.end( now + 100us);
-
-         auto vo = transform::Statistics{}( statistics);
-         vo += vo::Statistics{};
-
-         EXPECT_TRUE( vo.invoked == 1);
-         EXPECT_TRUE( vo.min == 100us);
-         EXPECT_TRUE( vo.max == 100us);
-         EXPECT_TRUE( vo.total == 100us);
-
-      }
-
-      TEST( casual_transaction_admin, vo_statistics__addition_assignment__lhs_defualt)
-      {
-         common::unittest::Trace trace;
-
-         state::Statistics statistics;
-
-         auto now = common::platform::time::clock::type::now();
-
-         statistics.start( now);
-         statistics.end( now + 100us);
-
-         vo::Statistics vo;
-         vo += transform::Statistics{}( statistics);
-
-         EXPECT_TRUE( vo.invoked == 1);
-         EXPECT_TRUE( vo.min == 100us) << CASUAL_MAKE_NVP( vo);
-         EXPECT_TRUE( vo.max == 100us);
-         EXPECT_TRUE( vo.total == 100us);
-
-      }
-
-      TEST( casual_transaction_admin, vo_statistics__addition_assignment__rhs_defualt_2x)
-      {
-         common::unittest::Trace trace;
-
-         vo::Statistics vo;
-
-         vo.min = 100us;
-         vo.max = 100us + 100us;
-         vo.total = 100us * 3;
-         vo.invoked = 2;
-
-
-         auto value = vo;
-         value += vo::Statistics{};
-         value += vo;
-
-         EXPECT_TRUE( value.invoked == 4);
-         EXPECT_TRUE( value.min == 100us) << CASUAL_MAKE_NVP( vo);
-         EXPECT_TRUE( value.max == 100us * 2);
-         EXPECT_TRUE( value.total == 100us * 3 * 2);
-
-
-      }
-
-
+         }
+         
+      } // manager
    } // transaction
 
 } // casual
