@@ -7,12 +7,15 @@
 
 #include <sys/types.h>
 #include <ngx_config.h>
+#include <http/inbound/caller.h>
+
 //
 // Unique configuration per request
 //
 typedef struct {
    u_char* service;
    u_char* protocol;
+   ngx_int_t lookup_key;
    ngx_int_t descriptor;
    ngx_int_t code;
    ngx_int_t number_of_calls;

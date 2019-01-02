@@ -9,15 +9,6 @@
 #include <xatmi.h>
 
 #ifdef __cplusplus
-
-#include <map>
-#include <iostream>
-
-namespace std
-{
-   std::ostream &operator<<( std::ostream& stream, const std::vector< std::pair< std::string, std::string>>& input);
-}
-
 extern "C"
 {
 #endif
@@ -62,16 +53,30 @@ extern "C"
       //!
       //! misc
       //!
-      char service[XATMI_SERVICE_NAME_LENGTH];
+      char service[ XATMI_SERVICE_NAME_LENGTH];
       char protocol[80];
 
       long descriptor;
+      long lookup_key;
       long code;
    } casual_buffer_type;
 
-   long casual_xatmi_send(casual_buffer_type *data);
-   long casual_xatmi_receive(casual_buffer_type *data);
-   long casual_xatmi_cancel(casual_buffer_type *data);
+   //!
+   //! Communicate with service manager
+   //!
+   long casual_xatmi_lookup( casual_buffer_type* data);
+   //!
+   //! Make the call
+   //!
+   long casual_xatmi_send( casual_buffer_type* data);
+   //!
+   //! Get the response
+   //!
+   long casual_xatmi_receive( casual_buffer_type* data);
+   //!
+   //! Abort the call
+   //!
+   long casual_xatmi_cancel( casual_buffer_type* data);
 
    enum
    {
