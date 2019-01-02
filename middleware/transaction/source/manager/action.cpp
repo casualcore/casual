@@ -28,12 +28,12 @@ namespace casual
 
    namespace transaction
    {
-      namespace action
+      namespace manager
       {
-         void configure( State& state)
+         namespace action
          {
+            void configure( State& state)
             {
-
                Trace trace( "configure");
 
                common::message::domain::configuration::Request request;
@@ -41,230 +41,219 @@ namespace casual
 
                auto configuration = communication::ipc::call( communication::instance::outbound::domain::manager::device(), request);
 
-
-               //
                // configure state
-               //
                state::configure( state, configuration);
             }
-         }
 
 
-
-         namespace resource
-         {
-
-            void Instances::operator () ( state::resource::Proxy& proxy)
+            namespace resource
             {
-               Trace trace( "resource::Instances::operator()");
-
-               log::line( log, "update instances for resource: ", proxy);
-
-               auto count = static_cast< long>( proxy.concurency - proxy.instances.size());
-
-               if( count > 0)
+               void Instances::operator () ( state::resource::Proxy& proxy)
                {
-                  while( count-- > 0)
+                  Trace trace( "resource::Instances::operator()");
+
+                  log::line( log, "update instances for resource: ", proxy);
+
+                  auto count = static_cast< long>( proxy.concurency - proxy.instances.size());
+
+                  if( count > 0)
                   {
-                     auto& info = m_state.resource_properties.at( proxy.key);
+                     while( count-- > 0)
+                     {
+                        auto& info = m_state.resource_properties.at( proxy.key);
 
-                     state::resource::Proxy::Instance instance;
-                     instance.id = proxy.id;
+                        state::resource::Proxy::Instance instance;
+                        instance.id = proxy.id;
 
+                        try
+                        {
+                           instance.process.pid = process::spawn(
+                                 info.server,
+                                 {
+                                       "--rm-key", info.key,
+                                       "--rm-openinfo", proxy.openinfo,
+                                       "--rm-closeinfo", proxy.closeinfo,
+                                       "--rm-id", std::to_string( proxy.id.value()),
+                                 }
+                              );
+
+                           instance.state( state::resource::Proxy::Instance::State::started);
+
+                           proxy.instances.push_back( std::move( instance));
+                        }
+                        catch( ...)
+                        {
+                           common::exception::handle();
+                           common::event::error::send( "failed to spawn resource-proxy-instance: " + info.server);
+                        }
+                     }
+                  }
+                  else
+                  {
+                     auto end = std::end( proxy.instances);
+
+                     for( auto& instance : range::make( end + count, end))
+                     {
+                        switch( instance.state())
+                        {
+                           case state::resource::Proxy::Instance::State::absent:
+                           case state::resource::Proxy::Instance::State::started:
+                           {
+
+                              log::line( log, "Instance has not register yet. We, kill it...: ", instance);
+
+                              process::lifetime::terminate( { instance.process.pid});
+                              instance.state( state::resource::Proxy::Instance::State::shutdown);
+                              break;
+                           }
+                           case state::resource::Proxy::Instance::State::shutdown:
+                           {
+                              log::line( log, "instance already in shutdown state - ", instance);
+                              break;
+                           }
+                           default:
+                           {
+                              log::line( log, "shutdown instance: ", instance);
+
+
+                              instance.state( state::resource::Proxy::Instance::State::shutdown);
+
+                              if( ! ipc::device().non_blocking_send( instance.process.ipc, message::shutdown::Request{}))
+                              {
+                                 // We couldn't send shutdown for some reason, we put the message in 'persistent-replies' and
+                                 // hope to send it later...
+                                 log::line( log::category::warning, "failed to send shutdown to instance: ", instance, " - action: try send it later");
+
+                                 m_state.persistent.replies.emplace_back( instance.process.ipc, message::shutdown::Request{});
+                              }
+                              break;
+                           }
+                        }
+                     }
+                  }
+               }
+
+               std::vector< admin::resource::Proxy> insances( State& state, std::vector< admin::update::Instances> instances)
+               {
+                  std::vector< admin::resource::Proxy> result;
+
+                  // Make sure we only update a specific RM one time
+                  for( auto& directive : algorithm::unique( algorithm::sort( instances)))
+                  {
                      try
                      {
-                        instance.process.pid = process::spawn(
-                              info.server,
-                              {
-                                    "--rm-key", info.key,
-                                    "--rm-openinfo", proxy.openinfo,
-                                    "--rm-closeinfo", proxy.closeinfo,
-                                    "--rm-id", std::to_string( proxy.id.value()),
-                              }
-                           );
+                        auto& resource = state.get_resource( directive.id);
+                        resource.concurency = directive.instances;
 
-                        instance.state( state::resource::Proxy::Instance::State::started);
+                        Instances{ state}( resource);
 
-                        proxy.instances.push_back( std::move( instance));
+                        result.push_back( admin::transform::resource::Proxy{}( resource));
                      }
-                     catch( ...)
+                     catch( const common::exception::system::invalid::Argument&)
                      {
-                        common::exception::handle();
-                        common::event::error::send( "failed to spawn resource-proxy-instance: " + info.server);
+                        // User did not use correct resource-id. We propagate this by not including
+                        // the resource in the result
                      }
                   }
+
+                  return result;
                }
-               else
+
+               namespace local
                {
-                  auto end = std::end( proxy.instances);
-
-                  for( auto& instance : range::make( end + count, end))
+                  namespace
                   {
-                     switch( instance.state())
+                     namespace instance
                      {
-                        case state::resource::Proxy::Instance::State::absent:
-                        case state::resource::Proxy::Instance::State::started:
+                        bool request( const common::communication::message::Complete& message, state::resource::Proxy::Instance& instance)
                         {
+                           Trace trace{ "transaction::action::resource::instance::request"};
 
-                           log::line( log, "Instance has not register yet. We, kill it...: ", instance);
-
-                           process::lifetime::terminate( { instance.process.pid});
-                           instance.state( state::resource::Proxy::Instance::State::shutdown);
-                           break;
-                        }
-                        case state::resource::Proxy::Instance::State::shutdown:
-                        {
-                           log::line( log, "instance already in shutdown state - ", instance);
-                           break;
-                        }
-                        default:
-                        {
-                           log::line( log, "shutdown instance: ", instance);
-
-
-                           instance.state( state::resource::Proxy::Instance::State::shutdown);
-
-                           if( ! ipc::device().non_blocking_send( instance.process.ipc, message::shutdown::Request{}))
+                           if( ipc::device().non_blocking_push( instance.process.ipc, message))
                            {
-                              // We couldn't send shutdown for some reason, we put the message in 'persistent-replies' and
-                              // hope to send it later...
-                              log::line( log::category::warning, "failed to send shutdown to instance: ", instance, " - action: try send it later");
-
-                              m_state.persistent.replies.emplace_back( instance.process.ipc, message::shutdown::Request{});
+                              instance.state( state::resource::Proxy::Instance::State::busy);
+                              instance.metrics.requested = common::platform::time::clock::type::now();
+                              return true;
                            }
-                           break;
+                           return false;
+
                         }
-                     }
-                  }
-               }
-            }
+                     } // instance
 
-            std::vector< vo::resource::Proxy> insances( State& state, std::vector< vo::update::Instances> instances)
-            {
-               std::vector< vo::resource::Proxy> result;
+                  } // <unnamed>
+               } // local
 
-               //
-               // Make sure we only update a specific RM one time
-               //
-               for( auto& directive : algorithm::unique( algorithm::sort( instances)))
+
+
+               bool request( State& state, state::pending::Request& message)
                {
-                  try
+                  Trace trace{ "transaction::action::resource::request"};
+
+                  if( state::resource::id::local( message.resource))
                   {
+                     auto found = state.idle_instance( message.resource);
 
-                     auto& resource = state.get_resource( directive.id);
-                     resource.concurency = directive.instances;
-
-                     Instances{ state}( resource);
-
-                     result.push_back( transform::resource::Proxy{}( resource));
-
-                  }
-                  catch( const common::exception::system::invalid::Argument&)
-                  {
-                     //
-                     // User did not use correct resource-id. We propagate this by not including
-                     // the resource in the result
-                     //
-                  }
-
-               }
-
-               return result;
-            }
-
-            namespace local
-            {
-               namespace
-               {
-                  namespace instance
-                  {
-                     bool request( const common::communication::message::Complete& message, state::resource::Proxy::Instance& instance)
+                     if( found )
                      {
-                        Trace trace{ "transaction::action::resource::instance::request"};
 
-                        if( ipc::device().non_blocking_push( instance.process.ipc, message))
+                        if( ! local::instance::request( message.message, *found))
                         {
-                           instance.state( state::resource::Proxy::Instance::State::busy);
-                           instance.statistics.roundtrip.start( common::platform::time::clock::type::now());
-                           return true;
+                           log::line( log, "failed to send resource request - type: ", message.message.type, " to: ", found->process);
+                           return false;
                         }
-                        return false;
-
                      }
-                  } // instance
-
-               } // <unnamed>
-            } // local
-
-
-
-            bool request( State& state, state::pending::Request& message)
-            {
-               Trace trace{ "transaction::action::resource::request"};
-
-               if( state::resource::id::local( message.resource))
-               {
-                  auto found = state.idle_instance( message.resource);
-
-                  if( found )
-                  {
-
-                     if( ! local::instance::request( message.message, *found))
+                     else
                      {
-                        log::line( log, "failed to send resource request - type: ", message.message.type, " to: ", found->process);
+                        log::line( log, "failed to find idle resource - action: wait");
                         return false;
                      }
                   }
                   else
                   {
-                     log::line( log, "failed to find idle resource - action: wait");
-                     return false;
+                     auto& domain = state.get_external( message.resource);
+
+                     ipc::device().blocking_push( domain.process.ipc, message.message);
                   }
+                  return true;
                }
-               else
-               {
-                  auto& domain = state.get_external( message.resource);
 
-                  ipc::device().blocking_push( domain.process.ipc, message.message);
-               }
-               return true;
-            }
-
-         } // resource
+            } // resource
 
 
-         namespace persistent
-         {
-
-            bool Send::operator () ( state::pending::Reply& message) const
+            namespace persistent
             {
-               try
+
+               bool Send::operator () ( state::pending::Reply& message) const
                {
-                  if( ! ipc::device().non_blocking_push( message.target, message.message))
+                  try
                   {
-                     log::line( log, "failed to send reply - type: ", message.message.type, " to: ", message.target);
-                     return false;
+                     if( ! ipc::device().non_blocking_push( message.target, message.message))
+                     {
+                        log::line( log, "failed to send reply - type: ", message.message.type, " to: ", message.target);
+                        return false;
+                     }
                   }
+                  catch( const exception::system::communication::Unavailable&)
+                  {
+                     log::line( log::category::error, "failed to send reply - target: ", message.target, ", message: ", message.message, " - TODO: rollback transaction?");
+                     //
+                     // ipc-queue has been removed...
+                     // TODO attention: deduce from message.message.type what we should do
+                     //  We should rollback if we are in a prepare stage?
+                     //
+                  }
+                  return true;
                }
-               catch( const exception::system::communication::Unavailable&)
+
+               bool Send::operator () ( state::pending::Request& message) const
                {
-                  log::line( log::category::error, "failed to send reply - target: ", message.target, ", message: ", message.message, " - TODO: rollback transaction?");
-                  //
-                  // ipc-queue has been removed...
-                  // TODO attention: deduce from message.message.type what we should do
-                  //  We should rollback if we are in a prepare stage?
-                  //
+                  return resource::request( m_state, message);
                }
-               return true;
-            }
 
-            bool Send::operator () ( state::pending::Request& message) const
-            {
-               return resource::request( m_state, message);
-            }
+            } // pending
 
-         } // pending
-
-      } // action
+         } // action
+               
+      } // manager   
    } //transaction
 } // casual

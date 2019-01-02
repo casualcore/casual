@@ -53,7 +53,7 @@ namespace casual
 
       static_assert( traits::is::tuple< std::pair< int, long>>::value, "traits::is::tuple does not work...");
 
-      TEST( casual_common_conformance, struct_with_pod_attributes__is_pod)
+      TEST( common_conformance, struct_with_pod_attributes__is_pod)
       {
          struct POD
          {
@@ -63,7 +63,7 @@ namespace casual
          EXPECT_TRUE( std::is_pod< POD>::value);
       }
 
-      TEST( casual_common_conformance, struct_with_member_function__is_pod)
+      TEST( common_conformance, struct_with_member_function__is_pod)
       {
          struct POD
          {
@@ -74,7 +74,7 @@ namespace casual
       }
 
 
-      TEST( casual_common_conformance, is_floating_point__is_signed)
+      TEST( common_conformance, is_floating_point__is_signed)
       {
 
          EXPECT_TRUE( std::is_signed< float>::value);
@@ -97,7 +97,7 @@ namespace casual
       };
 
 
-      TEST( casual_common_conformance, get_functor_argument_type)
+      TEST( common_conformance, get_functor_argument_type)
       {
 
          EXPECT_TRUE( traits::function< some_functor>::arguments() == 1);
@@ -110,7 +110,7 @@ namespace casual
       }
 
 
-      TEST( casual_common_conformance, get_function_argument_type)
+      TEST( common_conformance, get_function_argument_type)
       {
          using function_1 = std::function< void( double&)>;
 
@@ -127,7 +127,7 @@ namespace casual
 
       long some_function( const std::string& value) { return 1;}
 
-      TEST( casual_common_conformance, get_free_function_argument_type)
+      TEST( common_conformance, get_free_function_argument_type)
       {
          using traits_type = traits::function< decltype( &some_function)>;
 
@@ -149,7 +149,7 @@ namespace casual
       }
 
 
-      TEST( casual_common_conformance, search)
+      TEST( common_conformance, search)
       {
          std::string source{ "some string to search in"};
          std::string to_find{ "some"};
@@ -159,7 +159,7 @@ namespace casual
       }
 
 
-      TEST( casual_common_conformance, posix_spawnp)
+      TEST( common_conformance, posix_spawnp)
       {
          common::unittest::Trace trace;
 
@@ -224,13 +224,13 @@ namespace casual
       }
 
 
-      TEST( casual_common_conformance, optional_default_ctor)
+      TEST( common_conformance, optional_default_ctor)
       {
          common::optional< std::size_t> optional;
          EXPECT_TRUE( ! optional.has_value());
       }
 
-      TEST( casual_common_conformance, optional_ctor)
+      TEST( common_conformance, optional_ctor)
       {
          common::optional< std::size_t> optional{ 42};
          EXPECT_TRUE( optional.has_value());
@@ -252,7 +252,7 @@ namespace casual
       } // local
 
 
-      TEST( casual_common_conformance, ommitt_return)
+      TEST( common_conformance, ommitt_return)
       {
          EXPECT_TRUE( local::ommit_return());
       }
@@ -275,7 +275,7 @@ namespace casual
       };
 
 
-      TEST( casual_common_conformance, std_function__move_only_functor)
+      TEST( common_conformance, std_function__move_only_functor)
       {
          std::function< bool(long)> f1{ move_only_functor{}};
 

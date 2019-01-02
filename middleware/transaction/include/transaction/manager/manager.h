@@ -11,55 +11,48 @@
 #include "transaction/manager/state.h"
 
 
-
-//
-// std
-//
 #include <string>
 
 namespace casual
 {
-
-
    namespace transaction
    {
-      namespace environment
+      namespace manager
       {
-         namespace log
+         namespace environment
          {
-            std::string file();
-         } // log
+            namespace log
+            {
+               std::string file();
+            } // log
+         } // environment
 
-      } // environment
+         struct Settings
+         {
+            Settings();
 
+            std::string log;
+         };
 
-      struct Settings
-      {
-         Settings();
-
-         std::string log;
-      };
-
+      } // manager
 
       class Manager
       {
       public:
 
-         Manager( Settings settings);
+         Manager( manager::Settings settings);
          ~Manager();
 
          void start();
 
-         const State& state() const;
+         const manager::State& state() const;
 
       private:
 
          void handle_pending();
 
-         State m_state;
+         manager::State m_state;
       };
-
-
    } // transaction
 } // casual
 

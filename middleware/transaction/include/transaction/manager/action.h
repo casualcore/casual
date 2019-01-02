@@ -19,46 +19,48 @@ namespace casual
 {
    namespace transaction
    {
-      namespace action
+      namespace manager
       {
-
-         void configure( State& state);
-
-
-         namespace resource
+         namespace action
          {
-            struct Instances : state::Base
+
+            void configure( State& state);
+
+            namespace resource
             {
-               using state::Base::Base;
+               struct Instances : state::Base
+               {
+                  using state::Base::Base;
 
-               void operator () ( state::resource::Proxy& proxy);
-            };
+                  void operator () ( state::resource::Proxy& proxy);
+               };
 
-            std::vector< vo::resource::Proxy> insances( State& state, std::vector< vo::update::Instances> instances);
-
-
-            bool request( State& state, state::pending::Request& message);
-
-         } // resource
+               std::vector< admin::resource::Proxy> insances( State& state, std::vector< admin::update::Instances> instances);
 
 
+               bool request( State& state, state::pending::Request& message);
 
-         namespace persistent
-         {
-            struct Send : state::Base
+            } // resource
+
+
+
+            namespace persistent
             {
-               using state::Base::Base;
+               struct Send : state::Base
+               {
+                  using state::Base::Base;
 
-               bool operator () ( state::pending::Reply& message) const;
+                  bool operator () ( state::pending::Reply& message) const;
 
-               bool operator () ( state::pending::Request& message) const;
+                  bool operator () ( state::pending::Request& message) const;
 
-            };
+               };
 
-         } // pending
+            } // pending
 
 
-      } // action
+         } // action
+      } // manager
    } // transaction
 } // casual
 

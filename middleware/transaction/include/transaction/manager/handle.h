@@ -4,10 +4,7 @@
 //! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-
 #pragma once
-
-
 
 #include "transaction/manager/state.h"
 #include "transaction/manager/action.h"
@@ -30,258 +27,255 @@ namespace casual
 {
    namespace transaction
    {
-
-      namespace ipc
+      namespace manager
       {
-
-         const common::communication::ipc::Helper& device();
-
-      } // ipc
-
-      namespace user
-      {
-
-         using error = common::exception::tx::exception;
-
-      } // transaction
-
-
-      namespace handle
-      {
-         using dispatch_type = common::communication::ipc::dispatch::Handler;
-
-         namespace implementation
+         namespace ipc
          {
-            struct Interface
+            const common::communication::ipc::Helper& device();
+         } // ipc
+
+         namespace user
+         {
+            using error = common::exception::tx::exception;
+         } // transaction
+
+
+         namespace handle
+         {
+            using dispatch_type = common::communication::ipc::dispatch::Handler;
+
+            namespace implementation
             {
-               virtual bool prepare( State& state, common::message::transaction::resource::prepare::Reply& message, Transaction& transaction) const = 0;
-               virtual bool commit( State& state, common::message::transaction::resource::commit::Reply& message, Transaction& transaction) const = 0;
-               virtual bool rollback( State& state, common::message::transaction::resource::rollback::Reply& message, Transaction& transaction) const = 0;
+               struct Interface
+               {
+                  virtual bool prepare( State& state, common::message::transaction::resource::prepare::Reply& message, Transaction& transaction) const = 0;
+                  virtual bool commit( State& state, common::message::transaction::resource::commit::Reply& message, Transaction& transaction) const = 0;
+                  virtual bool rollback( State& state, common::message::transaction::resource::rollback::Reply& message, Transaction& transaction) const = 0;
+               };
+            } // implementation
+
+
+            namespace process
+            {
+               struct Exit : state::Base
+               {
+                  using Base::Base;
+
+                  using message_type = common::message::event::process::Exit;
+
+                  void operator () ( message_type& message);
+               };
+
+            } // process
+
+            namespace resource
+            {
+               //! Sent by servers that using resources
+               struct Lookup : public state::Base
+               {
+                  using Base::Base;
+
+                  void operator () ( common::message::transaction::resource::lookup::Request& message);
+               };
+
+               //! Sent by a server when resource(s) is involved
+               struct Involved : public state::Base
+               {
+                  using Base::Base;
+
+                  void operator () ( common::message::transaction::resource::Involved& message);
+               };
+
+               namespace reply
+               {
+
+                  template< typename H>
+                  struct Wrapper : public state::Base
+                  {
+                     using handler_type = H;
+                     using message_type = typename handler_type::message_type;
+
+                     Wrapper( State& state) : state::Base{ state}, m_handler{ state} {}
+
+                     void operator () ( message_type& message);
+
+
+                  private:
+                     H m_handler;
+                  };
+
+                  struct Connect : public state::Base
+                  {
+                     using message_type = common::message::transaction::resource::connect::Reply;
+
+                     using state::Base::Base;
+
+                     void operator () ( message_type& message);
+
+                  private:
+                     bool m_connected = false;
+
+                  };
+
+
+                  struct basic_prepare : public state::Base
+                  {
+                     using message_type = common::message::transaction::resource::prepare::Reply;
+
+                     using state::Base::Base;
+
+                     bool operator () ( message_type& message, Transaction& transaction);
+
+                     static constexpr Transaction::Resource::Stage stage() { return Transaction::Resource::Stage::prepare_replied;}
+
+                  };
+                  using Prepare = Wrapper< basic_prepare>;
+
+
+                  struct basic_commit : public state::Base
+                  {
+                     using message_type = common::message::transaction::resource::commit::Reply;
+
+                     using state::Base::Base;
+
+                     bool operator () ( message_type& message, Transaction& transaction);
+
+                     static constexpr Transaction::Resource::Stage stage() { return Transaction::Resource::Stage::commit_replied;}
+
+                  };
+                  using Commit = Wrapper< basic_commit>;
+
+                  struct basic_rollback : public state::Base
+                  {
+                     using message_type = common::message::transaction::resource::rollback::Reply;
+
+                     using state::Base::Base;
+
+                     bool operator () ( message_type& message, Transaction& transaction);
+
+                     static constexpr Transaction::Resource::Stage stage() { return Transaction::Resource::Stage::rollback_replied;}
+                  };
+
+                  using Rollback = Wrapper< basic_rollback>;
+
+
+               } // reply
+
+            } // resource
+
+            template< typename Handler>
+            struct user_reply_wrapper : Handler
+            {
+               using Handler::Handler;
+
+               void operator () ( typename Handler::message_type& message);
             };
-         } // implementation
 
 
-         namespace process
-         {
-            struct Exit : state::Base
+            struct basic_commit : public state::Base
             {
-               using Base::Base;
+               using message_type = common::message::transaction::commit::Request;
+               using reply_type = common::message::transaction::commit::Reply;
 
-               using message_type = common::message::event::process::Exit;
+               using Base::Base;
 
                void operator () ( message_type& message);
             };
 
-         } // process
+            using Commit = user_reply_wrapper< basic_commit>;
 
 
-         namespace resource
-         {
-            //! Sent by servers that using resources
-            struct Lookup : public state::Base
+            struct basic_rollback : public state::Base
             {
+               using message_type = common::message::transaction::rollback::Request;
+               using reply_type = common::message::transaction::rollback::Reply;
+
                using Base::Base;
 
-               void operator () ( common::message::transaction::resource::lookup::Request& message);
+               void operator () ( message_type& message);
             };
 
-            //! Sent by a server when resource(s) is involved
-            struct Involved : public state::Base
+            using Rollback = user_reply_wrapper< basic_rollback>;
+
+
+            namespace external
             {
-               using Base::Base;
-
-               void operator () ( common::message::transaction::resource::Involved& message);
-            };
-
-            namespace reply
-            {
-
-               template< typename H>
-               struct Wrapper : public state::Base
+               struct Involved : public state::Base
                {
-                  using handler_type = H;
-                  using message_type = typename handler_type::message_type;
+                  using Base::Base;
 
-                  Wrapper( State& state) : state::Base{ state}, m_handler{ state} {}
+                  void operator () ( common::message::transaction::resource::external::Involved& message);
+               };
+            }
+
+
+            //!
+            //! This is used when this TM act as an resource to
+            //! other TM:s, as in other domains.
+            //!
+            namespace domain
+            {
+               enum class Directive : char
+               {
+                  keep_transaction,
+                  remove_transaction,
+               };
+
+               struct Base : state::Base
+               {
+                  using state::Base::Base;
+
+               protected:
+                  template< typename M>
+                  void prepare_remote_owner( Transaction& transaction, M& message);
+               };
+
+
+               struct Prepare : Base
+               {
+                  using message_type = common::message::transaction::resource::prepare::Request;
+                  using reply_type = common::message::transaction::resource::prepare::Reply;
+
+                  using Base::Base;
+
+                  void operator () ( message_type& message);
+               private:
+                  Directive handle( message_type& message, Transaction& transaction);
+               };
+
+               struct Commit : Base
+               {
+                  using message_type = common::message::transaction::resource::commit::Request;
+                  using reply_type = common::message::transaction::resource::commit::Reply;
+
+                  using Base::Base;
 
                   void operator () ( message_type& message);
 
-
                private:
-                  H m_handler;
+                  Directive handle( message_type& message, Transaction& transaction);
                };
 
-               struct Connect : public state::Base
+               struct Rollback : Base
                {
-                  using message_type = common::message::transaction::resource::connect::Reply;
+                  using message_type = common::message::transaction::resource::rollback::Request;
+                  using reply_type = common::message::transaction::resource::rollback::Reply;
 
-                  using state::Base::Base;
+                  using Base::Base;
 
                   void operator () ( message_type& message);
 
                private:
-                  bool m_connected = false;
+                  Directive handle( message_type& message, Transaction& transaction);
 
                };
 
+            } // domain
 
-               struct basic_prepare : public state::Base
-               {
-                  using message_type = common::message::transaction::resource::prepare::Reply;
+            dispatch_type handlers( State& state);
 
-                  using state::Base::Base;
-
-                  bool operator () ( message_type& message, Transaction& transaction);
-
-                  static constexpr Transaction::Resource::Stage stage() { return Transaction::Resource::Stage::prepare_replied;}
-
-               };
-               using Prepare = Wrapper< basic_prepare>;
-
-
-               struct basic_commit : public state::Base
-               {
-                  using message_type = common::message::transaction::resource::commit::Reply;
-
-                  using state::Base::Base;
-
-                  bool operator () ( message_type& message, Transaction& transaction);
-
-                  static constexpr Transaction::Resource::Stage stage() { return Transaction::Resource::Stage::commit_replied;}
-
-               };
-               using Commit = Wrapper< basic_commit>;
-
-               struct basic_rollback : public state::Base
-               {
-                  using message_type = common::message::transaction::resource::rollback::Reply;
-
-                  using state::Base::Base;
-
-                  bool operator () ( message_type& message, Transaction& transaction);
-
-                  static constexpr Transaction::Resource::Stage stage() { return Transaction::Resource::Stage::rollback_replied;}
-               };
-
-               using Rollback = Wrapper< basic_rollback>;
-
-
-            } // reply
-
-         } // resource
-
-         template< typename Handler>
-         struct user_reply_wrapper : Handler
-         {
-            using Handler::Handler;
-
-            void operator () ( typename Handler::message_type& message);
-         };
-
-
-         struct basic_commit : public state::Base
-         {
-            using message_type = common::message::transaction::commit::Request;
-            using reply_type = common::message::transaction::commit::Reply;
-
-            using Base::Base;
-
-            void operator () ( message_type& message);
-         };
-
-         using Commit = user_reply_wrapper< basic_commit>;
-
-
-         struct basic_rollback : public state::Base
-         {
-            using message_type = common::message::transaction::rollback::Request;
-            using reply_type = common::message::transaction::rollback::Reply;
-
-            using Base::Base;
-
-            void operator () ( message_type& message);
-         };
-
-         using Rollback = user_reply_wrapper< basic_rollback>;
-
-
-         namespace external
-         {
-            struct Involved : public state::Base
-            {
-               using Base::Base;
-
-               void operator () ( common::message::transaction::resource::external::Involved& message);
-            };
-         }
-
-
-         //!
-         //! This is used when this TM act as an resource to
-         //! other TM:s, as in other domains.
-         //!
-         namespace domain
-         {
-            enum class Directive : char
-            {
-               keep_transaction,
-               remove_transaction,
-            };
-
-            struct Base : state::Base
-            {
-               using state::Base::Base;
-
-            protected:
-               template< typename M>
-               void prepare_remote_owner( Transaction& transaction, M& message);
-            };
-
-
-            struct Prepare : Base
-            {
-               using message_type = common::message::transaction::resource::prepare::Request;
-               using reply_type = common::message::transaction::resource::prepare::Reply;
-
-               using Base::Base;
-
-               void operator () ( message_type& message);
-            private:
-               Directive handle( message_type& message, Transaction& transaction);
-            };
-
-            struct Commit : Base
-            {
-               using message_type = common::message::transaction::resource::commit::Request;
-               using reply_type = common::message::transaction::resource::commit::Reply;
-
-               using Base::Base;
-
-               void operator () ( message_type& message);
-
-            private:
-               Directive handle( message_type& message, Transaction& transaction);
-            };
-
-            struct Rollback : Base
-            {
-               using message_type = common::message::transaction::resource::rollback::Request;
-               using reply_type = common::message::transaction::resource::rollback::Reply;
-
-               using Base::Base;
-
-               void operator () ( message_type& message);
-
-            private:
-               Directive handle( message_type& message, Transaction& transaction);
-
-            };
-
-         } // domain
-
-         dispatch_type handlers( State& state);
-
-      } // handle
+         } // handle
+      } // manager
    } // transaction
 } // casual
 

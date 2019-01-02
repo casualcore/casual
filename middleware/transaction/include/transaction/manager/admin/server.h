@@ -15,10 +15,9 @@ namespace casual
 {
    namespace transaction
    {
-      class State;
-
       namespace manager
       {
+         class State;
          namespace admin
          {
             namespace service
@@ -33,13 +32,10 @@ namespace casual
                   } // update
 
 
-
-
-
                } // name
             } // service
 
-            common::server::Arguments services( State& state);
+            common::server::Arguments services( manager::State& state);
 
          } // manager
       } // admin

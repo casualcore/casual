@@ -22,7 +22,6 @@
 
 namespace casual
 {
-
    namespace local
    {
       namespace
@@ -72,9 +71,9 @@ namespace casual
 
       local::Domain domain;
 
-      transaction::State state( ":memory:");
+      transaction::manager::State state( ":memory:");
 
-      transaction::action::configure( state);
+      transaction::manager::action::configure( state);
 
       ASSERT_TRUE( state.resource_properties.size() >= 2) << "state.xaConfig.size(): " << state.resource_properties.size();
       EXPECT_TRUE( state.resource_properties.at( "db2").xa_struct_name == "db2xa_switch_static_std");
@@ -89,9 +88,9 @@ namespace casual
 
       local::Domain domain;
 
-      transaction::State state( ":memory:");
+      transaction::manager::State state( ":memory:");
 
-      transaction::action::configure( state);
+      transaction::manager::action::configure( state);
 
       const common::strong::resource::id invalid;
 

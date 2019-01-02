@@ -22,7 +22,7 @@ int main( int argc, char** argv)
 
    try
    {
-      casual::transaction::Settings settings;
+      casual::transaction::manager::Settings settings;
       {
          using namespace casual::common::argument;
          Parse parse{ "transaction manager",

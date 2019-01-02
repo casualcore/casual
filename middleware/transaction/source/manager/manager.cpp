@@ -31,25 +31,29 @@ namespace casual
 
    namespace transaction
    {
-      namespace environment
+      namespace manager
       {
-         namespace log
+
+         namespace environment
          {
-            std::string file()
+            namespace log
             {
-               return configuration::directory::domain() + "/transaction/log.db";
-            }
-         } // log
+               std::string file()
+               {
+                  return configuration::directory::domain() + "/transaction/log.db";
+               }
+            } // log
 
-      } // environment
+         } // environment
 
-      Settings::Settings() :
-         log{ environment::log::file()}
-      {
+         Settings::Settings() :
+            log{ environment::log::file()}
+         {
 
-      }
+         }
+      } // manager
 
-      Manager::Manager( Settings settings) :
+      Manager::Manager( manager::Settings settings) :
           m_state( common::environment::string( std::move( settings.log)))
       {
          auto start = common::platform::time::clock::type::now();
@@ -62,7 +66,7 @@ namespace casual
                common::process::handle());
 
          // get configuration from domain manager
-         action::configure( m_state);
+         manager::action::configure( m_state);
 
          // Start resource-proxies
          {
@@ -70,23 +74,23 @@ namespace casual
 
             common::algorithm::for_each(
                m_state.resources,
-               action::resource::Instances( m_state));
+               manager::action::resource::Instances( m_state));
 
             // Make sure we wait for the resources to get ready
-            auto handler = ipc::device().handler(
+            auto handler = manager::ipc::device().handler(
                common::message::handle::Shutdown{},
-               handle::process::Exit{ m_state},
-               handle::resource::reply::Connect{ m_state});
+               manager::handle::process::Exit{ m_state},
+               manager::handle::resource::reply::Connect{ m_state});
 
             while( ! m_state.booted())
             {
-               handler( ipc::device().blocking_next( handler.types()));
+               handler( manager::ipc::device().blocking_next( handler.types()));
             }
          }
 
          auto instances = common::algorithm::accumulate(
                m_state.resources, 0,
-               []( std::size_t count, const state::resource::Proxy& p) {
+               []( std::size_t count, const manager::state::resource::Proxy& p) {
                   return count + p.instances.size();
                });
 
@@ -106,13 +110,12 @@ namespace casual
 
          try
          {
-
             for( auto& resource : m_state.resources)
             {
                resource.concurency = 0;
             }
 
-            algorithm::for_each( m_state.resources, action::resource::Instances{ m_state});
+            algorithm::for_each( m_state.resources, manager::action::resource::Instances{ m_state});
 
             auto processes = m_state.processes();
 
@@ -125,109 +128,108 @@ namespace casual
          }
       }
 
-      namespace local
+      namespace manager
       {
-         namespace
+         namespace local
          {
-            namespace message
+            namespace
             {
-               void pump( State& state)
+               namespace message
                {
-                  try
+                  void pump( manager::State& state)
                   {
-                     log::line( log, "prepare message dispatch handlers");
-
-                     // prepare message dispatch handlers...
-                     auto handler = handle::handlers( state);
-
-                     log::line( log, "start message pump");
-
-                     // Connect to domain
-                     communication::instance::connect( communication::instance::identity::transaction::manager);
-
-
-                     persistent::Writer persist( state.persistent_log);
-
-                     while( true)
+                     try
                      {
-                        Trace trace{ "transaction::Manager message pump"};
+                        log::line( log, "prepare message dispatch handlers");
 
+                        // prepare message dispatch handlers...
+                        auto handler = handle::handlers( state);
+
+                        log::line( log, "start message pump");
+
+                        // Connect to domain
+                        communication::instance::connect( communication::instance::identity::transaction::manager);
+
+
+                        persistent::Writer persist( state.persistent_log);
+
+                        while( true)
                         {
-                           persist.begin();
+                           Trace trace{ "transaction::Manager message pump"};
 
-                           if( ! state.outstanding())
                            {
-                              // We can only block if our backlog is empty
+                              persist.begin();
 
-                              // Removed transaction-timeout from TM, since the semantics are not clear
-                              // see commit 559916d9b84e4f84717cead8f2ee7e3d9fd561cd for previous implementation.
-                              handler( ipc::device().blocking_next());
+                              if( ! state.outstanding())
+                              {
+                                 // We can only block if our backlog is empty
+
+                                 // Removed transaction-timeout from TM, since the semantics are not clear
+                                 // see commit 559916d9b84e4f84717cead8f2ee7e3d9fd561cd for previous implementation.
+                                 handler( ipc::device().blocking_next());
+                              }
+
+                              // Consume until the queue is empty or we've got pending replies equal to batch::transaction
+                              while( handler( ipc::device().non_blocking_next()) &&
+                                    state.persistent.replies.size() < common::platform::batch::transaction::persistence)
+                              {
+                                 ; // no-op
+                              }
                            }
 
-                           // Consume until the queue is empty or we've got pending replies equal to batch::transaction
-                           while( handler( ipc::device().non_blocking_next()) &&
-                                 state.persistent.replies.size() < common::platform::batch::transaction::persistence)
+                           // Check if we have any persistent stuff to handle, if not we don't do persistent commit
+                           if( ! state.persistent.replies.empty() || ! state.persistent.requests.empty())
                            {
-                              ; // no-op
+                              persist.commit();
+
+                              // Send persistent replies to clients
+                              {
+
+                                 log::line( log, "manager persistent replies: ", state.persistent.replies.size());;
+
+                                 auto not_done = common::algorithm::partition(
+                                       state.persistent.replies,
+                                       common::predicate::negate( manager::action::persistent::Send{ state}));
+
+                                 common::algorithm::trim( state.persistent.replies, std::get< 0>( not_done));
+
+                                 log::line( log, "manager persistent replies: ", state.persistent.replies.size());
+                              }
+
+                              // Send persistent resource requests
+                              {
+                                 log::line( log, "manager persistent request: ", state.persistent.requests.size());
+
+                                 auto not_done = common::algorithm::partition(
+                                       state.persistent.requests,
+                                       common::predicate::negate( manager::action::persistent::Send{ state}));
+
+                                 // Move the ones that did not find an idle resource to pending requests
+                                 common::algorithm::move( std::get< 0>( not_done), state.pending.requests);
+
+                                 state.persistent.requests.clear();
+
+                              }
                            }
+                           log::line( log, "manager transactions: ", state.transactions.size());
                         }
-
-                        // Check if we have any persistent stuff to handle, if not we don't do persistent commit
-                        if( ! state.persistent.replies.empty() || ! state.persistent.requests.empty())
-                        {
-                           persist.commit();
-
-                           // Send persistent replies to clients
-                           {
-
-                              log::line( log, "manager persistent replies: ", state.persistent.replies.size());;
-
-                              auto not_done = common::algorithm::partition(
-                                    state.persistent.replies,
-                                    common::predicate::negate( action::persistent::Send{ state}));
-
-                              common::algorithm::trim( state.persistent.replies, std::get< 0>( not_done));
-
-                              log::line( log, "manager persistent replies: ", state.persistent.replies.size());
-                           }
-
-                           // Send persistent resource requests
-                           {
-                              log::line( log, "manager persistent request: ", state.persistent.requests.size());
-
-                              auto not_done = common::algorithm::partition(
-                                    state.persistent.requests,
-                                    common::predicate::negate( action::persistent::Send{ state}));
-
-                              // Move the ones that did not find an idle resource to pending requests
-                              common::algorithm::move( std::get< 0>( not_done), state.pending.requests);
-
-                              state.persistent.requests.clear();
-
-                           }
-                        }
-                        log::line( log, "manager transactions: ", state.transactions.size());
+                     }
+                     catch( const exception::casual::Shutdown&)
+                     {
+                        // We do nothing
                      }
                   }
-                  catch( const exception::casual::Shutdown&)
-                  {
-                     // We do nothing
-                  }
-               }
-
-            } // message
-         } // <unnamed>
-      } // local
+               } // message
+            } // <unnamed>
+         } // local
+      } // manager
 
       void Manager::start()
       {
          try
          {
-            //
             // We're ready to start....
-            //
-            local::message::pump( m_state);
-
+            manager::local::message::pump( m_state);
          }
          catch( const common::exception::signal::Terminate&)
          {
@@ -240,7 +242,7 @@ namespace casual
       }
 
 
-      const State& Manager::state() const
+      const manager::State& Manager::state() const
       {
          return m_state;
       }

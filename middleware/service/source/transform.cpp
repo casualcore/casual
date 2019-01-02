@@ -7,6 +7,7 @@
 
 
 #include "service/transform.h"
+#include "service/common.h"
 
 #include "common/environment.h"
 #include "common/chronology.h"
@@ -85,25 +86,25 @@ namespace casual
                   manager::admin::ServiceVO operator() ( const manager::state::Service& value) const
                   {
                      auto transform_metric = []( const auto& value)
-                           {
+                     {
                         manager::admin::service::Metric result;
-                              result.count = value.count();
-                              result.total = value.total();
-                              return result;
-                           };
+                        result.count = value.count;
+                        result.total = value.total;
+                        result.limit.min = value.limit.min;
+                        result.limit.max = value.limit.max;
+                        return result;
+                     };
 
                      manager::admin::ServiceVO result;
 
                      result.name = value.information.name;
                      result.timeout = value.information.timeout;
                      result.metrics = transform_metric( value.metric);
-                     result.pending.count = value.pending.count();
-                     result.pending.total = value.pending.total();
+                     result.pending = transform_metric( value.pending);
                      result.remote_invocations = value.remote_invocations();
                      result.category = value.information.category;
                      result.transaction = common::cast::underlying( value.information.transaction);
                      result.last = value.last();
-
 
                      auto transform_remote = []( const auto& value)
                            {

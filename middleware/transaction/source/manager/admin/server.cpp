@@ -33,7 +33,7 @@ namespace casual
                namespace
                {
 
-                  common::service::invoke::Result state( common::service::invoke::Parameter&& parameter, State& state)
+                  common::service::invoke::Result state( common::service::invoke::Parameter&& parameter, manager::State& state)
                   {
                      auto protocol = serviceframework::service::protocol::deduce( std::move( parameter));
 
@@ -45,11 +45,11 @@ namespace casual
 
                   namespace update
                   {
-                     common::service::invoke::Result instances( common::service::invoke::Parameter&& parameter, State& state)
+                     common::service::invoke::Result instances( common::service::invoke::Parameter&& parameter, manager::State& state)
                      {
                         auto protocol = serviceframework::service::protocol::deduce( std::move( parameter));
 
-                        std::vector< vo::update::Instances> instances;
+                        std::vector< admin::update::Instances> instances;
                         protocol >> CASUAL_MAKE_NVP( instances);
 
                         auto result = serviceframework::service::user( protocol, &action::resource::insances, state, std::move( instances));
@@ -58,14 +58,12 @@ namespace casual
                         return protocol.finalize();
 
                      }
-
                   } // update
-
                } // <unnamed>
             } // local
 
 
-            common::server::Arguments services( State& state)
+            common::server::Arguments services( manager::State& state)
             {
                return { {
                      { service::name::state(),
@@ -81,7 +79,7 @@ namespace casual
                }};
             }
 
-         } // manager
-      } // admin
+         } // admin
+      } // manager
    } // transaction
 } // casual

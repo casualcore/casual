@@ -20,6 +20,7 @@
 #include "transaction/manager/handle.h"
 #include "transaction/manager/manager.h"
 #include "transaction/manager/admin/server.h"
+#include "transaction/manager/admin/transform.h"
 
 
 #include "common/mockup/ipc.h"
@@ -67,9 +68,7 @@ namespace casual
                     m_process{ "./bin/casual-transaction-manager", { "-l", ":memory:"}
                   }
                {
-                  //
                   // We wait until tm is up
-                  //
                   common::communication::instance::ping(
                         common::communication::instance::fetch::handle(
                               common::communication::instance::identity::transaction::manager).ipc);
@@ -163,12 +162,12 @@ resources:
             {
                namespace call
                {
-                  vo::State state()
+                  manager::admin::State state()
                   {
                      serviceframework::service::protocol::binary::Call call;
                      auto reply = call( manager::admin::service::name::state());
 
-                     vo::State result;
+                     manager::admin::State result;
                      reply >> CASUAL_MAKE_NVP( result);
 
                      return result;
@@ -190,16 +189,20 @@ resources:
 
             } // send
 
-            std::vector< vo::resource::Proxy> accumulate_stats( const vo::State& state)
+            std::vector< manager::admin::resource::Proxy> accumulate_metrics( const manager::admin::State& state)
             {
                auto result = state.resources;
 
                for( auto& proxy : result)
                {
+                  auto metric_p = manager::admin::transform::metrics( proxy.metrics);
                   for( auto& instance : proxy.instances)
                   {
-                     proxy.statistics += instance.statistics;
+                     auto metric_i = manager::admin::transform::metrics( instance.metrics);
+                     metric_p.resource += metric_i.resource;
+                     metric_p.roundtrip += metric_i.roundtrip; 
                   }
+                  proxy.metrics = manager::admin::transform::metrics( metric_p);
                }
                return result;
             }
@@ -324,11 +327,10 @@ resources:
          {
             for( auto& instance : resource.instances)
             {
-               EXPECT_TRUE( instance.statistics.resource.invoked == 0);
+               EXPECT_TRUE( instance.metrics.resource.count == 0);
             }
          }
       }
-
 
 
       TEST( casual_transaction_manager, begin_commit_transaction__1_resources_involved__expect_one_phase_commit_optimization)
@@ -364,13 +366,13 @@ resources:
          state = local::admin::call::state();
          EXPECT_TRUE( state.transactions.empty());
 
-         auto proxies = local::accumulate_stats( state);
+         auto proxies = local::accumulate_metrics( state);
          auto& rm1 = proxies.at( 0);
 
          ASSERT_TRUE( rm1.instances.size() == 2);
          EXPECT_TRUE( rm1.id == local::rm_1);
          EXPECT_TRUE( rm1.name == "rm1");
-         EXPECT_TRUE( rm1.statistics.resource.invoked == 1);
+         EXPECT_TRUE( rm1.metrics.resource.count == 1);
       }
 
 
@@ -523,12 +525,12 @@ resources:
          state = local::admin::call::state();
          EXPECT_TRUE( state.transactions.empty());
 
-         auto proxies = local::accumulate_stats( state);
+         auto proxies = local::accumulate_metrics( state);
          auto& rm1 = proxies.at( 0);
 
          ASSERT_TRUE( rm1.instances.size() == 2);
          EXPECT_TRUE( rm1.id == local::rm_1);
-         EXPECT_TRUE( rm1.statistics.resource.invoked == 1);
+         EXPECT_TRUE( rm1.metrics.resource.count == 1);
       }
 
 
@@ -556,17 +558,17 @@ resources:
          auto state = local::admin::call::state();
          EXPECT_TRUE( state.transactions.empty());
 
-         auto proxies = local::accumulate_stats( state);
+         auto proxies = local::accumulate_metrics( state);
          auto& rm1 = proxies.at( 0);
          auto& rm2 = proxies.at( 1);
 
          ASSERT_TRUE( rm1.instances.size() == 2);
          EXPECT_TRUE( rm1.id == local::rm_1);
-         EXPECT_TRUE( rm1.statistics.resource.invoked == 1);
+         EXPECT_TRUE( rm1.metrics.resource.count == 1);
 
          ASSERT_TRUE( rm2.instances.size() == 2);
          EXPECT_TRUE( rm2.id == local::rm_2);
-         EXPECT_TRUE( rm2.statistics.resource.invoked == 1);
+         EXPECT_TRUE( rm2.metrics.resource.count == 1);
       }
 
 
@@ -600,17 +602,17 @@ resources:
          state = local::admin::call::state();
          EXPECT_TRUE( state.transactions.empty());
 
-         auto proxies = local::accumulate_stats( state);
+         auto proxies = local::accumulate_metrics( state);
          auto& rm1 = proxies.at( 0);
          auto& rm2 = proxies.at( 1);
 
          ASSERT_TRUE( rm1.instances.size() == 2);
          EXPECT_TRUE( rm1.id == local::rm_1);
-         EXPECT_TRUE( rm1.statistics.resource.invoked == 2); // 1 prepare, 1 commit
+         EXPECT_TRUE( rm1.metrics.resource.count == 2); // 1 prepare, 1 commit
 
          ASSERT_TRUE( rm2.instances.size() == 2);
          EXPECT_TRUE( rm2.id == local::rm_2);
-         EXPECT_TRUE( rm2.statistics.resource.invoked == 2); // 1 prepare, 1 commit
+         EXPECT_TRUE( rm2.metrics.resource.count == 2); // 1 prepare, 1 commit
       }
 
 
