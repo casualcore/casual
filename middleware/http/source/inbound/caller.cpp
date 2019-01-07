@@ -125,10 +125,13 @@ namespace casual
 
                         common::service::header::Fields fields;
                         fields.emplace_back( 
-                           common::service::header::Field( http::header::name::result::code, std::to_string( code)));
+                           http::header::name::result::code, 
+                           http::header::value::result::code( static_cast< common::code::xatmi>( code))
+                           );
                         fields.emplace_back( 
-                           common::service::header::Field( http::header::name::result::user::code, std::to_string( usercode)));
-                        
+                           http::header::name::result::user::code, 
+                           http::header::value::result::user::code( usercode)
+                           );                        
                         return fields;
                      }
                   }
