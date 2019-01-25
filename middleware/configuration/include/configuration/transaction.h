@@ -88,6 +88,8 @@ namespace casual
                archive & CASUAL_MAKE_NVP( log);
                archive & CASUAL_MAKE_NVP( resources);
             )
+
+            friend Manager& operator += ( Manager& lhs, const Manager& rhs);
          };
 
 

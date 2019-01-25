@@ -7,6 +7,8 @@
 
 #include "configuration/transaction.h"
 
+#include "common/algorithm.h"
+
 
 namespace casual
 {
@@ -34,9 +36,23 @@ namespace casual
                   }
                } // complement
 
-               void validate( Manager& value)
+               void validate( const Manager& value)
                {
 
+               }
+
+               template< typename LHS, typename RHS>
+               void replace_or_add( LHS& lhs, RHS&& rhs)
+               {
+                  for( auto& value : rhs)
+                  {
+                     auto found = common::algorithm::find( lhs, value);
+
+                     if( found)
+                        *found = std::move( value);
+                     else
+                        lhs.push_back( std::move( value));
+                  }
                }
 
             } // <unnamed>
@@ -56,6 +72,7 @@ namespace casual
             return lhs;
          }
 
+
          Manager::Manager() : log{ "${CASUAL_DOMAIN_HOME}/transaction/log.db"}
          {
             manager_default.resource.instances.emplace( 1);
@@ -69,6 +86,18 @@ namespace casual
 
             // Make sure we've got valid configuration
             local::validate( *this);
+         }
+
+
+         Manager& operator += ( Manager& lhs, const Manager& rhs)
+         {
+            local::replace_or_add( lhs.resources, rhs.resources);
+
+            lhs.log = common::coalesce( rhs.log, lhs.log);
+
+            local::replace_or_add( lhs.resources, rhs.resources);
+
+            return lhs;
          }
       } // transaction
    } // configuration

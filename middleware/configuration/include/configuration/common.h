@@ -33,7 +33,7 @@ namespace casual
          Trace( T&& value) : common::log::Trace( std::forward< T>( value), trace::log) {}
       };
 
-   } // gateway
+   } // configuration
 } // casual
 
 

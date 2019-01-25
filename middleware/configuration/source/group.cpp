@@ -7,6 +7,7 @@
 
 #include "configuration/group.h"
 
+#include "common/algorithm.h"
 
 namespace casual
 {
@@ -14,17 +15,31 @@ namespace casual
    {
       namespace group
       {
-
-         Group::Group() = default;
-         Group::Group( std::function< void(Group&)> foreign) { foreign( *this);}
-
-
          bool operator == ( const Group& lhs, const Group& rhs)
          {
             return lhs.name == rhs.name;
          }
 
+         Group& operator += ( Group& lhs, const Group& rhs)
+         {
+            if( lhs.dependencies && rhs.dependencies)
+            {
+               auto& l_range = lhs.dependencies.value();
+               auto& r_range = rhs.dependencies.value();
 
+               l_range.insert( std::end( l_range), std::begin( r_range), std::end( r_range));
+
+               common::algorithm::trim( l_range, common::algorithm::unique( common::algorithm::sort( l_range)));
+            }
+            else
+            {
+               lhs.dependencies = common::coalesce( lhs.dependencies, rhs.dependencies);
+            }
+
+
+
+            return lhs;
+         }
       } // group
    } // configuration
 } // casual

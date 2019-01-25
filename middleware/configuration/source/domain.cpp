@@ -64,39 +64,47 @@ namespace casual
                      auto found = algorithm::find( lhs, value);
 
                      if( found)
-                     {
                         *found = std::move( value);
-                     }
                      else
-                     {
                         lhs.push_back( std::move( value));
-                     }
+                  }
+               }
+
+               template< typename LHS, typename RHS>
+               void compound_assign_or_add( LHS& lhs, RHS&& rhs)
+               {
+                  for( auto& value : rhs)
+                  {
+                     auto found = algorithm::find( lhs, value);
+
+                     if( found)
+                        *found += std::move( value);
+                     else
+                        lhs.push_back( std::move( value));
                   }
                }
 
                template< typename D>
                Manager& append( Manager& lhs, D&& rhs)
                {
-                  if( lhs.name.empty()) { lhs.name = std::move( rhs.name);}
+                  lhs.name = coalesce( std::move( rhs.name), std::move( lhs.name));
 
-                  local::replace_or_add( lhs.transaction.resources, rhs.transaction.resources);
-                  local::replace_or_add( lhs.groups, rhs.groups);
+                  lhs.transaction += std::move( rhs.transaction);
+                  lhs.gateway += std::move( rhs.gateway);
+                  lhs.queue += std::move( rhs.queue);
+
+                  local::compound_assign_or_add( lhs.groups, rhs.groups);
+
                   local::replace_or_add( lhs.executables, rhs.executables);
                   local::replace_or_add( lhs.servers, rhs.servers);
                   local::replace_or_add( lhs.services, rhs.services);
-
-                  lhs.gateway += std::move( rhs.gateway);
-                  lhs.queue += std::move( rhs.queue);
 
                   return lhs;
                }
 
                Manager get( Manager domain, const std::string& file)
                {
-
-                  //
                   // Create the archive and deserialize configuration
-                  //
                   common::file::Input stream( file);
                   auto archive = serviceframework::archive::create::reader::consumed::from( stream.extension(), stream);
                   archive >> CASUAL_MAKE_NVP( domain);

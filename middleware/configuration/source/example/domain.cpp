@@ -82,29 +82,28 @@ namespace casual
 
             {
                domain.groups = {
-                     {
-                           []( group::Group& v){
-                              v.name = "common-group";
-                              v.note = "group that logically groups 'common' stuff";
-                           }
-                     },
-                     {
-                           []( group::Group& v){
-                              v.name = "customer-group";
-                              v.note = "group that logically groups 'customer' stuff";
-                              v.resources.emplace( { std::string{ "customer-db"}});
-                              v.dependencies.emplace( { std::string{ "common-group"}});
-                           }
-                     },
-                     {
-                            []( group::Group& v){
-                               v.name = "sales-group";
-                               v.note = "group that logically groups 'customer' stuff";
-                               v.resources.emplace( { std::string{ "sales-db"}, std::string{ "event-queue"}});
-                               v.dependencies.emplace( { std::string{ "customer-group"}});
-                            }
-                      },
-
+                       [](){
+                           group::Group v;
+                           v.name = "common-group";
+                           v.note = "group that logically groups 'common' stuff";
+                           return v;
+                        }(),
+                        [](){
+                           group::Group v;
+                           v.name = "customer-group";
+                           v.note = "group that logically groups 'customer' stuff";
+                           v.resources.emplace( { std::string{ "customer-db"}});
+                           v.dependencies.emplace( { std::string{ "common-group"}});
+                           return v;
+                        }(),
+                        [](){
+                         group::Group v;
+                         v.name = "sales-group";
+                         v.note = "group that logically groups 'customer' stuff";
+                         v.resources.emplace( { std::string{ "sales-db"}, std::string{ "event-queue"}});
+                         v.dependencies.emplace( { std::string{ "customer-group"}});
+                         return v;
+                        }()
                };
 
                domain.servers = {

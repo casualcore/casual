@@ -66,9 +66,7 @@ namespace casual
 
             friend bool operator == ( const Executable& lhs, const Executable& rhs);
 
-            //!
             //! Will assign any unassigned values in lhs
-            //!
             friend Executable& operator += ( Executable& lhs, const executable::Default& rhs);
 
             friend bool operator < ( const Executable& lhs, const Executable& rhs);
