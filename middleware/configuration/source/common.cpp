@@ -22,5 +22,5 @@ namespace casual
       {
          common::log::Stream log{ "casual.configuration.trace"};
       } // trace
-   } // gateway
+   } // configuration
 } // casual

@@ -31,11 +31,6 @@ namespace casual
             } // <unnamed>
          } // local
 
-         Executable::Executable() = default;
-         Executable::Executable( std::function< void(Executable&)> foreign)
-         {
-            foreign( *this);
-         }
 
          bool operator == ( const Executable& lhs, const Executable& rhs)
          {
@@ -57,23 +52,12 @@ namespace casual
             return std::tie( lhs.path, lhs.alias) < std::tie( rhs.path, rhs.alias);
          }
 
-
-         Server::Server() = default;
-         Server::Server( std::function< void(Server&)> foreign) { foreign( *this);}
-
-
          bool operator == ( const Server& lhs, const Server& rhs)
          {
             return lhs.restrictions == rhs.restrictions &&
                   static_cast< const Executable&>( lhs) == static_cast< const Executable&>( rhs);
          }
 
-
-
       } // server
-
    } // configuration
-
-
-
 } // casual

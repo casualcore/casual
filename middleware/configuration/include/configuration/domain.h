@@ -43,7 +43,6 @@ namespace casual
                server::executable::Default executable;
                service::service::Default service;
 
-
                CASUAL_CONST_CORRECT_SERIALIZE
                (
                   archive & CASUAL_MAKE_NVP( environment);
@@ -89,14 +88,13 @@ namespace casual
             Manager& operator += ( const Manager& rhs);
             Manager& operator += ( Manager&& rhs);
 
-            friend Manager operator + ( const Manager& lhs, const Manager& rhs);
+            friend Manager operator + ( Manager lhs, const Manager& rhs);
          };
 
 
          Manager get( const std::vector< std::string>& files);
 
 
-         //!
          //! Complement with defaults and validates
          //!
          //! @param configuration domain configuration

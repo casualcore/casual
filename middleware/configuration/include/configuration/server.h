@@ -43,16 +43,11 @@ namespace casual
 
          struct Executable : executable::Default
          {
-            Executable();
-            Executable( std::function< void(Executable&)> foreign);
-
             std::string path;
             serviceframework::optional< std::string> alias;
             serviceframework::optional< std::string> note;
 
-
             serviceframework::optional< std::vector< std::string>> arguments;
-
 
             CASUAL_CONST_CORRECT_SERIALIZE
             (
@@ -75,10 +70,6 @@ namespace casual
 
          struct Server : public Executable
          {
-
-            Server();
-            Server( std::function< void(Server&)> foreign);
-
             serviceframework::optional< std::vector< std::string>> restrictions;
             serviceframework::optional< std::vector< std::string>> resources;
 

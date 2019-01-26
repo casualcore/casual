@@ -89,6 +89,9 @@ namespace casual
                {
                   lhs.name = coalesce( std::move( rhs.name), std::move( lhs.name));
 
+                  // defaults just propagates to the left...
+                  lhs.manager_default = std::move( rhs.manager_default);
+
                   lhs.transaction += std::move( rhs.transaction);
                   lhs.gateway += std::move( rhs.gateway);
                   lhs.queue += std::move( rhs.queue);
@@ -102,8 +105,9 @@ namespace casual
                   return lhs;
                }
 
-               Manager get( Manager domain, const std::string& file)
+               Manager get( Manager current, const std::string& file)
                {
+                  Manager domain;
                   // Create the archive and deserialize configuration
                   common::file::Input stream( file);
                   auto archive = serviceframework::archive::create::reader::consumed::from( stream.extension(), stream);
@@ -114,7 +118,10 @@ namespace casual
 
                   finalize( domain);
 
-                  return domain;
+                  // accumulate it to current
+                  current += std::move( domain);
+
+                  return current;
 
                }
 
@@ -130,7 +137,6 @@ namespace casual
                executable.instances.emplace( 1);
                service.timeout.emplace( "0s");
             }
-
          } // domain
 
 
@@ -145,37 +151,36 @@ namespace casual
             return local::append( *this, std::move( rhs));
          }
 
-         Manager operator + ( const Manager& lhs, const Manager& rhs)
+         Manager operator + ( Manager lhs, const Manager& rhs)
          {
-            auto result = lhs;
-            result += rhs;
-            return result;
+            lhs += rhs;
+            return lhs;
          }
 
          void finalize( Manager& configuration)
          {
-            //
             // Complement with default values
-            //
             local::complement::default_values( configuration);
 
-            //
             // Make sure we've got valid configuration
-            //
             local::validate( configuration);
 
             configuration.transaction.finalize();
             configuration.gateway.finalize();
             configuration.queue.finalize();
-
          }
 
 
          Manager get( const std::vector< std::string>& files)
          {
-            common::Trace trace{ "configuration::domain::get"};
+            Trace trace{ "configuration::domain::get"};
 
             auto domain = algorithm::accumulate( files, Manager{}, &local::get);
+
+            // finalize the complete domain configuration
+            finalize( domain);
+
+            log::line( verbose::log, "domain: ", domain);
 
             return domain;
 

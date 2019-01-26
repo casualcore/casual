@@ -12,6 +12,8 @@
 
 #include "common/domain.h"
 
+#include "serviceframework/log.h"
+
 namespace casual
 {
    using namespace common;
@@ -315,10 +317,11 @@ namespace casual
 
          manager::State state( casual::configuration::domain::Manager domain)
          {
+            Trace trace{ "domain::transform::state"};
 
-            //
+            log::line( verbose::log, "configuration: ", domain);
+
             // Set the domain
-            //
             common::domain::identity( common::domain::Identity{ domain.name});
 
             manager::State result;
@@ -326,11 +329,7 @@ namespace casual
             result.configuration = casual::configuration::transform::configuration( domain);
             result.environment = domain.manager_default.environment;
 
-
-
-            //
             // Handle groups
-            //
             {
                manager::state::Group master{ ".casual.master", {}, "the master and (implicit) parent of all groups"};
                result.group_id.master = master.id;
@@ -351,11 +350,9 @@ namespace casual
             }
 
             {
-               //
                // We need to remove any of the reserved groups (that we created above), either because
                // the user has used one of the reserved names, or we're reading from a persistent stored
                // configuration
-               //
                const std::vector< std::string> reserved{
                   ".casual.master", ".casual.transaction", ".casual.queue", ".global", ".casual.gateway"};
 
@@ -363,19 +360,14 @@ namespace casual
                   return common::algorithm::find( reserved, g.name);
                });
 
-
-               //
                // We transform user defined groups
-               //
                algorithm::transform( groups, result.groups, local::Group{ result});
             }
 
             {
-               //
                // We need to make sure the gateway have dependencies to all user groups. We could
                // order the groups and pick the last one, but it's more semantic correct to make have dependencies
                // to all, since that is exactly what we're trying to represent.
-               //
                manager::state::Group gateway{ ".casual.gateway", {}};
                result.group_id.gateway = gateway.id;
 
@@ -386,16 +378,10 @@ namespace casual
                result.groups.push_back( std::move( gateway));
             }
 
-
-            //
             // Handle executables
-            //
             {
-
-               //
                // Add our self to processes that this domain has. Mostly to
                // make it symmetric
-               //
                {
 
                   manager::state::Server manager;
@@ -421,7 +407,6 @@ namespace casual
                algorithm::for_each( result.executables, verify);
 
             }
-
 
             return result;
          }

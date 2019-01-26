@@ -91,9 +91,10 @@ namespace casual
 
          Manager& operator += ( Manager& lhs, const Manager& rhs)
          {
-            local::replace_or_add( lhs.resources, rhs.resources);
-
             lhs.log = common::coalesce( rhs.log, lhs.log);
+
+            // defaults just propagates to the left...
+            lhs.manager_default = std::move( rhs.manager_default);
 
             local::replace_or_add( lhs.resources, rhs.resources);
 

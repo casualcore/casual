@@ -47,9 +47,7 @@ namespace casual
 
                      void operator () ()
                      {
-                        //
                         // Make sure we unsubscribe for events
-                        //
                         auto unsubscribe = execute::scope( [](){
                            message::event::subscription::End message;
                            message.process = process::handle();
@@ -177,9 +175,7 @@ namespace casual
                            std::cerr << terminal::color::red << "fatal";
                            std::cerr << " failed to boot domain\n";
 
-                           //
                            // Check if we got some error events
-                           //
                            common::message::dispatch::pump(
                                  event_handler,
                                  common::communication::ipc::inbound::device(),
@@ -298,10 +294,7 @@ namespace casual
 
                   void shutdown()
                   {
-
-                     //
                      // subscribe for events
-                     //
                      {
                         message::event::subscription::Begin message;
                         message.process = process::handle();
@@ -501,7 +494,7 @@ namespace casual
                      common::argument::Option( &local::action::list_instances, { "-li", "--list-instances"}, "list all instances"),
                      common::argument::Option( &local::action::scale_instances, local::action::scale_instances_completion, { "-si", "--scale-instances"}, "<alias> <#> scale executable instances"),
                      common::argument::Option( &local::action::shutdown, { "-s", "--shutdown"}, "shutdown the domain"),
-                     common::argument::Option( &local::action::boot, { "-b", "--boot"}, "boot domain"),
+                     common::argument::Option( &local::action::boot, { "-b", "--boot"}, "boot domain -"),
                      common::argument::Option( &local::action::persist::configuration, { "-p", "--persist-state"}, "persist current state"),
                      common::argument::Option( &local::action::state, complete_state, { "--state"}, "domain state")
                   };

@@ -134,14 +134,10 @@ namespace casual
 
          void Manager::finalize()
          {
-            //
             // Complement with default values
-            //
             local::complement::default_values( *this);
 
-            //
             // Make sure we've got valid configuration
-            //
             local::validate( *this);
          }
 

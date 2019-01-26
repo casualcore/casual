@@ -21,6 +21,7 @@ namespace casual
 
                constexpr auto quote = '\"';
                constexpr auto first = "";
+               //constexpr auto init = "";
                constexpr auto scope = ", ";
 
                std::ostream& maybe_name( std::ostream& stream, const char* name)
@@ -39,13 +40,14 @@ namespace casual
                   platform::size::type container_start( const platform::size::type size, const char* name)
                   {
                      begin_scope();
-                     maybe_name( m_stream, name) << "[ ";
+                     maybe_name( m_stream, name) << ( size == 0 ? "[" : "[ ");
                      return size;
                   }
 
                   void container_end( const char*)
                   {
                      m_stream << ']';
+                     m_prefix = scope;
                   }
 
                   void serialtype_start( const char* name)
@@ -57,6 +59,7 @@ namespace casual
                   void serialtype_end( const char*)
                   {
                      m_stream << '}';
+                     m_prefix = scope;
                   }
 
                   template<typename T>

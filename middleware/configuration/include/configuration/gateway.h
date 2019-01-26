@@ -49,9 +49,6 @@ namespace casual
 
          struct Listener : listener::Default
          {
-            Listener() = default;
-            Listener( std::function<void( Listener&)> foreign) { foreign( *this);}
-
             std::string address;
             std::string note;
 
@@ -85,9 +82,6 @@ namespace casual
 
          struct Connection : connection::Default
          {
-            Connection() = default;
-            Connection( std::function<void( Connection&)> foreign) { foreign( *this);}
-
             std::vector< std::string> services;
             std::vector< std::string> queues;
             std::string note;

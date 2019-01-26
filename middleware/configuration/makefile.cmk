@@ -66,9 +66,12 @@ LinkUnittest( 'bin/test-casual-configuration',
         Compile( 'unittest/source/test_message.cpp'),
         Compile( 'unittest/source/test_environment.cpp'),
         Compile( 'unittest/source/test_transaction.cpp'),
+
         
         Compile( 'unittest/source/resource/test_property.cpp'),
         Compile( 'unittest/source/build/test_server.cpp'),
+
+        Compile( 'unittest/source/domain/test_accumulate.cpp'),
    ],
    [ 
        example_archive, 

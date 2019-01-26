@@ -37,9 +37,6 @@ namespace casual
 
          struct Queue : queue::Default
          {
-            Queue();
-            Queue( std::function<void( Queue&)> foreign);
-
             std::string name;
             std::string note;
 
@@ -56,9 +53,6 @@ namespace casual
 
          struct Group
          {
-            Group();
-            Group( std::function<void( Group&)> foreign);
-
             std::string name;
             serviceframework::optional< std::string> queuebase;
             std::string note;
@@ -95,8 +89,6 @@ namespace casual
 
          struct Manager
          {
-            Manager();
-
             manager::Default manager_default;
             std::vector< Group> groups;
 
@@ -106,18 +98,13 @@ namespace casual
                archive & CASUAL_MAKE_NVP( groups);
             )
 
-            //!
             //! Complement with defaults and validates
-            //!
             void finalize();
 
             Manager& operator += ( const Manager& rhs);
             Manager& operator += ( Manager&& rhs);
             friend Manager operator + ( const Manager& lhs, const Manager& rhs);
          };
-
-
-
 
          namespace unittest
          {

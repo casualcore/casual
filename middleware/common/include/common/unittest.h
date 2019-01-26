@@ -30,9 +30,7 @@ namespace casual
 
          namespace clean
          {
-            //!
             //! tries to clean all signals when scope is entered and exited
-            //!
             struct Scope
             {
                Scope();
@@ -85,7 +83,6 @@ namespace casual
                archive & payload;
             })
 
-            //
             // cores on ubuntu 16.04 when size gets over 5M.
             // guessing that the stack gets to big...
             // We switch to a vector instead.
@@ -118,9 +115,7 @@ namespace casual
          {
             namespace manager
             {
-               //!
                //! Waits for the domain manager to boot
-               //!
                void wait( communication::ipc::inbound::Device& device);
 
             } // manager

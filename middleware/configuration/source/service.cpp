@@ -14,10 +14,6 @@ namespace casual
    {
       namespace service
       {
-
-         Service::Service() = default;
-         Service::Service( std::function< void(Service&)> foreign) { foreign( *this);}
-
          bool operator == ( const Service& lhs, const Service& rhs)
          {
             return lhs.name == rhs.name;

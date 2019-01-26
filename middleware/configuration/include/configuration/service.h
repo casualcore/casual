@@ -36,10 +36,6 @@ namespace casual
 
          struct Service : service::Default
          {
-
-            Service();
-            Service( std::function< void(Service&)> foreign);
-
             std::string name;
             serviceframework::optional< std::vector< std::string>> routes;
 
@@ -52,9 +48,7 @@ namespace casual
 
             friend bool operator == ( const Service& lhs, const Service& rhs);
 
-            //!
             //! Will assign any unassigned values in lhs
-            //!
             friend Service& operator += ( Service& lhs, const service::Default& rhs);
          };
 

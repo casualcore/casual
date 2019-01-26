@@ -32,20 +32,13 @@ namespace casual
                      {
                         auto state = persistent::state::load();
 
-                        //
                         // We don't need to prepare anything, we got the total state (hopefully)
-                        //
                         state.mandatory_prepare = false;
 
-                        //
                         // Make sure we set the domain-name.
-                        //
                         common::domain::identity( common::domain::Identity{ state.configuration.name});
 
-
-                        //
                         // We need to adjust 'next-id' so runtime configuration works.
-                        //
                         {
                            auto adjust_id = []( const auto& range){
                               auto max = algorithm::max( range);
