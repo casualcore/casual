@@ -13,28 +13,26 @@ namespace casual
 {
    namespace configuration
    {
-      namespace group
+      struct Group
       {
-         struct Group
+         std::string name;
+         std::string note;
+
+         serviceframework::optional< std::vector< std::string>> resources;
+         serviceframework::optional< std::vector< std::string>> dependencies;
+
+         CASUAL_CONST_CORRECT_SERIALIZE(
          {
-            std::string name;
-            std::string note;
+            archive & CASUAL_MAKE_NVP( name);
+            archive & CASUAL_MAKE_NVP( note);
+            archive & CASUAL_MAKE_NVP( resources);
+            archive & CASUAL_MAKE_NVP( dependencies);
+         })
 
-            serviceframework::optional< std::vector< std::string>> resources;
-            serviceframework::optional< std::vector< std::string>> dependencies;
+         Group& operator += ( const Group& rhs);
+         friend bool operator == ( const Group& lhs, const Group& rhs);
 
-            CASUAL_CONST_CORRECT_SERIALIZE(
-            {
-               archive & CASUAL_MAKE_NVP( name);
-               archive & CASUAL_MAKE_NVP( note);
-               archive & CASUAL_MAKE_NVP( resources);
-               archive & CASUAL_MAKE_NVP( dependencies);
-            })
-
-            friend bool operator == ( const Group& lhs, const Group& rhs);
-            friend Group& operator += ( Group& lhs, const Group& rhs);
-         };
-      } // group
+      };
    } // configuration
 } // casual
 

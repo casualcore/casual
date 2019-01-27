@@ -34,14 +34,18 @@ namespace casual
       {
          Environment env;
          env.variables = {
-               { []( environment::Variable& v){
-                  v.key = "a";
-                  v.value = "b";
-               }},
-               { []( environment::Variable& v){
-                  v.key = "c";
-                  v.value = "d";
-               }}
+            [](){
+               environment::Variable v;
+               v.key = "a";
+               v.value = "b";
+               return v;
+            }(),
+            [](){
+               environment::Variable v;
+               v.key = "c";
+               v.value = "d";
+               return v;
+            }()
          };
 
          auto result = environment::fetch( env);
@@ -130,14 +134,18 @@ namespace casual
          {
             refered.files.push_back( env_file);
             refered.variables = {
-                  { []( environment::Variable& v){
-                     v.key = "k_c";
-                     v.value = "v_c";
-                  }},
-                  { []( environment::Variable& v){
-                     v.key = "k_d";
-                     v.value = "v_d";
-                  }}
+               [](){
+                  environment::Variable v;
+                  v.key = "k_c";
+                  v.value = "v_c";
+                  return v;
+               }(),
+               [](){
+                  environment::Variable v;
+                  v.key = "k_d";
+                  v.value = "v_d";
+                  return v;
+               }()
             };
          }
 

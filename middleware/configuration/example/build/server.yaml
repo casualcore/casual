@@ -6,6 +6,9 @@ server:
       category: some.category
 
 
+  resources:
+    []
+
   services:
     - name: s1
 

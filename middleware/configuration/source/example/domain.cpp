@@ -29,27 +29,31 @@ namespace casual
             // default
             {
                domain.manager_default.environment.variables = {
-                     { []( environment::Variable& v){
-                        v.key = "SOME_VARIABLE";
-                        v.value = "42";
-                     }},
-                     { []( environment::Variable& v){
-                        v.key = "SOME_OTHER_VARIABLE";
-                        v.value = "some value";
-                     }}
+                  [](){
+                     environment::Variable v;
+                     v.key = "SOME_VARIABLE";
+                     v.value = "42";
+                     return v;
+                  }(),
+                  [](){
+                     environment::Variable v;
+                     v.key = "SOME_OTHER_VARIABLE";
+                     v.value = "some value";
+                     return v;
+                  }()
                };
                domain.manager_default.environment.files = {
                      { "/some/path/to/environment/file"},
                      { "/some/other/file"}
                };
 
-               domain.manager_default.service.timeout.emplace( "90s");
-               domain.manager_default.server.restart.emplace( true);
+               domain.manager_default.service.timeout = "90s";
+               domain.manager_default.server.restart = true;
             }
 
             {
-               domain.transaction.manager_default.resource.instances.emplace( 3);
-               domain.transaction.manager_default.resource.key.emplace( "db2_rm");
+               domain.transaction.manager_default.resource.instances = 3;
+               domain.transaction.manager_default.resource.key = "db2_rm";
 
                domain.transaction.log = "/some/fast/disk/domain.A42/transaction.log";
 
@@ -81,47 +85,48 @@ namespace casual
                };
             }
 
+            // group
             {
                domain.groups = {
-                       [](){
-                           group::Group v;
-                           v.name = "common-group";
-                           v.note = "group that logically groups 'common' stuff";
-                           return v;
-                        }(),
-                        [](){
-                           group::Group v;
-                           v.name = "customer-group";
-                           v.note = "group that logically groups 'customer' stuff";
-                           v.resources.emplace( { std::string{ "customer-db"}});
-                           v.dependencies.emplace( { std::string{ "common-group"}});
-                           return v;
-                        }(),
-                        [](){
-                         group::Group v;
-                         v.name = "sales-group";
-                         v.note = "group that logically groups 'customer' stuff";
-                         v.resources.emplace( { std::string{ "sales-db"}, std::string{ "event-queue"}});
-                         v.dependencies.emplace( { std::string{ "customer-group"}});
-                         return v;
-                        }()
+                  [](){
+                     Group v;
+                     v.name = "common-group";
+                     v.note = "group that logically groups 'common' stuff";
+                     return v;
+                  }(),
+                  [](){
+                     Group v;
+                     v.name = "customer-group";
+                     v.note = "group that logically groups 'customer' stuff";
+                     v.resources.emplace( { std::string{ "customer-db"}});
+                     v.dependencies.emplace( { std::string{ "common-group"}});
+                     return v;
+                  }(),
+                  [](){
+                     Group v;
+                     v.name = "sales-group";
+                     v.note = "group that logically groups 'customer' stuff";
+                     v.resources.emplace( { std::string{ "sales-db"}, std::string{ "event-queue"}});
+                     v.dependencies.emplace( { std::string{ "customer-group"}});
+                     return v;
+                  }()
                };
 
                domain.servers = {
                   [](){
-                     server::Server v;
+                     Server v;
                      v.path = "customer-server-1";
                      v.memberships.emplace( { std::string{ "customer-group"}});
                      return v;
                   }(),
                   [](){
-                     server::Server v;
+                     Server v;
                      v.path = "customer-server-2";
                      v.memberships.emplace( { std::string{ "customer-group"}});
                      return v;
                   }(),
                   [](){
-                     server::Server v;
+                     Server v;
                      v.path = "sales-server";
                      v.alias.emplace( "sales-pre");
                      v.instances.emplace( 10);
@@ -131,7 +136,7 @@ namespace casual
                      return v;
                   }(),
                   [](){
-                     server::Server v;
+                     Server v;
                      v.path = "sales-server";
                      v.alias.emplace( "sales-post");
                      v.memberships.emplace( { std::string{ "sales-group"}});
@@ -140,23 +145,30 @@ namespace casual
                      return v;
                   }(),
                   [](){
-                     server::Server v;
+                     Server v;
                      v.path = "sales-broker";
                      v.memberships.emplace( { std::string{ "sales-group"}});
                      v.resources.emplace( { std::string{ "event-queue"}});
-                     v.environment.emplace( []( Environment& e){
-                        e.variables.emplace_back( []( environment::Variable& v){
-                           v.key = "SALES_BROKER_VARIABLE";
-                           v.value = "556";
-                        });
-                     });
+                     v.environment.emplace( [](){
+                        Environment e;
+                        e.variables = { 
+                           [](){
+                              environment::Variable v;
+                              v.key = "SALES_BROKER_VARIABLE";
+                              v.value = "556";
+                              return v;
+                           }()
+                        };
+                        return e;
+                     }());
+
                      return v;
                   }()
                };
 
                domain.executables = {
                   [](){
-                     server::Executable v;
+                     Executable v;
                      v.path = "mq-server";
                      v.memberships.emplace( { std::string{ "common-group"}});
                      v.arguments.emplace( { std::string{ "--configuration"}, std::string{ "/path/to/configuration"}});
@@ -164,17 +176,16 @@ namespace casual
                   }()
                };
 
-
                domain.services = {
                   [](){
-                     service::Service v;
+                     Service v;
                      v.name = "postSalesSaveService";
                      v.timeout.emplace( "2h");
                      v.routes.emplace( { std::string( "postSalesSaveService"), std::string( "sales/post/save")});
                      return v;
                   }(),
                   [](){
-                     service::Service v;
+                     Service v;
                      v.name = "postSalesGetService";
                      v.timeout.emplace( "130ms");
                      return v;
@@ -249,7 +260,7 @@ namespace casual
 
             // queue
             {
-               domain.queue.manager_default.queue.retries.emplace( 0);
+               domain.queue.manager_default.queue.retries = 0;
 
                domain.queue.groups = {
                   [](){

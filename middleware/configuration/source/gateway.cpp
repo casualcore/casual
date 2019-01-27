@@ -78,42 +78,31 @@ namespace casual
                   return lhs;
                }
 
-
             } // <unnamed>
          } // local
+
+         Listener& Listener::operator += ( const listener::Default& rhs)
+         {
+            limit = common::coalesce( limit, rhs.limit);
+            return *this;
+         }
 
          bool operator == ( const Listener& lhs, const Listener& rhs)
          {
             return lhs.address == rhs.address;
          }
 
-         Listener& operator += ( Listener& lhs, const listener::Default& rhs)
+         Connection& Connection::operator += ( const connection::Default& rhs)
          {
-            lhs.limit = common::coalesce( lhs.limit, rhs.limit);
-            return lhs;
+            restart = common::coalesce( std::move( restart), rhs.restart);
+            address = common::coalesce( std::move( address), rhs.address);
+            return *this;
          }
 
          bool operator == ( const Connection& lhs, const Connection& rhs)
          {
             return lhs.address == rhs.address;
          }
-
-         Connection& operator += ( Connection& lhs, const connection::Default& rhs)
-         {
-            lhs.restart = common::coalesce( lhs.restart, rhs.restart);
-            lhs.address = common::coalesce( lhs.address, rhs.address);
-
-            return lhs;
-         }
-
-         namespace manager
-         {
-            Default::Default()
-            {
-               connection.restart = true;
-            }
-         } // manager
-
 
          Manager& Manager::operator += ( const Manager& rhs)
          {
@@ -125,11 +114,10 @@ namespace casual
             return local::append( *this, std::move( rhs));
          }
 
-         Manager operator + ( const Manager& lhs, const Manager& rhs)
+         Manager operator + ( Manager lhs, const Manager& rhs)
          {
-            auto result = lhs;
-            result += rhs;
-            return result;
+            lhs += rhs;
+            return lhs;
          }
 
          void Manager::finalize()

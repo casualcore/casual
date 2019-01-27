@@ -18,41 +18,33 @@ namespace casual
    {
       namespace service
       {
-
-         namespace service
+         struct Default
          {
-            struct Default
-            {
-               serviceframework::optional< std::string> timeout;
-
-               CASUAL_CONST_CORRECT_SERIALIZE
-               (
-                  archive & CASUAL_MAKE_NVP( timeout);
-               )
-
-            };
-         } // service
-
-
-         struct Service : service::Default
-         {
-            std::string name;
-            serviceframework::optional< std::vector< std::string>> routes;
+            std::string timeout = "0s";
 
             CASUAL_CONST_CORRECT_SERIALIZE
             (
-               service::Default::serialize( archive);
-               archive & CASUAL_MAKE_NVP( name);
-               archive & CASUAL_MAKE_NVP( routes);
+               archive & CASUAL_MAKE_NVP( timeout);
             )
-
-            friend bool operator == ( const Service& lhs, const Service& rhs);
-
-            //! Will assign any unassigned values in lhs
-            friend Service& operator += ( Service& lhs, const service::Default& rhs);
          };
 
       } // service
+      struct Service
+      {
+         std::string name;
+         serviceframework::optional< std::string> timeout;
+         serviceframework::optional< std::vector< std::string>> routes;
+
+         CASUAL_CONST_CORRECT_SERIALIZE
+         (
+            archive & CASUAL_MAKE_NVP( name);
+            archive & CASUAL_MAKE_NVP( timeout);
+            archive & CASUAL_MAKE_NVP( routes);
+         )
+
+         Service& operator += ( const service::Default& rhs);
+         friend bool operator == ( const Service& lhs, const Service& rhs);
+      };
    } // configuration
 } // casual
 

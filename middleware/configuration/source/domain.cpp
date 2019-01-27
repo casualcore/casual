@@ -89,8 +89,7 @@ namespace casual
                {
                   lhs.name = coalesce( std::move( rhs.name), std::move( lhs.name));
 
-                  // defaults just propagates to the left...
-                  lhs.manager_default = std::move( rhs.manager_default);
+                  lhs.manager_default += std::move( rhs.manager_default);
 
                   lhs.transaction += std::move( rhs.transaction);
                   lhs.gateway += std::move( rhs.gateway);
@@ -131,11 +130,16 @@ namespace casual
 
          namespace manager
          {
-            Default::Default()
+            Default& Default::operator += ( const Default& rhs)
             {
-               server.instances.emplace( 1);
-               executable.instances.emplace( 1);
-               service.timeout.emplace( "0s");
+               // we accumulate environment
+               environment += rhs.environment;
+               
+               service = rhs.service;
+               executable = rhs.executable;
+               server = rhs.server;               
+               
+               return *this;
             }
          } // domain
 

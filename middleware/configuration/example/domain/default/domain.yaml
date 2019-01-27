@@ -12,9 +12,33 @@ domain:
 
     server:
       instances: 1
+      restart: false
+      memberships:
+        []
+
+      environment:
+        files:
+          []
+
+        variables:
+          []
+
+
 
     executable:
       instances: 1
+      restart: false
+      memberships:
+        []
+
+      environment:
+        files:
+          []
+
+        variables:
+          []
+
+
 
     service:
       timeout: 0s
@@ -23,6 +47,7 @@ domain:
   transaction:
     default:
       resource:
+        key: ""
         instances: 1
 
 
@@ -46,10 +71,13 @@ domain:
   gateway:
     default:
       listener:
-        {}
+        limit:
+          {}
+
 
       connection:
         restart: true
+        address: ""
 
 
     listeners:

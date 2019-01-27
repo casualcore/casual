@@ -20,10 +20,21 @@
             },
             "server": {
                 "instances": 1,
-                "restart": true
+                "restart": true,
+                "memberships": [],
+                "environment": {
+                    "files": [],
+                    "variables": []
+                }
             },
             "executable": {
-                "instances": 1
+                "instances": 1,
+                "restart": false,
+                "memberships": [],
+                "environment": {
+                    "files": [],
+                    "variables": []
+                }
             },
             "service": {
                 "timeout": "90s"
@@ -39,8 +50,8 @@
             "log": "/some/fast/disk/domain.A42/transaction.log",
             "resources": [
                 {
-                    "instances": 5,
                     "name": "customer-db",
+                    "instances": 5,
                     "note": "this resource is named 'customer-db' - using the default rm-key (db_rm) - overrides the default rm-instances to 5",
                     "openinfo": "db=customer,uid=db2,pwd=db2"
                 },
@@ -50,8 +61,8 @@
                     "openinfo": "db=sales,uid=db2,pwd=db2"
                 },
                 {
-                    "key": "mq_rm",
                     "name": "event-queue",
+                    "key": "mq_rm",
                     "note": "this resource is named 'event-queue' - overrides rm-key - using default rm-instances",
                     "openinfo": "some-mq-specific-stuff",
                     "closeinfo": "some-mq-specific-stuff"
@@ -101,11 +112,11 @@
             {
                 "path": "sales-server",
                 "alias": "sales-pre",
+                "note": "the only services that will be advertised are 'preSalesSaveService' and 'preSalesGetService'",
                 "instances": 10,
                 "memberships": [
                     "sales-group"
                 ],
-                "note": "the only services that will be advertised are 'preSalesSaveService' and 'preSalesGetService'",
                 "restrictions": [
                     "preSalesSaveService",
                     "preSalesGetService"
@@ -114,10 +125,10 @@
             {
                 "path": "sales-server",
                 "alias": "sales-post",
+                "note": "the only services that will be advertised are 'postSalesSaveService' and 'postSalesGetService'",
                 "memberships": [
                     "sales-group"
                 ],
-                "note": "the only services that will be advertised are 'postSalesSaveService' and 'postSalesGetService'",
                 "restrictions": [
                     "postSalesSaveService",
                     "postSalesGetService"
@@ -156,46 +167,49 @@
         ],
         "services": [
             {
-                "timeout": "2h",
                 "name": "postSalesSaveService",
+                "timeout": "2h",
                 "routes": [
                     "postSalesSaveService",
                     "sales/post/save"
                 ]
             },
             {
-                "timeout": "130ms",
-                "name": "postSalesGetService"
+                "name": "postSalesGetService",
+                "timeout": "130ms"
             }
         ],
         "gateway": {
             "default": {
-                "listener": {},
+                "listener": {
+                    "limit": {}
+                },
                 "connection": {
-                    "restart": true
+                    "restart": true,
+                    "address": ""
                 }
             },
             "listeners": [
                 {
+                    "address": "localhost:7779",
                     "limit": {
                         "size": 2097152
                     },
-                    "address": "localhost:7779",
                     "note": "local host - if threshold of 2MB of total payload 'in flight' is reach inbound will stop consume from socket until we're below"
                 },
                 {
+                    "address": "some.host.org:7779",
                     "limit": {
                         "messages": 200
                     },
-                    "address": "some.host.org:7779",
                     "note": "listener that is bound to some 'external ip' - limit to max 200 calls 'in flight'"
                 },
                 {
+                    "address": "some.host.org:9999",
                     "limit": {
                         "size": 10485760,
                         "messages": 10
                     },
-                    "address": "some.host.org:9999",
                     "note": "listener - threshold of either 10 messages OR 10MB - the first that is reach, inbound will stop consume"
                 },
                 {
@@ -206,30 +220,30 @@
             "connections": [
                 {
                     "address": "a45.domain.host.org:7779",
-                    "note": "connection to domain 'a45' - we expect to find service 's1' and 's2' there.",
                     "services": [
                         "s1",
                         "s2"
                     ],
-                    "queues": []
+                    "queues": [],
+                    "note": "connection to domain 'a45' - we expect to find service 's1' and 's2' there."
                 },
                 {
                     "address": "a46.domain.host.org:7779",
-                    "note": "connection to domain 'a46' - we expect to find queues 'q1' and 'q2' and service 's1' - casual will only route 's1' to a46 if it's not accessible in a45 (or local)",
                     "services": [
                         "s1"
                     ],
                     "queues": [
                         "q1",
                         "q2"
-                    ]
+                    ],
+                    "note": "connection to domain 'a46' - we expect to find queues 'q1' and 'q2' and service 's1' - casual will only route 's1' to a46 if it's not accessible in a45 (or local)"
                 },
                 {
-                    "restart": false,
                     "address": "a99.domain.host.org:7780",
-                    "note": "connection to domain 'a99' - if the connection is closed from a99, casual will not try to reestablish the connection",
                     "services": [],
-                    "queues": []
+                    "queues": [],
+                    "restart": false,
+                    "note": "connection to domain 'a99' - if the connection is closed from a99, casual will not try to reestablish the connection"
                 }
             ]
         },
@@ -250,8 +264,8 @@
                             "note": ""
                         },
                         {
-                            "retries": 10,
                             "name": "q_A2",
+                            "retries": 10,
                             "note": "after 10 rollbacked dequeues, message is moved to q_A2.error"
                         },
                         {
@@ -274,8 +288,8 @@
                             "note": ""
                         },
                         {
-                            "retries": 10,
                             "name": "q_B2",
+                            "retries": 10,
                             "note": "after 10 rollbacked dequeues, message is moved to q_B2.error"
                         }
                     ]

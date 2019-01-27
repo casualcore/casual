@@ -18,9 +18,7 @@ namespace casual
 
       namespace directory
       {
-         //!
          //! @return configuration directory for the current domain
-         //!
          std::string domain();
 
          std::string persistent();
@@ -30,23 +28,19 @@ namespace casual
       namespace file
       {
 
-         //!
          //! Tries to find file with supported extensions/formats
          //!
          //! @param basepath the file to be found, without extensions
          //!
          //! @return the found file.
-         //!
          std::string find( const std::string& basepath);
 
-         //!
          //! Tries to find file with supported extensions/formats
          //!
          //! @param path the path to search
          //! @param basename the file to be found, without extensions
          //!
          //! @return the found file.
-         //!
          std::string find( const std::string& path, const std::string& basename);
 
 

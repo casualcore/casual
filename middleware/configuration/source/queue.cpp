@@ -29,6 +29,11 @@ namespace casual
    {
       namespace queue
       {
+         Queue& Queue::operator += ( const queue::Default& value)
+         {
+            retries = common::coalesce( std::move( retries), value.retries);
+            return *this;
+         }
          bool operator < ( const Queue& lhs, const Queue& rhs)
          {
             return lhs.name < rhs.name;
@@ -174,7 +179,6 @@ namespace casual
          {
             Default::Default() : directory{ "${CASUAL_DOMAIN_HOME}/queue/groups"}
             {
-               queue.retries.emplace( 0);
             }
          } // manager
 

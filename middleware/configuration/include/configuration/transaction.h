@@ -24,8 +24,8 @@ namespace casual
          {
             struct Default
             {
-               serviceframework::optional< std::string> key;
-               serviceframework::optional< serviceframework::platform::size::type> instances;
+               std::string key;
+               serviceframework::platform::size::type instances = 1;
 
                CASUAL_CONST_CORRECT_SERIALIZE
                (
@@ -35,9 +35,12 @@ namespace casual
             };
          } // resource
 
-         struct Resource : resource::Default
+         struct Resource
          {
             std::string name;
+            serviceframework::optional< std::string> key;
+            serviceframework::optional< serviceframework::platform::size::type> instances;
+            
             std::string note;
 
             serviceframework::optional< std::string> openinfo;
@@ -45,15 +48,17 @@ namespace casual
 
             CASUAL_CONST_CORRECT_SERIALIZE
             (
-               resource::Default::serialize( archive);
                archive & CASUAL_MAKE_NVP( name);
+               archive & CASUAL_MAKE_NVP( key);
+               archive & CASUAL_MAKE_NVP( instances);
                archive & CASUAL_MAKE_NVP( note);
                archive & CASUAL_MAKE_NVP( openinfo);
                archive & CASUAL_MAKE_NVP( closeinfo);
             )
 
+            Resource& operator += ( const resource::Default& rhs);
             friend bool operator == ( const Resource& lhs, const Resource& rhs);
-            friend Resource& operator += ( Resource& lhs, const resource::Default& rhs);
+            
          };
 
          namespace manager

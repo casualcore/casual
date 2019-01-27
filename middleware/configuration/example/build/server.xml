@@ -6,6 +6,7 @@
    <category>some.category</category>
   </service>
  </default>
+ <resources />
  <services>
   <element>
    <name>s1</name>

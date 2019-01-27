@@ -58,24 +58,21 @@ namespace casual
             } // <unnamed>
          } // local
 
+         Resource& Resource::operator += ( const resource::Default& rhs)
+         {
+            key = common::coalesce( std::move( key), rhs.key);
+            instances = common::coalesce( std::move( instances), rhs.instances);
+
+            return *this;
+         }
 
          bool operator == ( const Resource& lhs, const Resource& rhs)
          {
             return lhs.name == rhs.name;
          }
 
-         Resource& operator += ( Resource& lhs, const resource::Default& rhs)
-         {
-            lhs.key = common::coalesce( lhs.key, rhs.key);
-            lhs.instances = common::coalesce( lhs.instances, rhs.instances);
-
-            return lhs;
-         }
-
-
          Manager::Manager() : log{ "${CASUAL_DOMAIN_HOME}/transaction/log.db"}
          {
-            manager_default.resource.instances.emplace( 1);
          }
 
 

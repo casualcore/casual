@@ -95,7 +95,7 @@ namespace casual
 
                   Group( const manager::State& state) : m_state( state) {}
 
-                  manager::state::Group operator () ( const casual::configuration::group::Group& group) const
+                  manager::state::Group operator () ( const casual::configuration::Group& group) const
                   {
                      manager::state::Group result{ group.name, { m_state.group_id.global}, group.note};
 
@@ -147,12 +147,12 @@ namespace casual
                struct Executable
                {
 
-                  manager::state::Executable operator() ( const configuration::server::Executable& value, const std::vector< manager::state::Group>& groups)
+                  manager::state::Executable operator() ( const configuration::Executable& value, const std::vector< manager::state::Group>& groups)
                   {
                      return transform< manager::state::Executable>( value, groups);
                   }
 
-                  manager::state::Server operator() ( const configuration::server::Server& value, const std::vector< manager::state::Group>& groups)
+                  manager::state::Server operator() ( const configuration::Server& value, const std::vector< manager::state::Group>& groups)
                   {
                      auto result = transform< manager::state::Server>( value, groups);
 
@@ -356,7 +356,8 @@ namespace casual
                const std::vector< std::string> reserved{
                   ".casual.master", ".casual.transaction", ".casual.queue", ".global", ".casual.gateway"};
 
-               auto groups = common::algorithm::remove_if( domain.groups, [&reserved]( const casual::configuration::group::Group& g){
+               auto groups = common::algorithm::remove_if( domain.groups, [&reserved]( const auto& g)
+               {
                   return common::algorithm::find( reserved, g.name);
                });
 

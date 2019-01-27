@@ -58,7 +58,7 @@ namespace casual
          // serialize and deserialize
          auto domain = domain::get( { example::temporary( example::domain(), GetParam())});
 
-         EXPECT_TRUE( domain.manager_default.server.instances.value() == 1) << CASUAL_MAKE_NVP( domain.manager_default.server.instances); //<< CASUAL_MAKE_NVP( path.release());
+         EXPECT_TRUE( domain.manager_default.server.instances == 1) << CASUAL_MAKE_NVP( domain.manager_default.server.instances); //<< CASUAL_MAKE_NVP( path.release());
          EXPECT_TRUE( domain.manager_default.server.restart == true);
 
 
@@ -77,12 +77,12 @@ namespace casual
       TEST_P( configuration_domain, default_resource)
       {
          common::unittest::Trace trace;
-
+   
          // serialize and deserialize
          auto domain = domain::get( { example::temporary( example::domain(), GetParam())});
 
-         EXPECT_TRUE( domain.transaction.manager_default.resource.instances.value() == 3);
-         EXPECT_TRUE( domain.transaction.manager_default.resource.key.value() == "db2_rm");
+         EXPECT_TRUE( domain.transaction.manager_default.resource.instances == 3);
+         EXPECT_TRUE( domain.transaction.manager_default.resource.key == "db2_rm");
       }
 
 

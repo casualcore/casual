@@ -5,6 +5,7 @@
                 "transaction": "auto"
             }
         },
+        "resources": [],
         "services": []
     }
 }

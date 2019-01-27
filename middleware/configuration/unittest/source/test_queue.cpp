@@ -31,9 +31,7 @@ namespace casual
          ::testing::Values(".yaml", ".json", ".xml", ".ini"));
 
 
-      //
       // Look at configuration/example/domain.yaml for what to expect.
-      //
 
       TEST_P( configuration_queue, expect_3_groups)
       {
@@ -150,7 +148,7 @@ namespace casual
       TEST( casual_configuration_queue, default_values__retries)
       {
          queue::Manager manager;
-         manager.manager_default.queue.retries.emplace( 42);
+         manager.manager_default.queue.retries = 42;
          manager.groups.resize( 1);
          manager.groups.at( 0).name = "A";
          manager.groups.at( 0).queuebase.emplace( "X");

@@ -37,7 +37,7 @@ namespace casual
 
             struct Default
             {
-               serviceframework::optional< Limit> limit;
+               Limit limit;
 
                CASUAL_CONST_CORRECT_SERIALIZE
                (
@@ -47,63 +47,66 @@ namespace casual
 
          } // listener
 
-         struct Listener : listener::Default
+         struct Listener
          {
             std::string address;
+            serviceframework::optional< listener::Limit> limit;
             std::string note;
 
             CASUAL_CONST_CORRECT_SERIALIZE
             (
-               listener::Default::serialize( archive);
                archive & CASUAL_MAKE_NVP( address);
+               archive & CASUAL_MAKE_NVP( limit);
                archive & CASUAL_MAKE_NVP( note);
             )
 
+            Listener& operator += ( const listener::Default& rhs);
             friend bool operator == ( const Listener& lhs, const Listener& rhs);
-            friend Listener& operator += ( Listener& lhs, const listener::Default& rhs);
          };
 
          namespace connection
          {
             struct Default
             {
-               serviceframework::optional< bool> restart;
-               serviceframework::optional< std::string> address;
+               bool restart = true;
+
+               // TODO: why address in default?
+               std::string address;
 
                CASUAL_CONST_CORRECT_SERIALIZE
                (
                   archive & CASUAL_MAKE_NVP( restart);
                   archive & CASUAL_MAKE_NVP( address);
                )
-
             };
-
          } // connection
 
-         struct Connection : connection::Default
+         struct Connection
          {
+            serviceframework::optional< std::string> address;
             std::vector< std::string> services;
             std::vector< std::string> queues;
             std::string note;
+            serviceframework::optional< bool> restart;
 
             CASUAL_CONST_CORRECT_SERIALIZE
             (
-               connection::Default::serialize( archive);
-               archive & CASUAL_MAKE_NVP( note);
+               archive & CASUAL_MAKE_NVP( address);
                archive & CASUAL_MAKE_NVP( services);
                archive & CASUAL_MAKE_NVP( queues);
+               archive & CASUAL_MAKE_NVP( restart);
+               archive & CASUAL_MAKE_NVP( note);
             )
 
+            Connection& operator += ( const connection::Default& rhs);
             friend bool operator == ( const Connection& lhs, const Connection& rhs);
-            friend Connection& operator += ( Connection& lhs, const connection::Default& rhs);
+            
          };
 
          namespace manager
          {
             struct Default
             {
-               Default();
-
                listener::Default listener;
                connection::Default connection;
 
@@ -129,14 +132,12 @@ namespace casual
                archive & CASUAL_MAKE_NVP( connections);
             )
 
-            //!
             //! Complement with defaults and validates
-            //!
             void finalize();
 
             Manager& operator += ( const Manager& rhs);
             Manager& operator += ( Manager&& rhs);
-            friend Manager operator + ( const Manager& lhs, const Manager& rhs);
+            friend Manager operator + ( Manager lhs, const Manager& rhs);
 
          };
 

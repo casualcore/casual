@@ -110,7 +110,7 @@ namespace casual
                   std::string key;
                   std::string openinfo;
                   std::string closeinfo;
-                  serviceframework::platform::size::type concurency;
+                  serviceframework::platform::size::type concurency = 0;
                   Metrics metrics;
 
                   std::vector< Instance> instances;

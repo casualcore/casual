@@ -117,6 +117,7 @@ namespace casual
                      result.key = value.key;
                      result.openinfo = value.openinfo;
                      result.closeinfo = value.closeinfo;
+                     result.concurency = value.concurency;
                      result.metrics = transform::metrics( value.metrics);
 
                      common::algorithm::transform( value.instances, result.instances, Instance{});

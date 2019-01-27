@@ -8,9 +8,21 @@
   </environment>
   <server>
    <instances>1</instances>
+   <restart>false</restart>
+   <memberships />
+   <environment>
+    <files />
+    <variables />
+   </environment>
   </server>
   <executable>
    <instances>1</instances>
+   <restart>false</restart>
+   <memberships />
+   <environment>
+    <files />
+    <variables />
+   </environment>
   </executable>
   <service>
    <timeout>0s</timeout>
@@ -19,6 +31,7 @@
  <transaction>
   <default>
    <resource>
+    <key></key>
     <instances>1</instances>
    </resource>
   </default>
@@ -31,9 +44,12 @@
  <services />
  <gateway>
   <default>
-   <listener />
+   <listener>
+    <limit />
+   </listener>
    <connection>
     <restart>true</restart>
+    <address></address>
    </connection>
   </default>
   <listeners />

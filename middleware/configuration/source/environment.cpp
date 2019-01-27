@@ -15,36 +15,25 @@ namespace casual
 {
    namespace configuration
    {
-      Environment::Environment() = default;
-      Environment::Environment( std::function< void(Environment&)> foreign) { foreign( *this);}
-
-      bool operator == ( const Environment& lhs, const Environment& rhs)
-      {
-         return lhs.files == rhs.files && rhs.variables == rhs.variables;
-      }
-
-
 
 
       namespace environment
       {
-         Variable::Variable() = default;
-         Variable::Variable( std::function< void(Variable&)> foreign) { foreign( *this);}
-
-
          bool operator == ( const Variable& lhs, const Variable& rhs)
          {
-            return lhs.key == rhs.key && lhs.value == rhs.value;
+            return lhs.key == rhs.key;
          }
 
+         bool operator < ( const Variable& lhs, const Variable& rhs)
+         {
+            return lhs.key < rhs.key;
+         }
 
          configuration::Environment get( const std::string& name)
          {
             configuration::Environment environment;
 
-            //
             // Create the reader and deserialize configuration
-            //
             common::file::Input file{ name};
             auto reader = serviceframework::archive::create::reader::consumed::from( file.extension(), file);
 
@@ -58,7 +47,6 @@ namespace casual
          {
             namespace
             {
-
                std::vector< Variable> fetch( configuration::Environment environment, std::vector< std::string>& paths)
                {
                   std::vector< Variable> result;
@@ -88,9 +76,7 @@ namespace casual
 
          std::vector< Variable> fetch( configuration::Environment environment)
          {
-            //
             // So we only fetch one file one time. If there are circular dependencies.
-            //
             std::vector< std::string> paths;
 
             return local::fetch( std::move( environment), paths);
@@ -107,9 +93,14 @@ namespace casual
 
             return result;
          }
-
       } // environment
 
+      Environment& Environment::operator += ( const Environment& value)
+      {
+         common::algorithm::append_unique( value.files, files);
+         common::algorithm::append_replace( value.variables, variables);
+         return *this;
+      }
 
    } // config
 } // casual

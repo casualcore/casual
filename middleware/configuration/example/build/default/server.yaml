@@ -5,6 +5,9 @@ server:
       transaction: auto
 
 
+  resources:
+    []
+
   services:
     []
 

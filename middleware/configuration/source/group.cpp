@@ -13,33 +13,28 @@ namespace casual
 {
    namespace configuration
    {
-      namespace group
+      bool operator == ( const Group& lhs, const Group& rhs)
       {
-         bool operator == ( const Group& lhs, const Group& rhs)
+         return lhs.name == rhs.name;
+      }
+
+      Group& Group::operator += ( const Group& rhs)
+      {
+         if( dependencies && rhs.dependencies)
          {
-            return lhs.name == rhs.name;
+            auto& l_range = dependencies.value();
+            auto& r_range = rhs.dependencies.value();
+
+            l_range.insert( std::end( l_range), std::begin( r_range), std::end( r_range));
+
+            common::algorithm::trim( l_range, common::algorithm::unique( common::algorithm::sort( l_range)));
+         }
+         else
+         {
+            dependencies = common::coalesce( rhs.dependencies, dependencies);
          }
 
-         Group& operator += ( Group& lhs, const Group& rhs)
-         {
-            if( lhs.dependencies && rhs.dependencies)
-            {
-               auto& l_range = lhs.dependencies.value();
-               auto& r_range = rhs.dependencies.value();
-
-               l_range.insert( std::end( l_range), std::begin( r_range), std::end( r_range));
-
-               common::algorithm::trim( l_range, common::algorithm::unique( common::algorithm::sort( l_range)));
-            }
-            else
-            {
-               lhs.dependencies = common::coalesce( lhs.dependencies, rhs.dependencies);
-            }
-
-
-
-            return lhs;
-         }
-      } // group
+         return *this;
+      }
    } // configuration
 } // casual

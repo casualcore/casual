@@ -26,7 +26,7 @@ namespace casual
          {
             struct Default
             {
-               serviceframework::optional< serviceframework::platform::size::type> retries;
+               serviceframework::platform::size::type retries = 0;
 
                CASUAL_CONST_CORRECT_SERIALIZE
                (
@@ -35,18 +35,20 @@ namespace casual
             };
          } // queue
 
-         struct Queue : queue::Default
+         struct Queue
          {
             std::string name;
+            serviceframework::optional< serviceframework::platform::size::type> retries;
             std::string note;
 
             CASUAL_CONST_CORRECT_SERIALIZE
             (
-               queue::Default::serialize( archive);
                archive & CASUAL_MAKE_NVP( name);
+               archive & CASUAL_MAKE_NVP( retries);
                archive & CASUAL_MAKE_NVP( note);
             )
 
+            Queue& operator += ( const queue::Default& value);
             friend bool operator < ( const Queue& lhs, const Queue& rhs);
             friend bool operator == ( const Queue& lhs, const Queue& rhs);
          };

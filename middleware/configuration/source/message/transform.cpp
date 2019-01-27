@@ -24,15 +24,12 @@ namespace casual
 
             result.name = domain.name;
 
-            //
             // Service
-            //
             {
-               if( domain.manager_default.service.timeout)
-                  result.service.default_timeout = common::chronology::from::string( domain.manager_default.service.timeout.value());
+               result.service.default_timeout = common::chronology::from::string( domain.manager_default.service.timeout);
 
-               common::algorithm::transform( domain.services, result.service.services, []( const service::Service& s){
-
+               common::algorithm::transform( domain.services, result.service.services, []( const auto& s)
+               {
                   common::message::domain::configuration::service::Service result;
 
                   result.name = s.name;
@@ -46,14 +43,12 @@ namespace casual
                });
             }
 
-            //
             // Transaction
-            //
             {
                result.transaction.log = domain.transaction.log;
 
-               common::algorithm::transform( domain.transaction.resources, result.transaction.resources, []( const transaction::Resource& r){
-
+               common::algorithm::transform( domain.transaction.resources, result.transaction.resources, []( const auto& r)
+               {
                   common::message::domain::configuration::transaction::Resource result;
 
                   result.name = r.name;
@@ -64,15 +59,13 @@ namespace casual
                   result.closeinfo = r.closeinfo.value_or( "");
 
                   return result;
-
                });
             }
 
-            //
             // Gateway
-            //
             {
-               common::algorithm::transform( domain.gateway.listeners, result.gateway.listeners, []( const gateway::Listener& l){
+               common::algorithm::transform( domain.gateway.listeners, result.gateway.listeners, []( const auto& l)
+               {
                   common::message::domain::configuration::gateway::Listener result;
 
                   result.address = l.address;
@@ -86,7 +79,8 @@ namespace casual
                   return result;
                });
 
-               common::algorithm::transform( domain.gateway.connections, result.gateway.connections, []( const gateway::Connection& c){
+               common::algorithm::transform( domain.gateway.connections, result.gateway.connections, []( const auto& c)
+               {
                   common::message::domain::configuration::gateway::Connection result;
 
                   result.note = c.note;
@@ -99,18 +93,18 @@ namespace casual
                });
             }
 
-            //
             // Queue
-            //
             {
-               common::algorithm::transform( domain.queue.groups, result.queue.groups, []( const queue::Group& g){
+               common::algorithm::transform( domain.queue.groups, result.queue.groups, []( const auto& g)
+               {
                   common::message::domain::configuration::queue::Group result;
 
                   result.name = g.name;
                   result.note = g.note;
                   result.queuebase = g.queuebase.value_or( "");
 
-                  common::algorithm::transform( g.queues, result.queues, []( const queue::Queue& q){
+                  common::algorithm::transform( g.queues, result.queues, []( const auto& q)
+                  {
                      common::message::domain::configuration::queue::Queue result;
 
                      result.name = q.name;
@@ -122,16 +116,11 @@ namespace casual
 
                   return result;
                });
-
-
             }
 
             return result;
          }
 
-
       } // transform
    } // configuration
-
-
 } // casual

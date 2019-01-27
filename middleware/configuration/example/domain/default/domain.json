@@ -7,10 +7,22 @@
                 "variables": []
             },
             "server": {
-                "instances": 1
+                "instances": 1,
+                "restart": false,
+                "memberships": [],
+                "environment": {
+                    "files": [],
+                    "variables": []
+                }
             },
             "executable": {
-                "instances": 1
+                "instances": 1,
+                "restart": false,
+                "memberships": [],
+                "environment": {
+                    "files": [],
+                    "variables": []
+                }
             },
             "service": {
                 "timeout": "0s"
@@ -19,6 +31,7 @@
         "transaction": {
             "default": {
                 "resource": {
+                    "key": "",
                     "instances": 1
                 }
             },
@@ -31,9 +44,12 @@
         "services": [],
         "gateway": {
             "default": {
-                "listener": {},
+                "listener": {
+                    "limit": {}
+                },
                 "connection": {
-                    "restart": true
+                    "restart": true,
+                    "address": ""
                 }
             },
             "listeners": [],

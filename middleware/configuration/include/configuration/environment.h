@@ -22,12 +22,8 @@ namespace casual
    {
       namespace environment
       {
-
          struct Variable
          {
-            Variable();
-            Variable( std::function< void(Variable&)> foreign);
-
             std::string key;
             std::string value;
 
@@ -38,16 +34,13 @@ namespace casual
             )
 
             friend bool operator == ( const Variable& lhs, const Variable& rhs);
-
+            friend bool operator < ( const Variable& lhs, const Variable& rhs);
          };
 
       } // environment
 
       struct Environment
       {
-         Environment();
-         Environment( std::function< void(Environment&)> foreign);
-
          std::vector< std::string> files;
          std::vector< environment::Variable> variables;
 
@@ -57,7 +50,7 @@ namespace casual
             archive & CASUAL_MAKE_NVP( variables);
          )
 
-         friend bool operator == ( const Environment& lhs, const Environment& rhs);
+         Environment& operator += ( const Environment& value);
       };
 
       namespace environment

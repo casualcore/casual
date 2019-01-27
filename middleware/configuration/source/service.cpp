@@ -12,19 +12,15 @@ namespace casual
 {
    namespace configuration
    {
-      namespace service
+      Service& Service::operator += ( const service::Default& rhs)
       {
-         bool operator == ( const Service& lhs, const Service& rhs)
-         {
-            return lhs.name == rhs.name;
-         }
+         timeout = common::coalesce( timeout, rhs.timeout);
+         return *this;
+      }
 
-         Service& operator += ( Service& lhs, const service::Default& rhs)
-         {
-            lhs.timeout = common::coalesce( lhs.timeout, rhs.timeout);
-            return lhs;
-         }
-
-      } // service
+      bool operator == ( const Service& lhs, const Service& rhs)
+      {
+         return lhs.name == rhs.name;
+      }
    } // configuration
 } // casual

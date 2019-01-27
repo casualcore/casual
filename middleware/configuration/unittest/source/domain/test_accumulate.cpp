@@ -23,6 +23,9 @@ namespace casual
             {
                domain::Manager value;
 
+               value.manager_default.environment.variables.push_back( { "domain-a", "value-a"});
+               value.manager_default.environment.files.emplace_back( "file-a");
+
                // transaction
                {
                   value.transaction.log = "a";
@@ -48,6 +51,10 @@ namespace casual
             auto domain_b = []()
             {
                domain::Manager value;
+
+               value.manager_default.environment.variables.push_back( { "domain-b", "value-b"});
+               value.manager_default.environment.variables.push_back( { "domain-a", "value-a-2"}); // will override from a
+               value.manager_default.environment.files.emplace_back( "file-b");
 
                // transaction
                {
@@ -99,8 +106,8 @@ namespace casual
 
          auto value = domain::Manager{} + domain::Manager{};
 
-         EXPECT_TRUE( value.manager_default.server.instances.value() == 1);
-         EXPECT_TRUE( value.manager_default.executable.instances.value() == 1);
+         EXPECT_TRUE( value.manager_default.server.instances == 1);
+         EXPECT_TRUE( value.manager_default.executable.instances == 1);
          EXPECT_TRUE( value.groups.empty());
          EXPECT_TRUE( value.servers.empty());
          EXPECT_TRUE( value.executables.empty());
@@ -181,6 +188,28 @@ domain:
             EXPECT_TRUE( resource.key.value() == "key-b");
             EXPECT_TRUE( resource.instances.value() == 2);
          }
+      }
+
+      TEST( configuration_domain_accumulate, default_environment)
+      {
+         common::unittest::Trace trace;
+
+         auto value =  local::domain_a() + local::domain_b();
+
+         auto& environment = value.manager_default.environment;
+
+         ASSERT_TRUE( environment.variables.size() == 2);
+         EXPECT_TRUE( environment.variables[ 0].key == "domain-a");
+         EXPECT_TRUE( environment.variables[ 0].value == "value-a-2"); // overridden
+
+         EXPECT_TRUE( environment.variables[ 1].key == "domain-b");
+         EXPECT_TRUE( environment.variables[ 1].value == "value-b");
+
+         ASSERT_TRUE( environment.files.size() == 2);
+         ASSERT_TRUE( environment.files[ 0] == "file-a");
+         ASSERT_TRUE( environment.files[ 1] == "file-b");
+         
+         
       }
    } // configuration   
 } // casual

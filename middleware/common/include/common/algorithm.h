@@ -51,13 +51,16 @@ namespace casual
          namespace coalesce
          {
             template< typename T>
-            bool empty( T& value) { return value.empty();}
+            auto empty( const T& value) -> std::enable_if_t< traits::has::empty< T>::value, bool>
+            { 
+               return value.empty();
+            }
 
             template< typename T>
-            bool empty( T* value) { return value == nullptr;}
+            bool empty( const T* value) { return value == nullptr;}
 
             template< typename T>
-            bool empty( optional< T>& value) { return ! value.has_value();}
+            bool empty( const optional< T>& value) { return ! value.has_value();}
 
             template< typename T>
             decltype( auto) implementation( T&& value)
@@ -651,7 +654,6 @@ namespace casual
                output.push_back( value);
          }
 
-
          template< typename R, typename Out> 
          void append_unique( R&& range, Out& output)
          {
@@ -659,6 +661,25 @@ namespace casual
 
             while( current)
                push_back_unique( *current++, output);
+         }
+
+         template< typename T, typename Out> 
+         void push_back_replace( T&& value, Out& output)
+         {
+            auto found = algorithm::find( output, value);
+            if( found)
+               *found = std::forward< T>( value);
+            else
+               output.push_back( std::forward< T>( value));
+         }
+
+         template< typename R, typename Out> 
+         void append_replace( R&& range, Out& output)
+         {
+            auto current = range::make( range);
+
+            while( current)
+               push_back_replace( *current++, output);
          }
 
 
