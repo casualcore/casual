@@ -67,8 +67,6 @@ namespace casual
 
          Executable& operator += ( const executable::Default& value);
 
-         friend bool operator == ( const Executable& lhs, const Executable& rhs);
-         friend bool operator < ( const Executable& lhs, const Executable& rhs);
       };
    } // configuration
 } // casual

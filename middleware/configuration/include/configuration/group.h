@@ -29,8 +29,8 @@ namespace casual
             archive & CASUAL_MAKE_NVP( dependencies);
          })
 
-         Group& operator += ( const Group& rhs);
          friend bool operator == ( const Group& lhs, const Group& rhs);
+         friend bool operator < ( const Group& lhs, const Group& rhs);
 
       };
    } // configuration

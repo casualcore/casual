@@ -208,8 +208,214 @@ domain:
          ASSERT_TRUE( environment.files.size() == 2);
          ASSERT_TRUE( environment.files[ 0] == "file-a");
          ASSERT_TRUE( environment.files[ 1] == "file-b");
-         
-         
       }
+
+      TEST( configuration_domain_accumulate, group_duplicates___throws)
+      {
+         common::unittest::Trace trace;
+
+         auto file_a = common::mockup::file::temporary::content( ".yaml", R"(
+domain:
+   name: domain-a
+   groups:
+     - name: A1
+     - name: A2
+         )");
+
+         auto file_b = common::mockup::file::temporary::content( ".yaml", R"(
+domain:
+   name: domain-b
+   groups:
+     - name: B1
+     - name: B2
+     - name: A2
+         )");
+
+         EXPECT_THROW({
+            auto value = domain::get( { file_a.path(), file_b.path()});
+         }, common::exception::system::invalid::Argument);
+      }
+
+      TEST( configuration_domain_accumulate, group_duplicates_in_one_file__throws)
+      {
+         common::unittest::Trace trace;
+
+         auto file_a = common::mockup::file::temporary::content( ".yaml", R"(
+domain:
+   name: domain-a
+   groups:
+     - name: A1
+     - name: A2
+         )");
+
+         auto file_b = common::mockup::file::temporary::content( ".yaml", R"(
+domain:
+   name: domain-b
+   groups:
+     - name: B1
+     - name: B2
+     - name: B2
+         )");
+
+         EXPECT_THROW({
+            auto value = domain::get( { file_a.path(), file_b.path()});
+         }, common::exception::system::invalid::Argument);
+      }
+
+      TEST( configuration_domain_accumulate, groups)
+      {
+         common::unittest::Trace trace;
+
+         auto file_a = common::mockup::file::temporary::content( ".yaml", R"(
+domain:
+   name: domain-a
+   groups:
+     - name: A1
+     - name: A2
+         )");
+
+         auto file_b = common::mockup::file::temporary::content( ".yaml", R"(
+domain:
+   name: domain-b
+   groups:
+     - name: B1
+     - name: B2
+         )");
+
+         auto value = domain::get( { file_a.path(), file_b.path()});
+
+         auto& groups = value.groups;
+         ASSERT_TRUE( groups.size() == 4);
+         EXPECT_TRUE( groups[ 0].name == "A1");
+         EXPECT_TRUE( groups[ 1].name == "A2");
+         EXPECT_TRUE( groups[ 2].name == "B1");
+         EXPECT_TRUE( groups[ 3].name == "B2");
+      }
+
+
+      TEST( configuration_domain_accumulate, executables)
+      {
+         common::unittest::Trace trace;
+
+         auto file_a = common::mockup::file::temporary::content( ".yaml", R"(
+domain:
+   name: domain-a
+   executables:
+     - path: A1
+     - path: A2
+         )");
+
+         auto file_b = common::mockup::file::temporary::content( ".yaml", R"(
+domain:
+   name: domain-b
+   executables:
+     - path: B1
+     - path: B2
+         )");
+
+         auto value = domain::get( { file_a.path(), file_b.path()});
+
+         auto& executables = value.executables;
+         ASSERT_TRUE( executables.size() == 4);
+         EXPECT_TRUE( executables[ 0].path == "A1");
+         EXPECT_TRUE( executables[ 1].path == "A2");
+         EXPECT_TRUE( executables[ 2].path == "B1");
+         EXPECT_TRUE( executables[ 3].path == "B2");
+      }
+
+      TEST( configuration_domain_accumulate, servers)
+      {
+         common::unittest::Trace trace;
+
+         auto file_a = common::mockup::file::temporary::content( ".yaml", R"(
+domain:
+   name: domain-a
+   servers:
+     - path: A1
+     - path: A2
+         )");
+
+         auto file_b = common::mockup::file::temporary::content( ".yaml", R"(
+domain:
+   name: domain-b
+   servers:
+     - path: B1
+     - path: B2
+         )");
+
+         auto value = domain::get( { file_a.path(), file_b.path()});
+
+         auto& servers = value.servers;
+         ASSERT_TRUE( servers.size() == 4);
+         EXPECT_TRUE( servers[ 0].path == "A1");
+         EXPECT_TRUE( servers[ 1].path == "A2");
+         EXPECT_TRUE( servers[ 2].path == "B1");
+         EXPECT_TRUE( servers[ 3].path == "B2");
+      }
+
+      TEST( configuration_domain_accumulate, servers_duplicate_path__ok)
+      {
+         common::unittest::Trace trace;
+
+         auto file_a = common::mockup::file::temporary::content( ".yaml", R"(
+domain:
+   name: domain-a
+   servers:
+     - path: A1
+       alias: a_A1
+     - path: A2
+       alias: a_A2
+         )");
+
+         auto file_b = common::mockup::file::temporary::content( ".yaml", R"(
+domain:
+   name: domain-b
+   servers:
+     - path: A1
+       alias: b_A1
+     - path: A2
+       alias: b_A2
+         )");
+
+         auto value = domain::get( { file_a.path(), file_b.path()});
+
+         auto& servers = value.servers;
+         ASSERT_TRUE( servers.size() == 4);
+         EXPECT_TRUE( servers[ 0].path == "A1");
+         EXPECT_TRUE( servers[ 1].path == "A2");
+         EXPECT_TRUE( servers[ 2].path == "A1");
+         EXPECT_TRUE( servers[ 3].path == "A2");
+      }
+
+
+      TEST( configuration_domain_accumulate, servers_duplicate_alias__throws)
+      {
+         common::unittest::Trace trace;
+
+         auto file_a = common::mockup::file::temporary::content( ".yaml", R"(
+domain:
+   name: domain-a
+   servers:
+     - path: A1
+       alias: a1
+     - path: A2
+       alias: a2
+         )");
+
+         auto file_b = common::mockup::file::temporary::content( ".yaml", R"(
+domain:
+   name: domain-b
+   servers:
+     - path: A1
+       alias: a1_2
+     - path: A2
+       alias: a2
+         )");
+
+         EXPECT_THROW({
+            auto value = domain::get( { file_a.path(), file_b.path()});
+         }, common::exception::system::invalid::Argument);
+      }
+
    } // configuration   
 } // casual

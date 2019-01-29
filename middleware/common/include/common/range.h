@@ -342,12 +342,8 @@ namespace casual
          template< typename R>
          auto to_reference( R&& range)
          {
-            std::vector< std::reference_wrapper< std::remove_reference_t< decltype( *std::begin( range))>>> result;
-            result.reserve( size( range));
-
-            std::copy( std::begin( range), std::end( range), std::back_inserter( result));
-
-            return result;
+            using result_typ = std::vector< std::reference_wrapper< std::remove_reference_t< decltype( *std::begin( range))>>>;
+            return result_typ( std::begin( range), std::end( range));
          }
 
 

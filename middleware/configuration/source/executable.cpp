@@ -13,18 +13,6 @@ namespace casual
 {
    namespace configuration
    {
-
-      namespace local
-      {
-         namespace
-         {
-            auto tie( const Executable& value)
-            {
-               return std::tie( value.path, value.alias);
-            }
-         } // <unnamed>
-      } // local
-
       Executable& Executable::operator += ( const executable::Default& value)
       {
          instances = common::coalesce( instances, value.instances);
@@ -33,17 +21,6 @@ namespace casual
          environment = common::coalesce( environment, value.environment);
 
          return *this;
-      }
-
-
-      bool operator == ( const Executable& lhs, const Executable& rhs)
-      {
-         return local::tie( lhs) == local::tie( rhs);
-      }
-
-      bool operator < ( const Executable& lhs, const Executable& rhs)
-      {
-         return local::tie( lhs) < local::tie( rhs);
       }
 
    } // configuration

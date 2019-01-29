@@ -376,6 +376,19 @@ namespace casual
       }
 
 
+      TEST( casual_common_algorithm, duplicates)
+      {
+         common::unittest::Trace trace;
+
+         std::vector< int> set{ 1, 2, 3, 4, 5, 6, 7, 1, 3};
+
+         auto duplicates = algorithm::duplicates( algorithm::sort( set));
+
+         ASSERT_TRUE( duplicates.size() == 2) << "duplicates: " << duplicates;
+         EXPECT_TRUE( set.at( 0) == 1);
+         EXPECT_TRUE( set.at( 1) == 3);
+      }
+
 
       TEST( casual_common_algorithm, copy_empty)
       {

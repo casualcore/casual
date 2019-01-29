@@ -385,16 +385,56 @@ namespace casual
          }
 
 
-         //!
          //! Applies std::unique on [std::begin( range), std::end( range) )
          //!
          //! @return the unique range
-         //!
+         //! @{
          template< typename R>
          auto unique( R&& range)
          {
             return range::make( std::begin( range), std::unique( std::begin( range), std::end( range)));
          }
+
+         template< typename R, typename P>
+         auto unique( R&& range, P predicate)
+         {
+            return range::make( std::begin( range), std::unique( std::begin( range), std::end( range), predicate));
+         }
+         //! @}
+
+         //! @returns the complement of unique, that is all occurrences that is not unique
+         template< typename R, typename P = std::equal_to<>>
+         auto duplicates( R&& range, P predicate = P{})
+         {
+            auto current = std::begin( range);
+            auto last = std::end( range);
+
+            while( current != last)
+            {
+               auto equal_first = std::adjacent_find( current, last, predicate);
+
+               if( current == equal_first)
+               {
+                  // we've got some duplicates
+                  auto compare = current;
+                  auto consume = ++current;
+
+                  // we consume all duplicates
+                  while( consume != last && predicate( *compare, *consume++))
+                     ;
+
+                  // rotate away [current, consume)
+                  last = std::rotate( current, consume, last);
+               }
+               else
+               {
+                  // rotate away [first, equal_first)
+                  last = std::rotate( current, equal_first, last);
+               }
+            }
+            return range::make( std::begin( range), last);
+         }
+
 
          //!
          //! Trims @p container so it matches @p range

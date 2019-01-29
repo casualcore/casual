@@ -51,38 +51,66 @@ namespace casual
 
                } // complement
 
-               void validate( const Manager& settings)
+               void validate( const Manager& configuration)
                {
-
-               }
-
-               template< typename LHS, typename RHS>
-               void replace_or_add( LHS& lhs, RHS&& rhs)
-               {
-                  for( auto& value : rhs)
+                  // make sure a group is only defined once
                   {
-                     auto found = algorithm::find( lhs, value);
+                     auto groups = range::to_reference( configuration.groups);
+                     auto duplicates = algorithm::duplicates( algorithm::sort( groups));
 
-                     if( found)
-                        *found = std::move( value);
-                     else
-                        lhs.push_back( std::move( value));
+                     if( duplicates)
+                     {
+                        auto names = algorithm::transform( duplicates, []( auto& g){ return g.get().name;});
+
+                        throw exception::system::invalid::Argument{ string::compose( "the following groups are defined more than once: ", names)};
+                     }
+                  }
+
+                  // make sure servers and executables has a PATH
+                  {
+                     auto validate_path = []( auto& e)
+                     {
+                        if( e.path.empty())
+                        {
+                           throw exception::system::invalid::Argument{ "servers and executables need to have a path"};
+                        }
+                     };
+
+                     algorithm::for_each( configuration.executables, validate_path);
+                     algorithm::for_each( configuration.servers, validate_path);
+                  }
+
+                  // make sure we have unique aliases
+                  {
+                     auto executables = range::to_reference( configuration.executables);
+
+                     // add servers to the same range
+                     algorithm::copy( configuration.servers, executables);
+
+                     auto has_alias = []( const Executable& e){
+                        return e.alias.has_value() && ! e.alias.value().empty();
+                     };
+
+                     auto interesting = algorithm::filter( executables, has_alias);
+
+                     auto alias_less = []( const Executable& l, const Executable& r){
+                        return l.alias < r.alias;
+                     };
+                     auto alias_equal = []( const Executable& l, const Executable& r){
+                        return l.alias == r.alias;
+                     };
+
+                     auto duplicates = algorithm::duplicates( algorithm::sort( interesting, alias_less), alias_equal);
+
+                     if( duplicates)
+                     {
+                        auto aliases = algorithm::transform( duplicates, []( const Executable& e){ return e.alias.value();});
+
+                        throw exception::system::invalid::Argument{ string::compose( "defined aliases are used more than once: ", aliases)};
+                     }
                   }
                }
 
-               template< typename LHS, typename RHS>
-               void compound_assign_or_add( LHS& lhs, RHS&& rhs)
-               {
-                  for( auto& value : rhs)
-                  {
-                     auto found = algorithm::find( lhs, value);
-
-                     if( found)
-                        *found += std::move( value);
-                     else
-                        lhs.push_back( std::move( value));
-                  }
-               }
 
                template< typename D>
                Manager& append( Manager& lhs, D&& rhs)
@@ -95,11 +123,10 @@ namespace casual
                   lhs.gateway += std::move( rhs.gateway);
                   lhs.queue += std::move( rhs.queue);
 
-                  local::compound_assign_or_add( lhs.groups, rhs.groups);
-
-                  local::replace_or_add( lhs.executables, rhs.executables);
-                  local::replace_or_add( lhs.servers, rhs.servers);
-                  local::replace_or_add( lhs.services, rhs.services);
+                  algorithm::append( rhs.groups, lhs.groups);
+                  algorithm::append( rhs.executables, lhs.executables);
+                  algorithm::append( rhs.servers, lhs.servers);
+                  algorithm::append( rhs.services, lhs.services);
 
                   return lhs;
                }
