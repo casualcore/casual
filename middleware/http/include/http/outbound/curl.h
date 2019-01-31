@@ -32,11 +32,36 @@ namespace casual
                namespace native
                {
                   using easy = decltype( curl_easy_init());
+                  using multi = decltype( curl_multi_init());
+                  using slist = curl_slist*;
                } // native
 
-               using multi = decltype( common::memory::guard( curl_multi_init(), &curl_multi_cleanup));
-               using easy = decltype( common::memory::guard( curl_easy_init(), &curl_easy_cleanup));
-               using header_list = std::unique_ptr< curl_slist, std::function< void(curl_slist*)>>;
+               namespace detail
+               {
+                  namespace cleanup
+                  {
+                     struct multi
+                     {
+                        void operator () ( native::multi value) const noexcept { curl_multi_cleanup( value);}
+                     };
+
+                     struct easy
+                     {
+                        void operator () ( native::easy value) const noexcept;
+                     };
+
+                     struct slist
+                     {
+                        void operator () ( native::slist value) const noexcept { curl_slist_free_all( value);}
+                     };
+
+                  } // cleanup
+
+               } // detail
+
+               using multi = std::unique_ptr< std::remove_pointer_t< native::multi>, detail::cleanup::multi>;
+               using easy = std::unique_ptr< std::remove_pointer_t< native::easy>, detail::cleanup::easy>;
+               using header_list = std::unique_ptr< std::remove_pointer_t< native::slist>, detail::cleanup::slist>;
 
                using socket = curl_socket_t;
                using wait_descriptor = curl_waitfd;

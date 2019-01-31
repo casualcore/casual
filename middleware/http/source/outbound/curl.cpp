@@ -32,21 +32,6 @@ namespace casual
                         std::vector< curl::type::native::easy> cache;
                      } // easy
 
-                     namespace cleanup
-                     {
-                        void easy( curl::type::native::easy handle)
-                        {
-                           if( global::easy::cache.size() < 100)
-                           {
-                              curl_easy_reset( handle);
-                              global::easy::cache.push_back( handle);
-                           }
-                           else 
-                           {
-                              curl_easy_cleanup( handle);
-                           }
-                        }
-                     } // cleanup
                      struct Initializer 
                      {
                         static const Initializer& instance()
@@ -55,17 +40,20 @@ namespace casual
                            return singleton;
                         }
 
-                        auto multi() const { return common::memory::guard( curl_multi_init(), &curl_multi_cleanup);}
+                        auto multi() const
+                        {
+                           return curl::type::multi{ curl_multi_init()};
+                        }
                         
                         auto easy() const 
                         { 
                            if( ! global::easy::cache.empty())
                            {
-                              auto handle = common::memory::guard( global::easy::cache.back(), &cleanup::easy);
+                              auto handle = curl::type::easy( global::easy::cache.back());
                               global::easy::cache.pop_back();
                               return handle;
                            }
-                           return common::memory::guard( curl_easy_init(), &cleanup::easy);
+                           return curl::type::easy( curl_easy_init());
                         }
 
                      private:
@@ -87,6 +75,30 @@ namespace casual
                   } // global
                } // <unnamed>
             } // local
+
+            namespace type
+            {
+               namespace detail
+               {
+                  namespace cleanup
+                  {
+                     void easy::operator () ( native::easy handle) const noexcept
+                     {
+                        if( local::global::easy::cache.size() < 100)
+                        {
+                           curl_easy_reset( handle);
+                           local::global::easy::cache.push_back( handle);
+                        }
+                        else
+                        {
+                           curl_easy_cleanup( handle);
+                        }
+                     }
+                  } // cleanup
+
+               } // detail
+            } // type
+
 
             namespace error
             {

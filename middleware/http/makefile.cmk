@@ -76,6 +76,7 @@ LinkUnittest( 'unittest/bin/test-http',
    [
     Compile( 'unittest/outbound/source/test_model.cpp'),
     Compile( 'unittest/outbound/source/test_transcode.cpp'),
+    Compile( 'unittest/outbound/source/test_state.cpp'),
    ],
    [ 
       common_outbound_archive, 
