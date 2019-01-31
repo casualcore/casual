@@ -45,7 +45,17 @@ namespace casual
                {
                   log::line( verbose::log, "header: ", value);
 
-                  m_header.reset( curl_slist_append( m_header.release(), value.c_str()));
+                  auto handle = curl_slist_append( m_header.get(), value.c_str());
+
+                  if( ! handle)
+                  {
+                     log::line( log::category::error, "request - failed to add header: ", value, " - action: ignore");
+                  }
+                  else
+                  {
+                     m_header.release();
+                     m_header.reset( handle);
+                  }
                }
 
                Request::Request() : m_easy( curl::easy::create()) {}

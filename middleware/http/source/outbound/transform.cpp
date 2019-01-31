@@ -28,7 +28,7 @@ namespace casual
                         return common::service::header::Field{ h.name, h.value};
                      });
 
-                     return std::make_shared< common::service::header::Fields>( std::move( headers));
+                     return std::make_shared< const common::service::header::Fields>( std::move( headers));
                   }
                } // <unnamed>
             } // local

@@ -71,7 +71,7 @@ namespace casual
                            inline auto native() { return m_header.get();}
                            inline explicit operator bool () const { return static_cast< bool>( m_header);}
                         private:
-                           curl::type::header_list m_header = curl::type::header_list{ nullptr, &curl_slist_free_all};
+                           curl::type::header_list m_header{ nullptr};
                         } request;
 
                         //! holds the reply headers, when the call is done
