@@ -250,11 +250,18 @@ namespace casual
                   xa_RDONLY,  //! Went "better" than expected
                };
 
-               Resource( id_type id) : id( id) {}
+               inline Resource( id_type id) : id( id) {}
+               inline Resource( common::transaction::resource::ID id) : id{ id.resource}, m_involved{ id.process} {}
+
                Resource( Resource&&) noexcept = default;
                Resource& operator = ( Resource&&) noexcept = default;
 
                id_type id;
+
+               //! all the _thread of controls_ that are involved with this RM and transaction 
+               inline const std::vector< common::strong::process::id>& involved() const noexcept { return m_involved;};
+               void involved( common::strong::process::id thread_of_control);
+
                Stage stage = Stage::involved;
                Result result = Result::xa_OK;
 
@@ -294,6 +301,8 @@ namespace casual
 
                inline friend std::ostream& operator << ( std::ostream& out, const Resource& value) { return out << value.id; }
 
+            private:
+               std::vector< common::strong::process::id> m_involved;
             };
 
 
@@ -307,6 +316,17 @@ namespace casual
             //! handle-implementations.
             const handle::implementation::Interface* implementation = nullptr;
 
+            std::vector< common::transaction::resource::ID> involved() const;
+            void involved( common::transaction::resource::ID resource);
+
+            template< typename R> 
+            void involved( R range)
+            {
+               for( auto r : range)
+                  involved( r);
+            }
+
+
             common::transaction::ID trid;
             std::vector< Resource> resources;
 
@@ -319,6 +339,7 @@ namespace casual
             //! Indicate if the transaction is owned by a remote domain,
             //! and what RM id that domain act as.
             state::resource::id::type resource;
+            
 
             Resource::Stage stage() const;
 

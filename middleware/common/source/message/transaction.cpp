@@ -68,25 +68,30 @@ namespace casual
                         << ", state: " << message.state
                         << '}';
                }
-               std::ostream& operator << ( std::ostream& out, const Request& message)
-               {
-                  return out << "{ process: " << message.process
-                        << ", trid: " << message.trid
-                        << ", resources: " << range::make( message.resources)
-                        << '}';
-               }
+
             } // commit
 
             namespace resource
             {
-
-               std::ostream& operator << ( std::ostream& out, const Involved& value)
+               namespace involved
                {
-                  return out << "{ process: " << value.process
-                        << ", resources: " << range::make( value.resources)
-                        << ", trid: " << value.trid
-                        << '}';
-               }
+                  std::ostream& operator << ( std::ostream& out, const Request& value)
+                  {
+                     return out << "{ process: " << value.process
+                           << ", resources: " << value.involved
+                           << ", trid: " << value.trid
+                           << '}';
+                  }
+
+                  std::ostream& operator << ( std::ostream& out, const Reply& value)
+                  {
+                     return out << "{ resources: " << value.involved
+                           << '}';
+                  }
+                  
+               } // involved
+
+
 
                namespace external
                {

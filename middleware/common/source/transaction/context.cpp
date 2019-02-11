@@ -141,7 +141,7 @@ namespace casual
 
                      return Resource{
                         resource,
-                        found->id,
+                        { found->id, common::process::id()},
                         found->openinfo,
                         found->closeinfo,
                      };
@@ -169,7 +169,7 @@ namespace casual
                   {
                      m_resources.all.emplace_back(
                         resource,
-                        rm.id,
+                        resource::ID{ rm.id, common::process::id()},
                         std::move( rm.openinfo),
                         std::move( rm.closeinfo));
                   }
@@ -227,35 +227,42 @@ namespace casual
                   return transaction;
                }
 
+               namespace resource
+               {
+
+                  auto involved( const transaction::ID& trid, std::vector< transaction::resource::ID> resources)
+                  {
+                     Trace trace{ "transaction::local::resource::involved"};
+
+                     // we don't bother the TM if there's no resources involved...
+                     if( resources.empty())
+                        return std::vector< transaction::resource::ID>{};
+
+                     message::transaction::resource::involved::Request message;
+                     message.process = process::handle();
+                     message.trid = trid;
+                     message.involved = std::move( resources);
+
+                     log::line( log::category::transaction, "involved message: ", message);
+
+                     auto reply = communication::ipc::call( communication::instance::outbound::transaction::manager::device(), message);
+
+                     return std::move( reply.involved);
+                  }
+               } // resource
+
             } // <unnamed>
          } // local
 
-         std::vector< resource::id> Context::resources() const
+         std::vector< resource::ID> Context::resources() const
          {
-            std::vector< resource::id> result;
+            std::vector< resource::ID> result;
 
             for( auto& resource : m_resources.fixed)
             {
                result.push_back( resource.id());
             }
             return result;
-         }
-
-         void Context::involved( const transaction::ID& trid, std::vector< resource::id> resources)
-         {
-            Trace trace{ "transaction::Context::involved"};
-
-            if( ! resources.empty())
-            {
-               message::transaction::resource::Involved message;
-               message.process = process::handle();
-               message.trid = trid;
-               message.resources = std::move( resources);
-
-               log::line( log::category::transaction, "involved message: ", message);
-
-               communication::ipc::blocking::send( communication::instance::outbound::transaction::manager::device(), message);
-            }
          }
 
 
@@ -478,6 +485,7 @@ namespace casual
                   //
                   // Notify TM about resources involved in this transaction
                   //
+                  /*
                   {
                      auto& transaction = found.front();
                      auto involved = resources();
@@ -488,6 +496,7 @@ namespace casual
                         Context::involved( transaction.trid, std::move( involved));
                      }
                   }
+                  */
 
                   //
                   // end resource
@@ -500,18 +509,17 @@ namespace casual
             }
          }
 
-         void Context::resource_registration( resource::id rmid, XID* xid)
+         code::ax Context::resource_registration( strong::resource::id rmid, XID* xid)
          {
             Trace trace{ "transaction::Context::resourceRegistration"};
 
-            //
             // Verify that rmid is known and is dynamic
-            //
             if( ! common::algorithm::find( m_resources.dynamic, rmid))
             {
                throw exception::ax::exception{ code::ax::argument, string::compose( "resource id: ", rmid)};
             }
-
+            
+            resource::ID resource{ rmid, process::id()};
 
             auto& transaction = current();
 
@@ -526,15 +534,21 @@ namespace casual
                throw exception::ax::exception{ code::ax::resume};
             }
 
-            //
+            transaction.resources.push_back( rmid);
+
             // Let the resource know the xid (if any)
-            //
             *xid = transaction.trid.xid;
 
-            transaction.resources.push_back( rmid);
+            if( transaction)
+            {
+               auto involved = local::resource::involved( transaction.trid, { resource});
+               return algorithm::find( involved, resource).empty() ? code::ax::ok : code::ax::join;
+            }
+
+            return code::ax::ok;
          }
 
-         void Context::resource_unregistration( resource::id rmid)
+         void Context::resource_unregistration( strong::resource::id rmid)
          {
             Trace trace{ "transaction::Context::resource_unregistration"};
 
@@ -677,7 +691,7 @@ namespace casual
 
                if( ! m_resources.fixed.empty())
                {
-                  return resource_commit( m_resources.fixed.front().id(), transaction, flag::xa::Flag::one_phase);
+                  return resource_commit( m_resources.fixed.front().id().resource, transaction, flag::xa::Flag::one_phase);
                }
 
                //
@@ -692,8 +706,6 @@ namespace casual
                message::transaction::commit::Request request;
                request.trid = transaction.trid;
                request.process = process;
-               request.resources = resources();
-               algorithm::append( transaction.resources, request.resources);
 
                //
                // Get reply
@@ -786,7 +798,7 @@ namespace casual
             message::transaction::rollback::Request request;
             request.trid = transaction.trid;
             request.process = process;
-            request.resources = resources();
+            //request.resources = resources();
             algorithm::append( transaction.resources, request.resources);
 
             auto reply = communication::ipc::call( communication::instance::outbound::transaction::manager::device(), request);
@@ -978,12 +990,24 @@ namespace casual
             {
                log::line( log::category::transaction, "transaction: ", transaction, " - flags: ", flags);
 
-               //
+
+               auto involved = algorithm::transform( m_resources.fixed, []( auto& r){ return r.id();});
+               
+               involved = local::resource::involved( transaction.trid, std::move( involved));
+
+
                // We call start only on static resources
-               //
                for( auto& r : m_resources.fixed)
                {
-                  auto result = r.start( transaction.trid, flags);
+                  auto deduce_flag = []( auto id, auto flags, auto& involved)
+                  {
+                     if( ! flags.exist( flag::xa::Flag::resume))
+                        return algorithm::find( involved, id).empty() ? flags : flags | flag::xa::Flag::join;
+
+                     return flags;
+                  };
+
+                  auto result = r.start( transaction.trid, deduce_flag( r.id(), flags, involved));
                   if( result != code::xa::ok)
                   {
                      log::line( code::stream( result), "failed to start resource: ", r, " - error: ", result);
@@ -1024,7 +1048,7 @@ namespace casual
             log::line( log::category::transaction, "transaction: ", transaction, " - rm: ", rm, " - flags: ", flags);
 
             auto found = algorithm::find_if( m_resources.all, [rm]( const auto& r){
-               return r.id() == rm;
+               return r.id().resource == rm;
             });
 
             if( found)

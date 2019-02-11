@@ -9,6 +9,8 @@
 
 
 #include "common/message/type.h"
+
+#include "common/transaction/resource/id.h"
 #include "common/code/xa.h"
 #include "common/code/tx.h"
 #include "common/flag/xa.h"
@@ -38,6 +40,13 @@ namespace casual
                   archive & trid;
                })
 
+               inline friend std::ostream& operator << ( std::ostream& out, const basic_transaction& message)
+               {
+                  return out << "{ process: " << message.process
+                        << ", trid: " << message.trid
+                        << '}';
+               }
+
             };
 
 
@@ -65,21 +74,7 @@ namespace casual
 
             namespace commit
             {
-               using base_request = basic_request< Type::transaction_commit_request>;
-
-               struct Request : base_request
-               {
-                  std::vector< strong::resource::id> resources;
-
-                  CASUAL_CONST_CORRECT_MARSHAL(
-                  {
-                     base_request::marshal( archive);
-                     archive & resources;
-                  })
-
-                  friend std::ostream& operator << ( std::ostream& out, const Request& message);
-               };
-               static_assert( traits::is_movable< Request>::value, "not movable");
+               using Request = basic_request< Type::transaction_commit_request>;
 
                using base_reply = basic_reply< code::tx, Type::transaction_commit_reply>;
                struct Reply : base_reply
@@ -234,20 +229,36 @@ namespace casual
                   }
                };
 
-
-               struct Involved : basic_transaction< Type::transaction_resource_involved>
-               {
-                  std::vector< strong::resource::id> resources;
-
-                  CASUAL_CONST_CORRECT_MARSHAL(
+               namespace involved
+               {  
+                  struct Request : basic_transaction< Type::transaction_resource_involved_request>
                   {
-                     base_type::marshal( archive);
-                     archive & resources;
-                  })
+                     std::vector< common::transaction::resource::ID> involved;
 
-                  friend std::ostream& operator << ( std::ostream& out, const Involved& value);
-               };
-               static_assert( traits::is_movable< Involved>::value, "not movable");
+                     CASUAL_CONST_CORRECT_MARSHAL(
+                     {
+                        base_type::marshal( archive);
+                        archive & involved;
+                     })
+
+                     friend std::ostream& operator << ( std::ostream& out, const Request& value);
+                  };
+
+                  struct Reply : basic_message< Type::transaction_resource_involved_reply>
+                  {
+                     //! resources involved prior to the request
+                     std::vector< common::transaction::resource::ID> involved;
+
+                     CASUAL_CONST_CORRECT_MARSHAL(
+                     {
+                        base_type::marshal( archive);
+                        archive & involved;
+                     })
+
+                     friend std::ostream& operator << ( std::ostream& out, const Reply& value);
+                  };
+               } // involve
+
 
                template< message::Type type>
                struct basic_request : basic_transaction< type>
@@ -370,6 +381,9 @@ namespace casual
             struct type_traits< transaction::commit::Request> : detail::type< transaction::commit::Reply> {};
             template<>
             struct type_traits< transaction::rollback::Request> : detail::type< transaction::rollback::Reply> {};
+
+            template<>
+            struct type_traits< transaction::resource::involved::Request> : detail::type< transaction::resource::involved::Reply> {};
 
             template<>
             struct type_traits< transaction::resource::lookup::Request> : detail::type< transaction::resource::lookup::Reply> {};

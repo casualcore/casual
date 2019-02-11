@@ -38,7 +38,7 @@
 #include "common/communication/instance.h"
 
 #include "serviceframework/service/protocol/call.h"
-#include "serviceframework/archive/log.h"
+#include "serviceframework/log.h"
 
 #include "tx.h"
 
@@ -112,8 +112,6 @@ namespace casual
                {
                   common::message::domain::configuration::Domain domain;
 
-
-
                   using resource_type = common::message::domain::configuration::transaction::Resource;
 
                   domain.transaction.resources = {
@@ -179,14 +177,22 @@ resources:
 
             namespace send
             {
-
                template< typename M>
                void tm( M&& message)
                {
                   communication::ipc::blocking::send(
                         common::communication::instance::outbound::transaction::manager::device(), message);
                }
+            } // send
 
+            namespace call
+            {
+               template< typename M>
+               auto tm( M&& message)
+               {
+                  return communication::ipc::call(
+                        common::communication::instance::outbound::transaction::manager::device(), message);
+               }
             } // send
 
             std::vector< manager::admin::resource::Proxy> accumulate_metrics( const manager::admin::State& state)
@@ -303,7 +309,7 @@ resources:
 
          auto state = local::admin::call::state();
 
-         EXPECT_TRUE( state.transactions.empty());
+         EXPECT_TRUE( state.transactions.empty()) << "state.transactions: " << state.transactions;
          EXPECT_TRUE( tx_commit() == TX_OK);
       }
 
@@ -342,9 +348,7 @@ resources:
 
          EXPECT_TRUE( tx_begin() == TX_OK);
 
-         //
          // Make sure we make the transaction distributed
-         //
          auto state = local::admin::call::state();
          EXPECT_TRUE( state.transactions.empty());
 
@@ -352,12 +356,13 @@ resources:
 
          // involved
          {
-            common::message::transaction::resource::Involved message;
+            common::message::transaction::resource::involved::Request message;
             message.trid = common::transaction::Context::instance().current().trid;
             message.process = process::handle();
-            message.resources = { local::rm_1};
+            message.involved = { { local::rm_1, common::process::id()}};
 
-            local::send::tm( message);
+            auto reply = local::call::tm( message);
+            EXPECT_TRUE( reply.involved.empty());
          }
 
          EXPECT_TRUE( tx_commit() == TX_OK);
@@ -372,10 +377,62 @@ resources:
          ASSERT_TRUE( rm1.instances.size() == 2);
          EXPECT_TRUE( rm1.id == local::rm_1);
          EXPECT_TRUE( rm1.name == "rm1");
-         EXPECT_TRUE( rm1.metrics.resource.count == 1);
+         EXPECT_TRUE( rm1.metrics.resource.count == 1) << "rm: " << rm1;
       }
 
+      TEST( casual_transaction_manager, begin_commit_transaction__1_resources_involved__2_times___expect_one_phase_commit_optimization)
+      {
+         common::unittest::Trace trace;
 
+         local::Domain domain;
+
+
+         EXPECT_TRUE( tx_begin() == TX_OK);
+
+         // Make sure we make the transaction distributed
+         auto state = local::admin::call::state();
+         EXPECT_TRUE( state.transactions.empty());
+
+
+
+         // first time involved
+         {
+            common::message::transaction::resource::involved::Request message;
+            message.trid = common::transaction::Context::instance().current().trid;
+            message.process = process::handle();
+            message.involved = { { local::rm_1, common::process::id()}};
+
+            auto reply = local::call::tm( message);
+            EXPECT_TRUE( reply.involved.empty());
+         }
+
+         // second time involved
+         {
+            common::message::transaction::resource::involved::Request message;
+            message.trid = common::transaction::Context::instance().current().trid;
+            message.process = process::handle();
+            message.involved = { { local::rm_1, common::process::id()}};
+
+            auto reply = local::call::tm( message);
+            ASSERT_TRUE( reply.involved.size() == 1);
+            EXPECT_TRUE( reply.involved.at( 0).resource == local::rm_1);
+            EXPECT_TRUE( reply.involved.at( 0).process == common::process::id());
+         }
+
+         EXPECT_TRUE( tx_commit() == TX_OK);
+
+
+         state = local::admin::call::state();
+         EXPECT_TRUE( state.transactions.empty());
+
+         auto proxies = local::accumulate_metrics( state);
+         auto& rm1 = proxies.at( 0);
+
+         ASSERT_TRUE( rm1.instances.size() == 2);
+         EXPECT_TRUE( rm1.id == local::rm_1);
+         EXPECT_TRUE( rm1.name == "rm1");
+         EXPECT_TRUE( rm1.metrics.resource.count == 1) << "rm: " << rm1;
+      }
       namespace local
       {
          namespace
@@ -401,20 +458,19 @@ resources:
 
          EXPECT_TRUE( tx_begin() == TX_OK);
 
-         //
          // Make sure we make the transaction distributed
-         //
          auto state = local::admin::call::state();
          EXPECT_TRUE( state.transactions.empty());
 
          // involved
          {
-            common::message::transaction::resource::Involved message;
+            common::message::transaction::resource::involved::Request message;
             message.trid = common::transaction::Context::instance().current().trid;
             message.process = process::handle();
-            message.resources = { local::rm_1};
-
-            local::send::tm( message);
+            message.involved = { { local::rm_1, common::process::id()}};
+            
+            auto reply = local::call::tm( message);
+            EXPECT_TRUE( reply.involved.empty());
          }
 
          using tx = common::code::tx;
@@ -440,20 +496,19 @@ resources:
 
          EXPECT_TRUE( local::tx_invoke( &tx_begin) == tx::ok);
 
-         //
          // Make sure we make the transaction distributed
-         //
          auto state = local::admin::call::state();
          EXPECT_TRUE( state.transactions.empty());
 
          // involved
          {
-            common::message::transaction::resource::Involved message;
+            common::message::transaction::resource::involved::Request message;
             message.trid = common::transaction::Context::instance().current().trid;
             message.process = process::handle();
-            message.resources = { local::rm_1};
-
-            local::send::tm( message);
+            message.involved = { { local::rm_1, common::process::id()}};
+            
+            auto reply = local::call::tm( message);
+            EXPECT_TRUE( reply.involved.empty());
          }
 
          auto result = local::tx_invoke( &tx_commit);
@@ -476,27 +531,26 @@ resources:
 
          EXPECT_TRUE( local::tx_invoke( &tx_begin) == tx::ok);
 
-         //
          // Make sure we make the transaction distributed
-         //
          auto state = local::admin::call::state();
          EXPECT_TRUE( state.transactions.empty());
 
          // involved
          {
-            common::message::transaction::resource::Involved message;
+            common::message::transaction::resource::involved::Request message;
             message.trid = common::transaction::Context::instance().current().trid;
             message.process = process::handle();
-            message.resources = { local::rm_1};
-
-            local::send::tm( message);
+            message.involved = { { local::rm_1, common::process::id()}};
+            
+            auto reply = local::call::tm( message);
+            EXPECT_TRUE( reply.involved.empty());
          }
 
          auto result = local::tx_invoke( &tx_commit);
          EXPECT_TRUE( result == tx::ok) << "result: " << result;
       }
 
-      TEST( casual_transaction_manager, begin_rollback_transaction__1_resources_involved__expect_one_phase_commit_optimization)
+      TEST( casual_transaction_manager, begin_rollback_transaction__1_resources_involved__expect_XA_OK)
       {
          common::unittest::Trace trace;
 
@@ -504,20 +558,19 @@ resources:
 
          EXPECT_TRUE( tx_begin() == TX_OK);
 
-         //
          // Make sure we make the transaction distributed
-         //
          auto state = local::admin::call::state();
          EXPECT_TRUE( state.transactions.empty());
 
          // involved
          {
-            common::message::transaction::resource::Involved message;
+            common::message::transaction::resource::involved::Request message;
             message.trid = common::transaction::Context::instance().current().trid;
             message.process = process::handle();
-            message.resources = { local::rm_1};
-
-            local::send::tm( message);
+            message.involved = { { local::rm_1, common::process::id()}};
+            
+            auto reply = local::call::tm( message);
+            EXPECT_TRUE( reply.involved.empty());
          }
 
          EXPECT_TRUE( tx_rollback() == TX_OK);
@@ -545,12 +598,16 @@ resources:
 
          // involved
          {
-            common::message::transaction::resource::Involved message;
+            common::message::transaction::resource::involved::Request message;
             message.trid = common::transaction::Context::instance().current().trid;
             message.process = process::handle();
-            message.resources = { local::rm_1, local::rm_2};
-
-            local::send::tm( message);
+            message.involved = { 
+               { local::rm_1, common::process::id()},
+               { local::rm_2, common::process::id()}
+            };
+            
+            auto reply = local::call::tm( message);
+            EXPECT_TRUE( reply.involved.empty());
          }
 
          EXPECT_TRUE( tx_rollback() == TX_OK);
@@ -578,23 +635,36 @@ resources:
 
          local::Domain domain;
 
-
          EXPECT_TRUE( tx_begin() == TX_OK);
 
-         //
          // Make sure we make the transaction distributed
-         //
          auto state = local::admin::call::state();
          EXPECT_TRUE( state.transactions.empty());
 
-         // involved
+         // first rm involved
          {
-            common::message::transaction::resource::Involved message;
+            common::message::transaction::resource::involved::Request message;
             message.trid = common::transaction::Context::instance().current().trid;
             message.process = process::handle();
-            message.resources = { local::rm_1, local::rm_2};
+            message.involved = { { local::rm_1, common::process::id()}};
+            
+            auto reply = local::call::tm( message);
+            EXPECT_TRUE( reply.involved.empty());
+         }
 
-            local::send::tm( message);
+         // second rm involved
+         {
+            common::message::transaction::resource::involved::Request message;
+            message.trid = common::transaction::Context::instance().current().trid;
+            message.process = process::handle();
+            message.involved = { { local::rm_2, common::process::id()}};
+            
+            auto reply = local::call::tm( message);
+
+            //! should give the first rm as already involved
+            ASSERT_TRUE( reply.involved.size() == 1);
+            EXPECT_TRUE( reply.involved.at( 0).resource == local::rm_1);
+            EXPECT_TRUE( reply.involved.at( 0).process == common::process::id());
          }
 
          EXPECT_TRUE( tx_commit() == TX_OK);
@@ -628,12 +698,16 @@ resources:
 
          // involved
          {
-            common::message::transaction::resource::Involved message;
+            common::message::transaction::resource::involved::Request message;
             message.trid = common::transaction::Context::instance().current().trid;
             message.process = process::handle();
-            message.resources = { local::rm_1, local::rm_2};
-
-            local::send::tm( message);
+            message.involved = { 
+               { local::rm_1, common::process::id()},
+               { local::rm_2, common::process::id()}
+            };
+            
+            auto reply = local::call::tm( message);
+            EXPECT_TRUE( reply.involved.empty());
          }
 
          // caller dies
@@ -720,7 +794,7 @@ resources:
          }
       }
 
-      TEST( casual_transaction_manager, remote_resource_rollback__xid_unknown___expect_read_only)
+      TEST( casual_transaction_manager, remote_resource_rollback__xid_unknown___expect_xa_ok)
       {
          common::unittest::Trace trace;
 
@@ -745,7 +819,8 @@ resources:
             communication::ipc::blocking::receive( common::communication::ipc::inbound::device(), message);
 
             EXPECT_TRUE( message.trid == trid);
-            EXPECT_TRUE( message.state == common::code::xa::read_only);
+            // rollback has no optimization, just ok, or errors...
+            EXPECT_TRUE( message.state == common::code::xa::ok);
          }
       }
 
@@ -761,12 +836,13 @@ resources:
 
          // local involved
          {
-            common::message::transaction::resource::Involved message;
+            common::message::transaction::resource::involved::Request message;
             message.trid = trid;
             message.process = process::handle();
-            message.resources = { local::rm_1};
-
-            local::send::tm( message);
+            message.involved = { { local::rm_1, common::process::id()}};
+            
+            auto reply = local::call::tm( message);
+            EXPECT_TRUE( reply.involved.empty()) << "reply.involved: " << reply.involved;
          }
 
          // remote rollback

@@ -30,11 +30,6 @@ namespace casual
    {
       namespace transaction
       {
-         namespace resource
-         {
-            using id = strong::resource::id;
-         } // resource
-
 
          class Context
          {
@@ -76,8 +71,8 @@ namespace casual
             //! Correspond to the ax API
             //!
             //! @{
-            void resource_registration( resource::id rmid, XID* xid);
-            void resource_unregistration( resource::id rmid);
+            code::ax resource_registration( strong::resource::id rmid, XID* xid);
+            void resource_unregistration( strong::resource::id rmid);
             //! @}
 
 
@@ -168,7 +163,7 @@ namespace casual
 
             } m_resources;
 
-            std::vector< resource::id> resources() const;
+            std::vector< resource::ID> resources() const;
 
 
             std::vector< Transaction> m_transactions;
@@ -177,15 +172,10 @@ namespace casual
 
             TRANSACTION_TIMEOUT m_timeout = 0;
 
-            void involved( const transaction::ID& xid, std::vector< resource::id> resources);
-
-
             Context();
-
 
             void commit( const Transaction& transaction);
             void rollback( const Transaction& transaction);
-
 
             void resources_start( const Transaction& transaction, flag::xa::Flags flags = flag::xa::Flag::no_flags);
             void resources_end( const Transaction& transaction, flag::xa::Flags flags = flag::xa::Flag::no_flags);

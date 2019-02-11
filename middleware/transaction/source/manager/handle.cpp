@@ -875,15 +875,38 @@ namespace casual
                }
 
 
-               void Involved::operator () ( common::message::transaction::resource::Involved& message)
+               void Involved::operator () ( common::message::transaction::resource::involved::Request& message)
                {
                   Trace trace{ "transaction::handle::resource::Involved"};
 
-                  common::log::line( log, "involved message: ",  message);
+                  common::log::line( verbose::log, "message: ",  message);
 
                   auto& transaction = *local::transaction::find_or_add( m_state, message);
 
-                  local::resource::involved( m_state, transaction, message);
+                  // prepare and send the reply
+                  auto reply = common::message::reverse::type( message);
+                  reply.involved = transaction.involved();
+                  ipc::optional::send( message.process.ipc, reply);
+
+                  // partition what we don't got since before
+                  auto involved = std::get< 1>( common::algorithm::intersection( message.involved, reply.involved));
+
+                  // sanity check
+                  auto split = common::algorithm::partition( involved, [&]( auto& r)
+                  {
+                     return ! common::algorithm::find( m_state.resources, r.resource).empty();
+                  });
+
+                  // add new involved thread of control, if any.
+                  transaction.involved( std::get< 0>( split));
+
+                  // if we've got some resources that we don't know about.
+                  // TODO: should we set the transaction to rollback only?
+                  if( std::get< 1>( split))
+                  {
+                     common::log::line( common::log::category::error, "invalid resources: ", std::get< 1>( split), " - action: discard");
+                     common::log::line( common::log::category::verbose::error, "trid: ", message.trid);
+                  }
                }
 
                namespace reply
@@ -1105,10 +1128,6 @@ namespace casual
 
                auto location = local::transaction::find_or_add( m_state, message);
                auto& transaction = *location;
-
-               // Make sure we add the involved resources from the commit message (if any)
-               local::resource::involved( m_state, transaction, message);
-
                
                switch( transaction.stage())
                {
@@ -1202,9 +1221,6 @@ namespace casual
 
                // Local normal rollback phase
                transaction.implementation = local::implementation::Local::instance();
-
-               // Make sure we add the involved resources from the rollback message (if any)
-               local::resource::involved( m_state, transaction, message);
 
                if( transaction.resources.empty())
                {
@@ -1534,8 +1550,8 @@ namespace casual
                   }
                   else
                   {
-                     common::log::line( log, message.trid, " either does not exists (longer) in this domain or there are no resources involved - action: send rollback-reply (read only)");
-                     local::send::read_only( m_state, message);
+                     common::log::line( log, message.trid, " either does not exists (longer) in this domain or there are no resources involved - action: send rollback-reply (XA_OK)");
+                     local::send::xa_result( m_state, message, common::code::xa::ok);
                   }
                }
 

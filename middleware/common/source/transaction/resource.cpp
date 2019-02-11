@@ -14,9 +14,9 @@
 #include "common/log/category.h"
 #include "common/flag.h"
 
+
 namespace casual
 {
-
    namespace common
    {
       namespace transaction
@@ -39,13 +39,13 @@ namespace casual
             } // <unnamed>
          } // local
 
-         Resource::Resource( resource::Link link, id_type id, std::string openinfo, std::string closeinfo)
+         Resource::Resource( resource::Link link, resource::ID id, std::string openinfo, std::string closeinfo)
             : m_key( std::move( link.key)), m_xa( link.xa), m_id(std::move( id)), m_openinfo( std::move( openinfo)), m_closeinfo( std::move( closeinfo))
          {
             if( ! m_xa)
                throw common::exception::system::invalid::Argument( "xa-switch is null");
 
-            log::line( log::category::transaction, "associated resource: ", *this, " name: '" , m_xa->name, "' version: ", m_xa->version);
+            log::line( log::category::transaction, "associated resource: ", *this);
          }
 
 
@@ -53,7 +53,7 @@ namespace casual
          {
             log::line( log::category::transaction, "start resource: ", m_id, " transaction: ", transaction, " flags: ", flags);
 
-            auto result = local::convert( m_xa->xa_start_entry( local::non_const_xid( transaction), m_id.value(), flags.underlaying()));
+            auto result = local::convert( m_xa->xa_start_entry( local::non_const_xid( transaction), m_id.resource.value(), flags.underlaying()));
 
 
             if( result == code::duplicate_xid)
@@ -65,7 +65,7 @@ namespace casual
 
                flags |= Flag::join;
 
-               result = local::convert( m_xa->xa_start_entry( local::non_const_xid( transaction), m_id.value(), flags.underlaying()));
+               result = local::convert( m_xa->xa_start_entry( local::non_const_xid( transaction), m_id.resource.value(), flags.underlaying()));
             }
 
             if( result != code::ok)
@@ -79,7 +79,7 @@ namespace casual
          {
             log::line( log::category::transaction, "end resource: ", m_id, " transaction: ", transaction, " flags: ", flags);
 
-            auto result = local::convert( m_xa->xa_end_entry( local::non_const_xid( transaction), m_id.value(), flags.underlaying()));
+            auto result = local::convert( m_xa->xa_end_entry( local::non_const_xid( transaction), m_id.resource.value(), flags.underlaying()));
 
             if( result != code::ok)
                log::line( log::category::error, result, " failed to end resource - ", m_id, " - trid: ", transaction);
@@ -93,7 +93,7 @@ namespace casual
 
             auto info = common::environment::string( m_openinfo);
 
-            auto result = local::convert( m_xa->xa_open_entry( info.c_str(), m_id.value(), flags.underlaying()));
+            auto result = local::convert( m_xa->xa_open_entry( info.c_str(), m_id.resource.value(), flags.underlaying()));
 
             if( result != code::ok)
                log::line( log::category::error, result, " failed to open resource - ", m_id, " - openinfo: ", m_openinfo);
@@ -107,7 +107,7 @@ namespace casual
 
             auto info = common::environment::string( m_closeinfo);
 
-            auto result = local::convert( m_xa->xa_close_entry( info.c_str(), m_id.value(), flags.underlaying()));
+            auto result = local::convert( m_xa->xa_close_entry( info.c_str(), m_id.resource.value(), flags.underlaying()));
 
             if( result != code::ok)
                log::line( log::category::error, result, " failed to close resource - ", m_id, " - openinfo: ", m_closeinfo);
@@ -118,7 +118,7 @@ namespace casual
          Resource::code Resource::prepare( const transaction::ID& transaction, Flags flags)
          {
             auto result = local::convert( m_xa->xa_prepare_entry( 
-               local::non_const_xid( transaction), m_id.value(), flags.underlaying()));
+               local::non_const_xid( transaction), m_id.resource.value(), flags.underlaying()));
 
             if( result == common::code::xa::protocol)
             {
@@ -141,14 +141,14 @@ namespace casual
          {
             log::line( log::category::transaction, "commit resource: ", m_id, " flags: ", flags);
 
-            return local::convert( m_xa->xa_commit_entry( local::non_const_xid( transaction), m_id.value(), flags.underlaying()));
+            return local::convert( m_xa->xa_commit_entry( local::non_const_xid( transaction), m_id.resource.value(), flags.underlaying()));
          }
 
          Resource::code Resource::rollback( const transaction::ID& transaction, Flags flags)
          {
             log::line( log::category::transaction, "rollback resource: ", m_id, " flags: ", flags);
 
-            return local::convert( m_xa->xa_rollback_entry( local::non_const_xid( transaction), m_id.value(), flags.underlaying()));
+            return local::convert( m_xa->xa_rollback_entry( local::non_const_xid( transaction), m_id.resource.value(), flags.underlaying()));
          }
 
          bool Resource::dynamic() const
@@ -166,7 +166,7 @@ namespace casual
 
             while( count == xids.size())
             {
-               count = m_xa->xa_recover_entry( xids.data(), xids.size(), m_id.value(), flags.underlaying());
+               count = m_xa->xa_recover_entry( xids.data(), xids.size(), m_id.resource.value(), flags.underlaying());
 
                if( count < 0)
                {
@@ -180,7 +180,7 @@ namespace casual
                   if( count == xids.size())
                   {
                      m_xa->xa_recover_entry(
-                        xids.data(), 1, m_id.value(),
+                        xids.data(), 1, m_id.resource.value(),
                         cast::underlying( flag::xa::Flag::end_scan));
                   }
 
@@ -199,7 +199,10 @@ namespace casual
                << ", id: " << resource.m_id 
                << ", openinfo: " << resource.m_openinfo
                << ", closeinfo: " << resource.m_closeinfo 
-               << "}";
+               << ", xa: { name: " << resource.m_xa->name
+               << ", flags: " << resource.m_xa->flags
+               << ", version: " << resource.m_xa->version
+               << "}}";
          }
 
 

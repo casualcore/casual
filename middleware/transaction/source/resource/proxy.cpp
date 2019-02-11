@@ -55,7 +55,7 @@ namespace casual
                      reply_type reply;
 
                      reply.process = common::process::handle();
-                     reply.resource = m_state.resource.id();
+                     reply.resource = m_state.resource.id().resource;
 
                      reply.state = m_state.resource.open();
 
@@ -94,7 +94,7 @@ namespace casual
 
 
                      reply.process = common::process::handle();
-                     reply.resource = m_state.resource.id();
+                     reply.resource = m_state.resource.id().resource;
 
                      reply.state = policy_type()( m_state, message);
                      reply.trid = std::move( message.trid);
@@ -163,7 +163,7 @@ namespace casual
             State::State( Settings&& settings, casual_xa_switch_mapping* switches)
                : resource{
                   common::transaction::resource::Link{ std::move( settings.key), switches->xa_switch},
-                  common::strong::resource::id{ settings.id}, 
+                  common::transaction::resource::ID{ common::strong::resource::id{ settings.id}, common::process::id()}, 
                   std::move( settings.openinfo), 
                   std::move( settings.closeinfo)}
             {

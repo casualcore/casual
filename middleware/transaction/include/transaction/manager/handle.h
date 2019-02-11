@@ -83,7 +83,7 @@ namespace casual
                {
                   using Base::Base;
 
-                  void operator () ( common::message::transaction::resource::Involved& message);
+                  void operator () ( common::message::transaction::resource::involved::Request& message);
                };
 
                namespace reply

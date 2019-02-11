@@ -675,10 +675,6 @@ namespace casual
             }
 
 
-
-
-
-
             namespace transaction
             {
 
@@ -691,7 +687,7 @@ namespace casual
                      {
                         m_involved[ message.trid].push_back( message);
                      }
-
+ 
                      template< typename M>
                      void transaction( M&& message)
                      {
@@ -700,7 +696,7 @@ namespace casual
                            ipc::eventually::send( involved.process.ipc, message);
                         }
                      }
-
+           
                      std::vector< Involved> extract( const common::transaction::ID& trid) 
                      {
                         auto found = algorithm::find( m_involved, trid);
@@ -721,28 +717,21 @@ namespace casual
                      : m_replier{ default_handler() + std::move( handler)}
                   {
 
-                     //
                      // Connect to the domain
-                     //
                      local::send::connect::domain( m_replier, communication::instance::identity::transaction::manager);
 
-                     //
                      // Set environment variable to make it easier for other processes to
                      // reach TM (should work any way...)
-                     //
                      common::environment::variable::process::set(
                            common::environment::variable::name::ipc::transaction::manager(),
                            m_replier.process());
 
-                     //
                      // Make sure we're up'n running before we let unittest-stuff interact with us...
-                     //
                      communication::instance::fetch::handle( communication::instance::identity::transaction::manager);
                   }
 
                   dispatch_type default_handler()
                   {
-
                      return dispatch_type{
                         [&]( common::message::transaction::commit::Request& message)
                         {
@@ -788,6 +777,12 @@ namespace casual
                            reply.trid = message.trid;
 
                            ipc::eventually::send( message.process.ipc, reply);
+                        },
+                        [&]( common::message::transaction::resource::involved::Request& message)
+                        {
+                           Trace trace{ "mockup::transaction::resource::involved::Request"};
+
+                           ipc::eventually::send( message.process.ipc, common::message::reverse::type( message));
                         },
                         [&]( common::message::transaction::resource::external::Involved& message)
                         {
