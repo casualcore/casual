@@ -39,7 +39,7 @@ namespace casual
             } // <unnamed>
          } // local
 
-         Resource::Resource( resource::Link link, resource::ID id, std::string openinfo, std::string closeinfo)
+         Resource::Resource( resource::Link link, strong::resource::id id, std::string openinfo, std::string closeinfo)
             : m_key( std::move( link.key)), m_xa( link.xa), m_id(std::move( id)), m_openinfo( std::move( openinfo)), m_closeinfo( std::move( closeinfo))
          {
             if( ! m_xa)
@@ -53,19 +53,17 @@ namespace casual
          {
             log::line( log::category::transaction, "start resource: ", m_id, " transaction: ", transaction, " flags: ", flags);
 
-            auto result = local::convert( m_xa->xa_start_entry( local::non_const_xid( transaction), m_id.resource.value(), flags.underlaying()));
+            auto result = local::convert( m_xa->xa_start_entry( local::non_const_xid( transaction), m_id.value(), flags.underlaying()));
 
 
             if( result == code::duplicate_xid)
             {
-               //
                // Transaction is already associated with this thread of control, we try to join instead
-               //
                log::line( log::category::transaction, result, " - action: try to join instead");
 
                flags |= Flag::join;
 
-               result = local::convert( m_xa->xa_start_entry( local::non_const_xid( transaction), m_id.resource.value(), flags.underlaying()));
+               result = local::convert( m_xa->xa_start_entry( local::non_const_xid( transaction), m_id.value(), flags.underlaying()));
             }
 
             if( result != code::ok)
@@ -79,7 +77,7 @@ namespace casual
          {
             log::line( log::category::transaction, "end resource: ", m_id, " transaction: ", transaction, " flags: ", flags);
 
-            auto result = local::convert( m_xa->xa_end_entry( local::non_const_xid( transaction), m_id.resource.value(), flags.underlaying()));
+            auto result = local::convert( m_xa->xa_end_entry( local::non_const_xid( transaction), m_id.value(), flags.underlaying()));
 
             if( result != code::ok)
                log::line( log::category::error, result, " failed to end resource - ", m_id, " - trid: ", transaction);
@@ -93,7 +91,7 @@ namespace casual
 
             auto info = common::environment::string( m_openinfo);
 
-            auto result = local::convert( m_xa->xa_open_entry( info.c_str(), m_id.resource.value(), flags.underlaying()));
+            auto result = local::convert( m_xa->xa_open_entry( info.c_str(), m_id.value(), flags.underlaying()));
 
             if( result != code::ok)
                log::line( log::category::error, result, " failed to open resource - ", m_id, " - openinfo: ", m_openinfo);
@@ -107,7 +105,7 @@ namespace casual
 
             auto info = common::environment::string( m_closeinfo);
 
-            auto result = local::convert( m_xa->xa_close_entry( info.c_str(), m_id.resource.value(), flags.underlaying()));
+            auto result = local::convert( m_xa->xa_close_entry( info.c_str(), m_id.value(), flags.underlaying()));
 
             if( result != code::ok)
                log::line( log::category::error, result, " failed to close resource - ", m_id, " - openinfo: ", m_closeinfo);
@@ -118,7 +116,7 @@ namespace casual
          Resource::code Resource::prepare( const transaction::ID& transaction, Flags flags)
          {
             auto result = local::convert( m_xa->xa_prepare_entry( 
-               local::non_const_xid( transaction), m_id.resource.value(), flags.underlaying()));
+               local::non_const_xid( transaction), m_id.value(), flags.underlaying()));
 
             if( result == common::code::xa::protocol)
             {
@@ -141,14 +139,14 @@ namespace casual
          {
             log::line( log::category::transaction, "commit resource: ", m_id, " flags: ", flags);
 
-            return local::convert( m_xa->xa_commit_entry( local::non_const_xid( transaction), m_id.resource.value(), flags.underlaying()));
+            return local::convert( m_xa->xa_commit_entry( local::non_const_xid( transaction), m_id.value(), flags.underlaying()));
          }
 
          Resource::code Resource::rollback( const transaction::ID& transaction, Flags flags)
          {
             log::line( log::category::transaction, "rollback resource: ", m_id, " flags: ", flags);
 
-            return local::convert( m_xa->xa_rollback_entry( local::non_const_xid( transaction), m_id.resource.value(), flags.underlaying()));
+            return local::convert( m_xa->xa_rollback_entry( local::non_const_xid( transaction), m_id.value(), flags.underlaying()));
          }
 
          bool Resource::dynamic() const
@@ -166,7 +164,7 @@ namespace casual
 
             while( count == xids.size())
             {
-               count = m_xa->xa_recover_entry( xids.data(), xids.size(), m_id.resource.value(), flags.underlaying());
+               count = m_xa->xa_recover_entry( xids.data(), xids.size(), m_id.value(), flags.underlaying());
 
                if( count < 0)
                {
@@ -180,7 +178,7 @@ namespace casual
                   if( count == xids.size())
                   {
                      m_xa->xa_recover_entry(
-                        xids.data(), 1, m_id.resource.value(),
+                        xids.data(), 1, m_id.value(),
                         cast::underlying( flag::xa::Flag::end_scan));
                   }
 

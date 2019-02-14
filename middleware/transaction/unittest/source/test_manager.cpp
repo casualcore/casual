@@ -359,7 +359,7 @@ resources:
             common::message::transaction::resource::involved::Request message;
             message.trid = common::transaction::Context::instance().current().trid;
             message.process = process::handle();
-            message.involved = { { local::rm_1, common::process::id()}};
+            message.involved = { local::rm_1};
 
             auto reply = local::call::tm( message);
             EXPECT_TRUE( reply.involved.empty());
@@ -400,7 +400,7 @@ resources:
             common::message::transaction::resource::involved::Request message;
             message.trid = common::transaction::Context::instance().current().trid;
             message.process = process::handle();
-            message.involved = { { local::rm_1, common::process::id()}};
+            message.involved = { local::rm_1};
 
             auto reply = local::call::tm( message);
             EXPECT_TRUE( reply.involved.empty());
@@ -411,12 +411,11 @@ resources:
             common::message::transaction::resource::involved::Request message;
             message.trid = common::transaction::Context::instance().current().trid;
             message.process = process::handle();
-            message.involved = { { local::rm_1, common::process::id()}};
+            message.involved = { local::rm_1};
 
             auto reply = local::call::tm( message);
             ASSERT_TRUE( reply.involved.size() == 1);
-            EXPECT_TRUE( reply.involved.at( 0).resource == local::rm_1);
-            EXPECT_TRUE( reply.involved.at( 0).process == common::process::id());
+            EXPECT_TRUE( reply.involved.at( 0) == local::rm_1);
          }
 
          EXPECT_TRUE( tx_commit() == TX_OK);
@@ -467,7 +466,7 @@ resources:
             common::message::transaction::resource::involved::Request message;
             message.trid = common::transaction::Context::instance().current().trid;
             message.process = process::handle();
-            message.involved = { { local::rm_1, common::process::id()}};
+            message.involved = { local::rm_1};
             
             auto reply = local::call::tm( message);
             EXPECT_TRUE( reply.involved.empty());
@@ -505,7 +504,7 @@ resources:
             common::message::transaction::resource::involved::Request message;
             message.trid = common::transaction::Context::instance().current().trid;
             message.process = process::handle();
-            message.involved = { { local::rm_1, common::process::id()}};
+            message.involved = { local::rm_1};
             
             auto reply = local::call::tm( message);
             EXPECT_TRUE( reply.involved.empty());
@@ -540,7 +539,7 @@ resources:
             common::message::transaction::resource::involved::Request message;
             message.trid = common::transaction::Context::instance().current().trid;
             message.process = process::handle();
-            message.involved = { { local::rm_1, common::process::id()}};
+            message.involved = { local::rm_1};
             
             auto reply = local::call::tm( message);
             EXPECT_TRUE( reply.involved.empty());
@@ -567,7 +566,7 @@ resources:
             common::message::transaction::resource::involved::Request message;
             message.trid = common::transaction::Context::instance().current().trid;
             message.process = process::handle();
-            message.involved = { { local::rm_1, common::process::id()}};
+            message.involved = { local::rm_1};
             
             auto reply = local::call::tm( message);
             EXPECT_TRUE( reply.involved.empty());
@@ -601,10 +600,7 @@ resources:
             common::message::transaction::resource::involved::Request message;
             message.trid = common::transaction::Context::instance().current().trid;
             message.process = process::handle();
-            message.involved = { 
-               { local::rm_1, common::process::id()},
-               { local::rm_2, common::process::id()}
-            };
+            message.involved = { local::rm_1, local::rm_2};
             
             auto reply = local::call::tm( message);
             EXPECT_TRUE( reply.involved.empty());
@@ -646,7 +642,7 @@ resources:
             common::message::transaction::resource::involved::Request message;
             message.trid = common::transaction::Context::instance().current().trid;
             message.process = process::handle();
-            message.involved = { { local::rm_1, common::process::id()}};
+            message.involved = { local::rm_1};
             
             auto reply = local::call::tm( message);
             EXPECT_TRUE( reply.involved.empty());
@@ -657,14 +653,13 @@ resources:
             common::message::transaction::resource::involved::Request message;
             message.trid = common::transaction::Context::instance().current().trid;
             message.process = process::handle();
-            message.involved = { { local::rm_2, common::process::id()}};
+            message.involved = { local::rm_2};
             
             auto reply = local::call::tm( message);
 
             //! should give the first rm as already involved
             ASSERT_TRUE( reply.involved.size() == 1);
-            EXPECT_TRUE( reply.involved.at( 0).resource == local::rm_1);
-            EXPECT_TRUE( reply.involved.at( 0).process == common::process::id());
+            EXPECT_TRUE( reply.involved.at( 0) == local::rm_1);
          }
 
          EXPECT_TRUE( tx_commit() == TX_OK);
@@ -701,10 +696,7 @@ resources:
             common::message::transaction::resource::involved::Request message;
             message.trid = common::transaction::Context::instance().current().trid;
             message.process = process::handle();
-            message.involved = { 
-               { local::rm_1, common::process::id()},
-               { local::rm_2, common::process::id()}
-            };
+            message.involved = { local::rm_1, local::rm_2};
             
             auto reply = local::call::tm( message);
             EXPECT_TRUE( reply.involved.empty());
@@ -839,7 +831,7 @@ resources:
             common::message::transaction::resource::involved::Request message;
             message.trid = trid;
             message.process = process::handle();
-            message.involved = { { local::rm_1, common::process::id()}};
+            message.involved = { local::rm_1};
             
             auto reply = local::call::tm( message);
             EXPECT_TRUE( reply.involved.empty()) << "reply.involved: " << reply.involved;

@@ -24,7 +24,7 @@ namespace casual
                {
                   return out << "{ process: " << message.process
                         << ", trid: " << message.trid
-                        << ", resources: " << range::make( message.resources)
+                        << ", resources: " << range::make( message.involved)
                         << '}';
                }
 
@@ -50,6 +50,14 @@ namespace casual
 
             namespace commit
             {
+               std::ostream& operator << ( std::ostream& out, const Request& message)
+               {
+                  return out << "{ process: " << message.process
+                        << ", trid: " << message.trid
+                        << ", state: " << message.involved
+                        << '}';
+               }
+
                std::ostream& operator << ( std::ostream& out, const Reply::Stage& stage)
                {
                   switch( stage)

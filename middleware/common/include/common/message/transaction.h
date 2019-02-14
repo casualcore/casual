@@ -10,7 +10,7 @@
 
 #include "common/message/type.h"
 
-#include "common/transaction/resource/id.h"
+#include "common/strong/id.h"
 #include "common/code/xa.h"
 #include "common/code/tx.h"
 #include "common/flag/xa.h"
@@ -74,7 +74,21 @@ namespace casual
 
             namespace commit
             {
-               using Request = basic_request< Type::transaction_commit_request>;
+               using base_request = basic_request< Type::transaction_commit_request>;
+
+               struct Request : base_request
+               {
+                  std::vector< strong::resource::id> involved;
+
+                  CASUAL_CONST_CORRECT_MARSHAL(
+                  {
+                        base_request::marshal( archive);
+                        archive & involved;
+                  })
+
+                  friend std::ostream& operator << ( std::ostream& out, const Request& message);
+               };
+               static_assert( traits::is_movable< Request>::value, "not movable");
 
                using base_reply = basic_reply< code::tx, Type::transaction_commit_reply>;
                struct Reply : base_reply
@@ -107,12 +121,12 @@ namespace casual
 
                struct Request : base_request
                {
-                  std::vector< strong::resource::id> resources;
+                  std::vector< strong::resource::id> involved;
 
                   CASUAL_CONST_CORRECT_MARSHAL(
                   {
                      base_request::marshal( archive);
-                     archive & resources;
+                     archive & involved;
                   })
 
                   friend std::ostream& operator << ( std::ostream& out, const Request& message);
@@ -233,7 +247,8 @@ namespace casual
                {  
                   struct Request : basic_transaction< Type::transaction_resource_involved_request>
                   {
-                     std::vector< common::transaction::resource::ID> involved;
+                     //! potentially new resorces involved
+                     std::vector< strong::resource::id> involved;
 
                      CASUAL_CONST_CORRECT_MARSHAL(
                      {
@@ -247,7 +262,7 @@ namespace casual
                   struct Reply : basic_message< Type::transaction_resource_involved_reply>
                   {
                      //! resources involved prior to the request
-                     std::vector< common::transaction::resource::ID> involved;
+                     std::vector< strong::resource::id> involved;
 
                      CASUAL_CONST_CORRECT_MARSHAL(
                      {

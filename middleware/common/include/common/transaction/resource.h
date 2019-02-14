@@ -13,7 +13,6 @@
 #include "tx.h"
 
 #include "common/transaction/resource/link.h"
-#include "common/transaction/resource/id.h"
 #include "common/strong/id.h"
 #include "common/code/xa.h"
 #include "common/flag/xa.h"
@@ -36,7 +35,7 @@ namespace casual
             using Flag = flag::xa::Flag;
             using Flags = flag::xa::Flags;
 
-            Resource( resource::Link link, resource::ID id, std::string openinfo, std::string closeinfo);
+            Resource( resource::Link link, strong::resource::id id, std::string openinfo, std::string closeinfo);
 
 
             code start( const transaction::ID& transaction, Flags flags);
@@ -53,13 +52,12 @@ namespace casual
             bool dynamic() const;
 
             inline const std::string& key() const { return m_key;}
-            inline resource::ID id() const { return m_id;}
+            inline strong::resource::id id() const { return m_id;}
 
 
             friend std::ostream& operator << ( std::ostream& out, const Resource& resource);
-            friend bool operator == ( const Resource& lhs, strong::resource::id rhs) { return lhs.m_id.resource == rhs;}
-            friend bool operator == ( const Resource& lhs, resource::ID rhs) { return lhs.m_id == rhs;}
-            friend bool operator == ( resource::ID lhs, const Resource& rhs) { return lhs == rhs.m_id;}
+            friend bool operator == ( const Resource& lhs, strong::resource::id rhs) { return lhs.m_id == rhs;}
+            friend bool operator == ( strong::resource::id lhs, const Resource& rhs) { return lhs == rhs.m_id;}
 
          private:
             bool prepared( const transaction::ID& transaction);
@@ -67,7 +65,7 @@ namespace casual
 
             std::string m_key;
             xa_switch_t* m_xa;
-            resource::ID m_id;
+            strong::resource::id m_id;
 
             std::string m_openinfo;
             std::string m_closeinfo;

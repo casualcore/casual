@@ -37,9 +37,7 @@ namespace casual
 
             static Context& instance();
 
-            //!
             //! Correspond to the tx API
-            //!
             //! @{
             void open();
             void close();
@@ -59,73 +57,49 @@ namespace casual
             bool info( TXINFO* info);
             //! @}
 
-            //!
             //! Correspond to casual extension of the tx API
-            //!
             //! @{
             void suspend( XID* xid);
             void resume( const XID* xid);
             //! @}
 
-            //!
             //! Correspond to the ax API
-            //!
             //! @{
             code::ax resource_registration( strong::resource::id rmid, XID* xid);
             void resource_unregistration( strong::resource::id rmid);
             //! @}
 
-
-
-            //!
             //! @ingroup service-start
             //!
             //! Join transaction. could be a null xid.
-            //!
             void join( const transaction::ID& trid);
 
-            //!
             //! @ingroup service-start
             //!
             //! Start a new transaction
-            //!
             void start( const platform::time::point::type& start);
 
-            //!
             //! trid server is invoked with
-            //!
             //! @{
             transaction::ID caller;
             //! @}
 
-
             void update( message::service::call::Reply& state);
 
-            //!
             //! commits or rollback transaction created from this server
-            //!
             message::service::Transaction finalize( bool commit);
 
-
-            //!
             //! @return current transaction. 'null xid' if there are none...
-            //!
             Transaction& current();
 
-
-            //!
             //! @return true if @p correlation is associated with an active transaction
-            //!
             bool associated( const Uuid& correlation);
 
 
             void configure( std::vector< resource::Link> resources, std::vector< std::string> names);
 
-
-            //!
             //! @return true if there are pending transactions that is owned by this
             //! process
-            //!
             bool pending() const;
 
          private:
@@ -163,7 +137,7 @@ namespace casual
 
             } m_resources;
 
-            std::vector< resource::ID> resources() const;
+            std::vector< strong::resource::id> resources() const;
 
 
             std::vector< Transaction> m_transactions;
@@ -177,9 +151,9 @@ namespace casual
             void commit( const Transaction& transaction);
             void rollback( const Transaction& transaction);
 
-            void resources_start( const Transaction& transaction, flag::xa::Flags flags = flag::xa::Flag::no_flags);
-            void resources_end( const Transaction& transaction, flag::xa::Flags flags = flag::xa::Flag::no_flags);
-            void resource_commit( strong::resource::id rm, const Transaction& transaction, flag::xa::Flags flags = flag::xa::Flag::no_flags);
+            void resources_start( const Transaction& transaction, flag::xa::Flags flags);
+            void resources_end( const Transaction& transaction, flag::xa::Flags flags);
+            void resource_commit( strong::resource::id rm, const Transaction& transaction, flag::xa::Flags flags);
 
             void pop_transaction();
 

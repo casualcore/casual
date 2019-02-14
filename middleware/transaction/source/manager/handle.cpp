@@ -34,10 +34,8 @@ namespace casual
                   common::communication::error::handler::callback::on::Terminate
                   {
                      []( const common::process::lifetime::Exit& exit){
-                        //
                         // We put a dead process event on our own ipc device, that
                         // will be handled later on.
-                        //
                         common::message::event::process::Exit event{ exit};
                         common::communication::ipc::inbound::device().push( std::move( event));
                      }
@@ -891,13 +889,13 @@ namespace casual
                   // partition what we don't got since before
                   auto involved = std::get< 1>( common::algorithm::intersection( message.involved, reply.involved));
 
-                  // sanity check
-                  auto split = common::algorithm::partition( involved, [&]( auto& r)
+                  // partition the new involved based on which we've got configured resources for
+                  auto split = common::algorithm::partition( involved, [&]( auto& resource)
                   {
-                     return ! common::algorithm::find( m_state.resources, r.resource).empty();
+                     return ! common::algorithm::find( m_state.resources, resource).empty();
                   });
 
-                  // add new involved thread of control, if any.
+                  // add new involved resources, if any.
                   transaction.involved( std::get< 0>( split));
 
                   // if we've got some resources that we don't know about.

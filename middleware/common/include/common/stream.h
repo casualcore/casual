@@ -107,7 +107,8 @@ namespace casual
             {
                void operator () ( std::ostream& out, C value) const
                {
-                  out << std::error_code( value);
+                  auto code = std::error_code( value);
+                  out << '[' << code << ' ' << code.message() << ']';
                }
             };
          };

@@ -284,11 +284,6 @@ namespace casual
             result = convert( value);
          }
 
-         void Transaction::Resource::involved( common::strong::process::id thread_of_control)
-         {
-            algorithm::push_back_unique( thread_of_control, m_involved);
-         }
-
          bool Transaction::Resource::done() const
          {
             switch( result)
@@ -301,34 +296,18 @@ namespace casual
             }
          }
 
-         std::vector< common::transaction::resource::ID> Transaction::involved() const
+         std::vector< common::strong::resource::id> Transaction::involved() const
          {
-            std::vector< common::transaction::resource::ID> result;
-            for( auto& resource : resources)
-            {
-               for( auto& toc : resource.involved())
-               {
-                  result.emplace_back( resource.id, toc);
-               }
-            }
-            return result;
+            return common::algorithm::transform( resources, []( auto& r){ return r.id;});
          }
 
-         void Transaction::involved( common::transaction::resource::ID resource)
+         void Transaction::involved( common::strong::resource::id resource)
          {
-            auto found = algorithm::find( resources, resource.resource);
-
-            if( found)
+            if( ! algorithm::find( resources, resource))
             {
-               log::line( verbose::log, "involved to existing resource: ", resource);
-               found->involved( resource.process);
-            }
-            else 
-            {
-               log::line( verbose::log, "involved to new resource: ", resource);
+               log::line( verbose::log, "new resource involved: ", resource);
                resources.emplace_back( resource);
             }
-               
          }
 
          Transaction::Resource::Stage Transaction::stage() const

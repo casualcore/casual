@@ -251,16 +251,11 @@ namespace casual
                };
 
                inline Resource( id_type id) : id( id) {}
-               inline Resource( common::transaction::resource::ID id) : id{ id.resource}, m_involved{ id.process} {}
 
                Resource( Resource&&) noexcept = default;
                Resource& operator = ( Resource&&) noexcept = default;
 
                id_type id;
-
-               //! all the _thread of controls_ that are involved with this RM and transaction 
-               inline const std::vector< common::strong::process::id>& involved() const noexcept { return m_involved;};
-               void involved( common::strong::process::id thread_of_control);
 
                Stage stage = Stage::involved;
                Result result = Result::xa_OK;
@@ -300,9 +295,6 @@ namespace casual
                inline friend bool operator == ( const Resource& lhs, id_type id) { return lhs.id == id; }
 
                inline friend std::ostream& operator << ( std::ostream& out, const Resource& value) { return out << value.id; }
-
-            private:
-               std::vector< common::strong::process::id> m_involved;
             };
 
 
@@ -316,8 +308,8 @@ namespace casual
             //! handle-implementations.
             const handle::implementation::Interface* implementation = nullptr;
 
-            std::vector< common::transaction::resource::ID> involved() const;
-            void involved( common::transaction::resource::ID resource);
+            std::vector< common::strong::resource::id> involved() const;
+            void involved( common::strong::resource::id resource);
 
             template< typename R> 
             void involved( R range)
