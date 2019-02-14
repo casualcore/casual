@@ -354,7 +354,7 @@ namespace casual
                {
                   if( transaction.trid)
                   {
-                     log::line( log::category::error, "pending replies associated with transaction - action: transaction state to rollback only");
+                     log::line( log::category::error, "pending replies associated with transaction - action: discard pending and set transaction state to rollback only");
                      log::line( log::category::transaction, transaction);
 
                      transaction.state = Transaction::State::rollback;
@@ -362,12 +362,9 @@ namespace casual
                   }
 
                   // Discard pending
-                  /*
-                  for( const auto& correlation : transaction.correlations())
-                  {
-                     service::call::Context::instance().cancel( descriptor);
-                  }
-                  */
+                  algorithm::for_each( transaction.correlations(), []( const auto& correlation){ 
+                     communication::ipc::inbound::device().discard( correlation);
+                  });
                }
             };
 
@@ -421,15 +418,11 @@ namespace casual
                return transaction.trid.owner() != process;
             });
 
-
-
-
             // take care of owned transactions
             {
                auto owner = std::get< 1>( owner_split);
                algorithm::for_each( owner, trans_commit_rollback);
             }
-
 
             // Take care of not-owned transaction(s)
             {
