@@ -215,17 +215,20 @@ namespace casual
                } // pop
 
 
-
-               Transaction startTransaction( const platform::time::point::type& start, TRANSACTION_TIMEOUT timeout)
+               namespace start
                {
+                  Transaction transaction( const platform::time::point::type& start, TRANSACTION_TIMEOUT timeout)
+                  {
+                     Transaction transaction{ common::transaction::ID::create( process::handle())};
+                     transaction.state = Transaction::State::active;
+                     transaction.timout.start = start;
+                     transaction.timout.timeout = std::chrono::seconds{ timeout};
 
-                  Transaction transaction{ transaction::ID::create( process::handle())};
-                  transaction.state = Transaction::State::active;
-                  transaction.timout.start = start;
-                  transaction.timout.timeout = std::chrono::seconds{ timeout};
+                     return transaction;
+                  }
+               } // start
 
-                  return transaction;
-               }
+
 
                namespace resource
                {
@@ -284,7 +287,7 @@ namespace casual
          {
             Trace trace{ "transaction::Context::start"};
 
-            auto transaction = local::startTransaction( start, m_timeout);
+            auto transaction = local::start::transaction( start, m_timeout);
 
             resources_start( transaction, flag::xa::Flag::no_flags);
 
@@ -495,18 +498,27 @@ namespace casual
             // XA-spec - RM can't reg when it's already regged... Why?
             // We'll interpret this as the transaction has been suspended, and
             // then resumed.
-            if( common::algorithm::find( transaction.resources, rmid))
+            if( ! transaction.associate_dynamic( rmid))
             {
                throw exception::ax::exception{ code::ax::resume};
             }
-
-            transaction.resources.push_back( rmid);
 
             // Let the resource know the xid (if any)
             *xid = transaction.trid.xid;
 
             if( transaction)
             {
+               // if the rm is already involved vi use join directly
+               if( algorithm::find( transaction.involved(), rmid))
+                  return code::ax::join;
+
+               transaction.involve( rmid);
+
+               // if local, we know that this rm has never been associated with this transaction.
+               if( transaction.local())
+                  return code::ax::ok;
+
+               // we need to correlate with TM
                auto involved = local::resource::involved( transaction.trid, { rmid});
                return algorithm::find( involved, rmid).empty() ? code::ax::ok : code::ax::join;
             }
@@ -521,18 +533,9 @@ namespace casual
             auto&& transaction = current();
 
             // RM:s can only unregister if we're outside global
-            // transactions
-            if( ! transaction.trid)
-            {
-               auto found = common::algorithm::find( transaction.resources, rmid);
-
-               if( found)
-               {
-                  transaction.resources.erase( found.begin());
-                  return;
-               }
-            }
-            throw exception::ax::exception{ code::ax::protocol};
+            // transactions, and the rm is registered before
+            if( transaction.trid || ! transaction.disassociate_dynamic( rmid))
+               throw exception::ax::exception{ code::ax::protocol};
          }
 
 
@@ -553,12 +556,12 @@ namespace casual
                resources_end( transaction, flag::xa::Flag::suspend);
 
             }
-            else if( ! transaction.resources.empty())
+            else if( ! transaction.dynamic().empty())
             {
-               throw exception::tx::Outside{ "begin - resources not done with work outside global transaction"}; //, exception::make_nip( "resources", range::make( transaction.resources))};
+               throw exception::tx::Outside{ "begin - dynamic resources not done with work outside global transaction"};
             }
 
-            auto trans = local::startTransaction( platform::time::clock::type::now(), m_timeout);
+            auto trans = local::start::transaction( platform::time::clock::type::now(), m_timeout);
 
             resources_start( trans, flag::xa::Flag::no_flags);
 
@@ -630,7 +633,7 @@ namespace casual
             resources_end( transaction, flag::xa::Flag::success);
 
 
-            if( transaction.local() && transaction.resources.size() + m_resources.fixed.size() <= 1)
+            if( transaction.local() && transaction.involved().size() + m_resources.fixed.size() <= 1)
             {
                Trace trace{ "transaction::Context::commit - local"};
 
@@ -638,8 +641,8 @@ namespace casual
                // We do the commit directly against the resource (if any).
                // TODO: we could do a two-phase-commit local if the transaction is 'local'
 
-               if( ! transaction.resources.empty())
-                  return resource_commit( transaction.resources.front(), transaction, flag::xa::Flag::one_phase);
+               if( ! transaction.involved().empty())
+                  return resource_commit( transaction.involved().front(), transaction, flag::xa::Flag::one_phase);
 
                if( ! m_resources.fixed.empty())
                   return resource_commit( m_resources.fixed.front().id(), transaction, flag::xa::Flag::one_phase);
@@ -654,6 +657,7 @@ namespace casual
                message::transaction::commit::Request request;
                request.trid = transaction.trid;
                request.process = process;
+               request.involved = transaction.involved();
 
                // Get reply
                {
@@ -734,8 +738,7 @@ namespace casual
             message::transaction::rollback::Request request;
             request.trid = transaction.trid;
             request.process = process;
-            //request.resources = resources();
-            algorithm::append( transaction.resources, request.involved);
+            algorithm::append( transaction.involved(), request.involved);
 
             auto reply = communication::ipc::call( communication::instance::outbound::transaction::manager::device(), request);
 
@@ -858,39 +861,26 @@ namespace casual
             Trace trace{ "transaction::Context::resume"};
 
             if( xid == nullptr)
-            {
                throw exception::tx::Argument{ "argument xid is null"};
-            }
 
             if( transaction::null( *xid))
-            {
                throw exception::tx::Argument{ "attempt to resume a 'null xid'"};
-            }
 
             auto& ongoing = current();
 
             if( ongoing.trid)
-            {
                throw exception::tx::Protocol{ "active transaction"};
-            }
 
-            if( ! ongoing.resources.empty())
-            {
-               auto& global = ongoing;
-               throw exception::tx::Outside{ string::compose( "ongoing work outside global transaction: ", global)};
-            }
-
-
+            if( ! ongoing.dynamic().empty())
+               throw exception::tx::Outside{ string::compose( "ongoing work outside global transaction: ", ongoing)};
 
             auto found = algorithm::find( m_transactions, *xid);
 
             if( ! found)
-            {
                throw exception::tx::Argument{ "transaction not known"};
-            }
 
 
-            // All precondition is met, let's set wanted transaction as current
+            // All precondition are met, let's set wanted transaction as current
             {
                // Tell the RM:s to resume
                resources_start( *found, flag::xa::Flag::resume);
@@ -903,41 +893,62 @@ namespace casual
             }
          }
 
-
-         void Context::resources_start( const Transaction& transaction, flag::xa::Flags flags)
+         void Context::resources_start( Transaction& transaction, flag::xa::Flags flags)
          {
             Trace trace{ "transaction::Context::resources_start"};
 
-            if( transaction)
+            if( ! transaction)
+               return; // nothing to do
+
+
+            auto deduce_flag = []( auto id, auto flags, auto& involved)
             {
-               log::line( log::category::transaction, "transaction: ", transaction, " - flags: ", flags);
+               if( ! flags.exist( flag::xa::Flag::resume))
+                  return algorithm::find( involved, id).empty() ? flags : flags | flag::xa::Flag::join;
 
+               return flags;
+            };
 
-               auto involved = algorithm::transform( m_resources.fixed, []( auto& r){ return r.id();});
+            auto transform_rmid = []( auto& resource){ return resource.id();};
+
+            if( transaction.local())
+            {
+               log::line( log::category::transaction, "local transaction: ", transaction, " - flags: ", flags);
                
-               involved = local::resource::involved( transaction.trid, std::move( involved));
-
-
-               // We call start only on static resources
-               for( auto& r : m_resources.fixed)
+               // local transaction, we don't need to coralate with TM
+               auto resource_start = [&]( auto& resource)
                {
-                  auto deduce_flag = []( auto id, auto flags, auto& involved)
-                  {
-                     if( ! flags.exist( flag::xa::Flag::resume))
-                        return algorithm::find( involved, id).empty() ? flags : flags | flag::xa::Flag::join;
-
-                     return flags;
-                  };
-
-                  auto result = r.start( transaction.trid, deduce_flag( r.id(), flags, involved));
+                  auto result = resource.start( transaction.trid, deduce_flag( resource.id(), flags, transaction.involved())); 
                   if( result != code::xa::ok)
-                  {
-                     log::line( code::stream( result), "failed to start resource: ", r, " - error: ", result);
-                  }
+                     log::line( code::stream( result), "failed to start resource: ", resource, " - error: ", result);
                };
 
-               // TODO: throw if some of the rm:s report an error?
+               algorithm::for_each( m_resources.fixed, resource_start);
             }
+            else 
+            {
+               log::line( log::category::transaction, "distributed transaction: ", transaction, " - flags: ", flags);
+
+               // coordinate with TM
+               auto involved = local::resource::involved( transaction.trid, 
+                  algorithm::transform( m_resources.fixed, transform_rmid));
+               
+               auto resource_start = [&]( auto& resource)
+               {
+                  auto result = resource.start( transaction.trid, deduce_flag( resource.id(), flags, involved));
+                  if( result != code::xa::ok)  
+                     log::line( code::stream( result), "failed to start resource: ", resource, " - error: ", result);
+               };
+
+               algorithm::for_each( m_resources.fixed, resource_start);
+            }
+
+            // involve all static resources
+            transaction.involve( algorithm::transform( m_resources.fixed, transform_rmid));
+
+
+            // TODO: throw if some of the rm:s report an error?
+            
          }
 
          void Context::resources_end( const Transaction& transaction, flag::xa::Flags flags)

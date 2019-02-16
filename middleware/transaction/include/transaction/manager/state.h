@@ -199,9 +199,23 @@ namespace casual
             } // pending
          } // state
 
+         class State;
 
          struct Transaction
          {
+            //! Holds specific implementations for the current transaction. 
+            //! That is, depending on where the task comes from and if there
+            //! are some optimizations there are different semantics for 
+            //! the transaction.
+            struct Dispatch
+            {
+               std::function< bool( State&, common::message::transaction::resource::prepare::Reply&, Transaction&)> prepare;
+               std::function< bool( State&, common::message::transaction::resource::commit::Reply&, Transaction&)> commit;
+               std::function< bool( State&, common::message::transaction::resource::rollback::Reply&, Transaction&)> rollback;
+
+               inline explicit operator bool () { return static_cast< bool>( prepare);}
+            };
+
             struct Resource
             {
                using id_type = state::resource::id::type;
@@ -260,6 +274,7 @@ namespace casual
                Stage stage = Stage::involved;
                Result result = Result::xa_OK;
 
+
                static Result convert( common::code::xa value);
                static common::code::xa convert( Result value);
 
@@ -306,7 +321,7 @@ namespace casual
 
             //! Depending on context the transaction will have different
             //! handle-implementations.
-            const handle::implementation::Interface* implementation = nullptr;
+            Dispatch implementation;
 
             std::vector< common::strong::resource::id> involved() const;
             void involved( common::strong::resource::id resource);
@@ -398,6 +413,7 @@ namespace casual
             void operator () ( const common::process::lifetime::Exit& death);
 
             state::resource::Proxy& get_resource( state::resource::id::type rm);
+            state::resource::Proxy& get_resource( const std::string& name);
             state::resource::Proxy::Instance& get_instance( state::resource::id::type rm, common::strong::process::id pid);
 
             bool remove_instance( common::strong::process::id pid);

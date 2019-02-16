@@ -35,7 +35,7 @@ namespace casual
                   void operator () ( state::resource::Proxy& proxy);
                };
 
-               std::vector< admin::resource::Proxy> insances( State& state, std::vector< admin::update::Instances> instances);
+               std::vector< admin::resource::Proxy> instances( State& state, std::vector< admin::scale::Instances> instances);
 
 
                bool request( State& state, state::pending::Request& message);

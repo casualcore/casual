@@ -15,44 +15,6 @@ namespace casual
    namespace common
    {
 
-/*
-      TEST( casual_common_transaction_id, ostream)
-      {
-         common::unittest::Trace trace;
-
-         const Uuid gtrid = uuid::make();
-
-         transaction::ID id{ gtrid, gtrid, { strong::process::id{}, strong::ipc::id{}}};
-
-         std::ostringstream stream;
-         stream << id;
-
-         std::ostringstream expected;
-         expected << gtrid << ':' << gtrid << ':' << transaction::ID::cCasual << ":0:0";
-
-
-         EXPECT_TRUE( stream.str() == expected.str()) << "stream: " << stream.str() << '\n' << "expected: " << expected.str() << '\n';
-      }
-
-      TEST( casual_common_transaction_id, generic_string)
-      {
-         common::unittest::Trace trace;
-
-         transaction::ID id{ uuid::make(), uuid::make(), {  strong::process::id{}, strong::ipc::id{}}};
-
-         std::ostringstream stream;
-         stream << id;
-
-         auto trid = common::string::split( stream.str(), ':');
-
-         ASSERT_TRUE( trid.size() == 5);
-         EXPECT_TRUE( trid[ 0].size() == 32);
-         EXPECT_TRUE( trid[ 1].size() == 32);
-
-         EXPECT_TRUE( trid[ 3].size() == 1);
-         EXPECT_TRUE( trid[ 4].size() == 1);
-      }
-*/
       TEST( casual_common_transaction_id, uuid_constructor)
       {
          common::unittest::Trace trace;

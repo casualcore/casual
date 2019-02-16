@@ -43,16 +43,16 @@ namespace casual
                      return protocol.finalize();
                   }
 
-                  namespace update
+                  namespace scale
                   {
                      common::service::invoke::Result instances( common::service::invoke::Parameter&& parameter, manager::State& state)
                      {
                         auto protocol = serviceframework::service::protocol::deduce( std::move( parameter));
 
-                        std::vector< admin::update::Instances> instances;
+                        std::vector< admin::scale::Instances> instances;
                         protocol >> CASUAL_MAKE_NVP( instances);
 
-                        auto result = serviceframework::service::user( protocol, &action::resource::insances, state, std::move( instances));
+                        auto result = serviceframework::service::user( protocol, &action::resource::instances, state, std::move( instances));
 
                         protocol << CASUAL_MAKE_NVP( result);
                         return protocol.finalize();
@@ -71,8 +71,8 @@ namespace casual
                         common::service::transaction::Type::none,
                         common::service::category::admin()
                      },
-                     { service::name::update::instances(),
-                        std::bind( &local::update::instances, std::placeholders::_1, std::ref( state)),
+                     { service::name::scale::instances(),
+                        std::bind( &local::scale::instances, std::placeholders::_1, std::ref( state)),
                         common::service::transaction::Type::none,
                         common::service::category::admin()
                      }

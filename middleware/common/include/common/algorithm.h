@@ -687,11 +687,18 @@ namespace casual
          }
          //! @}
 
+
+         //! push_back `value` to `output` if it's not allready present
+         //! @return true if push_back
          template< typename T, typename Out> 
-         void push_back_unique( const T& value, Out& output)
+         bool push_back_unique( const T& value, Out& output)
          {
             if( ! algorithm::find( output, value))
+            {
                output.push_back( value);
+               return true;
+            }
+            return false;
          }
 
          template< typename R, typename Out> 

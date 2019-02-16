@@ -176,11 +176,11 @@ namespace casual
                {
                   Trace trace{ "transaction manager resource configuration"};
 
-                  auto transform_resource = []( const auto& r){
-
+                  auto transform_resource = []( const auto& r)
+                  {
                      state::resource::Proxy proxy{ state::resource::Proxy::generate_id{}};
 
-                     proxy.name = r.name;
+                     proxy.name = common::coalesce( r.name, ".rm-" + std::to_string( proxy.id.value()));
                      proxy.concurency = r.instances;
                      proxy.key = r.key;
                      proxy.openinfo = r.openinfo;
@@ -202,10 +202,10 @@ namespace casual
                   };
 
                   common::algorithm::transform_if(
-                        configuration.domain.transaction.resources,
-                        state.resources,
-                        transform_resource,
-                        validate);
+                     configuration.domain.transaction.resources,
+                     state.resources,
+                     transform_resource,
+                     validate);
 
                }
             }
@@ -415,9 +415,18 @@ namespace casual
             auto found = common::algorithm::find( resources, rm);
 
             if( ! found)
-            {
                throw common::exception::system::invalid::Argument{ "failed to find resource"};
-            }
+
+            return *found;
+         }
+
+         state::resource::Proxy& State::get_resource( const std::string& name)
+         {
+            auto found = common::algorithm::find_if( resources, [&name]( auto& r){ return r.name == name;});
+
+            if( ! found)
+               throw common::exception::system::invalid::Argument{ "failed to find resource"};
+
             return *found;
          }
 

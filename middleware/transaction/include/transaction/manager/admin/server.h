@@ -26,9 +26,9 @@ namespace casual
                {
                   constexpr auto state() { return ".casual/transaction/state";}
 
-                  namespace update
+                  namespace scale
                   {
-                     constexpr auto instances() { return ".casual/transaction/update/instances";}
+                     constexpr auto instances() { return ".casual/transaction/scale/instances";}
                   } // update
 
 

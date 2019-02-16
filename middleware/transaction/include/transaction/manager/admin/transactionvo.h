@@ -249,21 +249,21 @@ namespace casual
                })
             };
 
-            namespace update
+            namespace scale
             {
                struct Instances
                {
-                  resource::id_type id;
+                  std::string name;
                   serviceframework::platform::size::type instances;
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
                   {
-                     archive & CASUAL_MAKE_NVP( id);
+                     archive & CASUAL_MAKE_NVP( name);
                      archive & CASUAL_MAKE_NVP( instances);
                   })
 
-                  inline friend bool operator == ( const Instances& lhs, const Instances& rhs) { return lhs.id == rhs.id;}
-                  inline friend bool operator < ( const Instances& lhs, const Instances& rhs) { return lhs.id < rhs.id;}
+                  inline friend bool operator == ( const Instances& lhs, const Instances& rhs) { return lhs.name == rhs.name;}
+                  inline friend bool operator < ( const Instances& lhs, const Instances& rhs) { return lhs.name < rhs.name;}
                };
 
 

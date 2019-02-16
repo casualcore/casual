@@ -133,7 +133,7 @@ namespace casual
                   }
                }
 
-               std::vector< admin::resource::Proxy> insances( State& state, std::vector< admin::update::Instances> instances)
+               std::vector< admin::resource::Proxy> instances( State& state, std::vector< admin::scale::Instances> instances)
                {
                   std::vector< admin::resource::Proxy> result;
 
@@ -142,7 +142,7 @@ namespace casual
                   {
                      try
                      {
-                        auto& resource = state.get_resource( directive.id);
+                        auto& resource = state.get_resource( directive.name);
                         resource.concurency = directive.instances;
 
                         Instances{ state}( resource);

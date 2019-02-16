@@ -22,30 +22,46 @@ namespace casual
          Transaction::Transaction( ID trid) : trid( std::move( trid)) {}
 
 
-
          Transaction::operator bool() const { return static_cast< bool>( trid);}
 
 
          void Transaction::associate( const Uuid& correlation)
          {
+            m_external = true;
             m_pending.push_back( correlation);
-            m_local = false;
          }
 
          void Transaction::replied( const Uuid& correlation)
          {
-            m_pending.erase(
-                  std::remove( std::begin( m_pending), std::end( m_pending), correlation),
-                  std::end( m_pending)
-            );
+            algorithm::trim( m_pending, algorithm::remove( m_pending, correlation));
+         }
+
+         void Transaction::involve( strong::resource::id id)
+         {
+            algorithm::push_back_unique( id, m_involved);
+         }
+
+         bool Transaction::associate_dynamic( strong::resource::id id)
+         {
+            return algorithm::push_back_unique( id, m_dynamic); 
+         }
+
+         bool Transaction::disassociate_dynamic( strong::resource::id id)
+         {
+            auto found = common::algorithm::find( m_dynamic, id);
+
+            if( found)
+            {
+               m_dynamic.erase( std::begin( found));
+               return true;
+            }
+            return false;
          }
 
          bool Transaction::pending() const
          {
             return ! m_pending.empty();
          }
-
-
 
          bool Transaction::associated( const Uuid& correlation) const
          {
@@ -59,12 +75,12 @@ namespace casual
 
          bool Transaction::local() const
          {
-            return m_local;
+            return trid.owner().pid == process::id() && ! m_external;
          }
 
          void Transaction::external()
          {
-            m_local = false;
+            m_external = true;
          }
 
          bool operator == ( const Transaction& lhs, const ID& rhs) { return lhs.trid == rhs;}
@@ -75,8 +91,9 @@ namespace casual
          {
             return out << "{trid: " << rhs.trid << ", state: " << rhs.state <<
                   ", timeout: " << rhs.timout <<
-                  ", resources: " << range::make( rhs.resources) <<
-                  ", pending: " << range::make( rhs.m_pending) << "}";
+                  ", involved: " << rhs.m_involved <<
+                  ", dynamic: " << rhs.m_dynamic <<
+                  ", pending: " << rhs.m_pending << "}";
          }
 
       } // transaction
