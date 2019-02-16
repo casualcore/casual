@@ -858,7 +858,7 @@ namespace casual
                   });
 
                   // add new involved resources, if any.
-                  transaction.involved( std::get< 0>( split));
+                  transaction.involve( std::get< 0>( split));
 
                   // if we've got some resources that we don't know about.
                   // TODO: should we set the transaction to rollback only?
@@ -1082,6 +1082,9 @@ namespace casual
 
                auto location = local::transaction::find_or_add( m_state, message);
                auto& transaction = *location;
+
+               // caller might have _local_ resources that hasn't been involved earlier
+               transaction.involve( message.involved);
                
                switch( transaction.stage())
                {
@@ -1172,6 +1175,9 @@ namespace casual
 
                auto location = local::transaction::find_or_add( m_state, message);
                auto& transaction = *location;
+
+               // caller might have _local_ resources that hasn't been involved earlier
+               transaction.involve( message.involved);
 
                // Local normal rollback phase
                transaction.implementation = local::dispatch::localized::get();

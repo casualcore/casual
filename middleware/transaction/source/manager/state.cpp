@@ -301,7 +301,7 @@ namespace casual
             return common::algorithm::transform( resources, []( auto& r){ return r.id;});
          }
 
-         void Transaction::involved( common::strong::resource::id resource)
+         void Transaction::involve( common::strong::resource::id resource)
          {
             if( ! algorithm::find( resources, resource))
             {

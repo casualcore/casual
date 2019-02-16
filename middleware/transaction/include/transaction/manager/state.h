@@ -324,13 +324,13 @@ namespace casual
             Dispatch implementation;
 
             std::vector< common::strong::resource::id> involved() const;
-            void involved( common::strong::resource::id resource);
+            void involve( common::strong::resource::id resource);
 
             template< typename R> 
-            void involved( R range)
+            auto involve( R&& range) -> std::enable_if_t< common::traits::is::iterable< R>::value>
             {
                for( auto r : range)
-                  involved( r);
+                  involve( r);
             }
 
 

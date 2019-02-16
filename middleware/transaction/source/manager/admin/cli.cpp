@@ -363,19 +363,9 @@ namespace casual
                         if( help)
                            return { "rm-id", "# instances"};
 
-                        auto resources = call::state().resources;
-
                         if( values.size() % 2 == 0)
-                        {
-                           return algorithm::transform( resources, []( auto& r){ return r.name;});
-                        }
-                        else
-                        {
-
-
-                        }
-
-                                                   
+                           return algorithm::transform( call::state().resources, []( auto& r){ return r.name;});
+    
                         return std::vector< std::string>{ common::argument::reserved::name::suggestions::value()}; 
                      };
                   } // complete
