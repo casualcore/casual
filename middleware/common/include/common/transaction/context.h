@@ -79,6 +79,11 @@ namespace casual
             //! Start a new transaction
             void start( const platform::time::point::type& start);
 
+            //! @ingroup service-start
+            //!
+            //! branch transaction, if null-xid, we start a new one
+            void branch( const transaction::ID& trid);
+
             //! trid server is invoked with
             //! @{
             transaction::ID caller;

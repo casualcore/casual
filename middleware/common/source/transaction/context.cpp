@@ -219,7 +219,7 @@ namespace casual
                {
                   Transaction transaction( const platform::time::point::type& start, TRANSACTION_TIMEOUT timeout)
                   {
-                     Transaction transaction{ common::transaction::ID::create( process::handle())};
+                     Transaction transaction{ common::transaction::id::create( process::handle())};
                      transaction.state = Transaction::State::active;
                      transaction.timout.start = start;
                      transaction.timout.timeout = std::chrono::seconds{ timeout};
@@ -228,11 +228,8 @@ namespace casual
                   }
                } // start
 
-
-
                namespace resource
                {
-
                   auto involved( const transaction::ID& trid, std::vector< strong::resource::id> resources)
                   {
                      Trace trace{ "transaction::local::resource::involved"};
@@ -276,9 +273,7 @@ namespace casual
             Transaction transaction( trid);
 
             if( trid)
-            {
                resources_start( transaction, flag::xa::Flag::no_flags);
-            }
 
             m_transactions.push_back( std::move( transaction));
          }
@@ -292,6 +287,18 @@ namespace casual
             resources_start( transaction, flag::xa::Flag::no_flags);
 
             m_transactions.push_back( std::move( transaction));
+         }
+
+         void Context::branch( const transaction::ID& trid)
+         {
+            Trace trace{ "transaction::Context::branch"};
+
+            m_transactions.emplace_back( id::branch( trid));
+
+            auto& transaction = m_transactions.back();
+
+            if( transaction)
+               resources_start( transaction, flag::xa::Flag::no_flags);
          }
 
 
@@ -838,7 +845,7 @@ namespace casual
 
             auto& ongoing = current();
 
-            if( transaction::null( ongoing.trid))
+            if( id::null( ongoing.trid))
             {
                throw exception::tx::Protocol{ "attempt to suspend a null xid"};
             }
@@ -863,7 +870,7 @@ namespace casual
             if( xid == nullptr)
                throw exception::tx::Argument{ "argument xid is null"};
 
-            if( transaction::null( *xid))
+            if( id::null( *xid))
                throw exception::tx::Argument{ "attempt to resume a 'null xid'"};
 
             auto& ongoing = current();

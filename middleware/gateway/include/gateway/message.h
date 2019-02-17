@@ -35,12 +35,12 @@ void casual_marshal_value( const XID& value, M& marshler)
 {
    marshler << value.formatID;
 
-   if( ! casual::common::transaction::null( value))
+   if( ! casual::common::transaction::id::null( value))
    {
       marshler << value.gtrid_length;
       marshler << value.bqual_length;
 
-      marshler.append( casual::common::transaction::data( value));
+      marshler.append( casual::common::transaction::id::range::data( value));
    }
 }
 
@@ -49,7 +49,7 @@ void casual_unmarshal_value( XID& value, M& unmarshler)
 {
    unmarshler >> value.formatID;
 
-   if( ! casual::common::transaction::null( value))
+   if( ! casual::common::transaction::id::null( value))
    {
       unmarshler >> value.gtrid_length;
       unmarshler >> value.bqual_length;

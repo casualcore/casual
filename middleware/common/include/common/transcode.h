@@ -215,6 +215,13 @@ namespace casual
                return out;
             }
 
+            template< typename R>
+            auto encode( std::ostream& out, R&& range) -> 
+               std::enable_if_t< traits::is::binary::like< R>::value, std::ostream&>
+            {
+               return encode( out, std::begin( range), std::end( range));
+            }
+
             //!
             //! encode binary @p container to hex-representation
             //!

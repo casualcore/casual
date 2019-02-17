@@ -12,6 +12,7 @@
 
 #include "common/platform.h"
 #include "common/view/string.h"
+#include "common/range.h"
 
 #include <string>
 
@@ -40,18 +41,14 @@ namespace casual
          inline const uuid_type& get() const { return m_uuid;}
          inline uuid_type& get() { return m_uuid;}
 
-         //!
          //! Copy to native uuid
          //!
          //! @param uuid target to copy to.
-         //!
          void copy( uuid_type& uuid) const;
 
          explicit operator bool() const noexcept;
 
          bool empty() const;
-
-
 
 
          friend std::ostream& operator << ( std::ostream& out, const Uuid& uuid);
@@ -86,6 +83,8 @@ namespace casual
          std::string string( const Uuid& uuid);
 
          Uuid make();
+
+         inline auto range( const Uuid& uuid) { return range::make( uuid.get());}
 
          const Uuid& empty();
          bool empty( const Uuid& uuid);

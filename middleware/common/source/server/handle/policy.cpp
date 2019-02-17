@@ -188,13 +188,15 @@ namespace casual
                               case service::transaction::Type::automatic:
                               {
                                  if( message.trid)
-                                 {
                                     transaction::Context::instance().join( message.trid);
-                                 }
                                  else
-                                 {
                                     transaction::Context::instance().start( now);
-                                 }
+
+                                 break;
+                              }
+                              case service::transaction::Type::branch:
+                              {
+
                                  break;
                               }
                               case service::transaction::Type::join:

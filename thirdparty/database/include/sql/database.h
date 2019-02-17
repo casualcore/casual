@@ -31,6 +31,11 @@ namespace sql
 {
    namespace database
    {
+      namespace memory
+      {
+         constexpr auto file = ":memory:";
+      } // memory
+      
       namespace exception
       {
          struct Base : public casual::common::exception::system::invalid::Argument
@@ -436,18 +441,13 @@ namespace sql
             query( statement, std::forward< Params>( params)...).execute();
          }
 
-         //!
          //! @returns true if the table exists
-         //!
          bool table( const std::string& name)
          {
             return ! query( R"( SELECT * FROM sqlite_master WHERE type = 'table' AND name = ?; )", name).fetch().empty();
          }
 
-
-         //!
          //! @return last rowid
-         //!
          auto rowid() const -> decltype( sqlite3_last_insert_rowid( std::declval<sqlite3*>()))
          {
             return sqlite3_last_insert_rowid( m_handle.get());

@@ -108,38 +108,33 @@ namespace casual
 
                      auto transaction()
                      {
-                        struct format_global
-                        {
-                           std::string operator () ( const admin::Transaction& value) const { return value.trid.global; }
-                        };
+                        auto format_global = []( auto& value) { return value.global.id;};
 
-                        struct format_branch
-                        {
-                           std::string operator () ( const admin::Transaction& value) const { return value.trid.branch; }
-                        };
+                        auto format_branch = []( auto& value) { return value.branches.size();};
 
-                        struct format_owner
-                        {
-                           auto operator () ( const admin::Transaction& value) const { return value.trid.owner.pid;}
-                        };
+                        auto format_owner = []( auto& value){ return value.global.owner.pid;};
 
-                        auto format_state = []( const admin::Transaction& value){
+                        auto format_state = []( auto& value){
                            return common::string::compose( static_cast< common::code::xa>( value.state));
                         };
 
-                        struct format_resources
+                        auto format_resources = []( auto& value)
                         {
-                           std::string operator () ( const admin::Transaction& value)
-                           { std::ostringstream out;  out << common::range::make( value.resources); return out.str();}
+                           std::vector< resource::id_type> resources;
+                           
+                           for( auto& branch : value.branches)
+                           {
+                              algorithm::append( branch.resources, resources);
+                           }
+                           return common::string::compose( algorithm::unique( algorithm::sort( resources)));
                         };
 
-
                         return common::terminal::format::formatter< admin::Transaction>::construct(
-                           common::terminal::format::column( "global", format_global{}, common::terminal::color::yellow),
-                           common::terminal::format::column( "branch", format_branch{}, common::terminal::color::grey),
-                           common::terminal::format::column( "owner", format_owner{}, common::terminal::color::white, common::terminal::format::Align::right),
+                           common::terminal::format::column( "global", format_global, common::terminal::color::yellow),
+                           common::terminal::format::column( "branch", format_branch, common::terminal::color::grey),
+                           common::terminal::format::column( "owner", format_owner, common::terminal::color::white, common::terminal::format::Align::right),
                            common::terminal::format::column( "state", format_state, common::terminal::color::green, common::terminal::format::Align::left),
-                           common::terminal::format::column( "resources", format_resources{}, common::terminal::color::magenta, common::terminal::format::Align::left)
+                           common::terminal::format::column( "resources", format_resources, common::terminal::color::magenta, common::terminal::format::Align::left)
                         );
                      }
 

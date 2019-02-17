@@ -34,14 +34,9 @@ bool operator < ( const XID& lhs, const XID& rhs)
    return std::memcmp( &lhs, &rhs, sizeof( XID) - ( XIDDATASIZE - ( lhs.gtrid_length + lhs.bqual_length))) < 0;
 }
 
-bool operator != ( const XID& lhs, const XID& rhs)
-{
-   return ! ( lhs == rhs);
-}
-
 std::ostream& operator << ( std::ostream& out, const XID& xid)
 {
-   if( ! casual::common::transaction::null( xid))
+   if( ! casual::common::transaction::id::null( xid))
    {
       // TODO: hack to get rid of concurrent xid read/write in a
       // unittest environment - We should get rid of threads in unittest also...
@@ -134,33 +129,6 @@ namespace casual
             return *this;
          }
 
-
-         ID ID::create( const process::Handle& owner)
-         {
-            return { uuid::make(), uuid::make(), owner};
-         }
-
-         ID ID::create()
-         {
-            return { uuid::make(), uuid::make(), process::handle()};
-         }
-
-
-         ID ID::branch() const
-         {
-            ID result( *this);
-
-            if( result)
-            {
-               auto uuid = uuid::make();
-
-               algorithm::copy( uuid.get(), result.xid.data + result.xid.gtrid_length);
-            }
-            return result;
-         }
-
-
-
          bool ID::null() const
          {
             return xid.formatID == Format::null;
@@ -168,14 +136,7 @@ namespace casual
 
          ID::operator bool() const
          {
-            return ! transaction::null( xid);
-         }
-
-
-
-         xid_range_type ID::range() const
-         {
-            return data( xid);
+            return ! id::null( xid);
          }
 
 
@@ -188,8 +149,6 @@ namespace casual
          {
             m_owner = handle;
          }
-
-
 
          bool operator < ( const ID& lhs, const ID& rhs)
          {
@@ -216,49 +175,80 @@ namespace casual
             return out;
          }
 
-         xid_range_type global( const xid_type& xid)
+         namespace id
          {
-            return xid_range_type{ xid.data, xid.data + xid.gtrid_length};
-         }
+            ID create( const process::Handle& owner)
+            {
+               return { uuid::make(), uuid::make(), owner};
+            }
 
-         xid_range_type branch( const xid_type& xid)
-         {
-            return xid_range_type{ xid.data + xid.gtrid_length,
-                  xid.data + xid.gtrid_length + xid.bqual_length};
-         }
+            ID create()
+            {
+               return { uuid::make(), uuid::make(), process::handle()};
+            }
 
-         xid_range_type data( const xid_type& xid)
-         {
-            return xid_range_type{ xid.data, xid.data + xid.gtrid_length + xid.bqual_length};
-         }
+            bool null( const ID& id)
+            {
+               return null( id.xid);
+            }
 
-         bool null( const ID& id)
-         {
-            return null( id.xid);
-         }
+            bool null( const xid_type& id)
+            {
+               return id.formatID == ID::Format::null;
+            }
 
-         bool null( const xid_type& id)
-         {
-            return id.formatID == ID::Format::null;
-         }
+            ID branch( const ID& id)
+            {
+               if( id.null())
+                  return {};
 
-         xid_range_type data( const ID& id)
-         {
-            return data( id.xid);
-         }
+               ID result( id);
 
+               result.xid.formatID = ID::Format::branch;
 
-         xid_range_type global( const ID& id)
-         {
-            return global( id.xid);
-         }
+               auto uuid = uuid::make();
+               auto range = uuid::range( uuid);
 
-         xid_range_type branch( const ID& id)
-         {
-            return branch( id.xid);
-         }
+               algorithm::copy( range, result.xid.data + result.xid.gtrid_length);
+               result.xid.bqual_length = range.size();
+               
+               return result;
+            }
 
+            namespace range
+            {
+               range_type global( const xid_type& xid)
+               {
+                  return range_type{ xid.data, xid.data + xid.gtrid_length};
+               }
 
+               range_type branch( const xid_type& xid)
+               {
+                  return range_type{ xid.data + xid.gtrid_length,
+                        xid.data + xid.gtrid_length + xid.bqual_length};
+               }
+
+               range_type data( const xid_type& xid)
+               {
+                  return range_type{ xid.data, xid.data + xid.gtrid_length + xid.bqual_length};
+               }
+
+               range_type data( const ID& id)
+               {
+                  return data( id.xid);
+               }
+
+               range_type global( const ID& id)
+               {
+                  return global( id.xid);
+               }
+
+               range_type branch( const ID& id)
+               {
+                  return branch( id.xid);
+               }
+            } // range
+         } // id
       } // transaction
    } // common
 } // casual

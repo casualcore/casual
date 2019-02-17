@@ -8,6 +8,9 @@
 #pragma once
 
 
+#include "transaction/global.h"
+#include "transaction/manager/log.h"
+
 #include "common/platform.h"
 #include "common/message/transaction.h"
 #include "common/message/domain.h"
@@ -16,7 +19,7 @@
 
 #include "common/marshal/complete.h"
 
-#include "transaction/manager/log.h"
+
 
 #include "configuration/resource/property.h"
 
@@ -34,14 +37,6 @@ namespace casual
       namespace manager
       {
          using size_type = common::platform::size::type;
-
-         namespace handle
-         {
-            namespace implementation
-            {
-               struct Interface;
-            } // implementation
-         } // handle
 
          class State;
 
@@ -199,7 +194,6 @@ namespace casual
             } // pending
          } // state
 
-         class State;
 
          struct Transaction
          {
@@ -233,6 +227,10 @@ namespace casual
                   error,
                   not_involved,
                };
+
+               friend std::ostream& operator << ( std::ostream& out, Stage value);
+
+               friend Stage operator + ( Stage lhs, Stage rhs) { return std::max( lhs, rhs);}
 
                //! Used to rank the return codes from the resources, the lower the enum value (higher up),
                //! the more severe...
@@ -309,7 +307,35 @@ namespace casual
                inline friend bool operator == ( const Resource& lhs, const Resource& rhs) { return lhs.id == rhs.id; }
                inline friend bool operator == ( const Resource& lhs, id_type id) { return lhs.id == id; }
 
-               inline friend std::ostream& operator << ( std::ostream& out, const Resource& value) { return out << value.id; }
+               friend std::ostream& operator << ( std::ostream& out, const Resource& value);
+            };
+
+            struct Branch
+            {
+               Branch( const common::transaction::ID& trid) : trid( trid) {}
+
+               std::vector< common::strong::resource::id> involved() const;
+               void involve( common::strong::resource::id resource);
+
+               template< typename R> 
+               auto involve( R&& range) -> std::enable_if_t< common::traits::is::iterable< R>::value>
+               {
+                  for( auto r : range)
+                     involve( r);
+               }
+
+               //! @return the least progressed stage of all resources associated with this branch
+               Resource::Stage stage() const;
+
+               //! @return the most severe result from all the resources
+               Resource::Result results() const;
+
+               common::transaction::ID trid;
+               std::vector< Resource> resources;
+
+               inline friend bool operator == ( const Branch& lhs, const common::transaction::ID& rhs) { return lhs.trid == rhs;}
+
+               friend std::ostream& operator << ( std::ostream& out, const Branch& value);
             };
 
 
@@ -317,25 +343,24 @@ namespace casual
             Transaction( Transaction&&) = default;
             Transaction& operator = ( Transaction&&) = default;
 
-            Transaction( common::transaction::ID trid) : trid( std::move( trid)) {}
+            inline Transaction( const common::transaction::ID& trid) : global( trid)
+            {
+               branches.emplace_back( trid);
+            }
+
+            inline const common::process::Handle& owner() const { return branches.at( 0).trid.owner();}
+
+            common::platform::size::type resource_count() const noexcept;
+
+            //! the global part of the distributed transaction id
+            global::ID global;
+
+            //! 1..* branches of this global transaction
+            std::vector< Branch> branches;
 
             //! Depending on context the transaction will have different
             //! handle-implementations.
             Dispatch implementation;
-
-            std::vector< common::strong::resource::id> involved() const;
-            void involve( common::strong::resource::id resource);
-
-            template< typename R> 
-            auto involve( R&& range) -> std::enable_if_t< common::traits::is::iterable< R>::value>
-            {
-               for( auto r : range)
-                  involve( r);
-            }
-
-
-            common::transaction::ID trid;
-            std::vector< Resource> resources;
 
             common::platform::time::point::type started;
             common::platform::time::point::type deadline;
@@ -347,13 +372,14 @@ namespace casual
             //! and what RM id that domain act as.
             state::resource::id::type resource;
             
-
+            //! @return the 
             Resource::Stage stage() const;
 
-            //! @return the most severe result from the resources
+            //! @return the most severe result from all the resources
+            //! in all branches
             common::code::xa results() const;
 
-            inline friend bool operator == ( const Transaction& lhs, const common::transaction::ID& trid) { return lhs.trid == trid;}
+            inline friend bool operator == ( const Transaction& lhs, const global::ID& rhs) { return lhs.global == rhs;}
             friend std::ostream& operator << ( std::ostream& out, const Transaction& value);
          };
 

@@ -220,7 +220,7 @@ resources:
       } // local
 
 
-      TEST( casual_transaction_manager, shutdown)
+      TEST( transaction_manager, shutdown)
       {
          common::unittest::Trace trace;
 
@@ -229,7 +229,7 @@ resources:
          });
       }
 
-      TEST( casual_transaction_manager, one_non_existent_RM_key__expect_boot)
+      TEST( transaction_manager, one_non_existent_RM_key__expect_boot)
       {
          common::unittest::Trace trace;
 
@@ -242,7 +242,7 @@ resources:
          });
       }
 
-      TEST( casual_transaction_manager, non_existent_RM_proxy___expect_boot)
+      TEST( transaction_manager, non_existent_RM_proxy___expect_boot)
       {
          common::unittest::Trace trace;
 
@@ -263,7 +263,7 @@ resources:
       }
 
 
-      TEST( casual_transaction_manager, one_RM_xa_open__error___expect_boot)
+      TEST( transaction_manager, one_RM_xa_open__error___expect_boot)
       {
          common::unittest::Trace trace;
 
@@ -277,7 +277,7 @@ resources:
       }
 
 
-      TEST( casual_transaction_manager, resource_lookup_request)
+      TEST( transaction_manager, resource_lookup_request)
       {
          common::unittest::Trace trace;
 
@@ -298,7 +298,7 @@ resources:
       }
 
 
-      TEST( casual_transaction_manager, begin_transaction)
+      TEST( transaction_manager, begin_transaction)
       {
          common::unittest::Trace trace;
 
@@ -314,7 +314,7 @@ resources:
       }
 
 
-      TEST( casual_transaction_manager, commit_transaction__expect_ok__no_resource_roundtrips)
+      TEST( transaction_manager, commit_transaction__expect_ok__no_resource_roundtrips)
       {
          common::unittest::Trace trace;
 
@@ -339,7 +339,7 @@ resources:
       }
 
 
-      TEST( casual_transaction_manager, begin_commit_transaction__1_resources_involved__expect_one_phase_commit_optimization)
+      TEST( transaction_manager, begin_commit_transaction__1_resources_involved__expect_one_phase_commit_optimization)
       {
          common::unittest::Trace trace;
 
@@ -380,7 +380,7 @@ resources:
          EXPECT_TRUE( rm1.metrics.resource.count == 1) << "rm: " << rm1;
       }
 
-      TEST( casual_transaction_manager, begin_commit_transaction__1_resources_involved__2_times___expect_one_phase_commit_optimization)
+      TEST( transaction_manager, begin_commit_transaction__1_resources_involved__2_times___expect_one_phase_commit_optimization)
       {
          common::unittest::Trace trace;
 
@@ -444,7 +444,7 @@ resources:
          } // <unnamed>
       } // local
 
-      TEST( casual_transaction_manager, begin_commit_transaction__1_resources_involved__xa_XA_RBDEADLOCK___expect__TX_HAZARD)
+      TEST( transaction_manager, begin_commit_transaction__1_resources_involved__xa_XA_RBDEADLOCK___expect__TX_HAZARD)
       {
          common::unittest::Trace trace;
 
@@ -481,7 +481,7 @@ resources:
       }
 
 
-      TEST( casual_transaction_manager, begin_commit_transaction__1_resources_involved__XAER_NOTA___expect__TX_OK)
+      TEST( transaction_manager, begin_commit_transaction__1_resources_involved__XAER_NOTA___expect__TX_OK)
       {
          common::unittest::Trace trace;
 
@@ -514,7 +514,7 @@ resources:
          EXPECT_TRUE( result == tx::ok) << "result: " << result;
       }
 
-      TEST( casual_transaction_manager, begin_commit_transaction__1_resources_involved__environment_open_info__XAER_NOTA___expect__TX_OK)
+      TEST( transaction_manager, begin_commit_transaction__1_resources_involved__environment_open_info__XAER_NOTA___expect__TX_OK)
       {
          common::unittest::Trace trace;
 
@@ -549,7 +549,7 @@ resources:
          EXPECT_TRUE( result == tx::ok) << "result: " << result;
       }
 
-      TEST( casual_transaction_manager, begin_rollback_transaction__1_resources_involved__expect_XA_OK)
+      TEST( transaction_manager, begin_rollback_transaction__1_resources_involved__expect_XA_OK)
       {
          common::unittest::Trace trace;
 
@@ -587,7 +587,7 @@ resources:
 
 
 
-      TEST( casual_transaction_manager, begin_rollback_transaction__2_resources_involved__expect_XA_OK)
+      TEST( transaction_manager, begin_rollback_transaction__2_resources_involved__expect_XA_OK)
       {
          common::unittest::Trace trace;
 
@@ -625,7 +625,7 @@ resources:
       }
 
 
-      TEST( casual_transaction_manager, begin_commit_transaction__2_resources_involved__expect_two_phase_commit)
+      TEST( transaction_manager, begin_commit_transaction__2_resources_involved__expect_two_phase_commit)
       {
          common::unittest::Trace trace;
 
@@ -682,7 +682,7 @@ resources:
 
 
 
-      TEST( casual_transaction_manager, begin_transaction__2_resource_involved__owner_dies__expect_rollback)
+      TEST( transaction_manager, begin_transaction__2_resource_involved__owner_dies__expect_rollback)
       {
          common::unittest::Trace trace;
 
@@ -727,13 +727,13 @@ resources:
          EXPECT_TRUE( tx_rollback() == TX_OK);
       }
 
-      TEST( casual_transaction_manager, remote_resource_commit_one_phase__xid_unknown___expect_read_only)
+      TEST( transaction_manager, remote_resource_commit_one_phase__xid_unknown___expect_read_only)
       {
          common::unittest::Trace trace;
 
          local::Domain domain;
 
-         auto trid = common::transaction::ID::create();
+         auto trid = common::transaction::id::create();
 
 
          // remote commit
@@ -757,13 +757,13 @@ resources:
          }
       }
 
-      TEST( casual_transaction_manager, remote_resource_prepare__xid_unknown___expect_read_only)
+      TEST( transaction_manager, remote_resource_prepare__xid_unknown___expect_read_only)
       {
          common::unittest::Trace trace;
 
          local::Domain domain;
 
-         auto trid = common::transaction::ID::create();
+         auto trid = common::transaction::id::create();
 
 
          // remote commit
@@ -786,13 +786,13 @@ resources:
          }
       }
 
-      TEST( casual_transaction_manager, remote_resource_rollback__xid_unknown___expect_xa_ok)
+      TEST( transaction_manager, remote_resource_rollback__xid_unknown___expect_xa_ok)
       {
          common::unittest::Trace trace;
 
          local::Domain domain;
 
-         auto trid = common::transaction::ID::create();
+         auto trid = common::transaction::id::create();
 
 
          // remote rollback
@@ -817,13 +817,13 @@ resources:
       }
 
 
-      TEST( casual_transaction_manager, remote_owner__local_resource_involved__remote_rollback____expect_rollback)
+      TEST( transaction_manager, remote_owner__local_resource_involved__remote_rollback____expect_rollback)
       {
          common::unittest::Trace trace;
 
          local::Domain domain;
 
-         auto trid = common::transaction::ID::create();
+         auto trid = common::transaction::id::create();
 
 
          // local involved
@@ -857,13 +857,13 @@ resources:
          }
       }
 
-      TEST( casual_transaction_manager, remote_owner__same_remote_resource_involved__remote_rollback____expect_xa_read_only)
+      TEST( transaction_manager, remote_owner__same_remote_resource_involved__remote_rollback____expect_xa_read_only)
       {
          common::unittest::Trace trace;
 
          local::Domain domain;
 
-         auto trid = common::transaction::ID::create();
+         auto trid = common::transaction::id::create();
 
 
          // remote involved
@@ -896,7 +896,7 @@ resources:
       }
 
 
-      TEST( casual_transaction_manager, begin_transaction__1_remote_resource_involved___expect_one_phase_optimization)
+      TEST( transaction_manager, begin_transaction__1_remote_resource_involved___expect_one_phase_optimization)
       {
          common::unittest::Trace trace;
 
@@ -904,7 +904,7 @@ resources:
 
          mockup::ipc::Collector gateway;
 
-         auto trid = common::transaction::ID::create();
+         auto trid = common::transaction::id::create();
 
          // gateway involved
          {
@@ -956,7 +956,7 @@ resources:
 
 
 
-      TEST( casual_transaction_manager, begin_transaction__2_remote_resource_involved___expect_remote_prepare_commit)
+      TEST( transaction_manager, begin_transaction__2_remote_resource_involved___expect_remote_prepare_commit)
       {
          common::unittest::Trace trace;
 
@@ -965,7 +965,7 @@ resources:
          mockup::ipc::Collector gateway1;
          mockup::ipc::Collector gateway2;
 
-         auto trid = common::transaction::ID::create();
+         auto trid = common::transaction::id::create();
 
          // gateway involved
          {
@@ -1059,7 +1059,7 @@ resources:
          }
       }
 
-      TEST( casual_transaction_manager, begin_transaction__2_remote_resource_involved_read_only___expect_remote_prepare__read_only_optimization)
+      TEST( transaction_manager, begin_transaction__2_remote_resource_involved_read_only___expect_remote_prepare__read_only_optimization)
       {
          common::unittest::Trace trace;
 
@@ -1068,7 +1068,7 @@ resources:
          mockup::ipc::Collector gateway1;
          mockup::ipc::Collector gateway2;
 
-         auto trid = common::transaction::ID::create();
+         auto trid = common::transaction::id::create();
 
          // gateway involved
          {
@@ -1127,7 +1127,7 @@ resources:
          }
       }
 
-      TEST( casual_transaction_manager, transaction_2_remote_resource_involved__one_phase_commit_optimization___expect_prepare_phase_commit_XA_OK)
+      TEST( transaction_manager, transaction_2_remote_resource_involved__one_phase_commit_optimization___expect_prepare_phase_commit_XA_OK)
       {
          common::unittest::Trace trace;
 
@@ -1136,7 +1136,7 @@ resources:
          mockup::ipc::Collector gateway1;
          mockup::ipc::Collector gateway2;
 
-         auto trid = common::transaction::ID::create();
+         auto trid = common::transaction::id::create();
 
          // gateway involved
          {
@@ -1220,7 +1220,7 @@ resources:
 
 
 
-      TEST( casual_transaction_manager, transaction_2_remote_resource_involved__one_phase_commit_optimization__RM_fail__expect_rollback__commit_XA_RBOTHER)
+      TEST( transaction_manager, transaction_2_remote_resource_involved__one_phase_commit_optimization__RM_fail__expect_rollback__commit_XA_RBOTHER)
       {
          common::unittest::Trace trace;
 
@@ -1229,7 +1229,7 @@ resources:
          mockup::ipc::Collector gateway1;
          mockup::ipc::Collector gateway2;
 
-         auto trid = common::transaction::ID::create();
+         auto trid = common::transaction::id::create();
 
          // gateway involved
          {
@@ -1311,6 +1311,144 @@ resources:
          }
       }
 
+      TEST( transaction_manager_branch, begin_commit_transaction__1_branched_resource_involved___expect_one_phase_commit_optimization)
+      {
+         common::unittest::Trace trace;
+
+         local::Domain domain;
+
+
+         EXPECT_TRUE( tx_begin() == TX_OK);
+
+         // Make sure we make the transaction distributed
+         auto state = local::admin::call::state();
+         EXPECT_TRUE( state.transactions.empty());
+
+         // branch involved
+         {
+            common::message::transaction::resource::involved::Request message;
+            message.trid = common::transaction::id::branch( common::transaction::Context::instance().current().trid);
+            message.process = process::handle();
+            message.involved = { local::rm_1};
+
+            auto reply = local::call::tm( message);
+            EXPECT_TRUE( reply.involved.empty());
+         }
+
+         EXPECT_TRUE( tx_commit() == TX_OK);
+
+
+         state = local::admin::call::state();
+         EXPECT_TRUE( state.transactions.empty());
+
+         auto proxies = local::accumulate_metrics( state);
+         auto& rm1 = proxies.at( 0);
+
+         ASSERT_TRUE( rm1.instances.size() == 2);
+         EXPECT_TRUE( rm1.id == local::rm_1);
+         EXPECT_TRUE( rm1.name == "rm1");
+         EXPECT_TRUE( rm1.metrics.resource.count == 1) << "rm: " << rm1;
+      }
+
+      TEST( transaction_manager_branch, begin_commit_transaction__rm1_involved__rm1_branched_involved___expect_tpc)
+      {
+         common::unittest::Trace trace;
+
+         local::Domain domain;
+
+
+         EXPECT_TRUE( tx_begin() == TX_OK);
+
+         // Make sure we make the transaction distributed
+         auto state = local::admin::call::state();
+         EXPECT_TRUE( state.transactions.empty());
+
+         // involved
+         {
+            common::message::transaction::resource::involved::Request message;
+            message.trid = common::transaction::Context::instance().current().trid;
+            message.process = process::handle();
+            message.involved = { local::rm_1};
+
+            auto reply = local::call::tm( message);
+            EXPECT_TRUE( reply.involved.empty());
+         }
+
+         // branch involved
+         {
+            common::message::transaction::resource::involved::Request message;
+            message.trid = common::transaction::id::branch( common::transaction::Context::instance().current().trid);
+            message.process = process::handle();
+            message.involved = { local::rm_1};
+
+            auto reply = local::call::tm( message);
+            EXPECT_TRUE( reply.involved.empty());
+         }
+
+         EXPECT_TRUE( tx_commit() == TX_OK);
+
+
+         state = local::admin::call::state();
+         EXPECT_TRUE( state.transactions.empty());
+
+         auto proxies = local::accumulate_metrics( state);
+         auto& rm1 = proxies.at( 0);
+
+         ASSERT_TRUE( rm1.instances.size() == 2);
+         EXPECT_TRUE( rm1.id == local::rm_1);
+         EXPECT_TRUE( rm1.name == "rm1");
+         EXPECT_TRUE( rm1.metrics.resource.count == 4) << "rm: " << rm1;  // 2 prepare, 2 commit
+      }
+
+      TEST( transaction_manager_branch, begin_commit_transaction__rm1_involved__rm2_branched_involved___expect_tpc)
+      {
+         common::unittest::Trace trace;
+
+         local::Domain domain;
+
+
+         EXPECT_TRUE( tx_begin() == TX_OK);
+
+         // Make sure we make the transaction distributed
+         auto state = local::admin::call::state();
+         EXPECT_TRUE( state.transactions.empty());
+
+         // involved
+         {
+            common::message::transaction::resource::involved::Request message;
+            message.trid = common::transaction::Context::instance().current().trid;
+            message.process = process::handle();
+            message.involved = { local::rm_1};
+
+            auto reply = local::call::tm( message);
+            EXPECT_TRUE( reply.involved.empty());
+         }
+
+         // branch involved
+         {
+            common::message::transaction::resource::involved::Request message;
+            message.trid = common::transaction::id::branch( common::transaction::Context::instance().current().trid);
+            message.process = process::handle();
+            message.involved = { local::rm_2};
+
+            auto reply = local::call::tm( message);
+            EXPECT_TRUE( reply.involved.empty());
+         }
+
+         EXPECT_TRUE( tx_commit() == TX_OK);
+
+
+         state = local::admin::call::state();
+         EXPECT_TRUE( state.transactions.empty());
+
+         auto proxies = local::accumulate_metrics( state);
+         auto& rm1 = proxies.at( 0);
+
+         ASSERT_TRUE( rm1.instances.size() == 2);
+         EXPECT_TRUE( rm1.id == local::rm_1);
+         EXPECT_TRUE( rm1.name == "rm1");
+         EXPECT_TRUE( rm1.metrics.resource.count == 2) << "rm: " << rm1;  // 1 prepare, 1 commit
+      }
       namespace local
       {
          namespace
@@ -1330,7 +1468,7 @@ resources:
          } // <unnamed>
       } // local
 
-      TEST( casual_transaction_manager, one_local_resource__configure)
+      TEST( transaction_manager, one_local_resource__configure)
       {
          common::unittest::Trace trace;
 
@@ -1342,7 +1480,7 @@ resources:
       }
 
 
-      TEST( casual_transaction_manager, one_local_resource__begin_commit)
+      TEST( transaction_manager, one_local_resource__begin_commit)
       {
          common::unittest::Trace trace;
 

@@ -477,7 +477,7 @@ namespace casual
          auto queue = database.create( group::Queue{ "unittest_queue"});
 
 
-         common::transaction::ID xid = common::transaction::ID::create();
+         common::transaction::ID xid = common::transaction::id::create();
          auto origin = local::message( queue, xid);
 
          {
@@ -497,7 +497,7 @@ namespace casual
          }
 
          {
-            common::transaction::ID xid = common::transaction::ID::create();
+            common::transaction::ID xid = common::transaction::id::create();
 
             auto fetched = database.dequeue( local::request( queue, xid));
 
@@ -524,7 +524,7 @@ namespace casual
          database.enqueue( origin);
 
          {
-            common::transaction::ID xid = common::transaction::ID::create();
+            common::transaction::ID xid = common::transaction::id::create();
 
             auto fetched = database.dequeue( local::request( queue, xid));
 
@@ -554,7 +554,7 @@ namespace casual
          database.enqueue( origin);
 
          {
-            common::transaction::ID xid = common::transaction::ID::create();
+            common::transaction::ID xid = common::transaction::id::create();
 
             auto fetched = database.dequeue( local::request( group_queue, xid));
 
@@ -592,7 +592,7 @@ namespace casual
          database.enqueue( origin);
 
          {
-            common::transaction::ID xid = common::transaction::ID::create();
+            common::transaction::ID xid = common::transaction::id::create();
 
             auto fetched = database.dequeue( local::request( queue, xid));
 
@@ -618,7 +618,7 @@ namespace casual
          auto queue = database.create( group::Queue{ "unittest_queue"});
 
 
-         common::transaction::ID xid = common::transaction::ID::create();
+         common::transaction::ID xid = common::transaction::id::create();
          auto origin = local::message( queue, xid);
          database.enqueue( origin);
 
@@ -640,7 +640,7 @@ namespace casual
          auto queue = database.create( group::Queue{ "unittest_queue"});
 
 
-         common::transaction::ID xid = common::transaction::ID::create();
+         common::transaction::ID xid = common::transaction::id::create();
          auto origin = local::message( queue, xid);
          database.enqueue( origin);
 
@@ -667,7 +667,7 @@ namespace casual
          auto origin = local::message( queue);
 
          {
-            common::transaction::ID xid = common::transaction::ID::create();
+            common::transaction::ID xid = common::transaction::id::create();
 
             database.enqueue( origin);
             database.commit( xid);
@@ -680,7 +680,7 @@ namespace casual
          }
 
          {
-            common::transaction::ID xid = common::transaction::ID::create();
+            common::transaction::ID xid = common::transaction::id::create();
 
             auto fetched = database.dequeue( local::request( queue, xid));
 
@@ -704,7 +704,7 @@ namespace casual
             EXPECT_TRUE( queues.at( 1).count == 1) << " queues.at( 2).count: " <<  queues.at( 1).count;
             EXPECT_TRUE( queues.at( 1).size ==  static_cast< common::platform::size::type>( origin.message.payload.size()));
 
-            common::transaction::ID xid = common::transaction::ID::create();
+            common::transaction::ID xid = common::transaction::id::create();
             auto errorQ = queue;
             errorQ.id = queue.error;
 
@@ -728,7 +728,7 @@ namespace casual
             EXPECT_TRUE( queues.at( 0).count == 1);
             EXPECT_TRUE( queues.at( 0).size ==  static_cast< common::platform::size::type>( origin.message.payload.size()));
 
-            common::transaction::ID xid = common::transaction::ID::create();
+            common::transaction::ID xid = common::transaction::id::create();
 
             auto errorQ = queue;
             errorQ.id = database.error();
@@ -774,7 +774,7 @@ namespace casual
          messages.reserve( 100);
 
          {
-            common::transaction::ID xid = common::transaction::ID::create();
+            common::transaction::ID xid = common::transaction::id::create();
 
             auto count = 0;
             while( count++ < 100)
@@ -789,7 +789,7 @@ namespace casual
          }
 
 
-         common::transaction::ID xid = common::transaction::ID::create();
+         common::transaction::ID xid = common::transaction::id::create();
 
          common::algorithm::for_each( messages,[&]( const message_type& origin){
 
@@ -833,7 +833,7 @@ namespace casual
          {
             database.enqueue( message);
 
-            auto trid = common::transaction::ID::create();
+            auto trid = common::transaction::id::create();
             database.dequeue( local::request( queue, trid));
             database.rollback( trid);
 

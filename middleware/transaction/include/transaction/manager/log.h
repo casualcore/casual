@@ -8,6 +8,7 @@
 #pragma once
 
 
+#include "transaction/global.h"
 
 #include "sql/database.h"
 
@@ -40,15 +41,10 @@ namespace casual
                timeout
             };
 
-
             Log( std::string database);
 
-
             void prepare( const Transaction& transaction);
-
-            void remove( const common::transaction::ID& xid);
-
-
+            void remove( const global::ID& global);
 
             void write_begin();
             void write_commit();
@@ -56,7 +52,7 @@ namespace casual
 
             struct Stats
             {
-               struct update_t
+               struct
                {
                   serviceframework::platform::size::type prepare = 0;
                   serviceframework::platform::size::type remove = 0;
@@ -68,10 +64,8 @@ namespace casual
             const Stats& stats() const;
 
 
-            //!
             //! Only for unittest purpose
             //! @{
-
             struct Row
             {
                common::transaction::ID trid;
@@ -84,13 +78,11 @@ namespace casual
             std::vector< Row> logged();
             //! @}
 
-
          private:
-
 
             sql::database::Connection m_connection;
 
-            struct statement_t
+            struct
             {
                sql::database::Statement insert;
                sql::database::Statement remove;

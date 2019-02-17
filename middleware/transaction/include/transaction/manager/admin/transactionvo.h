@@ -164,7 +164,7 @@ namespace casual
 
             } // pending
 
-            struct Transaction
+            struct Branch
             {
                struct ID
                {
@@ -184,7 +184,7 @@ namespace casual
 
                ID trid;
                std::vector< resource::id_type> resources;
-               long state;
+               long state{};
 
                CASUAL_CONST_CORRECT_SERIALIZE(
                {
@@ -193,6 +193,31 @@ namespace casual
                   archive & CASUAL_MAKE_NVP( state);
                })
 
+            };
+
+            struct Transaction
+            {
+               struct Global
+               {
+                  std::string id;
+                  common::process::Handle owner;
+               
+                  CASUAL_CONST_CORRECT_SERIALIZE(
+                  {
+                     archive & CASUAL_MAKE_NVP( id);
+                     archive & CASUAL_MAKE_NVP( owner);
+                  })
+               };
+
+               Global global;
+               long state{};
+               std::vector< Branch> branches;
+
+               CASUAL_CONST_CORRECT_SERIALIZE(
+               {
+                  archive & CASUAL_MAKE_NVP( global);
+                  archive & CASUAL_MAKE_NVP( branches);
+               })
             };
 
             struct Log

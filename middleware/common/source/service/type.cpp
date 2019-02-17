@@ -27,6 +27,7 @@ namespace casual
                   case Type::join: return out << "join";
                   case Type::automatic: return out << "automatic";
                   case Type::none: return out << "none";
+                  case Type::branch: return out << "branch";
                }
                return out << "unknown";
             }
@@ -39,6 +40,7 @@ namespace casual
                   { "join", Type::join},
                   { "atomic", Type::atomic},
                   { "none", Type::none},
+                  { "branch", Type::branch},
                };
                return mapping.at( mode);
             }
