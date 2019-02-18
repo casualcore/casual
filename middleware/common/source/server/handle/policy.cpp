@@ -196,8 +196,10 @@ namespace casual
                               }
                               case service::transaction::Type::branch:
                               {
-
-                                 break;
+                                 if( message.trid)
+                                    transaction::Context::instance().branch( message.trid);
+                                 else
+                                    transaction::Context::instance().start( now);
                               }
                               case service::transaction::Type::join:
                               {
