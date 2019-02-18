@@ -314,6 +314,7 @@ namespace casual
                   case Stage::error: return "error";
                   case Stage::not_involved: return "not_involved";
                }
+               return "unknown";
             };
 
             return out << stringify( value);
