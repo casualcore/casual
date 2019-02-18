@@ -303,7 +303,7 @@ namespace casual
             {
                message.correlation = uuid::make();
                message.execution = uuid::make();
-               message.transaction.trid = transaction::ID::create( process::handle());
+               message.transaction.trid = transaction::id::create( process::handle());
                message.transaction.state = common::message::service::Transaction::State::rollback;
                message.buffer.type = ".binary";
                message.code.result = common::code::xatmi::ok;

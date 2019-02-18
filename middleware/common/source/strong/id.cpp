@@ -20,7 +20,7 @@ namespace casual
             {
                if( value < 0) return out << "E-" << std::abs( value);
                if( value > 0) return out << "L-" << value;
-               return out << "invalid";
+               return out << "nil";
             }
          } // resource
       } // strong

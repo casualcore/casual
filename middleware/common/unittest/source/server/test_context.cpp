@@ -232,7 +232,7 @@ namespace casual
             {
                const common::transaction::ID& ongoing()
                {
-                  static auto singleton = common::transaction::ID::create(
+                  static auto singleton = common::transaction::id::create(
                         process::Handle{ strong::process::id( process::handle().pid.value() + 1), process::handle().ipc});
 
                   return singleton;

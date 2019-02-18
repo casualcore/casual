@@ -60,33 +60,49 @@ namespace casual
                   return local::metrics< state::Metrics>( value);
                }
 
-               struct Transaction
+               struct Branch
                {
                   struct ID
                   {
-                     admin::Transaction::ID operator () ( const common::transaction::ID& id) const
+                     admin::Branch::ID operator () ( const common::transaction::ID& id) const
                      {
-                        admin::Transaction::ID result;
+                        admin::Branch::ID result;
 
                         result.owner = id.owner();
                         result.type = id.xid.formatID;
-                        result.global = common::transcode::hex::encode( common::transaction::global( id));
-                        result.branch = common::transcode::hex::encode( common::transaction::branch( id));
+                        result.global = common::transcode::hex::encode( common::transaction::id::range::global( id));
+                        result.branch = common::transcode::hex::encode( common::transaction::id::range::branch( id));
 
                         return result;
                      }
                   };
 
-                  admin::Transaction operator () ( const manager::Transaction& transaction) const
+                  admin::Branch operator () ( const manager::Transaction::Branch& branch) const
                   {
-                     admin::Transaction result;
+                     admin::Branch result;
 
-                     common::algorithm::transform( transaction.resources, result.resources, []( const manager::Transaction::Resource& r){
+                     common::algorithm::transform( branch.resources, result.resources, []( auto& r)
+                     {
                         return r.id;
                      });
 
-                     result.trid = ID{}( transaction.trid);
+                     result.trid = ID{}( branch.trid);
+                     result.state = static_cast< long>( branch.results());
+
+                     return result;
+                  }
+               };
+
+               struct Transaction 
+               {
+                  admin::Transaction operator () ( const manager::Transaction& transaction) const
+                  {
+                     admin::Transaction result;
+                     result.global.id = common::transcode::hex::encode( transaction.global.id());
+                     result.global.owner = transaction.owner();
                      result.state = static_cast< long>( transaction.results());
+
+                     common::algorithm::transform( transaction.branches, result.branches, Branch{});
 
                      return result;
                   }

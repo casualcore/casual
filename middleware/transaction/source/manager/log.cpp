@@ -47,7 +47,7 @@ namespace casual
 
 
             m_statement.insert = m_connection.precompile( R"( INSERT INTO trans VALUES (?,?,?,?,?,?,?); )" );
-            m_statement.remove = m_connection.precompile( "DELETE FROM trans WHERE gtrid = ? AND bqual = ?; ");
+            m_statement.remove = m_connection.precompile( "DELETE FROM trans WHERE gtrid = ?; ");
       
          }
 
@@ -56,29 +56,34 @@ namespace casual
          {
             Trace trace{ "transaction::Log::prepare"};
 
-            m_statement.insert.execute(
-               common::transaction::global( transaction.trid),
-               common::transaction::branch( transaction.trid),
-               transaction.trid.xid.formatID,
-               transaction.trid.owner().pid.value(),
-               State::prepared,
-               transaction.started,
-               transaction.deadline
-            );
-            ++m_stats.update.prepare;
+            common::log::line( verbose::log, "transaction: ", transaction);
+
+            auto prepare_branch = [&]( auto& branch)
+            {
+               m_statement.insert.execute(
+                  common::transaction::id::range::global( branch.trid),
+                  common::transaction::id::range::branch( branch.trid),
+                  branch.trid.xid.formatID,
+                  branch.trid.owner().pid.value(),
+                  State::prepared,
+                  transaction.started,
+                  transaction.deadline
+               );
+               ++m_stats.update.prepare;
+            };
+
+            common::algorithm::for_each( transaction.branches, prepare_branch);
 
             common::log::line( verbose::log, "total prepares: ", m_stats.update.prepare);
          }
 
-         void Log::remove( const common::transaction::ID& trid)
+         void Log::remove( const global::ID& global)
          {
             Trace trace{ "transaction::Log::remove"};
 
-            m_statement.remove.execute(
-               common::transaction::global( trid),
-               common::transaction::branch( trid));
+            m_statement.remove.execute( global.id());
 
-            ++m_stats.update.remove;
+            m_stats.update.remove += m_connection.affected();
 
             common::log::line( verbose::log, "total removes: ", m_stats.update.remove);
          }

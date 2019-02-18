@@ -582,7 +582,7 @@ namespace casual
             //
             reply.id = message.message.id ? message.message.id : common::uuid::make();
 
-            auto gtrid = common::transaction::global( message.trid);
+            auto gtrid = common::transaction::id::range::global( message.trid);
 
             long state = message.trid ? message::State::added : message::State::enqueued;
 
@@ -653,7 +653,7 @@ namespace casual
             //
             if( message.trid)
             {
-               auto gtrid = common::transaction::global(  message.trid);
+               auto gtrid = common::transaction::id::range::global(  message.trid);
 
                m_statement.state.xid.execute( gtrid, std::get< 0>( result));
             }
@@ -754,7 +754,7 @@ namespace casual
 
             log::line( log, "commit xid: ", id);
 
-            auto gtrid = common::transaction::global( id);
+            auto gtrid = common::transaction::id::range::global( id);
 
             m_statement.commit1.execute( gtrid);
             m_statement.commit2.execute( gtrid);
@@ -767,7 +767,7 @@ namespace casual
 
             log::line( log, "rollback xid: ", id);
 
-            auto gtrid = common::transaction::global( id);
+            auto gtrid = common::transaction::id::range::global( id);
 
             m_statement.rollback1.execute( gtrid);
             m_statement.rollback2.execute( gtrid);
@@ -778,7 +778,7 @@ namespace casual
          {
             std::vector< common::strong::queue::id> result;
 
-            auto gtrid = common::transaction::global( id);
+            auto gtrid = common::transaction::id::range::global( id);
             auto resultset =  m_statement.commit3.query( gtrid);
 
             sql::database::Row row;

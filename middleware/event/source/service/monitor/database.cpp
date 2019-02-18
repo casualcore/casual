@@ -89,7 +89,7 @@ namespace casual
                      event.service,
                      event.parent,
                      event.execution.get(),
-                     common::transaction::global( event.trid),
+                     common::transaction::id::range::global( event.trid),
                      event.start,
                      event.end);
                }

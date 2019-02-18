@@ -9,8 +9,10 @@
 
 
 
+
 #include "common/log/stream.h"
 #include "common/log/trace.h"
+
 
 namespace casual
 {

@@ -22,18 +22,14 @@
 #include <ostream>
 
 
-//!
 //! Global scope compare operations for XID
-//!
 //! @{
 bool operator == ( const XID& lhs, const XID& rhs);
 bool operator < ( const XID& lhs, const XID& rhs);
-bool operator != ( const XID& lhs, const XID& rhs);
+inline bool operator != ( const XID& lhs, const XID& rhs) { return ! ( lhs == rhs);}
 //! @}
 
-//!
 //! Global stream operator for XID
-//!
 std::ostream& operator << ( std::ostream& out, const XID& xid);
 
 namespace casual
@@ -44,8 +40,6 @@ namespace casual
       {
          using xid_type = XID;
 
-         using xid_range_type = decltype( view::binary::make( std::declval< const xid_type&>().data));
-
          class ID
          {
          public:
@@ -55,18 +49,11 @@ namespace casual
                enum 
                {
                   null = -1,
-                  casual = 42
+                  casual = 42,
+                  branch = 43,
                };
             };
 
-            //!
-            //! Creates a new unique transaction id, global and branch
-            //!
-            static ID create();
-            static ID create( const process::Handle& owner);
-
-
-            //!
             //! Initialize with null-xid
             //! @{
             ID() noexcept;
@@ -75,59 +62,28 @@ namespace casual
 
             explicit ID( const xid_type& xid);
 
-
-            //!
             //! Initialize with uuid, gtrid and bqual.
             //! Sets the format id to "casual"
             //!
             //! @note not likely to be used other than unittesting
-            //!
             ID( Uuid gtrid, Uuid bqual, const process::Handle& owner);
-
 
             ID( ID&&) noexcept;
             ID& operator = ( ID&&) noexcept;
-
 
             ID( const ID&) noexcept = default;
             ID& operator = ( const ID&) noexcept = default;
 
 
-
-            //!
-            //! Creates a new Id with same global transaction id but a new branch id.
-            //!
-            ID branch() const;
-
-
-            //!
             //! @return true if XID is null
-            //!
             bool null() const;
 
-            //!
             //! @return true if XID is not null
-            //!
             explicit operator bool() const;
 
-
-
-            //!
-            //! Return the raw data of the xid in a range
-            //!
-            xid_range_type range() const;
-
-
-            //!
             //! @return owner/creator of the transaction
-            //!
             const process::Handle& owner() const;
-            //strong::process::id owner() const;
             void owner( const process::Handle& handle);
-
-
-
-
 
             friend bool operator < ( const ID& lhs, const ID& rhs);
             friend bool operator == ( const ID& lhs, const ID& rhs);
@@ -143,61 +99,60 @@ namespace casual
             template< typename M>
             friend void casual_unmarshal_value( ID& value, M& unmarshler);
 
-
-            //!
             //! The XA-XID object.
             //!
             //! We need to have access to the xid to communicate via xa and such,
             //! no reason to keep it private and have getters..
-            //!
             xid_type xid{};
-
 
             friend std::ostream& operator << ( std::ostream& out, const ID& id);
 
          private:
-
             process::Handle m_owner;
-
          };
 
+         namespace id
+         {
+            //! Creates a new unique transaction id, global and branch
+            ID create();
+            ID create( const process::Handle& owner);
 
-         //!
-         //! @return a (binary) range that represent the data part of the xid, global + branch
-         //!
-         //! @{
-         xid_range_type data( const ID& id);
-         xid_range_type data( const xid_type& id);
-         //! @}
+            //! @return true if trid is null, false otherwise
+            //! @{
+            bool null( const ID& id);
+            bool null( const xid_type& id);
+            //! @}
 
-         //!
-         //! @return a (binary) range that represent the global part of the xid
-         //!
-         //! @{
-         xid_range_type global( const ID& id);
-         xid_range_type global( const xid_type& id);
-         //! @}
+            //! Creates a new Id with same global transaction id but a new branch id.
+            //! if the transaction is _null_ then a _null_ xid is returned 
+            ID branch( const ID& id);
+            
+            namespace range
+            {
+               using range_type = decltype( view::binary::make( std::declval< const xid_type&>().data));
 
-         //!
-         //! @return a (binary) range that represent the branch part of the xid
-         //!
-         //! @{
-         xid_range_type branch( const ID& id);
-         xid_range_type branch( const xid_type& id);
-         //! @}
+               //! @return a (binary) range that represent the data part of the xid, global + branch
+               //! @{
+               range_type data( const ID& id);
+               range_type data( const xid_type& id);
+               //! @}
 
-         //!
-         //! @return true if trid is null, false otherwise
-         //!
-         //! @{
-         bool null( const ID& id);
-         bool null( const xid_type& id);
-         //! @}
+               //! @return a (binary) range that represent the global part of the xid
+               //! @{
+               range_type global( const ID& id);
+               range_type global( const xid_type& id);
+               //! @}
 
+               //! @return a (binary) range that represent the branch part of the xid
+               //! @{
+               range_type branch( const ID& id);
+               range_type branch( const xid_type& id);
+               //! @}
 
-         //!
+            } // range
+         } // id
+
          //! Overload for transaction::Id
-         //!
          //! @{
          template< typename M>
          void casual_marshal_value( const ID& value, M& marshler)
@@ -211,7 +166,7 @@ namespace casual
                marshler << value.xid.gtrid_length;
                marshler << value.xid.bqual_length;
 
-               marshler.append( value.range());
+               marshler.append( id::range::data( value));
             }
          }
 
@@ -231,7 +186,6 @@ namespace casual
                   std::begin( value.xid.data),
                   value.xid.gtrid_length + value.xid.bqual_length);
             }
-
          }
          //! @}
 

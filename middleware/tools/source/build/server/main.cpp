@@ -110,9 +110,10 @@ namespace casual
                   {
                      auto splittet = split( value, ',');
 
-                     common::algorithm::transform( splittet, services, []( const std::string& name){
+                     common::algorithm::transform( splittet, services, []( const std::string& name)
+                     {
                         return Service{ name};
-                        });
+                     });
                   }
 
 

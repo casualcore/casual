@@ -37,7 +37,9 @@ namespace casual
                //! start a new transaction regardless
                atomic = 2,
                //! execute outside transaction regardless
-               none = 3
+               none = 3,
+               //! branch transaction if present, else start a new transaction
+               branch,
             };
 
             std::ostream& operator << ( std::ostream& out, Type value);

@@ -8,6 +8,7 @@
 #include "common/unittest.h"
 
 #include "common/signal.h"
+#include "common/execution.h"
 
 #include "common/message/event.h"
 #include "common/message/handle.h"
@@ -25,8 +26,12 @@ namespace casual
       {
          namespace clean
          {
+            Scope::Scope() 
+            { 
+               execution::reset();
+               signal::clear();
+            }
 
-            Scope::Scope() { signal::clear();}
             Scope::~Scope() { signal::clear();}
 
          } // clean

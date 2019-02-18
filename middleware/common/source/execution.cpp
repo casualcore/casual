@@ -32,11 +32,15 @@ namespace casual
             local::id() = id;
          }
 
+         void reset()
+         {
+            local::id() = common::uuid::make();
+         }
+
          const Uuid& id()
          {
             return local::id();
          }
-
 
          namespace service
          {

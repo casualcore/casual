@@ -40,7 +40,6 @@ namespace casual
             using output_type = O;
          };
 
-
          using marshal_types = ::testing::Types<
                IO< binary::create::Input, binary::create::Output>,
                IO< binary::network::create::Input, binary::network::create::Output>
@@ -209,7 +208,7 @@ namespace casual
             using input_type = typename TestFixture::input_type;
             using output_type = typename TestFixture::output_type;
 
-            auto xid_source = transaction::ID::create();
+            auto xid_source = transaction::id::create();
 
             platform::binary::type buffer;
             auto output = output_type{}( buffer);

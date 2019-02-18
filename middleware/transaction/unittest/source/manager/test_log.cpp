@@ -25,28 +25,24 @@ namespace casual
 
             manager::Transaction create_transaction()
             {
-               manager::Transaction result;
+               manager::Transaction result{ common::transaction::id::create( common::process::handle())};
 
-               result.trid = common::transaction::ID::create( common::process::handle());
                result.started = common::platform::time::clock::type::now();
                result.deadline = result.started + std::chrono::seconds{ 10};
 
                return result;
             }
 
-            std::string transactionLogPath()
-            {
-               return ":memory:";
-            }
+            constexpr auto log_path = ":memory:";
          }
       } // local
 
 
-      TEST( casual_transaction_log, prepare)
+      TEST( transaction_manager_log, prepare)
       {
          common::unittest::Trace trace;
 
-         manager::Log log( local::transactionLogPath());
+         manager::Log log( local::log_path);
 
          auto trans = local::create_transaction();
 
@@ -55,7 +51,7 @@ namespace casual
          auto rows = log.logged();
 
          ASSERT_TRUE( rows.size() == 1);
-         EXPECT_TRUE( rows.at( 0).trid == trans.trid);
+         EXPECT_TRUE( rows.at( 0).trid == trans.branches.at( 0).trid);
          EXPECT_TRUE( rows.at( 0).state == manager::Log::State::prepared);
       }
 

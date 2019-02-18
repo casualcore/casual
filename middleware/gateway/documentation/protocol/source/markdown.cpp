@@ -389,7 +389,7 @@ the rest of the message.
             template< typename M>
             void transaction_request( std::ostream& out, M&& message)
             {
-               message.trid = common::transaction::ID::create();
+               message.trid = common::transaction::id::create();
 
                local::message_type( out, message) << "\n\n";
 
@@ -407,7 +407,7 @@ the rest of the message.
             template< typename M>
             void transaction_reply( std::ostream& out, M&& message)
             {
-               message.trid = common::transaction::ID::create();
+               message.trid = common::transaction::id::create();
 
                local::message_type( out, message) << "\n\n";
 
@@ -542,7 +542,7 @@ Sent to and received from other domains when one domain wants call a service in 
                   local::message_type( out, message_type{}) << "\n\n";
 
                   message_type request;
-                  request.trid = common::transaction::ID::create();
+                  request.trid = common::transaction::id::create();
                   request.service.name.resize( 128);
                   request.parent.resize( 128);
                   request.buffer.type.resize( 8 + 1 + 16);
@@ -584,7 +584,7 @@ Reply to call request
 
                   message_type message;
 
-                  message.transaction.trid = common::transaction::ID::create();
+                  message.transaction.trid = common::transaction::id::create();
                   message.buffer.type.resize( 8 + 1 + 16);
                   message.buffer.memory.resize( 1024);
 
@@ -782,7 +782,7 @@ Represent enqueue request.
 
                   message_type message;
 
-                  message.trid = common::transaction::ID::create();
+                  message.trid = common::transaction::id::create();
 
                   message.name.resize( 128);
                   message.message.payload.resize( 1024);
@@ -846,7 +846,7 @@ Represent dequeue request.
 
                   message_type message;
 
-                  message.trid = common::transaction::ID::create();
+                  message.trid = common::transaction::id::create();
                   message.name.resize( 128);
 
 
@@ -929,7 +929,7 @@ Sent to establish a conversation
 
                   message.service.name.resize( 128);
                   message.parent.resize( 128);
-                  message.trid = common::transaction::ID::create();
+                  message.trid = common::transaction::id::create();
                   message.buffer.type.resize( 8 + 1 + 16);
                   message.buffer.memory.resize( 1024);
                   message.recording.nodes.resize( 1);
