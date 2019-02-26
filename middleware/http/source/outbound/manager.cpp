@@ -52,11 +52,14 @@ namespace casual
                         {
                            try
                            {
+                              communication::ipc::blocking::send( process.ipc, message);
+                              /*
                               if( ! communication::ipc::non::blocking::send( process.ipc, message))
                               {
                                  log::line( verbose::log, "failed to send message - type: ", common::message::type( message), " to: ", process, " - action: try later");
                                  state.pending.replies.emplace_back( std::move( message), process);
                               }
+                              */
                            }
                            catch( const exception::system::communication::Unavailable&)
                            {

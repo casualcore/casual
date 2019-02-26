@@ -200,6 +200,7 @@ namespace casual
                                     transaction::Context::instance().branch( message.trid);
                                  else
                                     transaction::Context::instance().start( now);
+                                 break;
                               }
                               case service::transaction::Type::join:
                               {
@@ -211,14 +212,19 @@ namespace casual
                                  transaction::Context::instance().start( now);
                                  break;
                               }
-                              case service::transaction::Type::none:
                               default:
+                              {
+                                 log::line( log::category::error, "unknown transaction semantics for service: ", service);
+                                 // fallthrough
+                              }
+                              case service::transaction::Type::none:
                               {
                                  // We don't start or join any transactions
                                  // (technically we join a null-trid)
                                  transaction::Context::instance().join( transaction::ID{ process::handle()});
                                  break;
                               }
+
 
                            }
 

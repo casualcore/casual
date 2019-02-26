@@ -334,22 +334,20 @@ namespace casual
                   }
                };
 
-
-               struct format_mode
+               auto format_mode = []( auto& service)
                {
-                  const char* operator () ( const admin::ServiceVO& value) const
+                  using Type = common::service::transaction::Type;
+                  switch( common::service::transaction::mode( service.transaction))
                   {
-                     static std::map< common::service::transaction::Type, const char*> mapping{
-                        { common::service::transaction::Type::automatic, "auto"},
-                        { common::service::transaction::Type::join, "join"},
-                        { common::service::transaction::Type::atomic, "atomic"},
-                        { common::service::transaction::Type::none, "none"},
-                     };
-                     return mapping[ common::service::transaction::mode( value.transaction)];
-                  }
+                     case Type::automatic: return "auto";
+                     case Type::atomic: return "atomic";
+                     case Type::join: return "join";
+                     case Type::none: return "none";
+                     case Type::branch: return "branch";
+                  };
+                  return "unknown";
                };
 
-               //
                // we need to set something when category is empty to help
                // enable possible use of sort, cut, awk and such
                auto format_category = []( const admin::ServiceVO& value){
@@ -400,7 +398,7 @@ namespace casual
                return terminal::format::formatter< admin::ServiceVO>::construct( 
                   terminal::format::column( "name", std::mem_fn( &admin::ServiceVO::name), terminal::color::yellow, terminal::format::Align::left),
                   terminal::format::column( "category", format_category, terminal::color::no_color, terminal::format::Align::left),
-                  terminal::format::column( "mode", format_mode{}, terminal::color::no_color, terminal::format::Align::right),
+                  terminal::format::column( "mode", format_mode, terminal::color::no_color, terminal::format::Align::right),
                   terminal::format::column( "timeout", format_timeout{}, terminal::color::blue, terminal::format::Align::right),
                   terminal::format::column( "I", format::instance::local::total{}, terminal::color::white, terminal::format::Align::right),
                   terminal::format::column( "C", format_invoked, terminal::color::white, terminal::format::Align::right),
