@@ -441,10 +441,6 @@ namespace casual
                // should be 0..1
                assert( not_owner.size() <= 1);
 
-               auto found = algorithm::find_if( not_owner, [&]( const Transaction& transaction){
-                  return transaction.trid == result.trid;
-               });
-
                auto transform_state = []( Transaction::State state){
                   switch( state)
                   {
@@ -455,11 +451,11 @@ namespace casual
                   }
                };
 
-               if( found)
+               if( not_owner)
                {
-                  log::line( log::category::transaction, "caller: ", *found);
+                  log::line( log::category::transaction, "not_owner: ", *not_owner);
 
-                  result.state = transform_state( found->state);
+                  result.state = transform_state( not_owner->state);
 
                   if( ! commit && result.state == message::service::Transaction::State::active)
                   {
@@ -482,7 +478,7 @@ namespace casual
                   */
 
                   // end resource
-                  resources_end( *found, flag::xa::Flag::success);
+                  resources_end( *not_owner, flag::xa::Flag::success);
                }
 
 

@@ -169,80 +169,13 @@ namespace casual
                      }
                   }
 
-                  namespace local
-                  {
-                     namespace
-                     {
-                        template< typename M>
-                        void transaction( M& message, const server::Service& service, const platform::time::point::type& now)
-                        {
-                           Trace trace{ "server::handle::policy::local::transaction"};
-
-                           log::line( log::debug, "message: ", message, ", service: ", service);
-
-                           // We keep track of callers transaction (can be null-trid).
-                           transaction::context().caller = message.trid;
-
-                           switch( service.transaction)
-                           {
-                              case service::transaction::Type::automatic:
-                              {
-                                 if( message.trid)
-                                    transaction::Context::instance().join( message.trid);
-                                 else
-                                    transaction::Context::instance().start( now);
-
-                                 break;
-                              }
-                              case service::transaction::Type::branch:
-                              {
-                                 if( message.trid)
-                                    transaction::Context::instance().branch( message.trid);
-                                 else
-                                    transaction::Context::instance().start( now);
-                                 break;
-                              }
-                              case service::transaction::Type::join:
-                              {
-                                 transaction::Context::instance().join( message.trid);
-                                 break;
-                              }
-                              case service::transaction::Type::atomic:
-                              {
-                                 transaction::Context::instance().start( now);
-                                 break;
-                              }
-                              default:
-                              {
-                                 log::line( log::category::error, "unknown transaction semantics for service: ", service);
-                                 // fallthrough
-                              }
-                              case service::transaction::Type::none:
-                              {
-                                 // We don't start or join any transactions
-                                 // (technically we join a null-trid)
-                                 transaction::Context::instance().join( transaction::ID{ process::handle()});
-                                 break;
-                              }
-
-
-                           }
-
-                           // Set 'global deadline'
-                           transaction::Context::instance().current().timout.set( now, message.service.timeout);
-
-                        }
-
-                     } // <unnamed>
-                  } // local
-
                   void Default::transaction(
                         const common::transaction::ID& trid,
                         const server::Service& service,
                         const common::platform::time::unit& timeout,
                         const platform::time::point::type& now)
                   {
-                     Trace trace{ "server::handle::policy::local::transaction"};
+                     Trace trace{ "server::handle::policy::Default::transaction"};
 
                      log::line( log::debug, "trid: ", trid, " - service: ", service);
 
@@ -254,13 +187,18 @@ namespace casual
                         case service::transaction::Type::automatic:
                         {
                            if( trid)
-                           {
                               transaction::Context::instance().join( trid);
-                           }
                            else
-                           {
                               transaction::Context::instance().start( now);
-                           }
+
+                           break;
+                        }
+                        case service::transaction::Type::branch:
+                        {
+                           if( trid)
+                              transaction::Context::instance().branch( trid);
+                           else
+                              transaction::Context::instance().start( now);
                            break;
                         }
                         case service::transaction::Type::join:
@@ -273,15 +211,18 @@ namespace casual
                            transaction::Context::instance().start( now);
                            break;
                         }
-                        case service::transaction::Type::none:
                         default:
+                        {
+                           log::line( log::category::error, "unknown transaction semantics for service: ", service);
+                           // fallthrough
+                        }
+                        case service::transaction::Type::none:
                         {
                            // We don't start or join any transactions
                            // (technically we join a null-trid)
                            transaction::Context::instance().join( transaction::ID{ process::handle()});
                            break;
                         }
-
                      }
 
                      // Set 'global deadline'
