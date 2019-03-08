@@ -22,13 +22,7 @@
 
 #include <thread>
 
-
-
-
-
-//!
 //! global overload for XID
-//!
 //! @{
 template< typename M>
 void casual_marshal_value( const XID& value, M& marshler)
@@ -296,7 +290,8 @@ namespace casual
                   archive & value.execution;
                   archive & value.route;
                   archive & value.recording;
-                  archive & value.status;
+                  archive & value.code.result;
+                  // TODO: archive & value.code.user;   
                })
 
             } // connect
@@ -313,7 +308,8 @@ namespace casual
                archive & value.execution;
                archive & value.route;
                archive & value.events;
-               archive & value.status;
+               archive & value.code.result;
+               // TODO: archive & value.code.user;  
                archive & value.buffer;
             })
 

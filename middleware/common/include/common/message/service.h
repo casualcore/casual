@@ -29,6 +29,20 @@ namespace casual
       {
          namespace service
          {
+
+            struct Code 
+            {
+               code::xatmi result = code::xatmi::ok;
+               long user = 0;
+
+               CASUAL_CONST_CORRECT_MARSHAL(
+               {
+                  archive & result;
+                  archive & user;
+               })
+               friend std::ostream& operator << ( std::ostream& out, const Code& value);
+            };
+
             struct Base
             {
                Base() = default;
@@ -391,18 +405,7 @@ namespace casual
                //! Represent service reply.
                struct Reply :  basic_message< Type::service_reply>
                {
-                  struct Code 
-                  {
-                     code::xatmi result = code::xatmi::ok;
-                     long user = 0;
-
-                     CASUAL_CONST_CORRECT_MARSHAL(
-                     {
-                        archive & result;
-                        archive & user;
-                     })
-                  } code;
-
+                  service::Code code;
                   Transaction transaction;
                   common::buffer::Payload buffer;
 

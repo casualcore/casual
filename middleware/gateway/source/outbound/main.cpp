@@ -356,6 +356,8 @@ namespace casual
                                        metric.start = destination.start;
                                        metric.end = now;
 
+                                       metric.code = message.code.result;
+
                                        return metric;
                                     }());
 

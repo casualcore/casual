@@ -128,7 +128,7 @@ namespace casual
             inbound.m_wait.fd = communication::ipc::inbound::handle().socket().descriptor().value();
          }
 
-         void State::Metric::add( const state::pending::Request& request)
+         void State::Metric::add( const state::pending::Request& request, common::message::service::Code code)
          {
             auto now = platform::time::clock::type::now();
 
@@ -140,6 +140,7 @@ namespace casual
                metric.service = request.state().service;
                metric.parent = request.state().parent;
                metric.process = common::process::handle();
+               metric.code = code.result;
                
                // not transctions over http...
                // metric.trid

@@ -383,9 +383,9 @@ namespace casual
 
             namespace code
             {
-               common::message::service::call::Reply::Code transform( const common::service::header::Fields& header, curl::type::code::easy code) noexcept
+               common::message::service::Code transform( const common::service::header::Fields& header, curl::type::code::easy code) noexcept
                {
-                  common::message::service::call::Reply::Code result;
+                  common::message::service::Code result;
 
                   using common::code::xatmi;
                   using curl::type::code::easy;

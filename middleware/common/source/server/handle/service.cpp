@@ -112,12 +112,12 @@ namespace casual
                      if( result.transaction == common::service::invoke::Result::Transaction::commit)
                      {
                         reply.events = common::service::conversation::Event::service_success;
-                        reply.status = code::xatmi::ok;
+                        reply.code.result = code::xatmi::ok;
                      }
                      else
                      {
                         reply.events = common::service::conversation::Event::service_fail;
-                        reply.status = code::xatmi::service_fail;
+                        reply.code.result = code::xatmi::service_fail;
                      }
 
                      reply.buffer = std::move( result.payload);

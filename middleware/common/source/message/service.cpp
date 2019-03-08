@@ -33,6 +33,14 @@ namespace casual
 
          namespace service
          {
+
+            std::ostream& operator << ( std::ostream& out, const Code& value)
+            {
+               return out << "{ result: " << value.result 
+                  << ", user: " << value.user 
+                  << '}';
+            }
+
             std::ostream& operator << ( std::ostream& out, const Base& value)
             {
                out << "{ ";
@@ -203,13 +211,6 @@ namespace casual
                      << ", flags: " << value.flags
                      << ", header: " << range::make( header)
                      << '}';
-               }
-
-               std::ostream& operator << ( std::ostream& out, const Reply::Code& code)
-               {
-                  return out << "{ result: " << code.result
-                        << ", user: " << code.user
-                        << '}';
                }
 
                std::ostream& operator << ( std::ostream& out, const Reply& message)

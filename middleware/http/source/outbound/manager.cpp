@@ -146,15 +146,19 @@ namespace casual
                      {
                         using Base::Base;
 
-                        void operator () ( state::pending::Request&& request, curl::type::code::easy code)
+                        void operator () ( state::pending::Request&& request, curl::type::code::easy curl_code)
                         {
                            Trace trace{ "http::outbound::manager::local::handle::Reply"};
 
                            log::line( verbose::log, "request: ", request);
+                           log::line( verbose::log, "curl_code: ", curl_code);
+
+                           auto code = request::code::transform( request.state().header.reply, curl_code);
+
                            log::line( verbose::log, "code: ", code);
                            
                            // take care of metrics
-                           state.metric.add( request);
+                           state.metric.add( request, code);
 
                            auto destination = request.state().destination;
 
@@ -162,7 +166,7 @@ namespace casual
                            message.buffer = std::move( request.state().payload);
                            message.correlation = request.state().correlation;
                            message.execution = request.state().execution;
-                           message.code = request::code::transform( request.state().header.reply, code);
+                           message.code = code;
 
                            manager::local::ipc::optional::send( state, destination, message);
 

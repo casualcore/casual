@@ -81,6 +81,8 @@ namespace casual
                      ack.metric.start = start;
                      ack.metric.end = platform::time::clock::type::now();
 
+                     ack.metric.code = reply.code.result;
+
                      policy.ack( ack);
                      server::context().finalize();
                   });
