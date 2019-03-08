@@ -22,6 +22,7 @@
 #include "common/service/lookup.h"
 #include "common/exception/xatmi.h"
 #include "common/communication/instance.h"
+#include "common/event/listen.h"
 
 #include "serviceframework/service/protocol/call.h"
 
@@ -40,12 +41,9 @@ namespace casual
                   // Wait for manager to get online
                   EXPECT_TRUE( process.handle() != common::process::handle());
                }
-
-               ~Manager()
-               = default;
+               ~Manager() = default;
 
                common::mockup::Process process;
-
             };
 
             struct Domain : common::mockup::domain::Manager
@@ -333,7 +331,15 @@ namespace casual
 
          {
             // Send Ack
-            server.send_ack();
+            {
+               common::message::service::call::ACK message;
+               message.metric.process = server.process();
+
+               common::communication::ipc::blocking::send( 
+                  common::communication::instance::outbound::service::manager::device(),
+                  message);
+
+            }
 
             // get next pending reply
             auto service = lookup();
@@ -412,7 +418,60 @@ namespace casual
             EXPECT_TRUE( message.code.result == decltype( message.code.result)::service_error);
             EXPECT_TRUE( message.correlation == correlation);
          }
+      }
 
+      TEST( service_manager, service_lookup__send_ack__expect_metric)
+      {
+         common::unittest::Trace trace;
+
+         local::Domain domain;
+
+         common::mockup::domain::echo::Server server{ { { "service1"}, { "service2"}}};
+
+         auto start = common::platform::time::clock::type::now();
+         auto end = start + std::chrono::milliseconds{ 2};
+
+         {
+            auto service = common::service::Lookup{ "service1"}();
+            EXPECT_TRUE( service.service.name == "service1");
+            EXPECT_TRUE( service.process == server.process());
+            EXPECT_TRUE( service.state == decltype( service)::State::idle);
+         }
+
+         // subscribe to metric event
+         common::message::event::service::Calls event;
+         common::event::subscribe( common::process::handle(), { event.type()});
+
+         // Send Ack
+         {
+            common::message::service::call::ACK message;
+            message.metric.process = server.process();
+            message.metric.service = "b";
+            message.metric.parent = "a";
+            message.metric.start = start;
+            message.metric.end = end;
+            message.metric.code = common::code::xatmi::service_fail;
+
+            common::communication::ipc::blocking::send( 
+               common::communication::instance::outbound::service::manager::device(),
+               message);
+         }
+
+         // wati for event
+         {
+            common::communication::ipc::blocking::receive( 
+               common::communication::ipc::inbound::device(),
+               event);
+            
+            ASSERT_TRUE( event.metrics.size() == 1);
+            auto& metric = event.metrics.at( 0);
+            EXPECT_TRUE( metric.service == "b");
+            EXPECT_TRUE( metric.parent == "a");
+            EXPECT_TRUE( metric.process == server.process());
+            EXPECT_TRUE( metric.start == start);
+            EXPECT_TRUE( metric.end == end);
+            EXPECT_TRUE( metric.code == common::code::xatmi::service_fail);
+         }
       }
 
    } // service

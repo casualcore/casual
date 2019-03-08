@@ -154,10 +154,7 @@ namespace casual
                            log::line( verbose::log, "code: ", code);
                            
                            // take care of metrics
-                           state.metric.services.emplace_back(
-                              request.state().service,
-                              platform::time::clock::type::now() - request.state().start);
-                           
+                           state.metric.add( request);
 
                            auto destination = request.state().destination;
 
@@ -169,12 +166,11 @@ namespace casual
 
                            manager::local::ipc::optional::send( state, destination, message);
 
-
                            // do we send metrics to service-manager?
-                           if( state.pending.requests.empty() || state.metric.services.size() >= platform::batch::http::outbound::concurrent::metrics)
+                           if( state.pending.requests.empty() || state.metric)
                            {
-                              communication::ipc::blocking::send( common::communication::instance::outbound::service::manager::device(), state.metric);
-                              state.metric.services.clear();
+                              communication::ipc::blocking::send( common::communication::instance::outbound::service::manager::device(), state.metric.message());
+                              state.metric.clear();
                            }
                         }
                      };

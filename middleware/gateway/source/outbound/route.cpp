@@ -31,6 +31,7 @@ namespace casual
                   return out << "{ correlation: " << value.correlation
                         << ", destination: " << value.destination
                         << ", service: "<< value.service
+                        << ", parent: "<< value.parent
                         << ", start: "<< common::chronology::local( value.start) << "us"
                         << '}';
                }

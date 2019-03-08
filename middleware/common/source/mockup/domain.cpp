@@ -340,7 +340,7 @@ namespace casual
                            Trace trace{ "mockup service::call::ACK"};
 
                         },
-                        [&]( message::service::concurrent::Metric& m)
+                        [&]( message::event::service::Calls& m)
                         {
                            Trace trace{ "mockup service::remote::Metric"};
 
@@ -826,20 +826,14 @@ namespace casual
                   Implementation( dispatch_type&& handler)
                      : m_replier{ default_handler() + std::move( handler)}
                   {
-                     //
                      // Connect to the domain
-                     //
                      local::send::connect::domain( m_replier, communication::instance::identity::queue::manager);
 
-                     //
                      // Set environment variable to make it easier for other processes to
                      // reach this broker (should work any way...)
-                     //
                      environment::variable::set( environment::variable::name::ipc::queue::manager(), m_replier.input());
 
-                     //
                      // Make sure we're up'n running before we let unittest-stuff interact with us...
-                     //
                      communication::instance::fetch::handle( communication::instance::identity::queue::manager);
                   }
 
@@ -943,9 +937,7 @@ namespace casual
                    service::conversation::echo()
                 }}
                {
-                  //
                   // Connect to the domain
-                  //
                   local::send::connect::domain( m_replier);
 
                   advertise( std::move( services));
@@ -962,9 +954,7 @@ namespace casual
                {
                   Trace trace{ "mockup echo::Server::advertise"};
 
-                  //
                   // Advertise services
-                  //
                   local::advertise( std::move( services),  m_replier.process());
                }
 
@@ -978,14 +968,6 @@ namespace casual
                   algorithm::copy( services, unadvertise.services);
 
                   communication::ipc::blocking::send( communication::instance::outbound::service::manager::device(), unadvertise);
-               }
-
-               void Server::send_ack() const
-               {
-                  message::service::call::ACK message;
-                  message.process = process();
-
-                  communication::ipc::blocking::send( communication::instance::outbound::service::manager::device(), message);
                }
 
                process::Handle Server::process() const

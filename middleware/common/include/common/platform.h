@@ -142,29 +142,26 @@ namespace casual
 
             namespace queue
             {
-               //!
                //! Max number of pending updates before 
                //! a persistent write
-               //!
                constexpr size::type persitent = 100;
             } // queue
 
             namespace service
             {
-               //!
                //! Max number of consumed messages before trying to send
                //! pending messages. 
-               //!
                constexpr size::type pending = 100;
 
                namespace forward
                {
-                  //!
                   //! Max number of consumed messages before trying to send
                   //! pending messages. 
-                  //!
                   constexpr size::type pending = 100;
                } // forward
+
+               //! max number of 'cached' metrics.
+               constexpr size::type metrics = 100;
             } // service
 
             namespace http

@@ -340,6 +340,7 @@ namespace casual
                request.state().correlation = message.correlation;
                request.state().execution = message.execution;
                request.state().service = std::move( message.service.name);
+               request.state().parent = std::move( message.parent);
                request.state().start = now;
 
                auto& easy = request.easy();

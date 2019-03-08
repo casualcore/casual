@@ -49,7 +49,7 @@ install_bin.append( target)
 
 target = LinkExecutable( 'bin/casual-event-service-log',
 	[
-	    Compile( 'source/service/log/log.cpp')
+	    Compile( 'source/service/log/main.cpp')
 	],
 	[
 	'casual-common'] )

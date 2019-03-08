@@ -136,7 +136,7 @@ namespace casual
                   void undadvertise( std::vector< std::string> services) const;
 
 
-                  void send_ack() const;
+                  //void send_ack() const;
 
                   process::Handle process() const;
 

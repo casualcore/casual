@@ -36,9 +36,21 @@ namespace casual
             const common::communication::ipc::Helper& device();
          } // ipc
 
-
          namespace handle
          {
+            namespace metric
+            {
+               //! tries to send metrics regardless
+               void send( State& state);
+
+               namespace batch
+               {
+                  //! send metrics if we've reach batch-limit
+                  void send( State& state);
+               } // batch
+               
+            } // metric
+
             using dispatch_type = decltype( ipc::device().handler());
 
             void process_exit( const common::process::lifetime::Exit& exit);
@@ -95,18 +107,14 @@ namespace casual
                   };
 
                } // subscription
-
             } // event
-
 
             namespace service
             {
-               //!
                //! Handles local advertise
                //!  - add  0..* services
                //!  - remove 0..* services
                //!  - replace == remove all services for instance and then add 0..* services
-               //!
                struct Advertise : Base
                {
                   using message_type = common::message::service::Advertise;
@@ -129,10 +137,11 @@ namespace casual
                      void operator () ( message_type& message);
                   };
 
+                  //! handles metric and "acks" from cuncurrent servers.
                   struct Metric : Base
                   {
                      using Base::Base;
-                     void operator () ( common::message::service::concurrent::Metric& message);
+                     void operator () ( common::message::event::service::Calls& message);
                   };
                } // concurrent
 
@@ -183,38 +192,24 @@ namespace casual
                      void operator () ( message_type& message);
                   };
 
-
                } // discover
-
-
             } // domain
 
-
-            //!
             //! Handles ACK from services.
             //!
             //! if there are pending request for the "acked-service" we
             //! send response directly
-            //!
             struct ACK : public Base
             {
-
-               using message_type = common::message::service::call::ACK;
-
                using Base::Base;
 
-               void operator () ( message_type& message);
+               void operator () ( const common::message::service::call::ACK& message);
             };
 
 
-
-
-
-            //!
             //! service-manager needs to have it's own policy for callee::handle::basic_call, since
             //! we can't communicate with blocking to the same queue (with read, who is
             //! going to write? with write, what if the queue is full?)
-            //!
             struct Policy
             {
 
@@ -228,8 +223,7 @@ namespace casual
 
                void reply( common::strong::ipc::id id, common::message::service::call::Reply& message);
 
-               void ack();
-
+               void ack( const common::message::service::call::ACK& ack);
 
                void transaction(
                      const common::transaction::ID& trid,
@@ -238,19 +232,14 @@ namespace casual
                      const common::platform::time::point::type& now);
 
                common::message::service::Transaction transaction( bool commit);
-
                void forward( common::service::invoke::Forward&& forward, const common::message::service::call::callee::Request& message);
-
                void statistics( common::strong::ipc::id, common::message::event::service::Call&);
 
             private:
-
                manager::State& m_state;
-
             };
 
             using Call = common::server::handle::basic_call< manager::handle::Policy>;
-
 
          } // handle
 

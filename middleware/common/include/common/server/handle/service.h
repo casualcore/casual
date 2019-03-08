@@ -38,7 +38,6 @@ namespace casual
                   message::service::call::Reply reply( const message::service::call::callee::Request& message);
                   message::conversation::caller::Send reply( const message::conversation::connect::callee::Request& message);
 
-
                   common::service::invoke::Parameter parameter( message::service::call::callee::Request& message);
                   common::service::invoke::Parameter parameter( message::conversation::connect::callee::Request& message);
 
@@ -61,57 +60,54 @@ namespace casual
 
                   common::service::header::fields() = std::move( message.header);
 
+                  auto start = platform::time::clock::type::now();
 
 
-                  //
-                  // Make sure we do some cleanup and send ACK to broker.
-                  //
-                  auto execute_finalize = execute::scope( [&](){
-                     policy.ack();
+                  // Prepare reply
+                  auto reply = transform::reply( message);
+
+                  // Make sure we do some cleanup and send ACK to service-manager.
+                  auto execute_finalize = execute::scope( [&]()
+                  {
+                     message::service::call::ACK ack;
+
+                     ack.execution = message.execution;
+                     ack.metric.execution = message.execution;
+                     ack.metric.service = message.service.name;
+                     ack.metric.parent = message.parent;
+                     ack.metric.process = common::process::handle();
+                     ack.metric.trid = reply.transaction.trid;
+
+                     ack.metric.start = start;
+                     ack.metric.end = platform::time::clock::type::now();
+
+                     policy.ack( ack);
                      server::context().finalize();
                   });
 
 
-                  //
-                  // Prepare reply
-                  //
-                  auto reply = transform::reply( message);
 
-                  auto execute_reply = execute::scope( [&](){
+                  auto execute_reply = execute::scope( [&]()
+                  {
                      if( send_reply)
                      {
-                        //
                         // Send reply to caller.
-                        //
                         policy.reply( message.process.ipc, reply);
                      }
                   });
 
-
                   auto parameter = transform::parameter( message);
 
-
-                  //
                   // If something goes wrong, make sure to rollback before reply with error.
                   // this will execute before execute_reply
-                  //
-                  auto execute_error_reply = execute::scope( [&](){
+                  auto execute_error_reply = execute::scope( [&]()
+                  {
                      reply.transaction = policy.transaction( false);
                   });
 
-
                   auto& state = server::Context::instance().state();
 
-                  //
-                  // Set start time.
-                  //
-                  state.event.start = platform::time::clock::type::now();
-
-
-                  //
                   // Find service
-                  //
-
                   auto found = algorithm::find( state.services, parameter.service.name);
 
                   if( ! found)
@@ -121,13 +117,11 @@ namespace casual
 
                   auto& service = found->second;
 
-                  //
                   // Do transaction stuff...
                   // - begin transaction if service has "auto-transaction"
                   // - notify TM about potentially resources involved.
                   // - set 'global' deadline/timeout
-                  //
-                  policy.transaction( message.trid, service, message.service.timeout, state.event.start);
+                  policy.transaction( message.trid, service, message.service.timeout, start);
 
 
                   //
@@ -141,9 +135,7 @@ namespace casual
                         buffer::transport::Lifecycle::pre_service);
                         */
 
-                  //
                   // call the service
-                  //
                   try
                   {
                      complement::reply( service( std::move( parameter)), reply);
@@ -176,46 +168,19 @@ namespace casual
                         buffer::transport::Lifecycle::post_service);
                         */
 
-
-
-                  //
                   // Do transaction stuff...
                   // - commit/rollback transaction if service has "auto-transaction"
-                  //
-                  auto execute_transaction = execute::scope( [&](){
+                  auto execute_transaction = execute::scope( [&]()
+                  {
                      reply.transaction = policy.transaction(
                            reply.transaction.state == message::service::Transaction::State::active);
                   });
 
-                  //
                   // Nothing did go wrong
-                  //
                   execute_error_reply.release();
-
-
-                  //
-                  // Take end time
-                  //
-                  auto execute_monitor = execute::scope( [&](){
-                     if( ! message.service.event_subscribers.empty())
-                     {
-                        state.event.end = platform::time::clock::type::now();
-                        state.event.execution = message.execution;
-                        state.event.service = message.service.name;
-                        state.event.parent = message.parent;
-                        state.event.trid = reply.transaction.trid;
-                        state.event.process = process::handle();
-
-                        for( auto& queue : message.service.event_subscribers)
-                        {
-                           policy.statistics( queue, state.event);
-                        }
-                     }
-                  });
 
                   execute_transaction();
                   execute_reply();
-                  execute_monitor();
                }
 
             } // service

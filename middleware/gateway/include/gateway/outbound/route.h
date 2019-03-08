@@ -98,12 +98,15 @@ namespace casual
                   inline Point( const common::Uuid& correlation,
                         common::process::Handle destination,
                         std::string service,
+                        std::string parent,
                         common::platform::time::point::type start)
-                     : correlation( correlation), destination( destination), service( std::move( service)), start( start) {}
+                     : correlation( correlation), destination( destination), 
+                        service( std::move( service)), parent( std::move( parent)), start( start) {}
 
                   common::Uuid correlation;
                   common::process::Handle destination;
                   std::string service;
+                  std::string parent;
                   common::platform::time::point::type start;
 
                   friend std::ostream& operator << ( std::ostream& out, const Point& value);

@@ -100,6 +100,32 @@ namespace casual
             return local::message( code);
          }
 
+         const char* string( xatmi code) noexcept
+         {
+            switch( code)
+            {
+               case xatmi::ok: return "OK";
+               case xatmi::descriptor: return "TPEBADDESC";
+               case xatmi::no_message: return "TPEBLOCK";
+               case xatmi::argument: return "TPEINVAL";
+               case xatmi::limit: return "TPELIMIT";
+               case xatmi::no_entry: return "TPENOENT";
+               case xatmi::os: return "TPEOS";
+               case xatmi::protocol: return "TPEPROTO";
+               case xatmi::service_error: return "TPESVCERR";
+               case xatmi::service_fail: return "TPESVCFAIL";
+               case xatmi::system: return "TPESYSTEM";
+               case xatmi::timeout: return "TPETIME";
+               case xatmi::transaction: return "TPETRAN";
+               case xatmi::signal: return "TPGOTSIG";
+               case xatmi::buffer_input: return "TPEITYPE";
+               case xatmi::buffer_output: return "TPEOTYPE";
+               case xatmi::event: return "TPEEVENT";
+               case xatmi::service_advertised: return "TPEMATCH";
+               default: return "unknown";
+            }
+         }
+
       } // code
    } // common
 } // casual
