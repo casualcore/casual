@@ -47,7 +47,11 @@ namespace casual
 
          common::log::Stream& stream( code::xatmi code);
 
+         //! @return a "message" representation of the code.
          const char* message( xatmi code) noexcept;
+
+         //! @return the string representation of the code.
+         const char* string( xatmi code) noexcept;
 
 
       } // codee

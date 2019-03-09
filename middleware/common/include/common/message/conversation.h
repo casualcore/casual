@@ -91,14 +91,14 @@ namespace casual
                {
                   Route route;
                   Route recording;
-                  code::xatmi status;
+                  service::Code code;
 
                   CASUAL_CONST_CORRECT_MARSHAL(
                   {
                      reply_base::marshal( archive);
                      archive & route;
                      archive & recording;
-                     archive & status;
+                     archive & code;
                   })
                   friend std::ostream& operator << ( std::ostream& out, const Reply& value);
                };
@@ -113,7 +113,7 @@ namespace casual
                flag::service::conversation::send::Flags flags;
                flag::service::conversation::Events events;
                service::Transaction transaction;
-               code::xatmi status = code::xatmi::ok;
+               service::Code code;
 
                CASUAL_CONST_CORRECT_MARSHAL(
                {
@@ -121,7 +121,7 @@ namespace casual
                   archive & route;
                   archive & flags;
                   archive & events;
-                  archive & status;
+                  archive & code;
                })
                friend std::ostream& operator << ( std::ostream& out, const basic_send& value);
             };

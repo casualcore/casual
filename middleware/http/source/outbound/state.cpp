@@ -126,8 +126,40 @@ namespace casual
          {
             inbound.m_wait.events = CURL_WAIT_POLLIN;
             inbound.m_wait.fd = communication::ipc::inbound::handle().socket().descriptor().value();
+         }
 
-            metric.process = process::handle();
+         void State::Metric::add( const state::pending::Request& request, common::message::service::Code code)
+         {
+            auto now = platform::time::clock::type::now();
+
+            m_message.metrics.push_back( [&]()
+            {
+               message::event::service::Metric metric;
+
+               metric.execution = request.state().execution;
+               metric.service = request.state().service;
+               metric.parent = request.state().parent;
+               metric.process = common::process::handle();
+               metric.code = code.result;
+               
+               // not transctions over http...
+               // metric.trid
+
+               metric.start = request.state().start;
+               metric.end = now;
+
+               return metric;
+            }());
+         }
+
+         State::Metric::operator bool () const noexcept
+         {
+            return m_message.metrics.size() >= platform::batch::http::outbound::concurrent::metrics;
+         }
+
+         void State::Metric::clear()
+         {
+            m_message.metrics.clear();
          }
 
 

@@ -33,6 +33,14 @@ namespace casual
 
          namespace service
          {
+
+            std::ostream& operator << ( std::ostream& out, const Code& value)
+            {
+               return out << "{ result: " << value.result 
+                  << ", user: " << value.user 
+                  << '}';
+            }
+
             std::ostream& operator << ( std::ostream& out, const Base& value)
             {
                out << "{ ";
@@ -56,7 +64,6 @@ namespace casual
                   out << "{ ";
                   local::output::base_service( out, value);
                   return out << ", timeout: " << value.timeout.count()
-                        << ", event_subscribers: " << range::make( value.event_subscribers)
                         << '}';
                }
             } // call
@@ -113,19 +120,6 @@ namespace casual
                         << '}';
                }
 
-               std::ostream& operator << ( std::ostream& out, const Metric::Service& value)
-               {
-                  return out << "{ name: " << value.name
-                     << ", duration: " << chronology::duration( value.duration)
-                     << '}';
-               }
-
-               std::ostream& operator << ( std::ostream& out, const Metric& value)
-               {
-                  return out << "{ process: " << value.process
-                     << ", services: " << range::make( value.services)
-                     << '}';
-               }
             } // concurrent
 
             std::ostream& operator << ( std::ostream& out, Advertise::Directive value)
@@ -219,13 +213,6 @@ namespace casual
                      << '}';
                }
 
-               std::ostream& operator << ( std::ostream& out, const Reply::Code& code)
-               {
-                  return out << "{ result: " << code.result
-                        << ", user: " << code.user
-                        << '}';
-               }
-
                std::ostream& operator << ( std::ostream& out, const Reply& message)
                {
                   return out << "{ transaction: " << message.transaction
@@ -236,7 +223,7 @@ namespace casual
 
                std::ostream& operator << ( std::ostream& out, const ACK& message)
                {
-                  return out << "{ process: " << message.process
+                  return out << "{ metric: " << message.metric
                         << '}';
                }
 

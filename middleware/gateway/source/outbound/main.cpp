@@ -89,8 +89,7 @@ namespace casual
                   State( communication::tcp::inbound::Device&& inbound, size_type order)
                      : external{ std::move( inbound)}, order( order)
                   {
-                     metric.process = common::process::handle();
-                     metric.services.reserve( common::platform::batch::gateway::metrics);
+                     metric.metrics.reserve( common::platform::batch::gateway::metrics);
                   }
 
                   struct 
@@ -116,7 +115,7 @@ namespace casual
 
                   route::Route route;
 
-                  common::message::service::concurrent::Metric metric;
+                  common::message::event::service::Calls metric;
                   size_type order;
                };
 
@@ -345,9 +344,22 @@ namespace casual
 
                                     auto now = common::platform::time::clock::type::now();
 
-                                    state.metric.services.emplace_back(
-                                          std::move( destination.service),
-                                          std::chrono::duration_cast< std::chrono::microseconds>( now - destination.start));
+                                    state.metric.metrics.push_back( [&]()
+                                    {
+                                       common::message::event::service::Metric metric;
+                                       metric.process = common::process::handle();
+                                       metric.execution = message.execution;
+                                       metric.service = std::move( destination.service);
+                                       metric.parent = std::move( destination.parent);
+                                       
+                                       metric.trid = message.transaction.trid;
+                                       metric.start = destination.start;
+                                       metric.end = now;
+
+                                       metric.code = message.code.result;
+
+                                       return metric;
+                                    }());
 
                                     blocking::optional::send( destination.destination.ipc, message);
                                  }
@@ -359,10 +371,10 @@ namespace casual
 
                                  // send service metrics if we don't have any more in-flight call request (this one
                                  // was the last, or only) OR we've accumulated enough metrics for a batch update
-                                 if( state.service.route.empty() || state.metric.services.size() >= common::platform::batch::gateway::metrics)
+                                 if( state.service.route.empty() || state.metric.metrics.size() >= common::platform::batch::gateway::metrics)
                                  {
                                     blocking::send( common::communication::instance::outbound::service::manager::device(), state.metric);
-                                    state.metric.services.clear();
+                                    state.metric.metrics.clear();
                                  }
                               }
                            };
@@ -557,6 +569,7 @@ namespace casual
                                        message.correlation,
                                        message.process,
                                        message.service.name,
+                                       message.parent,
                                        now
                                     );
                                  }

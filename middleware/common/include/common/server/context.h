@@ -15,16 +15,9 @@
 
 #include "common/platform.h"
 
-#include "common/message/event.h"
-
-
-
 #include "xatmi/defines.h"
 
 
-//
-// std
-//
 #include <unordered_map>
 #include <functional>
 
@@ -88,81 +81,52 @@ namespace casual
 
             using service_mapping_type = std::unordered_map< std::string, std::reference_wrapper< Service>>;
             service_mapping_type services;
-
-
-            message::event::service::Call event;
-
          };
 
          class Context
          {
          public:
 
-
             static Context& instance();
 
             Context( const Context&) = delete;
 
-
-            //!
             //! Being called from tpreturn
-            //!
             void jump_return( flag::xatmi::Return rval, long rcode, char* data, long len);
 
-            //!
             //! called from extern casual_service_forward
-            //!
             void forward( const char* service, char* data, long size);
 
-            //!
             //! Being called from tpadvertise
-            //!
             void advertise( const std::string& service, void (*adress)( TPSVCINFO *));
 
-
-
-            //!
             //! Being called from tpunadvertise
-            //!
             void unadvertise( const std::string& service);
 
-            //!
             //! Basic configuration for a server
-            //!
-            //! @param services
             void configure( const server::Arguments& arguments);
 
-
-            //!
             //! Tries to find the physical service from it's original name
             //!
             //! @param name
             //! @return a pointer to the service if found, nullptr otherwise.
             server::Service* physical( const std::string& name);
 
-
-            //!
             //! Tries to find the physical service from the associated callback function
             //!
             //! @param name
             //! @return a pointer to the service if found, nullptr otherwise.
             server::Service* physical( const server::xatmi::function_type& function);
 
-
-            //!
             //! Share state with callee::handle::basic_call for now...
             //! if this "design" feels good, we should expose needed functionality
             //! to callee::handle::basic_call
-            //!
             State& state();
 
             void finalize();
 
-
          private:
-
             Context();
-
             State m_state;
          };
 

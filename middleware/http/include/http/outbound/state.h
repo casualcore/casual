@@ -59,6 +59,7 @@ namespace casual
                      common::Uuid execution;
                      common::platform::time::point::type start = common::platform::time::point::type::min();
                      std::string service;
+                     std::string parent;
 
                      struct Header
                      {
@@ -94,9 +95,7 @@ namespace casual
 
                   inline const curl::type::easy& easy() const { return m_easy;}
 
-                  //!
                   //! @return state that is _stable_ in memory, hence it's address will never change 
-                  //!
                   State& state() { return *m_state;} 
                   const State& state() const { return *m_state;} 
 
@@ -171,8 +170,22 @@ namespace casual
 
             } inbound;
 
-            common::message::service::concurrent::Metric metric;
             std::unordered_map< std::string, state::Node> lookup;
+
+            struct Metric 
+            {
+               void add( const state::pending::Request& request, common::message::service::Code code);
+
+               explicit operator bool () const noexcept;
+
+               void clear();
+
+               inline auto& message() const { return m_message;}
+
+            private:
+               common::message::event::service::Calls m_message;
+            } metric;
+
          };
       } // outbound
    } // http

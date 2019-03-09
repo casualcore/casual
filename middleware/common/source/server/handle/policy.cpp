@@ -143,14 +143,13 @@ namespace casual
                      communication::ipc::blocking::send( node.address, message);
                   }
 
-                  void Default::ack()
+                  void Default::ack( const message::service::call::ACK& message)
                   {
                      Trace trace{ "server::handle::policy::Default::ack"};
 
-                     message::service::call::ACK ack;
-                     ack.process = process::handle();
+                     log::line( verbose::log, "reply: ", message);
 
-                     communication::ipc::blocking::send( communication::instance::outbound::service::manager::device(), ack);
+                     communication::ipc::blocking::send( communication::instance::outbound::service::manager::device(), message);
                   }
 
                   void Default::statistics( strong::ipc::id id,  message::event::service::Call& event)
@@ -312,12 +311,9 @@ namespace casual
                      communication::ipc::blocking::send( id, message, m_error_handler);
                   }
 
-                  void Admin::ack()
+                  void Admin::ack( const message::service::call::ACK& message)
                   {
-                     message::service::call::ACK ack;
-                     ack.process = common::process::handle();
-
-                     communication::ipc::blocking::send( communication::instance::outbound::service::manager::device(), ack, m_error_handler);
+                     communication::ipc::blocking::send( communication::instance::outbound::service::manager::device(), message, m_error_handler);
                   }
 
 

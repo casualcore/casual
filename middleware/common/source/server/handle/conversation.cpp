@@ -31,21 +31,19 @@ namespace casual
                {
                   auto reply = message::reverse::type( message);
                   // We set the worst we got until proven otherwise.
-                  reply.status = code::xatmi::protocol;
+                  reply.code.result = code::xatmi::protocol;
 
                   auto send_reply = execute::scope( [&](){
                      reply.process = process::handle();
                      reply.route = message.recording;
                   });
 
-                  //
                   // Prepare the descriptor
-                  //
                   {
                      auto& descriptor = common::service::conversation::context().descriptors().reserve( message.correlation);
                      descriptor.route = message.recording;
 
-                     reply.status = code::xatmi::ok;
+                     reply.code.result = code::xatmi::ok;
 
                   }
                   send_reply();

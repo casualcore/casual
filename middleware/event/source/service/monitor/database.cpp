@@ -9,6 +9,7 @@
 #include "common/chronology.h"
 #include "common/argument.h"
 #include "common/process.h"
+#include "common/algorithm.h"
 #include "common/event/listen.h"
 #include "common/exception/handle.h"
 #include "common/communication/instance.h"
@@ -22,12 +23,8 @@
 #include <string>
 #include <cstdlib>
 
-
-//
 // TODO: Use casual exception
-//
 #include <stdexcept>
-
 
 namespace casual
 {
@@ -83,15 +80,21 @@ namespace casual
                   m_connection.begin();
                }
 
-               void log( common::message::event::service::Call& event)
+               void log( common::message::event::service::Metric& metric)
                {
                   m_connection.execute( "INSERT INTO call VALUES (?,?,?,?,?,?);",
-                     event.service,
-                     event.parent,
-                     event.execution.get(),
-                     common::transaction::id::range::global( event.trid),
-                     event.start,
-                     event.end);
+                     metric.service,
+                     metric.parent,
+                     metric.execution.get(),
+                     common::transaction::id::range::global( metric.trid),
+                     metric.start,
+                     metric.end);
+               }
+
+
+               void log( common::message::event::service::Calls& event)
+               {
+                  common::algorithm::for_each( event.metrics, [&]( auto& metric){ log( metric);});
                }
 
             private:
@@ -101,9 +104,7 @@ namespace casual
 
             void main(int argc, char **argv)
             {
-               //
                // get database from arguments
-               //
                std::string database{"monitor.db"};
                {
                   casual::common::argument::Parse parse{ "service monitor",
@@ -113,22 +114,20 @@ namespace casual
                   parse( argc, argv);
                }
 
-               //
                // connect to domain
-               //
                common::communication::instance::connect( common::Uuid{ "8130b1cd7e8842a49e3da91f8913aff7"});
 
                {
                   Handler handler{ database};
 
                   common::event::idle::listen(
-                        [&](){
-                        //
+                     [&]()
+                     {
                         // the queue is empty
-                        //
                         handler.idle();
                      },
-                     [&]( common::message::event::service::Call& event){
+                     [&]( common::message::event::service::Calls& event)
+                     {
                         handler.log( event);
                      });
                }

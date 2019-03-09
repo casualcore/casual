@@ -10,6 +10,7 @@
 
 #include "common/message/type.h"
 #include "common/message/buffer.h"
+#include "common/message/event.h"
 
 #include "common/transaction/id.h"
 #include "common/service/type.h"
@@ -28,6 +29,20 @@ namespace casual
       {
          namespace service
          {
+
+            struct Code 
+            {
+               code::xatmi result = code::xatmi::ok;
+               long user = 0;
+
+               CASUAL_CONST_CORRECT_MARSHAL(
+               {
+                  archive & result;
+                  archive & user;
+               })
+               friend std::ostream& operator << ( std::ostream& out, const Code& value);
+            };
+
             struct Base
             {
                Base() = default;
@@ -76,19 +91,14 @@ namespace casual
          {
             namespace call
             {
-               //!
                //! Represent service information in a 'call context'
-               //!
                struct Service : message::Service
                {
                   using message::Service::Service;
 
-                  std::vector< strong::ipc::id> event_subscribers;
-
                   CASUAL_CONST_CORRECT_MARSHAL(
                   {
                      message::Service::marshal( archive);
-                     archive & event_subscribers;
                   })
 
                   friend std::ostream& operator << ( std::ostream& out, const call::Service& value);
@@ -219,42 +229,7 @@ namespace casual
                   friend std::ostream& operator << ( std::ostream& out, const Advertise& message);
                };
                static_assert( traits::is_movable< Advertise>::value, "not movable");
-
-
- 
-               struct Metric : basic_message< Type::service_concurrent_metrics>
-               {
-                  struct Service
-                  {
-                     Service() = default;
-                     Service( std::string name, common::platform::time::unit duration)
-                      : name( std::move( name)), duration( std::move( duration)) {}
-
-                     std::string name;
-                     common::platform::time::unit duration;
-
-                     CASUAL_CONST_CORRECT_MARSHAL(
-                     {
-                        CASUAL_MARSHAL( name);
-                        CASUAL_MARSHAL( duration);
-                     })
-                     friend std::ostream& operator << ( std::ostream& out, const Service& value);
-                  };
-
-                  common::process::Handle process;
-                  std::vector< Service> services;
-
-                  CASUAL_CONST_CORRECT_MARSHAL(
-                  {
-                     base_type::marshal( archive);
-                     CASUAL_MARSHAL( process);
-                     CASUAL_MARSHAL( services);
-                  })
-                  friend std::ostream& operator << ( std::ostream& out, const Metric& value);
-
-               };
-               static_assert( traits::is_movable< Metric>::value, "not movable");
-               
+              
             } // concurrent   
 
 
@@ -430,18 +405,7 @@ namespace casual
                //! Represent service reply.
                struct Reply :  basic_message< Type::service_reply>
                {
-                  struct Code 
-                  {
-                     code::xatmi result = code::xatmi::ok;
-                     long user = 0;
-
-                     CASUAL_CONST_CORRECT_MARSHAL(
-                     {
-                        archive & result;
-                        archive & user;
-                     })
-                  } code;
-
+                  service::Code code;
                   Transaction transaction;
                   common::buffer::Payload buffer;
 
@@ -457,25 +421,23 @@ namespace casual
                };
                static_assert( traits::is_movable< Reply>::value, "not movable");
 
-               //! Represent the reply to the broker when a server is done handling
+               //! Represent the reply to the service-manager when a server is done handling
                //! a service-call and is ready for new calls
                struct ACK : basic_message< Type::service_acknowledge>
                {
-                  ACK() = default;
-                  inline ACK( common::process::Handle process) : process( std::move( process)) {}
-                  
-                  common::process::Handle process;
+                  event::service::Metric metric;
 
                   CASUAL_CONST_CORRECT_MARSHAL(
                   {
                      base_type::marshal( archive);
-                     archive & process;
+                     archive & metric;
                   })
 
                   friend std::ostream& operator << ( std::ostream& out, const ACK& message);
                };
                static_assert( traits::is_movable< ACK>::value, "not movable");
 
+               
             } // call
 
 

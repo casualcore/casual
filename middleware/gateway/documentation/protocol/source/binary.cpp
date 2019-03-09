@@ -203,14 +203,13 @@ namespace casual
 
 
                      message.events = common::flag::service::conversation::Event::send_only;
-                     message.status = common::code::xatmi::ok;
                      message.flags = common::flag::service::conversation::send::Flag::no_time;
 
                      message.buffer.type = ".json/";
                      message.buffer.memory = { '{', '}'};
 
-                     message.status = common::code::xatmi::ok;
-
+                     message.code.result = common::code::xatmi::ok;
+                     message.code.user = 42;
 
                      generate( message, basename + "message.conversation.Send");
                   }

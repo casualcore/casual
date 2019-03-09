@@ -1069,14 +1069,14 @@ namespace casual
                         }
 
                         // overload ack so we use domain-manager internal stuff to lookup service-manager
-                        void ack()
+                        void ack( const message::service::call::ACK& message)
                         {
                            Trace trace{ "domain::manager::handle::local::server::Policy::ack"};
 
                            try
                            {
                               auto service_manager = m_state.singleton( common::communication::instance::identity::service::manager);
-                              manager::ipc::device().blocking_send( service_manager.ipc, message::service::call::ACK{ common::process::handle()});
+                              manager::ipc::device().blocking_send( service_manager.ipc, message);
                            }
                            catch( const exception::system::communication::Unavailable&)
                            {

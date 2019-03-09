@@ -41,11 +41,8 @@ namespace casual
             service::transaction::Type transaction = service::transaction::Type::automatic;
             std::string category;
 
-            //!
             //! Only to be able to compare 'c-functions', which we have to do according to the XATMI-spec
-            //!
             const void* compare = nullptr;
-
 
             friend std::ostream& operator << ( std::ostream& out, const Service& service);
 

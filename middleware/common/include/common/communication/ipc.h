@@ -37,33 +37,22 @@ namespace casual
                {
                   struct Header
                   {
-                     //!
                      //! Which logical type of message this transport is carrying
-                     //!
                      //! @attention has to be the first bytes in the message
-                     //!
                      common::message::Type type;
 
                      using correlation_type = Uuid::uuid_type;
 
-                     //!
                      //! The message correlation id
-                     //!
                      correlation_type correlation;
 
-                     //!
                      //! which offset this transport message represent of the complete message
-                     //!
                      std::int64_t offset;
 
-                     //!
                      //! Size of payload in this transport message
-                     //!
                      std::int64_t count;
 
-                     //!
                      //! size of the logical complete message
-                     //!
                      std::int64_t complete_size;
                   };
 
@@ -83,7 +72,6 @@ namespace casual
 
                   struct message_t
                   {
-
                      transport::Header header;
                      payload_type payload;
 
@@ -102,9 +90,8 @@ namespace casual
                      message.header.type = type;
                      message.header.complete_size = complete_size;
                   }
-                  //!
+
                   //! @return the message type
-                  //!
                   inline common::message::Type type() const { return static_cast< common::message::Type>( message.header.type);}
 
                   inline const_range_type payload() const
@@ -115,29 +102,18 @@ namespace casual
                   inline const correlation_type& correlation() const { return message.header.correlation;}
                   inline correlation_type& correlation() { return message.header.correlation;}
 
-                  //!
                   //! @return payload size
-                  //!
                   inline size_type payload_size() const { return message.header.count;}
 
-                  //!
                   //! @return the offset of the logical complete message this transport
                   //!    message represent.
-                  //!
                   inline size_type payload_offset() const { return message.header.offset;}
 
-
-                  //!
                   //! @return the size of the complete logical message
-                  //!
                   inline size_type complete_size() const { return message.header.complete_size;}
 
-
-                  //!
                   //! @return the total size of the transport message including header.
-                  //!
                   inline size_type size() const { return transport::header_size() + payload_size();}
-
 
                   inline void* data() { return static_cast< void*>( &message);}
                   inline const void* data() const { return static_cast< const void*>( &message);}
@@ -146,15 +122,11 @@ namespace casual
                   inline void* payload_data() { return static_cast< void*>( &message.payload);}
 
 
-                  //!
                   //! Indication if this transport message is the last of the logical message.
                   //!
                   //! @return true if this transport message is the last of the logical message.
-                  //!
                   //! @attention this does not give any guarantees that no more transport messages will arrive...
-                  //!
                   inline bool last() const { return message.header.offset + message.header.count == message.header.complete_size;}
-
 
                   auto begin() { return std::begin( message.payload);}
                   inline auto begin() const { return std::begin( message.payload);}
@@ -457,6 +429,28 @@ namespace casual
                   {
                      return ipc::send( std::forward< D>( device), message, policy::non::Blocking{}, handler);
                   }
+
+                  
+                  namespace optional
+                  {
+                     //! tries to send the message, if callee is unreachable (i.e. the process has died)
+                     //! the send is regarded as successfull
+                     //! @returns true if successfull
+                     template< typename D, typename M>
+                     bool send( D&& device, M&& message, const error_type& handler = nullptr)
+                     {
+                        try 
+                        {
+                           if( ! ipc::send( std::forward< D>( device), message, policy::non::Blocking{}, handler))
+                              return false;
+                        }
+                        catch( const exception::system::communication::Unavailable&)
+                        {
+                           /* no-op */
+                        }
+                        return true;
+                     }
+                  } // optional
                } // blocking
             } // non
 
@@ -489,6 +483,9 @@ namespace casual
 
             struct Helper
             {
+               using blocking_policy = policy::Blocking;
+               using non_blocking_policy = policy::non::Blocking;
+
                inline Helper(std::function<void()> error_handler)
                      : m_error_handler{std::move(error_handler)} {};
                inline Helper() : Helper(nullptr) {}

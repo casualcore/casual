@@ -64,7 +64,7 @@ namespace casual
                   return out << "{ process: " << value.process
                         << ", route: " << value.route
                         << ", recording: " << value.recording
-                        << ", status: " << value.status
+                        << ", code: " << value.code
                         << '}';
                }
 

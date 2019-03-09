@@ -57,11 +57,9 @@ namespace casual
                         message.process = process::handle();
                         message.flags = flags;
 
-                        //
                         // we push the ipc-queue-id that this instance has. This will
                         // be the last node (for the route when the other server communicate
                         // with us, in the "reverse" order).
-                        //
                         message.recording.nodes.emplace_back( communication::ipc::inbound::ipc());
 
                         auto& transaction = common::transaction::context().current();
@@ -71,9 +69,7 @@ namespace casual
                            message.trid = transaction.trid;
                            transaction.associate( message.correlation);
 
-                           //
                            // We use the transaction deadline if it's earlier
-                           //
                            /*
                            if( transaction.timout.deadline() < descriptor.timeout.deadline())
                            {
@@ -226,49 +222,44 @@ namespace casual
 
                log::line( log::debug, "descriptor: ", descriptor);
 
-               //
                // If some thing goes wrong we unreserve the descriptor
-               //
                auto unreserve = common::execute::scope( [&](){ m_state.descriptors.unreserve( descriptor.descriptor);});
 
-               //
                // TODO: Invoke pre-transport buffer modifiers
-               //
                //buffer::transport::Context::instance().dispatch( data, size, service, buffer::transport::Lifecycle::pre_call);
-
 
                auto target = lookup();
 
-               //
                // The service exists. Take care of reserving descriptor and determine timeout
-               //
                auto message = local::prepare::connect( m_state, start, std::move( buffer), flags, target.service);
                message.correlation = descriptor.correlation;
 
-
-
-               //
                // If something goes wrong (most likely a timeout), we need to send ack to broker in that case, cus the service(instance)
                // will not do it...
-               //
                auto send_ack = common::execute::scope( [&]()
-                  {
-                     message::service::call::ACK ack;
-                     ack.process = target.process;
-                     communication::ipc::blocking::send( communication::instance::outbound::service::manager::device(), ack);
-                  });
+               {
+                  message::service::call::ACK ack;
+
+                  ack.execution = message.execution;
+                  ack.metric.execution = message.execution;
+                  ack.metric.service = service;
+                  ack.metric.parent = message.parent;
+                  ack.metric.process = common::process::handle();
+                  ack.metric.trid = message.trid;
+
+                  ack.metric.start = start;
+                  ack.metric.end = platform::time::clock::type::now();
+
+                  communication::ipc::blocking::send( communication::instance::outbound::service::manager::device(), ack);
+               });
 
                if( target.busy())
                {
-                  //
                   // We wait for an instance to become idle.
-                  //
                   target = lookup();
                }
 
-               //
                // connect to the service
-               //
                {
                   message.service = target.service;
 
@@ -300,12 +291,9 @@ namespace casual
 
                local::check::disconnect( descriptor);
 
-
                auto message = local::prepare::send( descriptor, std::move( buffer), flags);
 
-               //
                // Check if the user wants to transfer the control of the conversation.
-               //
                if( flags & send::Flag::receive_only)
                {
                   descriptor.duplex = decltype( descriptor.duplex)::receive;
@@ -363,11 +351,7 @@ namespace casual
 
                if( result.event & termination_events)
                {
-                  //
                   // Other side has terminated the conversation
-                  //
-
-
                }
                else
                {
@@ -394,10 +378,7 @@ namespace casual
                   local::route::send( message);
                }
 
-
-               //
                // If we're not in control we "need" to discard the possible incoming message
-               //
                if( descriptor.duplex == state::descriptor::Information::Duplex::receive)
                {
                   communication::ipc::inbound::device().discard( descriptor.correlation);

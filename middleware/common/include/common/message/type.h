@@ -81,7 +81,6 @@ namespace casual
             service_acknowledge,
 
             service_concurrent_advertise,
-            service_concurrent_metrics,
 
             service_conversation_connect_request = SERVICE_BASE + 200,
             service_conversation_connect_reply,
@@ -109,6 +108,7 @@ namespace casual
 
             EVENT_SERVICE_BASE = 4200,
             event_service_call = EVENT_SERVICE_BASE,
+            event_service_calls,
             EVENT_SERVICE_BASE_END,
             
             EVENT_BASE_END,

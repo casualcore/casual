@@ -6,6 +6,7 @@
 
 
 #include "xatmi.h"
+#include "tx.h"
 
 #include "xatmi/internal/code.h"
 
@@ -41,9 +42,7 @@ char* tpalloc( const char* type, const char* subtype, long size)
 
    try
    {
-      //
       // TODO: Shall we report size less than zero ?
-      //
       return casual::common::buffer::pool::Holder::instance().allocate( type, subtype, size < 0 ? 0 : size);
    }
    catch( ...)
@@ -59,9 +58,7 @@ char* tprealloc( const char* ptr, long size)
 
    try
    {
-      //
       // TODO: Shall we report size less than zero ?
-      //
       return casual::common::buffer::pool::Holder::instance().reallocate( ptr, size < 0 ? 0 : size);
    }
    catch( ...)

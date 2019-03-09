@@ -33,21 +33,17 @@ namespace casual
 
          } // detail
 
+         void subscribe( const process::Handle& process, std::vector< message_type> types);
          void unsubscribe( const process::Handle& process, std::vector< message_type> types);
 
-
-         //!
          //! Register and start listening on events.
-         //!
          template< typename... Callback>
          void listen( device_type& device, Callback&&... callbacks)
          {
             detail::listen( device, device.handler( std::forward< Callback>( callbacks)...));
          }
 
-         //!
          //! Register and start listening on events on the default inbound queue.
-         //!
          template< typename... Callback>
          void listen( Callback&&... callbacks)
          {

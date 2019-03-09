@@ -57,10 +57,9 @@ namespace casual
 
                } // location
 
-
                void subscribe( const process::Handle& process, std::vector< message_type> types)
                {
-                  log::line( log::debug, "unsubscribe - process: ", process, ", types: ", types);
+                  log::line( log::debug, "subscribe - process: ", process, ", types: ", types);
 
                   message::event::subscription::Begin request;
 
@@ -69,9 +68,7 @@ namespace casual
 
                   location::domain( request, request.types);
                   location::service( request, request.types);
-
                }
-
 
                auto subscription( strong::ipc::id ipc, std::vector< message_type> types)
                {
@@ -142,9 +139,7 @@ namespace casual
                      ;
                   }
 
-                  //
                   // queue is empty, notify user
-                  //
                   empty();
 
                   handler( device.next( typename device_type::blocking_policy{}));
@@ -152,6 +147,13 @@ namespace casual
 
             }
          } // detail
+
+         void subscribe( const process::Handle& process, std::vector< message_type> types)
+         {
+            Trace trace{ "common::event::subscribe"};
+
+            local::subscribe( process, std::move( types));
+         }
 
          void unsubscribe( const process::Handle& process, std::vector< message_type> types)
          {

@@ -46,11 +46,9 @@ namespace casual
 
                }
 
-               //!
                //! Dispatch a message.
                //!
                //! @return true if the message was handled.
-               //!
                template< typename M>
                bool operator () ( M&& complete) const
                {
@@ -59,9 +57,7 @@ namespace casual
 
                platform::size::type size() const { return m_handlers.size();}
 
-               //!
                //! @return all message-types that this instance handles
-               //!
                std::vector< message_type> types() const
                {
                   std::vector< message_type> result;
@@ -74,8 +70,6 @@ namespace casual
                   return result;
                }
 
-
-               //!
                //! Inserts handler, that is, adds new handlers
                //!
                //! @param handlers
@@ -230,6 +224,39 @@ namespace casual
                   ;
                }
             }
+
+            
+            namespace empty
+            {
+               //! 
+               template< typename Unmarshal, typename D, typename BP, typename EC, typename NBL = int>
+               void pump( 
+                  basic_handler< Unmarshal>& handler, 
+                  D& device, 
+                  BP&& blocking_predicate, 
+                  EC&& empty_callback,
+                  NBL non_blocking_limit = std::numeric_limits< NBL>::max())
+               {
+                  using device_type = std::decay_t< decltype( device)>;
+
+                  while( true)
+                  {
+                     if( blocking_predicate())
+                     {
+                        handler( device.next( typename device_type::blocking_policy{}));
+                     }
+                     else
+                     {
+                        while( handler( device.next( typename device_type::non_blocking_policy{})) && non_blocking_limit-- > 0)
+                           ; /* no op */
+
+                        if( non_blocking_limit > 0)
+                           empty_callback();
+                     }
+                  }   
+               }
+            } // empty
+            
 
             namespace blocking
             {

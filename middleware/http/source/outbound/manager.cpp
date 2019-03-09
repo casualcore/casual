@@ -146,18 +146,19 @@ namespace casual
                      {
                         using Base::Base;
 
-                        void operator () ( state::pending::Request&& request, curl::type::code::easy code)
+                        void operator () ( state::pending::Request&& request, curl::type::code::easy curl_code)
                         {
                            Trace trace{ "http::outbound::manager::local::handle::Reply"};
 
                            log::line( verbose::log, "request: ", request);
+                           log::line( verbose::log, "curl_code: ", curl_code);
+
+                           auto code = request::code::transform( request.state().header.reply, curl_code);
+
                            log::line( verbose::log, "code: ", code);
                            
                            // take care of metrics
-                           state.metric.services.emplace_back(
-                              request.state().service,
-                              platform::time::clock::type::now() - request.state().start);
-                           
+                           state.metric.add( request, code);
 
                            auto destination = request.state().destination;
 
@@ -165,16 +166,15 @@ namespace casual
                            message.buffer = std::move( request.state().payload);
                            message.correlation = request.state().correlation;
                            message.execution = request.state().execution;
-                           message.code = request::code::transform( request.state().header.reply, code);
+                           message.code = code;
 
                            manager::local::ipc::optional::send( state, destination, message);
 
-
                            // do we send metrics to service-manager?
-                           if( state.pending.requests.empty() || state.metric.services.size() >= platform::batch::http::outbound::concurrent::metrics)
+                           if( state.pending.requests.empty() || state.metric)
                            {
-                              communication::ipc::blocking::send( common::communication::instance::outbound::service::manager::device(), state.metric);
-                              state.metric.services.clear();
+                              communication::ipc::blocking::send( common::communication::instance::outbound::service::manager::device(), state.metric.message());
+                              state.metric.clear();
                            }
                         }
                      };

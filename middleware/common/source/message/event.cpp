@@ -92,14 +92,28 @@ namespace casual
             {
                inline namespace v1
                {
-                  std::ostream& operator << ( std::ostream& out, const Call& value)
+                  
+                  std::ostream& operator << ( std::ostream& out, const Metric& value)
                   {
                      return out << "{ process: " << value.process
-                           << ", service: " << value.service
-                           << ", parent: " << value.parent
-                           << ", start: " << chronology::duration( std::chrono::duration_cast< common::platform::time::unit>( value.start.time_since_epoch()))
-                           << ", end: " << chronology::duration( std::chrono::duration_cast< common::platform::time::unit>( value.end.time_since_epoch()))
-                           << '}';
+                        << ", service: " << value.service
+                        << ", parent: " << value.parent
+                        << ", execution: " << value.execution
+                        << ", trid: " << value.trid
+                        << ", start: " << chronology::duration( std::chrono::duration_cast< common::platform::time::unit>( value.start.time_since_epoch()))
+                        << ", end: " << chronology::duration( std::chrono::duration_cast< common::platform::time::unit>( value.end.time_since_epoch()))
+                        << ", code: " << value.code
+                        << '}';
+                  }
+
+                  std::ostream& operator << ( std::ostream& out, const Call& value)
+                  {
+                     return out << "{ metric: " << value.metric << '}';
+                  }
+
+                  std::ostream& operator << ( std::ostream& out, const Calls& value)
+                  {
+                     return out << "{ metrics: " << value.metrics << '}';
                   }
                }
             } // service

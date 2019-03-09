@@ -68,12 +68,8 @@ namespace casual
             } // eventually
 
 
-
-            //!
             //! Collects messages from input and put them in output
             //! caches messages if the output is full
-            //!
-            //!
             struct Collector
             {
                Collector();

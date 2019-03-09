@@ -21,16 +21,12 @@ namespace casual
       {
          namespace pending
          {
-
-            //!
             //! A pending message, that will be sent later.
-            //!
             struct Message
             {
                using target_type = common::process::Handle;
                using targets_type = std::vector< target_type>;
                
-
                enum class Targets
                {
                   all,
@@ -69,15 +65,11 @@ namespace casual
                void remove( strong::ipc::id ipc);
                void remove( strong::process::id pid);
 
-
                friend std::ostream& operator << ( std::ostream& out, const Message& value);
 
                targets_type targets;
                communication::message::Complete complete;
                Targets task;
-
-            private:
-
             };
 
             namespace policy
@@ -129,11 +121,9 @@ namespace casual
                } // blocking
             } // non
 
-            //!
             //! Tries to send a message to targets.
             //! Depending on the task it will either send to all
             //! or stop when the first is successful.
-            //!
             template< typename P>
             struct Send
             {
@@ -146,9 +136,7 @@ namespace casual
                Send( error_type handler) : Send( send_policy{}, std::move( handler)) {}
                Send() : Send( send_policy{}, nullptr) {}
 
-               //!
                //! @return true if the message has been sent
-               //!
                bool operator () ( Message& message)
                {
                   return send( message, m_policy, m_handler);
@@ -159,10 +147,7 @@ namespace casual
             };
 
 
-
-            //!
             //! @return a 'pending-sender' that tries to send to targets
-            //!
             template< typename P>
             Send< P> sender( P&& policy, communication::error::type handler = nullptr)
             {

@@ -11,6 +11,7 @@
 #include "common/message/type.h"
 
 #include "common/domain.h"
+#include "common/code/xatmi.h"
 
 namespace casual
 {
@@ -207,20 +208,23 @@ namespace casual
             {
                inline namespace v1
                {
-               struct Call : basic_message< Type::event_service_call>
+               struct Metric 
                {
                   std::string service;
                   std::string parent;
                   common::process::Handle process;
-
+                  common::Uuid execution;
                   common::transaction::ID trid;
 
                   common::platform::time::point::type start;
                   common::platform::time::point::type end;
 
+                  common::code::xatmi code;
+
+                  auto duration() const noexcept { return end - start;}
+
                   CASUAL_CONST_CORRECT_MARSHAL
                   (
-                     base_type::marshal( archive);
                      archive & service;
                      archive & parent;
                      archive & process;
@@ -228,17 +232,41 @@ namespace casual
                      archive & trid;
                      archive & start;
                      archive & end;
+                     archive & code;
+                  )
+
+                  friend std::ostream& operator << ( std::ostream& out, const Metric& value);
+               };
+
+               struct Call : basic_message< Type::event_service_call>
+               {
+                  Metric metric;
+
+                  CASUAL_CONST_CORRECT_MARSHAL
+                  (
+                     base_type::marshal( archive);
+                     archive & metric;
                   )
 
                   friend std::ostream& operator << ( std::ostream& out, const Call& value);
                };
-               }
                static_assert( traits::is_movable< Call>::value, "not movable");
 
+               struct Calls : basic_message< Type::event_service_calls>
+               {
+                  std::vector< Metric> metrics;
+
+                  CASUAL_CONST_CORRECT_MARSHAL
+                  (
+                     base_type::marshal( archive);
+                     archive & metrics;
+                  )
+
+                  friend std::ostream& operator << ( std::ostream& out, const Calls& value);
+               };
+
+               } // inline v1            
             } // service
-
-
-
          } // event
 
          namespace is

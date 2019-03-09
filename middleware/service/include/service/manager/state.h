@@ -335,11 +335,26 @@ namespace casual
                std::vector< common::message::pending::Message> replies;
             } pending;
 
+            common::event::dispatch::Collection< common::message::event::service::Calls> events;
 
-            common::event::dispatch::Collection<
-               common::message::event::service::Call> events;
+            struct Metric 
+            {
+               using metric_type = common::message::event::service::Metric;
 
-            std::vector< common::strong::ipc::id> subscribers() const;
+               void add( metric_type metric);
+               void add( std::vector< metric_type> metrics);
+
+               inline auto& message() const noexcept { return m_message;}
+               inline void clear() { m_message.metrics.clear();}
+
+               inline auto size() const noexcept { return m_message.metrics.size();}
+               inline explicit operator bool() const noexcept { return ! m_message.metrics.empty();}
+
+            private:
+               common::message::event::service::Calls m_message;
+            } metric;        
+
+            
 
 
             common::process::Handle forward;
@@ -356,31 +371,21 @@ namespace casual
             void update( common::message::service::Advertise& message);
             void update( common::message::service::concurrent::Advertise& message);
 
-
-            //!
             //! Resets metrics for the provided services, if empty all metrics are reseted.
             //! @param services
             //!
             //! @return the services that was reseted.
-            //!
             std::vector< std::string> metric_reset( std::vector< std::string> services);
 
-
-            //!
             //! find a service from name
             //!
             //! @param name of the service wanted
             //! @return pointer to service, nullptr if not found
-            //!
             state::Service* find_service( const std::string& name);
 
             state::instance::Sequential& local( common::strong::process::id pid);
 
             void connect_manager( std::vector< common::server::Service> services);
-
-
-
-
          };
 
       } // manager
