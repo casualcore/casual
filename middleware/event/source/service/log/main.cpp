@@ -77,8 +77,8 @@ namespace casual
                   {
                      using namespace casual::common::argument;
                      Parse parse{ "service log", 
-                        Option( std::tie( settings.file), { "-f", "--file"}, "path to log-file (default: '" + settings.file + "'"),
-                        Option( std::tie( settings.delimiter), { "-d", "--delimiter"}, "delimiter between columns (default: '" + settings.delimiter + "'"),
+                        Option( std::tie( settings.file), { "-f", "--file"}, "path to log-file (default: '" + settings.file + "')"),
+                        Option( std::tie( settings.delimiter), { "-d", "--delimiter"}, "delimiter between columns (default: '" + settings.delimiter + "')"),
                      };
                      parse( argc, argv);
                   }
