@@ -73,24 +73,23 @@ namespace casual
                {
                   namespace transform
                   {
-
                      template< typename R, typename M>
                      R message( M&& message)
                      {
                         R result;
 
                         result.process = message.process;
+
+                        // TODO: remove, is not needed everywhere
                         result.trid = message.trid;
 
                         return result;
                      }
 
-
                      template< typename M>
-                     auto reply( M&& message) -> decltype( common::message::reverse::type( message))
+                     auto reply( M&& message)
                      {
                         auto result = common::message::reverse::type( message);
-
                         result.process = common::process::handle();
                         result.trid = message.trid;
 
@@ -189,6 +188,7 @@ namespace casual
                      {
                         auto reply = local::transform::reply( message);
                         reply.state = result;
+                        reply.trid = message.trid;
                         reply.resource = message.resource;
 
                         send::reply( state, std::move( reply), message.process);
@@ -225,7 +225,7 @@ namespace casual
                                     message.resource = resource.id;
                                     return message;
                                  };
-                                 
+
                                  state::pending::Request request{ resource.id, create_message()};
 
                                  if( ! action::resource::request( state, request))
@@ -260,7 +260,6 @@ namespace casual
 
                   namespace instance
                   {
-
                      void done( State& state, state::resource::Proxy::Instance& instance)
                      {
                         auto request = common::algorithm::find( state.pending.requests, instance.id);
@@ -295,7 +294,6 @@ namespace casual
 
                   namespace resource
                   {
-
                      template< typename M>
                      void involve( State& state, Transaction::Branch& branch, M&& message)
                      {
@@ -417,6 +415,7 @@ namespace casual
                                  {
                                     auto reply = local::transform::message< reply_type>( message);
                                     reply.correlation = transaction.correlation;
+                                    reply.trid = transaction.global.trid;
                                     reply.stage = reply_type::Stage::commit;
                                     reply.state = common::code::tx::ok;
 
@@ -437,6 +436,7 @@ namespace casual
                                  {
                                     auto reply = local::transform::message< reply_type>( message);
                                     reply.correlation = transaction.correlation;
+                                    reply.trid = transaction.global.trid;
                                     reply.stage = reply_type::Stage::prepare;
                                     reply.state = common::code::tx::ok;
 
@@ -495,6 +495,7 @@ namespace casual
 
                                  auto reply = local::transform::message< reply_type>( message);
                                  reply.correlation = transaction.correlation;
+                                 reply.trid = transaction.global.trid;
                                  reply.stage = reply_type::Stage::commit;
                                  reply.state = common::code::tx::ok;
 
@@ -527,6 +528,7 @@ namespace casual
                                  {
                                     auto reply = local::transform::message< reply_type>( message);
                                     reply.correlation = transaction.correlation;
+                                    reply.trid = transaction.global.trid;
                                     reply.stage = reply_type::Stage::commit;
                                     reply.state = common::code::convert::to::tx( result);
 
@@ -562,6 +564,7 @@ namespace casual
                                  {
                                     auto reply = local::transform::message< reply_type>( message);
                                     reply.correlation = transaction.correlation;
+                                    reply.trid = transaction.global.trid;
                                     reply.state = common::code::tx::ok;
 
                                     local::send::reply( state, std::move( reply), transaction.owner());
@@ -582,6 +585,7 @@ namespace casual
                                  {
                                     auto reply = local::transform::message< reply_type>( message);
                                     reply.correlation = transaction.correlation;
+                                    reply.trid = transaction.global.trid;
                                     reply.state = common::code::convert::to::tx( result);
 
                                     local::send::persistent::reply( state, std::move( reply), transaction.owner());
@@ -617,6 +621,7 @@ namespace casual
                            {
                               auto reply = local::transform::message< reply_type>( message);
                               reply.state = transaction.results();
+                              reply.trid = transaction.global.trid;
                               reply.correlation = transaction.correlation;
                               reply.resource = transaction.resource;
 
@@ -639,6 +644,7 @@ namespace casual
                            {
                               auto reply = local::transform::message< reply_type>( message);
                               reply.state = transaction.results();
+                              reply.trid = transaction.global.trid;
                               reply.correlation = transaction.correlation;
                               reply.resource = transaction.resource;
 
@@ -661,6 +667,7 @@ namespace casual
                            {
                               auto reply = local::transform::message< reply_type>( message);
                               reply.state = transaction.results();
+                              reply.trid = transaction.global.trid;
                               reply.correlation = transaction.correlation;
                               reply.resource = transaction.resource;
 
@@ -716,6 +723,7 @@ namespace casual
                                           {
                                              auto reply = local::transform::message< reply_type>( message);
                                              reply.correlation = transaction.correlation;
+                                             reply.trid = transaction.global.trid;
                                              reply.resource = transaction.resource;
                                              reply.state = result;
 
@@ -775,6 +783,7 @@ namespace casual
                                     {
                                        auto reply = local::transform::message< reply_type>( message);
                                        reply.correlation = transaction.correlation;
+                                       reply.trid = transaction.global.trid;
                                        reply.resource = transaction.resource;
                                        reply.state = common::code::xa::rollback_other;
 
@@ -1257,22 +1266,25 @@ namespace casual
                   transaction.correlation = message.correlation;
                   transaction.resource = message.resource;
 
-                  auto mutate_branch = [&]( auto& branch)
-                  {
-                     branch.trid.owner( message.process);
-                     
-                     auto obsolete_resource = [&]( auto& resource)
+                  // make sure we keep track of the transaction from this message,
+                  // so that we reply with the same trid (including branch).
+                  transaction.global.trid = message.trid;
+                  transaction.global.trid.owner( message.process);
+
+                  auto remove_obsolete_resources = [&]( auto& branch)
+                  {  
+                     auto obsolete_resources = [&]( auto& resource)
                      {
                         return state::resource::id::remote( resource.id) 
                            && m_state.get_external( resource.id).process.pid == message.process.pid;
                      };
 
                      // Remove resource from transaction if it's the same as the instigator for the
-                     // rollback
-                     common::algorithm::trim( branch.resources, common::algorithm::remove_if( branch.resources, obsolete_resource));
+                     // prepare, commit or rollback
+                     common::algorithm::trim( branch.resources, common::algorithm::remove_if( branch.resources, obsolete_resources));
                   };
 
-                  common::algorithm::for_each( transaction.branches, mutate_branch);
+                  common::algorithm::for_each( transaction.branches, remove_obsolete_resources);
                }
 
 
@@ -1407,6 +1419,7 @@ namespace casual
                      {
                         auto reply = local::transform::reply( message);
                         reply.state = common::code::xa::protocol;
+                        reply.trid = message.trid;
                         reply.resource = message.resource;
 
                         local::send::reply( m_state, std::move( reply), message.process);
@@ -1588,8 +1601,6 @@ namespace casual
 
             } // domain
 
-
-
             namespace resource
             {
                namespace reply
@@ -1599,9 +1610,7 @@ namespace casual
                   template struct Wrapper< basic_rollback>;
 
                } // reply
-
             }
-
 
             dispatch_type handlers( State& state)
             {

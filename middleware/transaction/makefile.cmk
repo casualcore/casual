@@ -44,7 +44,7 @@ manager_archive = LinkArchive( 'bin/manager-archive',
  
 
 
-target = LinkExecutable( 'bin/casual-transaction-manager',
+manager = LinkExecutable( 'bin/casual-transaction-manager',
     [
         Compile( 'source/manager/main.cpp')
     ],
@@ -57,7 +57,7 @@ target = LinkExecutable( 'bin/casual-transaction-manager',
         'casual-xatmi',
     ])
 
-install_bin.append( target)
+install_bin.append( manager)
 
 
 target = LinkLibrary( 'bin/casual-transaction-admin-cli',
@@ -104,7 +104,7 @@ install_bin.append( target)
 # unittest
 #
  
-LinkUnittest( 'bin/test-casual-transaction',
+test_transaction = LinkUnittest( 'bin/test-casual-transaction',
     [
         Compile( 'unittest/source/manager/test_state.cpp'),
         Compile( 'unittest/source/manager/test_log.cpp'),
@@ -125,6 +125,9 @@ LinkUnittest( 'bin/test-casual-transaction',
         'casual-mockup-unittest-environment',
         'casual-unittest',
     ])
+
+# make sure we link manager before we run tests 
+Dependencies( test_transaction, [ manager])
 
 
 Install( install_bin,'$(CASUAL_HOME)/bin')

@@ -98,7 +98,7 @@ namespace casual
                   admin::Transaction operator () ( const manager::Transaction& transaction) const
                   {
                      admin::Transaction result;
-                     result.global.id = common::transcode::hex::encode( transaction.global.id());
+                     result.global.id = common::transcode::hex::encode( transaction.global.global());
                      result.global.owner = transaction.owner();
                      result.state = static_cast< long>( transaction.results());
 

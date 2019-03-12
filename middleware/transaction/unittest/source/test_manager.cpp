@@ -752,7 +752,7 @@ resources:
 
             communication::ipc::blocking::receive( common::communication::ipc::inbound::device(), message);
 
-            EXPECT_TRUE( message.trid == trid);
+            EXPECT_TRUE( message.trid == trid) << "trid: " << trid << "\nmessage.trid: " << message.trid;
             EXPECT_TRUE( message.state == common::code::xa::read_only);
          }
       }
@@ -1449,6 +1449,46 @@ resources:
          EXPECT_TRUE( rm1.name == "rm1");
          EXPECT_TRUE( rm1.metrics.resource.count == 2) << "rm: " << rm1;  // 1 prepare, 1 commit
       }
+
+      TEST( transaction_manager_branch, remote_transaction__branched_rm1_involved____expect_original_trid_prepare_reply)
+      {
+         common::unittest::Trace trace;
+
+         local::Domain domain;
+
+         auto trid = common::transaction::id::create( process::handle());
+
+         // involved (new branch)
+         {
+            common::message::transaction::resource::involved::Request message;
+            message.trid = common::transaction::id::branch( trid);
+            message.process = process::handle();
+            message.involved = { local::rm_1};
+
+            auto reply = local::call::tm( message);
+            EXPECT_TRUE( reply.involved.empty());
+         }
+
+         // remote prepare request
+         {
+            common::message::transaction::resource::prepare::Request message;
+            message.trid = trid;
+            message.process = process::handle();
+         
+            local::send::tm( message);
+         }
+
+         // remote prepare reply
+         {
+            common::message::transaction::resource::prepare::Reply message;
+
+            communication::ipc::blocking::receive( common::communication::ipc::inbound::device(), message);
+
+            EXPECT_TRUE( message.trid == trid);
+            EXPECT_TRUE( message.state == common::code::xa::ok);
+         }
+      }
+
       namespace local
       {
          namespace

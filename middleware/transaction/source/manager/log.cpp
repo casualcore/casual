@@ -81,7 +81,7 @@ namespace casual
          {
             Trace trace{ "transaction::Log::remove"};
 
-            m_statement.remove.execute( global.id());
+            m_statement.remove.execute( global.global());
 
             m_stats.update.remove += m_connection.affected();
 

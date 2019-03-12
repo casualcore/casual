@@ -348,7 +348,7 @@ namespace casual
                branches.emplace_back( trid);
             }
 
-            inline const common::process::Handle& owner() const { return branches.at( 0).trid.owner();}
+            inline const common::process::Handle& owner() const { return global.trid.owner();}
 
             common::platform::size::type resource_count() const noexcept;
 

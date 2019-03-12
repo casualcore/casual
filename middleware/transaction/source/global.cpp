@@ -19,7 +19,7 @@ namespace casual
 
          std::ostream& operator << ( std::ostream& out, const ID& value)
          {
-            return common::transcode::hex::encode( out, value.id());
+            return common::transcode::hex::encode( out, value.global());
          }
       } // global
    } // transaction
