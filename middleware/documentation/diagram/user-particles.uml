@@ -1,0 +1,23 @@
+@startuml
+
+entity "instance" as sinstance
+entity "instance" as einstance
+entity service
+entity group
+entity server
+entity executable
+entity resource
+
+group "0..*"->"0..*"group
+group  "1" o-- "0..*" resource
+group  "0..*" o-- "0..*" server
+group  "0..*" o-- "0..*" executable
+
+server "1" o-- "0..*" sinstance
+server "1" o-- "0..*" resource
+sinstance "1" o-- "0..*" service
+
+executable "1" o-- "0..*" einstance
+executable "1" o-- "0..*" resource
+
+@enduml
