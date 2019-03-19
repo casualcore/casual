@@ -86,11 +86,20 @@ namespace casual
 
                struct State 
                {
+                  
                   State( communication::tcp::inbound::Device&& inbound, size_type order)
                      : external{ std::move( inbound)}, order( order)
                   {
                      metric.metrics.reserve( common::platform::batch::gateway::metrics);
                   }
+
+                  ~State()
+                  {
+                     log::line( verbose::log, "external branches: ", branch.branches());
+                  }
+
+                  State( State&&) = default;
+
 
                   struct 
                   {
@@ -117,6 +126,73 @@ namespace casual
 
                   common::message::event::service::Calls metric;
                   size_type order;
+
+                  struct
+                  {
+                     struct Mapping 
+                     {
+                        Mapping( const common::transaction::ID& internal, const common::transaction::ID& external) 
+                           : internal{ internal}, external{ external} {}
+
+                        common::transaction::ID internal;
+                        common::transaction::ID external;
+
+                        friend std::ostream& operator << ( std::ostream& out, const Mapping& value) 
+                        {
+                           return out << "{ internal: " << value.internal << ", external: " << value.external << "}";
+                        }
+                     };
+                     using transaction_branch_type = std::vector< Mapping>;
+
+                     //! @return the (possible created) external branched trid.
+                     const common::transaction::ID& external( const common::transaction::ID& trid)
+                     {
+                        auto find_internal = [&trid]( auto& m){ return m.internal == trid;};
+
+                        auto found = algorithm::find_if( m_branches, find_internal);
+
+                        if( found)
+                           return found->external;
+
+                        m_branches.emplace_back( trid, common::transaction::id::branch( trid));
+
+                        return m_branches.back().external;
+                     }
+
+                     //! @return the internal branched trid, throws if not found
+                     const common::transaction::ID& internal( const common::transaction::ID& trid) const
+                     {
+                        auto find_external = [&trid]( auto& m){ return m.external == trid;};
+
+                        auto found = algorithm::find_if( m_branches, find_external);
+
+                        if( found)
+                           return found->internal;
+
+                        throw exception::system::invalid::Argument{ string::compose( "failed to correlate the branchad external trid: ", trid)};
+                     }                     
+
+                     //! removes the correlation between external branched trid and the internal trid
+                     void remove( const common::transaction::ID& external)
+                     {
+                        auto find_external = [&external]( auto& m){ return m.external == external;};
+
+                        auto found = algorithm::find_if( m_branches, find_external);
+
+                        if( found)
+                        {
+                           log::line( verbose::log, "remove branch mapping: ", *found);
+                           m_branches.erase( std::begin( found));
+                        }
+                     }
+
+                     const transaction_branch_type& branches() const { return m_branches;}
+
+                  private: 
+                     transaction_branch_type m_branches;
+                  } branch;
+
+
                };
 
                namespace inbound
@@ -293,6 +369,20 @@ namespace casual
 
                   namespace external
                   {
+                     namespace origin
+                     {
+                        template< typename M>
+                        void transaction( State& state, M& message)
+                        {
+                           if( message.transaction.trid)
+                           {
+                              message.transaction.trid = state.branch.internal( message.transaction.trid);
+
+                              log::line( verbose::log, "internal trid: ", message.transaction.trid);
+                           }
+                        }
+
+                     } // branch
 
                      template< typename M>
                      struct basic_reply : state::Base
@@ -341,6 +431,9 @@ namespace casual
                                  try
                                  {
                                     auto destination = state.service.route.get( message.correlation);
+
+                                    // get the original "un-branched" trid
+                                    external::origin::transaction( state, message);
 
                                     auto now = common::platform::time::clock::type::now();
 
@@ -525,6 +618,20 @@ namespace casual
 
                   namespace internal
                   {
+                     
+                     namespace branch
+                     {
+                        template< typename M>
+                        void transaction( State& state, M& message)
+                        {
+                           message.trid = state.branch.external( message.trid);
+
+                           log::line( verbose::log, "external trid: ", message.trid);
+                        }
+
+                     } // branch
+                     
+
                      template< typename M>
                      struct basic_request : state::Base
                      {
@@ -558,13 +665,21 @@ namespace casual
 
                                  log::line( verbose::log, "message: ", message);
 
+
                                  auto now = common::platform::time::clock::type::now();
 
                                  if( ! message.flags.exist( common::message::service::call::request::Flag::no_reply))
                                  {
-                                    // potentially notify TM that this "resource" is involved in the transaction
-                                    blocking::transaction::involved( message);
+                                    // call within a transaction can only happend here (with a reply)
+                                    if( message.trid)
+                                    {
+                                       // branch 
+                                       branch::transaction( state, message);
 
+                                       // notify TM that this "resource" is involved in the branched transaction
+                                       blocking::transaction::involved( message);
+                                    }
+                           
                                     state.service.route.emplace(
                                        message.correlation,
                                        message.process,
@@ -594,8 +709,14 @@ namespace casual
 
                                     log::line( verbose::log, "message: ", message);
 
-                                    // potentially notify TM that this "resource" is involved in the transaction
-                                    blocking::transaction::involved( message);
+                                    if( message.trid)
+                                    {
+                                       // branch 
+                                       branch::transaction( state, message);
+
+                                       // notify TM that this "resource" is involved in the branched transaction
+                                       blocking::transaction::involved( message);
+                                    }
 
                                     state.route.add( message);
                                     state.external.send( message);
@@ -617,7 +738,24 @@ namespace casual
                      namespace transaction
                      {
                         namespace resource
-                        {
+                        {                           
+                           template< typename M>
+                           struct basic_request : internal::basic_request< M>
+                           {
+                              using internal::basic_request< M>::basic_request;
+                              using message_type = M;
+
+                              void operator() ( message_type& message)
+                              {
+                                 Trace trace{ "gateway::outbound::local::handle::internal::transaction::resource::basic_request"};
+
+                                 // remove the trid correlation, since we're in the commit/rollback dance
+                                 this->state.branch.remove( message.trid);
+
+                                 internal::basic_request< M>::operator() ( message);
+                              }
+                           };
+
                            namespace prepare
                            {
                               using Request = basic_request< common::message::transaction::resource::prepare::Request>;
@@ -648,6 +786,8 @@ namespace casual
                               Trace trace{ "gateway::outbound::local::handle::internal::queue::basic_request"};
 
                               log::line( verbose::log, "message: ", message);
+
+                              // we don't bother with branching on casual-queue, since it does not bother.
 
                               // potentially notify TM that this "resource" is involved in the transaction
                               blocking::transaction::involved( message);

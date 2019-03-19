@@ -345,7 +345,10 @@ namespace casual
 
                auto& easy = request.easy();
 
+               // clear error buffer
+               curl::error::buffer().fill( '\0');
                curl::easy::set::option( easy, CURLOPT_ERRORBUFFER, curl::error::buffer().data());
+               
                curl::easy::set::option( easy, CURLOPT_URL, node.url.data());
                curl::easy::set::option( easy, CURLOPT_FOLLOWLOCATION, 1L);
                curl::easy::set::option( easy, CURLOPT_FAILONERROR, 1L);

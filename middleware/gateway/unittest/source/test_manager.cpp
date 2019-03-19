@@ -42,10 +42,7 @@ namespace casual
                Gateway()
                 : process{ "./bin/casual-gateway-manager"}
                {
-
-                  //
                   // Make sure we're up'n running before we let unittest-stuff interact with us...
-                  //
                   communication::instance::fetch::handle( communication::instance::identity::gateway::manager);
                }
 
@@ -76,9 +73,7 @@ namespace casual
 
             namespace domain
             {
-               //!
                //! exposes service domain1
-               //!
                struct Service
                {
                   Service( config_domain configuration)
@@ -220,7 +215,7 @@ namespace casual
       }
 
 
-      TEST( casual_gateway_manager_tcp,  connect_to_our_self__remote1_advertise__expect_service_remote1)
+      TEST( casual_gateway_manager_tcp, connect_to_our_self__remote1_call__expect_service_remote1)
       {
          common::unittest::Trace trace;
 
@@ -240,9 +235,7 @@ namespace casual
 
          auto data = common::unittest::random::binary( 128);
 
-         //
          // Expect us to reach service remote1 via outbound -> inbound -> <service remote1>
-         //
          {
             {
                common::message::service::call::callee::Request request;
@@ -258,7 +251,65 @@ namespace casual
 
             EXPECT_TRUE( reply.buffer.memory ==  data);
          }
+      }
 
+
+      TEST( casual_gateway_manager_tcp, connect_to_our_self__remote1_call_in_transaction___expect_same_transaction_in_reply)
+      {
+         common::unittest::Trace trace;
+
+         // exposes service "remote1"
+         local::domain::Service domain{ local::one_listener_configuration()};
+
+         common::signal::timer::Scoped timer{ std::chrono::seconds{ 5}};
+
+
+         EXPECT_TRUE( communication::instance::ping( domain.gateway.process.handle().ipc) == domain.gateway.process.handle());
+
+         auto state = local::call::wait::ready::state();
+
+         ASSERT_TRUE( state.connections.size() == 2);
+
+         algorithm::sort( state.connections);
+
+         auto data = common::unittest::random::binary( 128);
+
+         auto trid = common::transaction::id::create( common::process::handle());
+
+         // Expect us to reach service remote1 via outbound -> inbound -> <service remote1>
+         {   
+            {
+               common::message::service::call::callee::Request request;
+               request.process = common::process::handle();
+               request.service.name = "remote1";
+               request.trid = trid;
+               request.buffer.memory = data;
+               
+               common::communication::ipc::blocking::send( state.connections.at( 0).process.ipc, request);
+            }
+
+            common::message::service::call::Reply reply;
+            common::communication::ipc::blocking::receive( common::communication::ipc::inbound::device(), reply);
+
+            EXPECT_TRUE( reply.buffer.memory == data);
+            EXPECT_TRUE( reply.transaction.trid == trid)  << "reply.transaction.trid: " << reply.transaction.trid << "\ntrid: " << trid;
+         }
+
+         // send prepare
+         {
+            common::message::transaction::resource::prepare::Request request;
+            request.trid = trid;
+            request.process = common::process::handle();
+            request.resource = common::strong::resource::id{ 42};
+            common::communication::ipc::blocking::send( state.connections.at( 0).process.ipc, request);
+         }
+
+         // get prepare reply
+         {
+            common::message::transaction::resource::prepare::Reply reply;
+            common::communication::ipc::blocking::receive( common::communication::ipc::inbound::device(), reply);
+            EXPECT_TRUE( reply.trid == trid);
+         }
       }
 
       namespace local

@@ -736,6 +736,7 @@ namespace casual
                         [&]( common::message::transaction::commit::Request& message)
                         {
                            Trace trace{ "mockup::transaction::Commit"};
+                           common::log::line( verbose::log, "message: ", message);
 
                            {
                               common::message::transaction::resource::commit::Request resource;
@@ -761,6 +762,7 @@ namespace casual
                         [&]( common::message::transaction::rollback::Request& message)
                         {
                            Trace trace{ "mockup::transaction::Rollback"};
+                           common::log::line( verbose::log, "message: ", message);
 
                            {
                               common::message::transaction::resource::rollback::Request resource;
@@ -781,22 +783,35 @@ namespace casual
                         [&]( common::message::transaction::resource::involved::Request& message)
                         {
                            Trace trace{ "mockup::transaction::resource::involved::Request"};
+                           common::log::line( verbose::log, "message: ", message);
 
                            ipc::eventually::send( message.process.ipc, common::message::reverse::type( message));
                         },
                         [&]( common::message::transaction::resource::external::Involved& message)
                         {
                            Trace trace{ "mockup::transaction::resource::external::Involved"};
+                           common::log::line( verbose::log, "message: ", message);
 
                            m_state.involved( message);
                         },
                         [&]( common::message::transaction::resource::commit::Reply& message)
                         {
                            Trace trace{ "mockup::transaction::resource::commit::Reply - ignore"};
+                           common::log::line( verbose::log, "message: ", message);
                         },
                         [&]( common::message::transaction::resource::rollback::Reply& message)
                         {
                            Trace trace{ "mockup::transaction::resource::rollback::Reply - ignore"};
+                           common::log::line( verbose::log, "message: ", message);
+                        },
+                        [&]( common::message::transaction::resource::prepare::Request& message)
+                        {
+                           Trace trace{ "mockup::transaction message::transaction::resource::prepare::Request"};
+                           common::log::line( verbose::log, "message: ", message);
+
+                           auto reply = message::reverse::type( message);
+                           reply.trid = message.trid;
+                           ipc::eventually::send( message.process.ipc, reply);
                         },
                         local::handle::connect::Reply{ "transaction manager"}
                      };
