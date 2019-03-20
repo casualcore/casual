@@ -29,11 +29,8 @@ archive_proxy = LinkArchive( 'bin/sftestproxy',
 	])
 
 
-
-
 #
 # Compile and link VO:n
-#
 
 archive_vo = LinkArchive( 'bin/sf-test-vo',
     [
@@ -47,8 +44,19 @@ target = LinkExecutable( 'bin/test_multicall_client',
 	[
 		Compile( 'source/test_multicall.cpp')
 	], ['casual-common', 'casual-xatmi', 'casual-serviceframework'])
-	
+
 install_bin.append( target)
+
+
+# mockup string server 
+target = LinkExecutable( 'bin/casual-test-mockup-string-server',
+	[
+		Compile( 'source/mockup/string/server.cpp')
+	], 
+   ['casual-common', 'casual-xatmi', 'casual-serviceframework'],
+)
+	
+Install( [ target],'$(CASUAL_HOME)/test/bin')
 
 
 # unittest
