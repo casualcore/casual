@@ -332,7 +332,6 @@ namespace casual
             struct
             {
                std::deque< state::service::Pending> requests;
-               std::vector< common::message::pending::Message> replies;
             } pending;
 
             common::event::dispatch::Collection< common::message::event::service::Calls> events;

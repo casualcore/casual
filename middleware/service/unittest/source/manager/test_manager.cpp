@@ -44,12 +44,14 @@ namespace casual
                ~Manager() = default;
 
                common::mockup::Process process;
+               
             };
 
             struct Domain : common::mockup::domain::Manager
             {
                using common::mockup::domain::Manager::Manager;
 
+               common::mockup::Process retry_send{ "../retry/bin/casual-retry-send"};
                local::Manager service;
                common::mockup::domain::transaction::Manager tm;
             };

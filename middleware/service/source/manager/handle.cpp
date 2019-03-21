@@ -10,6 +10,8 @@
 #include "service/transform.h"
 #include "service/common.h"
 
+#include "retry/send/message.h"
+
 #include "common/server/lifetime.h"
 #include "common/environment.h"
 #include "common/algorithm.h"
@@ -90,7 +92,7 @@ namespace casual
                         } // get
                      } // detail
                      template< typename D, typename M>
-                     void send( State& state, D&& device, M&& message)
+                     void send( D&& device, M&& message)
                      {
                         Trace trace{ "service::manager::handle::local::eventually::send"};
 
@@ -102,7 +104,7 @@ namespace casual
                            {
                               log::line( log, "non blocking send failed - action: try later");
 
-                              state.pending.replies.emplace_back( std::forward< M>( message), detail::get::process( device));
+                              retry::send::message::send( std::forward< M>( message), detail::get::process( device));
                            }
                         }
                         catch( const common::exception::system::communication::Unavailable&)
@@ -120,8 +122,7 @@ namespace casual
                         auto pending = state.events( state.metric.message());
                         state.metric.clear();
 
-                        if( ! common::message::pending::non::blocking::send( pending, manager::ipc::device().error_handler()))
-                           state.pending.replies.push_back( std::move( pending));
+                        common::message::pending::send( pending, communication::ipc::policy::Blocking{}, manager::ipc::device().error_handler());
                      }
                   } // metric
                } // <unnamed>
@@ -180,7 +181,7 @@ namespace casual
                         message.correlation = instance.correlation();
                         message.code.result = common::code::xatmi::service_error; 
 
-                        handle::local::eventually::send( state, instance.caller(), std::move( message));
+                        handle::local::eventually::send( instance.caller(), std::move( message));
                      }
 
                   } // <unnamed>

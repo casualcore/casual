@@ -8,6 +8,7 @@ Build( 'serviceframework/makefile.cmk')
 Build( 'buffer/makefile.cmk')
 Build( 'configuration/makefile.cmk')
 Build( 'tools/makefile.cmk')
+Build( 'retry/makefile.cmk')
 
 with Scope():
     Parallel( True)

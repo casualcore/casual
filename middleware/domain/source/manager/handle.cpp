@@ -439,6 +439,17 @@ namespace casual
                      Trace trace{ "domain::manager::handle::mandatory::boot::prepare"};
 
                      {
+                        state::Server retry_send;
+                        retry_send.alias = "casual-retry-send";
+                        retry_send.path = "${CASUAL_HOME}/bin/casual-retry-send";
+                        retry_send.scale( 1);
+                        retry_send.memberships.push_back( state.group_id.master);
+                        retry_send.note = "eventually send messages";
+
+                        state.servers.push_back( std::move( retry_send));
+                     }
+
+                     {
                         state::Server manager;
                         manager.alias = "casual-service-manager";
                         manager.path = "${CASUAL_HOME}/bin/casual-service-manager";

@@ -255,6 +255,29 @@ namespace casual
                      }
                   }   
                }
+
+               template< typename Unmarshal, typename D, typename EC>
+               void pump( 
+                  basic_handler< Unmarshal>& handler, 
+                  D& device, 
+                  EC&& empty_callback)
+               {
+                  using device_type = std::decay_t< decltype( device)>;
+
+                  while( true)
+                  {
+                     while( handler( device.next( typename device_type::non_blocking_policy{})))
+                     {
+                        ; /* no op */
+                     }
+
+                     // input is empty, we call the callback
+                     empty_callback();
+
+                     // we block
+                     handler( device.next( typename device_type::blocking_policy{}));
+                  }   
+               }
             } // empty
             
 

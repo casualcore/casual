@@ -37,6 +37,7 @@ namespace casual
             shutdown_reply,
             delay_message,
             inbound_ipc_connect,
+            retry_send_message,
 
             process_spawn_request = 600,
             process_lookup_request,

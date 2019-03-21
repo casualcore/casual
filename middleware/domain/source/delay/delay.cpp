@@ -31,9 +31,7 @@ namespace casual
          {
             Trace trace{ "domain::delay::start"};
 
-            //
             // Connect to domain
-            //
             communication::instance::connect( identification());
 
             message::pump( state);
@@ -128,9 +126,7 @@ namespace casual
                      {
                         log::line( log, "failed to send delayed message to ipc: ", message.destination, " - action: try to resend in 500ms");
 
-                        //
                         // Could not send... We set a new timeout in .5s
-                        //
                         message::Request request;
                         request.destination = message.destination;
                         request.message = std::move( message.message);

@@ -158,32 +158,6 @@ namespace casual
 
                   log::line( log, "start message pump");
 
-                  auto blocking_predicate = [&]()
-                  {
-                     if( ! state.pending.replies.empty()) 
-                     {
-                        signal::handle();
-                        signal::thread::scope::Block block;
-
-                        // Send pending replies
-                        {
-                           log::line( verbose::log, "pending replies: ", state.pending.replies);
-
-                           auto replies = std::exchange( state.pending.replies, {});
-
-                           auto remain = std::get< 1>( common::algorithm::partition(
-                                 replies,
-                                 common::message::pending::sender(
-                                       communication::ipc::policy::non::Blocking{},
-                                       manager::ipc::device().error_handler())));
-
-                           algorithm::move( remain, state.pending.replies);
-                        }
-                     }
-
-                     return state.pending.replies.empty() && ! state.metric;
-                  };
-
                   auto empty_callback = [&]()
                   {
                      // the input socket is empty, we can't know if there ever gonna be any more 
@@ -195,9 +169,7 @@ namespace casual
                   common::message::dispatch::empty::pump( 
                      handler, 
                      manager::ipc::device(), 
-                     blocking_predicate, 
-                     empty_callback,
-                     common::platform::batch::service::pending);
+                     empty_callback);
                }
 
             } // message
