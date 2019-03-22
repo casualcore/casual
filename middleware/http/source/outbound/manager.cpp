@@ -238,9 +238,7 @@ namespace casual
             try
             {
                log::line( log::category::information, "pending.requests.size: ", m_state.pending.requests.size(), 
-                  ", pending.requests.capacity: ", m_state.pending.requests.capacity(),
-                  ", pending.replies.size: ", m_state.pending.replies.size(),
-                  ", pending.replies.capacity: ", m_state.pending.replies.capacity());
+                  ", pending.requests.capacity: ", m_state.pending.requests.capacity());
 
                auto send_error_reply = []( const state::pending::Request& pending){
                   message::service::call::Reply message;
@@ -275,49 +273,18 @@ namespace casual
 
             auto outbound = manager::local::handle::Reply( m_state);
 
-            auto send_pending_replies = []( State& state)
-            {
-               auto& replies = state.pending.replies;
-
-               algorithm::trim( replies, algorithm::remove_if( replies, []( auto& pending){
-                  return message::pending::non::blocking::send( pending);
-               }));
-            }; 
-
             while( true)
             {
-               if( m_state.pending.replies.empty())
+               if( m_state.pending.requests)
                {
-                  // we got no pending replies, we can block
-
-                  if( m_state.pending.requests)
-                  {
-                     log::line( verbose::log, "state.pending.requests.size(): ", m_state.pending.requests.size());
-                     request::blocking::dispath( m_state, inbound, outbound);
-                  }
-                  else
-                  {
-                     // we've got no pending request, we only have to listen to inbound
-                     inbound( ipc.policy_blocking());
-                  }
+                  log::line( verbose::log, "state.pending.requests.size(): ", m_state.pending.requests.size());
+                  request::blocking::dispath( m_state, inbound, outbound);
                }
                else
                {
-                  // we can't block
-
-                  // we try to send pending
-                  send_pending_replies( m_state);
-
-                  if( m_state.pending.requests)
-                  {
-                     request::non::blocking::dispath( m_state, inbound, outbound);
-                  }
-                  else
-                  {
-                     // we've got no pending request, we only have to check inbound
-                     inbound( ipc.policy_non_blocking());
-                  }
-               }
+                  // we've got no pending request, we only have to listen to inbound
+                  inbound( ipc.policy_blocking());
+               } 
             }
          }
 

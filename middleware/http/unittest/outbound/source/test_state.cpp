@@ -24,7 +24,6 @@ namespace casual
             State state;
 
             EXPECT_TRUE( state.pending.requests.empty());
-            EXPECT_TRUE( state.pending.replies.empty());
          }
 
          TEST( http_outbound_state_request, empty)

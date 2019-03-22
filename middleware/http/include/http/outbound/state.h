@@ -150,7 +150,6 @@ namespace casual
             struct
             {
                state::Pending requests;
-               std::vector< common::message::pending::Message> replies;
             } pending;
 
             

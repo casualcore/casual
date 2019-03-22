@@ -24,14 +24,8 @@ namespace casual
             {
                namespace
                {
-
                   namespace global
                   {
-                     namespace easy
-                     {
-                        std::vector< curl::type::native::easy> cache;
-                     } // easy
-
                      struct Initializer 
                      {
                         static const Initializer& instance()
@@ -47,12 +41,6 @@ namespace casual
                         
                         auto easy() const 
                         { 
-                           if( ! global::easy::cache.empty())
-                           {
-                              auto handle = curl::type::easy( global::easy::cache.back());
-                              global::easy::cache.pop_back();
-                              return handle;
-                           }
                            return curl::type::easy( curl_easy_init());
                         }
 
@@ -60,12 +48,10 @@ namespace casual
                         Initializer()
                         {
                            curl::check( curl_global_init( CURL_GLOBAL_DEFAULT));
-                           global::easy::cache.reserve( 100);
                         }
 
                         ~Initializer()
                         {
-                           algorithm::for_each( global::easy::cache, []( auto handle){ curl_easy_cleanup( handle);});
                            curl_global_cleanup();
                         }
 
@@ -75,29 +61,6 @@ namespace casual
                   } // global
                } // <unnamed>
             } // local
-
-            namespace type
-            {
-               namespace detail
-               {
-                  namespace cleanup
-                  {
-                     void easy::operator () ( native::easy handle) const noexcept
-                     {
-                        if( local::global::easy::cache.size() < 100)
-                        {
-                           curl_easy_reset( handle);
-                           local::global::easy::cache.push_back( handle);
-                        }
-                        else
-                        {
-                           curl_easy_cleanup( handle);
-                        }
-                     }
-                  } // cleanup
-
-               } // detail
-            } // type
 
 
             namespace error

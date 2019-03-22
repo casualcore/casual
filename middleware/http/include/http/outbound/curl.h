@@ -42,17 +42,17 @@ namespace casual
                   {
                      struct multi
                      {
-                        void operator () ( native::multi value) const noexcept { curl_multi_cleanup( value);}
+                        void operator () ( native::multi handle) const noexcept { curl_multi_cleanup( handle);}
                      };
 
                      struct easy
                      {
-                        void operator () ( native::easy value) const noexcept;
+                        void operator () ( native::easy handle) const noexcept { curl_easy_cleanup( handle);}
                      };
 
                      struct slist
                      {
-                        void operator () ( native::slist value) const noexcept { curl_slist_free_all( value);}
+                        void operator () ( native::slist handle) const noexcept { curl_slist_free_all( handle);}
                      };
 
                   } // cleanup

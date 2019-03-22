@@ -135,26 +135,6 @@ namespace casual
                   }
                }
             } // blocking
-
-
-            namespace non
-            {
-               namespace blocking
-               {
-                  template< typename ID, typename OD>
-                  void dispath( State& state, ID&& inbound, OD&& outbound)
-                  {
-                     Trace trace{ "http::outbound::request::non::blocking::dispatch"};
-                     
-                     detail::perform( state, outbound);
-
-                     using inbound_non_blocking = common::communication::ipc::inbound::Connector::non_blocking_policy;
-
-                     // take care of inbound
-                     inbound( inbound_non_blocking{});
-                  }
-               } // blocking
-            } // non
             
          } // request
       } // outbound
