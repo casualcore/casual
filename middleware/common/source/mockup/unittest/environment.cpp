@@ -64,10 +64,11 @@ namespace casual
                         environment::variable::get( environment::variable::name::home()));
                   }
 
-                  if( ! directory::create( environment::domain::singleton::path()))
+                  /*if( ! directory::create( environment::domain::singleton::path()))
                   {
                      log::line( log::stream::get( "error"), "failed to create domain singleton directory");
                   }
+                  */
                }
 
                void TearDown() override

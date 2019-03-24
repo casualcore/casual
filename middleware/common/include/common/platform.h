@@ -92,52 +92,37 @@ namespace casual
 
             namespace transaction
             {
-               //!
                //! Max number of transaction state updates that will be done
                //! before (forced) persistence store of the updates, could be
                //! stored before though
-               //!
                constexpr size::type persistence = 100;
 
-               //!
                //! Number of xid:s we fetch from the xa-resource
                //! in a batch
-               //!
                constexpr size::type recover = 8;
 
             } // transaction
-            
 
-            //!
             //! Max number of statistics updates that will be done
             //! before persistence store of the updates...
-            //!
             constexpr size::type statistics = 1000;
 
-
-            //!
             //! Max number of ipc messages consumed from the queue to cache
             //! (application memory) during a 'flush'
-            //!
             constexpr size::type flush = 20;
 
             namespace gateway
             {
-               //!
                //! Max number of batched metrics before force
                //! send to service-manager
-               //!
                constexpr size::type metrics = 20;
             } // gateway
 
             namespace domain
             {
-               //!
                //! Max number of consumed messages before trying to send
                //! pending messages. 
-               //!
                constexpr size::type pending = 100;
-
             } // domain
 
             namespace queue
@@ -178,11 +163,12 @@ namespace casual
 
          } // batch
 
-
-
-         //
          // Some os-specific if-defs?
-         //
+
+         namespace directory
+         {
+            constexpr auto temporary = "/tmp";
+         } // directory
 
          namespace character
          {
@@ -209,9 +195,7 @@ namespace casual
             {
 
 #ifdef __APPLE__
-               //
                // OSX has very tight limits on IPC
-               //
                constexpr size::type size = 1024 * 1;
 #else
                constexpr size::type size = 1024 * 8;

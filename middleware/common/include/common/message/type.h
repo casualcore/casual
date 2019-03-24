@@ -205,7 +205,6 @@ namespace casual
             mockup_need_worker_process,
          };
 
-         //!
          //! Deduce witch type of message it is.
          //! @{
          template< typename M>
@@ -236,26 +235,19 @@ namespace casual
 
             Uuid correlation;
 
-            //!
             //! The execution-id
-            //!
             mutable Uuid execution;
 
             CASUAL_CONST_CORRECT_MARSHAL(
             {
-
-               //
                // correlation is part of ipc::message::Complete, and is
                // handled by the ipc-abstraction (marshaled 'on the side')
-               //
 
                archive & execution;
             })
          };
 
-         //!
          //! Wraps a message with basic_message
-         //!
          template< typename Message, message::Type message_type>
          struct type_wrapper : Message, basic_message< message_type>
          {
@@ -297,11 +289,8 @@ namespace casual
             return message.correlation;
          }
 
-
-         //!
          //! Message to "force" exit/termination.
          //! useful in unittest, to force exit on blocking read
-         //!
          namespace shutdown
          {
             struct Request : basic_message< Type::shutdown_request>
@@ -323,10 +312,7 @@ namespace casual
 
          } // shutdown
 
-
-         //
          // Below, some basic message related types that is used by others
-         //
 
          template< message::Type type>
          struct basic_request : basic_message< type>
@@ -439,13 +425,9 @@ namespace casual
 
          namespace reverse
          {
-
-
-            //!
             //! declaration of helper traits to get the
             //! "reverse type". Normally to get the Reply-type
             //! from a Request-type, and vice versa.
-            //!
             template< typename T>
             struct type_traits;
 
@@ -458,8 +440,6 @@ namespace casual
 
                };
             } // detail
-
-
 
             template< typename T>
             auto type( T&& message) -> typename type_traits< typename std::decay<T>::type>::reverse_type

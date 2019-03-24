@@ -163,10 +163,7 @@ namespace casual
                      // We only want child signals
                      signal::thread::scope::Mask mask{ signal::set::filled( signal::Type::child)};
 
-
-                     //
                      // We need to correlate with the service-manager (broker), if it's up
-                     //
 
                      common::message::domain::process::prepare::shutdown::Request prepare;
                      prepare.process = common::process::handle();
@@ -183,9 +180,7 @@ namespace casual
                      }
                      catch( const exception::system::communication::Unavailable&)
                      {
-                        //
-                        // broker is not online, we simulate the reply from the broker
-                        //
+                        // service-manager is not online, we simulate the reply from the broker
 
                         auto reply = common::message::reverse::type( prepare);
                         reply.processes = std::move( prepare.processes);
@@ -235,6 +230,7 @@ namespace casual
                            event.context = common::message::event::domain::Group::Context::boot_start;
                            event.id = m_batch.group.value();
                            event.name = state().group( m_batch.group).name;
+                           event.process = common::process::handle();
 
                            manager::local::ipc::send( state(), state().event( event));
                         }
@@ -253,6 +249,7 @@ namespace casual
                               event.context = common::message::event::domain::Group::Context::boot_end;
                               event.id = m_batch.group.value();
                               event.name = state().group( m_batch.group).name;
+                              event.process = common::process::handle();
 
                               manager::local::ipc::send( state(), state().event( event));
                            }
@@ -304,6 +301,7 @@ namespace casual
                               event.context = common::message::event::domain::Group::Context::shutdown_end;
                               event.id = m_batch.group.value();
                               event.name = state().group( m_batch.group).name;
+                              event.process = common::process::handle();
 
                               manager::local::ipc::send( state(), state().event( event));
                            }
@@ -335,6 +333,7 @@ namespace casual
                            event.context = common::message::event::domain::Group::Context::shutdown_start;
                            event.id = m_batch.group.value();
                            event.name = state().group( m_batch.group).name;
+                           event.process = common::process::handle();
 
                            manager::local::ipc::send( state(), state().event( event));
                         }
@@ -380,6 +379,7 @@ namespace casual
                            {
                               message::event::domain::boot::End event;
                               event.domain = common::domain::identity();
+                              event.process = common::process::handle();
                               manager::local::ipc::send( state(), state().event( event));
                            }
                         }
@@ -409,6 +409,7 @@ namespace casual
                            {
                               message::event::domain::shutdown::End event;
                               event.domain = common::domain::identity();
+                              event.process = common::process::handle();
                               manager::local::ipc::send( state(), state().event( event));
                            }
                         }
@@ -633,9 +634,7 @@ namespace casual
                         {
                            message::shutdown::Request shutdown{ common::process::handle()};
 
-                           //
                            // Just to make each shutdown easy to follow in log.
-                           //
                            shutdown.execution = uuid::make();
 
                            manager::local::ipc::send( this->state(), process, shutdown);
@@ -728,10 +727,7 @@ namespace casual
                         if( std::get< 0>( restarts)) scale::instances( state(), *std::get< 0>( restarts));
                         if( std::get< 1>( restarts)) scale::instances( state(), *std::get< 1>( restarts));
 
-
-                        //
                         // Are there any listeners to this event?
-                        //
                         if( state().event.active< common::message::event::process::Exit>())
                         {
                            manager::local::ipc::send( state(), state().event( message));

@@ -30,12 +30,9 @@ namespace casual
                {
                   namespace
                   {
-
                      auto call( common::message::domain::process::lookup::Request& request)
                      {
-                        //
                         // We create a temporary inbound, so we don't rely on the 'global' inbound
-                        //
                         communication::ipc::inbound::Device inbound;
 
                         request.process.pid = common::process::id();
@@ -251,6 +248,15 @@ namespace casual
                      log::line( verbose::log, "connector: ", *this);
                   }
 
+                  template< fetch::Directive directive>
+                  void basic_connector< directive>::clear()
+                  {
+                     Trace trace{ "communication::instance::outbound::Connector::clear"};
+
+                     environment::variable::unset( m_environment);
+                     m_connector.clear();
+                  }
+
                   template struct basic_connector< fetch::Directive::direct>;
                   template struct basic_connector< fetch::Directive::wait>;
                } // detail
@@ -358,13 +364,12 @@ namespace casual
                               Trace trace{ "communication::instance::outbound::domain::manager::local::reconnect"};
 
                               auto from_environment = []()
-                                    {
-                                       if( environment::variable::exists( environment::variable::name::ipc::domain::manager()))
-                                       {
-                                          return environment::variable::process::get( environment::variable::name::ipc::domain::manager());
-                                       }
-                                       return process::Handle{};
-                                    };
+                              {
+                                 if( environment::variable::exists( environment::variable::name::ipc::domain::manager()))
+                                    return environment::variable::process::get( environment::variable::name::ipc::domain::manager());
+
+                                 return process::Handle{};
+                              };
 
                               auto process = from_environment();
 
@@ -404,6 +409,13 @@ namespace casual
                         log::line( verbose::log, "connector: ", *this);
                      }
 
+                     void Connector::clear()
+                     {
+                        Trace trace{ "communication::instance::outbound::domain::manager::Connector::clear"};
+                        environment::variable::unset( environment::variable::name::ipc::domain::manager());
+                        m_connector.clear();
+                     }
+
 
                      Device& device()
                      {
@@ -436,6 +448,13 @@ namespace casual
                            log::line( verbose::log, "connector: ", *this);
                         }
 
+                        void Connector::clear()
+                        {
+                           Trace trace{ "communication::instance::outbound::domain::manager::optional::Connector::clear"};
+                           environment::variable::unset( environment::variable::name::ipc::domain::manager());
+                           m_connector.clear();
+                        }
+
                         Device& device()
                         {
                            static Device singelton;
@@ -443,7 +462,27 @@ namespace casual
                         }
                      } // optional
 
-                  } // manager      
+                  } // manager 
+
+                  void reset()
+                  {
+                     Trace trace{ "communication::instance::outbound::domain::reset"};
+
+                     // reset the environment before resetting devices
+                     common::environment::reset();
+
+                     outbound::service::manager::device().connector().clear();
+                     outbound::transaction::manager::device().connector().clear();
+                     outbound::gateway::manager::device().connector().clear();
+                     outbound::gateway::manager::optional::device().connector().clear();
+                     outbound::queue::manager::device().connector().clear();
+                     outbound::queue::manager::optional::device().connector().clear();
+
+                     outbound::domain::manager::device().connector().clear();
+                     outbound::domain::manager::optional::device().connector().clear();
+
+                  } 
+
                } // domain
             } // outbound
          } // instance

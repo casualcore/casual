@@ -67,13 +67,11 @@ namespace casual
 
                process::Handle handle( const Uuid& identity, Directive directive = Directive::wait);
 
-               //!
                //! Fetches the handle for a given pid
                //!
                //! @param pid
                //! @param directive if caller waits for the process to register or not
                //! @return handle to the process
-               //!
                process::Handle handle( strong::process::id pid , Directive directive = Directive::wait);
 
 
@@ -88,13 +86,11 @@ namespace casual
             void connect();
 
 
-            //!
             //! ping a server that owns the @p ipc-id
             //!
             //! @note will block
             //!
             //! @return the process handle
-            //!
             process::Handle ping( strong::ipc::id ipc);
 
             namespace outbound
@@ -135,6 +131,9 @@ namespace casual
                      basic_connector( const Uuid& identity, std::string environment);
                      
                      void reconnect();
+
+                     //! clear the connector
+                     void clear();
                      
                      friend std::ostream& operator << ( std::ostream& out, const basic_connector& rhs)
                      {
@@ -149,16 +148,12 @@ namespace casual
                      std::string m_environment;
                   };
 
-                  //!
                   //! Will wait until the instance is online, could block for ever.
-                  //!
                   using Device = communication::outbound::Device< basic_connector< fetch::Directive::wait>>;
 
                   namespace optional
                   {
-                     //!
                      //! Will fail if the instance is offline.
-                     //!
                      using Device = communication::outbound::Device< basic_connector< fetch::Directive::direct>>;
                   } // optional
                } // detail
@@ -186,15 +181,12 @@ namespace casual
                   {
                      outbound::detail::Device& device();
 
-
                      namespace optional
                      {
-                        //!
                         //! Can be missing. That is, this will not block
                         //! until the device is found (the gateway is online)
                         //!
                         //! @return device to gateway-manager
-                        //!
                         outbound::detail::optional::Device& device();
                      } // optional
                   } // manager
@@ -208,12 +200,10 @@ namespace casual
 
                      namespace optional
                      {
-                        //!
                         //! Can be missing. That is, this will not block
                         //! until the device is found (the queue is online)
                         //!
                         //! @return device to queue-manager
-                        //!
                         outbound::detail::optional::Device& device();
                      } // optional
 
@@ -228,6 +218,7 @@ namespace casual
                      {
                         Connector();
                         void reconnect();
+                        void clear();
                      };
                      using Device = communication::outbound::Device< Connector>;
                      Device& device();
@@ -238,12 +229,19 @@ namespace casual
                         {
                            Connector();
                            void reconnect();
+                           void clear();
                         };
 
                         using Device = communication::outbound::Device< Connector>;
                         Device& device();
                      } // optional
                   } // manager
+
+                  //! resets all outbound instances, hence they will start
+                  //! configure them self from the environment
+                  //! @attention only for unittests
+                  void reset();
+
                } // domain
             } // outbound
          } // instance

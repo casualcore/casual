@@ -46,10 +46,8 @@ namespace casual
                {
                   namespace on
                   {
-                     //!
                      //! A common policy that does a callback when a
                      //! process terminates
-                     //!
                      struct Terminate
                      {
                         using callback_type = std::function<void(const process::lifetime::Exit&)>;
@@ -78,11 +76,8 @@ namespace casual
 
                   } // on
                } // callback
-
             } // handler
-
          } // error
-
 
          namespace inbound
          {
@@ -129,25 +124,18 @@ namespace casual
                constexpr blocking_policy policy_blocking() const { return blocking_policy{};}
                constexpr non_blocking_policy policy_non_blocking() const { return non_blocking_policy{};}
 
-
-               //!
                //! Creates a corresponding message-dispatch-handler to this
                //! inbound device
-               //!
                template< typename... Args>
                static handler_type handler( Args&&... args)
                {
                   return { std::forward< Args>( args)...};
                }
 
-
-
-               //!
                //! Tries to find the first logic complete message
                //!
                //! @return a logical complete message if there is one,
                //!         otherwise the message has absent_message as type
-               //!
                template< typename P>
                complete_type next( P&& policy, const error_type& handler = nullptr)
                {
@@ -157,12 +145,10 @@ namespace casual
                         handler);
                }
 
-               //!
                //! Tries to find the first logic complete message with a specific type
                //!
                //! @return a logical complete message if there is one,
                //!         otherwise the message has absent_message as type
-               //!
                template< typename P>
                complete_type next( message_type type, P&& policy, const error_type& handler = nullptr)
                {
@@ -172,12 +158,10 @@ namespace casual
                         handler);
                }
 
-               //!
                //! Tries to find the first logic complete message with any of the types in @p types
                //!
                //! @return a logical complete message if there is one,
                //!         otherwise the message has absent_message as type
-               //!
                template< typename P>
                complete_type next( const std::vector< message_type>& types, P&& policy, const error_type& handler = nullptr)
                {
@@ -187,12 +171,10 @@ namespace casual
                         handler);
                }
 
-               //!
                //! Tries to find the logic complete message with correlation @p correlation
                //!
                //! @return a logical complete message if there is one,
                //!         otherwise the message has absent_message as type
-               //!
                template< typename P>
                complete_type next( const Uuid& correlation, P&& policy, const error_type& handler = nullptr)
                {
@@ -202,13 +184,10 @@ namespace casual
                         handler);
                }
 
-
-               //!
                //! Tries to find a logic complete message a specific type and correlation
                //!
                //! @return a logical complete message if there is one,
                //!         otherwise the message has absent_message as type
-               //!
                template< typename P>
                complete_type next( message_type type, const Uuid& correlation, P&& policy, const error_type& handler = nullptr)
                {
@@ -218,12 +197,10 @@ namespace casual
                         handler);
                }
 
-               //!
                //! Tries to find a logic complete message that fulfills the predicate
                //!
                //! @return a logical complete message if there is one,
                //!         otherwise the message has absent_message as type
-               //!
                template< typename Policy, typename Predicate>
                complete_type select( Policy&& policy, Predicate&& predicate, const error_type& handler = nullptr)
                {
@@ -244,12 +221,10 @@ namespace casual
 
                }
 
-               //!
                //! Tries to find a message with the same type as @p message
                //!
                //! @return true if we found one, and message is unmarshaled. false otherwise.
                //! @note depending on the policy it may not ever return false (ie with a blocking policy)
-               //!
                template< typename M, typename P>
                bool receive( M& message, P&& policy, const error_type& handler = nullptr)
                {
@@ -261,12 +236,10 @@ namespace casual
                         message);
                }
 
-               //!
                //! Tries to find a message that has the same type and @p correlation
                //!
                //! @return true if we found one, and message is unmarshaled. false otherwise.
                //! @note depending on the policy it may not ever return false (ie with a blocking policy)
-               //!
                template< typename M, typename P>
                bool receive( M& message, const Uuid& correlation, P&& policy, const error_type& handler = nullptr)
                {
@@ -279,12 +252,7 @@ namespace casual
                         message);
                }
 
-
-
-
-               //!
                //! Discards any message that correlates.
-               //!
                void discard( const Uuid& correlation)
                {
                   flush();
@@ -310,13 +278,7 @@ namespace casual
                   }
                }
 
-               //!
                //! push a complete message to the cache
-               //!
-               //! @param message
-               //!
-               //! @return
-               //!
                inline Uuid put( message::Complete&& message)
                {
                   //
@@ -334,15 +296,10 @@ namespace casual
                   return put( marshal::complete( std::forward< M>( message), marshal::create::reverse_t< unmarshal_type>{}));
                }
 
-
-               //!
                //! flushes the messages on the device into cache. (ie, make the device writable if it was full)
-               //!
                void flush()
                {
-                  //
                   // We don't want to handle any signals while we're flushing
-                  //
                   signal::thread::scope::Block block;
 
                   auto count = platform::batch::flush;
@@ -353,9 +310,7 @@ namespace casual
                   }
                }
 
-               //!
                //! Clear and discard all messages in cache and on the device.
-               //!
                void clear()
                {
                   flush();
@@ -443,10 +398,7 @@ namespace casual
 
          namespace outbound
          {
-
-            //!
             //! Doesn't do much. More for symmetry with inbound
-            //!
             template< typename Connector, typename Marshal = marshal::binary::create::Output>
             struct Device
             {
@@ -475,12 +427,10 @@ namespace casual
                   return apply( policy, complete, handler);
                }
 
-               //!
                //! Tries to send a message to the connector @p message
                //!
                //! @return true if we found one, and message is unmarshaled. false otherwise.
                //! @note depending on the policy it may not ever return false (ie with a blocking policy)
-               //!
                template< typename M, typename P>
                Uuid send( M&& message, P&& policy, const error_type& handler = nullptr)
                {
@@ -528,16 +478,12 @@ namespace casual
                   {
                      try
                      {
-                        //
                         // Delegate the invocation to the policy
-                        //
                         return policy.send( m_connector, complete);
                      }
                      catch( const exception::system::communication::Unavailable&)
                      {
-                        //
                         // Let connector take a crack at resolving this problem...
-                        //
                         m_connector.reconnect();
                      }
                      catch( const exception::signal::Pipe&)
@@ -546,9 +492,7 @@ namespace casual
                      }
                      catch( ...)
                      {
-                        //
                         // Delegate the errors to the handler, if provided
-                        //
                         if( ! handler)
                         {
                            throw;
@@ -561,12 +505,9 @@ namespace casual
             };
 
          } // outbound
-
-
-
+         
       } // communication
    } // common
-
 } // casual
 
 

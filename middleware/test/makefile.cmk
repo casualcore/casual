@@ -24,22 +24,6 @@ LibraryPaths( [ 'bin',
 install_bin = []
 
 
-archive_proxy = LinkArchive( 'bin/sftestproxy', 
-	[ 
-	   Compile( 'source/sf_testproxy.cpp')
-	])
-
-
-#
-# Compile and link VO:n
-
-archive_vo = LinkArchive( 'bin/sf-test-vo',
-    [
-	   Compile( 'source/sf_testvo.cpp')
-	])
-
-
-
 
 target = LinkExecutable( 'bin/test_multicall_client',
 	[
@@ -59,24 +43,6 @@ target = LinkExecutable( 'bin/casual-test-mockup-string-server',
 	
 Install( [ target],'$(CASUAL_HOME)/test/bin')
 
-
-# unittest
-#
-
-LinkUnittest( 'unittest/bin/test-casual-basic',
-    [
-	   Compile( 'unittest/source/domain/test_basic.cpp'),
-	   Compile( 'unittest/source/test_yaml_sf_generation.cpp'),
-	],
-    [ 
-		'casual-mockup-unittest-environment',
-		'casual-common', 
-		'casual-serviceframework', 
-		'casual-xatmi', 
-		'yaml-cpp', 
-		'casual-mockup',
-		'casual-unittest',
-	])
 	
 
 #

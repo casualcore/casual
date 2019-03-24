@@ -27,12 +27,15 @@ namespace casual
 
             ~Process();
 
-            //!
             //! @attention can only be used with executables that register them self
             //!   to the (mockup) domain.
             //!
             //! @return
             common::process::Handle handle() const;
+
+            //! explicitly set the process
+            //! @throws if the pids differ
+            void handle( const process::Handle& process);
 
          private:
             mutable common::process::Handle m_process;

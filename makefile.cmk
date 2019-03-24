@@ -4,3 +4,4 @@ Parallel( False)
 
 Build('thirdparty/makefile.cmk')
 Build('middleware/makefile.cmk')
+Build('test/makefile.cmk')

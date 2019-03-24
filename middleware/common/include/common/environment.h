@@ -27,8 +27,6 @@ namespace casual
 
          namespace variable
          {
-
-            //!
             //! Exposes the mutex that is used to get read and writes to environment variables
             //! thread safe.
             //!
@@ -57,21 +55,17 @@ namespace casual
                std::string get( const char* name, std::string alternative);
 
                void set( const char* name, const std::string& value);
+               void unset( const char* name);
 
             } // detail
 
-
-            //!
             //! @return value of environment variable with @p name
             //! @throws exception::EnvironmentVariableNotFound if not found
-            //!
             template< typename String>
             std::string get( String&& name) { return detail::get( detail::get_name( name));}
 
-            //!
             //! @return value of environment variable with @p name or value of alternative if
             //!   variable isn't found
-            //!
             template< typename String>
             std::string get( String&& name, std::string alternative) { return detail::get( detail::get_name( name), std::move( alternative));}
 
@@ -112,6 +106,9 @@ namespace casual
                set( name, string);
             }
 
+            template< typename String>
+            void unset( String&& name) { detail::unset( detail::get_name( name));}
+
             namespace process
             {
                common::process::Handle get( const char* name);
@@ -124,9 +121,7 @@ namespace casual
 
             namespace name
             {
-               //!
                //! @return variable name representing casual home. Where casual is installed
-               //!
                constexpr auto home() { return "CASUAL_HOME";};
 
                namespace domain
@@ -143,15 +138,13 @@ namespace casual
                } // log
 
                
-               namespace transient
+               namespace ipc
                {
                   //! where to hold transient files, such as named-pipes.
-                  constexpr auto directory() { return "CASUAL_TRANSIENT_DIRECTORY";}
+                  constexpr auto directory() { return "CASUAL_IPC_DIRECTORY";}
                } // transient
                
 
-
-               //!
                //! the name of the environment variables that holds ipc queue id:s
                //! @{
                namespace ipc
@@ -197,19 +190,13 @@ namespace casual
 
          namespace directory
          {
-            //!
             //! @return default temp directory
-            //!
             const std::string& temporary();
 
-            //!
             //! @return Home of current domain
-            //!
             const std::string& domain();
 
-            //!
             //! @return Where casual is installed
-            //!
             const std::string& casual();
          }
 
@@ -218,35 +205,30 @@ namespace casual
             const std::string& path();
          } // log
 
-         namespace transient
+         namespace ipc
          {
-            //! where to hold transient files, such as named-pipes.
-            //! default: $CASUAL_DOMAIN_HOME/.casual/transient
+            //! where to hold ipc files, such as named-pipes.
+            //! default: /<tmp>/casual/ipc
             const std::string& directory();
          } // log
 
          namespace domain
          {
-
             namespace singleton
             {
-               const std::string& path();
-
                const std::string& file();
-
             } // singleton
-
          } // domain
 
-
-         //!
          //! Parses value for environment variables with format @p ${<variable>}
          //! and tries to find and replace the variable from environment.
          //!
          //! @return possible altered string with regards to environment variables
-         //!
          std::string string( const std::string& value);
 
+         //! resets "all" paths to directories and files, based on what 
+         //! environment variables are present.
+         void reset();
 
       } // environment
    } // common

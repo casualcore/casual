@@ -33,8 +33,41 @@ namespace casual
                   return path;
                }
             } // temporary
-
          } // file
+
+         namespace directory
+         {
+            namespace temporary
+            {
+               Scoped::Scoped()
+                  : m_path{ common::file::name::unique( common::directory::temporary() + "/mockup-") }
+               {
+                  common::directory::create( m_path);
+               }
+               Scoped::~Scoped()
+               {
+                  if( ! m_path.empty())
+                     common::directory::remove( m_path);
+               }
+
+               Scoped::Scoped( Scoped&& rhs) noexcept
+                  : m_path{ std::exchange( rhs.m_path, {})}
+               {
+               }
+
+               Scoped& Scoped::operator = ( Scoped&& rhs) noexcept
+               {
+                  std::swap( m_path, rhs.m_path);
+                  return *this;
+               }
+
+               std::ostream& operator << ( std::ostream& out, const Scoped& value)
+               {
+                  return out << value.path();
+               }
+
+            } // temporary
+         } // directory
 
       } // mockup
    } // common

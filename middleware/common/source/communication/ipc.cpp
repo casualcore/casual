@@ -79,7 +79,7 @@ namespace casual
 
             Address::Address( strong::ipc::id ipc)
             {
-               const auto& directory = environment::transient::directory();
+               const auto& directory = environment::ipc::directory();
                const auto postfix = '/' + uuid::string( ipc.value());
                const auto max_size = sizeof( m_native.sun_path) - postfix.size() - 1;
 

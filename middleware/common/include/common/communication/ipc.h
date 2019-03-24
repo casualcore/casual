@@ -338,6 +338,7 @@ namespace casual
                   inline const Socket& socket() const { return native::detail::outbound::socket();}
 
                   inline void reconnect() const { throw; }
+                  inline void clear() { m_destination = Address{ strong::ipc::id{}};}
 
                   friend std::ostream& operator << ( std::ostream& out, const Connector& rhs);
                protected:

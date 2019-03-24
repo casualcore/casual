@@ -125,14 +125,11 @@ namespace casual
             namespace manager
             {
 
-               void wait( communication::ipc::inbound::Device& device)
+               process::Handle wait( communication::ipc::inbound::Device& device)
                {
-                  struct wait_done{};
-
-
                   auto handler = device.handler(
-                     []( const message::event::domain::boot::End&){
-                        throw wait_done{};
+                     []( const message::event::domain::boot::End& event){
+                        throw event.process;
                      },
                      []( const message::event::domain::Error& error){
                         if( error.severity == message::event::domain::Error::Severity::fatal)
@@ -153,11 +150,12 @@ namespace casual
                   {
                      message::dispatch::blocking::pump( handler, device);
                   }
-                  catch( const wait_done&)
+                  catch( const process::Handle& process)
                   {
-                     log::line( log::debug, "domain manager booted");
-                     // no-op
+                     log::line( log::debug, "domain manager booted: ", process);
+                     return process;
                   }
+                  return {};
                }
 
             } // manager

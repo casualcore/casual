@@ -116,7 +116,7 @@ namespace casual
             namespace manager
             {
                //! Waits for the domain manager to boot
-               void wait( communication::ipc::inbound::Device& device);
+               process::Handle wait( communication::ipc::inbound::Device& device);
 
             } // manager
 

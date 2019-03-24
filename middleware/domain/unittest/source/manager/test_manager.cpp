@@ -72,22 +72,16 @@ namespace casual
                      }}
                   {
 
-                     //
                      // Make sure we unregister the event subscription
-                     //
                      auto unsubscribe = common::execute::scope( [](){
                         common::event::unsubscribe( common::process::handle(), { common::message::Type::event_domain_error});
                      });
 
-                     //
                      // Wait for the domain to boot
-                     //
                      unittest::domain::manager::wait( common::communication::ipc::inbound::device());
 
-                     //
                      // Set environment variable to make it easier for other processes to
                      // reach domain-manager (should work any way...)
-                     //
                      common::environment::variable::process::set(
                            common::environment::variable::name::ipc::domain::manager(),
                            process.handle());

@@ -40,9 +40,7 @@ namespace casual
 
                if( ! m_process.ipc)
                {
-                  //
                   // Try to get corresponding queue
-                  //
                   m_process.ipc = communication::instance::fetch::handle( m_process.pid, communication::instance::fetch::Directive::direct).ipc;
                   log::line( log, "mockup fetched process: ", m_process);
                }
@@ -58,18 +56,23 @@ namespace casual
                   terminate();
                }
 
-               //
                // We clear all pending signals
-               //
                common::signal::clear();
 
                terminate.release();
-
             }
             catch( ...)
             {
                exception::handle();
             }
+         }
+
+         void Process::handle( const process::Handle& process)
+         {
+            if( m_process.pid != process.pid)
+               throw exception::system::invalid::Argument{ "trying to change pid for mockup process"};
+
+            m_process = process;
          }
 
          common::process::Handle Process::handle() const

@@ -27,6 +27,35 @@ namespace casual
             } // temporary
          } // file
 
+         namespace directory
+         {
+            namespace temporary
+            {
+               //! creates an unique directory
+               //! and deletes all content and the directory on destruction
+               struct Scoped 
+               {
+                  Scoped();
+                  ~Scoped();
+
+                  Scoped( Scoped&&) noexcept;
+                  Scoped& operator = ( Scoped&&) noexcept;
+
+                  Scoped( const Scoped&) = delete;
+                  Scoped& operator =( const Scoped&) = delete;
+
+                  inline const std::string& path() const & { return m_path;}
+                  inline operator const std::string&() const & { return m_path;}
+
+                  friend std::ostream& operator << ( std::ostream& out, const Scoped& value);
+
+               private:
+                  std::string m_path;
+               };
+               
+            } // temporary
+         } // directory
+
       } // mockup
    } // common
 

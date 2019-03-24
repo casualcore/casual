@@ -33,6 +33,7 @@ namespace casual
                error.severity = severity;
                error.executable = process::basename();
                error.pid = process::id();
+               error.process = process::handle();
 
                communication::ipc::blocking::send( communication::instance::outbound::domain::manager::device(), error);
             }

@@ -246,18 +246,14 @@ namespace casual
          {
             bool execution( const std::string& path)
             {
-               //
                // Check if path contains any directory, if so, we can check it directly
-               //
                if( algorithm::find( path, '/'))
                {
                   return access( path.c_str(), R_OK | X_OK) == 0;
                }
                else
                {
-                  //
                   // We need to go through PATH environment variable...
-                  //
                   for( auto total_path : string::split( environment::variable::get( "PATH", ""), ':'))
                   {
                      total_path += '/' + path;
@@ -346,10 +342,7 @@ namespace casual
 
             if( parent.size() < path.size() && parent != "/")
             {
-
-               //
                // We got a parent, make sure we create it first
-               //
                create( parent);
             }
 

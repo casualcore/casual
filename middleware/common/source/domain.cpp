@@ -91,8 +91,7 @@ namespace casual
             {
                Trace trace{ "common::domain::singleton::create"};
 
-
-               auto path = environment::domain::singleton::file();
+               auto& path = environment::domain::singleton::file();
 
                auto temp_file = file::scoped::Path{ file::name::unique( path, ".tmp")};
 
@@ -119,16 +118,12 @@ namespace casual
 
                   log::line( log::debug, "domain: ", content);
 
-                  //
                   // There is potentially a running casual-domain already - abort
-                  //
                   throw exception::system::invalid::Process( string::compose( 
                      "can only be one casual-domain running in a domain - domain lock file: ", path, " content: ", content));
                }
 
-               //
                // Set domain-process so children easy can send messages to us.
-               //
                environment::variable::process::set(
                      environment::variable::name::ipc::domain::manager(),
                      process);

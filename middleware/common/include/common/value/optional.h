@@ -37,7 +37,7 @@ namespace casual
                   template< typename T>
                   static std::ostream& print( std::ostream& out, bool valid, T&& value) 
                   { 
-                     return valid ? out << value : out << "invalid";
+                     return valid ? out << value : out << "nil";
                   }
                };
 

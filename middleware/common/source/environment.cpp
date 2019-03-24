@@ -13,8 +13,9 @@
 #include "common/string.h"
 #include "common/view/string.h"
 
-#include <memory>
 
+#include <memory>
+#include <iomanip>
 #include <cstdlib>
 
 namespace casual
@@ -52,10 +53,8 @@ namespace casual
 
                         auto result = getenv( name);
 
-                        //
                         // We need to return by value and copy the variable while
                         // we have the lock
-                        //
                         if( result)
                         {
                            return result;
@@ -69,6 +68,16 @@ namespace casual
                         lock_type lock { m_mutex};
 
                         if( setenv( name, value.c_str(), 1) == -1)
+                        {
+                           exception::system::throw_from_errno();
+                        }
+                     }
+
+                     void unset( const char* name) const
+                     {
+                        lock_type lock { m_mutex};
+
+                        if( ::unsetenv( name) == -1)
                         {
                            exception::system::throw_from_errno();
                         }
@@ -127,6 +136,11 @@ namespace casual
                   local::native::Variable::instance().set( name, value);
                }
 
+               void unset( const char* name)
+               {
+                  local::native::Variable::instance().unset( name);
+               }
+
             } // detail
 
 
@@ -167,117 +181,127 @@ namespace casual
 
          } // variable
 
+         namespace local
+         {
+            namespace
+            {
+               //! holds "all" paths based on enviornment.
+               //! main purpose is to be able to reset when running
+               //! unittests
+               struct Paths 
+               {
+                  std::string domain = create_path( get_domain());
+                  std::string detail = create_path( get_domain() + "/.casual");
+                  std::string tmp = "/tmp";
+                  std::string casual = variable::get( variable::name::home());
+
+                  std::string log = []() -> std::string
+                  {
+                     auto file = []( ) -> std::string
+                     {
+                        if( variable::exists( variable::name::log::path()))
+                           return variable::get( variable::name::log::path());
+
+                        if( variable::exists( variable::name::domain::home()))
+                           return variable::get( variable::name::domain::home()) + "/casual.log";
+
+                        return "./casual.log";
+                     }();
+
+                     create_path( common::directory::name::base( file));
+                     return file;
+                  }();
+
+                  std::string ipc = []() -> std::string 
+                  {
+                     auto get = []()
+                     {
+                        if( variable::exists( variable::name::ipc::directory()))
+                           return variable::get( variable::name::ipc::directory());
+
+                        return environment::directory::temporary() + "/casual/ipc";
+                     };
+                     return create_path( get());
+                  }();
+
+                  std::string singleton = detail + "/singleton";
+
+                  friend std::ostream& operator << ( std::ostream& out, const Paths& value)
+                  {
+                     return out << "{ domain: " << std::quoted( value.domain)
+                        << ", tmp: " << std::quoted( value.tmp)
+                        << ", casual: " << std::quoted( value.casual)
+                        << ", log: " << std::quoted( value.log)
+                        << ", ipc: " << std::quoted( value.ipc)
+                        << ", singleton: " << std::quoted( value.singleton)
+                        << '}';
+                  }
+
+               private:
+                  static std::string get_domain()
+                  {
+                     return variable::get( variable::name::domain::home());
+                  }
+
+                  static std::string create_path( std::string path)
+                  {
+                     if( ! common::directory::exists( path))
+                        common::directory::create( path);
+
+                     return path;
+                  }
+               };
+
+               Paths& paths() 
+               {
+                  static Paths singleton;
+                  return singleton;
+               }
+            } // <unnamed>
+         } // local
+
+
          namespace directory
          {
             const std::string& domain()
             {
-               static const std::string result = variable::get( variable::name::domain::home());
-               return result;
+               return local::paths().domain;
             }
 
             const std::string& temporary()
             {
-               static const std::string result = "/tmp";
-               return result;
+               static std::string singleton{ platform::directory::temporary};
+               return singleton;
             }
 
             const std::string& casual()
             {
-               static const std::string result = variable::get( variable::name::home());
-               return result;
+               return local::paths().casual;
             }
          } // directory
 
          namespace log
          {
-            namespace local
-            {
-               namespace
-               {
-                  std::string path()
-                  {
-                     if( variable::exists( variable::name::log::path()))
-                        return variable::get( variable::name::log::path());
-
-                     if( variable::exists( variable::name::domain::home()))
-                        return variable::get( variable::name::domain::home()) + "/casual.log";
-
-                     return "./casual.log";
-                  }
-               } // <unnamed>
-            } // local
-
             const std::string& path()
             {
-               static const std::string result = local::path();
-               return result;
+               return local::paths().log;
             }
          } // log
 
-         namespace transient
+         namespace ipc
          {
-            namespace local
-            {
-               namespace
-               {
-                  std::string directory()
-                  {
-                     if( variable::exists( variable::name::transient::directory()))
-                        return variable::get( variable::name::transient::directory());
-
-                     return environment::directory::temporary() + "/casual/transient";
-                  }
-
-                  std::string create_directory()
-                  {
-                     auto result = directory();
-                     if( ! common::directory::exists( result))
-                        common::directory::create( result);
-
-                     return result;
-                  }
-               } // <unnamed>
-            } // local
-
             const std::string& directory()
             {
-               static const std::string result = local::create_directory();
-               return result;
+                return local::paths().ipc;
             }
-         } // log
+         } // transient
 
          namespace domain
          {
             namespace singleton
             {
-               namespace local
-               {
-                  namespace
-                  {
-                     std::string path( std::string path)
-                     {
-                        common::directory::create(path);
-                        return path;
-                     }
-
-                  } // <unnamed>
-               } // local
-
-               const std::string& path()
-               {
-                  static const std::string path = local::path(directory::domain() + "/.singleton");
-                  return path;
-               }
-
-               const std::string& file()
-               {
-                  static const std::string file = path() + "/.domain-singleton";
-                  return file;
-
-               }
-
+               const std::string& file() { return local::paths().singleton;}
             } // singleton
-
          } // domain
 
 
@@ -373,6 +397,13 @@ namespace casual
             }
 
             return result;
+         }
+
+         void reset()
+         {
+            local::paths() = local::Paths{};
+
+            common::log::line( common::verbose::log, "paths: ", local::paths());
          }
       } // environment
    } // common

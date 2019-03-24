@@ -46,14 +46,11 @@ namespace casual
 
          const Identity& identity();
 
-         //!
          //! sets the domain identity
          //! Should only be used by casual-domain
          //!
          //! @param value the new identity
-         //!
          void identity( Identity value);
-
 
          namespace singleton
          {
