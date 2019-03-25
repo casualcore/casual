@@ -102,6 +102,52 @@ http:
             }
          }
 
+         TEST( test_domain_http, call_10_echo_in_other_domain)
+         {
+            common::unittest::Trace trace;
+
+            auto outbound = local::configuration::outbound();
+
+            domain::Manager a{ local::configuration::a()};
+            domain::Manager b{ local::configuration::b( outbound)};
+
+            {
+               b.activate();
+
+               auto binary = unittest::random::binary( 200);
+               std::vector< int> descriptors;
+               descriptors.resize( 10);
+               
+
+               for( auto& descriptor : descriptors)
+               {
+                  auto buffer = tpalloc( X_OCTET, nullptr, binary.size());
+                  common::algorithm::copy( binary, buffer);
+                  auto len = tptypes( buffer, nullptr, nullptr);
+
+                  descriptor = tpacall( "casual/example/echo", buffer, len, 0);
+
+                  EXPECT_TRUE( descriptor > 0) << "tperrno: " << tperrnostring( tperrno);
+
+                  ::tpfree( buffer);
+               }
+
+               for( auto& descriptor : descriptors)
+               {
+                  auto buffer = tpalloc( X_OCTET, nullptr, binary.size());
+                  common::algorithm::copy( binary, buffer);
+                  auto len = tptypes( buffer, nullptr, nullptr);
+
+                  EXPECT_TRUE( tpgetrply( &descriptor, &buffer, &len, 0) == 0) << "tperrno: " << tperrnostring( tperrno);
+
+                  auto result = common::range::make( buffer, len);
+                  EXPECT_TRUE( algorithm::equal( binary, result));
+
+                  ::tpfree( buffer);
+               }
+            }
+         }
+
       } // domain
 
    } // test

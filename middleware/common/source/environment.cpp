@@ -192,7 +192,7 @@ namespace casual
                {
                   std::string domain = create_path( get_domain());
                   std::string detail = create_path( get_domain() + "/.casual");
-                  std::string tmp = "/tmp";
+                  std::string tmp = environment::directory::temporary();
                   std::string casual = variable::get( variable::name::home());
 
                   std::string log = []() -> std::string
@@ -224,7 +224,7 @@ namespace casual
                      return create_path( get());
                   }();
 
-                  std::string singleton = detail + "/singleton";
+                  std::string singleton = get_domain() + "/.casual/singleton";
 
                   friend std::ostream& operator << ( std::ostream& out, const Paths& value)
                   {
@@ -240,7 +240,10 @@ namespace casual
                private:
                   static std::string get_domain()
                   {
-                     return variable::get( variable::name::domain::home());
+                     if( variable::exists( variable::name::domain::home()))
+                        return variable::get( variable::name::domain::home());
+
+                     return "./";
                   }
 
                   static std::string create_path( std::string path)
@@ -252,10 +255,16 @@ namespace casual
                   }
                };
 
+               
+               namespace global
+               {
+                  Paths paths;
+               } // global
+               
+
                Paths& paths() 
                {
-                  static Paths singleton;
-                  return singleton;
+                  return global::paths;
                }
             } // <unnamed>
          } // local

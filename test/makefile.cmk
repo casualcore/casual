@@ -13,9 +13,10 @@ LibraryPaths( [ 'bin',
 	'../middleware/common/bin',
 	'../middleware/queue/bin',
 	'../middleware/buffer/bin',
-    '../middleware/retry/bin',
+   '../middleware/retry/bin',
 	'../middleware/serviceframework/bin',
-    '../middleware/configuration/bin',
+   '../middleware/configuration/bin',
+   '../middleware/http/bin',
 	'$(CASUAL_OPTIONAL_LIBRARY_PATHS)',
 	])
 
@@ -36,7 +37,7 @@ LinkUnittest( 'unittest/bin/test-casual-basic',
     [
 	    Compile( 'unittest/source/domain/test_basic.cpp'),
         # activate when we got nginx build working, 
-        #Compile( 'unittest/source/domain/test_http.cpp'),
+        Compile( 'unittest/source/domain/test_http.cpp'),
 	],
     [ 
         test_archive,
