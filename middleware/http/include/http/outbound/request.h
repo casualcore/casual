@@ -31,7 +31,7 @@ namespace casual
 
             namespace code
             {
-               common::message::service::Code transform( const common::service::header::Fields& header, curl::type::code::easy code) noexcept;
+               common::message::service::Code transform( const state::pending::Request& request, curl::type::code::easy code) noexcept;
             } // code
  
             namespace detail

@@ -153,7 +153,7 @@ namespace casual
                            log::line( verbose::log, "request: ", request);
                            log::line( verbose::log, "curl_code: ", curl_code);
 
-                           auto code = request::code::transform( request.state().header.reply, curl_code);
+                           auto code = request::code::transform( request, curl_code);
 
                            log::line( verbose::log, "code: ", code);
                            

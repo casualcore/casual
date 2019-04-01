@@ -57,10 +57,23 @@ namespace casual
 
                   } // cleanup
 
+                  
+                  namespace base
+                  {
+                     using easy = std::unique_ptr< std::remove_pointer_t< native::easy>, detail::cleanup::easy>;
+                  } // base
+                  
+
                } // detail
 
                using multi = std::unique_ptr< std::remove_pointer_t< native::multi>, detail::cleanup::multi>;
-               using easy = std::unique_ptr< std::remove_pointer_t< native::easy>, detail::cleanup::easy>;
+               struct easy : detail::base::easy
+               {
+                  using detail::base::easy::easy;
+                  friend std::ostream& operator << ( std::ostream& out, const easy& value);
+               };
+               
+
                using header_list = std::unique_ptr< std::remove_pointer_t< native::slist>, detail::cleanup::slist>;
 
                using socket = curl_socket_t;

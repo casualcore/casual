@@ -71,6 +71,7 @@ namespace casual
                std::ostream& operator << ( std::ostream& out, const Request& value)
                {
                   return out << "{ state: " << value.state()
+                     << ", easy: " << value.easy()
                      << '}';
                }
             } // pending

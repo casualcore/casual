@@ -102,9 +102,32 @@ http:
             }
          }
 
-         TEST( test_domain_http, call_10_echo_in_other_domain)
+
+         struct Count 
+         {
+            long payload{};
+            long calls{};
+
+            friend std::ostream& operator << ( std::ostream& out, const Count& value)
+            {
+               return out << "{ payload: " << value.payload
+                  << "{ calls: " << value.calls
+                  << '}';
+            }
+         };
+
+
+         struct test_parallel_http : ::testing::TestWithParam< Count> 
+         {
+
+         };
+
+
+         TEST_P( test_parallel_http, call_echo_in_other_domain)
          {
             common::unittest::Trace trace;
+
+            auto count = GetParam();
 
             auto outbound = local::configuration::outbound();
 
@@ -114,9 +137,9 @@ http:
             {
                b.activate();
 
-               auto binary = unittest::random::binary( 200);
+               auto binary = unittest::random::binary( count.payload);
                std::vector< int> descriptors;
-               descriptors.resize( 10);
+               descriptors.resize( count.calls);
                
 
                for( auto& descriptor : descriptors)
@@ -128,6 +151,10 @@ http:
                   descriptor = tpacall( "casual/example/echo", buffer, len, 0);
 
                   EXPECT_TRUE( descriptor > 0) << "tperrno: " << tperrnostring( tperrno);
+
+                  // we do a flush to keep inbound clear
+                  // TODO: remove this when http-outbound uses retry-call
+                  common::communication::ipc::inbound::device().flush();
 
                   ::tpfree( buffer);
                }
@@ -147,6 +174,24 @@ http:
                }
             }
          }
+
+
+
+         const std::vector< Count> counts{
+            Count{ 100, 10},
+            Count{ 100, 100},
+            Count{ 1000, 100},
+            Count{ 10000, 100},
+            Count{ 1000, 1000},
+            //Count{ 1000, 10000},
+         };
+
+
+         INSTANTIATE_TEST_CASE_P( 
+            http,
+            test_parallel_http,
+            ::testing::ValuesIn( counts)
+         );
 
       } // domain
 

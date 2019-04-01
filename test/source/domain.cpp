@@ -65,10 +65,7 @@ namespace casual
 
          Manager::~Manager()
          {
-            if( file::exists( m_preconstruct.home))
-            {
-               file::remove( m_preconstruct.home);
-            }
+
          }
 
          void Manager::activate()
