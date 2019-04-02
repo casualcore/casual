@@ -33,12 +33,16 @@ test_archive = LinkArchive( 'bin/test-archive',
 
 # unittest
 
+unittest_object = [
+    Compile( 'unittest/source/domain/test_basic.cpp'),
+]
+
+# only build http test cases if the enviornment is set up
+if "CASUAL_UNITTEST_HTTP_INBOUND_CONFIG" in os.environ and "CASUAL_UNITTEST_HTTP_INBOUND_PATH" in os.environ:
+    unittest_object.append( Compile( 'unittest/source/domain/test_http.cpp'))
+
 LinkUnittest( 'unittest/bin/test-casual-basic',
-    [
-	    Compile( 'unittest/source/domain/test_basic.cpp'),
-        # activate when we got nginx build working, 
-        Compile( 'unittest/source/domain/test_http.cpp'),
-	],
+    unittest_object,
     [ 
         test_archive,
 		'casual-common', 
@@ -51,9 +55,7 @@ LinkUnittest( 'unittest/bin/test-casual-basic',
 	])
 	
 
-#
 # Install
-#
 Install( install_bin,'$(CASUAL_HOME)/bin')
 
 
