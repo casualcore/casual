@@ -24,38 +24,25 @@ namespace casual
             //! A pending message, that will be sent later.
             struct Message
             {
-               using target_type = common::process::Handle;
-               using targets_type = std::vector< target_type>;
+               using destination_type = common::process::Handle;
+               using destinations_type = std::vector< destination_type>;
                
-               enum class Targets
-               {
-                  all,
-                  first
-               };
+               inline Message( communication::message::Complete&& complete, destinations_type destinations) 
+                  : destinations( std::move( destinations)), complete( std::move( complete)) {}
 
                template< typename M>
-               Message( M&& message, targets_type targets, Targets task)
-                  : Message{ marshal::complete( std::forward< M>( message)), std::move( targets), task}
-               {
-               }
+               Message( M&& message, destinations_type destinations)
+                  : Message{ marshal::complete( std::forward< M>( message)), std::move( destinations)} {}
 
                template< typename M>
-               Message( M&& message, targets_type targets)
-                  : Message{ marshal::complete( std::forward< M>( message)), std::move( targets), Targets::all}
-               {
-               }
+               Message( M&& message, destination_type destination)
+                  : Message{ marshal::complete( std::forward< M>( message)), destinations_type{ destination}} {}
 
-               template< typename M>
-               Message( M&& message, target_type target)
-                  : Message{ marshal::complete( std::forward< M>( message)), { target}, Targets::first}
-               {
-               }
+               
+               Message() = default;
 
-               Message( communication::message::Complete&& complete, targets_type targets, Targets task);
-               Message( communication::message::Complete&& complete, targets_type targets);
-
-               Message( Message&&);
-               Message& operator = ( Message&&);
+               Message( Message&&) noexcept = default;
+               Message& operator = ( Message&&) noexcept = default;
 
                auto type() const noexcept { return complete.type;}
 
@@ -65,52 +52,18 @@ namespace casual
                void remove( strong::ipc::id ipc);
                void remove( strong::process::id pid);
 
-               friend std::ostream& operator << ( std::ostream& out, const Message& value);
-
-               targets_type targets;
+               destinations_type destinations;
                communication::message::Complete complete;
-               Targets task;
+
+               CASUAL_CONST_CORRECT_MARSHAL(
+               {
+                  archive & destinations;
+                  archive & complete;
+               })
+
+               friend std::ostream& operator << ( std::ostream& out, const Message& value);
             };
 
-            namespace policy
-            {
-               struct consume_unavailable
-               {
-                  bool operator () () const;
-               };
-
-            } // policy
-
-            template< typename P>
-            bool send( Message& message, P&& policy, const communication::error::type& handler = nullptr)
-            {
-               auto send = [&]( const common::process::Handle& process)
-                     {
-                        try
-                        {
-                           communication::ipc::outbound::Device device{ process.ipc};
-                           return static_cast< bool>( device.put( message.complete, policy, handler));
-                        }
-                        catch( const exception::system::communication::Unavailable&)
-                        {
-                           return true;
-                        }
-                     };
-
-               if( message.task == Message::Targets::all)
-               {
-                  algorithm::trim( message.targets, algorithm::remove_if( message.targets, send));
-               }
-               else
-               {
-                  if( algorithm::find_if( message.targets, send))
-                  {
-                     message.targets.clear();
-                  }
-               }
-
-               return message.sent();
-            }
 
             namespace non
             {
@@ -121,47 +74,9 @@ namespace casual
                } // blocking
             } // non
 
-            //! Tries to send a message to targets.
-            //! Depending on the task it will either send to all
-            //! or stop when the first is successful.
-            template< typename P>
-            struct Send
-            {
-               using send_policy = P;
-
-               using error_type = communication::error::type;
-
-               Send( send_policy policy, error_type handler) : m_policy( std::move( policy)), m_handler( std::move( handler)) {}
-               Send( send_policy policy) : Send( std::move( policy), nullptr) {}
-               Send( error_type handler) : Send( send_policy{}, std::move( handler)) {}
-               Send() : Send( send_policy{}, nullptr) {}
-
-               //! @return true if the message has been sent
-               bool operator () ( Message& message)
-               {
-                  return send( message, m_policy, m_handler);
-               }
-            private:
-               send_policy m_policy;
-               error_type m_handler;
-            };
-
-
-            //! @return a 'pending-sender' that tries to send to targets
-            template< typename P>
-            Send< P> sender( P&& policy, communication::error::type handler = nullptr)
-            {
-               return Send< P>( std::forward< P>( policy), handler);
-            }
-
-
-
          } // pending
-
       } // message
    } // common
-
-
 } // casual
 
 

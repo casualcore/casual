@@ -62,13 +62,8 @@ namespace casual
                basic_call( const basic_call&) = delete;
                basic_call& operator = ( basic_call&) = delete;
 
-
-
-
-               //!
                //! Connect @p server to the broker, broker will build a dispatch-table for
                //! coming XATMI-calls
-               //!
                template< typename... Args>
                basic_call( server::Arguments arguments, Args&&... args)
                   : m_policy( std::forward< Args>( args)...)
@@ -77,11 +72,8 @@ namespace casual
 
                   server::context().configure( arguments);
 
-                  //
                   // Connect to casual
-                  //
                   m_policy.configure( arguments);
-
                }
 
 
@@ -103,7 +95,7 @@ namespace casual
                }
 
                policy_type m_policy;
-               move::Moved m_moved;
+               move::Active m_active;
             };
 
 

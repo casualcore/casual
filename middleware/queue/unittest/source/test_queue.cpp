@@ -31,6 +31,8 @@
 #include "serviceframework/namevaluepair.h"
 #include "serviceframework/log.h"
 
+#include "eventually/send/unittest/process.h"
+
 
 
 #include <fstream>
@@ -55,9 +57,7 @@ namespace casual
                       }}
                {
 
-                  //
                   // Make sure we're up'n running before we let unittest-stuff interact with us...
-                  //
                   common::communication::instance::fetch::handle( common::communication::instance::identity::queue::manager);
                }
 
@@ -93,6 +93,8 @@ namespace casual
                common::mockup::domain::Manager manager;
                common::mockup::domain::service::Manager service;
                common::mockup::domain::transaction::Manager tm;
+
+               eventually::send::unittest::Process eventually_send;
 
                Manager queue_manager;
 

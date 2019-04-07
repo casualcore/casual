@@ -31,51 +31,22 @@ namespace casual
 
                common::communication::ipc::Helper ipc;
 
-               while( true)
+
+               // make sure we send persistent replies (if any) when inbound
+               // is empty, 
+               auto empty_inbound = [&state]( )
                {
-                  {
-                     auto persistent = sql::database::scoped::write( state.queuebase);
+                  handle::persistent::send( state);
+               };
 
-
-                     if( state.persistent.empty())
-                     {
-                        //
-                        // We can only block if our back log is empty...
-                        //
-
-                        handler( ipc.blocking_next());
-                     }
-
-                     //
-                     // Consume until the queue is empty or we've got pending replies equal to transaction_batch
-                     //
-
-                     while( handler( ipc.non_blocking_next()) &&
-                           state.persistent.size() < common::platform::batch::queue::persitent)
-                     {
-                        ;
-                     }
-                  }
-
-                  //
-                  // queuebase is persistent - send pending persistent replies
-                  //
-                  common::algorithm::trim( state.persistent, common::algorithm::remove_if(
-                     state.persistent,
-                     common::message::pending::sender( common::communication::ipc::policy::non::Blocking{})));
-
-               }
-
+               common::message::dispatch::empty::pump( handler, ipc, empty_inbound);
             }
          } // message
 
 
          Server::Server( Settings settings) : m_state( std::move( settings.queuebase), std::move( settings.name))
          {
-            //
             // Talk to queue-manager to get configuration
-            //
-
 
             {
                common::message::queue::connect::Request request;
@@ -108,19 +79,11 @@ namespace casual
                   }
                }
 
-
-               //
                // Try to remove queues
                // TODO:
-               //
                //auto removed = common::range::difference( existing, added);
 
-
-
-
-               //
                // Send all our queues to queue-manager
-               //
                {
                   common::message::queue::Information information;
                   information.name = m_state.name();

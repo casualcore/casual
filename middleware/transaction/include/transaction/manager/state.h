@@ -405,7 +405,7 @@ namespace casual
                std::vector< state::pending::Reply> replies;
 
                //! Resource request, that will be processed after an atomic
-               //! write to the log. If corresponding resources is busy, for some
+               //! write to the log. If corresponding resources are busy, for some
                //! requests, these will be moved to pending.requests
                std::vector< state::pending::Request> requests;
 

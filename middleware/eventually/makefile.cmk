@@ -1,0 +1,95 @@
+
+
+from casual.middleware.make.dsl import *
+
+
+
+IncludePaths([
+   'include',
+   '../common/include',
+   '../configuration/include',
+   '../xatmi/include',
+   '../serviceframework/include',
+   '$(CASUAL_OPTIONAL_INCLUDE_PATHS)',
+   ])
+
+
+LibraryPaths([
+    'bin',
+    '../common/bin',
+    '../configuration/bin',
+    '../xatmi/bin',
+    '../serviceframework/bin',
+    '$(CASUAL_OPTIONAL_LIBRARY_PATHS)',
+    ])
+
+
+install_bins = []
+install_libs = []
+
+
+eventually_library = LinkLibrary( 'bin/casual-eventually-send',
+    [
+        Compile( 'source/send/message.cpp'),
+        Compile( 'source/common.cpp'),
+    ],
+    [
+        'casual-common',
+        'casual-xatmi',
+        'casual-serviceframework'
+     ]
+)
+install_libs.append( eventually_library)
+
+
+eventually_executable = LinkExecutable( 'bin/casual-eventually-send',
+    [
+      Compile( 'source/send/main.cpp'),
+    ],
+    [
+     eventually_library,
+     'casual-common',
+     'casual-xatmi',
+     'casual-configuration',
+     'casual-serviceframework'
+    ] 
+)
+
+install_bins.append( eventually_executable)
+
+
+
+#unittest lib for other modules to use (in unittest)
+unittest_library = LinkLibrary( 'bin/casual-eventually-unittest',
+    [
+        Compile( 'source/send/unittest/process.cpp'),
+    ],
+    [
+        'casual-common',
+        'casual-mockup',
+    ]
+)
+Dependencies( unittest_library, [ eventually_executable ])
+
+
+target_test_eventually = LinkUnittest( 'bin/test-casual-retry-send', 
+    [ 
+        Compile( 'unittest/source/send/test_send.cpp'),
+    ],
+    [
+     eventually_library,
+     unittest_library,
+     'casual-common',
+     'casual-mockup',
+     'casual-mockup-unittest-environment',
+     'casual-unittest',
+    ])        
+
+
+Install( install_bins,'$(CASUAL_HOME)/bin')
+Install( install_libs,'$(CASUAL_HOME)/lib')
+
+
+
+
+

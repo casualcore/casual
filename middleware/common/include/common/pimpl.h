@@ -57,21 +57,13 @@ namespace casual
          basic_pimpl( basic_pimpl&&) noexcept = default;
          basic_pimpl& operator = ( basic_pimpl&&) noexcept = default;
 
-
-         //!
          //! Make a deep copy
-         //!
          basic_pimpl( const basic_pimpl& other) : base_type{ std::make_unique< implementation_type>( *other)} {}
 
-
-         //!
          //! We need to overload non const copy-ctor, otherwise variadic ctor will take it.
-         //!
          basic_pimpl( basic_pimpl& other) : base_type{ std::make_unique< implementation_type>( *other)} {}
 
-         //!
          //! Make a deep copy
-         //!
          basic_pimpl& operator = ( const basic_pimpl& other)
          {
             basic_pimpl temporary{ other};

@@ -10,6 +10,7 @@ IncludePaths([
    '../configuration/include',
    '../xatmi/include',
    '../serviceframework/include',
+   '../eventually/include',
    '$(CASUAL_OPTIONAL_INCLUDE_PATHS)',
    ])
 
@@ -20,6 +21,7 @@ LibraryPaths([
     '../configuration/bin',
     '../xatmi/bin',
     '../serviceframework/bin',
+    '../eventually/bin',
     '$(CASUAL_OPTIONAL_LIBRARY_PATHS)',
     ])
 
@@ -47,6 +49,7 @@ target_domain_manager = LinkExecutable( 'bin/casual-domain-manager',
     [
      manager_archive,
      'casual-common',
+     'casual-eventually-send',
      'casual-xatmi',
      'casual-configuration',
      'casual-serviceframework'
@@ -89,6 +92,7 @@ target_test_domain = LinkUnittest( 'bin/test-casual-domain',
       manager_archive,
      'casual-common',
      'casual-mockup',
+     'casual-eventually-unittest',
      'casual-configuration',
      'casual-mockup-unittest-environment',
      'casual-serviceframework',
@@ -100,7 +104,7 @@ target_test_domain = LinkUnittest( 'bin/test-casual-domain',
 #
 # We use domain-manager and simple-server from the unittests
 #
-Dependencies( target_test_domain, [ target_domain_manager, target_simple_server]);
+Dependencies( target_test_domain, [ target_domain_manager, target_simple_server])
 
 
 message_lib = LinkLibrary( 'bin/casual-delay-message', 

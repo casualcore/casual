@@ -133,7 +133,6 @@ namespace casual
                   void add( const state::Service& service);
                   void remove( const std::string& service);
 
-                  //!
                   //! caller and correlation of last reserve
                   //! @{
                   inline const common::process::Handle& caller() const { return m_caller;}

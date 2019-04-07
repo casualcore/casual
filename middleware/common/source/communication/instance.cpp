@@ -373,6 +373,8 @@ namespace casual
 
                               auto process = from_environment();
 
+                              common::log::line( verbose::log, "process: ", process);
+
 
                               if( ipc::exists( process.ipc))
                               {
@@ -463,25 +465,6 @@ namespace casual
                      } // optional
 
                   } // manager 
-
-                  void reset()
-                  {
-                     Trace trace{ "communication::instance::outbound::domain::reset"};
-
-                     // reset the environment before resetting devices
-                     common::environment::reset();
-
-                     outbound::service::manager::device().connector().clear();
-                     outbound::transaction::manager::device().connector().clear();
-                     outbound::gateway::manager::device().connector().clear();
-                     outbound::gateway::manager::optional::device().connector().clear();
-                     outbound::queue::manager::device().connector().clear();
-                     outbound::queue::manager::optional::device().connector().clear();
-
-                     outbound::domain::manager::device().connector().clear();
-                     outbound::domain::manager::optional::device().connector().clear();
-
-                  } 
 
                } // domain
             } // outbound

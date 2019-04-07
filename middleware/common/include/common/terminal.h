@@ -71,12 +71,13 @@ namespace casual
                template< typename T>
                std::ostream& operator << ( T&& value)
                {
-                  return *m_out << std::forward< T>( value);
+                  return *m_active.value << std::forward< T>( value);
                }
 
             private:
-               std::ostream* m_out;
-               move::Moved m_moved;
+               
+               using Active = move::basic_active< std::ostream*>;
+               Active m_active;
             };
 
 
@@ -144,7 +145,6 @@ namespace casual
                left,
                right
             };
-
 
             template< typename T>
             struct formatter

@@ -15,6 +15,8 @@
 
 #include "common/communication/instance.h"
 
+#include "eventually/send/message.h"
+
 namespace casual
 {
    using namespace common;
@@ -57,7 +59,7 @@ namespace casual
 
                   namespace pending
                   {
-                     void replies( State& state)
+                     void dequeue( State& state)
                      {
                         Trace trace{ "queue::handle::local::pending::replies"};
 
@@ -68,7 +70,8 @@ namespace casual
 
                            common::log::line( verbose::log, "pending: ", pending);
 
-                           auto failed = std::get< 1>( common::algorithm::partition( pending, [&]( auto& request){
+                           auto failed = std::get< 1>( common::algorithm::partition( pending, [&]( auto& request)
+                           {
                               return dequeue::request( state, request);
                            }));
 
@@ -81,10 +84,8 @@ namespace casual
                      }
                   } // pending
 
-
                   namespace ipc
                   {
-
                      namespace blocking
                      {
                         template< typename D, typename M>
@@ -104,6 +105,39 @@ namespace casual
 
                   } // ipc
 
+                  namespace persistent
+                  {
+                     void send( State& state)
+                     {
+                        auto send = []( auto& pending)
+                        {
+                           if( ! common::message::pending::non::blocking::send( pending))
+                              eventually::send::message( pending);
+                        };
+
+                        // persist
+                        state.persist();
+
+                        auto pending = std::exchange( state.pending.persistent, {});
+
+                        algorithm::for_each( pending, send);
+                     }
+                  } // persistent
+
+                  namespace possible
+                  {
+                     template< typename M> 
+                     void persist( State& state, const process::Handle& destination, M&& message)
+                     {
+                        state.pending.persist( std::forward< M>( message), destination);
+
+                        if( state.pending.persistent.size() >= common::platform::batch::queue::persitent)
+                        {
+                           local::persistent::send( state);
+                        }
+                     }
+                  } // possible
+
                } // <unnamed>
             } // local
 
@@ -112,11 +146,19 @@ namespace casual
             {
                Trace trace{ "queue::handle::shutdown"};
 
-               auto pending = state.queuebase.pending_forget();
+               algorithm::move( state.queuebase.pending_forget(), state.pending.persistent);
 
-               common::algorithm::for_each( pending, 
-                  common::message::pending::sender( common::communication::ipc::policy::Blocking{}));
+               handle::persistent::send( state);
             }
+
+            namespace persistent
+            {
+               void send( State& state)
+               {
+                  if( ! state.pending.persistent.empty())
+                     local::persistent::send( state);
+               }
+            } // persistent
 
             namespace dead
             {
@@ -124,9 +166,7 @@ namespace casual
                {
                   Trace trace{ "queue::handle::dead::Process"};
 
-                  //
                   // We check and do some clean up, if the dead process has any pending replies.
-                  //
                   m_state.queuebase.pending_erase( message.state.pid);
                }
 
@@ -178,9 +218,7 @@ namespace casual
 
                   try
                   {
-                     //
                      // Make sure we've got the quid.
-                     //
                      message.queue =  m_state.queuebase.quid( message);
 
                      auto reply = m_state.queuebase.enqueue( message);
@@ -193,19 +231,15 @@ namespace casual
                      }
                      else
                      {
-                        //
                         // enqueue is not in transaction, we guarantee atomic enqueue so
                         // we send reply when we're in persistent state
-                        //
-                        m_state.persist( std::move( reply), { message.process});
+                        local::possible::persist( m_state, message.process, std::move( reply));
 
-                        //
                         // Check if there are any pending request for the current queue (and selector).
                         // This could result in the message is dequeued before (persistent) reply to the caller
                         //
                         // We have to do it now, since it won't be any commits...
-                        //
-                        local::pending::replies( m_state);
+                        local::pending::dequeue( m_state);
                      }
 
                   }
@@ -232,10 +266,8 @@ namespace casual
                      {
                         reply.correlation = message.correlation;
 
-                        //
                         // We don't need to be involved in transaction if
                         // haven't consumed anything or if we're not in a transaction
-                        //
                         if( ! reply.message.empty() && message.trid)
                         {
                            local::transaction::involved( state, message);
@@ -258,9 +290,7 @@ namespace casual
                {
                   Trace trace{ "queue::handle::dequeue::Request"};
 
-                  //
                   // Make sure we've got the quid.
-                  //
                   message.queue =  m_state.queuebase.quid( message);
 
                   request( m_state, message);
@@ -336,10 +366,8 @@ namespace casual
                         m_state.queuebase.commit( message.trid);
                         log::line( log::category::transaction, "committed trid: ", message.trid, " - number of messages: ", m_state.queuebase.affected());
 
-                        //
                         // Will try to dequeue pending requests
-                        //
-                        local::pending::replies( m_state);
+                        local::pending::dequeue( m_state);
                      }
                      catch( ...)
                      {
@@ -347,7 +375,7 @@ namespace casual
                         reply.state = common::code::xa::resource_fail;
                      }
 
-                     m_state.persist( std::move( reply), { message.process});
+                     local::possible::persist( m_state, message.process, std::move( reply));
                   }
                }
 
@@ -394,7 +422,7 @@ namespace casual
                         reply.state = common::code::xa::resource_fail;
                      }
 
-                     m_state.persist( std::move( reply), { message.process});
+                     local::possible::persist( m_state, message.process, std::move( reply));
                   }
                }
             } // transaction
@@ -419,10 +447,8 @@ namespace casual
                      return result;
                   });
 
-                  //
                   // Make sure pending get a crack at the restored messages.
-                  //
-                  local::pending::replies( m_state);
+                  local::pending::dequeue( m_state);
                }
 
             } // restore

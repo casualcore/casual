@@ -347,7 +347,6 @@ namespace casual
 
             struct
             {
-               std::vector< common::message::pending::Message> replies;
                std::vector< common::message::domain::process::lookup::Request> lookup;
             } pending;
 
@@ -361,6 +360,9 @@ namespace casual
 
             //! executable id of this domain manager
             state::Server::id_type manager_id;
+
+            //! handle to casual-eventually-send
+            common::process::Handle eventually;
 
             //! Group id:s
             struct

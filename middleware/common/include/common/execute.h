@@ -20,11 +20,9 @@ namespace casual
    {
       namespace execute 
       {
-         //!
          //! executes an action ones.
          //! If the action has not been executed the
          //! destructor will perform the execution
-         //!
          template< typename E>
          struct basic_scope
          {
@@ -47,43 +45,37 @@ namespace casual
             basic_scope( basic_scope&&) noexcept = default;
             basic_scope& operator = ( basic_scope&&) noexcept = default;
 
-            //!
             //! executes the actions ones.
             //! no-op if already executed
-            //!
             void operator () ()
             {
-               if( ! m_moved)
+               if( m_active)
                {
                   m_execute();
                   release();
                }
             }
 
-            void release() { m_moved.release();}
+            void release() { m_active.release();}
 
          private:
             execute_type m_execute;
-            move::Moved m_moved;
+            move::Active m_active;
          };
 
-         //!
          //! returns an executer that will do an action ones.
          //! If the action has not been executed the
          //! destructor will perform the execution
-         //!
          template< typename E>
          auto scope( E&& executor)
          {
             return basic_scope< E>{ std::forward< E>( executor)};
          }
 
-         //!
          //! Execute @p executor once
          //!
          //! @note To be used with lambdas only.
          //! @note Every invocation of the same type will only execute once.
-         //!
          template< typename E>
          void once( E&& executor)
          {
@@ -95,7 +87,6 @@ namespace casual
                executor();
             }
          }
-
 
       } // execute 
    } // common 

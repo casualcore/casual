@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include <utility>
 
 namespace casual
 {
@@ -14,8 +15,46 @@ namespace casual
    {
       namespace move
       {
+         namespace policy
+         {
+            template< typename T, T active_value, T moved_value = T{}>
+            struct Default 
+            {
+               constexpr static auto active() noexcept { return active_value;}
+               constexpr static auto moved() noexcept { return moved_value;}
+               constexpr static bool moved( const T& value) noexcept { return value == moved();} 
+            };
+         } // policy
 
-         //!
+         template< typename T, T active_value = T{}, typename P = policy::Default< T, active_value>> 
+         struct basic_active
+         {
+            using policy_type = P;
+
+            basic_active() = default;
+            basic_active( T value) : value{ std::move( value)} {}
+
+            basic_active( basic_active&& other) noexcept
+               : value{ std::exchange( other.value, policy_type::moved())} {}
+
+            basic_active& operator = ( basic_active&& other) noexcept
+            {
+               value = std::exchange( other.value, policy_type::moved());
+               return *this;
+            }
+
+            basic_active( basic_active&) = delete;
+            basic_active( const basic_active&) = delete;
+            basic_active& operator = ( const basic_active&) = delete;
+
+            //! @return true if `value` is not moved
+            explicit operator bool () const noexcept { return ! policy_type::moved( value);}
+
+            auto release() noexcept { return std::exchange( value, policy_type::moved());}
+
+            T value = policy_type::active();
+         };
+
          //! indicator type to deduce if it has been moved or not.
          //!
          //! usecase:
@@ -23,33 +62,9 @@ namespace casual
          //!  <some type> can use default move ctor and move assignment.
          //!  use Active attribute in dtor do deduce if instance of <some type> still
          //!  has responsibility...
-         //!
-         struct Moved
-         {
-            Moved() = default;
+         using Active = basic_active< bool, true>;
 
-            Moved( Moved&& other) noexcept
-            {
-               other.m_moved = true;
-            }
-
-            Moved& operator = ( Moved&& other) noexcept
-            {
-               other.m_moved = true;
-               return *this;
-            }
-
-            Moved( const Moved&) = delete;
-            Moved& operator = ( const Moved&) = delete;
-
-
-            explicit operator bool () const noexcept { return m_moved;}
-
-            void release() noexcept { m_moved = true;}
-
-         private:
-            bool m_moved = false;
-         };
+         
       } // move
    } // common
 } // casual

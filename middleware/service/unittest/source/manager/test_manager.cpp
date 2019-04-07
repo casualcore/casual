@@ -12,6 +12,8 @@
 #include "service/manager/admin/server.h"
 #include "service/manager/admin/managervo.h"
 
+#include "eventually/send/unittest/process.h"
+
 #include "common/message/domain.h"
 #include "common/message/event.h"
 #include "common/message/service.h"
@@ -51,7 +53,7 @@ namespace casual
             {
                using common::mockup::domain::Manager::Manager;
 
-               common::mockup::Process retry_send{ "../retry/bin/casual-retry-send"};
+               eventually::send::unittest::Process eventually_send;
                local::Manager service;
                common::mockup::domain::transaction::Manager tm;
             };

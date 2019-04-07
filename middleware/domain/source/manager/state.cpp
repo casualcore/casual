@@ -372,9 +372,7 @@ namespace casual
                      std::vector< std::reference_wrapper< state::Server>> server_wrappers;
                      std::vector< std::reference_wrapper< state::Executable>> excutable_wrappers;
 
-                     //
                      // We make sure we don't include our self in the boot sequence.
-                     //
                      algorithm::copy_if( state.servers, std::back_inserter( server_wrappers), [&state]( const auto& e){
                         return e.id != state.manager_id;
                      });
@@ -384,20 +382,16 @@ namespace casual
                      auto executable = range::make( excutable_wrappers);
                      auto servers = range::make( server_wrappers);
 
-                     //
                      // Reverse the order, so we 'consume' executable based on the group
                      // that is the farthest in the dependency chain
-                     //
                      for( auto& group : algorithm::reverse( groups))
                      {
                         state::Batch batch{ group.get().id};
 
-                        auto extract = [&]( auto& entites, auto& output){
-
-                           //
+                        auto extract = [&]( auto& entities, auto& output)
+                        {
                            // Partition executables so we get the ones that has current group as a dependency
-                           //
-                           auto slice = algorithm::stable_partition( entites, [&]( const auto& e){
+                           auto slice = algorithm::stable_partition( entities, [&]( const auto& e){
                               return static_cast< bool>( algorithm::find( e.get().memberships, group.get().id));
                            });
 
@@ -416,9 +410,7 @@ namespace casual
                         result.push_back( std::move( batch));
                      }
 
-                     //
                      // We reverse the result so the dependency order is correct
-                     //
                      return algorithm::reverse( result);
                   }
                } // order
@@ -450,12 +442,6 @@ namespace casual
 
             // We remove from pending 
             {
-               algorithm::trim( pending.replies, algorithm::remove_if( pending.replies, [pid]( message::pending::Message& m)
-               {
-                  m.remove( pid);
-                  return m.sent();
-               }));
-
                algorithm::trim( pending.lookup, algorithm::remove_if( pending.lookup, [pid]( auto& m)
                {
                   return m.process == pid;

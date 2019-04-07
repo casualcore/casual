@@ -56,11 +56,8 @@ namespace casual
 
             Queue create( Queue queue);
 
-            //!
             //! @return the created queues
-            //!
             std::vector< Queue> update( std::vector< Queue> update, const std::vector< common::strong::queue::id>& remove);
-
 
             common::message::queue::enqueue::Reply enqueue( const common::message::queue::enqueue::Request& message);
 
@@ -75,12 +72,8 @@ namespace casual
             void commit( const common::transaction::ID& id);
             void rollback( const common::transaction::ID& id);
 
-            //!
             //! @return queues that was affected of the commit
-            //!
             std::vector< common::strong::queue::id> committed( const common::transaction::ID& id);
-
-
 
             std::vector< common::message::queue::information::Queue> queues();
 
@@ -99,56 +92,36 @@ namespace casual
             void pending_add( const common::message::queue::dequeue::Request& request);
             void pending_erase( common::strong::process::id pid);
             
-            
-            //!
             //! @return "global" error queue
-            //!
             common::strong::queue::id error() const { return m_error_queue;}
 
-
-            //!
             //! @return the number of rows affected by the last statement.
-            //!
             size_type affected() const;
-
-
-
-
-
 
             void begin();
             void commit();
             void rollback();
 
-
-            //!
             //! If message has a queue-id that will be returned,
             //! otherwise we lookup id from name
             //!
             //! @param message enqueue or dequeue message
             //! @return id to the queue
-            //!
             template< typename M>
             common::strong::queue::id quid( M&& message) const
             {
                if( message.queue)
-               {
                   return message.queue;
-               }
 
                auto found = common::algorithm::find( m_name_mapping, message.name);
 
                if( found)
-               {
                   return found->second;
-               }
 
                throw common::exception::system::invalid::Argument{ 
                   common::string::compose( "requested queue is not hosted by this queue-group - message: ", message)};
             }
 
-            
-            //!
             //! @attention only exposed for unittest purposes
             //! @{
             std::vector< pending::Dequeue> get_pending();
@@ -160,10 +133,7 @@ namespace casual
 
             sql::database::Version version();
  
-         private:
-
-           
-
+         private:         
 
             void update_queue( const Queue& queue);
             void remove_queue( common::strong::queue::id id);
@@ -185,7 +155,6 @@ namespace casual
             {
                sql::database::Statement enqueue;
 
-
                struct
                {
                   sql::database::Statement first;
@@ -193,8 +162,6 @@ namespace casual
                   sql::database::Statement first_match;
 
                } dequeue;
-
-
 
                struct
                {
@@ -234,8 +201,6 @@ namespace casual
                } peek;
 
                sql::database::Statement restore;
-
-
 
             } m_statement;
 

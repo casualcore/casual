@@ -4,8 +4,9 @@
 //! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-#include "retry/send/common.h"
-#include "retry/send/message.h"
+#include "eventually/common.h"
+#include "eventually/send/environment.h"
+#include "eventually/send/message.h"
 
 #include "common/communication/ipc.h"
 #include "common/communication/instance.h"
@@ -16,7 +17,7 @@ namespace casual
 {
    using namespace common;
 
-   namespace retry
+   namespace eventually
    {
       namespace send
       {
@@ -34,24 +35,15 @@ namespace casual
                      return std::chrono::duration_cast< common::platform::time::unit>( std::chrono::milliseconds{ 500});
                   }
 
-                  std::vector< message::Request> messages;
+                  std::vector< send::detail::Request> messages;
                };
 
                
                namespace ipc
                {
-                  bool send( const message::Request& request)
+                  bool send( send::detail::Request& request)
                   {
-                     try
-                     {
-                        common::communication::ipc::outbound::Device ipc{ request.destination.ipc};
-                        return ! ipc.put( request.message, common::communication::ipc::policy::non::Blocking{}).empty();
-                     }
-                     catch( const exception::system::communication::Unavailable&)
-                     {
-                        log::line( log, "destination unavailable: ", request.destination);
-                        return true;
-                     }
+                     return common::message::pending::non::blocking::send( request.message);
                   }
                } // ipc
                
@@ -69,11 +61,14 @@ namespace casual
                   {
                      using Base::Base;
 
-                     void operator () ( message::Request& message)
+                     void operator () ( send::detail::Request& message)
                      {
-                        Trace trace{ "retry::send::local::handle::Request"};
+                        Trace trace{ "eventually::send::local::handle::Request"};
 
                         log::line( verbose::log, "message: ", message);
+                        
+                        // we block all signals during non-blocking-send
+                        signal::thread::scope::Block block;
 
                         // we try to send the message directly
                         if( ! ipc::send( message))
@@ -83,8 +78,9 @@ namespace casual
 
                   void timeout( State& state)
                   {
-                     Trace trace{ "retry::send::local::handle::timeout"};
+                     Trace trace{ "eventually::send::local::handle::timeout"};
 
+                     // we block all signals during non-blocking-send
                      signal::thread::scope::Block block;
 
                      common::algorithm::trim( state.messages, common::algorithm::filter( state.messages, &ipc::send));
@@ -113,7 +109,7 @@ namespace casual
                   
                void start()
                {
-                  Trace trace{ "retry::send::local::start"};
+                  Trace trace{ "eventually::send::local::start"};
 
                   State state;
 
@@ -154,12 +150,12 @@ namespace casual
          }
       } // send
       
-   } // retry
+   } // eventually
 
 } // casual
 
 int main( int argc, const char **argv)
 {
-   return casual::retry::send::main( argc, argv);
+   return casual::eventually::send::main( argc, argv);
 }
 

@@ -54,10 +54,8 @@ namespace casual
                         {
                            process.alias = process.alias + "_" + std::to_string( count);
 
-                           //
                            // Just to make sure we don't get duplicates if users has configure aliases
                            // such as 'alias_1', and so on, we do another run
-                           //
                            operator ()( process);
                         }
                      }
@@ -97,7 +95,7 @@ namespace casual
 
                   manager::state::Group operator () ( const casual::configuration::Group& group) const
                   {
-                     manager::state::Group result{ group.name, { m_state.group_id.global}, group.note};
+                     manager::state::Group result{ group.name, { m_state.group_id.master}, group.note};
 
                      if( group.resources.has_value()) result.resources = group.resources.value();
 
@@ -330,7 +328,7 @@ namespace casual
             result.environment = domain.manager_default.environment;
 
             // Handle groups
-            {
+            {               
                manager::state::Group master{ ".casual.master", {}, "the master and (implicit) parent of all groups"};
                result.group_id.master = master.id;
                
@@ -354,7 +352,7 @@ namespace casual
                // the user has used one of the reserved names, or we're reading from a persistent stored
                // configuration
                const std::vector< std::string> reserved{
-                  ".casual.master", ".casual.transaction", ".casual.queue", ".global", ".casual.gateway"};
+                  ".casual.domain", ".casual.master", ".casual.transaction", ".casual.queue", ".global", ".casual.gateway"};
 
                auto groups = common::algorithm::remove_if( domain.groups, [&reserved]( const auto& g)
                {

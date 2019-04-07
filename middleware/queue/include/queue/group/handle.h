@@ -41,6 +41,12 @@ namespace casual
 
             void shutdown( State& state);
 
+            namespace persistent
+            {
+               //! sends all persistent messages, if any.
+               void send( State& state);
+            } // persistent
+
             namespace dead
             {
                struct Process : Base
@@ -53,10 +59,8 @@ namespace casual
 
             namespace information
             {
-
                namespace queues
                {
-
                   struct Request : Base
                   {
 
@@ -81,7 +85,6 @@ namespace casual
                   };
 
                } // messages
-
 
             } // information
 
@@ -161,9 +164,7 @@ namespace casual
             {
                namespace commit
                {
-                  //!
                   //! Invoked from the TM
-                  //!
                   struct Request : Base
                   {
                      using message_type = common::message::transaction::resource::commit::Request;
@@ -177,11 +178,9 @@ namespace casual
 
                namespace prepare
                {
-                  //!
                   //! Invoked from the TM
                   //!
                   //! This will always reply ok.
-                  //!
                   struct Request : Base
                   {
                      using message_type = common::message::transaction::resource::prepare::Request;
@@ -195,9 +194,7 @@ namespace casual
 
                namespace rollback
                {
-                  //!
                   //! Invoked from the TM
-                  //!
                   struct Request : Base
                   {
                      using message_type = common::message::transaction::resource::rollback::Request;

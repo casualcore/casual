@@ -240,7 +240,7 @@ namespace casual
                   //! resets all outbound instances, hence they will start
                   //! configure them self from the environment
                   //! @attention only for unittests
-                  void reset();
+                  //void reset();
 
                } // domain
             } // outbound

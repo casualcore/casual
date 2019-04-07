@@ -64,19 +64,17 @@ namespace casual
 
          color_t::color_t( std::string color) : m_color( std::move( color))
          {
-
          }
 
-
-         color_t::proxy_t::proxy_t( std::ostream& out) : m_out( &out) {}
+         color_t::proxy_t::proxy_t( std::ostream& out) : m_active( &out) {}
 
          color_t::proxy_t::~proxy_t()
          {
-            if( ! m_moved)
+            if( m_active)
             {
                // auto flags = m_out->flags();
                //auto width = m_out->width( 0);
-               *m_out << "\033[0m";
+               *m_active.value << "\033[0m";
                // m_out->setf( flags);
                // m_out->width( width);
             }

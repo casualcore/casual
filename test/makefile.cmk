@@ -13,10 +13,10 @@ LibraryPaths( [ 'bin',
 	'../middleware/common/bin',
 	'../middleware/queue/bin',
 	'../middleware/buffer/bin',
-   '../middleware/retry/bin',
+    '../middleware/eventually/bin',
 	'../middleware/serviceframework/bin',
-   '../middleware/configuration/bin',
-   '../middleware/http/bin',
+    '../middleware/configuration/bin',
+    '../middleware/http/bin',
 	'$(CASUAL_OPTIONAL_LIBRARY_PATHS)',
 	])
 

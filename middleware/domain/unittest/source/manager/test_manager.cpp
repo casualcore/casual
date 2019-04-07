@@ -29,6 +29,7 @@
 #include "serviceframework/service/protocol/call.h"
 #include "serviceframework/log.h"
 
+#include "eventually/send/unittest/process.h"
 
 #include <fstream>
 
@@ -71,6 +72,7 @@ namespace casual
                         "--bare", "true"
                      }}
                   {
+                     common::log::line( log, "singleton file: ", common::environment::domain::singleton::file());
 
                      // Make sure we unregister the event subscription
                      auto unsubscribe = common::execute::scope( [](){
@@ -78,8 +80,10 @@ namespace casual
                      });
 
                      // Wait for the domain to boot
+                     //process.handle( unittest::domain::manager::wait( common::communication::ipc::inbound::device()));
                      unittest::domain::manager::wait( common::communication::ipc::inbound::device());
 
+                     
                      // Set environment variable to make it easier for other processes to
                      // reach domain-manager (should work any way...)
                      common::environment::variable::process::set(
@@ -88,16 +92,20 @@ namespace casual
 
                   }
 
-                  struct remove_singleton_file_t
+                  struct Setup_environment
                   {
-                     remove_singleton_file_t()
+                     Setup_environment()
                      {
+                        common::environment::variable::set( "CASUAL_HOME", "../../test/home");
+
+                        common::environment::reset();
+
                         if( file::exists( environment::domain::singleton::file()))
                         {
                            file::remove( environment::domain::singleton::file());
                         }
                      }
-                  } remove_singleton_file;
+                  } setup_environment;
 
                   std::vector< file::scoped::Path> files;
                   mockup::Process process;

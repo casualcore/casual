@@ -8,6 +8,7 @@ IncludePaths( [
     '../serviceframework/include', 
     '../xatmi/include',
     '../transaction/include',
+    '../eventually/include',
     '../../thirdparty/database/include',
     '$(CASUAL_OPTIONAL_INCLUDE_PATHS)',
     ])
@@ -20,6 +21,7 @@ LibraryPaths( [
         '../serviceframework/bin',
         '../common/bin',
         '../buffer/bin',
+        '../eventually/bin',
         '../xatmi/bin',
         '$(CASUAL_OPTIONAL_LIBRARY_PATHS)',
     ])
@@ -66,6 +68,7 @@ queue_group = LinkExecutable( 'bin/casual-queue-group',
     [
      group_archive,
      common,
+     'casual-eventually-send',
      'casual-common',
      'sqlite3',
      ])
@@ -172,6 +175,7 @@ test_casual_queue = LinkUnittest( 'unittest/bin/test-casual-queue',
      queue_api,
      'casual-mockup',
      'casual-mockup-unittest-environment',
+     'casual-eventually-unittest',
      'casual-common',
      'casual-serviceframework',
      'casual-configuration',

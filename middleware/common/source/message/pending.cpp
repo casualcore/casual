@@ -15,22 +15,10 @@ namespace casual
       {
          namespace pending
          {
-            Message::Message( communication::message::Complete&& complete, targets_type targets, Targets task)
-               : targets( std::move( targets)), complete( std::move( complete)), task( task)
-            {
-            }
-
-            Message::Message( communication::message::Complete&& complete, targets_type targets)
-             : Message{ std::move( complete), std::move( targets), Targets::all}
-            {
-            }
-
-            Message::Message( Message&&) = default;
-            Message& Message::operator = ( Message&&) = default;
 
             bool Message::sent() const
             {
-               return targets.empty();
+               return destinations.empty();
             }
 
             Message::operator bool () const
@@ -40,34 +28,18 @@ namespace casual
 
             void Message::remove( strong::ipc::id ipc)
             {
-               algorithm::trim( targets, algorithm::remove( targets, ipc));
+               algorithm::trim( destinations, algorithm::remove( destinations, ipc));
             }
 
             void Message::remove( strong::process::id pid)
             {
-               algorithm::trim( targets, algorithm::remove( targets, pid));
+               algorithm::trim( destinations, algorithm::remove( destinations, pid));
             }
 
             std::ostream& operator << ( std::ostream& out, const Message& value)
             {
-               return out << "{ targets: " << range::make( value.targets) << ", complete: " << value.complete << "}";
+               return out << "{ destinations: " << value.destinations << ", complete: " << value.complete << "}";
             }
-
-            namespace policy
-            {
-               bool consume_unavailable::operator () () const
-               {
-                  try
-                  {
-                     throw;
-                  }
-                  catch( const exception::system::communication::Unavailable&)
-                  {
-                     return true;
-                  }
-               }
-
-            } // policy
 
             namespace non
             {
@@ -75,7 +47,22 @@ namespace casual
                {
                   bool send( Message& message, const communication::error::type& handler)
                   {
-                     return send( message, communication::ipc::policy::non::Blocking{}, handler);
+                     auto send = [&]( const common::process::Handle& process)
+                     {
+                        try
+                        {
+                           communication::ipc::outbound::Device device{ process.ipc};
+                           return static_cast< bool>( device.put( message.complete, communication::ipc::policy::non::Blocking{}, handler));
+                        }
+                        catch( const exception::system::communication::Unavailable&)
+                        {
+                           return true;
+                        }
+                     };
+
+                     algorithm::trim( message.destinations, algorithm::remove_if( message.destinations, send));
+                  
+                     return message.sent();
                   }
 
                } // blocking

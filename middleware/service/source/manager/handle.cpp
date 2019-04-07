@@ -10,7 +10,7 @@
 #include "service/transform.h"
 #include "service/common.h"
 
-#include "retry/send/message.h"
+#include "eventually/send/message.h"
 
 #include "common/server/lifetime.h"
 #include "common/environment.h"
@@ -101,11 +101,7 @@ namespace casual
                         try
                         {
                            if( ! communication::ipc::non::blocking::send( detail::get::device( device), message, ipc::device().error_handler()))
-                           {
-                              log::line( log, "non blocking send failed - action: try later");
-
-                              retry::send::message::send( std::forward< M>( message), detail::get::process( device));
-                           }
+                              casual::eventually::send::message( detail::get::process( device), std::forward< M>( message));
                         }
                         catch( const common::exception::system::communication::Unavailable&)
                         {
@@ -122,7 +118,8 @@ namespace casual
                         auto pending = state.events( state.metric.message());
                         state.metric.clear();
 
-                        common::message::pending::send( pending, communication::ipc::policy::Blocking{}, manager::ipc::device().error_handler());
+                        if( ! common::message::pending::non::blocking::send( pending, manager::ipc::device().error_handler()))
+                           casual::eventually::send::message( pending);
                      }
                   } // metric
                } // <unnamed>

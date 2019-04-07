@@ -37,11 +37,13 @@ namespace casual
             shutdown_reply,
             delay_message,
             inbound_ipc_connect,
-            retry_send_message,
 
             process_spawn_request = 600,
             process_lookup_request,
             process_lookup_reply,
+
+            eventually_send_message = 700,
+            eventually_multisend_message,
 
             DOMAIN_BASE = 1000,
             domain_scale_executable,

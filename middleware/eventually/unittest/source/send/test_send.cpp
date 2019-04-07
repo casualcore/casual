@@ -8,7 +8,8 @@
 #include <gtest/gtest.h>
 #include "common/unittest.h"
 
-#include "retry/send/message.h"
+#include "eventually/send/message.h"
+#include "eventually/send/unittest/process.h"
 
 #include "common/mockup/process.h"
 #include "common/mockup/domain.h"
@@ -20,7 +21,7 @@
 namespace casual
 {
 
-   namespace retry
+   namespace eventually
    {
       namespace send
       {
@@ -32,46 +33,34 @@ namespace casual
                {
                   common::mockup::domain::Manager manager;
                };
-
-               namespace process
-               {
-                  struct Retry : common::mockup::Process
-                  {
-                     Retry() : common::mockup::Process{ "./bin/casual-retry-send", {}} {}
-
-                  };
-
-               } // process
-
             } // <unnamed>
          } // local
 
-
-         TEST( retry_send, spawn_terminate)
+         TEST( eventually_send, spawn_terminate)
          {
             common::unittest::Trace trace;
 
             EXPECT_NO_THROW( {
                local::Domain domain;
-               local::process::Retry retry;
+               unittest::Process send;
             });
          }
 
 
 
-         TEST( retry_send, send_retry_message__expect_sent)
+         TEST( eventually_send, eventually_message__expect_sent)
          {
             common::unittest::Trace trace;
 
             local::Domain domain;
-            local::process::Retry retry;
+            unittest::Process send;
 
             common::communication::ipc::Helper ipc;
 
             {
                common::message::service::lookup::Request message;
                message.requested = "foo";
-               message::send( message, common::process::handle());
+               eventually::send::message( common::process::handle(), message);
             }
 
             {
@@ -83,5 +72,5 @@ namespace casual
          }
 
       } // send
-   } // retry
+   } // eventually
 } // casual

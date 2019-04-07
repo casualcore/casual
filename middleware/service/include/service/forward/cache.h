@@ -27,9 +27,7 @@ namespace casual
 
          struct State
          {
-            std::unordered_map< std::string, std::deque< common::message::service::call::callee::Request>> reqested;
-
-            std::vector< common::message::pending::Message> pending;
+            std::unordered_map< std::string, std::deque< common::message::service::call::callee::Request>> requested;
          };
 
          struct Cache

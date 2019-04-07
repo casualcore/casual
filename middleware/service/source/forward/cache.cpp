@@ -14,10 +14,12 @@
 #include "common/exception/casual.h"
 
 #include "common/server/handle/call.h"
-
 #include "common/communication/instance.h"
-
 #include "common/flag.h"
+
+#include "eventually/send/message.h"
+
+#include <iomanip>
 
 namespace casual
 {
@@ -27,6 +29,37 @@ namespace casual
    {
       namespace forward
       {
+
+         namespace local
+         {
+            namespace
+            {
+               namespace ipc
+               {
+                  template< typename M> 
+                  bool send( const process::Handle& process, M&& message)
+                  {
+                     try
+                     {
+                        if( ! communication::ipc::non::blocking::send( process.ipc, message))
+                        {
+                           log::line( log, "could not send message ", message.type(), " to process: ", process, " - action: eventually send");
+
+                           eventually::send::message( process, message);
+                        }
+                     }
+                     catch( const exception::system::communication::Unavailable&)
+                     {
+                        // No-op, we just drop the message
+                        log::line( log, "failed to sendmessage ", message.type(), " to process: ", process, " - action: discard");
+                        return false;
+                     }
+                     return true;
+                  }
+
+               } // ipc
+            } // <unnamed>
+         } // local
          namespace handle
          {
             struct base
@@ -55,27 +88,8 @@ namespace casual
                            reply.transaction.trid = message.trid;
                            reply.code.result = common::code::xatmi::service_error;
                            reply.buffer = buffer::Payload{ nullptr};
-
-                           try
-                           {
-                              if( ! communication::ipc::non::blocking::send( message.process.ipc, reply))
-                              {
-                                 //
-                                 // We failed to send reply for some reason (ipc-queue full?)
-                                 // we'll try to send it later
-                                 //
-                                 state.pending.emplace_back( std::move( reply), message.process);
-
-                                 log::line( log, "could not send error reply to process: ", message.process, " - will try later");
-                              }
-                           }
-                           catch( const exception::system::communication::Unavailable&)
-                           {
-                              //
-                              // No-op, we just drop the message
-                              //
-                              log::line( log, "could not send error reply to process: ", message.process, " - queue unavailable - action: ignore");
-                           }
+                           
+                           local::ipc::send( message.process, reply);
                         }
                      }
                   } // error
@@ -111,7 +125,7 @@ namespace casual
                            return;
                         }
 
-                        auto& pending_queue = m_state.reqested[ message.service.name];
+                        auto& pending_queue = m_state.requested[ message.service.name];
 
                         if( pending_queue.empty())
                         {
@@ -119,18 +133,12 @@ namespace casual
                            return;
                         }
 
-
-
-                        //
                         // We consume the request regardless
-                        //
                         auto request = std::move( pending_queue.front());
                         pending_queue.pop_front();
                         request.service = message.service;
 
-                        //
                         // If something goes wrong, we try to send error reply to caller
-                        //
                         auto error_reply = execute::scope( [&](){
                            send::error::reply( m_state, request);
                         });
@@ -142,19 +150,14 @@ namespace casual
                            return;
                         }
 
-                        log::line( log, "send request - to: ", message.process.ipc, " - request: ", request);
+                        log::line( log, "send request - to: ", message.process, " - request: ", request);
 
-                        if( ! communication::ipc::non::blocking::send( message.process.ipc, request))
+                        if( ! local::ipc::send( message.process, request))
                         {
-                           //
-                           // We could not send the call. We put in pending and hope to send it
-                           // later
-                           //
-                           m_state.pending.emplace_back( request, message.process);
-
-                           log::line( log, "could not forward call to process: ", message.process, " - will try later");
-
+                           log::line( log::category::error, "call to service ", std::quoted( message.service.name), "' failed - action: send error reply");
+                           return;
                         }
+
                         error_reply.release();
                      }
                   };
@@ -171,9 +174,7 @@ namespace casual
 
                      log::line( log, "call request received for service: ", message.service, " from: ", message.process);
 
-                     //
                      // lookup service
-                     //
                      {
                         message::service::lookup::Request request;
                         request.requested = message.service.name;
@@ -182,7 +183,7 @@ namespace casual
                         communication::ipc::blocking::send( communication::instance::outbound::service::manager::device(), request);
                      }
 
-                     m_state.reqested[ message.service.name].push_back( std::move( message));
+                     m_state.requested[ message.service.name].push_back( std::move( message));
 
                   }
                };
@@ -195,16 +196,12 @@ namespace casual
          {
             Trace trace{ "service::forward::Cache ctor"};
 
-            //
             // Connect to domain
-            //
             communication::instance::connect( communication::instance::identity::forward::cache);
 
          }
 
-         Cache::~Cache()
-         = default;
-
+         Cache::~Cache()  = default;
 
          void Cache::start()
          {
@@ -217,34 +214,7 @@ namespace casual
                      message::handle::Shutdown{}
                );
 
-
-               while( true)
-               {
-
-                  if( m_state.pending.empty())
-                  {
-                     handler( communication::ipc::inbound::device().next( communication::ipc::policy::Blocking{}));
-                  }
-                  else
-                  {
-                     signal::handle();
-                     signal::thread::scope::Block block;
-
-                     auto sender = message::pending::sender( communication::ipc::policy::non::Blocking{});
-
-                     auto remain = common::algorithm::remove_if(
-                        m_state.pending,
-                        sender);
-
-                     m_state.pending.erase( std::end( remain), std::end( m_state.pending));
-
-                     while( handler( communication::ipc::inbound::device().next( communication::ipc::policy::non::Blocking{}))
-                           && m_state.pending.size() < platform::batch::service::forward::pending)
-                     {
-                        ;
-                     }
-                  }
-               }
+               message::dispatch::blocking::pump( handler, communication::ipc::inbound::device());
             }
             catch( const exception::casual::Shutdown&)
             {
