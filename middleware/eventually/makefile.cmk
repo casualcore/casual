@@ -69,10 +69,8 @@ unittest_library = LinkLibrary( 'bin/casual-eventually-unittest',
         'casual-mockup',
     ]
 )
-Dependencies( unittest_library, [ eventually_executable ])
 
-
-target_test_eventually = LinkUnittest( 'bin/test-casual-retry-send', 
+target_test_eventually = LinkUnittest( 'bin/test-casual-eventually-send', 
     [ 
         Compile( 'unittest/source/send/test_send.cpp'),
     ],
@@ -83,7 +81,9 @@ target_test_eventually = LinkUnittest( 'bin/test-casual-retry-send',
      'casual-mockup',
      'casual-mockup-unittest-environment',
      'casual-unittest',
-    ])        
+    ])
+
+Dependencies( target_test_eventually, [ eventually_executable ])
 
 
 Install( install_bins,'$(CASUAL_HOME)/bin')
