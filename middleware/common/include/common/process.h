@@ -266,8 +266,26 @@ namespace casual
 
          } // children
 
-
       } // process
+
+      struct Process 
+      {
+         Process() = default;
+         Process( const std::string& path, std::vector< std::string> arguments);
+         inline Process( const std::string& path) : Process( path, {}) {}
+         ~Process();
+         
+         Process( Process&&) noexcept = default;
+         Process& operator = ( Process&&) noexcept = default;
+
+         inline const process::Handle& handle() const noexcept { return m_handle;}
+         void handle( const process::Handle& handle);
+
+         friend std::ostream& operator << ( std::ostream& out, const Process& value);
+
+      private:
+         process::Handle m_handle;
+      };
    } // common
 } // casual
 

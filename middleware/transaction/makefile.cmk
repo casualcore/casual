@@ -4,6 +4,7 @@ IncludePaths( ['include',
     '../common/include',
     '../xatmi/include',
     '../configuration/include',
+    '../domain/include',
     '../serviceframework/include',
     '../../thirdparty/database/include',
     '$(CASUAL_OPTIONAL_INCLUDE_PATHS)',
@@ -13,6 +14,7 @@ LibraryPaths( ['bin',
     '../common/bin',
     '../buffer/bin',
     '../configuration/bin',
+    '../domain/bin',
     '../serviceframework/bin',
     '../xatmi/bin',
     '$(CASUAL_OPTIONAL_LIBRARY_PATHS)',
@@ -89,9 +91,7 @@ install_lib.append( target)
 install_headers.append( ( 'include/transaction/resource/proxy_server.h', 'transaction/resource'))
 
 
-#
 # Mockup resource proxy
-#
 target = LinkExecutable( 'bin/rm-proxy-casual-mockup',
     [ Compile( 'source/resource/template_build_resource_proxy.cpp')],
     [ 'casual-mockup-rm', 'casual-resource-proxy-server'])
@@ -99,10 +99,7 @@ target = LinkExecutable( 'bin/rm-proxy-casual-mockup',
 
 install_bin.append( target)
 
-
-#
 # unittest
-#
  
 test_transaction = LinkUnittest( 'bin/test-casual-transaction',
     [
@@ -119,11 +116,12 @@ test_transaction = LinkUnittest( 'bin/test-casual-transaction',
         'casual-serviceframework', 
         'casual-configuration', 
         'sqlite3', 
+        'casual-xatmi',
+        'casual-unittest',
+        'casual-domain-unittest',
         'casual-mockup',
         'casual-mockup-rm',
-        'casual-xatmi',
-        'casual-mockup-unittest-environment',
-        'casual-unittest',
+
     ])
 
 # make sure we link manager before we run tests 

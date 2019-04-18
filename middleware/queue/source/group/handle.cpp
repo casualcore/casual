@@ -15,7 +15,7 @@
 
 #include "common/communication/instance.h"
 
-#include "eventually/send/message.h"
+#include "domain/pending/send/message.h"
 
 namespace casual
 {
@@ -112,7 +112,7 @@ namespace casual
                         auto send = []( auto& pending)
                         {
                            if( ! common::message::pending::non::blocking::send( pending))
-                              eventually::send::message( pending);
+                              casual::domain::pending::send::message( pending);
                         };
 
                         // persist

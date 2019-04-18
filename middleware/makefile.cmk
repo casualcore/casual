@@ -8,17 +8,16 @@ Build( 'serviceframework/makefile.cmk')
 Build( 'buffer/makefile.cmk')
 Build( 'configuration/makefile.cmk')
 Build( 'tools/makefile.cmk')
-Build( 'eventually/makefile.cmk')
+Build( 'domain/makefile.cmk') 
+Build( 'service/makefile.cmk')
+Build( 'transaction/makefile.cmk')
 
 with Scope():
     Parallel( True)
-    
-    Build( 'domain/makefile.cmk')    
+      
     Build( 'event/makefile.cmk')
     Build( 'gateway/makefile.cmk')
-
-    Build( 'service/makefile.cmk')
-    Build( 'transaction/makefile.cmk')
+    
     Build( 'queue/makefile.cmk')  
 
     Build( 'binding/makefile.cmk')  
@@ -33,6 +32,4 @@ Build( 'example/makefile.cmk')
 Build( 'tools/makefile.cli.cmk')
 Build( 'administration/makefile.cmk')
 
-# Temporary until moved to different repo
-Build( 'test/makefile.cmk')
 

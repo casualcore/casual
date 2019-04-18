@@ -37,6 +37,8 @@
 
 #include "common/communication/instance.h"
 
+#include "domain/manager/unittest/process.h"
+
 #include "serviceframework/service/protocol/call.h"
 #include "serviceframework/log.h"
 
@@ -53,108 +55,79 @@ namespace casual
 
    namespace transaction
    {
-
-
       namespace local
       {
          namespace
          {
-            struct Manager
-            {
-
-               Manager( const std::string& configuration)
-                  : m_filename{ common::mockup::file::temporary::content( ".yaml", configuration)},
-                    env{ m_filename},
-                    m_process{ "./bin/casual-transaction-manager", { "-l", ":memory:"}
-                  }
-               {
-                  // We wait until tm is up
-                  common::communication::instance::ping(
-                        common::communication::instance::fetch::handle(
-                              common::communication::instance::identity::transaction::manager).ipc);
-               }
-
-            private:
-               common::file::scoped::Path m_filename;
-
-               struct env_t
-               {
-                  env_t( const std::string& file)
-                  {
-                     common::environment::variable::set( "CASUAL_RESOURCE_CONFIGURATION_FILE", file);
-                  }
-               } env;
-
-               common::mockup::Process m_process;
-
-            };
-
             struct Domain
             {
-               Domain( common::message::domain::configuration::Domain configuration, const std::string& resource_configuration)
-                  : manager{ std::move( configuration)},
-                     tm{ resource_configuration}
+               struct Configuration
                {
-               }
+                  std::string domain =  R"(
+domain:
+   name: transaction-domain
 
-               Domain()
-                  : manager{ configuration()},
-                     tm{ resource_configuration()}
-               {
-               }
+   transaction:
+      resources:
+         - key: rm-mockup
+           name: rm1
+           instances: 2
+           openinfo: "${CASUAL_UNITTEST_OPEN_INFO_RM1}"
+         - key: rm-mockup
+           name: rm2
+           instances: 2
+           openinfo: "${CASUAL_UNITTEST_OPEN_INFO_RM2}"
 
-
-               common::mockup::domain::Manager manager;
-               common::mockup::domain::service::Manager service;
-               Manager tm;
-
-               static common::message::domain::configuration::Domain configuration()
-               {
-                  common::message::domain::configuration::Domain domain;
-
-                  using resource_type = common::message::domain::configuration::transaction::Resource;
-
-                  domain.transaction.resources = {
-                        {
-                           []( resource_type& r)
-                           {
-                              r.name = "rm1";
-                              r.key = "rm-mockup";
-                              r.instances = 2;
-                              //r.openinfo = "openinfo1";
-                           }
-                        },
-                        {
-                           []( resource_type& r)
-                           {
-                              r.name = "rm2";
-                              r.key = "rm-mockup";
-                              r.instances = 2;
-                              //r.openinfo = "openinfo2";
-                           }
-                        }
-                  };
-
-                  return domain;
-               }
-
-               static std::string resource_configuration()
-               {
-                  return R"(
-resources:
+   servers:
+      - path: "${CASUAL_HOME}/bin/casual-service-manager"
+      - path: "./bin/casual-transaction-manager"
+        arguments: [ --transaction-log, ":memory:"]
          
-  - key: rm-mockup   
+)";
+                  std::string resource = R"(
+resources:
+  - key: rm-mockup
     server: "./bin/rm-proxy-casual-mockup"
     xa_struct_name: casual_mockup_xa_switch_static
     libraries:
       - casual-mockup-rm
 )";
-               }
 
+               };
+
+               Domain( Configuration configuration) 
+                  : environment{ configuration.resource}, 
+                     process{ { std::move( configuration.domain)}} {}
+               Domain() : Domain{ Configuration{}} {}
+               
+               struct Environment 
+               {
+                  static constexpr auto env_rm1 = "CASUAL_UNITTEST_OPEN_INFO_RM1";
+                  static constexpr auto env_rm2 = "CASUAL_UNITTEST_OPEN_INFO_RM2";
+
+                  Environment( const std::string& configuration) 
+                     : resource{ common::mockup::file::temporary::content( ".yaml", configuration)}
+                  {
+                     common::environment::variable::set( "CASUAL_RESOURCE_CONFIGURATION_FILE", resource);
+
+                     if( ! common::environment::variable::exists( env_rm1))
+                        common::environment::variable::set( env_rm1, {});
+
+                     if( ! common::environment::variable::exists( env_rm2))
+                        common::environment::variable::set( env_rm2, {});
+                  }
+
+                  ~Environment() 
+                  {
+                     common::environment::variable::unset( env_rm1);
+                     common::environment::variable::unset( env_rm2);
+                  }
+                  
+                  common::file::scoped::Path resource;
+               } environment;
+
+               casual::domain::manager::unittest::Process process;
             };
-
-
-
 
             namespace admin
             {
@@ -233,12 +206,31 @@ resources:
       {
          common::unittest::Trace trace;
 
-         auto configuration = local::Domain::configuration();
-         configuration.transaction.resources.at( 1).key = "non-existent";
+         auto configuration = []()
+         {
+            local::Domain::Configuration result;
+            result.domain = R"(
+domain:
+   name: transaction-domain
+
+   transaction:
+      resources:
+         - key: non-existent
+           name: rm1
+           instances: 2
+
+   servers:
+      - path: "${CASUAL_HOME}/bin/casual-service-manager"
+      - path: "./bin/casual-transaction-manager"
+        arguments: [ --transaction-log, ":memory:"]
+         
+)";
+            return result;
+         }();
 
 
          EXPECT_NO_THROW({
-            local::Domain domain( std::move( configuration), local::Domain::resource_configuration());
+            local::Domain domain( std::move( configuration));
          });
       }
 
@@ -246,7 +238,10 @@ resources:
       {
          common::unittest::Trace trace;
 
-         auto rm_properties = R"(
+         auto configuration = []()
+         {
+            local::Domain::Configuration result;
+            result.resource =  R"(
 resources:
 
   - key: rm-mockup   
@@ -255,10 +250,12 @@ resources:
     libraries:
        - casual-mockup-rm
 )";
+            return result;
+         }();
 
 
          EXPECT_NO_THROW({
-            local::Domain domain( local::Domain::configuration(), rm_properties);
+            local::Domain domain( std::move( configuration));
          });
       }
 
@@ -267,12 +264,12 @@ resources:
       {
          common::unittest::Trace trace;
 
-         auto configuration = local::Domain::configuration();
-         configuration.transaction.resources.at( 1).openinfo = "--open " + std::to_string( XAER_RMFAIL);
-
+         // we set unittest environment variable to set "error"
+         common::environment::variable::set( "CASUAL_UNITTEST_OPEN_INFO_RM1", 
+            "--open " + std::to_string( XAER_RMFAIL));
 
          EXPECT_NO_THROW({
-            local::Domain domain( std::move( configuration), local::Domain::resource_configuration());
+            local::Domain domain;
          });
       }
 
@@ -281,10 +278,33 @@ resources:
       {
          common::unittest::Trace trace;
 
-         auto configuration = local::Domain::configuration();
-         configuration.transaction.resources.at( 1).openinfo = "openinfo2";
+         auto configuration = []()
+         {
+            local::Domain::Configuration result;
+            result.domain = R"(
+domain:
+   name: transaction-domain
 
-         local::Domain domain( std::move( configuration), local::Domain::resource_configuration());
+   transaction:
+      resources:
+         - key: rm-mockup
+           name: rm1
+           instances: 2
+         - key: rm-mockup
+           name: rm2
+           instances: 2
+           openinfo: openinfo2
+
+   servers:
+      - path: "${CASUAL_HOME}/bin/casual-service-manager"
+      - path: "./bin/casual-transaction-manager"
+        arguments: [ --transaction-log, ":memory:"]
+         
+)";
+            return result;
+         }();
+
+         local::Domain domain( std::move( configuration));
 
          common::message::transaction::resource::lookup::Request request;
          request.process = common::process::handle();
@@ -448,12 +468,11 @@ resources:
       {
          common::unittest::Trace trace;
 
-         auto configuration = local::Domain::configuration();
-         configuration.transaction.resources.resize( 1);
-         configuration.transaction.resources.at( 0).openinfo = "--commit " + std::to_string( XA_RBDEADLOCK);
+         // we set unittest environment variable to set "error"
+         common::environment::variable::set( "CASUAL_UNITTEST_OPEN_INFO_RM1", 
+            "--commit " + std::to_string( XA_RBDEADLOCK));
 
-         local::Domain domain( std::move( configuration), local::Domain::resource_configuration());
-
+         local::Domain domain;
 
          EXPECT_TRUE( tx_begin() == TX_OK);
 
@@ -485,11 +504,11 @@ resources:
       {
          common::unittest::Trace trace;
 
-         auto configuration = local::Domain::configuration();
-         configuration.transaction.resources.resize( 1);
-         configuration.transaction.resources.at( 0).openinfo = "--commit " + std::to_string( XAER_NOTA);
+         // we set unittest environment variable to set "error"
+         common::environment::variable::set( "CASUAL_UNITTEST_OPEN_INFO_RM1", 
+            "--commit " + std::to_string( XAER_NOTA));
 
-         local::Domain domain( std::move( configuration), local::Domain::resource_configuration());
+         local::Domain domain;
 
          using tx = common::code::tx;
 
@@ -518,13 +537,11 @@ resources:
       {
          common::unittest::Trace trace;
 
-         common::environment::variable::set( "CASUAL_OPEN_INFO", "--commit " + std::to_string( XAER_NOTA));
+         // we set unittest environment variable to set "error"
+         common::environment::variable::set( "CASUAL_UNITTEST_OPEN_INFO_RM1", 
+            "--commit " + std::to_string( XAER_NOTA));
 
-         auto configuration = local::Domain::configuration();
-         configuration.transaction.resources.resize( 1);
-         configuration.transaction.resources.at( 0).openinfo = "${CASUAL_OPEN_INFO}";
-
-         local::Domain domain( std::move( configuration), local::Domain::resource_configuration());
+         local::Domain domain;
 
          using tx = common::code::tx;
 

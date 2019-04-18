@@ -13,8 +13,8 @@
 
 #include "configuration/gateway.h"
 
-#include "eventually/send/message.h"
-#include "eventually/send/environment.h"
+#include "domain/pending/send/message.h"
+#include "domain/pending/send/environment.h"
 
 #include "common/message/handle.h"
 #include "common/server/handle/call.h"
@@ -58,7 +58,7 @@ namespace casual
                      try
                      {
                         if( ! manager::ipc::device().non_blocking_send( process.ipc, message))
-                           eventually::send::detail::message( process, std::forward< M>( message));
+                           pending::send::detail::message( process, std::forward< M>( message));
                      }
                      catch( const exception::system::communication::Unavailable&)
                      {
@@ -69,7 +69,7 @@ namespace casual
                   void send( message::pending::Message&& pending)
                   {
                      if( ! message::pending::non::blocking::send( pending, manager::ipc::device().error_handler()))
-                        eventually::send::detail::message( pending);
+                        pending::send::detail::message( pending);
                   }
 
                } // ipc
@@ -805,12 +805,12 @@ namespace casual
 
                      namespace singleton
                      {
-                        void eventually( State& state, const common::process::Handle& process)
+                        void pending( State& state, const common::process::Handle& process)
                         {
-                           Trace trace{ "domain::manager::handle::local::singleton::eventually"};
+                           Trace trace{ "domain::manager::handle::local::singleton::pending"};
 
-                           environment::variable::process::set( eventually::send::environment, process);
-                           state.eventually = process;
+                           environment::variable::process::set( pending::send::environment, process);
+                           state.process.pending.handle( process);
                         }
 
                         void service( State& state, const common::process::Handle& process)
@@ -858,7 +858,7 @@ namespace casual
                            Trace trace{ "domain::manager::handle::local::singleton::connect"};
 
                            static const std::map< Uuid, std::function< void(State&, const common::process::Handle&)>> tasks{
-                              { eventually::send::identification, &eventually},
+                              { pending::send::identification, &pending},
                               { common::communication::instance::identity::service::manager, &service},
                               { common::communication::instance::identity::transaction::manager, &tm},
                               { common::communication::instance::identity::queue::manager, &queue}

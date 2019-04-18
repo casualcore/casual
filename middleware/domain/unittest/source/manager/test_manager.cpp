@@ -29,7 +29,7 @@
 #include "serviceframework/service/protocol/call.h"
 #include "serviceframework/log.h"
 
-#include "eventually/send/unittest/process.h"
+#include "domain/manager/unittest/process.h"
 
 #include <fstream>
 
@@ -45,74 +45,6 @@ namespace casual
          {
             namespace
             {
-               namespace configuration
-               {
-
-                  std::vector< file::scoped::Path> files( const std::vector< std::string>& config)
-                  {
-                     return algorithm::transform( config, []( const std::string& c){
-                        return file::scoped::Path{ mockup::file::temporary::content( ".yaml", c)};
-                     });
-                  }
-
-                  std::string names( const std::vector< file::scoped::Path>& files)
-                  {
-                     return string::join( files, " ");
-                  }
-
-               } // configuration
-
-               struct Manager
-               {
-                  Manager( const std::vector< std::string>& config)
-                   : files( configuration::files( config)),
-                     process{ "./bin/casual-domain-manager", {
-                        "--event-ipc", common::string::compose( common::communication::ipc::inbound::ipc()),
-                        "--configuration-files", configuration::names( files),
-                        "--bare", "true"
-                     }}
-                  {
-                     common::log::line( log, "singleton file: ", common::environment::domain::singleton::file());
-
-                     // Make sure we unregister the event subscription
-                     auto unsubscribe = common::execute::scope( [](){
-                        common::event::unsubscribe( common::process::handle(), { common::message::Type::event_domain_error});
-                     });
-
-                     // Wait for the domain to boot
-                     //process.handle( unittest::domain::manager::wait( common::communication::ipc::inbound::device()));
-                     unittest::domain::manager::wait( common::communication::ipc::inbound::device());
-
-                     
-                     // Set environment variable to make it easier for other processes to
-                     // reach domain-manager (should work any way...)
-                     common::environment::variable::process::set(
-                           common::environment::variable::name::ipc::domain::manager(),
-                           process.handle());
-
-                  }
-
-                  struct Setup_environment
-                  {
-                     Setup_environment()
-                     {
-                        common::environment::variable::set( "CASUAL_HOME", "../../test/home");
-
-                        common::environment::reset();
-
-                        if( file::exists( environment::domain::singleton::file()))
-                        {
-                           file::remove( environment::domain::singleton::file());
-                        }
-                     }
-                  } setup_environment;
-
-                  std::vector< file::scoped::Path> files;
-                  mockup::Process process;
-               };
-
-
-
                namespace configuration
                {
 
@@ -178,7 +110,7 @@ domain:
             common::unittest::Trace trace;
 
             EXPECT_NO_THROW( {
-               local::Manager manager{ { local::configuration::empty()}};
+               unittest::Process manager{ { local::configuration::empty()}};
             });
          }
 
@@ -187,7 +119,7 @@ domain:
             common::unittest::Trace trace;
 
             EXPECT_NO_THROW( {
-               local::Manager manager{ { local::configuration::echo()}};
+               unittest::Process manager{ { local::configuration::echo()}};
             });
          }
 
@@ -206,7 +138,7 @@ domain:
 )";
 
             EXPECT_NO_THROW( {
-               local::Manager manager{ { configuration}};
+               unittest::Process manager{ { configuration}};
             });
          }
 
@@ -225,7 +157,7 @@ domain:
 )";
 
             EXPECT_NO_THROW( {
-               local::Manager manager{ { configuration}};
+               unittest::Process manager{ { configuration}};
             });
          }
 
@@ -235,7 +167,7 @@ domain:
             common::unittest::Trace trace;
 
             EXPECT_NO_THROW( {
-               local::Manager manager{ { local::configuration::echo_restart()}};
+               unittest::Process manager{ { local::configuration::echo_restart()}};
             });
          }
 
@@ -245,7 +177,7 @@ domain:
             common::unittest::Trace trace;
 
             EXPECT_NO_THROW( {
-               local::Manager manager{ { local::configuration::sleep()}};
+               unittest::Process manager{ { local::configuration::sleep()}};
             });
          }
 
@@ -263,7 +195,7 @@ domain:
 )"};
 
             EXPECT_NO_THROW( {
-               local::Manager manager{ { configuration}};
+               unittest::Process manager{ { configuration}};
             });
          }
 
@@ -349,7 +281,7 @@ domain:
          {
             common::unittest::Trace trace;
 
-            local::Manager manager{ { local::configuration::long_running_processes_5()}};
+            unittest::Process manager{ { local::configuration::long_running_processes_5()}};
 
             mockup::domain::service::Manager service;
 
@@ -367,7 +299,7 @@ domain:
          {
             common::unittest::Trace trace;
 
-            local::Manager manager{ { local::configuration::long_running_processes_5()}};
+            unittest::Process manager{ { local::configuration::long_running_processes_5()}};
 
             mockup::domain::service::Manager service;
 
@@ -385,7 +317,7 @@ domain:
          {
             common::unittest::Trace trace;
 
-            local::Manager manager{ { local::configuration::long_running_processes_5()}};
+            unittest::Process manager{ { local::configuration::long_running_processes_5()}};
 
             mockup::domain::service::Manager service;
 
@@ -415,7 +347,7 @@ domain:
 
 )"};
 
-            local::Manager manager{ { configuration}};
+            unittest::Process manager{ { configuration}};
 
             mockup::domain::service::Manager service;
 
@@ -441,7 +373,7 @@ domain:
 
 )"};
 
-            local::Manager manager{ { configuration}};
+            unittest::Process manager{ { configuration}};
 
             //
             // We add/override handler for prepare shutdown and forward to our
@@ -490,7 +422,7 @@ domain:
 
 )"};
 
-            local::Manager manager{ { configuration}};
+            unittest::Process manager{ { configuration}};
 
             mockup::ipc::Collector server;
             // We need to register this process to the manager
@@ -627,7 +559,7 @@ domain:
       memberships: [groupD]
 )"};
 
-            local::Manager manager{ { configuration}};
+            unittest::Process manager{ { configuration}};
 
             mockup::domain::service::Manager service;
 

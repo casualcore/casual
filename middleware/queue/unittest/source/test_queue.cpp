@@ -31,7 +31,7 @@
 #include "serviceframework/namevaluepair.h"
 #include "serviceframework/log.h"
 
-#include "eventually/send/unittest/process.h"
+#include "domain/manager/unittest/process.h"
 
 
 
@@ -47,57 +47,42 @@ namespace casual
          namespace
          {
 
-            using config_domain = common::message::domain::configuration::Domain;
-
-            struct Manager
+            struct Domain 
             {
-               Manager()
-                    : m_process{ "./bin/casual-queue-manager", {
-                        "-g", "./bin/casual-queue-group",
-                      }}
-               {
 
-                  // Make sure we're up'n running before we let unittest-stuff interact with us...
-                  common::communication::instance::fetch::handle( common::communication::instance::identity::queue::manager);
-               }
+               domain::manager::unittest::Process domain{ { Domain::configuration}};
 
-               auto process() const { return m_process.handle();}
+               static constexpr auto configuration = R"(
+domain: 
+   name: queue-domain
+   
+   servers:
+      - path: "${CASUAL_HOME}/bin/casual-service-manager"
+      - path: "${CASUAL_HOME}/bin/casual-transaction-manager"
+      - path: "./bin/casual-queue-forward-queue"
+        arguments: [ --forward, queueA3, queueB3]
+   queue:
+      groups:
+         - name: group_A
+           queuebase: ":memory:"
+           queues:
+            - name: queueA1
+              retries: 3
+            - name: queueA2
+              retries: 3
+            - name: queueA3
+              retries: 3
+         - name: group_B
+           queuebase: ":memory:"
+           queues:
+            - name: queueB1
+              retries: 3
+            - name: queueB2
+              retries: 3
+            - name: queueB3
+              retries: 3
 
-            private:
-               common::mockup::Process m_process;
-            };
-
-            struct Forward
-            {
-               Forward( const std::string& from, const std::string& to) 
-                : m_process{ "./bin/casual-queue-forward-queue", {
-                   "--forward", from, to
-                }}
-                {}
-
-               Forward() : Forward("queueA3", "queueB3") {}
-
-               auto process() const { return m_process.handle();}
-
-            private:
-               common::mockup::Process m_process;
-            };
-
-            struct Domain
-            {
-               Domain( config_domain configuration)
-               : manager{ std::move( configuration)}
-               {
-               }
-
-               common::mockup::domain::Manager manager;
-               common::mockup::domain::service::Manager service;
-               common::mockup::domain::transaction::Manager tm;
-
-               eventually::send::unittest::Process eventually_send;
-
-               Manager queue_manager;
-
+)";
             };
 
             namespace call
@@ -126,57 +111,6 @@ namespace casual
                }
             } // call
 
-            config_domain configuration()
-            {
-               config_domain domain;
-
-               using queue_t = common::message::domain::configuration::queue::Queue;
-
-               domain.queue.groups.resize( 2);
-               {
-                  auto& group = domain.queue.groups.at( 0);
-                  group.name = "group_A";
-                  group.queuebase = ":memory:";
-
-                  group.queues = {
-                        { []( queue_t& q){
-                           q.name = "queueA1";
-                           q.retries = 3;
-                        }},
-                        { []( queue_t& q){
-                           q.name = "queueA2";
-                           q.retries = 3;
-                        }},
-                        { []( queue_t& q){
-                           q.name = "queueA3";
-                           q.retries = 3;
-                        }}
-                  };
-               }
-               {
-                  auto& group = domain.queue.groups.at( 1);
-                  group.name = "group_B";
-                  group.queuebase = ":memory:";
-
-                  group.queues = {
-                        { []( queue_t& q){
-                           q.name = "queueB1";
-                           q.retries = 3;
-                        }},
-                        { []( queue_t& q){
-                           q.name = "queueB2";
-                           q.retries = 3;
-                        }},
-                        { []( queue_t& q){
-                           q.name = "queueB3";
-                           q.retries = 3;
-                        }}
-                  };
-               }
-
-               return domain;
-            }
-
          } // <unnamed>
 
       } // local
@@ -188,7 +122,7 @@ namespace casual
       {
          common::unittest::Trace trace;
 
-         local::Domain domain{ local::configuration()};
+         local::Domain domain;
 
 
          auto state = local::call::state();
@@ -201,7 +135,7 @@ namespace casual
       {
          common::unittest::Trace trace;
 
-         local::Domain domain{ local::configuration()};
+         local::Domain domain;
 
 
          const std::string payload{ "some message"};
@@ -219,7 +153,7 @@ namespace casual
       {
          common::unittest::Trace trace;
 
-         local::Domain domain{ local::configuration()};
+         local::Domain domain;
 
          auto count = 5;
          while( count-- > 0)
@@ -251,7 +185,7 @@ namespace casual
       {
          common::unittest::Trace trace;
 
-         local::Domain domain{ local::configuration()};
+         local::Domain domain;
 
          auto now = common::platform::time::clock::type::now();
 
@@ -292,7 +226,7 @@ namespace casual
       {
          common::unittest::Trace trace;
 
-         local::Domain domain{ local::configuration()};
+         local::Domain domain;
 
          auto now = common::platform::time::clock::type::now();
 
@@ -338,7 +272,7 @@ namespace casual
       {
          common::unittest::Trace trace;
 
-         local::Domain domain{ local::configuration()};
+         local::Domain domain;
 
          // make sure casual-manager-queue knows about a "remote queue"
          {
@@ -349,7 +283,10 @@ namespace casual
 
             remote.queues.emplace_back( "remote-queue");
 
-            common::communication::ipc::blocking::send( domain.queue_manager.process().ipc, remote);
+            
+
+            common::communication::ipc::blocking::send( 
+               common::communication::instance::outbound::queue::manager::device(), remote);
          }
 
          EXPECT_THROW({
@@ -361,7 +298,7 @@ namespace casual
       {
          common::unittest::Trace trace;
 
-         local::Domain domain{ local::configuration()};
+         local::Domain domain;
 
          const std::string payload{ "some message"};
 
@@ -415,7 +352,7 @@ namespace casual
       {
          common::unittest::Trace trace;
 
-         local::Domain domain{ local::configuration()};
+         local::Domain domain;
 
          common::communication::ipc::inbound::Device ipc1;
          common::communication::ipc::inbound::Device ipc2;
@@ -481,9 +418,7 @@ namespace casual
       {
          common::unittest::Trace trace;
 
-         local::Domain domain{ local::configuration()};
-
-         local::Forward forward;
+         local::Domain domain;
 
          const std::string payload{ "some message"};
 
@@ -499,17 +434,18 @@ namespace casual
 
          EXPECT_TRUE( common::algorithm::equal( message.payload.data, payload));
       }
-
+/*
       TEST( casual_queue, queue_forward_dequeue_not_available_queue__expect_gracefull_shutdown)
       {
          common::unittest::Trace trace;
 
-         local::Domain domain{ local::configuration()};
+         local::Domain domain;
 
          local::Forward forward{ "non-existent-A", "non-existent-B"};
 
          EXPECT_TRUE( forward.process() != common::process::handle());
       }
+      */
 
    } // queue
 } // casual

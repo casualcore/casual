@@ -6,7 +6,6 @@ IncludePaths( [
 	'../common/include',
     '../configuration/include',
     '../domain/include',
-    '../eventually/include',
 	'../xatmi/include',
 	'../serviceframework/include',
 	'$(CASUAL_OPTIONAL_INCLUDE_PATHS)'])
@@ -16,7 +15,7 @@ LibraryPaths( [
     '../common/bin',
     '../serviceframework/bin',
 	'../xatmi/bin',
-    '../eventually/bin',
+    '../domain/bin',
 	'../buffer/bin',
 	'../configuration/bin',
 	'$(CASUAL_OPTIONAL_LIBRARY_PATHS)'])
@@ -49,7 +48,7 @@ target = LinkExecutable( 'bin/casual-service-manager',
 	[
      logic_archive,
      'casual-common',
-     'casual-eventually-send',
+     'casual-domain-pending-send',
      'casual-serviceframework',
      'casual-xatmi',
      'casual-configuration']
@@ -70,7 +69,7 @@ target = LinkExecutable( 'bin/casual-service-forward',
      ] + forward_objs,
     [
       logic_archive,
-      'casual-eventually-send',
+      'casual-domain-pending-send',
       'casual-common'
      ])
 
@@ -104,8 +103,8 @@ LinkUnittest( 'unittest/bin/test-casual-service',
     ] + forward_objs,
     [
      logic_archive,
-     'casual-eventually-send',
-     'casual-eventually-unittest',
+     'casual-domain-pending-send',
+     'casual-domain-unittest',
      'casual-common', 
      'casual-serviceframework',
      'casual-xatmi', 

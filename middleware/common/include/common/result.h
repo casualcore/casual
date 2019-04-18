@@ -16,11 +16,9 @@ namespace casual
    {
       namespace posix
       {
-         //!
          //! checks posix result, and throws appropriate exception if error
          //! 
          //! @returns value of result, if no errors detected 
-         //!
          int result( int result);
 
          
@@ -28,9 +26,7 @@ namespace casual
 
          namespace log
          {
-            //!
             //! checks posix result, and logs if error
-            //!
             void result( int result) noexcept;
          } // log
 

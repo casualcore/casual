@@ -12,8 +12,6 @@
 #include "service/manager/admin/server.h"
 #include "service/manager/admin/managervo.h"
 
-#include "eventually/send/unittest/process.h"
-
 #include "common/message/domain.h"
 #include "common/message/event.h"
 #include "common/message/service.h"
@@ -27,6 +25,9 @@
 #include "common/event/listen.h"
 
 #include "serviceframework/service/protocol/call.h"
+#include "serviceframework/log.h"
+
+#include "domain/manager/unittest/process.h"
 
 namespace casual
 {
@@ -36,26 +37,19 @@ namespace casual
       {
          namespace
          {
-            struct Manager
+
+            constexpr auto configuration = R"(
+domain:
+   name: service-domain
+
+   servers:
+      - path: "./bin/casual-service-manager"
+        arguments: [ "--forward", "./bin/casual-service-forward"]
+)";
+
+            struct Domain
             {
-               Manager() : process{ "./bin/casual-service-manager", { "--forward", "./bin/casual-service-forward"}}
-               {
-                  // Wait for manager to get online
-                  EXPECT_TRUE( process.handle() != common::process::handle());
-               }
-               ~Manager() = default;
-
-               common::mockup::Process process;
-               
-            };
-
-            struct Domain : common::mockup::domain::Manager
-            {
-               using common::mockup::domain::Manager::Manager;
-
-               eventually::send::unittest::Process eventually_send;
-               local::Manager service;
-               common::mockup::domain::transaction::Manager tm;
+               domain::manager::unittest::Process domain{ { local::configuration}};
             };
 
             namespace call
@@ -172,7 +166,7 @@ namespace casual
          }
       }
 
-      TEST( service_manager, advertise_2_services_for_1_server__expect__2_local_instances)
+      TEST( service_manager, advertise_2_services_for_1_server)
       {
          common::unittest::Trace trace;
 
@@ -181,9 +175,6 @@ namespace casual
          common::mockup::domain::echo::Server server{ { { "service1"}, { "service2"}}};
 
          auto state = local::call::state();
-
-         ASSERT_TRUE( state.instances.sequential.size() == 2);
-         ASSERT_TRUE( state.instances.concurrent.empty());
 
          {
             auto instance = local::instance::find( state, server.process().pid);

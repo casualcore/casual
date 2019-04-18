@@ -9,6 +9,7 @@
 #include "domain/manager/handle.h"
 #include "domain/manager/configuration.h"
 #include "domain/common.h"
+#include "domain/pending/send/environment.h"
 
 #include "common/file.h"
 #include "common/environment.h"
@@ -38,8 +39,8 @@ namespace casual
                   common::environment::variable::name::ipc::domain::manager(),
                   common::process::handle());
 
-            // start casual-eventually-send
-            m_state.eventually.pid = common::process::spawn( "${CASUAL_HOME}/bin/casual-eventually-send", {});
+            // start casual-domain-pending-send
+            m_state.process.pending = common::Process{ string::compose( "${CASUAL_HOME}/bin/", pending::send::executable)};
 
             if( m_state.mandatory_prepare)
                handle::mandatory::boot::prepare( m_state);
@@ -49,14 +50,6 @@ namespace casual
 
          Manager::~Manager()
          {
-            try 
-            {
-               process::terminate( m_state.eventually);
-            }
-            catch( ...)
-            {
-               common::exception::handle();
-            }
          }
 
 
