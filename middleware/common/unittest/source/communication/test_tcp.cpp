@@ -6,13 +6,13 @@
 
 #include <gtest/gtest.h>
 #include "common/unittest.h"
+#include "common/unittest/thread.h"
 
 #include "common/communication/tcp.h"
 #include "common/exception/system.h"
 #include "common/exception/handle.h"
 
 #include "common/message/service.h"
-#include "common/mockup/thread.h"
 
 
 namespace casual
@@ -92,7 +92,7 @@ namespace casual
 
             const auto address = local::address();
 
-            mockup::Thread server{ &local::simple_server, address};
+            unittest::Thread server{ &local::simple_server, address};
 
             auto socket = tcp::retry::connect( address, { { std::chrono::milliseconds{ 1}, 0}});
 
@@ -106,7 +106,7 @@ namespace casual
 
             const auto address = local::address();
 
-            mockup::Thread server{ &local::simple_server, address};
+            unittest::Thread server{ &local::simple_server, address};
 
             std::vector< tcp::Socket> connections;
 
@@ -135,9 +135,9 @@ namespace casual
                         while( true)
                         {
                            tcp::native::send(
-                                 socket,
-                                 tcp::native::receive( socket, {}),
-                                 {});
+                              socket,
+                              tcp::native::receive( socket, {}),
+                              {});
                         }
                      }
                      catch( ...)
@@ -149,7 +149,7 @@ namespace casual
 
                   void server( tcp::Address address)
                   {
-                     std::vector< mockup::Thread> workers;
+                     std::vector< unittest::Thread> workers;
 
                      try
                      {
@@ -177,7 +177,7 @@ namespace casual
 
             const auto address = local::address();
 
-            mockup::Thread server{ &local::echo::server, address};
+            unittest::Thread server{ &local::echo::server, address};
 
             auto socket = tcp::retry::connect( address, { { std::chrono::milliseconds{ 1}, 0}});
 
@@ -210,7 +210,7 @@ namespace casual
 
             const auto address = local::address();
 
-            mockup::Thread server{ &local::echo::server, address};
+            unittest::Thread server{ &local::echo::server, address};
 
             std::vector< tcp::Socket> connections( 10);
 
@@ -250,7 +250,7 @@ namespace casual
 
             const auto address = local::address();
 
-            mockup::Thread server{ &local::echo::server, address};
+            unittest::Thread server{ &local::echo::server, address};
 
             tcp::outbound::Device outbund{ tcp::retry::connect( address, { { std::chrono::milliseconds{ 1}, 0}})};
 
@@ -286,7 +286,7 @@ namespace casual
 
             const auto address = local::address();
 
-            mockup::Thread server{ &local::echo::server, address};
+            unittest::Thread server{ &local::echo::server, address};
 
             tcp::outbound::Device outbund{ tcp::retry::connect( address, { { std::chrono::milliseconds{ 1}, 0}})};
 
@@ -312,7 +312,7 @@ namespace casual
 
             const auto address = local::address();
 
-            mockup::Thread server{ &local::echo::server, address};
+            unittest::Thread server{ &local::echo::server, address};
 
             tcp::outbound::Device outbund{ tcp::retry::connect( address, { { std::chrono::milliseconds{ 1}, 0}})};
 
@@ -338,7 +338,7 @@ namespace casual
 
             const auto address = local::address();
 
-            mockup::Thread server{ &local::echo::server, address};
+            unittest::Thread server{ &local::echo::server, address};
 
             tcp::outbound::Device outbund{ tcp::retry::connect( address, { { std::chrono::milliseconds{ 1}, 0}})};
 
@@ -365,7 +365,7 @@ namespace casual
 
             const auto address = local::address();
 
-            mockup::Thread server{ &local::echo::server, address};
+            unittest::Thread server{ &local::echo::server, address};
 
             tcp::outbound::Device outbund{ tcp::retry::connect( address, { { std::chrono::milliseconds{ 1}, 0}})};
 

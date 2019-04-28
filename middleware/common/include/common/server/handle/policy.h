@@ -28,14 +28,13 @@ namespace casual
             {
                namespace call
                {
-                  //! Default policy for basic_call. Only broker and unittest have to define another
-                  //! policy
+                  //! Default policy for basic_call.
                   struct Default
                   {
                      void configure( server::Arguments& arguments);
 
                      void reply( strong::ipc::id id, message::service::call::Reply& message);
-                     void reply( strong::ipc::id id, message::conversation::caller::Send& message);
+                     void reply( strong::ipc::id id, message::conversation::callee::Send& message);
 
                      void ack( const message::service::call::ACK& message);
 

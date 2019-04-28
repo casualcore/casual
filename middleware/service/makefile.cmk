@@ -14,7 +14,6 @@ LibraryPaths( [
     'bin',
     '../common/bin',
     '../serviceframework/bin',
-	'../xatmi/bin',
     '../domain/bin',
 	'../buffer/bin',
 	'../configuration/bin',
@@ -50,11 +49,9 @@ target = LinkExecutable( 'bin/casual-service-manager',
      'casual-common',
      'casual-domain-pending-send',
      'casual-serviceframework',
-     'casual-xatmi',
      'casual-configuration']
    )
-   
-   #casual-manager-admin-vo )
+
 
 install_bins.append( target)
 
@@ -76,23 +73,38 @@ target = LinkExecutable( 'bin/casual-service-forward',
 install_bins.append( target)
 	
 	
-#
 # admin-terminal
-#
 
 admin_api_archive = LinkLibrary( 'bin/casual-service-admin-api',
    [ Compile( 'source/manager/admin/api.cpp'),],
-   [ logic_archive, 'casual-common', 'casual-serviceframework', 'casual-xatmi'])
+   [ 
+       logic_archive, 
+       'casual-common',
+       'casual-serviceframework', 
+    ])
 
 install_libs.append( admin_api_archive)
 
 target = LinkLibrary( 'bin/casual-service-admin-cli',
-     [ Compile( 'source/manager/admin/cli.cpp')],
-     [ admin_api_archive, logic_archive, 'casual-common', 'casual-serviceframework', 'casual-xatmi'])
+    [ Compile( 'source/manager/admin/cli.cpp')],
+    [ 
+        admin_api_archive,
+        logic_archive, 
+        'casual-common', 
+        'casual-serviceframework', 
+    ])
  	
  
 install_libs.append( target)
 
+
+service_unittest = LinkLibrary( 'bin/casual-service-unittest',
+    [ 
+        Compile( 'source/unittest/advertise.cpp'),
+    ],
+    [ 
+        'casual-common', 
+    ])
 
  
 LinkUnittest( 'unittest/bin/test-casual-service',
@@ -103,22 +115,16 @@ LinkUnittest( 'unittest/bin/test-casual-service',
     ] + forward_objs,
     [
      logic_archive,
+     service_unittest,
      'casual-domain-pending-send',
-     'casual-domain-unittest',
      'casual-common', 
      'casual-serviceframework',
-     'casual-xatmi', 
      'casual-configuration', 
-     'casual-mockup-unittest-environment', 
-     'casual-mockup',
      'casual-unittest',
+     'casual-domain-unittest',
      ])
 
-
-	
-#
 # Install
-#
 Install( install_bins,'$(CASUAL_HOME)/bin')
 Install( install_libs,'$(CASUAL_HOME)/lib')
 

@@ -66,7 +66,7 @@ namespace casual
 
                               if( physical && ( configuration.restrictions.empty() || algorithm::find( configuration.restrictions, service.name)))
                               {
-                                 auto found = algorithm::find_if( configuration.routes, [&service]( const message::domain::configuration::server::Reply::Service& s){
+                                 auto found = algorithm::find_if( configuration.routes, [&service]( const auto& s){
                                     return s.name == service.name;
                                  });
 
@@ -116,7 +116,7 @@ namespace casual
                      // Ask domain-manager for our configuration
                      auto configuration = policy::local::configuration();
 
-                     // Let the broker know about our services...
+                     // Let the service-manager know about our services...
                      policy::local::configure::services( arguments.services, configuration);
 
                      // configure resources, if any.
@@ -133,7 +133,7 @@ namespace casual
                      communication::ipc::blocking::send( id, message);
                   }
 
-                  void Default::reply( strong::ipc::id id, message::conversation::caller::Send& message)
+                  void Default::reply( strong::ipc::id id, message::conversation::callee::Send& message)
                   {
                      Trace trace{ "server::handle::policy::Default::conversation::reply"};
 

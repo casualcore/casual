@@ -60,6 +60,11 @@ namespace casual
                tpreturn( TPFAIL, 0, info->data, info->len, 0);
             }
 
+            void casual_example_error_system( TPSVCINFO* info)
+            {
+               throw std::runtime_error{ "throwing from service"};
+            }
+
             void casual_example_terminate( TPSVCINFO* info)
             {
                std::terminate();

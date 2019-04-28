@@ -18,7 +18,6 @@ LibraryPaths([
     'bin',
     '../common/bin',
     '../configuration/bin',
-    '../xatmi/bin',
     '../serviceframework/bin',
     '$(CASUAL_OPTIONAL_LIBRARY_PATHS)',
     ])
@@ -52,7 +51,6 @@ pending_library = LinkLibrary( 'bin/casual-domain-pending-send',
     [
         common_archive,
         'casual-common',
-        'casual-xatmi',
         'casual-serviceframework'
      ]
 )
@@ -68,7 +66,6 @@ target_domain_manager = LinkExecutable( 'bin/casual-domain-manager',
      pending_library,
      common_archive,
      'casual-common',
-     'casual-xatmi',
      'casual-configuration',
      'casual-serviceframework'
     ] 
@@ -85,7 +82,6 @@ target = LinkLibrary( 'bin/casual-domain-admin-cli',
      manager_archive,
      common_archive,
      'casual-common',
-     'casual-xatmi',
      'casual-serviceframework'
      ]
 )
@@ -103,7 +99,6 @@ pending_executable = LinkExecutable( 'bin/casual-domain-pending-send',
      pending_library,
      common_archive,
      'casual-common',
-     'casual-xatmi',
      'casual-configuration',
      'casual-serviceframework'
     ] 
@@ -121,7 +116,6 @@ domain_unittest_library = LinkLibrary( 'bin/casual-domain-unittest',
     [
         'casual-common',
         'casual-unittest',
-        'casual-mockup',
     ]
 )
 
@@ -146,10 +140,8 @@ target_test_domain = LinkUnittest( 'bin/test-casual-domain',
         domain_unittest_library,
         pending_library,
         'casual-common',
-        'casual-mockup',
         'casual-configuration',
         'casual-serviceframework',
-        'casual-xatmi',
         'casual-unittest',
         'casual-configuration-example',
     ]) 
@@ -201,7 +193,7 @@ target_test_delay = LinkUnittest( 'bin/test-casual-domain-delay',
 # We execute 'target_domain_delay' from test-casual-domain-delay, so
 # we need to meke sure target_domain_delay is built before
 #
-Dependencies( target_test_delay, [ target_delay_message ]);
+Dependencies( target_test_delay, [ target_delay_message ])
 
 
 

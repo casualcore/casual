@@ -9,6 +9,7 @@
 #include "common/process.h"
 #include "common/pimpl.h"
 
+
 #include <vector>
 #include <string>
 
@@ -24,9 +25,17 @@ namespace casual
             {
                Process();
                Process( const std::vector< std::string>& configuration);
+
+               //! callback to be able to enable other _environment_ stuff before boot
+               //! @attention `callback` has to be idempotent (if activate is used)
+               Process( const std::vector< std::string>& configuration, std::function< void( const std::string&)> callback);
                ~Process();
 
                const common::process::Handle& handle() const noexcept;
+               
+               //! tries to "activate" the domain, i.e. resets environment variables and such
+               //! only usefull if more than one instance is used
+               void activate();
 
                friend std::ostream& operator << ( std::ostream& out, const Process& value);
 
@@ -34,6 +43,13 @@ namespace casual
                struct Implementation;
                common::move::basic_pimpl< Implementation> m_implementation;
             };
+
+            namespace process
+            {
+               //! Waits for the domain manager to boot
+               common::process::Handle wait();
+            } // process
+
          } // unittest
       } // manager
    } // domain

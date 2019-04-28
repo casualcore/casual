@@ -6,10 +6,10 @@
 
 #include <gtest/gtest.h>
 #include "common/unittest.h"
+#include "common/unittest/file.h"
 
 #include "configuration/domain.h"
-
-#include "common/mockup/file.h"
+#include "common/exception/system.h"
 
 namespace casual
 {
@@ -148,7 +148,7 @@ namespace casual
       {
          common::unittest::Trace trace;
 
-         auto file_a = common::mockup::file::temporary::content( ".yaml", R"(
+         auto file_a = common::unittest::file::temporary::content( ".yaml", R"(
 domain:
    name: domain-a
    transaction:
@@ -160,7 +160,7 @@ domain:
 
          )");
 
-         auto file_b = common::mockup::file::temporary::content( ".yaml", R"(
+         auto file_b = common::unittest::file::temporary::content( ".yaml", R"(
 domain:
    name: domain-b
    transaction:
@@ -214,7 +214,7 @@ domain:
       {
          common::unittest::Trace trace;
 
-         auto file_a = common::mockup::file::temporary::content( ".yaml", R"(
+         auto file_a = common::unittest::file::temporary::content( ".yaml", R"(
 domain:
    name: domain-a
    groups:
@@ -222,7 +222,7 @@ domain:
      - name: A2
          )");
 
-         auto file_b = common::mockup::file::temporary::content( ".yaml", R"(
+         auto file_b = common::unittest::file::temporary::content( ".yaml", R"(
 domain:
    name: domain-b
    groups:
@@ -240,7 +240,7 @@ domain:
       {
          common::unittest::Trace trace;
 
-         auto file_a = common::mockup::file::temporary::content( ".yaml", R"(
+         auto file_a = common::unittest::file::temporary::content( ".yaml", R"(
 domain:
    name: domain-a
    groups:
@@ -248,7 +248,7 @@ domain:
      - name: A2
          )");
 
-         auto file_b = common::mockup::file::temporary::content( ".yaml", R"(
+         auto file_b = common::unittest::file::temporary::content( ".yaml", R"(
 domain:
    name: domain-b
    groups:
@@ -266,7 +266,7 @@ domain:
       {
          common::unittest::Trace trace;
 
-         auto file_a = common::mockup::file::temporary::content( ".yaml", R"(
+         auto file_a = common::unittest::file::temporary::content( ".yaml", R"(
 domain:
    name: domain-a
    groups:
@@ -274,7 +274,7 @@ domain:
      - name: A2
          )");
 
-         auto file_b = common::mockup::file::temporary::content( ".yaml", R"(
+         auto file_b = common::unittest::file::temporary::content( ".yaml", R"(
 domain:
    name: domain-b
    groups:
@@ -297,7 +297,7 @@ domain:
       {
          common::unittest::Trace trace;
 
-         auto file_a = common::mockup::file::temporary::content( ".yaml", R"(
+         auto file_a = common::unittest::file::temporary::content( ".yaml", R"(
 domain:
    name: domain-a
    executables:
@@ -305,7 +305,7 @@ domain:
      - path: A2
          )");
 
-         auto file_b = common::mockup::file::temporary::content( ".yaml", R"(
+         auto file_b = common::unittest::file::temporary::content( ".yaml", R"(
 domain:
    name: domain-b
    executables:
@@ -327,7 +327,7 @@ domain:
       {
          common::unittest::Trace trace;
 
-         auto file_a = common::mockup::file::temporary::content( ".yaml", R"(
+         auto file_a = common::unittest::file::temporary::content( ".yaml", R"(
 domain:
    name: domain-a
    servers:
@@ -335,7 +335,7 @@ domain:
      - path: A2
          )");
 
-         auto file_b = common::mockup::file::temporary::content( ".yaml", R"(
+         auto file_b = common::unittest::file::temporary::content( ".yaml", R"(
 domain:
    name: domain-b
    servers:
@@ -357,7 +357,7 @@ domain:
       {
          common::unittest::Trace trace;
 
-         auto file_a = common::mockup::file::temporary::content( ".yaml", R"(
+         auto file_a = common::unittest::file::temporary::content( ".yaml", R"(
 domain:
    name: domain-a
    servers:
@@ -367,7 +367,7 @@ domain:
        alias: a_A2
          )");
 
-         auto file_b = common::mockup::file::temporary::content( ".yaml", R"(
+         auto file_b = common::unittest::file::temporary::content( ".yaml", R"(
 domain:
    name: domain-b
    servers:
@@ -392,7 +392,7 @@ domain:
       {
          common::unittest::Trace trace;
 
-         auto file_a = common::mockup::file::temporary::content( ".yaml", R"(
+         auto file_a = common::unittest::file::temporary::content( ".yaml", R"(
 domain:
    name: domain-a
    servers:
@@ -402,7 +402,7 @@ domain:
        alias: a2
          )");
 
-         auto file_b = common::mockup::file::temporary::content( ".yaml", R"(
+         auto file_b = common::unittest::file::temporary::content( ".yaml", R"(
 domain:
    name: domain-b
    servers:

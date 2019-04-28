@@ -9,42 +9,45 @@
 #include "common/argument.h"
 #include "common/exception/handle.h"
 
-using namespace casual;
+
+namespace casual
+{
+
+   namespace queue
+   {
+      namespace manager
+      {
+         void main( int argc, char **argv)
+         {
+            Settings settings;
+            {
+               using namespace casual::common::argument;
+               Parse{ R"(
+Manages casual queue, the provided queue functionality.
+)",
+                  Option( std::tie( settings.group_executable), {"-g", "--group-executable"}, "path to casual-queue-group only (?) for unittest")
+               }( argc, argv);
+            }
+
+            queue::Manager manager( std::move( settings));
+            manager.start();
+         }
+         
+      } // manager
+   } // queue
+} // casual
 
 int main( int argc, char **argv)
 {
-
    try
    {
-
-      queue::manager::Settings settings;
-
-      {
-         using namespace casual::common::argument;
-         Parse parse{
-            R"(
-Manages casual queue, the provided queue functionality.
-)",
-            Option( std::tie( settings.group_executable), {"-g", "--group-executable"}, "path to casual-queue-group only (?) for unittest")
-         };
-         parse( argc, argv);
-      }
-
-      queue::Broker broker( settings);
-
-      broker.start();
-
-   }
-   catch( const common::exception::signal::Terminate&)
-   {
+      casual::queue::manager::main( argc, argv);
       return 0;
    }
    catch( ...)
    {
       return casual::common::exception::handle();
-
    }
-   return 0;
 }
 
 

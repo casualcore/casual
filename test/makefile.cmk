@@ -3,6 +3,7 @@ from casual.middleware.make.dsl import *
 IncludePaths( ['include',
 	'../middleware/common/include',
 	'../middleware/serviceframework/include',
+    '../middleware/domain/include',
 	'../middleware/xatmi/include',
 	'../middleware/queue/include',
 	'../middleware/buffer/include',
@@ -11,9 +12,9 @@ IncludePaths( ['include',
 LibraryPaths( [ 'bin',
 	'../middleware/xatmi/bin',
 	'../middleware/common/bin',
+    '../middleware/domain/bin',
 	'../middleware/queue/bin',
 	'../middleware/buffer/bin',
-    '../middleware/eventually/bin',
 	'../middleware/serviceframework/bin',
     '../middleware/configuration/bin',
     '../middleware/http/bin',
@@ -35,6 +36,8 @@ test_archive = LinkArchive( 'bin/test-archive',
 
 unittest_object = [
     Compile( 'unittest/source/domain/test_basic.cpp'),
+    Compile( 'unittest/source/domain/xatmi/test_call.cpp'),
+    Compile( 'unittest/source/domain/xatmi/test_conversation.cpp'),
 ]
 
 # only build http test cases if the enviornment is set up
@@ -49,9 +52,8 @@ LinkUnittest( 'unittest/bin/test-casual-basic',
 		'casual-serviceframework', 
 		'casual-xatmi', 
 		'yaml-cpp', 
-		'casual-mockup',
-        'casual-mockup-log',
 		'casual-unittest',
+        'casual-domain-unittest'
 	])
 	
 

@@ -15,8 +15,7 @@
 
 #include "common/unittest.h"
 
-
-#include "common/mockup/domain.h"
+#include "casual/test/domain.h"
 
 #include "xatmi.h"
 
@@ -32,35 +31,24 @@ namespace casual
          namespace
          {
 
-            //
             // Represent a domain
-            //
-            struct Domain
+            struct Domain : test::domain::Manager
             {
-               Domain()
-                  : server{ {
-                     mockup::domain::echo::create::service( "echo"),
+               Domain() : test::domain::Manager{ { Domain::configuration}} 
+               {}
 
-                     /*
-                      * Will echo with error set to the following
-                        #define TPEOS 7
-                        #define TPEPROTO 9
-                        #define TPESVCERR 10
-                        #define TPESVCFAIL 11
-                        #define TPESYSTEM 12
-                      */
-                     mockup::domain::echo::create::service( "service_TPESVCERR"),
-                     mockup::domain::echo::create::service( "service_TPESVCFAIL"),
-                     mockup::domain::echo::create::service( "service_SUCCESS"),
-                  }}
-               {
+               constexpr static auto configuration = R"(
+domain:
+   name: test-xatmi-call
 
-               }
+   servers:
+      - path: ${CASUAL_HOME}/bin/casual-service-manager
+      - path: ${CASUAL_HOME}/bin/casual-transaction-manager
+      - path: ${CASUAL_HOME}/bin/casual-example-error-server
+      - path: ${CASUAL_HOME}/bin/casual-example-server
 
-               mockup::domain::Manager manager;
-               mockup::domain::service::Manager service;
-               mockup::domain::transaction::Manager tm;
-               mockup::domain::echo::Server server;
+)";
+
             };
 
          } // <unnamed>
@@ -107,7 +95,7 @@ namespace casual
 
          local::Domain domain;
 
-         EXPECT_TRUE( tpconnect( "echo", nullptr, 0, 0) == -1);
+         EXPECT_TRUE( tpconnect( "casual/example/conversation", nullptr, 0, 0) == -1);
          EXPECT_TRUE( tperrno == TPEINVAL);
       }
 
@@ -117,7 +105,7 @@ namespace casual
 
          local::Domain domain;
 
-         EXPECT_TRUE( tpconnect( "echo", nullptr, 0, TPSENDONLY | TPRECVONLY) == -1);
+         EXPECT_TRUE( tpconnect( "casual/example/conversation", nullptr, 0, TPSENDONLY | TPRECVONLY) == -1);
          EXPECT_TRUE( tperrno == TPEINVAL);
       }
 
@@ -137,20 +125,21 @@ namespace casual
 
          local::Domain domain;
 
-         auto descriptor = tpconnect( "echo", nullptr, 0, TPSENDONLY);
+         auto descriptor = tpconnect( "casual/example/conversation", nullptr, 0, TPSENDONLY);
          EXPECT_TRUE( descriptor != -1);
          EXPECT_TRUE( tperrno == 0);
 
          EXPECT_TRUE( tpdiscon( descriptor) != -1);
       }
 
-      TEST( casual_xatmi_conversation, connect__TPSENDONLY__service_TPESVCFAIL__tpsend___expect_TPEV_DISCONIMM_TPEV_SVCFAIL_events)
+/*
+      TEST( casual_xatmi_conversation, connect__TPSENDONLY__service_rollback__tpsend___expect_TPEV_DISCONIMM_TPEV_SVCFAIL_events)
       {
          unittest::Trace trace;
 
          local::Domain domain;
 
-         auto descriptor = tpconnect( "service_TPESVCFAIL", nullptr, 0, TPSENDONLY);
+         auto descriptor = tpconnect( "casual/example/rollback", nullptr, 0, TPSENDONLY);
          EXPECT_TRUE( descriptor != -1);
          EXPECT_TRUE( tperrno == 0);
 
@@ -166,13 +155,13 @@ namespace casual
          EXPECT_TRUE( tpdiscon( descriptor) == -1);
       }
 
-      TEST( casual_xatmi_conversation, connect__TPSENDONLY__service_TPESVCERR__tpsend___expect_TPEV_DISCONIMM__TPEV_SVCERR_events)
+      TEST( casual_xatmi_conversation, connect__TPSENDONLY__service_error_system__tpsend___expect_TPEV_DISCONIMM__TPEV_SVCERR_events)
       {
          unittest::Trace trace;
 
          local::Domain domain;
 
-         auto descriptor = tpconnect( "service_TPESVCERR", nullptr, 0, TPSENDONLY);
+         auto descriptor = tpconnect( "casual/example/error/system", nullptr, 0, TPSENDONLY);
          EXPECT_TRUE( descriptor != -1);
          EXPECT_TRUE( tperrno == 0);
 
@@ -194,7 +183,7 @@ namespace casual
 
          local::Domain domain;
 
-         auto descriptor = tpconnect( "service_SUCCESS", nullptr, 0, TPSENDONLY);
+         auto descriptor = tpconnect( "casual/example/echo", nullptr, 0, TPSENDONLY);
          EXPECT_TRUE( descriptor != -1);
          EXPECT_TRUE( tperrno == 0);
 
@@ -222,7 +211,7 @@ namespace casual
 
          unittest::random::range( range::make( buffer, buffer + len));
 
-         auto descriptor = tpconnect( "echo", buffer, len, TPRECVONLY);
+         auto descriptor = tpconnect( "casual/example/echo", buffer, len, TPRECVONLY);
          EXPECT_TRUE( descriptor != -1);
          EXPECT_TRUE( tperrno == 0);
 
@@ -245,6 +234,7 @@ namespace casual
          EXPECT_TRUE( tpdiscon( descriptor) != -1);
       }
 
+*/
 
    } // xatmi
 } // casual

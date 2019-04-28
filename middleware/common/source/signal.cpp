@@ -606,10 +606,8 @@ namespace casual
 
          } // mask
 
-
          namespace thread
          {
-
             void send( std::thread& thread, Type signal)
             {
                log::line( log::debug, "signal::thread::send thread: ", thread.get_id(), " signal: ", signal);
@@ -620,22 +618,15 @@ namespace casual
             void send( common::thread::native::type thread, Type signal)
             {
                if( pthread_kill( thread, 0) == 0)
-          {
+               {
                   if( pthread_kill( thread, cast::underlying( signal)) != 0)
-                  {
                       log::line( log::category::error, "failed to send signal - ", signal, " -> thread: ", thread, " - error: " , code::last::system::error());
-                  } 
-               }
-               else
-               {     
-                  log::line( log::category::error, "thread-handle is not valid - action: ignore");
                }
             }
 
             void send( Type signal)
             {
                log::line( log::debug, "signal::thread::send current thread - signal: ", signal);
-
                send( common::thread::native::current(), signal);
             }
 
@@ -661,25 +652,13 @@ namespace casual
 
                Mask::Mask( signal::Set mask) : Reset( mask::set( mask)) {}
 
-
-
-               Block::Block() : Reset( mask::block())
-               {
-               }
-
-               Block::Block( signal::Set mask) : Reset( mask::block( mask))
-               {
-               }
-
-               Unblock::Unblock( signal::Set mask) : Reset( mask::unblock( mask))
-               {
-               }
+               Block::Block() : Reset( mask::block()) {}
+               Block::Block( signal::Set mask) : Reset( mask::block( mask)) {}
+               Unblock::Unblock( signal::Set mask) : Reset( mask::unblock( mask)) {}
 
             } // scope
 
          } // thread
-
-
       } // signal
    } // common
 } // casual

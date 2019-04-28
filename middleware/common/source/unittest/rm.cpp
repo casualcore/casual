@@ -5,8 +5,8 @@
 //!
 
 
-#include "common/mockup/rm.h"
-#include "common/mockup/log.h"
+#include "common/unittest/rm.h"
+#include "common/unittest/log.h"
 #include "common/argument.h"
 
 #include "common/transaction/id.h"
@@ -20,7 +20,7 @@ namespace casual
 {
    namespace common
    {
-      namespace mockup
+      namespace unittest
       {
          namespace local
          {
@@ -237,7 +237,7 @@ namespace casual
 
             return XA_OK;
          }
-      } // mockup
+      } // unittest
    } // common
 } // casual
 
@@ -248,16 +248,16 @@ extern "C"
       "Casual Mockup XA",
       TMNOMIGRATE,
       0,
-      &casual::common::mockup::xa_open_entry,
-      &casual::common::mockup::xa_close_entry,
-      &casual::common::mockup::xa_start_entry,
-      &casual::common::mockup::xa_end_entry,
-      &casual::common::mockup::xa_rollback_entry,
-      &casual::common::mockup::xa_prepare_entry,
-      &casual::common::mockup::xa_commit_entry,
-      &casual::common::mockup::xa_recover_entry,
-      &casual::common::mockup::xa_forget_entry,
-      &casual::common::mockup::xa_complete_entry
+      &casual::common::unittest::xa_open_entry,
+      &casual::common::unittest::xa_close_entry,
+      &casual::common::unittest::xa_start_entry,
+      &casual::common::unittest::xa_end_entry,
+      &casual::common::unittest::xa_rollback_entry,
+      &casual::common::unittest::xa_prepare_entry,
+      &casual::common::unittest::xa_commit_entry,
+      &casual::common::unittest::xa_recover_entry,
+      &casual::common::unittest::xa_forget_entry,
+      &casual::common::unittest::xa_complete_entry
    };
 
 }

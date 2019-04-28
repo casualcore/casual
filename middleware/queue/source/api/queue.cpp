@@ -55,11 +55,9 @@ namespace casual
 
                   if( transaction)
                   {
-                     //
                      // Make sure we trigger an interaction with the TM.
                      // Since the queue-groups act as 'external resources' to
                      // the TM
-                     //
                      transaction.external();
                   }
 
@@ -98,18 +96,14 @@ namespace casual
                {
                   Trace trace{ "casual::queue::local::dequeue"};
 
-
                   auto& transaction = common::transaction::context().current();
-
 
                   casual::common::communication::ipc::Helper ipc;
 
                   auto group = lookup();
 
                   if( ! group)
-                  {
                      throw exception::Lookup{ "failed to lookup queue: " + lookup.name()};
-                  }
 
 
                   auto forget_blocking = common::execute::scope( [&]()
@@ -164,43 +158,35 @@ namespace casual
 
                   std::vector< Message> result;
 
-
-                  //
                   // We need to listen to shutdown-message.
                   // TODO: Don't know if we really should do this here, but otherwise we have
                   // no way of "interrupt" if it's a blocking request. We could rely only on terminate-signal
                   // (which we now also do) but it isn't really coherent with how casual otherwise works
-                  //
 
                   auto handler = ipc.handler(
                      [&]( common::message::queue::dequeue::Reply& reply)
                      {
                         if( ! reply.message.empty() && transaction)
                         {
-                           //
                            // Make sure we trigger an interaction with the TM.
                            // Since the queue-groups act as 'external resources' to
                            // the TM
-                           //
                            transaction.external();
                         }
 
                         if( reply.correlation != correlation)
-                        {
                            throw common::exception::system::invalid::Argument{ "correlation mismatch"};
-                        }
+
                         common::algorithm::transform( reply.message, result, queue::transform::Message{});
 
                      },
                      [&]( common::message::queue::dequeue::forget::Request& request)
                      {
-                        //
                         // The group we're waiting for is going off-line, we just
                         // return an empty message.
                         //
                         // We don't need to send forget to group ( since that is exactly what
                         // it is telling us...)
-                        //
                         forget_blocking.release();
                      },
                      common::message::handle::Shutdown{},
@@ -209,11 +195,7 @@ namespace casual
 
                   handler( ipc.blocking_next());
 
-
-
-                  //
                   // We don't need to send forget, since it went as it should.
-                  //
                   forget_blocking.release();
 
                   if( ! result.empty())
@@ -310,9 +292,7 @@ namespace casual
          {
             namespace copy
             {
-               //
                // To hold reference data, so we don't need to copy the buffer.
-               //
                struct Payload
                {
                   template< typename T, typename Iter>
@@ -337,7 +317,6 @@ namespace casual
 
                using Message = basic_message< Payload>;
 
-
             } // reference
 
             serviceframework::platform::Uuid enqueue( const std::string& queue, const Message& message)
@@ -348,7 +327,6 @@ namespace casual
 
                auto send = common::buffer::pool::Holder::instance().get( message.payload.buffer, message.payload.size);
 
-               //
                // We have to send only the real size of the buffer [buffer.begin, buffer.begin + transport_size)
                //
                // We could do this in several ways, but the most clean end ease way is to do
@@ -356,15 +334,12 @@ namespace casual
                //
                // TODO: get rid of the copy in a conformant way
                //         we probably need to change the interface for 'binary' in write-archives (to take a range, or iterator first, last)
-               //
                copy::Message send_message{
                   message.id, message.attributes,
                     { send.payload().type, send.payload().memory.begin(), send.payload().memory.begin() + send.transport}};
 
                return local::enqueue( lookup, send_message);
             }
-
-
 
             std::vector< Message> dequeue( const std::string& queue, const Selector& selector)
             {

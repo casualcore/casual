@@ -22,7 +22,6 @@ LibraryPaths( [
     '../common/bin',
     '../buffer/bin',
     '../domain/bin',
-    '../xatmi/bin',
     '$(CASUAL_OPTIONAL_LIBRARY_PATHS)',
 ])
     
@@ -32,14 +31,10 @@ LibraryPaths( [
 install_lib = []
 install_bin = []
 
-#
 # So we get the local build-rm
-#
 Environment( 'PATH', '../tools/bin:$(PATH)')
 
-#
 # Common stuff
-#
 
 common = LinkLibrary( 'bin/casual-queue-common',
    [
@@ -51,9 +46,7 @@ common = LinkLibrary( 'bin/casual-queue-common',
  
 install_lib.append( common)
 
-#
 # Group
-#
 
 group_archive = LinkArchive( 'bin/casual-queue-group-archive',
     [
@@ -76,9 +69,7 @@ queue_group = LinkExecutable( 'bin/casual-queue-group',
  
 install_bin.append( queue_group)
  
-#
 # Manager
-#
 
 manager_archive = LinkArchive( 'bin/casual-queue-manager-archive',
    [
@@ -99,7 +90,6 @@ queue_manager = LinkExecutable( 'bin/casual-queue-manager',
      'casual-common', 
      'casual-configuration', 
      'casual-serviceframework', 
-     'casual-xatmi',
      ])
 
 
@@ -121,9 +111,10 @@ install_lib.append( queue_api)
 
 
 
-#
-# Forward 
-#
+
+
+# Forwards
+
 forward_common = LinkArchive( 'bin/casual-queue-forward-common',
     [
        Compile( 'source/forward/common.cpp'),
@@ -133,38 +124,34 @@ forward_service = LinkExecutable( 'bin/casual-queue-forward-service',
     [
         Compile( 'source/forward/service.cpp'),
     ],
-    [ forward_common, common, queue_api, 'casual-xatmi', 'casual-common', 'casual-buffer', 'casual-serviceframework'])
+    [ forward_common, common, queue_api, 'casual-common', 'casual-buffer', 'casual-serviceframework'])
 
 forward_queue = LinkExecutable( 'bin/casual-queue-forward-queue',
     [
         Compile( 'source/forward/queue.cpp'),
     ],
-    [ forward_common, common, queue_api, 'casual-xatmi', 'casual-common', 'casual-buffer'])
+    [ forward_common, common, queue_api, 'casual-common', 'casual-buffer'])
 
 install_bin.append( forward_service)
 install_bin.append( forward_queue)
 
-#
+
 # Client
-#
 target = LinkLibrary( 'bin/casual-queue-admin-cli', 
     [
         Compile( 'source/manager/admin/cli.cpp'),
      ], 
-   [common, queue_api, 'casual-common', 'casual-serviceframework', 'casual-xatmi'])
+   [common, queue_api, 'casual-common', 'casual-serviceframework'])
  
 install_lib.append( target)
 
 
-
-#
 # Unittest
-#
 
 test_casual_queue = LinkUnittest( 'unittest/bin/test-casual-queue', 
     [
      Compile( 'unittest/source/test_transform.cpp'),
-     Compile( 'unittest/source/manager/test_handle.cpp'),
+     #Compile( 'unittest/source/manager/test_handle.cpp'),
      Compile( 'unittest/source/group/test_database.cpp'),
      Compile( 'unittest/source/test_queue.cpp'),
     ],
@@ -173,23 +160,17 @@ test_casual_queue = LinkUnittest( 'unittest/bin/test-casual-queue',
      manager_archive,
      common,
      queue_api,
-     'casual-mockup',
-     #'casual-mockup-unittest-environment',
-     'casual-domain-unittest',
      'casual-common',
      'casual-serviceframework',
      'casual-configuration',
      'sqlite3',
-     'casual-xatmi',
      'casual-unittest',
+     'casual-domain-unittest',
      
      ]  
-);
+)
 
-
-#
 # Make sure the executables is linked before unittest
-#
 Dependencies( test_casual_queue, [ queue_manager, queue_group])
 
 

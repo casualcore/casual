@@ -36,7 +36,7 @@ namespace casual
                namespace transform
                {
                   message::service::call::Reply reply( const message::service::call::callee::Request& message);
-                  message::conversation::caller::Send reply( const message::conversation::connect::callee::Request& message);
+                  message::conversation::callee::Send reply( const message::conversation::connect::callee::Request& message);
 
                   common::service::invoke::Parameter parameter( message::service::call::callee::Request& message);
                   common::service::invoke::Parameter parameter( message::conversation::connect::callee::Request& message);
@@ -46,7 +46,7 @@ namespace casual
                namespace complement
                {
                   void reply( common::service::invoke::Result&& result, message::service::call::Reply& reply);
-                  void reply( common::service::invoke::Result&& result, message::conversation::caller::Send& reply);
+                  void reply( common::service::invoke::Result&& result, message::conversation::callee::Send& reply);
 
                } // complement
 

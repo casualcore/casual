@@ -7,7 +7,6 @@
 
 #include <common/unittest.h>
 
-#include "common/mockup/domain.h"
 #include "common/exception/tx.h"
 
 
@@ -20,25 +19,10 @@ namespace casual
    {
       namespace transaction
       {
-         namespace local
-         {
-            namespace
-            {
-               struct Domain
-               {
-                  mockup::domain::Manager manager;
-                  mockup::domain::service::Manager service;
-                  mockup::domain::transaction::Manager tm;
-
-               };
-            } // <unnamed>
-         } // local
 
          TEST( casual_common_transaction, context_current__expect_null_transaction)
          {
             common::unittest::Trace trace;
-
-            local::Domain domain;
 
             EXPECT_TRUE( Context::instance().current().trid.null());
 
@@ -47,8 +31,6 @@ namespace casual
          TEST( casual_common_transaction, context_suspend__no_current_transaction__expect_TX_PROTOCOL_ERROR)
          {
             common::unittest::Trace trace;
-
-            local::Domain domain;
 
             XID xid;
 
@@ -59,9 +41,6 @@ namespace casual
          {
             common::unittest::Trace trace;
 
-            local::Domain domain;
-
-
             EXPECT_NO_THROW( Context::instance().begin());
             EXPECT_TRUE( ! Context::instance().current().trid.null());
             EXPECT_NO_THROW( Context::instance().commit());
@@ -71,18 +50,15 @@ namespace casual
          {
             common::unittest::Trace trace;
 
-            local::Domain domain;
 
-            EXPECT_NO_THROW( Context::instance().begin());
-            EXPECT_THROW( Context::instance().begin(), exception::tx::Protocol);
+            EXPECT_NO_THROW( context().begin());
+            EXPECT_THROW( context().begin(), exception::tx::Protocol);
             EXPECT_NO_THROW( context().rollback());
          }
 
          TEST( casual_common_transaction, context__begin_suspend_resume__rollback__expect_TX_OK)
          {
             common::unittest::Trace trace;
-
-            local::Domain domain;
 
             XID xid;
 
@@ -96,8 +72,6 @@ namespace casual
          TEST( casual_common_transaction, context__begin__10__suspend_begin_suspend_resume__rollback__expect_TX_OK)
          {
             common::unittest::Trace trace;
-
-            local::Domain domain;
 
             // global...
             ASSERT_NO_THROW( Context::instance().begin());

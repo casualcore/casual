@@ -7,7 +7,6 @@
 
 #include "common/unittest.h"
 
-
 #include "casual/test/domain.h"
 
 #include "common/communication/instance.h"
@@ -30,9 +29,9 @@ domain:
   name: empty_configuration
 )";
 
-            domain::Manager manager{ mockup::file::temporary::content( ".yaml", configuration)};
+            domain::Manager manager{ { configuration}};
 
-            EXPECT_TRUE( communication::instance::ping( manager.process().handle().ipc) == manager.process().handle());
+            EXPECT_TRUE( communication::instance::ping( manager.handle().ipc) == manager.handle());
          }
 
 
@@ -50,11 +49,11 @@ domain:
   name: B
 )";
 
-            domain::Manager a{ mockup::file::temporary::content( ".yaml", A)};
-            domain::Manager b{ mockup::file::temporary::content( ".yaml", B)};
+            domain::Manager a{ {A}};
+            domain::Manager b{ {B}};
 
-            EXPECT_TRUE( communication::instance::ping( a.process().handle().ipc) == a.process().handle());
-            EXPECT_TRUE( communication::instance::ping( b.process().handle().ipc) == b.process().handle());
+            EXPECT_TRUE( communication::instance::ping( a.handle().ipc) == a.handle());
+            EXPECT_TRUE( communication::instance::ping( b.handle().ipc) == b.handle());
          }
 
       } // domain

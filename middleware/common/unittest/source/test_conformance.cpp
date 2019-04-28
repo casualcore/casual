@@ -7,13 +7,14 @@
 
 
 #include <gtest/gtest.h>
-#include "common/unittest.h"
+#include "common/unittest/log.h"
 
 
 #include "common/algorithm.h"
 #include "common/traits.h"
 #include "common/signal.h"
 #include "common/optional.h"
+#include "common/code/system.h"
 
 #include <type_traits>
 

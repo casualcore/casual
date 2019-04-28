@@ -7,6 +7,7 @@
 
 #include "common/unittest.h"
 #include "common/domain.h"
+#include "common/exception/system.h"
 
 
 namespace casual

@@ -3,7 +3,6 @@ from casual.middleware.make.dsl import *
 
 IncludePaths( [
        '../common/include',
-       '../xatmi/include',
        '../domain/include',
        '../service/include',
        '../queue/include',
@@ -15,16 +14,15 @@ IncludePaths( [
 
 LibraryPaths( 
     [
-      '../common/bin',
-      '../domain/bin',
-      '../service/bin',
-      '../queue/bin',
-      '../transaction/bin',
-      '../gateway/bin',
-      '../tools/bin',
-		'../serviceframework/bin',
-		'../xatmi/bin',
-      '$(CASUAL_OPTIONAL_LIBRARY_PATHS)',
+        '../common/bin',
+        '../domain/bin',
+        '../service/bin',
+        '../queue/bin',
+        '../transaction/bin',
+        '../gateway/bin',
+        '../tools/bin',
+        '../serviceframework/bin',
+        '$(CASUAL_OPTIONAL_LIBRARY_PATHS)',
     ])
 
 

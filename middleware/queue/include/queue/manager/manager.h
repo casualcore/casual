@@ -30,27 +30,20 @@ namespace casual
             std::string group_executable;
          };
 
-
          std::vector< common::message::queue::information::queues::Reply> queues( State& state);
-
          common::message::queue::information::messages::Reply messages( State& state, const std::string& queue);
-
       } // manager
 
-      struct Broker
+      struct Manager
       {
-         Broker( manager::Settings settings);
-         ~Broker();
+         Manager( manager::Settings settings);
+         ~Manager();
 
          void start();
 
       private:
-
          manager::State m_state;
-
       };
-
-
 
    } // queue
 } // casual

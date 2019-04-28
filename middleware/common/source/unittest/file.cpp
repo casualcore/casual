@@ -5,7 +5,7 @@
 //!
 
 
-#include "common/mockup/file.h"
+#include "common/unittest/file.h"
 
 
 #include <fstream>
@@ -14,7 +14,7 @@ namespace casual
 {
    namespace common
    {
-      namespace mockup
+      namespace unittest
       {
          namespace file
          {
@@ -69,8 +69,6 @@ namespace casual
             } // temporary
          } // directory
 
-      } // mockup
+      } // unittest
    } // common
-
-
 } // casual

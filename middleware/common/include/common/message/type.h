@@ -200,11 +200,8 @@ namespace casual
 
 
 
-
-            MOCKUP_BASE = 10000000, // avoid conflict with real messages
-            mockup_disconnect,
-            mockup_clear,
-            mockup_need_worker_process,
+            UNITTEST_BASE = 10000000, // avoid conflict with real messages
+            unittest_message,
          };
 
          //! Deduce witch type of message it is.

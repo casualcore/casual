@@ -7,18 +7,16 @@
 
 #pragma once
 
+#include "common/unittest/log.h"
 
 #include "common/platform.h"
-#include "common/log.h"
 #include "common/marshal/marshal.h"
 #include "common/message/type.h"
-#include "common/communication/ipc.h"
 #include "common/execute.h"
-
-#include <gtest/gtest.h>
 
 
 #include <array>
+#include <iostream>
 
 namespace casual
 {
@@ -28,52 +26,21 @@ namespace casual
       {
          using size_type = platform::size::type;
 
-         namespace clean
-         {
-            //! tries to clean all signals when scope is entered and exited
-            struct Scope
-            {
-               Scope();
-               ~Scope();
-            };
-
-         } // clean
-
-
-         struct Trace : clean::Scope
-         {
-            Trace()
-            {
-               auto test_info = ::testing::UnitTest::GetInstance()->current_test_info();
-               log::line( log::debug, "TEST( ", test_info->test_case_name(), ".", test_info->name(), ") - in");
-            }
-            ~Trace()
-            {
-               auto test_info = ::testing::UnitTest::GetInstance()->current_test_info();
-               log::line( log::debug, "TEST( ", test_info->test_case_name(), ".", test_info->name(), ") - out");
-            }
-         };
-
             
-         struct Message : common::message::basic_message< common::message::Type::MOCKUP_BASE>
+         struct Message : common::message::basic_message< common::message::Type::unittest_message>
          {
             Message();
 
-            //!
             //! Will adjust the size of the paylad, and exclude the size of
             //! the 'payload size'.
             //!
             //! payload-size = size - sizeof( platform::binary::type::size_type)
             //!
             //! @param size the size of what is transported.
-            //!
             Message( size_type size);
 
-
-            //!
             //! @return the transport size
             //!   ( payload-size + sizeof( platform::binary::type::size_type)
-            //!
             size_type size() const;
 
             CASUAL_CONST_CORRECT_MARSHAL(
@@ -111,16 +78,6 @@ namespace casual
             }
          } // random
 
-         namespace domain
-         {
-            namespace manager
-            {
-               //! Waits for the domain manager to boot
-               process::Handle wait( communication::ipc::inbound::Device& device);
-
-            } // manager
-
-         } // domain
 
          namespace capture
          {

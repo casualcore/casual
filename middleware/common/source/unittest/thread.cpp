@@ -5,8 +5,7 @@
 //!
 
 
-#include "common/mockup/thread.h"
-#include "common/mockup/log.h"
+#include "common/unittest/thread.h"
 
 #include "common/exception/handle.h"
 #include "common/signal.h"
@@ -15,7 +14,7 @@ namespace casual
 {
    namespace common
    {
-      namespace mockup
+      namespace unittest
       {
 
          Thread::Thread() noexcept = default;
@@ -31,7 +30,7 @@ namespace casual
 
                if( m_thread.joinable())
                {
-                  signal::thread::send( m_thread, signal::Type::terminate);
+                  signal::thread::send( m_thread, signal::Type::user);
                   m_thread.join();
                }
             }

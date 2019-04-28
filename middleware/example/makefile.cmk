@@ -7,7 +7,6 @@ IncludePaths( ['server/include',
     '$(CASUAL_OPTIONAL_INCLUDE_PATHS)',
     ])
 LibraryPaths( [ 'server/bin',
-    '../xatmi/bin',
     '../common/bin',
     '../queue/bin',
     '../buffer/bin',
@@ -27,7 +26,6 @@ target = LinkServer( 'server/bin/casual-example-server',
        Compile( 'server/source/example/work.cpp')
     ],
     [ 
-        'casual-xatmi',
         'casual-common',
         'casual-buffer'
     ],
@@ -35,21 +33,26 @@ target = LinkServer( 'server/bin/casual-example-server',
 
 install_bin.append( target)
 
+target = LinkExecutable( 'server/bin/casual-example-error-server',
+    [ 
+       Compile( 'server/source/example/error.cpp')
+    ],
+    [ 
+        'casual-common',
+        'casual-buffer'
+    ])
+
+install_bin.append( target)
+
 LinkArchive( 'executable/bin/dummy', 
  [ Compile( 'executable/source/example.cpp') ]
 )
 
-
-
-#
 # Install
-#
 Install( install_bin,'$(CASUAL_HOME)/example/bin')
-
 
 # domain examples
 Install( [ 'domain/readme.md'],'$(CASUAL_HOME)/example/domain')
-
 
 # single domain minimal example
 Install( [ 'domain/single/minimal/readme.md', 'domain/single/minimal/domain.env'],'$(CASUAL_HOME)/example/domain/single/minimal')

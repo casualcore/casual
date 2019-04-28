@@ -15,10 +15,9 @@
 #include "transaction/manager/action.h"
 
 #include "common/message/transaction.h"
-#include "common/mockup/ipc.h"
-#include "common/mockup/domain.h"
 #include "common/environment.h"
 
+#include "domain/manager/unittest/process.h"
 
 namespace casual
 {
@@ -26,38 +25,28 @@ namespace casual
    {
       namespace
       {
-         common::message::domain::configuration::Domain configuration()
-         {
-            common::message::domain::configuration::Domain domain;
+         constexpr auto configuration = R"(
+domain:
+   name: transaction-configuration
 
-
-            common::message::domain::configuration::transaction::Resource resource;
-            resource.name = "rm1";
-            resource.key = "rm-mockup";
-            resource.instances = 3;
-            resource.openinfo = "some open info 1";
-            resource.closeinfo = "some close info 1";
-            domain.transaction.resources.push_back( resource);
-
-            resource.name = "rm2";
-            resource.key = "rm-mockup";
-            resource.instances = 3;
-            resource.openinfo = "some open info 2";
-            resource.closeinfo = "some close info 2";
-            domain.transaction.resources.push_back( resource);
-
-            return domain;
-         }
+   transaction:
+      resources:
+         - name: rm1
+           key: rm-mockup
+           instances: 3
+           openinfo: some open info 1
+           closeinfo: some close info 1
+         - name: rm2
+           key: rm-mockup
+           instances: 3
+           openinfo: some open info 2
+           closeinfo: some close info 2
+)";
 
          struct Domain
          {
-
-            Domain() : manager{ configuration()}
-            {
-            }
-
-            common::mockup::domain::Manager manager;
-            common::mockup::domain::service::Manager service;
+            domain::manager::unittest::Process manager{ { configuration}};
+            //common::mockup::domain::service::Manager service;
          };
 
       } // <unnamed>

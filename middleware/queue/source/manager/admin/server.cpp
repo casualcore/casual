@@ -15,7 +15,6 @@
 
 #include "serviceframework/service/protocol.h"
 
-#include "xatmi.h"
 
 namespace casual
 {

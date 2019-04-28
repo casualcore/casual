@@ -24,7 +24,6 @@
 #include "serviceframework/archive/create.h"
 #include "serviceframework/log.h"
 
-#include "xatmi.h"
 
 #include <iostream>
 
@@ -248,12 +247,6 @@ namespace casual
 
             void enqueue( const std::string& queue)
             {
-               tx_begin();
-
-               auto rollback = execute::scope( [](){
-                  tx_rollback();
-               });
-
                auto message = [&queue]()
                {
                   queue::Message message;
@@ -268,9 +261,6 @@ namespace casual
 
                auto id = queue::enqueue( queue, message);
 
-               tx_commit();
-               rollback.release();
-
                std::cout << id << '\n';
             }
 
@@ -281,16 +271,7 @@ namespace casual
 
             void dequeue( const std::string& queue)
             {
-               tx_begin();
-
-               auto rollback = execute::scope( [](){
-                  tx_rollback();
-               });
-
                const auto message = queue::dequeue( queue);
-
-               tx_commit();
-               rollback.release();
 
                if( ! message.empty())
                {

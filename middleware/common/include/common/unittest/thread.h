@@ -11,18 +11,17 @@
 
 #include <thread>
 
-#include "common/mockup/log.h"
+//#include "common/pimpl.h"
+#include "common/unittest/log.h"
 
 namespace casual
 {
    namespace common
    {
-      namespace mockup
+      namespace unittest
       {
-         //!
          //! as std::thread, but sends signal terminate on destruction
          //! and joins the thread
-         //!
          struct Thread
          {
             Thread() noexcept;
@@ -40,10 +39,11 @@ namespace casual
             ~Thread();
 
          private:
-
+            //struct Implementation;
+            //move::basic_pimpl< Implementation> m_implementation;
             std::thread m_thread;
          };
-      } // mockup
+      } // unittest
    } // common
 } // casual
 

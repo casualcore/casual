@@ -59,9 +59,7 @@ namespace casual
                };
             } // sync
 
-            //!
             //! Will be thrown if service fails (application error)
-            //!
             struct Fail : common::exception::xatmi::service::Fail
             {
                using common::exception::xatmi::service::Fail::Fail;
@@ -87,10 +85,8 @@ namespace casual
 
                void clean();
 
-               //!
                //! @returns true if there are pending replies or associated transactions.
                //!  Hence, it's ok to do a service-forward if false is return
-               //!
                bool pending() const;
 
             private:

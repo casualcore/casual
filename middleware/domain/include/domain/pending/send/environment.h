@@ -18,7 +18,7 @@ namespace casual
          {
             //! identification of the instance
             const common::Uuid identification{ "e32ece3e19544ae69aae5a6326a3d1e9"};
-            constexpr auto environment = "CASUAL_EVENTUALLY_SEND_PROCESS";
+            constexpr auto environment = "CASUAL_PENDING_SEND_PROCESS";
 
             constexpr auto executable = "casual-domain-pending-send";
 

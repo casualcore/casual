@@ -8,8 +8,7 @@
 #include "common/unittest.h"
 
 #include "common/event/listen.h"
-#include "common/mockup/ipc.h"
-#include "common/mockup/domain.h"
+#include "common/unittest/eventually/send.h"
 
 #include "common/exception/casual.h"
 
@@ -22,11 +21,9 @@ namespace casual
       {
          unittest::Trace trace;
 
-         //
          // Make sure we get a shutdown
-         //
          {
-            mockup::ipc::eventually::send( communication::ipc::inbound::ipc(), message::shutdown::Request{});
+            unittest::eventually::send( communication::ipc::inbound::ipc(), message::shutdown::Request{});
          }
 
          EXPECT_THROW({
@@ -38,35 +35,25 @@ namespace casual
       {
          unittest::Trace trace;
 
-
-         mockup::domain::Manager manager;
-
          {
-            //
             // send the event, premature...
-            //
             message::event::process::Exit event;
             event.state.pid = strong::process::id{ 42};
             event.state.reason = process::lifetime::Exit::Reason::core;
 
-            mockup::ipc::eventually::send( communication::ipc::inbound::ipc(), event);
+            unittest::eventually::send( communication::ipc::inbound::ipc(), event);
 
          }
 
-         //
          // Make sure we get a shutdown
-         //
          {
-            mockup::ipc::eventually::send( communication::ipc::inbound::ipc(), message::shutdown::Request{});
+            unittest::eventually::send( communication::ipc::inbound::ipc(), message::shutdown::Request{});
          }
 
-         
-         //
          // listen to the event
-         //
          {
             EXPECT_THROW({
-               event::listen( []( message::event::process::Exit& m){
+               event::no::subscription::listen( communication::ipc::inbound::device(), []( message::event::process::Exit& m){
                   EXPECT_TRUE( m.state.pid == strong::process::id{ 42});
                   EXPECT_TRUE( m.state.reason == process::lifetime::Exit::Reason::core);
                });

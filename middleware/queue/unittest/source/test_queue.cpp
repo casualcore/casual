@@ -18,9 +18,6 @@
 #include "common/process.h"
 #include "common/message/gateway.h"
 #include "common/message/domain.h"
-#include "common/mockup/domain.h"
-#include "common/mockup/process.h"
-#include "common/mockup/file.h"
 
 #include "common/transaction/context.h"
 #include "common/transaction/resource.h"
@@ -55,12 +52,23 @@ namespace casual
                static constexpr auto configuration = R"(
 domain: 
    name: queue-domain
+
+   groups: 
+      - name: base
+      - name: queue
+        dependencies: [ base]
    
    servers:
       - path: "${CASUAL_HOME}/bin/casual-service-manager"
+        memberships: [ base]
       - path: "${CASUAL_HOME}/bin/casual-transaction-manager"
+        memberships: [ base]
+      - path: "./bin/casual-queue-manager"
+        memberships: [ queue]
       - path: "./bin/casual-queue-forward-queue"
         arguments: [ --forward, queueA3, queueB3]
+        memberships: [ queue]
+
    queue:
       groups:
          - name: group_A
@@ -130,6 +138,62 @@ domain:
          EXPECT_TRUE( state.groups.size() == 2);
          EXPECT_TRUE( state.queues.size() == 3 * 2 * 2 + 2);
       }
+
+
+      TEST( casual_queue, lookup_request_queueA1__expect_existence)
+      {
+         common::unittest::Trace trace;
+
+         local::Domain domain;
+
+         {
+            common::communication::ipc::Helper ipc;
+
+            // Send request
+            common::message::queue::lookup::Request request;
+            request.process = common::process::handle();
+            request.name = "queueA1";
+
+            common::communication::ipc::blocking::send( 
+               common::communication::instance::outbound::queue::manager::device(), 
+               request);
+         }
+
+         {
+            common::message::queue::lookup::Reply reply;
+            common::communication::ipc::blocking::receive( common::communication::ipc::inbound::device(), reply);
+
+            EXPECT_TRUE( reply.queue) << "reply: " << reply;
+         }
+      }
+
+      TEST( casual_queue, lookup_request_non_existence__expect_absent)
+      {
+         common::unittest::Trace trace;
+
+         local::Domain domain;
+
+         {
+            common::communication::ipc::Helper ipc;
+
+            // Send request
+            common::message::queue::lookup::Request request;
+            request.process = common::process::handle();
+            request.name = "non-existence";
+
+            common::communication::ipc::blocking::send( 
+               common::communication::instance::outbound::queue::manager::device(), 
+               request);
+         }
+
+         {
+            common::message::queue::lookup::Reply reply;
+            common::communication::ipc::blocking::receive( common::communication::ipc::inbound::device(), reply);
+
+            EXPECT_FALSE( reply.queue) << "reply: " << reply;
+         }
+      }
+
 
       TEST( casual_queue, enqueue_1_message___expect_1_message_in_queue)
       {
@@ -434,6 +498,8 @@ domain:
 
          EXPECT_TRUE( common::algorithm::equal( message.payload.data, payload));
       }
+
+
 /*
       TEST( casual_queue, queue_forward_dequeue_not_available_queue__expect_gracefull_shutdown)
       {

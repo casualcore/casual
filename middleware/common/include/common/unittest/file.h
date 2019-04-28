@@ -14,7 +14,7 @@ namespace casual
 {
    namespace common
    {
-      namespace mockup
+      namespace unittest
       {
 
          namespace file
@@ -56,10 +56,8 @@ namespace casual
             } // temporary
          } // directory
 
-      } // mockup
+      } // unittest
    } // common
-
-
 } // casual
 
 

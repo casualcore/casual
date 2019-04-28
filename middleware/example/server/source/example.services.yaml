@@ -51,5 +51,8 @@ server:
     - name: casual/example/work
       function: casual_example_work
 
+    - name: casual/example/error/system
+      function: casual_example_error_system
+
     - name: casual/example/terminate
       function: casual_example_terminate

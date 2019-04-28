@@ -81,15 +81,12 @@ LinkUnittest( 'unittest/bin/test-http',
    [ 
       common_outbound_archive, 
       common_archive,
-      'casual-mockup',
       'casual-common', 
       'casual-serviceframework', 
       'casual-unittest',
       'curl'
    ])  
    
-
-
 
 Install( install_bin,'$(CASUAL_HOME)/bin')
 Install( install_lib,'$(CASUAL_HOME)/lib')

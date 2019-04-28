@@ -16,13 +16,14 @@ with Scope():
     Parallel( True)
       
     Build( 'event/makefile.cmk')
-    Build( 'gateway/makefile.cmk')
     
     Build( 'queue/makefile.cmk')  
 
     Build( 'binding/makefile.cmk')  
     Build( 'http/makefile.cmk')    
 
+# depends on domain, queue, service
+Build( 'gateway/makefile.cmk')
 
 
 # examples 

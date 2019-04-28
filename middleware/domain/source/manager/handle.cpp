@@ -10,6 +10,7 @@
 #include "domain/manager/persistent.h"
 #include "domain/common.h"
 #include "domain/transform.h"
+#include "domain/pending/send/environment.h"
 
 #include "configuration/gateway.h"
 
@@ -45,6 +46,8 @@ namespace casual
             }
 
          } // ipc
+
+
 
          namespace local
          {
@@ -428,6 +431,17 @@ namespace casual
          } // local
          namespace handle
          {
+            namespace start
+            {
+               namespace pending
+               {
+                  common::Process send()
+                  {
+                     Trace trace{ "domain::manager::handle::start::pending::send"};
+                     return { string::compose( "${CASUAL_HOME}/bin/", casual::domain::pending::send::executable)};
+                  }
+               } // pending
+            } // start
 
             namespace mandatory
             {
@@ -684,6 +698,16 @@ namespace casual
                         // We don't want to handle any signals in this task
                         signal::thread::scope::Block block;
 
+                        // check if the process is our own pending-send
+                        // should not be possible unless some "human" kills the process
+                        if( message.state.pid == state().process.pending.handle())
+                        {
+                           log::line( log::category::error, "pending send exited: ", message.state);
+
+                           state().process.pending = handle::start::pending::send();
+                           return;
+                        }
+
                         switch( message.state.reason)
                         {
                            case common::process::lifetime::Exit::Reason::core:
@@ -705,9 +729,7 @@ namespace casual
 
                         // Are there any listeners to this event?
                         if( state().event.active< common::message::event::process::Exit>())
-                        {
                            manager::local::ipc::send( state().event( message));
-                        }
                      }
                   }
                } // process

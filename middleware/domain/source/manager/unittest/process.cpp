@@ -10,9 +10,12 @@
 #include "common/communication/ipc.h"
 #include "common/event/listen.h"
 #include "common/execute.h"
+#include "common/exception/casual.h"
+#include "common/message/event.h"
+#include "common/message/handle.h"
 
-#include "common/mockup/file.h"
 #include "common/unittest.h"
+#include "common/unittest/file.h"
 
 namespace casual
 {
@@ -34,7 +37,7 @@ namespace casual
                      std::vector< file::scoped::Path> files( const std::vector< std::string>& configuration)
                      {
                         return algorithm::transform( configuration, []( const std::string& c){
-                           return file::scoped::Path{ mockup::file::temporary::content( ".yaml", c)};
+                           return file::scoped::Path{ common::unittest::file::temporary::content( ".yaml", c)};
                         });
                      }
 
@@ -54,8 +57,9 @@ namespace casual
 
             struct Process::Implementation
             {
-               Implementation( const std::vector< std::string>& configuration)
-                  : files( local::configuration::files( configuration)),
+               Implementation( const std::vector< std::string>& configuration, std::function< void( const std::string&)> callback = nullptr)
+                  : environment( std::move( callback)),
+                  files( local::configuration::files( configuration)),
                   process{ "${CASUAL_HOME}/bin/casual-domain-manager", {
                      "--event-ipc", common::string::compose( common::communication::ipc::inbound::ipc()),
                      "--configuration-files", local::configuration::names( files),
@@ -68,7 +72,7 @@ namespace casual
                   });
 
                   // Wait for the domain to boot
-                  process.handle( common::unittest::domain::manager::wait( common::communication::ipc::inbound::device()));
+                  process.handle( process::wait());
 
                   log::line( verbose::log, "domain-manager booted: ", process);
                   
@@ -88,21 +92,30 @@ domain:
                
                struct Environment
                {
-                  Environment()
+                  Environment( std::function< void( const std::string&)> callback)
+                     : callback{ std::move( callback)}
+                  {
+                     activate();
+                  }
+
+                  void activate()
                   {
                      environment::variable::set( "CASUAL_HOME", local::repository::root + "/test/home");
                      environment::variable::set( "CASUAL_DOMAIN_HOME", home);
 
-                     environment::reset();
-
                      if( file::exists( environment::domain::singleton::file()))
-                     {
                         file::remove( environment::domain::singleton::file());
-                     }
+                     
+                     if( callback)
+                        callback( home);
+
+                     environment::reset();
                   }
+
                      
                   //! domain root directory
-                  common::mockup::directory::temporary::Scoped home;
+                  common::unittest::directory::temporary::Scoped home;
+                  std::function< void( const std::string&)> callback;
                } environment;
 
                std::vector< common::file::scoped::Path> files;
@@ -113,6 +126,9 @@ domain:
             Process::Process( const std::vector< std::string>& configuration)
                : m_implementation( configuration) {}
 
+            Process::Process( const std::vector< std::string>& configuration, std::function< void( const std::string&)> callback)
+               : m_implementation( configuration, std::move( callback)) {}
+
             Process::Process() {}
 
             Process::~Process() = default;
@@ -120,6 +136,11 @@ domain:
             const common::process::Handle& Process::handle() const noexcept
             {
                return m_implementation->process.handle();
+            }
+
+            void Process::activate()
+            {
+               m_implementation->environment.activate();
             }
 
             std::ostream& operator << ( std::ostream& out, const Process& value)
@@ -130,6 +151,52 @@ domain:
                   << '}';
             }
              
+
+            namespace process
+            {  
+               common::process::Handle wait( common::communication::ipc::inbound::Device& device)
+               {
+                  common::Trace trace{ "domain::manager::unittest::process::wait"};
+
+                  auto handler = device.handler(
+                     []( const message::event::domain::boot::End& event)
+                     {
+                        throw event.process;
+                     },
+                     []( const message::event::domain::Error& error)
+                     {
+                        if( error.severity == message::event::domain::Error::Severity::fatal)
+                        {
+                           throw exception::casual::Shutdown{ string::compose( "fatal error: ", error)};
+                        }
+                     },
+                     common::message::handle::Discard< common::message::event::domain::Group>{},
+                     common::message::handle::Discard< common::message::event::domain::boot::Begin>{},
+                     common::message::handle::Discard< common::message::event::domain::shutdown::Begin>{},
+                     common::message::handle::Discard< common::message::event::domain::shutdown::End>{},
+                     common::message::handle::Discard< common::message::event::domain::server::Connect>{},
+                     common::message::handle::Discard< common::message::event::process::Spawn>{},
+                     common::message::handle::Discard< common::message::event::process::Exit>{}
+                  );
+
+                  try
+                  {
+                     message::dispatch::blocking::pump( handler, device);
+                  }
+                  catch( const common::process::Handle& process)
+                  {
+                     log::line( log::debug, "domain manager booted: ", process);
+                     return process;
+                  }
+                  return {};
+               }
+
+               common::process::Handle wait()
+               {
+                  return wait( communication::ipc::inbound::device());
+               }
+            } // process
+
          } // unittest
       } // manager
    } // domain

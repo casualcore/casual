@@ -40,7 +40,7 @@ namespace casual
                   common::process::handle());
 
             // start casual-domain-pending-send
-            m_state.process.pending = common::Process{ string::compose( "${CASUAL_HOME}/bin/", pending::send::executable)};
+            m_state.process.pending = handle::start::pending::send();
 
             if( m_state.mandatory_prepare)
                handle::mandatory::boot::prepare( m_state);

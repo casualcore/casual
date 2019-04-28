@@ -22,13 +22,6 @@
 #include "transaction/manager/admin/server.h"
 #include "transaction/manager/admin/transform.h"
 
-
-#include "common/mockup/ipc.h"
-#include "common/mockup/file.h"
-#include "common/mockup/domain.h"
-#include "common/mockup/rm.h"
-#include "common/mockup/process.h"
-
 #include "common/message/dispatch.h"
 #include "common/message/transaction.h"
 #include "common/environment.h"
@@ -37,20 +30,17 @@
 
 #include "common/communication/instance.h"
 
+#include "common/unittest/file.h"
 #include "domain/manager/unittest/process.h"
 
 #include "serviceframework/service/protocol/call.h"
 #include "serviceframework/log.h"
 
-#include "tx.h"
-
 #include <fstream>
-
 
 
 namespace casual
 {
-
    using namespace common;
 
    namespace transaction
@@ -106,7 +96,7 @@ resources:
                   static constexpr auto env_rm2 = "CASUAL_UNITTEST_OPEN_INFO_RM2";
 
                   Environment( const std::string& configuration) 
-                     : resource{ common::mockup::file::temporary::content( ".yaml", configuration)}
+                     : resource{ common::unittest::file::temporary::content( ".yaml", configuration)}
                   {
                      common::environment::variable::set( "CASUAL_RESOURCE_CONFIGURATION_FILE", resource);
 
@@ -188,6 +178,45 @@ resources:
 
             common::strong::resource::id rm_1{ 1};
             common::strong::resource::id rm_2{ 2};
+
+            auto begin() 
+            {
+               try 
+               {
+                  common::transaction::context().begin();
+                  return common::code::tx::ok;
+               }
+               catch( const common::exception::tx::exception& exception)
+               {
+                  return exception.type();
+               }
+            }
+
+            auto commit() 
+            {
+               try 
+               {
+                  common::transaction::context().commit();
+                  return common::code::tx::ok;
+               }
+               catch( const common::exception::tx::exception& exception)
+               {
+                  return exception.type();
+               }
+            }
+
+            auto rollback() 
+            {
+               try 
+               {
+                  common::transaction::context().rollback();
+                  return common::code::tx::ok;
+               }
+               catch( const common::exception::tx::exception& exception)
+               {
+                  return exception.type();
+               }
+            }
 
          } // <unnamed>
       } // local
@@ -323,14 +352,14 @@ domain:
          common::unittest::Trace trace;
 
          local::Domain domain;
-             
 
-         EXPECT_TRUE( tx_begin() == TX_OK);
+         EXPECT_TRUE( local::begin() == common::code::tx::ok);
 
          auto state = local::admin::call::state();
 
          EXPECT_TRUE( state.transactions.empty()) << "state.transactions: " << state.transactions;
-         EXPECT_TRUE( tx_commit() == TX_OK);
+
+         EXPECT_TRUE( local::commit() == common::code::tx::ok);
       }
 
 
@@ -340,11 +369,8 @@ domain:
 
          local::Domain domain;
 
-
-         EXPECT_TRUE( tx_begin() == TX_OK);
-
-         EXPECT_TRUE( tx_commit() == TX_OK);
-
+         EXPECT_TRUE( local::begin() == common::code::tx::ok);
+         EXPECT_TRUE( local::commit() == common::code::tx::ok);
 
          auto state = local::admin::call::state();
          EXPECT_TRUE( state.transactions.empty());
@@ -365,14 +391,11 @@ domain:
 
          local::Domain domain;
 
-
-         EXPECT_TRUE( tx_begin() == TX_OK);
+         EXPECT_TRUE( local::begin() == common::code::tx::ok);
 
          // Make sure we make the transaction distributed
          auto state = local::admin::call::state();
          EXPECT_TRUE( state.transactions.empty());
-
-
 
          // involved
          {
@@ -385,8 +408,7 @@ domain:
             EXPECT_TRUE( reply.involved.empty());
          }
 
-         EXPECT_TRUE( tx_commit() == TX_OK);
-
+         EXPECT_TRUE( local::commit() == common::code::tx::ok);
 
          state = local::admin::call::state();
          EXPECT_TRUE( state.transactions.empty());
@@ -407,7 +429,7 @@ domain:
          local::Domain domain;
 
 
-         EXPECT_TRUE( tx_begin() == TX_OK);
+         EXPECT_TRUE( local::begin() == common::code::tx::ok);
 
          // Make sure we make the transaction distributed
          auto state = local::admin::call::state();
@@ -438,8 +460,7 @@ domain:
             EXPECT_TRUE( reply.involved.at( 0) == local::rm_1);
          }
 
-         EXPECT_TRUE( tx_commit() == TX_OK);
-
+         EXPECT_TRUE( local::commit() == common::code::tx::ok);
 
          state = local::admin::call::state();
          EXPECT_TRUE( state.transactions.empty());
@@ -474,7 +495,7 @@ domain:
 
          local::Domain domain;
 
-         EXPECT_TRUE( tx_begin() == TX_OK);
+         EXPECT_TRUE( local::begin() == common::code::tx::ok);
 
          // Make sure we make the transaction distributed
          auto state = local::admin::call::state();
@@ -491,16 +512,14 @@ domain:
             EXPECT_TRUE( reply.involved.empty());
          }
 
-         using tx = common::code::tx;
-         auto result = local::tx_invoke( &tx_commit);
-         ASSERT_TRUE( result == tx::hazard) << "result: " << result;
+         auto result = local::commit();
+         ASSERT_TRUE( result == common::code::tx::hazard) << "result: " << result;
 
-         EXPECT_TRUE( local::tx_invoke( &tx_rollback) == tx::ok);
-
+         EXPECT_TRUE( local::rollback() == common::code::tx::ok);
       }
 
 
-      TEST( transaction_manager, begin_commit_transaction__1_resources_involved__XAER_NOTA___expect__TX_OK)
+      TEST( transaction_manager, no_transaction__1_resources_involved__XAER_NOTA___expect__TX_OK)
       {
          common::unittest::Trace trace;
 
@@ -510,9 +529,7 @@ domain:
 
          local::Domain domain;
 
-         using tx = common::code::tx;
-
-         EXPECT_TRUE( local::tx_invoke( &tx_begin) == tx::ok);
+         EXPECT_TRUE( local::begin() == common::code::tx::ok);
 
          // Make sure we make the transaction distributed
          auto state = local::admin::call::state();
@@ -528,9 +545,7 @@ domain:
             auto reply = local::call::tm( message);
             EXPECT_TRUE( reply.involved.empty());
          }
-
-         auto result = local::tx_invoke( &tx_commit);
-         EXPECT_TRUE( result == tx::ok) << "result: " << result;
+         EXPECT_TRUE( local::commit() == common::code::tx::ok);
       }
 
       TEST( transaction_manager, begin_commit_transaction__1_resources_involved__environment_open_info__XAER_NOTA___expect__TX_OK)
@@ -543,9 +558,7 @@ domain:
 
          local::Domain domain;
 
-         using tx = common::code::tx;
-
-         EXPECT_TRUE( local::tx_invoke( &tx_begin) == tx::ok);
+         EXPECT_TRUE( local::begin() == common::code::tx::ok);
 
          // Make sure we make the transaction distributed
          auto state = local::admin::call::state();
@@ -562,8 +575,7 @@ domain:
             EXPECT_TRUE( reply.involved.empty());
          }
 
-         auto result = local::tx_invoke( &tx_commit);
-         EXPECT_TRUE( result == tx::ok) << "result: " << result;
+         EXPECT_TRUE( local::commit() == common::code::tx::ok);
       }
 
       TEST( transaction_manager, begin_rollback_transaction__1_resources_involved__expect_XA_OK)
@@ -572,7 +584,7 @@ domain:
 
          local::Domain domain;
 
-         EXPECT_TRUE( tx_begin() == TX_OK);
+         EXPECT_TRUE( local::begin() == common::code::tx::ok);
 
          // Make sure we make the transaction distributed
          auto state = local::admin::call::state();
@@ -587,9 +599,9 @@ domain:
             
             auto reply = local::call::tm( message);
             EXPECT_TRUE( reply.involved.empty());
-         }
+         }     
 
-         EXPECT_TRUE( tx_rollback() == TX_OK);
+         EXPECT_TRUE( local::rollback() == common::code::tx::ok);
 
          state = local::admin::call::state();
          EXPECT_TRUE( state.transactions.empty());
@@ -610,7 +622,11 @@ domain:
 
          local::Domain domain;
 
-         EXPECT_TRUE( tx_begin() == TX_OK);
+         EXPECT_TRUE( local::begin() == common::code::tx::ok);
+
+         // Make sure we make the transaction distributed
+         auto state = local::admin::call::state();
+         EXPECT_TRUE( state.transactions.empty());
 
          // involved
          {
@@ -623,10 +639,10 @@ domain:
             EXPECT_TRUE( reply.involved.empty());
          }
 
-         EXPECT_TRUE( tx_rollback() == TX_OK);
+         EXPECT_TRUE( local::rollback() == common::code::tx::ok);
 
-         auto state = local::admin::call::state();
-         EXPECT_TRUE( state.transactions.empty());
+         state = local::admin::call::state();
+         EXPECT_TRUE( state.transactions.empty()) << "state: " << state;
 
          auto proxies = local::accumulate_metrics( state);
          auto& rm1 = proxies.at( 0);
@@ -634,7 +650,7 @@ domain:
 
          ASSERT_TRUE( rm1.instances.size() == 2);
          EXPECT_TRUE( rm1.id == local::rm_1);
-         EXPECT_TRUE( rm1.metrics.resource.count == 1);
+         EXPECT_TRUE( rm1.metrics.resource.count == 1) << "rm1.metrics.resource: " << rm1.metrics.resource;
 
          ASSERT_TRUE( rm2.instances.size() == 2);
          EXPECT_TRUE( rm2.id == local::rm_2);
@@ -648,7 +664,7 @@ domain:
 
          local::Domain domain;
 
-         EXPECT_TRUE( tx_begin() == TX_OK);
+         EXPECT_TRUE( local::begin() == common::code::tx::ok);
 
          // Make sure we make the transaction distributed
          auto state = local::admin::call::state();
@@ -679,7 +695,7 @@ domain:
             EXPECT_TRUE( reply.involved.at( 0) == local::rm_1);
          }
 
-         EXPECT_TRUE( tx_commit() == TX_OK);
+         EXPECT_TRUE( local::commit() == common::code::tx::ok);
 
          state = local::admin::call::state();
          EXPECT_TRUE( state.transactions.empty());
@@ -705,8 +721,7 @@ domain:
 
          local::Domain domain;
 
-         EXPECT_TRUE( tx_begin() == TX_OK);
-
+         EXPECT_TRUE( local::begin() == common::code::tx::ok);
 
          // involved
          {
@@ -728,20 +743,15 @@ domain:
             local::send::tm( event);
          }
 
-
          // should be more than enough for TM to complete the rollback.
          process::sleep( std::chrono::milliseconds{ 10});
 
-
          auto state = local::admin::call::state();
 
-         //
          // transaction should be rolled back and removed
          EXPECT_TRUE( state.transactions.empty());
 
-
-
-         EXPECT_TRUE( tx_rollback() == TX_OK);
+         EXPECT_TRUE( local::rollback() == common::code::tx::ok);
       }
 
       TEST( transaction_manager, remote_resource_commit_one_phase__xid_unknown___expect_read_only)
@@ -919,15 +929,13 @@ domain:
 
          local::Domain domain;
 
-         mockup::ipc::Collector gateway;
-
          auto trid = common::transaction::id::create();
 
-         // gateway involved
+         // external involved
          {
             common::message::transaction::resource::external::Involved message;
             message.trid = trid;
-            message.process = gateway.process();
+            message.process = process::handle();
 
             local::send::tm( message);
          }
@@ -945,7 +953,7 @@ domain:
          {
             common::message::transaction::resource::commit::Request message;
 
-            communication::ipc::blocking::receive( gateway.output(), message);
+            communication::ipc::blocking::receive( communication::ipc::inbound::device(), message);
 
             EXPECT_TRUE( message.trid == trid);
             EXPECT_TRUE( message.flags == common::flag::xa::Flag::one_phase);
@@ -971,7 +979,26 @@ domain:
          }
       }
 
+      namespace local
+      {
+         namespace
+         {
+            namespace involved
+            {
+               auto next()
+               {
+                  int global{};
+                  return strong::process::id{ ++global};
+               }
 
+               struct Process 
+               {
+                  communication::ipc::inbound::Device inbound;
+                  process::Handle process{ next(), inbound.connector().handle().ipc()};
+               };
+            } // involved
+         } // <unnamed>
+      } // local
 
       TEST( transaction_manager, begin_transaction__2_remote_resource_involved___expect_remote_prepare_commit)
       {
@@ -979,8 +1006,10 @@ domain:
 
          local::Domain domain;
 
-         mockup::ipc::Collector gateway1;
-         mockup::ipc::Collector gateway2;
+
+         local::involved::Process rm1;
+         local::involved::Process rm2;
+
 
          auto trid = common::transaction::id::create();
 
@@ -989,10 +1018,10 @@ domain:
             common::message::transaction::resource::external::Involved message;
             message.trid = trid;
 
-            message.process = gateway1.process();
+            message.process = rm1.process;
             local::send::tm( message);
 
-            message.process = gateway2.process();
+            message.process = rm2.process;
             local::send::tm( message);
          }
 
@@ -1005,14 +1034,13 @@ domain:
             local::send::tm( message);
          }
 
-
          // remote prepare
          {
-            auto remote_prepare = [&]( mockup::ipc::Collector& gtw){
+            auto remote_prepare = [&]( auto& involved){
 
                common::message::transaction::resource::prepare::Request message;
 
-               communication::ipc::blocking::receive( gtw.output(), message);
+               communication::ipc::blocking::receive( involved.inbound, message);
 
                EXPECT_TRUE( message.trid == trid);
                EXPECT_TRUE( message.flags == common::flag::xa::Flag::no_flags);
@@ -1025,8 +1053,8 @@ domain:
                local::send::tm( reply);
             };
 
-            remote_prepare( gateway1);
-            remote_prepare( gateway2);
+            remote_prepare( rm1);
+            remote_prepare( rm2);
          };
 
          // commit prepare reply
@@ -1043,11 +1071,11 @@ domain:
 
          // remote commit
          {
-            auto remote_commit = [&]( mockup::ipc::Collector& gtw){
+            auto remote_commit = [&]( auto& involved){
 
                common::message::transaction::resource::commit::Request message;
 
-               communication::ipc::blocking::receive( gtw.output(), message);
+               communication::ipc::blocking::receive( involved.inbound, message);
 
                EXPECT_TRUE( message.trid == trid);
                EXPECT_TRUE( message.flags == common::flag::xa::Flag::no_flags);
@@ -1060,8 +1088,8 @@ domain:
                local::send::tm( reply);
             };
 
-            remote_commit( gateway1);
-            remote_commit( gateway2);
+            remote_commit( rm1);
+            remote_commit( rm2);
          };
 
          // commit reply
@@ -1082,8 +1110,8 @@ domain:
 
          local::Domain domain;
 
-         mockup::ipc::Collector gateway1;
-         mockup::ipc::Collector gateway2;
+         local::involved::Process rm1;
+         local::involved::Process rm2;
 
          auto trid = common::transaction::id::create();
 
@@ -1092,10 +1120,10 @@ domain:
             common::message::transaction::resource::external::Involved message;
             message.trid = trid;
 
-            message.process = gateway1.process();
+            message.process = rm1.process;
             local::send::tm( message);
 
-            message.process = gateway2.process();
+            message.process = rm2.process;
             local::send::tm( message);
          }
 
@@ -1111,11 +1139,11 @@ domain:
 
          // remote prepare
          {
-            auto remote_prepare = [&]( mockup::ipc::Collector& gtw){
+            auto remote_prepare = [&]( auto& involved){
 
                common::message::transaction::resource::prepare::Request message;
 
-               communication::ipc::blocking::receive( gtw.output(), message);
+               communication::ipc::blocking::receive( involved.inbound, message);
 
                EXPECT_TRUE( message.trid == trid);
                EXPECT_TRUE( message.flags == common::flag::xa::Flag::no_flags);
@@ -1128,8 +1156,8 @@ domain:
                local::send::tm( reply);
             };
 
-            remote_prepare( gateway1);
-            remote_prepare( gateway2);
+            remote_prepare( rm1);
+            remote_prepare( rm2);
          };
 
          // commit reply
@@ -1139,10 +1167,10 @@ domain:
             communication::ipc::blocking::receive( communication::ipc::inbound::device(), message);
 
             EXPECT_TRUE( message.trid == trid) << "message: " << message;
-            //EXPECT_TRUE( message.state == XA_RDONLY) << "state: " << message.state;
             EXPECT_TRUE( message.state == common::code::tx::ok) << "state: " << message.state;
          }
       }
+
 
       TEST( transaction_manager, transaction_2_remote_resource_involved__one_phase_commit_optimization___expect_prepare_phase_commit_XA_OK)
       {
@@ -1150,8 +1178,8 @@ domain:
 
          local::Domain domain;
 
-         mockup::ipc::Collector gateway1;
-         mockup::ipc::Collector gateway2;
+         local::involved::Process rm1;
+         local::involved::Process rm2;
 
          auto trid = common::transaction::id::create();
 
@@ -1160,10 +1188,10 @@ domain:
             common::message::transaction::resource::external::Involved message;
             message.trid = trid;
 
-            message.process = gateway1.process();
+            message.process = rm1.process;
             local::send::tm( message);
 
-            message.process = gateway2.process();
+            message.process = rm2.process;
             local::send::tm( message);
          }
 
@@ -1180,11 +1208,11 @@ domain:
 
          // remote prepare
          {
-            auto remote_prepare = [&]( mockup::ipc::Collector& gtw){
-
+            auto remote_prepare = [&]( auto& involved)
+            {
                common::message::transaction::resource::prepare::Request message;
 
-               communication::ipc::blocking::receive( gtw.output(), message);
+               communication::ipc::blocking::receive( involved.inbound, message);
 
                EXPECT_TRUE( message.trid == trid);
                EXPECT_TRUE( message.flags == common::flag::xa::Flag::no_flags);
@@ -1197,17 +1225,17 @@ domain:
                local::send::tm( reply);
             };
 
-            remote_prepare( gateway1);
-            remote_prepare( gateway2);
+            remote_prepare( rm1);
+            remote_prepare( rm2);
          };
 
          // remote commit
          {
-            auto remote_commit = [&]( mockup::ipc::Collector& gtw){
-
+            auto remote_commit = [&]( auto& involved)
+            {
                common::message::transaction::resource::commit::Request message;
 
-               communication::ipc::blocking::receive( gtw.output(), message);
+               communication::ipc::blocking::receive( involved.inbound, message);
 
                EXPECT_TRUE( message.trid == trid);
                EXPECT_TRUE( message.flags == common::flag::xa::Flag::no_flags);
@@ -1220,8 +1248,8 @@ domain:
                local::send::tm( reply);
             };
 
-            remote_commit( gateway1);
-            remote_commit( gateway2);
+            remote_commit( rm1);
+            remote_commit( rm2);
          };
 
          // resource commit reply
@@ -1235,16 +1263,14 @@ domain:
          }
       }
 
-
-
       TEST( transaction_manager, transaction_2_remote_resource_involved__one_phase_commit_optimization__RM_fail__expect_rollback__commit_XA_RBOTHER)
       {
          common::unittest::Trace trace;
 
          local::Domain domain;
 
-         mockup::ipc::Collector gateway1;
-         mockup::ipc::Collector gateway2;
+         local::involved::Process rm1;
+         local::involved::Process rm2;
 
          auto trid = common::transaction::id::create();
 
@@ -1253,10 +1279,10 @@ domain:
             common::message::transaction::resource::external::Involved message;
             message.trid = trid;
 
-            message.process = gateway1.process();
+            message.process = rm1.process;
             local::send::tm( message);
 
-            message.process = gateway2.process();
+            message.process = rm2.process;
             local::send::tm( message);
          }
 
@@ -1273,11 +1299,11 @@ domain:
 
          // remote prepare
          {
-            auto remote_prepare = [&]( mockup::ipc::Collector& gtw){
+            auto remote_prepare = [&]( auto& involved){
 
                common::message::transaction::resource::prepare::Request message;
 
-               communication::ipc::blocking::receive( gtw.output(), message);
+               communication::ipc::blocking::receive( involved.inbound, message);
 
                EXPECT_TRUE( message.trid == trid);
                EXPECT_TRUE( message.flags == common::flag::xa::Flag::no_flags);
@@ -1290,17 +1316,17 @@ domain:
                local::send::tm( reply);
             };
 
-            remote_prepare( gateway1);
-            remote_prepare( gateway2);
+            remote_prepare( rm1);
+            remote_prepare( rm2);
          };
 
          // remote rollback
          {
-            auto remote_commit = [&]( mockup::ipc::Collector& gtw){
+            auto remote_commit = [&]( auto& involved){
 
                common::message::transaction::resource::rollback::Request message;
 
-               communication::ipc::blocking::receive( gtw.output(), message);
+               communication::ipc::blocking::receive( involved.inbound, message);
 
                EXPECT_TRUE( message.trid == trid);
                EXPECT_TRUE( message.flags == common::flag::xa::Flag::no_flags);
@@ -1313,8 +1339,8 @@ domain:
                local::send::tm( reply);
             };
 
-            remote_commit( gateway1);
-            remote_commit( gateway2);
+            remote_commit( rm1);
+            remote_commit( rm2);
          };
 
          // resource commit reply
@@ -1328,14 +1354,15 @@ domain:
          }
       }
 
+
+
       TEST( transaction_manager_branch, begin_commit_transaction__1_branched_resource_involved___expect_one_phase_commit_optimization)
       {
          common::unittest::Trace trace;
 
          local::Domain domain;
 
-
-         EXPECT_TRUE( tx_begin() == TX_OK);
+         EXPECT_TRUE( local::begin() == common::code::tx::ok);
 
          // Make sure we make the transaction distributed
          auto state = local::admin::call::state();
@@ -1352,7 +1379,7 @@ domain:
             EXPECT_TRUE( reply.involved.empty());
          }
 
-         EXPECT_TRUE( tx_commit() == TX_OK);
+         EXPECT_TRUE( local::commit() == common::code::tx::ok);
 
 
          state = local::admin::call::state();
@@ -1367,6 +1394,7 @@ domain:
          EXPECT_TRUE( rm1.metrics.resource.count == 1) << "rm: " << rm1;
       }
 
+   
       TEST( transaction_manager_branch, begin_commit_transaction__rm1_involved__rm1_branched_involved___expect_tpc)
       {
          common::unittest::Trace trace;
@@ -1374,7 +1402,7 @@ domain:
          local::Domain domain;
 
 
-         EXPECT_TRUE( tx_begin() == TX_OK);
+         EXPECT_TRUE( local::begin() == common::code::tx::ok);
 
          // Make sure we make the transaction distributed
          auto state = local::admin::call::state();
@@ -1402,7 +1430,7 @@ domain:
             EXPECT_TRUE( reply.involved.empty());
          }
 
-         EXPECT_TRUE( tx_commit() == TX_OK);
+         EXPECT_TRUE( local::commit() == common::code::tx::ok);
 
 
          state = local::admin::call::state();
@@ -1423,8 +1451,7 @@ domain:
 
          local::Domain domain;
 
-
-         EXPECT_TRUE( tx_begin() == TX_OK);
+         EXPECT_TRUE( local::begin() == common::code::tx::ok);
 
          // Make sure we make the transaction distributed
          auto state = local::admin::call::state();
@@ -1452,8 +1479,7 @@ domain:
             EXPECT_TRUE( reply.involved.empty());
          }
 
-         EXPECT_TRUE( tx_commit() == TX_OK);
-
+         EXPECT_TRUE( local::commit() == common::code::tx::ok);
 
          state = local::admin::call::state();
          EXPECT_TRUE( state.transactions.empty());
@@ -1506,24 +1532,6 @@ domain:
          }
       }
 
-      namespace local
-      {
-         namespace
-         {
-            /*
-            common::transaction::Resource xa_resource( std::string openinfo)
-            {
-               common::transaction::Resource result{ "rm-mockup", &casual_mockup_xa_switch_static};
-
-               result.id = common::strong::resource::id{ 1};
-               result.openinfo = std::move( openinfo);
-
-               return result;
-            }
-            */
-
-         } // <unnamed>
-      } // local
 
       TEST( transaction_manager, one_local_resource__configure)
       {
@@ -1554,8 +1562,7 @@ domain:
             common::transaction::context().commit();
          });
       }
-
-
+   
    } // transaction
 
 } // casual

@@ -8,31 +8,52 @@
 #include <gtest/gtest.h>
 #include "common/unittest.h"
 
+#include "service/unittest/advertise.h"
 
-#include "service/forward/cache.h"
+#include "common/communication/instance.h"
+#include "common/message/service.h"
 
-#include "common/mockup/domain.h"
-#include "common/communication/ipc.h"
-
+#include "domain/manager/unittest/process.h"
 
 namespace casual
 {
    using namespace common;
    namespace service
    {
+      namespace local
+      {
+         namespace
+         {
+            struct Domain 
+            {
+               casual::domain::manager::unittest::Process process{ { configuration}};
+
+               auto forward() const
+               {
+                  return communication::instance::fetch::handle( communication::instance::identity::forward::cache);
+               }
+
+               static constexpr auto configuration = R"(
+domain:
+   name: service-forward-domain
+
+   servers:
+      - path: ./bin/casual-service-manager
+        arguments [ --forward, ./bin/casual-service-forward]         
+)";
+            };
+         } // <unnamed>
+      } // local
 
       TEST( service_forward_cache, construction_destruction)
       {
          common::unittest::Trace trace;
 
-         //
-         // Take care of the connect
-         //
-         mockup::domain::minimal::Domain domain;
-
          EXPECT_NO_THROW({
-            forward::Cache cache;
+            local::Domain domain;
          });
+
+         
       }
 
 
@@ -40,99 +61,65 @@ namespace casual
       {
          common::unittest::Trace trace;
 
-         mockup::domain::minimal::Domain domain;
+         local::Domain domain;
 
-         mockup::ipc::Collector caller;
+         // advertise service2 
+         casual::service::unittest::advertise( { "service2"});
+         
+         auto forward = domain.forward();
 
          message::service::call::callee::Request request;
-
          {
-            request.process.pid = common::strong::process::id{ 1};
-            request.process.ipc = caller.id();
+            request.process = common::process::handle();
             request.service.name = "service2";
             request.trid = transaction::id::create( process::handle());
             request.flags = message::service::call::request::Flag::no_transaction;
          }
 
-         // Start the cache, witch will receive the request, and forward it to server
-         std::thread cache_thread{[](){
-            forward::Cache cache;
-            cache.start();
-         }};
-
-
-         // Send it to our forward
-         auto correlation = communication::ipc::blocking::send( communication::ipc::inbound::ipc(), request);
+         // Send it to our forward, which will forward it to our self
+         auto correlation = communication::ipc::blocking::send( forward.ipc, request);
 
          {
-            message::service::call::Reply reply;
-            communication::ipc::blocking::receive( caller.output(), reply);
+            message::service::call::callee::Request forwarded;
+            communication::ipc::blocking::receive( communication::ipc::inbound::device(), forwarded);
 
-
-            EXPECT_TRUE( reply.correlation == correlation);
-            EXPECT_TRUE( reply.transaction.trid == request.trid);
-            EXPECT_TRUE( reply.code.result == common::code::xatmi::ok);
+            EXPECT_TRUE( forwarded.correlation == correlation);
+            EXPECT_TRUE( forwarded.trid == request.trid);
+            EXPECT_TRUE( forwarded.flags == request.flags);
          }
-
-         // make sure we quit
-         communication::ipc::blocking::send( communication::ipc::inbound::ipc(), message::shutdown::Request{});
-
-         cache_thread.join();
-
       }
 
 
-      TEST( service_forward_cache, forward_call__missing_ipc_queue__expect_error_reply)
+      TEST( service_forward_cache, forward_call__missing_service__expect_error_reply)
       {
          common::unittest::Trace trace;
 
-         mockup::domain::minimal::Domain domain;
+         local::Domain domain;
 
-         mockup::ipc::Collector caller;
+         auto forward = domain.forward();
 
-         message::service::call::callee::Request request;
-
+         auto request = []()
          {
-            request.process.pid = common::strong::process::id{ 1};
-            request.process.ipc = caller.id();;
-            request.service.name = "removed_ipc_queue";
+            message::service::call::callee::Request request;
+            request.process = common::process::handle();
+            request.service.name = "non-existent-service";
             request.trid = transaction::id::create( process::handle());
-         }
+            return request;
+         }();
 
 
-         //
-         // Start the cache, witch will receive the request, and forward it to server
-         //
-         std::thread cache_thread{[](){
-            forward::Cache cache;
-            cache.start();
-         }};
-
-         //
-         // Send it to our forward (that will rout it to the ipc-queue that the forward is listening to)
-         //
-         auto correlation = communication::ipc::blocking::send( communication::ipc::inbound::ipc(), request);
+         // Send it to our forward, that will fail to lookup service and reply with error
+         auto correlation = communication::ipc::blocking::send( forward.ipc, request);
 
          {
-            //
             // Expect error reply to caller
-            //
-
             message::service::call::Reply reply;
-            communication::ipc::blocking::receive( caller.output(), reply);
+            communication::ipc::blocking::receive( communication::ipc::inbound::device(), reply);
 
             EXPECT_TRUE( reply.correlation == correlation);
             EXPECT_TRUE( reply.transaction.trid == request.trid);
             EXPECT_TRUE( reply.code.result == common::code::xatmi::service_error);
-
          }
-
-         // make sure we quit
-         communication::ipc::blocking::send( communication::ipc::inbound::ipc() , message::shutdown::Request{});
-
-         cache_thread.join();
-
       }
-
    } // service
 } // casual

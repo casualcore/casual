@@ -4,8 +4,6 @@
 //! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-
-
 #include "domain/manager/admin/server.h"
 #include "domain/manager/admin/vo.h"
 #include "domain/manager/handle.h"
@@ -14,8 +12,6 @@
 
 
 #include "serviceframework/service/protocol.h"
-
-#include "xatmi.h"
 
 namespace casual
 {
