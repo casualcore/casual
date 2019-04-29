@@ -17,6 +17,7 @@ LibraryPaths( [
     '../domain/bin',
 	'../buffer/bin',
 	'../configuration/bin',
+   '../xatmi/bin',
 	'$(CASUAL_OPTIONAL_LIBRARY_PATHS)'])
 
 

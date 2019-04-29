@@ -22,6 +22,7 @@ LibraryPaths(
         '../gateway/bin',
         '../tools/bin',
         '../serviceframework/bin',
+        '../xatmi/bin',
         '$(CASUAL_OPTIONAL_LIBRARY_PATHS)',
     ])
 

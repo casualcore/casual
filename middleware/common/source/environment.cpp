@@ -193,7 +193,14 @@ namespace casual
                   std::string domain = create_path( get_domain());
                   std::string detail = create_path( get_domain() + "/.casual");
                   std::string tmp = environment::directory::temporary();
-                  std::string casual = variable::get( variable::name::home());
+                  
+                  std::string casual = []() -> std::string
+                  {
+                     if( variable::exists( variable::name::home()))
+                        return variable::get( variable::name::home());
+
+                     return "/opt/casual";
+                  }();
 
                   std::string log = []() -> std::string
                   {
@@ -202,10 +209,7 @@ namespace casual
                         if( variable::exists( variable::name::log::path()))
                            return variable::get( variable::name::log::path());
 
-                        if( variable::exists( variable::name::domain::home()))
-                           return variable::get( variable::name::domain::home()) + "/casual.log";
-
-                        return "./casual.log";
+                        return get_domain() + "/casual.log";
                      }();
 
                      create_path( common::directory::name::base( file));

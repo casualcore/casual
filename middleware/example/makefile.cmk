@@ -12,9 +12,13 @@ LibraryPaths( [ 'server/bin',
     '../buffer/bin',
     '../configuration/bin',
     '../serviceframework/bin',
+    '../xatmi/bin',
     '$(CASUAL_OPTIONAL_LIBRARY_PATHS)',
     ])
 
+
+# make sure we use the tools we built
+Environment( 'CASUAL_HOME', '../../test/home/bin')
 
 
 install_bin = []

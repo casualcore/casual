@@ -15,14 +15,16 @@ IncludePaths([
 
 
 LibraryPaths([
-    'bin',
-    '../common/bin',
-    '../configuration/bin',
-    '../domain/bin',
-    '../service/bin',
-    '../serviceframework/bin',
-    '$(CASUAL_OPTIONAL_LIBRARY_PATHS)',
-    ])
+   'bin',
+   '../common/bin',
+   '../configuration/bin',
+   '../domain/bin',
+   '../service/bin',
+   '../serviceframework/bin',
+   '../xatmi/bin',
+   '../queue/bin',
+   '$(CASUAL_OPTIONAL_LIBRARY_PATHS)',
+])
 
 
 install_lib = []

@@ -16,6 +16,7 @@ LibraryPaths( ['bin',
     '../configuration/bin',
     '../domain/bin',
     '../serviceframework/bin',
+    '../xatmi/bin',
     '$(CASUAL_OPTIONAL_LIBRARY_PATHS)',
      ])
 
