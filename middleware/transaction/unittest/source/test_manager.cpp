@@ -49,6 +49,13 @@ namespace casual
       {
          namespace
          {
+            
+            namespace environment
+            {
+               constexpr auto rm1 = "CASUAL_UNITTEST_OPEN_INFO_RM1";
+               constexpr auto rm2 = "CASUAL_UNITTEST_OPEN_INFO_RM2";
+            } // environment
+            
             struct Domain
             {
                struct Configuration
@@ -92,25 +99,22 @@ resources:
                
                struct Environment 
                {
-                  static constexpr auto env_rm1 = "CASUAL_UNITTEST_OPEN_INFO_RM1";
-                  static constexpr auto env_rm2 = "CASUAL_UNITTEST_OPEN_INFO_RM2";
-
                   Environment( const std::string& configuration) 
                      : resource{ common::unittest::file::temporary::content( ".yaml", configuration)}
                   {
                      common::environment::variable::set( "CASUAL_RESOURCE_CONFIGURATION_FILE", resource);
 
-                     if( ! common::environment::variable::exists( env_rm1))
-                        common::environment::variable::set( env_rm1, {});
+                     if( ! common::environment::variable::exists( environment::rm1))
+                        common::environment::variable::set( environment::rm1, {});
 
-                     if( ! common::environment::variable::exists( env_rm2))
-                        common::environment::variable::set( env_rm2, {});
+                     if( ! common::environment::variable::exists( environment::rm2))
+                        common::environment::variable::set( environment::rm2, {});
                   }
 
                   ~Environment() 
                   {
-                     common::environment::variable::unset( env_rm1);
-                     common::environment::variable::unset( env_rm2);
+                     common::environment::variable::unset( environment::rm1);
+                     common::environment::variable::unset( environment::rm2);
                   }
                   
                   common::file::scoped::Path resource;
