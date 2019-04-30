@@ -10,6 +10,7 @@ The following packages need to be installed:
  * python
  * gcc (version 6)
  * g++ (version 6)
+ * cmake
  * puppet
  * gtest (included, see below)
 
