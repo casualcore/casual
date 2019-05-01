@@ -17,7 +17,7 @@
 #include "common/communication/instance.h"
 #include "common/flag.h"
 
-#include "domain/pending/send/message.h"
+#include "domain/pending/message/send.h"
 
 #include <iomanip>
 
@@ -45,7 +45,7 @@ namespace casual
                         {
                            log::line( log, "could not send message ", message.type(), " to process: ", process, " - action: eventually send");
 
-                           casual::domain::pending::send::message( process, message);
+                           casual::domain::pending::message::send( process, message);
                         }
                      }
                      catch( const exception::system::communication::Unavailable&)

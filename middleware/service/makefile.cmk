@@ -48,7 +48,7 @@ target = LinkExecutable( 'bin/casual-service-manager',
 	[
      logic_archive,
      'casual-common',
-     'casual-domain-pending-send',
+     'casual-domain-pending-message',
      'casual-serviceframework',
      'casual-configuration']
    )
@@ -67,7 +67,7 @@ target = LinkExecutable( 'bin/casual-service-forward',
      ] + forward_objs,
     [
       logic_archive,
-      'casual-domain-pending-send',
+      'casual-domain-pending-message',
       'casual-common'
      ])
 
@@ -117,7 +117,7 @@ LinkUnittest( 'unittest/bin/test-casual-service',
     [
      logic_archive,
      service_unittest,
-     'casual-domain-pending-send',
+     'casual-domain-pending-message',
      'casual-common', 
      'casual-serviceframework',
      'casual-configuration', 

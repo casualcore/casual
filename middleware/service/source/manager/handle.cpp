@@ -20,7 +20,7 @@
 
 #include "common/communication/instance.h"
 
-#include "domain/pending/send/message.h"
+#include "domain/pending/message/send.h"
 
 // std
 #include <vector>
@@ -101,7 +101,7 @@ namespace casual
                         try
                         {
                            if( ! communication::ipc::non::blocking::send( detail::get::device( device), message, ipc::device().error_handler()))
-                              casual::domain::pending::send::message( detail::get::process( device), std::forward< M>( message));
+                              casual::domain::pending::message::send( detail::get::process( device), std::forward< M>( message));
                         }
                         catch( const common::exception::system::communication::Unavailable&)
                         {
@@ -119,7 +119,7 @@ namespace casual
                         state.metric.clear();
 
                         if( ! common::message::pending::non::blocking::send( pending, manager::ipc::device().error_handler()))
-                           casual::domain::pending::send::message( pending);
+                           casual::domain::pending::message::send( pending);
                      }
                   } // metric
                } // <unnamed>

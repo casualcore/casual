@@ -363,7 +363,7 @@ namespace casual
 
             struct 
             {
-               //! process for casual-domain-pending-send
+               //! process for casual-domain-pending-message
                common::Process pending;
             } process;
            

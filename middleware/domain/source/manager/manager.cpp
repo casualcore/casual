@@ -9,7 +9,6 @@
 #include "domain/manager/handle.h"
 #include "domain/manager/configuration.h"
 #include "domain/common.h"
-#include "domain/pending/send/environment.h"
 
 #include "common/file.h"
 #include "common/environment.h"
@@ -39,8 +38,8 @@ namespace casual
                   common::environment::variable::name::ipc::domain::manager(),
                   common::process::handle());
 
-            // start casual-domain-pending-send
-            m_state.process.pending = handle::start::pending::send();
+            // start casual-domain-pending-message
+            m_state.process.pending = handle::start::pending::message();
 
             if( m_state.mandatory_prepare)
                handle::mandatory::boot::prepare( m_state);

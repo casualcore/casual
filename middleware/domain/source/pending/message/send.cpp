@@ -5,8 +5,8 @@
 //!
 
 
-#include "domain/pending/send/message.h"
-#include "domain/pending/send/environment.h"
+#include "domain/pending/message/send.h"
+#include "domain/pending/message/environment.h"
 #include "domain/common.h"
 
 #include "common/communication/instance.h"
@@ -19,29 +19,20 @@ namespace casual
    {
       namespace pending
       {
-         namespace send
+         namespace message
          {
+            
             namespace local
             {
                namespace
                {
                   auto& device() 
                   {
-                     static communication::instance::outbound::detail::Device device{ send::identification, send::environment}; 
+                     static communication::instance::outbound::detail::Device device{ environment::identification, environment::variable}; 
                      return device;  
                   }
 
-                  namespace optional
-                  {
-                     auto& device() 
-                     {
-                        static communication::instance::outbound::detail::optional::Device device{ send::identification, send::environment}; 
-                        return device;  
-                     }
-                  } // optional
-
-
-                  struct Request : common::message::basic_message< common::message::Type::eventually_send_message>
+                  struct Request : common::message::basic_message< common::message::Type::domain_pending_send_request>
                   {
                      Request( const common::message::pending::Message& message)
                         : message( message) {}
@@ -63,31 +54,15 @@ namespace casual
                } // <unnamed>
             } // local
 
-            namespace detail
+            void send( const common::message::pending::Message& message)
             {
-               std::ostream& operator << ( std::ostream& out, const Request& rhs)
-               {
-                  return out << "{ message: " << rhs.message
-                     << '}';
-               }
-
-               void message( const common::message::pending::Message& message)
-               {
-                  communication::ipc::blocking::send( local::optional::device(), local::Request{ message});
-               }
-            } // detail 
-
-            void message( const common::message::pending::Message& message)
-            {
-               Trace trace{ "eventually::send::message"};
+               Trace trace{ "domain::pending::send"};
 
                log::line( verbose::log, "message: ", message);
 
                local::send( local::Request{ message});
             }   
-
-         } // send
-         
+         } // message
       } // pending
    } // domain
 } // casual

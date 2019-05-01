@@ -45,9 +45,9 @@ manager_archive = LinkArchive( 'bin/casual-domain-manager',
 ])
 
 
-pending_library = LinkLibrary( 'bin/casual-domain-pending-send',
+pending_library = LinkLibrary( 'bin/casual-domain-pending-message',
     [
-        Compile( 'source/pending/send/message.cpp'),
+        Compile( 'source/pending/message/send.cpp'),
     ],
     [
         common_archive,
@@ -92,9 +92,10 @@ install_libs.append( target)
 # pending send
 
 
-pending_executable = LinkExecutable( 'bin/casual-domain-pending-send',
+pending_executable = LinkExecutable( 'bin/casual-domain-pending-message',
     [
-      Compile( 'source/pending/send/main.cpp'),
+      Compile( 'source/pending/message/main.cpp'),
+      Compile( 'source/pending/message/message.cpp'),
     ],
     [
      pending_library,
@@ -134,7 +135,7 @@ target_test_domain = LinkUnittest( 'bin/test-casual-domain',
     [ 
         Compile( 'unittest/source/manager/test_state.cpp'),
         Compile( 'unittest/source/manager/test_manager.cpp'),
-        Compile( 'unittest/source/pending/test_send.cpp'),
+        Compile( 'unittest/source/pending/test_message.cpp'),
     ],
     [
         manager_archive,

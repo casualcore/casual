@@ -8,7 +8,7 @@
 #include <gtest/gtest.h>
 #include "common/unittest.h"
 
-#include "domain/pending/send/message.h"
+#include "domain/pending/message/send.h"
 #include "domain/manager/unittest/process.h"
 
 
@@ -26,7 +26,7 @@ namespace casual
          namespace send
          {
 
-            TEST( eventually_send, spawn_terminate)
+            TEST( domain_pending_message, spawn_terminate)
             {
                common::unittest::Trace trace;
 
@@ -37,7 +37,7 @@ namespace casual
 
 
 
-            TEST( eventually_send, eventually_message__expect_sent)
+            TEST( domain_pending_message, eventually_message__expect_sent)
             {
                common::unittest::Trace trace;
 
@@ -48,7 +48,7 @@ namespace casual
                {
                   common::message::service::lookup::Request message;
                   message.requested = "foo";
-                  pending::send::message( common::process::handle(), message);
+                  pending::message::send( common::process::handle(), message);
                }
 
                {

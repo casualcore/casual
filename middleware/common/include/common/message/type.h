@@ -42,9 +42,6 @@ namespace casual
             process_lookup_request,
             process_lookup_reply,
 
-            eventually_send_message = 700,
-            eventually_multisend_message,
-
             DOMAIN_BASE = 1000,
             domain_scale_executable,
             domain_process_connect_request,
@@ -61,6 +58,9 @@ namespace casual
             domain_configuration_reply,
             domain_server_configuration_request,
             domain_server_configuration_reply,
+
+            domain_pending_send_connect = DOMAIN_BASE + 300,
+            domain_pending_send_request,
 
 
 

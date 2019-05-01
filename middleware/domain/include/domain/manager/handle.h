@@ -53,7 +53,7 @@ namespace casual
             {
                namespace pending
                {
-                  common::Process send();
+                  common::Process message();
                } // pending
             } // start
 

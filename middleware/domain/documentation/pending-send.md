@@ -1,4 +1,4 @@
-# casual-domain-pending-send
+# casual-domain-pending-message
 
 Responsible for eventually send messages to their destinations.
 

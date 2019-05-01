@@ -62,7 +62,7 @@ queue_group = LinkExecutable( 'bin/casual-queue-group',
     [
      group_archive,
      common,
-     'casual-domain-pending-send',
+     'casual-domain-pending-message',
      'casual-common',
      'sqlite3',
      ])

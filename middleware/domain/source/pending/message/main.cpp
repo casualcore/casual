@@ -5,8 +5,8 @@
 //!
 
 #include "domain/common.h"
-#include "domain/pending/send/environment.h"
-#include "domain/pending/send/message.h"
+#include "domain/pending/message/environment.h"
+#include "domain/pending/message/message.h"
 
 #include "common/communication/ipc.h"
 #include "common/communication/instance.h"
@@ -21,7 +21,7 @@ namespace casual
    {      
       namespace pending
       {
-         namespace send
+         namespace message
          {
             namespace local
             {
@@ -37,13 +37,13 @@ namespace casual
                         return std::chrono::duration_cast< common::platform::time::unit>( std::chrono::milliseconds{ 500});
                      }
 
-                     std::vector< send::detail::Request> messages;
+                     std::vector< message::Request> messages;
                   };
 
                   
                   namespace ipc
                   {
-                     bool send( send::detail::Request& request)
+                     bool send( message::Request& request)
                      {
                         return common::message::pending::non::blocking::send( request.message);
                      }
@@ -63,7 +63,7 @@ namespace casual
                      {
                         using Base::Base;
 
-                        void operator () ( send::detail::Request& message)
+                        void operator () ( message::Request& message)
                         {
                            Trace trace{ "eventually::send::local::handle::Request"};
 
@@ -115,10 +115,18 @@ namespace casual
 
                      State state;
 
-                     // Connect to domain
-                     communication::instance::connect( send::identification);
-
                      communication::ipc::Helper ipc{ handle::Timeout{ state}};
+
+                     // connect process
+                     {
+                        pending::message::Connect connect;
+                        connect.process = common::process::handle();
+                        ipc.blocking_send( communication::instance::outbound::domain::manager::device(), connect);
+                     }
+                     
+                     // Connect singleton to domain
+                     communication::instance::connect( message::environment::identification);
+
 
                      auto handler = ipc.handler(
                         common::message::handle::ping(),
@@ -150,7 +158,7 @@ namespace casual
                }
                return 0;
             }
-         } // send
+         } // message
          
       } // pending
 
@@ -160,6 +168,6 @@ namespace casual
 
 int main( int argc, const char **argv)
 {
-   return casual::domain::pending::send::main( argc, argv);
+   return casual::domain::pending::message::main( argc, argv);
 }
 
