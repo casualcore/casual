@@ -11,7 +11,7 @@
 
 
 #include "common/unittest.h"
-#include "common/mockup/file.h"
+#include "common/unittest/file.h"
 #include "serviceframework/log.h"
 
 namespace casual
@@ -35,7 +35,7 @@ namespace casual
          {
             common::unittest::Trace trace;
 
-            auto file = common::mockup::file::temporary::content( ".yaml", R"(
+            auto file = common::unittest::file::temporary::content( ".yaml", R"(
 
 http:
   services:
@@ -54,7 +54,7 @@ http:
          {
             common::unittest::Trace trace;
 
-            auto file = common::mockup::file::temporary::content( ".yaml", R"(
+            auto file = common::unittest::file::temporary::content( ".yaml", R"(
 http:
   default:
     service:
@@ -72,7 +72,7 @@ http:
          {
             common::unittest::Trace trace;
 
-            auto file = common::mockup::file::temporary::content( ".yaml", R"(
+            auto file = common::unittest::file::temporary::content( ".yaml", R"(
 
 http:
   default:
@@ -87,7 +87,7 @@ http:
          {
             common::unittest::Trace trace;
 
-            auto file = common::mockup::file::temporary::content( ".yaml", R"(
+            auto file = common::unittest::file::temporary::content( ".yaml", R"(
 
 http:
   default:
@@ -103,7 +103,7 @@ http:
          {
             common::unittest::Trace trace;
 
-            auto file = common::mockup::file::temporary::content( ".yaml", R"(
+            auto file = common::unittest::file::temporary::content( ".yaml", R"(
 http:
   services:
     - name: a
@@ -119,7 +119,7 @@ http:
          {
             common::unittest::Trace trace;
 
-            auto file = common::mockup::file::temporary::content( ".yaml", R"(
+            auto file = common::unittest::file::temporary::content( ".yaml", R"(
 http:
   services:
     - name: a
@@ -136,7 +136,7 @@ http:
 
          TEST( http_outbound_configuration, two_files__expect_aggregate)
          {
-            auto file_a = common::mockup::file::temporary::content( ".yaml", R"(
+            auto file_a = common::unittest::file::temporary::content( ".yaml", R"(
 
 http:
   services:
@@ -145,7 +145,7 @@ http:
 
 )");
 
-            auto file_b = common::mockup::file::temporary::content( ".yaml", R"(
+            auto file_b = common::unittest::file::temporary::content( ".yaml", R"(
 
 http:
   services:

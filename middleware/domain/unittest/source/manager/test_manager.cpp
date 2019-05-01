@@ -17,19 +17,17 @@
 
 #include "common/string.h"
 #include "common/environment.h"
-#include "common/mockup/file.h"
-#include "common/mockup/domain.h"
-#include "common/mockup/process.h"
 #include "common/service/lookup.h"
 #include "common/event/listen.h"
 #include "common/execute.h"
 
 #include "common/communication/instance.h"
 
-#include "serviceframework/service/protocol/call.h"
+//#include "serviceframework/service/protocol/call.h"
+#include "serviceframework/archive/binary.h"
 #include "serviceframework/log.h"
 
-#include "eventually/send/unittest/process.h"
+#include "domain/manager/unittest/process.h"
 
 #include <fstream>
 
@@ -45,74 +43,6 @@ namespace casual
          {
             namespace
             {
-               namespace configuration
-               {
-
-                  std::vector< file::scoped::Path> files( const std::vector< std::string>& config)
-                  {
-                     return algorithm::transform( config, []( const std::string& c){
-                        return file::scoped::Path{ mockup::file::temporary::content( ".yaml", c)};
-                     });
-                  }
-
-                  std::string names( const std::vector< file::scoped::Path>& files)
-                  {
-                     return string::join( files, " ");
-                  }
-
-               } // configuration
-
-               struct Manager
-               {
-                  Manager( const std::vector< std::string>& config)
-                   : files( configuration::files( config)),
-                     process{ "./bin/casual-domain-manager", {
-                        "--event-ipc", common::string::compose( common::communication::ipc::inbound::ipc()),
-                        "--configuration-files", configuration::names( files),
-                        "--bare", "true"
-                     }}
-                  {
-                     common::log::line( log, "singleton file: ", common::environment::domain::singleton::file());
-
-                     // Make sure we unregister the event subscription
-                     auto unsubscribe = common::execute::scope( [](){
-                        common::event::unsubscribe( common::process::handle(), { common::message::Type::event_domain_error});
-                     });
-
-                     // Wait for the domain to boot
-                     //process.handle( unittest::domain::manager::wait( common::communication::ipc::inbound::device()));
-                     unittest::domain::manager::wait( common::communication::ipc::inbound::device());
-
-                     
-                     // Set environment variable to make it easier for other processes to
-                     // reach domain-manager (should work any way...)
-                     common::environment::variable::process::set(
-                           common::environment::variable::name::ipc::domain::manager(),
-                           process.handle());
-
-                  }
-
-                  struct Setup_environment
-                  {
-                     Setup_environment()
-                     {
-                        common::environment::variable::set( "CASUAL_HOME", "../../test/home");
-
-                        common::environment::reset();
-
-                        if( file::exists( environment::domain::singleton::file()))
-                        {
-                           file::remove( environment::domain::singleton::file());
-                        }
-                     }
-                  } setup_environment;
-
-                  std::vector< file::scoped::Path> files;
-                  mockup::Process process;
-               };
-
-
-
                namespace configuration
                {
 
@@ -178,7 +108,7 @@ domain:
             common::unittest::Trace trace;
 
             EXPECT_NO_THROW( {
-               local::Manager manager{ { local::configuration::empty()}};
+               unittest::Process manager{ { local::configuration::empty()}};
             });
          }
 
@@ -187,7 +117,7 @@ domain:
             common::unittest::Trace trace;
 
             EXPECT_NO_THROW( {
-               local::Manager manager{ { local::configuration::echo()}};
+               unittest::Process manager{ { local::configuration::echo()}};
             });
          }
 
@@ -206,7 +136,7 @@ domain:
 )";
 
             EXPECT_NO_THROW( {
-               local::Manager manager{ { configuration}};
+               unittest::Process manager{ { configuration}};
             });
          }
 
@@ -225,7 +155,7 @@ domain:
 )";
 
             EXPECT_NO_THROW( {
-               local::Manager manager{ { configuration}};
+               unittest::Process manager{ { configuration}};
             });
          }
 
@@ -235,7 +165,7 @@ domain:
             common::unittest::Trace trace;
 
             EXPECT_NO_THROW( {
-               local::Manager manager{ { local::configuration::echo_restart()}};
+               unittest::Process manager{ { local::configuration::echo_restart()}};
             });
          }
 
@@ -245,7 +175,7 @@ domain:
             common::unittest::Trace trace;
 
             EXPECT_NO_THROW( {
-               local::Manager manager{ { local::configuration::sleep()}};
+               unittest::Process manager{ { local::configuration::sleep()}};
             });
          }
 
@@ -263,7 +193,7 @@ domain:
 )"};
 
             EXPECT_NO_THROW( {
-               local::Manager manager{ { configuration}};
+               unittest::Process manager{ { configuration}};
             });
          }
 
@@ -275,30 +205,59 @@ domain:
                namespace call
                {
 
+                  // we don't have access to service-manager (or other managers)
+                  // when we build domain-manager.
+                  // To be able to get state and such from domain-manager we call
+                  // natively and do our serialization "by hand".
+                  // 
+                  // not that much code, hence I think it's worth it to be able to 
+                  // test stuff locally within domain-manager.
+
+                  template< typename A>
+                  void serialize( A& archive) {}
+
+                  template< typename A, typename T, typename... Ts>
+                  void serialize( A& archive, T&& value, Ts&&... ts)
+                  {
+                     archive << CASUAL_MAKE_NVP( std::forward< T>( value));
+                     serialize( archive, std::forward< Ts>( ts)...);
+                  }
+                  template< typename R, typename... Ts> 
+                  R call( std::string service, Ts&&... arguments)
+                  {
+                     auto correlation = [&]()
+                     {
+                        common::message::service::call::callee::Request request;
+                        request.process = process::handle();
+                        request.service.name = std::move( service);
+                        request.buffer.type = common::buffer::type::binary();
+
+                        auto archive = serviceframework::archive::binary::writer( request.buffer.memory);
+                        serialize( archive, std::forward< Ts>( arguments)...);
+
+                        return communication::ipc::blocking::send( communication::instance::outbound::domain::manager::device(), request);
+                     }();
+
+
+                     common::message::service::call::Reply reply;
+                     communication::ipc::blocking::receive( communication::ipc::inbound::device(), reply, correlation);
+                     auto archive = serviceframework::archive::binary::reader( reply.buffer.memory);
+
+                     R result;
+                     archive >> CASUAL_MAKE_NVP( result);
+
+                     return result;
+                  }
+
                   admin::vo::State state()
                   {
-                     serviceframework::service::protocol::binary::Call call;
-                     auto reply = call( admin::service::name::state());
-
-                     admin::vo::State serviceReply;
-
-                     reply >> CASUAL_MAKE_NVP( serviceReply);
-
-                     return serviceReply;
+                     return call< admin::vo::State>( admin::service::name::state());
                   }
 
 
                   std::vector< admin::vo::scale::Instances> scale( const std::vector< admin::vo::scale::Instances>& instances)
                   {
-                     serviceframework::service::protocol::binary::Call call;
-
-                     call << CASUAL_MAKE_NVP( instances);
-                     auto reply = call( admin::service::name::scale::instances());
-
-                     std::vector< admin::vo::scale::Instances> result;
-                     reply >> CASUAL_MAKE_NVP( result);
-
-                     return result;
+                     return call< std::vector< admin::vo::scale::Instances>>( admin::service::name::scale::instances(), instances);
                   }
 
                   std::vector< admin::vo::scale::Instances> scale( const std::string& alias, common::platform::size::type instances)
@@ -349,9 +308,7 @@ domain:
          {
             common::unittest::Trace trace;
 
-            local::Manager manager{ { local::configuration::long_running_processes_5()}};
-
-            mockup::domain::service::Manager service;
+            unittest::Process manager{ { local::configuration::long_running_processes_5()}};
 
             auto state = local::call::state();
 
@@ -367,9 +324,7 @@ domain:
          {
             common::unittest::Trace trace;
 
-            local::Manager manager{ { local::configuration::long_running_processes_5()}};
-
-            mockup::domain::service::Manager service;
+            unittest::Process manager{ { local::configuration::long_running_processes_5()}};
 
             auto instances = local::call::scale( "sleep", 10);
             EXPECT_TRUE( instances.size() == 1);
@@ -385,9 +340,7 @@ domain:
          {
             common::unittest::Trace trace;
 
-            local::Manager manager{ { local::configuration::long_running_processes_5()}};
-
-            mockup::domain::service::Manager service;
+            unittest::Process manager{ { local::configuration::long_running_processes_5()}};
 
             auto instances = local::call::scale( "sleep", 0);
             EXPECT_TRUE( instances.size() == 1);
@@ -415,9 +368,7 @@ domain:
 
 )"};
 
-            local::Manager manager{ { configuration}};
-
-            mockup::domain::service::Manager service;
+            unittest::Process manager{ { configuration}};
 
             auto state = local::call::state();
 
@@ -428,41 +379,30 @@ domain:
 
          }
 
-         TEST( casual_domain_manager, scale_in___expect__prepare_shutdown_to_broker)
+         TEST( casual_domain_manager, scale_in___expect__prepare_shutdown_to_service_manager)
          {
             common::unittest::Trace trace;
 
-            const std::string configuration{ R"(
+            constexpr auto configuration = R"(
 domain:
   name: simple-server
   servers:
     - path: ./bin/test-simple-server
       instances: 2
 
-)"};
+)";
 
-            local::Manager manager{ { configuration}};
+            unittest::Process manager{ { configuration}};
 
-            //
-            // We add/override handler for prepare shutdown and forward to our
-            // local ipc queue
-            //
-            auto local_queue = communication::ipc::inbound::ipc();
-
-            mockup::domain::service::Manager service{
-               [local_queue]( message::domain::process::prepare::shutdown::Request& m)
-               {
-                  Trace trace{ "local forward"};
-                  mockup::ipc::eventually::send( local_queue, m);
-               }
-            };
+            // pretend that we're the service-manager
+            // ...since we don't have access to service-manager when we build
+            // domain-manager
+            communication::instance::connect( communication::instance::identity::service::manager);
 
             auto instances = local::call::scale( "test-simple-server", 1);
             ASSERT_TRUE( instances.size() == 1) << "instances: " << CASUAL_MAKE_NVP( instances);
 
-            //
             // Consume the request and send reply.
-            //
             {
                message::domain::process::prepare::shutdown::Request request;
                EXPECT_TRUE( communication::ipc::blocking::receive( communication::ipc::inbound::device(), request));
@@ -471,6 +411,16 @@ domain:
                auto reply = message::reverse::type( request);
                reply.processes = std::move( request.processes);
                communication::ipc::blocking::send( request.process.ipc, reply);
+            }
+
+            // make sure we 'un-connect' our self as service-manager before shutdown
+            // otherwise domain-manager will wait for approval from service-manager before
+            // each shutdown.
+            {
+               message::event::process::Exit event;
+               event.state.pid = common::process::id();
+               event.state.reason = common::process::lifetime::Exit::Reason::exited;
+               communication::ipc::blocking::send( communication::instance::outbound::domain::manager::device(), event);
             }
          }
 
@@ -490,9 +440,8 @@ domain:
 
 )"};
 
-            local::Manager manager{ { configuration}};
+            unittest::Process manager{ { configuration}};
 
-            mockup::ipc::Collector server;
             // We need to register this process to the manager
             communication::instance::connect( process::handle());
 
@@ -627,9 +576,7 @@ domain:
       memberships: [groupD]
 )"};
 
-            local::Manager manager{ { configuration}};
-
-            mockup::domain::service::Manager service;
+            unittest::Process manager{ { configuration}};
 
             auto state = local::call::state();
             state.executables = algorithm::trim( state.executables, algorithm::remove_if( state.executables, local::predicate::Manager{}));

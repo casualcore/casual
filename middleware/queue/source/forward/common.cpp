@@ -19,9 +19,6 @@
 
 #include "common/communication/instance.h"
 
-
-#include "tx.h"
-
 namespace casual
 {
    namespace queue
@@ -38,30 +35,23 @@ namespace casual
                   {
                      Trace trace{ "queue::forward::local::perform"};
 
-                     if( tx_begin() != common::cast::underlying( common::code::tx::ok))
-                     {
-                        return false;
-                     }
+                     common::transaction::context().begin();
 
-                     //
                      // Rollback unless we commit
-                     //
                      auto rollback = common::execute::scope( [](){
-                           tx_rollback();
+                        common::transaction::context().rollback();
                      });
 
                      task.dispatch( blocking::available::dequeue( task.queue));
 
-                     //
                      // Check what we should do with the transaction
-                     //
                      {
                         TXINFO txinfo;
-                        tx_info( &txinfo);
+                        common::transaction::context().info( &txinfo);
 
                         if( txinfo.transaction_state == TX_ACTIVE)
                         {
-                           tx_commit();
+                           common::transaction::context().commit();
                            rollback.release();
                         }
                      }
@@ -86,11 +76,22 @@ namespace casual
          Dispatch::Dispatch( std::vector< forward::Task> tasks)
            : m_tasks( std::move( tasks))
          {
+            Trace trace{ "queue::forward::Dispatch::Dispatch"};
+
             if( m_tasks.size() != 1)
-            {
                throw common::exception::system::invalid::Argument{ "only one task is allowed"};
+
+            // wait for queue-manager to be up and running
+            {
+               auto manager = common::communication::instance::fetch::handle( 
+                  common::communication::instance::identity::queue::manager,
+                  common::communication::instance::fetch::Directive::wait);
+
+               common::log::line( verbose::log, "queue-manager is running: ", manager);
             }
 
+         
+            // connect to domain
             common::communication::instance::connect();
          }
 

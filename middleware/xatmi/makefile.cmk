@@ -55,12 +55,10 @@ install_include.append( 'include/xa.h')
 LinkUnittest( 'bin/test-casual-xatmi',
     [
        Compile( 'unittest/source/test_buffer.cpp'),
-       Compile( 'unittest/source/test_xatmi.cpp'),
        Compile( 'unittest/source/test_tx.cpp'),
-       Compile( 'unittest/source/xatmi/test_conversation.cpp'),
        
     ],
-    [ lib_xatmi, 'casual-common', 'casual-mockup', 'casual-mockup-unittest-environment', 'casual-unittest'])
+    [ lib_xatmi, 'casual-common', 'casual-unittest'])
 
 #
 # Install

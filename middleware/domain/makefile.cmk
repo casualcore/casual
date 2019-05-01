@@ -10,7 +10,6 @@ IncludePaths([
    '../configuration/include',
    '../xatmi/include',
    '../serviceframework/include',
-   '../eventually/include',
    '$(CASUAL_OPTIONAL_INCLUDE_PATHS)',
    ])
 
@@ -19,15 +18,19 @@ LibraryPaths([
     'bin',
     '../common/bin',
     '../configuration/bin',
-    '../xatmi/bin',
     '../serviceframework/bin',
-    '../eventually/bin',
+    '../xatmi/bin',
     '$(CASUAL_OPTIONAL_LIBRARY_PATHS)',
     ])
 
 
 install_bins = []
 install_libs = []
+
+common_archive = LinkArchive( 'bin/casual-domain-common', 
+ [
+    Compile( 'source/common.cpp'),
+])
 
 manager_archive = LinkArchive( 'bin/casual-domain-manager', 
  [
@@ -38,9 +41,22 @@ manager_archive = LinkArchive( 'bin/casual-domain-manager',
     Compile( 'source/manager/task.cpp'),
     Compile( 'source/manager/configuration.cpp'),
     Compile( 'source/manager/persistent.cpp'),
-    Compile( 'source/common.cpp'),
     Compile( 'source/transform.cpp'),
 ])
+
+
+pending_library = LinkLibrary( 'bin/casual-domain-pending-message',
+    [
+        Compile( 'source/pending/message/send.cpp'),
+    ],
+    [
+        common_archive,
+        'casual-common',
+        'casual-serviceframework'
+     ]
+)
+install_libs.append( pending_library)
+
 
 target_domain_manager = LinkExecutable( 'bin/casual-domain-manager',
     [
@@ -48,9 +64,9 @@ target_domain_manager = LinkExecutable( 'bin/casual-domain-manager',
     ],
     [
      manager_archive,
+     pending_library,
+     common_archive,
      'casual-common',
-     'casual-eventually-send',
-     'casual-xatmi',
      'casual-configuration',
      'casual-serviceframework'
     ] 
@@ -65,13 +81,45 @@ target = LinkLibrary( 'bin/casual-domain-admin-cli',
      ],
     [
      manager_archive,
+     common_archive,
      'casual-common',
-     'casual-xatmi',
      'casual-serviceframework'
      ]
 )
 
 install_libs.append( target)
+
+# pending send
+
+
+pending_executable = LinkExecutable( 'bin/casual-domain-pending-message',
+    [
+      Compile( 'source/pending/message/main.cpp'),
+      Compile( 'source/pending/message/message.cpp'),
+    ],
+    [
+     pending_library,
+     common_archive,
+     'casual-common',
+     'casual-configuration',
+     'casual-serviceframework'
+    ] 
+)
+
+install_bins.append( pending_executable)
+
+
+
+#unittest lib for other modules to use (in unittest)
+domain_unittest_library = LinkLibrary( 'bin/casual-domain-unittest',
+    [
+        Compile( 'source/manager/unittest/process.cpp'),
+    ],
+    [
+        'casual-common',
+        'casual-unittest',
+    ]
+)
 
 
 target_simple_server = LinkExecutable( 'bin/test-simple-server',
@@ -86,32 +134,32 @@ target_simple_server = LinkExecutable( 'bin/test-simple-server',
 target_test_domain = LinkUnittest( 'bin/test-casual-domain', 
     [ 
         Compile( 'unittest/source/manager/test_state.cpp'),
-        Compile( 'unittest/source/manager/test_manager.cpp'),        
+        Compile( 'unittest/source/manager/test_manager.cpp'),
+        Compile( 'unittest/source/pending/test_message.cpp'),
     ],
     [
-      manager_archive,
-     'casual-common',
-     'casual-mockup',
-     'casual-eventually-unittest',
-     'casual-configuration',
-     'casual-mockup-unittest-environment',
-     'casual-serviceframework',
-     'casual-xatmi',
-     'casual-unittest',
-     'casual-configuration-example',
+        manager_archive,
+        domain_unittest_library,
+        pending_library,
+        'casual-common',
+        'casual-configuration',
+        'casual-serviceframework',
+        'casual-unittest',
+        'casual-configuration-example',
     ]) 
 
-#
 # We use domain-manager and simple-server from the unittests
-#
-Dependencies( target_test_domain, [ target_domain_manager, target_simple_server])
+Dependencies( target_test_domain, [ target_domain_manager, target_simple_server, pending_executable])
 
 
 message_lib = LinkLibrary( 'bin/casual-delay-message', 
     [
       Compile( 'source/delay/message.cpp'),
     ],
-    [ 'casual-common']
+    [ 
+        common_archive,
+        'casual-common'
+    ]
     )
 
 delay_objects = [
@@ -126,6 +174,7 @@ target_delay_message = LinkExecutable( 'bin/casual-delay-message',
     [
       message_lib,
       manager_archive,
+      common_archive,
      'casual-common'
     ])
 
@@ -136,9 +185,9 @@ target_test_delay = LinkUnittest( 'bin/test-casual-domain-delay',
     ],
     [
      message_lib,
+     common_archive,
+     domain_unittest_library,
      'casual-common',
-     'casual-mockup',
-     'casual-mockup-unittest-environment',
      'casual-unittest',
     ])        
 
@@ -146,7 +195,7 @@ target_test_delay = LinkUnittest( 'bin/test-casual-domain-delay',
 # We execute 'target_domain_delay' from test-casual-domain-delay, so
 # we need to meke sure target_domain_delay is built before
 #
-Dependencies( target_test_delay, [ target_delay_message ]);
+Dependencies( target_test_delay, [ target_delay_message ])
 
 
 

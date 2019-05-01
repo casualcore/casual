@@ -16,8 +16,7 @@
 
 #include "configuration/example/domain.h"
 
-#include "common/mockup/file.h"
-
+#include "common/unittest/file.h"
 
 #include "serviceframework/log.h"
 
@@ -34,7 +33,7 @@ namespace casual
             {
                State configure( const std::string configuration)
                {
-                  auto file = common::mockup::file::temporary::content( ".yaml", configuration);
+                  auto file = common::unittest::file::temporary::content( ".yaml", configuration);
 
                   Settings settings;
                   settings.configurationfiles.push_back( file);

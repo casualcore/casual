@@ -39,7 +39,12 @@ lib_serviceframework = LinkLibrary( 'bin/casual-serviceframework',
         Compile( 'source/log.cpp'),
         
     ],
-    ['casual-common', 'casual-xatmi', 'yaml-cpp', 'pugixml'])
+    [
+        'casual-common', 
+        'casual-xatmi', 
+        'yaml-cpp', 
+        'pugixml'
+    ])
 
 install_lib.append( lib_serviceframework)
 
@@ -77,7 +82,13 @@ LinkUnittest( 'bin/test-casual-serviceframework',
         Compile( 'unittest/source/archive/test_line.cpp'),
         Compile( 'unittest/source/archive/test_create.cpp'),
     ],
-	[ lib_serviceframework, 'casual-xatmi', 'casual-common', 'casual-mockup', 'casual-unittest', 'yaml-cpp', 'pugixml'])
+	[ 
+        lib_serviceframework, 
+        'casual-xatmi', 
+        'casual-common', 
+        'casual-unittest', 
+        'yaml-cpp', 
+        'pugixml'])
 
 #
 # Install

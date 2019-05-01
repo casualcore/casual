@@ -302,9 +302,7 @@ namespace casual
 
                namespace connect
                {
-                  //!
                   //! Used to notify the TM that a resource proxy is up and running, or not...
-                  //!
                   struct Reply : basic_message< Type::transaction_resource_connect_reply>
                   {
                      common::process::Handle process;
@@ -348,8 +346,6 @@ namespace casual
 
                } // rollback
 
-
-               //!
                //! These request and replies are used between TM and resources when
                //! the context is of "external proxies", that is, when some other part
                //! act as a resource proxy. This semantic is used when:
@@ -359,7 +355,6 @@ namespace casual
                //! The resource is doing exactly the same thing but the context is
                //! preserved, so that when the TM is invoked by the reply it knows
                //! the context, and can act accordingly
-               //!
                namespace external
                {
 

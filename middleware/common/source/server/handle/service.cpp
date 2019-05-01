@@ -33,13 +33,14 @@ namespace casual
                      return result;
                   }
 
-                  message::conversation::caller::Send reply( const message::conversation::connect::callee::Request& message)
+                  message::conversation::callee::Send reply( const message::conversation::connect::callee::Request& message)
                   {
-                     message::conversation::caller::Send result{ buffer::Payload{ nullptr}};
+                     message::conversation::callee::Send result;
 
                      result.correlation = message.correlation;
                      result.buffer = buffer::Payload{ nullptr};
-                     //result.error = TPESVCERR;
+                     result.code.result = code::xatmi::service_error;
+                     result.route = message.recording;
 
                      return result;
                   }
@@ -103,7 +104,7 @@ namespace casual
                   }
 
 
-                  void reply( common::service::invoke::Result&& result, message::conversation::caller::Send& reply)
+                  void reply( common::service::invoke::Result&& result, message::conversation::callee::Send& reply)
                   {
                      Trace trace{ "server::handle::service::complement::reply"};
 

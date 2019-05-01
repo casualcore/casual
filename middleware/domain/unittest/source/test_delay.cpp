@@ -8,13 +8,11 @@
 #include <gtest/gtest.h>
 #include "common/unittest.h"
 
+#include "domain/manager/unittest/process.h"
+
 #include "domain/delay/message.h"
 
 #include "common/message/domain.h"
-
-#include "common/mockup/process.h"
-#include "common/mockup/domain.h"
-
 #include "common/communication/ipc.h"
 
 namespace casual
@@ -30,18 +28,16 @@ namespace casual
             {
                struct Domain
                {
-                  common::mockup::domain::Manager manager;
+                  domain::manager::unittest::Process manager{ { Domain::configuration}};
+                  
+                  static constexpr auto configuration = R"(
+domain:
+   name: delay-domain
+
+   servers: 
+      - path: "./bin/casual-delay-message"
+)";
                };
-
-               namespace process
-               {
-                  struct Delay : common::mockup::Process
-                  {
-                     Delay() : common::mockup::Process{ "./bin/casual-delay-message", {}} {}
-
-                  };
-
-               } // process
 
             } // <unnamed>
          } // local
@@ -53,7 +49,6 @@ namespace casual
 
             EXPECT_NO_THROW( {
                local::Domain domain;
-               local::process::Delay delay;
             });
          }
 
@@ -63,7 +58,6 @@ namespace casual
             common::unittest::Trace trace;
 
             local::Domain domain;
-            local::process::Delay delay;
 
             common::communication::ipc::Helper ipc;
 
@@ -93,7 +87,6 @@ namespace casual
             common::unittest::Trace trace;
 
             local::Domain domain;
-            local::process::Delay delay;
 
             common::communication::ipc::Helper ipc;
 
@@ -118,9 +111,6 @@ namespace casual
             }
 
          }
-
-
-
 
       } // delay
    } // domain

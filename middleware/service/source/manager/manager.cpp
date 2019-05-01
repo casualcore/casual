@@ -28,8 +28,6 @@
 #include "serviceframework/log.h"
 
 
-#include <xatmi.h>
-
 // std
 #include <fstream>
 #include <algorithm>

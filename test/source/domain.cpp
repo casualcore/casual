@@ -5,14 +5,10 @@
 //!
 
 #include "casual/test/domain.h"
-
 #include "common/environment.h"
-#include "common/communication/instance.h"
-#include "common/mockup/log.h"
 
 namespace casual
 {
-   using namespace common;
    namespace test
    {
       namespace domain
@@ -21,66 +17,24 @@ namespace casual
          {
             namespace
             {
-               std::vector< file::scoped::Path> files( file::scoped::Path&& file)
+               auto environment()
                {
-                  std::vector< file::scoped::Path> result;
-                  result.push_back( std::move( file));
-                  return result;
-               }
-
-               void environment( const std::string& home) 
-               {
-                  // make sure we use our newly built stuff in the repo
-                  environment::variable::set( "CASUAL_HOME", "./home");
-                  environment::variable::set( "CASUAL_DOMAIN_HOME", home);
-
-                  // create directores for nginx...
-                  common::directory::create( home + "/logs");
-
-                  //! resets the environment
-                  common::environment::reset();
+                  return []( const std::string& home)
+                  {
+                     // create directores for nginx...
+                     common::directory::create( home + "/logs");
+                  };
                }
                
             } // <unnamed>
          } // local
+
+         Manager::Manager( const std::vector< std::string>& configuration)
+            : casual::domain::manager::unittest::Process{ configuration, local::environment()}
+         {
+
+         }
          
-         Manager::Manager( std::vector< file::scoped::Path> files)
-            : m_files{ std::move( files)},
-               m_process{ "./home/bin/casual-domain-manager", {
-               "--event-ipc", string::compose( communication::ipc::inbound::ipc()),
-               "--configuration-files", string::join( m_files, " "),
-               "--persist", "false"
-            }}
-         {
-            // Wait for the domain to boot
-            m_process.handle( unittest::domain::manager::wait( communication::ipc::inbound::device()));
-
-            log::line( mockup::log, "domain-manager is running with home: ", m_preconstruct.home);
-         }
-
-         Manager::Manager( file::scoped::Path file)
-            : Manager( local::files( std::move( file)))
-         {
-         }
-
-         Manager::~Manager()
-         {
-
-         }
-
-         void Manager::activate()
-         {
-            log::line( mockup::log, "activates domain: ", m_process.handle(), " - with home: ", m_preconstruct.home);
-
-            local::environment( m_preconstruct.home);
-         }
-
-         Manager::Preconstruct::Preconstruct() 
-         {
-            local::environment( home);
-
-            
-         }
 
       } // domain
    } // test

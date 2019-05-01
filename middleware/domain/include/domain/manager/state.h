@@ -361,8 +361,12 @@ namespace casual
             //! executable id of this domain manager
             state::Server::id_type manager_id;
 
-            //! handle to casual-eventually-send
-            common::process::Handle eventually;
+            struct 
+            {
+               //! process for casual-domain-pending-message
+               common::Process pending;
+            } process;
+           
 
             //! Group id:s
             struct

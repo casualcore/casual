@@ -54,11 +54,9 @@ namespace casual
 
          void start( Settings settings)
          {
-
             Dispatch dispatch( tasks( std::move( settings)));
 
             dispatch.execute();
-
          }
 
          int main( int argc, char **argv)

@@ -171,12 +171,10 @@ namespace casual
             {
                namespace detail
                {
-                  //
                   // Some stuff to deduce what the archive implemantations are capable of.
                   //
                   // Hence, not force a specific semantics and give opportunities for better
                   // performance
-                  //
 
                   template< typename I, typename O>
                   using has_output_ctor = decltype( I( std::declval< O&>()));
@@ -259,9 +257,7 @@ namespace casual
                   template< typename I, typename D, typename Enable = void>
                   struct basic_creator;
 
-                  //!
                   //! uses the archive implementation constructor for the destination, if possible.
-                  //!
                   template< typename I, typename D>
                   struct basic_creator< D, I, 
                      std::enable_if_t< common::traits::detect::is_detected< has_output_ctor, I, D>::value>>
@@ -272,9 +268,7 @@ namespace casual
                      }
                   };
 
-                  //!
                   //! uses the archive implementation flush for the destination
-                  //!
                   template< typename I, typename D>
                   struct basic_creator< D, I, 
                      std::enable_if_t< ! common::traits::detect::is_detected< has_output_ctor, I, D>::value>>

@@ -140,9 +140,9 @@ namespace casual
                         }
                      }
 
-                     void diconnect( const State::descriptor_type& descriptor)
+                     void disconnect( const State::descriptor_type& descriptor)
                      {
-                        Trace trace{ "common::service::conversation::local::validate::diconnect"};
+                        Trace trace{ "common::service::conversation::local::validate::disconnect"};
 
                         log::line( log::debug, "descriptor: ", descriptor);
 
@@ -368,7 +368,7 @@ namespace casual
 
                auto& descriptor = m_state.descriptors.get( handle);
 
-               local::validate::diconnect( descriptor);
+               local::validate::disconnect( descriptor);
 
                auto unreserve = common::execute::scope( [&](){ m_state.descriptors.unreserve( descriptor.descriptor);});
 

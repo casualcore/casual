@@ -10,8 +10,6 @@
 #include "service/transform.h"
 #include "service/common.h"
 
-#include "eventually/send/message.h"
-
 #include "common/server/lifetime.h"
 #include "common/environment.h"
 #include "common/algorithm.h"
@@ -21,6 +19,8 @@
 #include "common/event/listen.h"
 
 #include "common/communication/instance.h"
+
+#include "domain/pending/message/send.h"
 
 // std
 #include <vector>
@@ -101,7 +101,7 @@ namespace casual
                         try
                         {
                            if( ! communication::ipc::non::blocking::send( detail::get::device( device), message, ipc::device().error_handler()))
-                              casual::eventually::send::message( detail::get::process( device), std::forward< M>( message));
+                              casual::domain::pending::message::send( detail::get::process( device), std::forward< M>( message));
                         }
                         catch( const common::exception::system::communication::Unavailable&)
                         {
@@ -119,7 +119,7 @@ namespace casual
                         state.metric.clear();
 
                         if( ! common::message::pending::non::blocking::send( pending, manager::ipc::device().error_handler()))
-                           casual::eventually::send::message( pending);
+                           casual::domain::pending::message::send( pending);
                      }
                   } // metric
                } // <unnamed>

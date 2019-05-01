@@ -38,8 +38,8 @@ namespace casual
                   common::environment::variable::name::ipc::domain::manager(),
                   common::process::handle());
 
-            // start casual-eventually-send
-            m_state.eventually.pid = common::process::spawn( "${CASUAL_HOME}/bin/casual-eventually-send", {});
+            // start casual-domain-pending-message
+            m_state.process.pending = handle::start::pending::message();
 
             if( m_state.mandatory_prepare)
                handle::mandatory::boot::prepare( m_state);
@@ -49,14 +49,6 @@ namespace casual
 
          Manager::~Manager()
          {
-            try 
-            {
-               process::terminate( m_state.eventually);
-            }
-            catch( ...)
-            {
-               common::exception::handle();
-            }
          }
 
 

@@ -130,6 +130,7 @@ namespace casual
 
                common::message::domain::process::connect::Request request;
                request.identification = identity;
+               request.correlation = identity;
                request.process = process;
 
                local::connect( request);

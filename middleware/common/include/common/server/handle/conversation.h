@@ -22,7 +22,7 @@ namespace casual
             {
                using message_type = message::conversation::connect::callee::Request;
 
-               void operator () ( message_type& messaage);
+               void operator () ( message_type& message);
             };
 
          } // handle

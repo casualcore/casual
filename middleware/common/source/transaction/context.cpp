@@ -551,18 +551,14 @@ namespace casual
             if( transaction.trid)
             {
                if( m_control != Control::stacked)
-               {
                   throw exception::tx::Protocol{ string::compose( "begin - already in transaction mode - ", transaction)};
-               }
 
                // Tell the RM:s to suspend
                resources_end( transaction, flag::xa::Flag::suspend);
 
             }
             else if( ! transaction.dynamic().empty())
-            {
                throw exception::tx::Outside{ "begin - dynamic resources not done with work outside global transaction"};
-            }
 
             auto trans = local::start::transaction( platform::time::clock::type::now(), m_timeout);
 
@@ -613,24 +609,16 @@ namespace casual
             const auto process = process::handle();
 
             if( ! transaction.trid)
-            {
                throw exception::tx::no::Begin{ "commit - no ongoing transaction"};
-            }
 
             if( transaction.trid.owner() != process)
-            {
                throw exception::tx::Protocol{ string::compose( "commit - not owner of transaction: ", transaction)};
-            }
 
             if( transaction.state != Transaction::State::active)
-            {
                throw exception::tx::Protocol{ string::compose( "commit - transaction is in rollback only mode - ", transaction)};
-            }
 
             if( transaction.pending())
-            {
                throw exception::tx::Protocol{ string::compose(  "commit - pending replies associated with transaction: ", transaction)};
-            }
 
             // end resources
             resources_end( transaction, flag::xa::Flag::success);
@@ -723,31 +711,46 @@ namespace casual
          {
             Trace trace{ "transaction::Context::rollback"};
 
+            log::line( log::category::transaction, "transaction: ", transaction);
+
             if( ! transaction)
-            {
                throw exception::tx::Protocol{ "no ongoing transaction"};
-            }
 
             const auto process = process::handle();
 
             if( transaction.trid.owner() != process)
-            {
                throw exception::tx::Protocol{ string::compose( "current process not owner of transaction: ", transaction.trid)};
-            }
 
             // end resources
             resources_end( transaction, flag::xa::Flag::success);
 
-            message::transaction::rollback::Request request;
-            request.trid = transaction.trid;
-            request.process = process;
-            algorithm::append( transaction.involved(), request.involved);
+            if( transaction.local())
+            {
+               log::line( log::category::transaction, "rollback is local");
 
-            auto reply = communication::ipc::call( communication::instance::outbound::transaction::manager::device(), request);
+               auto involved = transaction.involved();
+               algorithm::transform( m_resources.fixed, involved, []( auto& r){ return r.id();});
 
-            log::line( log::category::transaction, "rollback reply tx: ", reply.state);
+               algorithm::for_each( algorithm::unique( algorithm::sort( involved)), [&]( auto id)
+               {
+                  resource_rollback( id, transaction);
+               });
+            }
+            else 
+            {
+               log::line( log::category::transaction, "rollback is distributed");
 
-            exception::tx::handle( reply.state, "rollback");
+               message::transaction::rollback::Request request;
+               request.trid = transaction.trid;
+               request.process = process;
+               algorithm::append( transaction.involved(), request.involved);
+
+               auto reply = communication::ipc::call( communication::instance::outbound::transaction::manager::device(), request);
+
+               log::line( log::category::transaction, "rollback reply tx: ", reply.state);
+
+               exception::tx::handle( reply.state, "rollback");
+            }
          }
 
          void Context::rollback()
@@ -989,9 +992,24 @@ namespace casual
                exception::tx::handle( code, "resource commit");
             }
             else
-            {
                throw exception::tx::Error{ string::compose( "resource id not known - rm: ", rm, " transaction: ", transaction)};
+         }
+
+         void Context::resource_rollback( strong::resource::id rm, const Transaction& transaction)
+         {
+            Trace trace{ "transaction::Context::resource_rollback"};
+            
+            log::line( log::category::transaction, "transaction: ", transaction, " - rm: ", rm);
+
+            auto found = algorithm::find( m_resources.all, rm);
+
+            if( found)
+            {
+               auto code = common::code::convert::to::tx( found->rollback( transaction.trid, flag::xa::Flag::no_flags));
+               exception::tx::handle( code, "resource rollback");
             }
+            else
+               throw exception::tx::Error{ string::compose( "resource id not known - rm: ", rm, " transaction: ", transaction)};
          }
 
          void Context::pop_transaction()

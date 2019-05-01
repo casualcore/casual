@@ -10,6 +10,8 @@
 
 #include "common/service/conversation/context.h"
 
+#include "common/communication/ipc.h"
+
 #include "common/execute.h"
 
 namespace casual
@@ -23,7 +25,7 @@ namespace casual
 
             void Conversation::operator () ( message_type& message)
             {
-               Trace trace{ "server::Conversation::operator()"};
+               Trace trace{ "server::handle::Conversation::operator()"};
 
                log::line( verbose::log, "message: ", message);
 
@@ -35,7 +37,11 @@ namespace casual
 
                   auto send_reply = execute::scope( [&](){
                      reply.process = process::handle();
+                     reply.recording = message.recording;
                      reply.route = message.recording;
+
+                     auto node = reply.route.next();
+                     communication::ipc::blocking::send( node.address, reply);
                   });
 
                   // Prepare the descriptor

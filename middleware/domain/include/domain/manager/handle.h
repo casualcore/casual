@@ -28,6 +28,8 @@ namespace casual
          } // ipc
 
 
+
+
          namespace handle
          {
 
@@ -46,6 +48,16 @@ namespace casual
 
             void boot( State& state);
             void shutdown( State& state);
+
+            namespace start
+            {
+               namespace pending
+               {
+                  common::Process message();
+               } // pending
+            } // start
+
+            
 
 
 

@@ -49,7 +49,7 @@ namespace casual
 
          bool empty( const Uuid& uuid)
          {
-            return  uuid == uuid::empty();
+            return uuid == uuid::empty();
          }
 
       } // uuid

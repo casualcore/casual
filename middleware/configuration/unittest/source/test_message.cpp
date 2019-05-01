@@ -9,7 +9,9 @@
 #include "common/unittest.h"
 
 #include "common/message/domain.h"
-#include "common/mockup/ipc.h"
+#include "common/communication/ipc.h"
+
+#include "common/unittest/eventually/send.h"
 
 
 namespace casual
@@ -25,7 +27,7 @@ namespace casual
 
          {
             configuration::Reply reply;
-            common::mockup::ipc::eventually::send( common::communication::ipc::inbound::ipc(), reply);
+            common::unittest::eventually::send( common::communication::ipc::inbound::ipc(), reply);
          }
 
          {
@@ -44,7 +46,7 @@ namespace casual
          {
             configuration::Reply reply;
             reply.domain.name = "test-domain";
-            common::mockup::ipc::eventually::send( common::communication::ipc::inbound::ipc(), reply);
+            common::unittest::eventually::send( common::communication::ipc::inbound::ipc(), reply);
          }
 
          {

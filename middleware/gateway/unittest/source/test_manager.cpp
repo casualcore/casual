@@ -11,9 +11,6 @@
 #include "gateway/manager/admin/vo.h"
 #include "gateway/manager/admin/server.h"
 
-#include "common/mockup/file.h"
-#include "common/mockup/process.h"
-#include "common/mockup/domain.h"
 
 #include "common/environment.h"
 #include "common/service/lookup.h"
@@ -25,6 +22,9 @@
 #include "serviceframework/service/protocol/call.h"
 #include "serviceframework/log.h"
 
+#include "domain/manager/unittest/process.h"
+#include "service/unittest/advertise.h"
+
 namespace casual
 {
    using namespace common;
@@ -33,85 +33,44 @@ namespace casual
 
       namespace local
       {
-         using config_domain = common::message::domain::configuration::Domain;
-
          namespace
          {
-            struct Gateway
-            {
-               Gateway()
-                : process{ "./bin/casual-gateway-manager"}
-               {
-                  // Make sure we're up'n running before we let unittest-stuff interact with us...
-                  communication::instance::fetch::handle( communication::instance::identity::gateway::manager);
-               }
-
-               struct set_environment_t
-               {
-                  set_environment_t()
-                  {
-                     environment::variable::set( environment::variable::name::home(), "./" );
-                  }
-               } set_environment;
-
-               mockup::Process process;
-            };
-
             struct Domain
             {
-               Domain( config_domain configuration) : manager{ std::move( configuration)}
+               
+               Domain( std::string configuration) : domain{ { std::move( configuration)}} 
                {
-
                }
 
-               mockup::domain::Manager manager;
-               mockup::domain::service::Manager service;
-               mockup::domain::transaction::Manager tm;
+               Domain() : Domain( Domain::configuration) {}
 
-               Gateway gateway;
+               casual::domain::manager::unittest::Process domain;
+
+               static constexpr auto configuration = R"(
+domain: 
+   name: gateway-domain
+
+   groups: 
+      - name: base
+      - name: gateway
+        dependencies: [ base]
+   
+   servers:
+      - path: "${CASUAL_HOME}/bin/casual-service-manager"
+        memberships: [ base]
+      - path: "${CASUAL_HOME}/bin/casual-transaction-manager"
+        memberships: [ base]
+      - path: "./bin/casual-gateway-manager"
+        memberships: [ gateway]
+   gateway:
+      listeners: 
+         - address: 127.0.0.1:6666
+      connections:
+         - address: 127.0.0.1:6666
+)";
+
             };
 
-            namespace domain
-            {
-               //! exposes service domain1
-               struct Service
-               {
-                  Service( config_domain configuration)
-                     : manager{ std::move( configuration)},
-                       domain1{ mockup::domain::echo::create::service( "remote1")} {}
-
-                  mockup::domain::Manager manager;
-                  mockup::domain::service::Manager service;
-                  mockup::domain::transaction::Manager tm;
-
-                  mockup::domain::echo::Server domain1;
-
-                  Gateway gateway;
-
-               };
-
-            } // domain
-
-
-
-            config_domain empty_configuration()
-            {
-               return {};
-            }
-
-
-            config_domain one_listener_configuration()
-            {
-               config_domain result;
-
-               result.gateway.listeners.resize( 1);
-               result.gateway.listeners.front().address = "127.0.0.1:6666";
-
-               result.gateway.connections.resize( 1);
-               result.gateway.connections.front().address = "127.0.0.1:6666";
-
-               return result;
-            }
 
 
             namespace call
@@ -133,25 +92,24 @@ namespace casual
                {
                   namespace ready
                   {
-
-                     bool manager_ready( const manager::admin::vo::State& state)
-                     {
-                        if( state.connections.empty())
-                           return false;
-
-                        return algorithm::all_of( state.connections, []( const manager::admin::vo::Connection& c){
-                           return c.runlevel >= manager::admin::vo::Connection::Runlevel::online &&
-                              c.process == communication::instance::ping( c.process.ipc);
-                        });
-                     }
-
                      manager::admin::vo::State state()
                      {
                         auto state = local::call::state();
 
                         auto count = 100;
 
-                        while( ! manager_ready( state) && count-- > 0)
+                        auto ready = []( auto& state)
+                        {
+                           if( state.connections.empty())
+                              return false;
+
+                           return algorithm::all_of( state.connections, []( const manager::admin::vo::Connection& c){
+                              return c.runlevel >= manager::admin::vo::Connection::Runlevel::online &&
+                                 c.process == communication::instance::ping( c.process.ipc);
+                           });
+                        };
+
+                        while( ! ready( state) && count-- > 0)
                         {
                            common::process::sleep( std::chrono::milliseconds{ 10});
                            state = local::call::state();
@@ -161,50 +119,29 @@ namespace casual
                      }
 
                   } // ready
-
                } // wait
-
             } // call
-
-
-
          } // <unnamed>
       } // local
 
-
-      TEST( casual_gateway_manager_tcp, empty_configuration)
-      {
-         common::unittest::Trace trace;
-
-         local::Domain domain{ local::empty_configuration()};
-
-         common::signal::timer::Scoped timer{ std::chrono::milliseconds{ 100}};
-
-         EXPECT_TRUE( communication::instance::ping( domain.gateway.process.handle().ipc) == domain.gateway.process.handle());
-      }
 
 
       TEST( casual_gateway_manager_tcp, listen_on_127_0_0_1__6666)
       {
          common::unittest::Trace trace;
 
-         local::Domain domain{ local::one_listener_configuration()};
-
-         common::signal::timer::Scoped timer{ std::chrono::milliseconds{ 100}};
-
-         EXPECT_TRUE( communication::instance::ping( domain.gateway.process.handle().ipc) == domain.gateway.process.handle());
+         EXPECT_NO_THROW( {
+            local::Domain domain;
+         });
       }
 
       TEST( casual_gateway_manager_tcp, listen_on_127_0_0_1__6666__outbound__127_0_0_1__6666__expect_connection)
       {
          common::unittest::Trace trace;
 
-         local::Domain domain{ local::one_listener_configuration()};
+         local::Domain domain;
 
-         common::signal::timer::Scoped timer{ std::chrono::milliseconds{ 100}};
-
-
-         EXPECT_TRUE( communication::instance::ping( domain.gateway.process.handle().ipc) == domain.gateway.process.handle());
+         EXPECT_TRUE( common::communication::instance::fetch::handle( common::communication::instance::identity::gateway::manager));
 
          auto state = local::call::wait::ready::state();
 
@@ -214,18 +151,38 @@ namespace casual
          }));
       }
 
+      namespace local
+      {
+         namespace
+         {
+            namespace service
+            {
+               void echo() 
+               {
+                  common::message::service::call::callee::Request request;
+                  common::communication::ipc::blocking::receive( common::communication::ipc::inbound::device(), request);
+                  
+                  common::message::service::call::Reply reply;
+                  reply.correlation = request.correlation;
+                  reply.buffer = std::move( request.buffer);
+                  reply.transaction.trid = std::move( request.trid);
 
+                  common::communication::ipc::blocking::send( request.process.ipc, reply);
+               };
+            } // service
+         } // <unnamed>
+      } // local
       TEST( casual_gateway_manager_tcp, connect_to_our_self__remote1_call__expect_service_remote1)
       {
          common::unittest::Trace trace;
 
-         // exposes service "remote1"
-         local::domain::Service domain{ local::one_listener_configuration()};
+         
+         local::Domain domain;
 
-         common::signal::timer::Scoped timer{ std::chrono::seconds{ 5}};
+         // we exposes service "remote1"
+         casual::service::unittest::advertise( { "remote1"});
 
-
-         EXPECT_TRUE( communication::instance::ping( domain.gateway.process.handle().ipc) == domain.gateway.process.handle());
+         EXPECT_TRUE( common::communication::instance::fetch::handle( common::communication::instance::identity::gateway::manager));
 
          auto state = local::call::wait::ready::state();
 
@@ -236,6 +193,7 @@ namespace casual
          auto data = common::unittest::random::binary( 128);
 
          // Expect us to reach service remote1 via outbound -> inbound -> <service remote1>
+         // we act as the server
          {
             {
                common::message::service::call::callee::Request request;
@@ -246,6 +204,9 @@ namespace casual
                common::communication::ipc::blocking::send( state.connections.at( 0).process.ipc, request);
             }
 
+            // echo the call
+            local::service::echo();
+
             common::message::service::call::Reply reply;
             common::communication::ipc::blocking::receive( common::communication::ipc::inbound::device(), reply);
 
@@ -254,17 +215,17 @@ namespace casual
       }
 
 
+
       TEST( casual_gateway_manager_tcp, connect_to_our_self__remote1_call_in_transaction___expect_same_transaction_in_reply)
       {
          common::unittest::Trace trace;
 
-         // exposes service "remote1"
-         local::domain::Service domain{ local::one_listener_configuration()};
+         local::Domain domain;
 
-         common::signal::timer::Scoped timer{ std::chrono::seconds{ 5}};
+         // we exposes service "remote1"
+         casual::service::unittest::advertise( { "remote1"});
 
-
-         EXPECT_TRUE( communication::instance::ping( domain.gateway.process.handle().ipc) == domain.gateway.process.handle());
+         EXPECT_TRUE( common::communication::instance::fetch::handle( common::communication::instance::identity::gateway::manager));
 
          auto state = local::call::wait::ready::state();
 
@@ -287,6 +248,9 @@ namespace casual
                
                common::communication::ipc::blocking::send( state.connections.at( 0).process.ipc, request);
             }
+
+            // echo the call
+            local::service::echo();
 
             common::message::service::call::Reply reply;
             common::communication::ipc::blocking::receive( common::communication::ipc::inbound::device(), reply);
@@ -312,53 +276,53 @@ namespace casual
          }
       }
 
-      namespace local
-      {
-         namespace
-         {
-
-            namespace domain
-            {
-               struct Queue
-               {
-                  Queue( config_domain configuration) : manager{ std::move( configuration)}
-                  {
-
-                  }
-
-                  mockup::domain::Manager manager;
-                  mockup::domain::service::Manager service;
-                  mockup::domain::transaction::Manager tm;
-                  mockup::domain::queue::Manager queue;
-
-                  Gateway gateway;
-
-               };
-
-            } // domain
-
-         } // <unnamed>
-      } // local
 
       TEST( casual_gateway_manager_tcp,  connect_to_our_self__enqueue_dequeue___expect_message)
       {
          common::unittest::Trace trace;
 
-         local::domain::Queue domain{ local::one_listener_configuration()};
+         static constexpr auto configuration = R"(
+domain: 
+   name: gateway-domain
 
-         common::signal::timer::Scoped timer{ std::chrono::seconds{ 5}};
+   groups: 
+      - name: base
+      - name: gateway
+        dependencies: [ base]
+   
+   servers:
+      - path: "${CASUAL_HOME}/bin/casual-service-manager"
+        memberships: [ base]
+      - path: "${CASUAL_HOME}/bin/casual-transaction-manager"
+        memberships: [ base]
+      - path: "${CASUAL_HOME}/bin/casual-queue-manager"
+        memberships: [ base]
+      - path: "./bin/casual-gateway-manager"
+        memberships: [ gateway]
+   gateway:
+      listeners: 
+         - address: 127.0.0.1:6666
+      connections:
+         - address: 127.0.0.1:6666
+   queue:
+      groups:
+         - name: groupA
+           queuebase: ":memory:"
+           queues:
+            - name: queue1
+)";
 
-         EXPECT_TRUE( communication::instance::ping( domain.gateway.process.handle().ipc) == domain.gateway.process.handle());
 
+         local::Domain domain{ configuration};
+
+         EXPECT_TRUE( common::communication::instance::fetch::handle( common::communication::instance::identity::gateway::manager));
 
          auto state = local::call::wait::ready::state();
          ASSERT_TRUE( state.connections.size() == 2);
          algorithm::sort( state.connections);
 
-         //
          // Gateway is connected to it self. Hence we can send a request to the outbound, and it
          // will send it to the corresponding inbound, and back in the current (mockup) domain
-         //
 
          ASSERT_TRUE( state.connections.at( 0).bound == manager::admin::vo::Connection::Bound::out);
          auto outbound =  state.connections.at( 0).process;

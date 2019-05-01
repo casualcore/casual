@@ -159,6 +159,7 @@ namespace casual
             void resources_start( Transaction& transaction, flag::xa::Flags flags);
             void resources_end( const Transaction& transaction, flag::xa::Flags flags);
             void resource_commit( strong::resource::id rm, const Transaction& transaction, flag::xa::Flags flags);
+            void resource_rollback( strong::resource::id rm, const Transaction& transaction);
 
             void pop_transaction();
 

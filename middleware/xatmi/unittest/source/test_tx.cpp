@@ -17,9 +17,6 @@
 
 #include "tx.h"
 
-#include "common/mockup/domain.h"
-
-
 #include "common/transaction/context.h"
 
 namespace casual
@@ -29,41 +26,16 @@ namespace casual
       namespace transaction
       {
 
-         namespace local
-         {
-            namespace
-            {
-
-               struct Domain
-               {
-                  //
-                  // Set up a tm
-                  //
-                  Domain()
-                  = default;
-
-                  mockup::domain::Manager domain;
-                  mockup::domain::transaction::Manager tm;
-               };
-
-            } // <unnamed>
-         } // local
-
          TEST( casual_xatmi_tx, tx_info__expect_0_transaction)
          {
             common::unittest::Trace trace;
 
-            local::Domain domain;
-
             EXPECT_TRUE( tx_info( nullptr) == 0);
-
          }
 
          TEST( casual_xatmi_tx, tx_suspend__no_current_transaction__expect_TX_PROTOCOL_ERROR)
          {
             common::unittest::Trace trace;
-
-            local::Domain domain;
 
             XID xid;
 
@@ -73,8 +45,6 @@ namespace casual
          TEST( casual_xatmi_tx, tx_begin__expect_transaction)
          {
             common::unittest::Trace trace;
-
-            local::Domain domain;
 
             ASSERT_TRUE( tx_begin() == TX_OK);
             EXPECT_TRUE( tx_info( nullptr) == 1);
@@ -86,8 +56,6 @@ namespace casual
          {
             common::unittest::Trace trace;
 
-            local::Domain domain;
-
             ASSERT_TRUE( tx_begin() == TX_OK);
             EXPECT_TRUE( tx_info( nullptr) == 1);
             EXPECT_TRUE( tx_begin() == TX_PROTOCOL_ERROR);
@@ -98,8 +66,6 @@ namespace casual
          TEST( casual_xatmi_tx, tx_begin_tx_suspend_tx_resume__tx_rollback__expect_TX_OK)
          {
             common::unittest::Trace trace;
-
-            local::Domain domain;
 
             XID xid;
 
@@ -113,8 +79,6 @@ namespace casual
          TEST( casual_xatmi_tx, tx_begin__10_tx_suspend_tx_begin___tx_commit_tx_resume__rollback__expect_TX_OK)
          {
             common::unittest::Trace trace;
-
-            local::Domain domain;
 
             // global...
             ASSERT_TRUE( tx_begin() == TX_OK);
@@ -146,8 +110,6 @@ namespace casual
          TEST( casual_xatmi_tx, tx_begin__10_tx_suspend_tx_begin__in_revers_order__tx_commit_tx_resume__rollback__expect_TX_OK)
          {
             common::unittest::Trace trace;
-
-            local::Domain domain;
 
             // global...
             ASSERT_TRUE( tx_begin() == TX_OK);
@@ -181,8 +143,6 @@ namespace casual
          {
             common::unittest::Trace trace;
 
-            local::Domain domain;
-
             tx_set_transaction_control( TX_CHAINED);
 
             ASSERT_TRUE( tx_begin() == TX_OK);
@@ -199,8 +159,6 @@ namespace casual
          {
             common::unittest::Trace trace;
 
-            local::Domain domain;
-
             tx_set_transaction_control( TX_CHAINED);
 
             ASSERT_TRUE( tx_begin() == TX_OK);
@@ -214,8 +172,6 @@ namespace casual
          TEST( casual_xatmi_tx, stacked_control__tx_begin_tx_begin__expect_TX_OK)
          {
             common::unittest::Trace trace;
-
-            local::Domain domain;
 
             tx_set_transaction_control( TX_STACKED);
 
@@ -234,8 +190,6 @@ namespace casual
          TEST( casual_xatmi_tx, stacked_control__tx_begin_tx_begin_tx_suspend__expect_TX_OK)
          {
             common::unittest::Trace trace;
-
-            local::Domain domain;
 
             tx_set_transaction_control( TX_STACKED);
 

@@ -56,9 +56,7 @@ namespace casual
                         casual::common::environment::directory::casual() + "/bin/casual-queue-group"
                      );
 
-                     //
                      // We ask the domain manager for configuration
-                     //
                      {
                         common::message::domain::configuration::Request request;
                         request.process = common::process::handle();
@@ -114,10 +112,7 @@ namespace casual
                      return ! g.process.pid;
                   }));
             
-
-                  //
                   // Make sure all groups are up and running before we continue
-                  //
                   {
                      auto handler = ipc::device().handler(
                         manager::handle::connect::Request{ state},
@@ -192,26 +187,19 @@ namespace casual
       } // manager
 
 
-
-
-
-      Broker::Broker( manager::Settings settings) : m_state{ manager::local::transform::state( settings)}
+      Manager::Manager( manager::Settings settings) : m_state{ manager::local::transform::state( settings)}
       {
-         Trace trace( "queue::Broker::Broker");
+         Trace trace( "queue::Manager::Manager");
 
-
-         //
          // Set environment variable so children can find us easy
-         //
          common::environment::variable::process::set(
                common::environment::variable::name::ipc::queue::manager(),
                common::process::handle());
-
       }
 
-      Broker::~Broker()
+      Manager::~Manager()
       {
-         Trace trace( "queue::Broker::~Broker");
+         Trace trace( "queue::Manager::~Manager");
 
          try
          {
@@ -235,7 +223,7 @@ namespace casual
 
       }
 
-      void Broker::start()
+      void Manager::start()
       {
          common::log::line( log, "queue manager start");
 
@@ -243,9 +231,7 @@ namespace casual
 
          auto handler = manager::handlers( m_state);
 
-         //
          // Connect to domain
-         //
          common::communication::instance::connect( common::communication::instance::identity::queue::manager);
 
          common::log::line( common::log::category::information, "casual-queue-manager is on-line");

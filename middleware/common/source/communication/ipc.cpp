@@ -31,8 +31,6 @@ namespace casual
       {
          namespace ipc
          {
-
-            
             namespace message
             {
                static_assert( transport::max_message_size() <= platform::ipc::transport::size, "ipc message is too big'");
@@ -194,8 +192,8 @@ namespace casual
                            {
                               // try again...
                               // We flush inbound
-                              ipc::inbound::device().flush();
-                              //std::this_thread::sleep_for( std::chrono::microseconds{ 10});
+                              //ipc::inbound::device().flush();
+                              std::this_thread::sleep_for( std::chrono::microseconds{ 10});
                               break;
                            }
                            case code::system::no_such_file_or_directory:

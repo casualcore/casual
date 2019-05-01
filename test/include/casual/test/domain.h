@@ -6,11 +6,10 @@
 
 #pragma once
 
-#include "common/unittest.h"
+#include "domain/manager/unittest/process.h"
 
-#include "common/mockup/process.h"
-#include "common/mockup/file.h"
-
+#include <string>
+#include <vector>
 
 namespace casual
 {
@@ -18,35 +17,9 @@ namespace casual
    {
       namespace domain
       {
-         struct Manager
+         struct Manager : casual::domain::manager::unittest::Process
          {
-            Manager( common::file::scoped::Path file);
-            Manager( std::vector< common::file::scoped::Path> files);
-            ~Manager();
-
-            inline const common::mockup::Process& process() const { return m_process;}
-
-            //! tries to activate this domain, that is, resets all global domain specifc paths
-            //! and outbound-instances
-            void activate();
-
-         private:
-
-            struct Preconstruct
-            {
-               Preconstruct();
-
-               //! domain root directory
-               common::mockup::directory::temporary::Scoped home;
-            };
-            
-            // sets environment variables and stuff
-            Preconstruct m_preconstruct;
-
-            std::vector< common::file::scoped::Path> m_files;
-         public:
-
-            common::mockup::Process m_process;
+            Manager( const std::vector< std::string>& configuration);
          };
       } // domain
    } // test

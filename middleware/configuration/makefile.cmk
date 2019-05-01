@@ -12,8 +12,8 @@ IncludePaths([
 LibraryPaths([
     'bin',
     '../common/bin',
-    '../xatmi/bin',
     '../serviceframework/bin',
+    '../xatmi/bin',
     '$(CASUAL_OPTIONAL_LIBRARY_PATHS)',
     ])
 
@@ -78,9 +78,7 @@ LinkUnittest( 'bin/test-casual-configuration',
        lib_configuration, 
        'casual-serviceframework', 
        'casual-common', 
-       'casual-mockup', 
        'casual-unittest',
-       'casual-mockup-unittest-environment',
    ])  
 
 

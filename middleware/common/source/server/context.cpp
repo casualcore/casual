@@ -54,17 +54,15 @@ namespace casual
 
          Context::Context()
          {
-            Trace log{ "server::Context instansiated"};
+            Trace log{ "server::Context instantiated"};
          }
 
 
          void Context::jump_return( flag::xatmi::Return rval, long rcode, char* data, long len)
          {
-            //
             // Prepare buffer.
             // We have to keep state, since there seems not to be any way to send information
             // via longjump...
-            //
 
             m_state.jump.state.value = rval;
             m_state.jump.state.code = rcode;
@@ -98,25 +96,19 @@ namespace casual
 
             auto prospect = xatmi::service( service, adress);
 
-            //
             // validate
-            //
             if( prospect.name.size() >= XATMI_SERVICE_NAME_LENGTH)
             {
                prospect.name.resize( XATMI_SERVICE_NAME_LENGTH - 1);
                log::line( log::category::warning, "service name '", service, "' truncated to '", prospect.name, "'");
             }
 
-
-
             auto found = algorithm::find( m_state.services, prospect.name);
 
             if( found)
             {
-               //
                // service name is already advertised
                // No error if it's the same function
-               //
                if( found->second != prospect)
                {
                   throw common::exception::xatmi::service::Advertised( "service name: " + prospect.name);
