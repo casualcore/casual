@@ -57,6 +57,8 @@ domain:
       - name: base
       - name: queue
         dependencies: [ base]
+      - name: forward
+        dependencies: [ queue]
    
    servers:
       - path: "${CASUAL_HOME}/bin/casual-service-manager"
@@ -67,7 +69,7 @@ domain:
         memberships: [ queue]
       - path: "./bin/casual-queue-forward-queue"
         arguments: [ --forward, queueA3, queueB3]
-        memberships: [ queue]
+        memberships: [ forward]
 
    queue:
       groups:
