@@ -59,9 +59,7 @@ namespace casual
             {
                using descriptor_type = basic_information< Information>;
 
-               //!
                //! Reserves a descriptor and associates it to message-correlation
-               //!
                descriptor_type& reserve( const Uuid& correlation);
 
                void unreserve( descriptor::type descriptor);
@@ -80,7 +78,7 @@ namespace casual
 
                friend std::ostream& operator << ( std::ostream& out, const Holder& value)
                {
-                  return out << "{ descriptors: " << range::make( value.m_descriptors)
+                  return out << "{ descriptors: " << value.m_descriptors
                         << '}';
                }
 

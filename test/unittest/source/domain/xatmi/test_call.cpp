@@ -41,21 +41,7 @@ namespace casual
             // Represent a domain
             struct Domain : test::domain::Manager
             {
-               Domain() : test::domain::Manager{ { Domain::configuration}} 
-               {}
-
-               constexpr static auto configuration = R"(
-domain:
-   name: test-xatmi-call
-
-   servers:
-      - path: ${CASUAL_HOME}/bin/casual-service-manager
-      - path: ${CASUAL_HOME}/bin/casual-queue-manager
-      - path: ${CASUAL_HOME}/bin/casual-transaction-manager
-      - path: ${CASUAL_HOME}/bin/casual-example-error-server
-      - path: ${CASUAL_HOME}/bin/casual-example-server
-
-)";
+               // using test::domain::Manager default configuration
 
             };
 

@@ -197,8 +197,9 @@ namespace casual
             {
                if( pending())
                {
-                  log::line( log::category::error, "pending conversations: ", m_state.descriptors);
+                  log::line( log::category::error, "pending conversations: ", m_state.descriptors.size());
                }
+               
             }
 
 

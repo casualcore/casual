@@ -34,12 +34,12 @@ namespace casual
                   auto reply = message::reverse::type( message);
                   // We set the worst we got until proven otherwise.
                   reply.code.result = code::xatmi::protocol;
+                  reply.process = process::handle();
+                  reply.recording = message.recording;
+                  reply.route = message.recording;
 
-                  auto send_reply = execute::scope( [&](){
-                     reply.process = process::handle();
-                     reply.recording = message.recording;
-                     reply.route = message.recording;
-
+                  auto send_reply = execute::scope( [&]()
+                  {
                      auto node = reply.route.next();
                      communication::ipc::blocking::send( node.address, reply);
                   });
