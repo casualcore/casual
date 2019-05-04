@@ -61,6 +61,10 @@ namespace casual
             return ! ( lhs == rhs);
          }
 
+         bool operator == ( const Service& lhs, const std::string& rhs)
+         {
+            return lhs.name == rhs;
+         }
 
          namespace xatmi
          {
