@@ -75,7 +75,7 @@ target = LinkLibrary( 'bin/casual-transaction-admin-cli',
 install_lib.append( target)
 
 #
-# Compile and link resurce-proxy-server lib
+# Compile and link resource-proxy-server lib
 #
 
 target = LinkLibrary( 'bin/casual-resource-proxy-server',
@@ -87,7 +87,7 @@ target = LinkLibrary( 'bin/casual-resource-proxy-server',
 
 install_lib.append( target)
 
-install_headers.append( ( 'include/transaction/resource/proxy_server.h', 'transaction/resource'))
+install_headers.append( ( 'include/transaction/resource/proxy/server.h', 'transaction/resource/proxy'))
 
 
 # Mockup resource proxy
