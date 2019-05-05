@@ -36,9 +36,10 @@ namespace casual
                   std::ostream& operator << ( std::ostream& out, const Information& value)
                   {
                      return out << "{ route: " << value.route
-                           << ", initiator: " << value.initiator
-                           << ", duplex: " << value.duplex
-                           << '}';
+                        << ", initiator: " << value.initiator
+                        << ", duplex: " << value.duplex
+                        << '}';
+                           
                   }
 
                } // descriptor

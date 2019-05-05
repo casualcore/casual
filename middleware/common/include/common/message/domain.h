@@ -265,26 +265,36 @@ namespace casual
                   {
                      struct Service
                      {
-                        std::string name;
-                        std::vector< std::string> routes;
+                        struct Route
+                        {
+                           std::string name;
+                           std::vector< std::string> routes;
+
+                           CASUAL_CONST_CORRECT_MARSHAL(
+                           {
+                              archive & name;
+                              archive & routes;
+                           })
+                        };
+
+                        std::vector< std::string> restrictions;
+                        std::vector< Route> routes;
 
                         CASUAL_CONST_CORRECT_MARSHAL(
                         {
-                           archive & name;
+                           archive & restrictions;
                            archive & routes;
                         })
                      };
 
                      std::vector< std::string> resources;
-                     std::vector< std::string> restrictions;
-                     std::vector< Service> routes;
+                     Service service;
 
                      CASUAL_CONST_CORRECT_MARSHAL(
                      {
                         base_reply::marshal( archive);
                         archive & resources;
-                        archive & restrictions;
-                        archive & routes;
+                        archive & service;
                      })
                   };
 

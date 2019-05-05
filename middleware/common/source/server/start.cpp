@@ -67,14 +67,15 @@ namespace casual
                   {
                      Trace trace{ "common::server::start"};
 
-                     // Connect to domain
-                     common::communication::instance::connect();
-
                      auto handler = common::communication::ipc::inbound::device().handler(
+                        // will configure and advertise services
                         common::server::handle::Call( local::transform::arguments( std::move( services), std::move( resources))),
                         common::server::handle::Conversation{},
                         common::message::handle::Shutdown{},
                         common::message::handle::ping());
+
+                     // Connect to domain
+                     common::communication::instance::connect();
 
                      if( connected)
                         connected();

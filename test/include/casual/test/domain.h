@@ -20,6 +20,34 @@ namespace casual
          struct Manager : casual::domain::manager::unittest::Process
          {
             Manager( const std::vector< std::string>& configuration);
+
+            inline Manager() : Manager{ { configuration}} {}
+
+            constexpr static auto configuration = R"(
+domain:
+   name: test-default-domain
+
+   groups: 
+      - name: base
+      - name: transaction
+        dependencies: [ base]
+      - name: queue
+        dependencies: [ transaction]
+      - name: example
+        dependencies: [ queue]
+
+   servers:
+      - path: ${CASUAL_HOME}/bin/casual-service-manager
+        memberships: [ base]
+      - path: ${CASUAL_HOME}/bin/casual-transaction-manager
+        memberships: [ transaction]
+      - path: ${CASUAL_HOME}/bin/casual-queue-manager
+        memberships: [ queue]
+      - path: ${CASUAL_HOME}/bin/casual-example-error-server
+        memberships: [ example]
+      - path: ${CASUAL_HOME}/bin/casual-example-server
+        memberships: [ example]
+)";
          };
       } // domain
    } // test

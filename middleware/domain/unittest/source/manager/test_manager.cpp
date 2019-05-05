@@ -439,22 +439,20 @@ domain:
         - service3
 
 )"};
-
             unittest::Process manager{ { configuration}};
 
             // We need to register this process to the manager
             communication::instance::connect( process::handle());
-
 
             message::domain::configuration::server::Request request;
             request.process = process::handle();
             auto reply = communication::ipc::call( communication::instance::outbound::domain::manager::device(), request);
 
 
-            ASSERT_TRUE( reply.routes.size() == 1);
-            EXPECT_TRUE( reply.routes.at( 0).name == "service1");
-            EXPECT_TRUE( reply.routes.at( 0).routes.at( 0) == "service2");
-            EXPECT_TRUE( reply.routes.at( 0).routes.at( 1) == "service3");
+            ASSERT_TRUE( reply.service.routes.size() == 1);
+            EXPECT_TRUE( reply.service.routes.at( 0).name == "service1");
+            EXPECT_TRUE( reply.service.routes.at( 0).routes.at( 0) == "service2");
+            EXPECT_TRUE( reply.service.routes.at( 0).routes.at( 1) == "service3");
 
          }
 

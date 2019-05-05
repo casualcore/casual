@@ -13,6 +13,8 @@
 #include "common/flag/service/conversation.h"
 
 
+#include <cassert>
+
 namespace casual
 {
    namespace common
@@ -41,6 +43,8 @@ namespace casual
 
                inline Node next()
                {
+                  assert( ! nodes.empty());
+
                   auto node = std::move( nodes.back());
                   nodes.pop_back();
                   return node;
