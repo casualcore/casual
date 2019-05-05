@@ -27,19 +27,24 @@ namespace casual
             {
                namespace name
                {
-                  constexpr auto state() { return ".casual/domain/state";}
+                  constexpr auto state = ".casual/domain/state";
                   namespace scale
                   {
-                     constexpr auto instances() { return ".casual/domain/scale/instances";}
+                     constexpr auto instances = ".casual/domain/scale/instances";
                   } // scale
 
-                  constexpr auto shutdown() { return ".casual/domain/shutdown";}
+                  constexpr auto shutdown = ".casual/domain/shutdown";
 
                   namespace configuration
                   {
-                     constexpr auto persist() { return ".casual/domain/configuration/persist";}
+                     constexpr auto persist = ".casual/domain/configuration/persist";
 
                   } // configuration
+
+                  namespace set
+                  {
+                     constexpr auto environment = ".casual/domain/set/environment";
+                  } // set
 
                } // name
             } // service

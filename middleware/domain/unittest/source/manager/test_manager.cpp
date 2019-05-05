@@ -251,13 +251,13 @@ domain:
 
                   admin::vo::State state()
                   {
-                     return call< admin::vo::State>( admin::service::name::state());
+                     return call< admin::vo::State>( admin::service::name::state);
                   }
 
 
                   std::vector< admin::vo::scale::Instances> scale( const std::vector< admin::vo::scale::Instances>& instances)
                   {
-                     return call< std::vector< admin::vo::scale::Instances>>( admin::service::name::scale::instances(), instances);
+                     return call< std::vector< admin::vo::scale::Instances>>( admin::service::name::scale::instances, instances);
                   }
 
                   std::vector< admin::vo::scale::Instances> scale( const std::string& alias, common::platform::size::type instances)

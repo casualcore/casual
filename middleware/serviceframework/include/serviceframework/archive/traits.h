@@ -37,36 +37,17 @@ namespace casual
    {
       namespace traits
       {
-
          using namespace common::traits;
 
-
          template< typename T>
-         struct is_pod : public traits::bool_constant< std::is_pod< T>::value && ! std::is_class< T>::value && ! std::is_enum< T>::value> {};
-
-         template<>
-         struct is_pod< std::string> : public traits::bool_constant< true> {};
-
-         template<>
-         struct is_pod< std::wstring> : public traits::bool_constant< true> {};
-
-         template<>
-         struct is_pod< std::vector< char> > : public traits::bool_constant< true> {};
-
-
-         template< typename T, typename... Args>
-         struct has_serialize
-         {
-         private:
-            using one = char;
-            struct two { char m[ 2];};
-
-            template< typename C, typename... A> static auto test( C&& c, A&&... a) -> decltype( (void)( c.serialize( a...)), one());
-            static two test(...);
-         public:
-            enum { value = sizeof( test( std::declval< T>(), std::declval< Args>()...)) == sizeof(one) };
-         };
-
+         struct is_pod : public traits::bool_constant< 
+            ! std::is_enum< T>::value
+            && ( ( std::is_pod< T>::value && ! std::is_class< T>::value)
+               || std::is_convertible< T&, std::string&>::value
+               || std::is_convertible< const T&, const std::string&>::value
+               || std::is_same< traits::remove_cvref_t< T>, common::platform::binary::type>::value
+            )
+            > {};
 
       } // traits
    } // serviceframework

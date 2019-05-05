@@ -19,17 +19,16 @@ namespace casual
    {
       namespace transform
       {
-
          manager::admin::vo::State state( const manager::State& state);
-
-
          manager::State state( casual::configuration::domain::Manager domain);
 
+         namespace environment
+         {
+            std::vector< common::environment::Variable> variables( const casual::configuration::Environment& environment);
+         } // environment
+
       } // transform
-
    } // domain
-
-
 } // casual
 
 

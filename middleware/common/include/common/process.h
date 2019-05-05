@@ -13,6 +13,7 @@
 #include "common/uuid.h"
 
 #include "common/algorithm.h"
+#include "common/environment/variable.h"
 
 #include "common/marshal/marshal.h"
 
@@ -160,13 +161,13 @@ namespace casual
          //! @param path path to application to be spawned
          //! @param arguments 0..N arguments that is passed to the application
          //! @return process id of the spawned process
-         strong::process::id spawn( const std::string& path, std::vector< std::string> arguments);
+         strong::process::id spawn( std::string path, std::vector< std::string> arguments);
 
 
          strong::process::id spawn(
             std::string path,
             std::vector< std::string> arguments,
-            std::vector< std::string> environment);
+            std::vector< environment::Variable> environment);
 
          //! Spawn a new application that path describes, and wait until it exit. That is
          //!  - spawn
@@ -175,7 +176,7 @@ namespace casual
          //! @param path path to application to be spawned
          //! @param arguments 0..N arguments that is passed to the application
          //! @return exit code from the process
-         int execute( const std::string& path, std::vector< std::string> arguments);
+         int execute( std::string path, std::vector< std::string> arguments);
 
          //! Wait for a specific process to terminate.
          //!

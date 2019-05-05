@@ -25,10 +25,7 @@ namespace casual
       namespace archive
       {
 
-
-         //!
          //! Read from archvie
-         //!
          class Reader
          {
          public:
@@ -58,11 +55,9 @@ namespace casual
             inline bool read( std::string& value, const char* name) { return m_protocol->read( value, name);}
             inline bool read( platform::binary::type& value, const char* name) { return m_protocol->read( value, name);}
 
-            //!
             //! Validates the 'consumed' archive, if the implementation has a validate member function.
             //!
             //! It throws if there are information in the source that is not consumed by the object-model
-            //!
             inline void validate() { m_protocol->validate();}
 
          private:
@@ -143,10 +138,8 @@ namespace casual
          };
 
 
-
          template< typename NVP>
          Reader& operator >> ( Reader& archive, NVP&& nvp);
-
 
          template< typename T>
          std::enable_if_t< traits::is_pod< T>::value, bool>
@@ -155,9 +148,8 @@ namespace casual
             return archive.read( value, name);
          }
 
-
          template< typename T>
-         std::enable_if_t< traits::has_serialize< T, Reader&>::value, bool>
+         std::enable_if_t< traits::has::serialize< T, Reader&>::value, bool>
          serialize( Reader& archive, T& value, const char* const name)
          {
             if( archive.serialtype_start( name))
@@ -353,9 +345,7 @@ namespace casual
             inline void write( const std::string& value, const char* name) { m_protocol->write( value, name);}
             inline void write( const platform::binary::type& value, const char* name) { m_protocol->write( value, name);}
 
-            //!
             //! Flushes the archive, if the implementation has a flush member function.
-            //!
             inline void flush() { m_protocol->flush();}
 
          private:
@@ -447,7 +437,7 @@ namespace casual
 
 
          template< typename T>
-         std::enable_if_t< traits::has_serialize< T, Writer&>::value || traits::has_serialize< const T, Writer&>::value>
+         std::enable_if_t< traits::has::serialize< T, Writer&>::value || traits::has::serialize< const T, Writer&>::value>
          serialize( Writer& archive, const T& value, const char* const name)
          {
             archive.serialtype_start( name);

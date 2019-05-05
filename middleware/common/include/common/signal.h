@@ -159,9 +159,7 @@ namespace casual
 
             type set;
 
-            //!
             //! @return true if @signal is present in the mask
-            //!
             bool exists( Type signal) const;
 
             friend std::ostream& operator << ( std::ostream& out, const Set& value);

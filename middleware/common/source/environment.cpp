@@ -18,6 +18,12 @@
 #include <iomanip>
 #include <cstdlib>
 
+#ifdef __APPLE__
+   #include <crt_externs.h>
+#else
+   #include <unistd.h>
+#endif
+
 namespace casual
 {
    namespace common
@@ -56,9 +62,7 @@ namespace casual
                         // We need to return by value and copy the variable while
                         // we have the lock
                         if( result)
-                        {
                            return result;
-                        }
 
                         return {};
                      }
@@ -68,9 +72,7 @@ namespace casual
                         lock_type lock { m_mutex};
 
                         if( setenv( name, value.c_str(), 1) == -1)
-                        {
                            exception::system::throw_from_errno();
-                        }
                      }
 
                      void unset( const char* name) const
@@ -78,9 +80,7 @@ namespace casual
                         lock_type lock { m_mutex};
 
                         if( ::unsetenv( name) == -1)
-                        {
                            exception::system::throw_from_errno();
-                        }
                      }
 
                      std::mutex& mutex() const
@@ -93,8 +93,16 @@ namespace casual
                      mutable std::mutex m_mutex;
                   };
 
-               } // native
+                  auto environment()
+                  {
+                     #ifdef __APPLE__
+                        return *::_NSGetEnviron();
+                     #else
+                        return ::environ;
+                     #endif
+                  }
 
+               } // native
             } // <unnamed>
          } // local
 
@@ -143,6 +151,25 @@ namespace casual
 
             } // detail
 
+            namespace native
+            {
+               std::vector< environment::Variable> current()
+               {
+                  std::vector< environment::Variable> result;
+
+                  // take lock
+                  std::lock_guard< std::mutex> lock{ variable::mutex()};
+
+                  auto variable = local::native::environment();
+
+                  while( *variable)
+                  {
+                     result.emplace_back( *variable);
+                     ++variable;
+                  }
+                  return result;
+               }
+            } // native
 
 
             namespace process
@@ -410,6 +437,12 @@ namespace casual
             }
 
             return result;
+         }
+         
+         std::string string( std::string&& value)
+         {
+            // TODO: optimize?
+            return string( value);
          }
 
          void reset()

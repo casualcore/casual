@@ -134,7 +134,7 @@ namespace casual
 
                struct
                {
-                  std::vector< std::string> variables;
+                  std::vector< common::environment::Variable> variables;
                } environment;
 
                bool restart = false;
@@ -427,7 +427,7 @@ namespace casual
             std::tuple< state::Server*, state::Executable*> remove( common::strong::process::id pid);
 
             //! @return environment variables for the process, including global/default variables
-            std::vector< std::string> variables( const state::Process& process);
+            std::vector< common::environment::Variable> variables( const state::Process& process);
 
             state::Group& group( state::Group::id_type id);
             const state::Group& group( state::Group::id_type id) const;

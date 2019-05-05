@@ -38,6 +38,11 @@ namespace casual
          struct Identity;
       } // domain
 
+      namespace environment
+      {
+         struct Variable;
+      } // environment
+
    } // common
    namespace serviceframework
    {
@@ -121,6 +126,8 @@ namespace casual
          void serialize( Reader& archive, common::domain::Identity& value, const char* name);
          void serialize( Writer& archive, const common::domain::Identity& value, const char* name);
 
+         void serialize( Reader& archive, common::environment::Variable& value, const char* name);
+         void serialize( Writer& archive, const common::environment::Variable& value, const char* name);
 
          void serialize( Reader& archive, platform::time::point::type& value, const char* name);
          void serialize( Writer& archive, const platform::time::point::type& value, const char* name);

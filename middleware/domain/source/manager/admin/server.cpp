@@ -35,9 +35,9 @@ namespace casual
                      {
                         std::vector< vo::scale::Instances> result;
 
-                        auto scale_entites = [&]( auto& instance, auto& entites){
+                        auto scale_entities = [&]( auto& instance, auto& entities){
 
-                           auto found = algorithm::find_if( entites, [&instance]( auto& e){
+                           auto found = algorithm::find_if( entities, [&instance]( auto& e){
                               return e.alias == instance.alias;
                            });
 
@@ -53,8 +53,8 @@ namespace casual
 
                         for( auto& instance : instances)
                         {
-                           if( scale_entites( instance, state.servers) ||
-                                 scale_entites( instance, state.executables))
+                           if( scale_entities( instance, state.servers) ||
+                                 scale_entities( instance, state.executables))
                            {
                               result.push_back( std::move( instance));
                            }
@@ -65,19 +65,87 @@ namespace casual
 
                   } // scale
 
+                  namespace set
+                  {
+                     auto environment( manager::State& state, const vo::set::Environment& environment)
+                     {
+
+                        // collect all relevant processes
+                        auto processes = [&]()
+                        {
+                           std::vector< state::Process*> result;
+
+                           if( environment.aliases.empty())
+                           {
+                              algorithm::transform( state.servers, result, []( auto& process){ return &process;});
+                              algorithm::transform( state.executables, result, []( auto& process){ return &process;});
+                           }
+                           else 
+                           {
+                              auto find_alias = [&]( auto& alias) -> state::Process*
+                              {
+                                 auto equal_alias = [&alias]( auto& p){ return p.alias == alias;};
+                                 {
+                                    auto found = algorithm::find_if( state.servers, equal_alias);
+                                    if( found)
+                                       return &( *found);
+                                 }
+                                 {
+                                    auto found = algorithm::find_if( state.executables, equal_alias);
+                                    if( found)
+                                       return &( *found);
+                                 }
+                                 return nullptr;
+                              };
+
+                              algorithm::transform( environment.aliases, result, find_alias);
+                              algorithm::trim( result, algorithm::remove( result, nullptr));
+                           }
+
+                           return result;
+                        }();
+
+                        const auto variables = transform::environment::variables( environment.variables);
+
+                        auto update_variables = [&]( auto process)
+                        {
+
+                           // replace or add the variable
+                           auto update_variable = [&]( auto& variable)
+                           {
+                              auto found = algorithm::find_if( process->environment.variables, [&]( auto& v)
+                              { 
+                                 auto equal_variable = []( auto& lhs, auto& rhs)
+                                 {
+                                    return lhs.name() == rhs.name();
+                                 };
+
+                                 return equal_variable( v, variable);
+                              });
+
+                              if( found)
+                                 *found = variable;
+                              else 
+                                 process->environment.variables.push_back( variable);
+                           };
+
+                           algorithm::for_each( variables, update_variable);
+
+                           return process->alias;
+                        };
+
+                        return algorithm::transform( processes, update_variables);
+                     };
+                  } // set
+
                   namespace service
                   {
                      common::service::invoke::Result state( common::service::invoke::Parameter&& parameter, manager::State& state)
                      {
-                        auto protocol = serviceframework::service::protocol::deduce( std::move( parameter));
-
-                        manager::admin::vo::State (*function)(const manager::State&) = casual::domain::transform::state;
-
-                        auto result = serviceframework::service::user( protocol, function, state);
-
-                        protocol << CASUAL_MAKE_NVP( result);
-
-                        return protocol.finalize();
+                        return serviceframework::service::user( 
+                           serviceframework::service::protocol::deduce( std::move( parameter)), 
+                           []( auto& state){ return casual::domain::transform::state( state);}, 
+                           state);
                      }
 
 
@@ -88,32 +156,42 @@ namespace casual
                         std::vector< vo::scale::Instances> instances;
                         protocol >> CASUAL_MAKE_NVP( instances);
 
-                        auto result = serviceframework::service::user( protocol, &scale::instances, state, instances);
-
-                        protocol << CASUAL_MAKE_NVP( result);
-                        return protocol.finalize();
+                        return serviceframework::service::user( std::move( protocol), &scale::instances, state, instances);
                      }
 
 
                      common::service::invoke::Result shutdown( common::service::invoke::Parameter&& parameter, manager::State& state)
                      {
-                        auto protocol = serviceframework::service::protocol::deduce( std::move( parameter));
-
-                        serviceframework::service::user( protocol, &handle::shutdown, state);
-
-                        return protocol.finalize();
+                        return serviceframework::service::user( 
+                           serviceframework::service::protocol::deduce( std::move( parameter)), 
+                           &handle::shutdown, state);
                      }
 
                      common::service::invoke::Result persist( common::service::invoke::Parameter&& parameter, manager::State& state)
                      {
-                        auto protocol = serviceframework::service::protocol::deduce( std::move( parameter));
-
-                        serviceframework::service::user( protocol,
-                              static_cast< void(*)( const manager::State&)>( persistent::state::save),
-                              state);
-
-                        return protocol.finalize();
+                        return serviceframework::service::user( 
+                           serviceframework::service::protocol::deduce( std::move( parameter)),
+                           []( auto& state){ return persistent::state::save( state);},
+                           state);
                      }
+
+                     namespace set
+                     {
+                        common::service::invoke::Result environment( common::service::invoke::Parameter&& parameter, manager::State& state)
+                        {
+                           auto protocol = serviceframework::service::protocol::deduce( std::move( parameter));
+
+                           vo::set::Environment environment;
+                           protocol >> CASUAL_MAKE_NVP( environment);
+
+                           return serviceframework::service::user(
+                              std::move( protocol),
+                              &local::set::environment,
+                              state, 
+                              environment);
+                        }
+                     } // set
+
 
                   } // service
                } // <unnamed>
@@ -122,26 +200,31 @@ namespace casual
             common::server::Arguments services( manager::State& state)
             {
                return { {
-                     { service::name::state(),
+                     { service::name::state,
                         std::bind( &local::service::state, std::placeholders::_1, std::ref( state)),
                         common::service::transaction::Type::none,
                         common::service::category::admin()
                      },
-                     { service::name::scale::instances(),
+                     { service::name::scale::instances,
                            std::bind( &local::service::scale, std::placeholders::_1, std::ref( state)),
                            common::service::transaction::Type::none,
                            common::service::category::admin()
                      },
-                     { service::name::shutdown(),
+                     { service::name::shutdown,
                            std::bind( &local::service::shutdown, std::placeholders::_1, std::ref( state)),
                            common::service::transaction::Type::none,
                            common::service::category::admin()
                      },
-                     { service::name::configuration::persist(),
+                     { service::name::configuration::persist,
                            std::bind( &local::service::persist, std::placeholders::_1, std::ref( state)),
                            common::service::transaction::Type::none,
                            common::service::category::admin()
                      },
+                     { service::name::set::environment,
+                           std::bind( &local::service::set::environment, std::placeholders::_1, std::ref( state)),
+                           common::service::transaction::Type::none,
+                           common::service::category::admin()
+                     }
                }};
             }
          } // admin

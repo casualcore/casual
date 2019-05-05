@@ -45,8 +45,6 @@ namespace casual
                            }
                         }
 
-
-
                         auto& count = m_mapping[ process.alias];
                         ++count;
 
@@ -130,18 +128,6 @@ namespace casual
                };
 
 
-
-               std::vector< std::string> environment( const casual::configuration::Environment& environment)
-               {
-                  std::vector< std::string> result;
-                  for( auto& variable : casual::configuration::environment::fetch( environment))
-                  {
-                     result.push_back( variable.key + "=" + variable.value);
-                  }
-                  return result;
-               }
-
-
                struct Executable
                {
 
@@ -177,7 +163,7 @@ namespace casual
                      result.restart = value.restart.value_or( false);
 
                      if( value.environment)
-                        result.environment.variables = local::environment( value.environment.value());
+                        result.environment.variables = transform::environment::variables( value.environment.value());
 
                      if( value.memberships)
                         result.memberships = local::membership( value.memberships.value(), groups);
@@ -288,7 +274,12 @@ namespace casual
                         result.memberships = algorithm::transform( value.memberships, []( auto id){
                            return id.value();
                         });
-                        result.environment.variables = value.environment.variables;
+
+                        result.environment.variables = algorithm::transform( value.environment.variables, []( auto& v)
+                        {  
+                           return static_cast< const std::string&>( v);
+                        });
+
                         result.restart = value.restart;
                         result.restarts = value.restarts;
 
@@ -409,6 +400,15 @@ namespace casual
 
             return result;
          }
+
+         namespace environment
+         {
+            std::vector< common::environment::Variable> variables( const casual::configuration::Environment& environment)
+            {
+               return casual::configuration::environment::transform( casual::configuration::environment::fetch( environment));
+            }
+
+         } // environment
 
       } // transform
    } // domain

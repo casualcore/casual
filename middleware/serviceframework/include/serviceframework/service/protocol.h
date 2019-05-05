@@ -164,6 +164,41 @@ namespace casual
             return decltype( common::invoke( function, std::forward< Args>( args)...))();
          }
 
+         namespace detail
+         {
+            template< typename R> 
+            struct user 
+            {
+               template< typename F, typename... Args>
+               static auto call( Protocol&& protocol, F&& function, Args&&... args)
+               {
+                  auto result = service::user( protocol, std::forward< F>( function), std::forward< Args>( args)...);
+                  protocol << CASUAL_MAKE_NVP( result);
+                  return protocol.finalize();
+               }
+            };
+
+            template<> 
+            struct user< void>
+            {
+               template< typename F, typename... Args>
+               static auto call( Protocol&& protocol, F&& function, Args&&... args)
+               {
+                  service::user( protocol, std::forward< F>( function), std::forward< Args>( args)...);
+                  return protocol.finalize();
+               }
+            };
+
+         } // detail
+         
+         //! takes ownership of protocol and serializes the result (if not void) and return 
+         //! common::service::invoke::Result
+         template< typename F, typename... Args>
+         auto user( Protocol&& protocol, F&& function, Args&&... args)
+         {
+            using implementation = detail::user< decltype( common::invoke( function, std::forward< Args>( args)...))>;
+            return implementation::call( std::move( protocol), std::forward< F>( function), std::forward< Args>( args)...);
+         }
 
 
          namespace protocol
