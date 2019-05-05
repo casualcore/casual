@@ -68,7 +68,7 @@ namespace casual
                {
                   struct Instance
                   {
-                     enum class State
+                     enum class State : short
                      {
                         absent,
                         started,

@@ -108,24 +108,21 @@ namespace casual
       {
          common::Trace trace{ "transaction::Manager::~Manager"};
 
-         try
+         exception::guard( [&]()
          {
-            for( auto& resource : m_state.resources)
-            {
-               resource.concurency = 0;
-            }
+            auto scale_down = [&]( auto& resource)
+            { 
+               exception::guard( [&](){
+                  resource.concurency = 0;
+                  manager::action::resource::Instances{ m_state}( resource);
+               }); 
+            };
 
-            algorithm::for_each( m_state.resources, manager::action::resource::Instances{ m_state});
+            algorithm::for_each( m_state.resources, scale_down);
 
             auto processes = m_state.processes();
-
             process::lifetime::wait( processes, std::chrono::milliseconds( processes.size() * 100));
-
-         }
-         catch( ...)
-         {
-            common::exception::handle();
-         }
+         });
       }
 
       namespace manager

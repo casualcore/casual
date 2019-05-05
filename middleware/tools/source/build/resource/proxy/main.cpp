@@ -43,7 +43,7 @@ namespace casual
                      {
                         out << license::c << R"(
 
-#include <transaction/resource/proxy_server.h>
+#include <transaction/resource/proxy/server.h>
 #include <xa.h>
 
 #ifdef __cplusplus
@@ -233,9 +233,7 @@ int main( int argc, char** argv)
                            settings.output = xa_switch.server;
                         }
 
-                        //
                         // Generate file
-                        //
                         common::file::scoped::Path path( common::file::name::unique( "rm_proxy_", ".cpp"));
 
                         {

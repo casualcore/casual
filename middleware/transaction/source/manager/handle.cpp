@@ -987,11 +987,10 @@ namespace casual
                      try
                      {
                         auto& instance = m_state.get_instance( message.resource, message.process.pid);
+                        instance.process = message.process;
 
                         if( message.state == common::code::xa::ok)
                         {
-                           instance.process = std::move( message.process);
-
                            local::instance::done( m_state, instance);
                         }
                         else
