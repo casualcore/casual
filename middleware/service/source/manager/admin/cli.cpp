@@ -26,18 +26,10 @@
 #include "common/server/service.h"
 #include "common/exception/handle.h"
 
-
-
-
-//
 // std
-//
 #include <iostream>
 #include <iomanip>
 #include <limits>
-
-
-
 
 namespace casual
 {
@@ -46,10 +38,8 @@ namespace casual
 
    namespace service
    {
-
       namespace manager
       {
-
          namespace global
          {
             bool admin_services = false;
@@ -87,7 +77,7 @@ namespace casual
                State state;
 
                serviceframework::service::protocol::binary::Call call;
-               auto reply = call( casual::domain::manager::admin::service::name::state());
+               auto reply = call( casual::domain::manager::admin::service::name::state);
 
                reply >> CASUAL_MAKE_NVP( state.domain);
 

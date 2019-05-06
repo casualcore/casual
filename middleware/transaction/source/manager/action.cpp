@@ -16,6 +16,8 @@
 #include "common/event/send.h"
 #include "common/communication/instance.h"
 
+#include "domain/pending/message/send.h"
+
 
 #include "serviceframework/log.h"
 
@@ -53,8 +55,8 @@ namespace casual
                   Trace trace( "resource::Instances::operator()");
 
                   log::line( log, "update instances for resource: ", proxy);
-
-                  auto count = static_cast< long>( proxy.concurency - proxy.instances.size());
+               
+                  auto count = proxy.concurency - range::size( proxy.instances);
 
                   if( count > 0)
                   {
@@ -115,16 +117,12 @@ namespace casual
                            {
                               log::line( log, "shutdown instance: ", instance);
 
-
                               instance.state( state::resource::Proxy::Instance::State::shutdown);
 
                               if( ! ipc::device().non_blocking_send( instance.process.ipc, message::shutdown::Request{}))
                               {
-                                 // We couldn't send shutdown for some reason, we put the message in 'persistent-replies' and
-                                 // hope to send it later...
-                                 log::line( log::category::warning, "failed to send shutdown to instance: ", instance, " - action: try send it later");
-
-                                 m_state.persistent.replies.emplace_back( instance.process.ipc, message::shutdown::Request{});
+                                 // We couldn't send shutdown for some reason, we send it to pending
+                                 casual::domain::pending::message::send( instance.process, message::shutdown::Request{});
                               }
                               break;
                            }
@@ -195,7 +193,6 @@ namespace casual
 
                      if( found )
                      {
-
                         if( ! local::instance::request( message.message, *found))
                         {
                            log::line( log, "failed to send resource request - type: ", message.message.type, " to: ", found->process);
@@ -222,7 +219,6 @@ namespace casual
 
             namespace persistent
             {
-
                bool Send::operator () ( state::pending::Reply& message) const
                {
                   try
@@ -236,11 +232,9 @@ namespace casual
                   catch( const exception::system::communication::Unavailable&)
                   {
                      log::line( log::category::error, "failed to send reply - target: ", message.target, ", message: ", message.message, " - TODO: rollback transaction?");
-                     //
                      // ipc-queue has been removed...
                      // TODO attention: deduce from message.message.type what we should do
                      //  We should rollback if we are in a prepare stage?
-                     //
                   }
                   return true;
                }

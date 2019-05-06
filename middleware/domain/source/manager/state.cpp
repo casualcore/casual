@@ -515,7 +515,7 @@ namespace casual
          }
 
 
-         std::vector< std::string> State::variables( const state::Process& process)
+         std::vector< common::environment::Variable> State::variables( const state::Process& process)
          {
             auto result = casual::configuration::environment::transform( casual::configuration::environment::fetch( environment));
 

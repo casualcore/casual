@@ -17,10 +17,6 @@ LibraryPaths( [ 'server/bin',
     ])
 
 
-# make sure we use the tools we built
-Environment( 'CASUAL_HOME', '../../test/home/bin')
-
-
 install_bin = []
 
 

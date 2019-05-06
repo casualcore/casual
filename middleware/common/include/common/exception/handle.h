@@ -22,6 +22,21 @@ namespace casual
 
          int handle( std::ostream& out) noexcept;
 
+         template< typename F> 
+         auto guard( F&& callable)
+         {
+            try 
+            {
+               callable();
+               return 0;
+            }
+            catch( ...)
+            {
+               return exception::handle();
+            }
+         }
+
+
       } // error
    } // common
 } // casual

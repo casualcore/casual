@@ -53,7 +53,8 @@ manager = LinkExecutable( 'bin/casual-transaction-manager',
         manager_archive, 
         'casual-serviceframework', 
         'casual-common', 
-        'casual-configuration', 
+        'casual-configuration',
+        'casual-domain-pending-message',
         'sqlite3',
     ])
 
@@ -74,19 +75,19 @@ target = LinkLibrary( 'bin/casual-transaction-admin-cli',
 install_lib.append( target)
 
 #
-# Compile and link resurce-proxy-server lib
+# Compile and link resource-proxy-server lib
 #
 
 target = LinkLibrary( 'bin/casual-resource-proxy-server',
    [
-        Compile( 'source/resource/proxy_server.cpp'),
+        Compile( 'source/resource/proxy/server.cpp'),
         Compile( 'source/resource/proxy.cpp'),
    ],
    [ manager_archive, 'casual-common', 'casual-serviceframework'])
 
 install_lib.append( target)
 
-install_headers.append( ( 'include/transaction/resource/proxy_server.h', 'transaction/resource'))
+install_headers.append( ( 'include/transaction/resource/proxy/server.h', 'transaction/resource/proxy'))
 
 
 # Mockup resource proxy
@@ -116,6 +117,7 @@ test_transaction = LinkUnittest( 'bin/test-casual-transaction',
         'casual-common', 
         'casual-serviceframework', 
         'casual-configuration', 
+        'casual-domain-pending-message',
         'sqlite3',
         'casual-unittest',
         'casual-domain-unittest',

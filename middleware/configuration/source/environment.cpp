@@ -15,7 +15,7 @@ namespace casual
 {
    namespace configuration
    {
-
+      inline namespace v1 {
 
       namespace environment
       {
@@ -82,16 +82,12 @@ namespace casual
             return local::fetch( std::move( environment), paths);
          }
 
-         std::vector< std::string> transform( const std::vector< Variable>& variables)
+         std::vector< common::environment::Variable> transform( const std::vector< Variable>& variables)
          {
-            std::vector< std::string> result;
-
-            for( auto& variable : variables)
+            return common::algorithm::transform( variables, []( auto& variable)
             {
-               result.push_back( variable.key + '=' + variable.value);
-            }
-
-            return result;
+               return common::environment::Variable{ variable.key + '=' + variable.value};
+            });
          }
       } // environment
 
@@ -102,7 +98,8 @@ namespace casual
          return *this;
       }
 
-   } // config
+      } // inline namespace v1 
+   } // configuration
 } // casual
 
 

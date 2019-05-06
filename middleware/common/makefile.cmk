@@ -180,24 +180,6 @@ target_unittest = LinkLibrary( 'bin/casual-unittest',
      [ common, "gtest"])
 
 #
-# Mockup stuff, only for unittest
-#
-
-#lib_mockup_log = LinkLibrary( 'bin/casual-mockup-log',
-#      [ Compile( 'source/mockup/log.cpp')],
-#      [ common])
-
-#mockup = LinkLibrary( 'bin/casual-mockup', 
-#     [
-#       Compile( 'source/mockup/ipc.cpp'),
-#       Compile( 'source/mockup/domain.cpp'),
-#       Compile( 'source/mockup/process.cpp'),
-#       Compile( 'source/mockup/file.cpp'),
-#       Compile( 'source/mockup/thread.cpp'),
-#     ],
-#     [ common, lib_mockup_log, target_unittest])
-
-#
 # The mockup-rm, only for testing.
 #
 lib_mockup_rm = LinkLibrary( 'bin/casual-mockup-rm', 
@@ -209,13 +191,6 @@ lib_mockup_rm = LinkLibrary( 'bin/casual-mockup-rm',
 # Since we use this in our example-servers we "install it"
 install_libs.append( lib_mockup_rm)
 install_libs.append( target_unittest)
-
-
-#mockup_unittest = LinkLibrary( 'bin/casual-mockup-unittest-environment',
-#    [ 
-#      Compile( 'source/mockup/unittest/environment.cpp'),  
-#    ],
-#    [ common, mockup, 'gtest'])
 
 
 target_simple_process = LinkExecutable( 'bin/simple_process',
@@ -250,8 +225,10 @@ unittest_objectfiles = [
     Compile( 'unittest/source/test_file.cpp'),
     Compile( 'unittest/source/test_process.cpp'),
     Compile( 'unittest/source/test_string.cpp'),
-    Compile( 'unittest/source/test_environment.cpp'),
     Compile( 'unittest/source/test_exception.cpp'),
+
+    Compile( 'unittest/source/test_environment.cpp'),
+    Compile( 'unittest/source/environment/test_variable.cpp'),
     
     Compile( 'unittest/source/network/test_byteorder.cpp'),
     

@@ -849,38 +849,40 @@ namespace casual
                         {
                            Trace trace{ "domain::manager::handle::local::singleton::service"};
                            
+                           auto transform_service = []( const auto& s)
+                           {
+                              common::message::service::advertise::Service result;
+                              result.name = s.name;
+                              result.category = s.category;
+                              result.transaction = s.transaction;
+                              return result;
+                           };
 
                            common::message::service::Advertise message;
                            message.process = common::process::handle();
-
-                           message.services = algorithm::transform( manager::admin::services( state).services,
-                                 []( const common::server::Service& s)
-                                 {
-                                    common::message::service::advertise::Service result;
-
-                                    result.name = s.name;
-                                    result.category = s.category;
-                                    result.transaction = s.transaction;
-
-                                    return result;
-                                 });
-
+                           message.services = algorithm::transform( manager::admin::services( state).services, transform_service);
+                              
                            manager::local::ipc::send( state, process, message);
 
-                           environment::variable::process::set( environment::variable::name::ipc::service::manager(), process);
+                           // so new spawned processes get it easier
+                           environment::variable::process::set( 
+                              environment::variable::name::ipc::service::manager(), process);
                         }
 
                         void tm( State& state, const common::process::Handle& process)
                         {
                            Trace trace{ "domain::manager::handle::local::singleton::tm"};
 
-                           environment::variable::process::set( environment::variable::name::ipc::transaction::manager(), process);
+                           // so new spawned processes get it easier
+                           environment::variable::process::set( 
+                              environment::variable::name::ipc::transaction::manager(), process);
                         }
 
                         void queue( State& state, const common::process::Handle& process)
                         {
                            Trace trace{ "domain::manager::handle::local::singleton::queue"};
 
+                           // so new spawned processes get it easier
                            environment::variable::process::set(
                                  environment::variable::name::ipc::queue::manager(), process);
                         }
@@ -898,9 +900,7 @@ namespace casual
                            auto found = algorithm::find( tasks, message.identification);
 
                            if( found)
-                           {
                               found->second( state, message.process);
-                           }
                         }
 
                      } // singleton
@@ -919,12 +919,9 @@ namespace casual
                      manager::local::ipc::send( state(), message.process, reply);
                   });
 
-
-
                   if( message.identification)
                   {
                      auto found = algorithm::find( state().singletons, message.identification);
-
 
                      if( found)
                      {
@@ -958,13 +955,12 @@ namespace casual
                         {
                            message::event::domain::Error event;
                            event.severity = message::event::domain::Error::Severity::warning;
-                           event.message = "server connect - only one instance is allowed for " + uuid::string( message.identification);
+                           event.message = string::compose( "server connect - only one instance is allowed for ", message.identification);
 
                            manager::local::ipc::send( state(), state().event( event));
                         }
                         return;
                      }
-
 
                      state().singletons[ message.identification] = message.process;
 
@@ -1011,13 +1007,10 @@ namespace casual
                   }
                }
 
-
             } // process
-
 
             namespace configuration
             {
-
                void Domain::operator () ( const common::message::domain::configuration::Request& message)
                {
                   Trace trace{ "domain::manager::handle::configuration::Domain"};
@@ -1029,7 +1022,6 @@ namespace casual
 
                   manager::local::ipc::send( state(), message.process, reply);
                }
-
 
                void Server::operator () ( const common::message::domain::configuration::server::Request& message)
                {
@@ -1044,33 +1036,29 @@ namespace casual
                   auto server = state().server( message.process.pid);
 
                   if( server)
+                     reply.service.restrictions = server->restrictions;
+
+                  auto transform_route = []( const auto& service)
                   {
-                     reply.restrictions = server->restrictions;
-                  }
-
-                  using service_type = message::domain::configuration::service::Service;
+                     message::domain::configuration::server::Reply::Service::Route result;
+                     result.name = service.name;
+                     result.routes = service.routes;
+                     return result;
+                  };
+                  
                   algorithm::transform_if(
-                        state().configuration.service.services,
-                        reply.routes,
-                        []( const service_type& s){ // transform
-
-                           message::domain::configuration::server::Reply::Service result;
-
-                           result.name = s.name;
-                           result.routes = s.routes;
-
-                           return result;
-                        },
-                        []( const service_type& s){ // predicate
-                           return s.routes.size() != 1 || s.routes[ 0] != s.name;
-                        });
-
+                     state().configuration.service.services,
+                     reply.service.routes,
+                     transform_route,
+                     []( const auto& s) // predicate
+                     { 
+                        return ! s.routes.empty();
+                     });
 
                   manager::local::ipc::send( state(), message.process, reply);
 
                }
             } // configuration
-
 
             namespace local
             {

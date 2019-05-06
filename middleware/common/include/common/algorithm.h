@@ -201,6 +201,32 @@ namespace casual
             template< typename T>
             constexpr auto is_resize_copy = traits::has::resize< T>::value &&
                std::is_default_constructible< traits::remove_cvref_t< traits::iterable::value_t< T>>>::value;
+
+
+            namespace output
+            {
+               template< typename C, std::enable_if_t< traits::has::push_back< C>::value, int> = 0> 
+               auto iterator( C& value)
+               {
+                  return std::back_inserter( value);
+               }
+
+               template< typename I, std::enable_if_t< traits::iterator::is_output< I>::value, int> = 0> 
+               auto iterator( I value)
+               {
+                  return value;
+               }
+
+               template< typename C, std::enable_if_t< 
+                  ! traits::has::push_back< C>::value 
+                  && traits::is::iterable< C>::value, int> = 0> 
+               auto iterator( C& value)
+               {
+                  return std::begin( value);
+               }
+
+            } // output
+
          } // detail
 
          //! copy `range` to `output`
@@ -233,12 +259,10 @@ namespace casual
 
 
 
-         template< typename R, typename OutIter, typename P, typename = std::enable_if_t< 
-            common::traits::iterator::is_output< OutIter>::value
-            && common::traits::is::iterable< R>::value>>
-         auto copy_if( R&& range, OutIter output, P predicate)
+         template< typename R, typename Out, typename P> 
+         auto copy_if( R&& range, Out output, P predicate)
          {
-            return std::copy_if( std::begin( range), std::end( range), output, predicate);
+            return std::copy_if( std::begin( range), std::end( range), detail::output::iterator( output), predicate);
          }
 
       
@@ -268,11 +292,13 @@ namespace casual
             copy_max( source, range::size( destination), std::begin( destination));
          }
 
-         template< typename R, typename C>
-         decltype( auto) move( R&& range, C& container)
+         //! move range to out.
+         //! if out has push_back it will be used, hance append.
+         template< typename R, typename Out>
+         decltype( auto) move( R&& range, Out&& out)
          {
-            std::move( std::begin( range), std::end( range), std::back_inserter( container));
-            return container;
+            std::move( std::begin( range), std::end( range), detail::output::iterator( out));
+            return std::forward< Out>( out);
          }
 
          template< typename R, typename C, typename P>
@@ -343,28 +369,27 @@ namespace casual
             return result;
          }
 
-         //! Transform @p range into @p container, using @p transform if @p predicate is true
+         //! Transform @p range into @p output, using @p transform if @p predicate is true
          //!
          //! @return container
-         template< typename R, typename C, typename T, typename P>
-         C& transform_if( R&& range, C& container, T transformer, P predicate)
+         template< typename R, typename Out, typename T, typename P>
+         decltype( auto) transform_if( R&& range, Out&& output, T transformer, P predicate)
          {
+            auto&& out = detail::output::iterator( output);
+
             for( auto&& value : range)
             {
                if( predicate( value))
-               {
-                  container.push_back( transformer( value));
-               }
+                  *out++ = transformer( value);
             }
-            return container;
+            return std::forward< Out>( output);
          }
 
          template< typename R, typename T, typename P>
          auto transform_if( R&& range, T transformer, P predicate)
          {
             std::vector< std::remove_reference_t< decltype( transformer( *std::begin( range)))>> result;
-            transform_if( range, result, transformer, predicate);
-            return result;
+            return transform_if( range, std::move( result), transformer, predicate);
          }
 
 
@@ -606,19 +631,6 @@ namespace casual
          {
             return range::make( std::find_if( std::begin( range), std::end( range), predicate), std::end( range));
          }
-
-         template< typename R, typename T>
-         auto find_last( R&& range, const T& value) 
-         {
-            auto found = find( range, value);
-
-            while( found)
-            {
-
-            }
-            return found;
-         }
-
 
 
          template< typename R, typename P>
@@ -948,6 +960,17 @@ namespace casual
                std::iota( std::begin( range), std::end( range), value);
             }
          } // numeric
+
+         namespace lexicographical
+         {
+            template< typename A, typename B> 
+            auto compare( A&& a, B&& b)
+            {
+               return std::lexicographical_compare(
+                  std::begin( a), std::end( a),
+                  std::begin( b), std::end( b));
+            }
+         } // lexicographical
 
          namespace sorted
          {

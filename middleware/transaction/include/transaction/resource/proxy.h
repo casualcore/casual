@@ -8,7 +8,7 @@
 #pragma once
 
 
-#include "transaction/resource/proxy_server.h"
+#include "transaction/resource/proxy/server.h"
 
 #include "common/platform.h"
 #include "common/strong/id.h"

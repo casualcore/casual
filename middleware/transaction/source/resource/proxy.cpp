@@ -192,9 +192,7 @@ namespace casual
             common::log::line( log, "open resource");
             proxy::handle::Open{ m_state}();
 
-            //
             // prepare message dispatch handlers...
-            //
             common::log::line( log, "prepare message dispatch handlers");
 
             auto handler = common::communication::ipc::inbound::device().handler(
@@ -204,13 +202,11 @@ namespace casual
                proxy::handle::Rollback{ m_state}
             );
 
-
             common::log::line( log, "start message pump");
 
-            while( handler( common::communication::ipc::inbound::device().next( common::communication::ipc::policy::Blocking{})))
-            {
-               ;
-            }
+            common::message::dispatch::blocking::pump( 
+               handler, 
+               common::communication::ipc::inbound::device());
 
          }
       } // resource

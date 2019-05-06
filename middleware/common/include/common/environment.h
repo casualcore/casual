@@ -8,6 +8,7 @@
 #pragma once
 
 
+#include "common/environment/variable.h"
 #include "common/platform.h"
 #include "common/uuid.h"
 #include "common/process.h"
@@ -24,7 +25,6 @@ namespace casual
    {
       namespace environment
       {
-
          namespace variable
          {
             //! Exposes the mutex that is used to get read and writes to environment variables
@@ -58,6 +58,13 @@ namespace casual
                void unset( const char* name);
 
             } // detail
+
+            namespace native
+            {
+               //! @returns all current environment variables in the format [name=value]
+               std::vector< environment::Variable> current();
+            } // native
+
 
             //! @return value of environment variable with @p name
             //! @throws exception::EnvironmentVariableNotFound if not found
@@ -224,7 +231,10 @@ namespace casual
          //! and tries to find and replace the variable from environment.
          //!
          //! @return possible altered string with regards to environment variables
+         //! @{
          std::string string( const std::string& value);
+         std::string string( std::string&& value);
+         //! @}
 
          //! resets "all" paths to directories and files, based on what 
          //! environment variables are present.

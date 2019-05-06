@@ -52,41 +52,46 @@ namespace casual
                      namespace configure
                      {
                         void services(
-                              const std::vector< server::Service>& services,
-                              const message::domain::configuration::server::Reply& configuration)
+                           std::vector< server::Service> services,
+                           message::domain::configuration::server::Reply::Service configuration)
                         {
                            Trace trace{ "common::server::local::configure::services"};
 
-                           std::vector< message::service::advertise::Service> advertise;
+                           auto equal_service_name = []( auto& lhs, auto& rhs){ return lhs.name == rhs.name;};
 
+                           // if this server has restrictions, we intersect.
+                           if( ! configuration.restrictions.empty())
+                              algorithm::trim( services, std::get< 0>( algorithm::intersection( services, configuration.restrictions)));
 
-                           for( auto& service : services)
+                           // split the ones that has routes, and those who have not
+                           auto split = algorithm::intersection( services, configuration.routes, equal_service_name);
+
+                           // transform the non-routes directly (the complement of the intersection)
+                           auto advertise = algorithm::transform( std::get< 1>( split), []( auto& service)
+                           {
+                              return message::service::advertise::Service{ service.name, service.category, service.transaction};
+                           });
+                           
+                           auto handle_route = [&]( auto& service)
                            {
                               auto physical = server::context().physical( service.name);
+                              assert( physical);
 
-                              if( physical && ( configuration.restrictions.empty() || algorithm::find( configuration.restrictions, service.name)))
+                              auto route = algorithm::find_if( configuration.routes, [&]( auto& route){ return route.name == service.name;});
+
+                              auto transform_route = [physical,&service]( auto& route)
                               {
-                                 auto found = algorithm::find_if( configuration.routes, [&service]( const auto& s){
-                                    return s.name == service.name;
-                                 });
+                                 // bind the physical service to the configured route.
+                                 server::Context::instance().state().services.emplace( route, *physical);
+                                 return message::service::advertise::Service{ route, service.category, service.transaction};
+                              };
 
-                                 if( found)
-                                 {
-                                    algorithm::for_each( found->routes, [physical,&advertise,&service]( const std::string& name){
+                              algorithm::transform( route->routes, advertise, transform_route);
+                           };
 
-                                       advertise.emplace_back( name, service.category, service.transaction);
-
-                                       server::Context::instance().state().services.emplace( name, *physical);
-
-                                    });
-
-                                 }
-                                 else
-                                 {
-                                    advertise.emplace_back( service.name, service.category, service.transaction);
-                                 }
-                              }
-                           }
+                           // handle the configured routes, if any.
+                           auto& routes = std::get< 0>( split);
+                           algorithm::for_each( routes, handle_route);
 
                            local::advertise( std::move( advertise));
                         }
@@ -116,12 +121,11 @@ namespace casual
                      // Ask domain-manager for our configuration
                      auto configuration = policy::local::configuration();
 
-                     // Let the service-manager know about our services...
-                     policy::local::configure::services( arguments.services, configuration);
-
                      // configure resources, if any.
                      transaction::Context::instance().configure( arguments.resources, std::move( configuration.resources));
 
+                     // Let the service-manager know about our services...
+                     policy::local::configure::services( arguments.services, std::move( configuration.service));
                   }
 
                   void Default::reply( strong::ipc::id id, message::service::call::Reply& message)

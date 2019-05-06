@@ -44,9 +44,7 @@ namespace casual
             && std::is_integral< Size>::value >* dummy = nullptr>
          explicit constexpr Range( convertible_iterator first, Size size) : m_first( first), m_last( first + size) {}
 
-         //!
          //! conversion from Range with convertable iterators
-         //!
          template< typename convertible_iterator, std::enable_if_t< std::is_convertible< convertible_iterator, iterator>::value>* dummy = nullptr>
          constexpr Range( Range< convertible_iterator> range) :  m_first( std::begin( range)), m_last( std::end( range)) {}
 
@@ -86,8 +84,8 @@ namespace casual
          constexpr reference front() { return *m_first;}
          constexpr const reference front() const { return *m_first;}
 
-         constexpr reference back() { return *( m_last - 1);}
-         constexpr const reference back() const { return *( m_last - 1);}
+         constexpr reference back() { return *( std::prev( m_last));}
+         constexpr const reference back() const { return *( std::prev( m_last));}
 
          constexpr reference at( const difference_type index) { return at( m_first, m_last, index);}
          constexpr const reference at( const difference_type index) const { return at( m_first, m_last, index);}
@@ -126,19 +124,16 @@ namespace casual
          constexpr static pointer data( iterator first, iterator last) noexcept
          {
             if( first != last)
-            {
                return &( *first);
-            }
+
             return nullptr;
          }
 
          constexpr static reference at( iterator first, iterator last, const difference_type index)
          {
-            if( std::distance( first, last) < index) { throw std::out_of_range{ std::to_string( index)};}
-
-            return *( first + index);
+            assert( index < std::distance( first, last));
+            return *( std::next( first, index));
          }
-
 
          iterator m_first = iterator{};
          iterator m_last = iterator{};
@@ -148,11 +143,9 @@ namespace casual
 
 
 
-      //!
       //! This is not intended to be a serious attempt at a range-library
       //! Rather an abstraction that helps our use-cases and to get a feel for
       //! what a real range-library could offer. It's a work in progress
-      //!
       namespace range
       {
          namespace category
@@ -248,28 +241,21 @@ namespace casual
 
          namespace position
          {
-            //!
             //! @return returns true if @lhs overlaps @rhs in some way.
-            //!
             template< typename R1, typename R2>
             bool overlap( R1&& lhs, R2&& rhs)
             {
                return std::end( lhs) >= std::begin( rhs) && std::begin( lhs) <= std::end( rhs);
             }
 
-
-            //!
             //! @return true if @lhs is adjacent to @rhs or @rhs is adjacent to @lhs
-            //!
             template< typename R1, typename R2>
             bool adjacent( R1&& lhs, R2&& rhs)
             {
                return std::end( lhs) + 1 == std::begin( rhs) || std::end( lhs) + 1 == std::begin( rhs);
             }
 
-            //!
             //! @return true if @rhs is a sub-range to @lhs
-            //!
             template< typename R1, typename R2>
             bool includes( R1&& lhs, R2&& rhs)
             {
@@ -355,13 +341,11 @@ namespace casual
             return out.str();
          }
 
-         //!
          //! Returns the first value in the range
          //!
          //! @param range
          //! @return first value
          //! @throws std::out_of_range if range is empty
-         //!
          template< typename R>
          decltype( auto) front( R&& range)
          {
@@ -378,9 +362,7 @@ namespace casual
             return range.back();
          }
 
-         //!
          //! If @p range has size > 1, shorten range to size 1.
-         //!
          template< typename R>
          auto zero_one( R&& range)
          {

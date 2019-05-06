@@ -49,6 +49,7 @@ namespace casual
             friend bool operator == ( const Service& lhs, const Service& rhs);
             friend bool operator == ( const Service& lhs, const void* rhs);
             friend bool operator != ( const Service& lhs, const Service& rhs);
+            friend bool operator == ( const Service& lhs, const std::string& rhs);
 
          };
 

@@ -78,6 +78,18 @@ namespace casual
             archive.serialtype_end( name);
          }
 
+         void serialize( Reader& archive, common::environment::Variable& value, const char* name)
+         {
+            std::string representation;
+            archive >> name::value::pair::make( name, representation);
+            value = std::move( representation);
+         }
+
+         void serialize( Writer& archive, const common::environment::Variable& value, const char* name)
+         {
+            archive << name::value::pair::make( name, static_cast< const std::string&>( value));
+         }
+
 
          void serialize( Reader& archive, platform::time::point::type& value, const char* name)
          {

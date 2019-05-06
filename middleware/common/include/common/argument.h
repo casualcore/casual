@@ -165,14 +165,11 @@ namespace casual
                   return *this;
                }
 
-
-               //!
                //! Semantics
                //! * first `has` is used to find a key to an option
                //! * then to determine which values the option should be invoked with
                //!    `next` is used to find the next option. This to provide a mean for 
                //!     the _handler_ to have different semantics for the two.
-               //! 
                //! @{
                inline bool has( const std::string& key) const { return m_handler->has( key);}
                inline bool next( const std::string& key) const { return m_handler->next( key);}
