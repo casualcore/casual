@@ -31,42 +31,16 @@ namespace casual
 
    namespace transaction
    {
-      namespace manager
-      {
-
-         namespace environment
-         {
-            namespace log
-            {
-               std::string file()
-               {
-                  return configuration::directory::domain() + "/transaction/log.db";
-               }
-            } // log
-
-         } // environment
-
-         Settings::Settings() :
-            log{ environment::log::file()}
-         {
-
-         }
-      } // manager
 
       Manager::Manager( manager::Settings settings) :
-          m_state( common::environment::string( std::move( settings.log)))
+          m_state{ manager::action::state( std::move( settings))}
       {
-         auto start = common::platform::time::clock::type::now();
-
          log::line( log, "transaction manager start");
 
          // Set the process variables so children can communicate with us.
          common::environment::variable::process::set(
-               common::environment::variable::name::ipc::transaction::manager(),
-               common::process::handle());
-
-         // get configuration from domain manager
-         manager::action::configure( m_state);
+            common::environment::variable::name::ipc::transaction::manager(),
+            common::process::handle());
 
          // Start resource-proxies
          {
@@ -83,25 +57,10 @@ namespace casual
                manager::handle::resource::reply::Connect{ m_state});
 
             while( ! m_state.booted())
-            {
                handler( manager::ipc::device().blocking_next( handler.types()));
-            }
          }
 
-         auto instances = common::algorithm::accumulate(
-               m_state.resources, 0,
-               []( std::size_t count, const manager::state::resource::Proxy& p) {
-                  return count + p.instances.size();
-               });
-
-         auto end = common::platform::time::clock::type::now();
-
-
-         log::line( log::category::information, "transaction manager is on-line - ", 
-            m_state.resources.size(), " resources - ", 
-            instances, " instances - boot time: ", 
-            chronology::duration( end - start));
-
+         log::line( log::category::information, "transaction-manager is on-line");
       }
 
       Manager::~Manager()
@@ -125,119 +84,28 @@ namespace casual
          });
       }
 
-      namespace manager
-      {
-         namespace local
-         {
-            namespace
-            {
-               namespace message
-               {
-                  void pump( manager::State& state)
-                  {
-                     try
-                     {
-                        log::line( log, "prepare message dispatch handlers");
-
-                        // prepare message dispatch handlers...
-                        auto handler = handle::handlers( state);
-
-                        log::line( log, "start message pump");
-
-                        // Connect to domain
-                        communication::instance::connect( communication::instance::identity::transaction::manager);
-
-
-                        persistent::Writer persist( state.persistent_log);
-
-                        while( true)
-                        {
-                           Trace trace{ "transaction::Manager message pump"};
-
-                           {
-                              persist.begin();
-
-                              if( ! state.outstanding())
-                              {
-                                 // We can only block if our backlog is empty
-
-                                 // Removed transaction-timeout from TM, since the semantics are not clear
-                                 // see commit 559916d9b84e4f84717cead8f2ee7e3d9fd561cd for previous implementation.
-                                 handler( ipc::device().blocking_next());
-                              }
-
-                              // Consume until the queue is empty or we've got pending replies equal to batch::transaction
-                              while( handler( ipc::device().non_blocking_next()) &&
-                                    state.persistent.replies.size() < common::platform::batch::transaction::persistence)
-                              {
-                                 ; // no-op
-                              }
-                           }
-
-                           // Check if we have any persistent stuff to handle, if not we don't do persistent commit
-                           if( ! state.persistent.replies.empty() || ! state.persistent.requests.empty())
-                           {
-                              persist.commit();
-
-                              // Send persistent replies to clients
-                              {
-
-                                 log::line( log, "manager persistent replies: ", state.persistent.replies.size());;
-
-                                 auto not_done = common::algorithm::partition(
-                                       state.persistent.replies,
-                                       common::predicate::negate( manager::action::persistent::Send{ state}));
-
-                                 common::algorithm::trim( state.persistent.replies, std::get< 0>( not_done));
-
-                                 log::line( log, "manager persistent replies: ", state.persistent.replies.size());
-                              }
-
-                              // Send persistent resource requests
-                              {
-                                 log::line( log, "manager persistent request: ", state.persistent.requests.size());
-
-                                 auto not_done = common::algorithm::partition(
-                                       state.persistent.requests,
-                                       common::predicate::negate( manager::action::persistent::Send{ state}));
-
-                                 // Move the ones that did not find an idle resource to pending requests
-                                 common::algorithm::move( std::get< 0>( not_done), state.pending.requests);
-
-                                 state.persistent.requests.clear();
-
-                              }
-                           }
-                           log::line( log, "manager transactions: ", state.transactions.size());
-                        }
-                     }
-                     catch( const exception::casual::Shutdown&)
-                     {
-                        // We do nothing
-                     }
-                  }
-               } // message
-            } // <unnamed>
-         } // local
-      } // manager
-
       void Manager::start()
       {
-         try
-         {
-            // We're ready to start....
-            manager::local::message::pump( m_state);
-         }
-         catch( const common::exception::signal::Terminate&)
-         {
-            // we do nothing, and let the dtor take care of business
-         }
-         catch( ...)
-         {
-            common::exception::handle();
-         }
-      }
+         Trace trace{ "transaction::Manager::start"};
 
+         // prepare message dispatch handlers...
+         auto handler = manager::handle::handlers( m_state);
+
+         // Connect to domain
+         communication::instance::connect( communication::instance::identity::transaction::manager);
+
+         auto empty_callback = [&]()
+         {
+            // if input "queue" is empty, we persist and send persistent replies, if any.
+            manager::handle::persist::send( m_state);
+         };
+
+         common::message::dispatch::empty::pump(
+            handler,
+            manager::ipc::device(),
+            empty_callback);
+
+      }
 
       const manager::State& Manager::state() const
       {

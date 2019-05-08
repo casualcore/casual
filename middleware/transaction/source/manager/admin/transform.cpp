@@ -161,18 +161,17 @@ namespace casual
 
                   struct Reply
                   {
-                     admin::pending::Reply operator () ( const state::pending::Reply& value) const
+                     admin::pending::Reply operator () ( const common::message::pending::Message& value) const
                      {
                         admin::pending::Reply result;
 
-                        result.queue = value.target;
-                        result.type = common::message::convert::type( value.message.type);
-                        result.correlation = value.message.correlation;
+                        result.destinations = value.destinations;
+                        result.type = common::message::convert::type( value.complete.type);
+                        result.correlation = value.complete.correlation;
 
                         return result;
                      }
                   };
-
                } // pending
 
 
@@ -187,8 +186,6 @@ namespace casual
                   return result;
                }
 
-
-
                admin::State state( const manager::State& state)
                {
                   admin::State result;
@@ -197,10 +194,9 @@ namespace casual
                   common::algorithm::transform( state.transactions, result.transactions, transform::Transaction{});
 
                   common::algorithm::transform( state.pending.requests, result.pending.requests, transform::pending::Request{});
-                  common::algorithm::transform( state.persistent.requests, result.persistent.requests, transform::pending::Request{});
                   common::algorithm::transform( state.persistent.replies, result.persistent.replies, transform::pending::Reply{});
 
-                  result.log = transform::log( state.persistent_log.stats());
+                  result.log = transform::log( state.persistent.log.stats());
 
                   return result;
                }

@@ -45,8 +45,7 @@ domain:
 
          struct Domain
          {
-            domain::manager::unittest::Process manager{ { configuration}};
-            //common::mockup::domain::service::Manager service;
+            domain::manager::unittest::Process manager{ { configuration}}; 
          };
 
       } // <unnamed>
@@ -60,9 +59,12 @@ domain:
 
       local::Domain domain;
 
-      transaction::manager::State state( ":memory:");
-
-      transaction::manager::action::configure( state);
+      auto state = []()
+      {
+         transaction::manager::Settings settings;
+         settings.log = ":memory:";
+         return transaction::manager::action::state( std::move( settings));
+      }();
 
       ASSERT_TRUE( state.resource_properties.size() >= 2) << "state.xaConfig.size(): " << state.resource_properties.size();
       EXPECT_TRUE( state.resource_properties.at( "db2").xa_struct_name == "db2xa_switch_static_std");
@@ -77,9 +79,12 @@ domain:
 
       local::Domain domain;
 
-      transaction::manager::State state( ":memory:");
-
-      transaction::manager::action::configure( state);
+      auto state = []()
+      {
+         transaction::manager::Settings settings;
+         settings.log = ":memory:";
+         return transaction::manager::action::state( std::move( settings));
+      }();
 
       const common::strong::resource::id invalid;
 

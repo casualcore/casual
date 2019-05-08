@@ -12,7 +12,6 @@
 
 #include "transaction/manager/admin/transactionvo.h"
 
-
 #include <vector>
 
 namespace casual
@@ -23,8 +22,7 @@ namespace casual
       {
          namespace action
          {
-
-            void configure( State& state);
+            State state( manager::Settings settings);
 
             namespace resource
             {
@@ -37,27 +35,9 @@ namespace casual
 
                std::vector< admin::resource::Proxy> instances( State& state, std::vector< admin::scale::Instances> instances);
 
-
                bool request( State& state, state::pending::Request& message);
 
             } // resource
-
-
-
-            namespace persistent
-            {
-               struct Send : state::Base
-               {
-                  using state::Base::Base;
-
-                  bool operator () ( state::pending::Reply& message) const;
-
-                  bool operator () ( state::pending::Request& message) const;
-
-               };
-
-            } // pending
-
 
          } // action
       } // manager

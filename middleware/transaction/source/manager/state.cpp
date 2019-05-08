@@ -28,16 +28,19 @@ namespace casual
    {
       namespace manager
       {
+
+         Settings::Settings() :
+            log{ environment::directory::domain() + "/transaction/log.db"}
+         {}
+
          namespace state
          {
-
             Metrics& Metrics::operator += ( const Metrics& rhs)
             {
                resource += rhs.resource;
                roundtrip += rhs.roundtrip;
                return *this;
             }
-
 
             namespace resource
             {
@@ -156,59 +159,6 @@ namespace casual
                } // external
             } // resource
 
-            void configure( State& state, const common::message::domain::configuration::Reply& configuration)
-            {
-
-               {
-                  Trace trace{ "transaction manager xa-switch configuration"};
-
-                  auto resources = configuration::resource::property::get();
-
-                  for( auto& resource : resources)
-                  {
-                     auto result = state.resource_properties.emplace( resource.key, std::move( resource));
-                     if( ! result.second)
-                        throw common::exception::casual::invalid::Configuration( "multiple keys in resource config: " + result.first->first);
-                  }
-               }
-
-               // configure resources
-               {
-                  Trace trace{ "transaction manager resource configuration"};
-
-                  auto transform_resource = []( const auto& r)
-                  {
-                     state::resource::Proxy proxy{ state::resource::Proxy::generate_id{}};
-
-                     proxy.name = common::coalesce( r.name, ".rm-" + std::to_string( proxy.id.value()));
-                     proxy.concurency = r.instances;
-                     proxy.key = r.key;
-                     proxy.openinfo = r.openinfo;
-                     proxy.closeinfo = r.closeinfo;
-                     proxy.note = r.note;
-
-                     return proxy;
-                  };
-
-                  auto validate = [&state]( const common::message::domain::configuration::transaction::Resource& r) {
-                     if( ! common::algorithm::find( state.resource_properties, r.key))
-                     {
-                        log::line( log::category::error, "failed to correlate resource key '", r.key, "' - action: skip resource");
-
-                        common::event::error::send( "failed to correlate resource key '" + r.key + "'");
-                        return false;
-                     }
-                     return true;
-                  };
-
-                  common::algorithm::transform_if(
-                     configuration.domain.transaction.resources,
-                     state.resources,
-                     transform_resource,
-                     validate);
-
-               }
-            }
          } // state
 
          Transaction::Resource::Result Transaction::Resource::convert( common::code::xa value)
@@ -398,7 +348,7 @@ namespace casual
                << '}';
          }
 
-         State::State( std::string database) : persistent_log( std::move( database)) {}
+         State::State( std::string database) : persistent( std::move( database)) {}
 
 
          bool State::outstanding() const

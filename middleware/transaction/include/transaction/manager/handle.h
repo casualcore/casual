@@ -42,6 +42,12 @@ namespace casual
 
          namespace handle
          {
+            namespace persist
+            {
+               //! persist and send pending replies, if any
+               void send( State& state);
+            } // persist
+
             using dispatch_type = common::communication::ipc::dispatch::Handler;
 
             namespace process

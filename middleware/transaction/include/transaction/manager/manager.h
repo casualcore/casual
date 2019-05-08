@@ -11,35 +11,14 @@
 #include "transaction/manager/state.h"
 
 
-#include <string>
-
 namespace casual
 {
    namespace transaction
    {
-      namespace manager
-      {
-         namespace environment
-         {
-            namespace log
-            {
-               std::string file();
-            } // log
-         } // environment
-
-         struct Settings
-         {
-            Settings();
-
-            std::string log;
-         };
-
-      } // manager
-
       class Manager
       {
       public:
-
+      
          Manager( manager::Settings settings);
          ~Manager();
 

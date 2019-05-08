@@ -48,8 +48,16 @@ namespace casual
 
             m_statement.insert = m_connection.precompile( R"( INSERT INTO trans VALUES (?,?,?,?,?,?,?); )" );
             m_statement.remove = m_connection.precompile( "DELETE FROM trans WHERE gtrid = ?; ");
-      
+
+            // start a "transaction" for the sql-lite db
+            m_connection.begin();
          }
+
+         Log::~Log()
+         {
+            // persist.
+            m_connection.commit();
+         } 
 
 
          void Log::prepare( const Transaction& transaction)
@@ -88,28 +96,17 @@ namespace casual
             common::log::line( verbose::log, "total removes: ", m_stats.update.remove);
          }
 
-
-         void Log::write_begin()
+         void Log::persist()
          {
-            Trace trace{ "transaction::Log::write_begin"};
+            Trace trace{ "transaction::Log::persist"};
 
-            m_connection.begin();
-         }
-
-         void Log::write_commit()
-         {
-            Trace trace{ "transaction::Log::write_commit"};
-
+            // commit and and start a new "transaction" for the sql-lite db
+            
             m_connection.commit();
             ++m_stats.writes;
+            m_connection.begin();
 
             common::log::line( verbose::log, "total commits: ", m_stats.writes);
-         }
-
-
-         void Log::write_rollback()
-         {
-            m_connection.rollback();
          }
 
          const Log::Stats& Log::stats() const

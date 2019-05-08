@@ -13,6 +13,7 @@
 #include "serviceframework/namevaluepair.h"
 #include "serviceframework/platform.h"
 #include "common/metric.h"
+#include "common/process.h"
 
 namespace casual
 {
@@ -150,13 +151,13 @@ namespace casual
 
                struct Reply
                {
-                  serviceframework::strong::ipc::id queue;
+                  std::vector< common::process::Handle> destinations;
                   serviceframework::platform::Uuid correlation;
                   long type;
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
                   {
-                     archive & CASUAL_MAKE_NVP( queue);
+                     archive & CASUAL_MAKE_NVP( destinations);
                      archive & CASUAL_MAKE_NVP( correlation);
                      archive & CASUAL_MAKE_NVP( type);
                   })

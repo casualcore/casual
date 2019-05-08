@@ -4,9 +4,7 @@
 //! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-
 #pragma once
-
 
 #include "transaction/global.h"
 
@@ -16,9 +14,7 @@
 
 #include "common/message/transaction.h"
 
-//
-// std
-//
+
 #include <string>
 
 namespace casual
@@ -42,13 +38,13 @@ namespace casual
             };
 
             Log( std::string database);
+            ~Log();
 
             void prepare( const Transaction& transaction);
             void remove( const global::ID& global);
 
-            void write_begin();
-            void write_commit();
-            void write_rollback();
+            //! persist the current "transaction" and start a new one
+            void persist();
 
             struct Stats
             {
@@ -91,50 +87,6 @@ namespace casual
 
             Stats m_stats;
          };
-
-
-         namespace persistent
-         {
-            struct Writer
-            {
-               enum class State
-               {
-                  begun,
-                  committed,
-               };
-
-               inline Writer( Log& log) : m_log( log), m_state{ State::committed} {}
-
-               inline void begin()
-               {
-                  if( m_state == State::committed)
-                  {
-                     m_log.write_begin();
-                     m_state = State::begun;
-                  }
-               }
-
-               inline void commit()
-               {
-                  if( m_state == State::begun)
-                  {
-                     m_log.write_commit();
-                     m_state = State::committed;
-                  }
-               }
-
-               inline ~Writer()
-               {
-                  commit();
-               }
-
-            private:
-               Log& m_log;
-               State m_state;
-            };
-
-         } // persistent
-
       } // manager
    } // transaction
 } // casual

@@ -6,10 +6,7 @@
 
 #pragma once
 
-
-
 #include "common/server/argument.h"
-
 
 namespace casual
 {
@@ -17,7 +14,7 @@ namespace casual
    {
       namespace manager
       {
-         class State;
+         struct State;
          namespace admin
          {
             namespace service
@@ -30,8 +27,6 @@ namespace casual
                   {
                      constexpr auto instances() { return ".casual/transaction/scale/instances";}
                   } // update
-
-
                } // name
             } // service
 

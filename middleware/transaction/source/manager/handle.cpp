@@ -18,6 +18,8 @@
 
 #include "common/communication/instance.h"
 
+#include "domain/pending/message/send.h"
+
 
 namespace casual
 {
@@ -33,7 +35,8 @@ namespace casual
                static common::communication::ipc::Helper ipc{
                   common::communication::error::handler::callback::on::Terminate
                   {
-                     []( const common::process::lifetime::Exit& exit){
+                     []( const common::process::lifetime::Exit& exit)
+                     {
                         // We put a dead process event on our own ipc device, that
                         // will be handled later on.
                         common::message::event::process::Exit event{ exit};
@@ -46,8 +49,30 @@ namespace casual
 
             namespace
             {
+               namespace pending
+               {
+                  template< typename M>
+                  void send( M&& message, const common::process::Handle& target)
+                  {
+                     try
+                     {
+                        if( ! ipc::device().non_blocking_send( target.ipc, message))
+                        {
+                           common::log::line( log, "failed to send reply directly to : ", target,  " - action: pend reply");
+                           casual::domain::pending::message::send( target, message, ipc::device().error_handler());
+                        }
+                     }
+                     catch( const common::exception::system::communication::Unavailable&)
+                     {
+                        common::log::line( log, "failed to send message to queue: ", device);
+                     }
+
+                  }
+               } // pending
+
                namespace optional
                {
+                  
                   template< typename D, typename M>
                   void send( D&& device, M&& message)
                   {
@@ -60,13 +85,76 @@ namespace casual
                         common::log::line( log, "failed to send message to queue: ", device);
                      }
                   }
-
                } // optional
+
+
             } //
          } // ipc
 
          namespace handle
          {
+            namespace persist
+            {
+
+               namespace local
+               {
+                  namespace
+                  {
+                     void send( State& state)
+                     {
+                        // persist transaction log   
+                        state.persistent.log.persist();
+
+                        // we'll consume every message either way
+                        auto persistent = std::exchange( state.persistent.replies, {});
+
+                        common::log::line( verbose::log, "persistent: ", persistent);
+
+                        auto direct_send = []( auto& message)
+                        {
+                           return common::message::pending::non::blocking::send( message, ipc::device().error_handler());
+                        };
+
+                        // try send directly
+                        auto pending = common::algorithm::remove_if( persistent, direct_send);
+                     
+                        common::log::line( verbose::log, "pending: ", pending);
+
+
+                        auto pending_send = []( auto& message)
+                        {
+                           casual::domain::pending::message::send( message, ipc::device().error_handler());
+                        };
+                        
+                        // send failed non-blocking sends to pending
+                        common::algorithm::for_each( pending, pending_send);
+                     }
+                  } // <unnamed>
+               } // local
+
+
+               void send( State& state)
+               {
+                  Trace trace{ "transaction::handle::persist:send"};
+
+                  // if we don't have any persistent replies, we don't need to persist
+                  if( ! state.persistent.replies.empty())
+                     local::send( state);
+                 
+               }
+                  
+               namespace batch
+               {
+                  void send( State& state)
+                  {  
+                     // check if we've reach our "batch-limit", if so, persit and send replies
+                     if( state.persistent.replies.size() >= common::platform::batch::transaction::persistence)
+                        local::send( state);  
+                  }
+                  
+               } // batch
+            } // persist
+
             namespace local
             {
                namespace
@@ -102,6 +190,13 @@ namespace casual
                   {
                      namespace persistent
                      {
+                        
+                        template< typename M>
+                        void reply( State& state, M&& message, const common::process::Handle& target)
+                        {
+                           state.persistent.replies.emplace_back( std::move( message), target);
+                           handle::persist::batch::send( state);
+                        }
 
                         template< typename R, typename M>
                         void reply( State& state, const M& request, int code, const common::process::Handle& target)
@@ -112,7 +207,7 @@ namespace casual
                            message.trid = request.trid;
                            message.state = code;
 
-                           state.persistent.replies.emplace_back( target.ipc, std::move( message));
+                           reply( state, std::move( message), target);
                         }
 
                         template< typename R, typename M>
@@ -121,83 +216,30 @@ namespace casual
                            reply< R>( state, request, code, request.process);
                         }
 
-                        template< typename M>
-                        void reply( State& state, M&& message, const common::process::Handle& target)
-                        {
-                           state.persistent.replies.emplace_back( target.ipc, std::move( message));
-                        }
-
                      } // persistent
 
-                     template< typename M>
-                     struct Reply : state::Base
-                     {
-                        using state::Base::Base;
-
-                        template< typename T>
-                        void operator () ( const T& request, int code, const common::process::Handle& target)
-                        {
-                           auto create_message = [&]()
-                           {
-                              M message;
-                              message.correlation = request.correlation;
-                              message.process = common::process::handle();
-                              message.trid = request.trid;
-                              message.state = code;
-                              return message;
-                           };
-
-                           state::pending::Reply reply{ target.ipc, create_message()};
-                           action::persistent::Send send{ m_state};
-
-                           if( ! send( reply))
-                           {
-                              common::log::line( log, "failed to send reply directly to : ", target,  " - action: pend reply");
-                              common::log::line( verbose::log, "pending: ", reply);
-
-                              m_state.persistent.replies.push_back( std::move( reply));
-                           }
-                        }
-
-                        template< typename T>
-                        void operator () ( const T& request, int code)
-                        {
-                           operator()( request, code, request.process);
-                        }
-                     };
-
-
+   
                      template< typename R>
-                     void reply( State& state, R&& message, const common::process::Handle& target)
+                     void reply( R&& message, const common::process::Handle& target)
                      {
-                        state::pending::Reply reply{ target.ipc, std::forward< R>( message)};
-
-                        action::persistent::Send send{ state};
-
-                        if( ! send( reply))
-                        {
-                           common::log::line( log, "failed to send reply directly to : ", target,  " - action: pend reply");
-                           common::log::line( verbose::log, "message: ", message, " trid: ", message.trid);
-
-                           state.persistent.replies.push_back( std::move( reply));
-                        }
+                        ipc::pending::send( std::forward< R>( message), target);
                      }
 
                      template< typename R>
-                     void xa_result( State& state, R&& message, common::code::xa result)
+                     void xa_result( R&& message, common::code::xa result)
                      {
                         auto reply = local::transform::reply( message);
                         reply.state = result;
                         reply.trid = message.trid;
                         reply.resource = message.resource;
 
-                        send::reply( state, std::move( reply), message.process);
+                        send::reply( std::move( reply), message.process);
                      }
 
                      template< typename R>
-                     void read_only( State& state, R&& message)
+                     void read_only( R&& message)
                      {
-                        xa_result( state, message, common::code::xa::read_only);
+                        xa_result( message, common::code::xa::read_only);
                      }
 
 
@@ -409,7 +451,7 @@ namespace casual
 
                                  // Read-only optimization. We can send the reply directly and
                                  // discard the transaction
-                                 state.persistent_log.remove( transaction.global);
+                                 state.persistent.log.remove( transaction.global);
 
                                  // Send reply
                                  {
@@ -419,7 +461,7 @@ namespace casual
                                     reply.stage = reply_type::Stage::commit;
                                     reply.state = common::code::tx::ok;
 
-                                    local::send::reply( state, std::move( reply), transaction.owner());
+                                    local::send::reply( std::move( reply), transaction.owner());
                                  }
 
                                  // Indicate that wrapper should remove the transaction from state
@@ -430,7 +472,7 @@ namespace casual
                                  common::log::line( log, result, " prepare completed - ", transaction);
 
                                  // Prepare has gone ok. Log state
-                                 state.persistent_log.prepare( transaction);
+                                 state.persistent.log.prepare( transaction);
 
                                  // prepare send reply. Will be sent after persistent write to file
                                  {
@@ -501,7 +543,7 @@ namespace casual
 
                                  if( transaction.resource_count() <= 1)
                                  {
-                                    local::send::reply( state, reply, transaction.owner());
+                                    local::send::reply( reply, transaction.owner());
                                  }
                                  else
                                  {
@@ -514,7 +556,7 @@ namespace casual
                                  }
 
                                  // Remove transaction
-                                 state.persistent_log.remove( message.trid);
+                                 state.persistent.log.remove( message.trid);
                                  return true;
                               }
                               default:
@@ -567,11 +609,11 @@ namespace casual
                                     reply.trid = transaction.global.trid;
                                     reply.state = common::code::tx::ok;
 
-                                    local::send::reply( state, std::move( reply), transaction.owner());
+                                    local::send::reply( std::move( reply), transaction.owner());
                                  }
 
                                  // Remove transaction
-                                 state.persistent_log.remove( message.trid);
+                                 state.persistent.log.remove( message.trid);
                                  return true;
                               }
                               default:
@@ -625,7 +667,7 @@ namespace casual
                               reply.correlation = transaction.correlation;
                               reply.resource = transaction.resource;
 
-                              local::send::reply( state, std::move( reply), transaction.owner());
+                              local::send::reply( std::move( reply), transaction.owner());
                            }
 
                            return false;
@@ -648,7 +690,7 @@ namespace casual
                               reply.correlation = transaction.correlation;
                               reply.resource = transaction.resource;
 
-                              local::send::reply( state, std::move( reply), transaction.owner());
+                              local::send::reply( std::move( reply), transaction.owner());
                            }
 
                            return true;
@@ -671,7 +713,7 @@ namespace casual
                               reply.correlation = transaction.correlation;
                               reply.resource = transaction.resource;
 
-                              local::send::reply( state, std::move( reply), transaction.owner());
+                              local::send::reply( std::move( reply), transaction.owner());
                            }
 
                            return true;
@@ -717,7 +759,7 @@ namespace casual
 
                                           // Read-only optimization. We can send the reply directly and
                                           // discard the transaction
-                                          state.persistent_log.remove( transaction.global);
+                                          state.persistent.log.remove( transaction.global);
 
                                           // Send reply
                                           {
@@ -727,7 +769,7 @@ namespace casual
                                              reply.resource = transaction.resource;
                                              reply.state = result;
 
-                                             local::send::reply( state, std::move( reply), transaction.owner());
+                                             local::send::reply( std::move( reply), transaction.owner());
                                           }
 
                                           // Indicate that wrapper should remove the transaction from state
@@ -738,7 +780,7 @@ namespace casual
                                           common::log::line( log, result, " prepare completed - ", transaction);
 
                                           // Prepare has gone ok. Log state
-                                          state.persistent_log.prepare( transaction);
+                                          state.persistent.log.prepare( transaction);
 
                                           // All XA_OK is to be committed, send commit to all
 
@@ -787,7 +829,7 @@ namespace casual
                                        reply.resource = transaction.resource;
                                        reply.state = common::code::xa::rollback_other;
 
-                                       local::send::reply( state, std::move( reply), transaction.owner());
+                                       local::send::reply( std::move( reply), transaction.owner());
                                     }
                                     return true;
                                  }
@@ -807,6 +849,7 @@ namespace casual
                   } // implementation
                } // <unnamed>
             } // local
+
 
             namespace process
             {
@@ -1082,7 +1125,7 @@ namespace casual
                   reply.stage = decltype( reply)::Stage::error;
                   reply.state = exception.type();
 
-                  local::send::reply( Handler::m_state, std::move( reply), message.process);
+                  local::send::reply( std::move( reply), message.process);
                }
                catch( const common::exception::signal::Terminate&)
                {
@@ -1099,7 +1142,7 @@ namespace casual
                   reply.stage = decltype( reply)::Stage::error;
                   reply.state = fail;
 
-                  local::send::reply( Handler::m_state, std::move( reply), message.process);
+                  local::send::reply( std::move( reply), message.process);
                }
             }
 
@@ -1149,7 +1192,7 @@ namespace casual
                         reply.state = common::code::tx::ok;
                         reply.stage = reply_type::Stage::commit;
 
-                        local::send::reply( m_state, std::move( reply), message.process);
+                        local::send::reply( std::move( reply), message.process);
                      }
 
                      break;
@@ -1219,7 +1262,7 @@ namespace casual
                      auto reply = local::transform::reply( message);
                      reply.state = common::code::tx::ok;
 
-                     local::send::reply( m_state, std::move( reply), message.process);
+                     local::send::reply( std::move( reply), message.process);
                   }
                }
                else
@@ -1314,7 +1357,7 @@ namespace casual
 
                      common::log::line( log, message.trid, " either does not exists (longer) in this domain or there are no resources involved - action: send prepare-reply (read only)");
 
-                     local::send::read_only( m_state, message);
+                     local::send::read_only( message);
                   }
                }
 
@@ -1344,7 +1387,7 @@ namespace casual
                      //
                      // The commit/rollback phase has already started, we send
                      // read only and let the phase take it's course
-                     local::send::read_only( m_state, message);
+                     local::send::read_only( message);
                   }
                   else
                   {
@@ -1363,7 +1406,7 @@ namespace casual
 
                            if( transaction.resource_count() == 0)
                            {
-                              local::send::read_only( m_state, message);
+                              local::send::read_only( message);
                               return Directive::remove_transaction;
                            }
 
@@ -1379,7 +1422,7 @@ namespace casual
                         }
                         case Transaction::Resource::Stage::not_involved:
                         {
-                           local::send::read_only( m_state, message);
+                           local::send::read_only( message);
                            return Directive::remove_transaction;
                         }
                         default:
@@ -1421,12 +1464,12 @@ namespace casual
                         reply.trid = message.trid;
                         reply.resource = message.resource;
 
-                        local::send::reply( m_state, std::move( reply), message.process);
+                        local::send::reply( std::move( reply), message.process);
                         return;
                      }
 
                      common::log::line( log, message.trid, " either does not exists (longer) in this domain or there are no resources involved - action: send commit-reply (read only)");
-                     local::send::read_only( m_state, message);
+                     local::send::read_only( message);
                   }
                }
 
@@ -1460,7 +1503,7 @@ namespace casual
                         reply.state = common::code::xa::protocol;
                         reply.resource = message.resource;
 
-                        local::send::reply( m_state, std::move( reply), message.process);
+                        local::send::reply( std::move( reply), message.process);
                         return Directive::keep_transaction;
                      }
 
@@ -1473,7 +1516,7 @@ namespace casual
                         case 0:
                         {
                            common::log::line( log, transaction.global, " - no relevant resources involved");
-                           local::send::read_only( m_state, message);
+                           local::send::read_only( message);
 
                            return Directive::remove_transaction;
                         }
@@ -1525,7 +1568,7 @@ namespace casual
                   else
                   {
                      common::log::line( log, message.trid, " either does not exists (longer) in this domain or there are no resources involved - action: send rollback-reply (XA_OK)");
-                     local::send::xa_result( m_state, message, common::code::xa::ok);
+                     local::send::xa_result( message, common::code::xa::ok);
                   }
                }
 
@@ -1547,7 +1590,7 @@ namespace casual
 
                         if( transaction.resource_count() == 0)
                         {
-                           local::send::read_only( m_state, message);
+                           local::send::read_only( message);
                            return Directive::remove_transaction;
                         }
 
@@ -1577,19 +1620,19 @@ namespace casual
                      }
                      case Transaction::Resource::Stage::rollback_requested:
                      {
-                        local::send::read_only( m_state, message);
+                        local::send::read_only( message);
                         break;
                      }
                      case Transaction::Resource::Stage::not_involved:
                      {
-                        local::send::read_only( m_state, message);
+                        local::send::read_only( message);
                         return Directive::remove_transaction;
                      }
                      default:
                      {
                         common::log::line( common::log::category::error, common::code::xa::protocol, ' ', transaction.global, " unexpected transaction stage");
                         common::log::line( common::log::category::verbose::error, "transaction: ", transaction);
-                        local::send::xa_result( m_state, message, common::code::xa::protocol);
+                        local::send::xa_result( message, common::code::xa::protocol);
 
                      }
 

@@ -46,21 +46,21 @@ namespace casual
                      }
                   };
 
-                  void send( const Request& request)
+                  void send( const Request& request, const common::communication::error::type& handler)
                   {
-                     communication::ipc::blocking::send( local::device(), request);
+                     communication::ipc::blocking::send( local::device(), request, handler);
                   }
                   
                } // <unnamed>
             } // local
 
-            void send( const common::message::pending::Message& message)
+            void send( const common::message::pending::Message& message, const common::communication::error::type& handler)
             {
                Trace trace{ "domain::pending::send"};
 
                log::line( verbose::log, "message: ", message);
 
-               local::send( local::Request{ message});
+               local::send( local::Request{ message}, handler);
             }   
          } // message
       } // pending

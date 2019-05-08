@@ -14,6 +14,7 @@
 #include "common/platform.h"
 #include "common/message/transaction.h"
 #include "common/message/domain.h"
+#include "common/message/pending.h"
 #include "common/algorithm.h"
 #include "common/metric.h"
 
@@ -38,7 +39,15 @@ namespace casual
       {
          using size_type = common::platform::size::type;
 
-         class State;
+         struct State;
+
+         //! argument settings
+         struct Settings
+         {
+            Settings();
+
+            std::string log;
+         };
 
          namespace state
          {
@@ -157,36 +166,14 @@ namespace casual
 
             namespace pending
             {
-               struct base_message
+               struct Request
                {
                   template< typename M>
-                  base_message( M&& information) : message{ common::marshal::complete( std::forward< M>( information))}
-                  {
-                  }
-
-                  base_message( base_message&&) noexcept = default;
-                  base_message& operator = ( base_message&&) noexcept = default;
-
-                  common::communication::message::Complete message;
-                  common::platform::time::point::type created;
-               };
-
-               struct Reply : base_message
-               {
-                  using queue_id_type = common::strong::ipc::id;
-
-                  template< typename M>
-                  Reply( queue_id_type target, M&& message) : base_message( std::forward< M>( message)), target( target) {}
-
-                  queue_id_type target;
-               };
-
-               struct Request : base_message
-               {
-                  template< typename M>
-                  Request( resource::id::type resource, M&& message) : base_message( std::forward< M>( message)), resource( resource) {}
+                  Request( resource::id::type resource, M&& message) 
+                     : resource( resource),  message( common::marshal::complete( std::forward< M>( message))) {}
 
                   resource::id::type resource;
+                  common::communication::message::Complete message;
 
                   inline friend bool operator == ( const Request& lhs, resource::id::type rhs) { return lhs.resource == rhs;}
                };
@@ -384,30 +371,26 @@ namespace casual
          };
 
 
-         class State
+         struct State
          {
-         public:
             State( std::string database);
 
-            State( const State&) = delete;
-            State& operator = ( const State&) = delete;
+            State( State&&) = default;
+            State& operator = ( State&&) = default;
 
             std::vector< Transaction> transactions;
-
             std::vector< state::resource::Proxy> resources;
-
             std::vector< state::resource::external::Proxy> externals;
 
-
-            struct
+            struct Persistent
             {
-               //! Replies that will be sent after an atomic write to the log
-               std::vector< state::pending::Reply> replies;
+               inline Persistent( std::string database) : log{ std::move( database)} {}
 
-               //! Resource request, that will be processed after an atomic
-               //! write to the log. If corresponding resources are busy, for some
-               //! requests, these will be moved to pending.requests
-               std::vector< state::pending::Request> requests;
+               //! Replies that will be sent after an atomic write to the log
+               std::vector< common::message::pending::Message> replies;
+
+               //! the persistent transaction log
+               Log log;
 
             } persistent;
 
@@ -419,9 +402,7 @@ namespace casual
 
             } pending;
 
-            //! the persistent transaction log
-            Log persistent_log;
-
+            
             std::map< std::string, configuration::resource::Property> resource_properties;
 
             //! @return true if there are pending stuff to do. We can't block

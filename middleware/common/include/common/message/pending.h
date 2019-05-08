@@ -69,6 +69,7 @@ namespace casual
             {
                namespace blocking
                {
+                  //! return true if message is sent, or destination is removed
                   bool send( Message& message, const communication::error::type& handler = nullptr);
 
                } // blocking
