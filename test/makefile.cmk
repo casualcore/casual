@@ -26,6 +26,17 @@ LibraryPaths( [ 'bin',
 install_bin = []
 
 
+# mockup string server
+target = LinkExecutable( 'bin/casual-test-mockup-string-server',
+   [
+      Compile( 'source/mockup/string/server.cpp')
+   ],
+   ['casual-common', 'casual-xatmi', 'casual-serviceframework'],
+)
+
+Install( [ target],'$(CASUAL_HOME)/test/bin')
+
+
 test_archive = LinkArchive( 'bin/test-archive', 
   [
     Compile( 'source/domain.cpp'),
