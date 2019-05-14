@@ -97,9 +97,7 @@ namespace casual
             template< typename R, typename ...Args>
             struct function
             {
-               //!
                //! @returns number of arguments
-               //!
                constexpr static auto arguments() -> decltype( sizeof...(Args))
                {
                   return sizeof...(Args);

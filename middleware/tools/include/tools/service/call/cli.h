@@ -23,7 +23,7 @@ namespace casual
                cli();
                ~cli();
 
-               common::argument::Option options() &;
+               common::argument::Group options() &;
 
             private:
                struct Implementation;

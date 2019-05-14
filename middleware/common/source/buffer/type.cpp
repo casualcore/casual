@@ -8,6 +8,7 @@
 #include "common/buffer/type.h"
 #include "common/exception/xatmi.h"
 #include "common/marshal/network.h"
+#include "common/network/byteorder.h"
 #include "common/log.h"
 
 #include "xatmi/extended.h"
@@ -111,27 +112,87 @@ namespace casual
                   out.flush();
                }
 
+               namespace local
+               {
+                  namespace
+                  {
+                     //! consumes only enough from `in` to fill the payload
+                     auto read_payload = []( std::istream& in)
+                     {
+                        Payload payload;
+
+                        if( in.peek() == std::istream::traits_type::eof())
+                           return payload;
+
+                        auto fill_for = [&in]( platform::binary::type& binary, auto count)
+                        {
+                           while( in.peek() != std::istream::traits_type::eof() && --count >= 0)
+                              binary.push_back( in.get());
+
+                           if( count > 0)
+                              throw exception::system::invalid::Argument{ "not valid buffers on input stream"};
+                        };
+
+                        platform::binary::type binary;
+                        
+                        {
+                           platform::size::type size{};
+
+                           auto count = network::byteorder::bytes< platform::size::type>();
+                           
+                           // consume the size of the string, payload type.
+                           fill_for( binary, count);
+                           {
+                              common::marshal::binary::network::Input archive{ binary};
+                              archive >> size;
+                           }
+
+                           // consume the "payload" of the string, payload type.
+                           fill_for( binary, size);
+
+                           // figure out the size of the buffer
+                           {
+                              auto offset = count + size;
+                              platform::size::type memory_size{};
+
+                              fill_for( binary, network::byteorder::bytes< platform::size::type>());
+                              
+                              common::marshal::binary::network::Input archive{ binary, offset};
+                              archive >> memory_size;
+
+                              // consume the full buffer
+                              fill_for( binary, memory_size);
+                           }
+                        }
+                        
+                        // now we got the full payload, serialize it
+                        common::marshal::binary::network::Input archive{ binary};
+                        archive >> payload;
+
+                        return payload;
+                     };
+                  } // <unnamed>
+               } // local
+
                Payload stream( std::istream& in)
                {
                   Trace trace{ "common::buffer::payload::binary::stream istream"};
 
-                  platform::binary::type binary;
-
-                  while( in.peek() != std::istream::traits_type::eof())
-                     binary.push_back( in.get());
-
-                  if( binary.empty())
-                     throw exception::system::invalid::Argument{ "not a valid buffer on input stream"};
-
-                  common::marshal::binary::network::Input archive{ binary};
-
-                  Payload result;
-                  archive >> result;
+                  auto result = local::read_payload( in);
 
                   log::line( log::category::buffer, "payload: ", result);
 
                   return result;
                }
+
+               void stream( std::istream& in, const std::function< void( Payload&&)>& dispatch)
+               {
+                  Trace trace{ "common::buffer::payload::binary::stream input dispatch"};
+
+                  while( auto payload = local::read_payload( in))
+                     dispatch( std::move( payload));
+               }
+
             } // binary
 
             std::ostream& operator << ( std::ostream& out, const Send& value)

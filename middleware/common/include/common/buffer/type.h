@@ -58,7 +58,7 @@ namespace casual
             Payload( std::string type, platform::binary::size::type size);
 
             //!
-            //! g++ does not generate noexecpt move ctor/assignment
+            //! g++ does not generate noexcept move ctor/assignment
             //! @{
             Payload( Payload&& rhs) noexcept;
             Payload& operator = ( Payload&& rhs) noexcept;
@@ -69,6 +69,7 @@ namespace casual
             Payload& operator = ( const Payload&);
 
             bool null() const;
+            inline explicit operator bool () const { return ! type.empty();}
 
             std::string type;
             platform::binary::type memory;
@@ -91,6 +92,9 @@ namespace casual
                void stream( const Payload& value, std::ostream& out);
                Payload stream( std::istream& in);
                //! @}
+
+               //! consumes 0..* payloads from `in` and call dispatch
+               void stream( std::istream& in, const std::function< void( Payload&&)>& dispatch);
 
             } // binary
 

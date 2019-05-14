@@ -31,7 +31,7 @@ namespace casual
             {
                int start( const casual_executable_arguments& argument) noexcept
                {
-                  try
+                  return common::exception::guard( [&]()
                   {
                      casual::xatmi::Trace trace{ "casual::xatmi::executable::local::start"};
 
@@ -44,12 +44,7 @@ namespace casual
                            return common::invoke( argument.entrypoint, argument.argc, argument.argv);
                         }
                      );
-                  }
-                  catch( ...)
-                  {
-                     return casual::common::exception::handle();
-                  }
-                  return 0;
+                  }); 
                }
 
             } // <unnamed>

@@ -245,55 +245,119 @@ namespace casual
                });
             }
 
-            void enqueue( const std::string& queue)
+            namespace enqueue
             {
-               auto message = [&queue]()
+               void invoke( const std::string& queue)
                {
-                  queue::Message message;
+                  auto dispatch = [&queue]( auto&& payload)
+                  {
+                     queue::Message message;
+                     std::swap( message.payload.data, payload.memory);
+                     std::swap( message.payload.type, payload.type);
 
-                  message.attributes.reply = queue;
-                  auto payload = common::buffer::payload::binary::stream( std::cin);
-                  message.payload.data = std::move( payload.memory);
-                  message.payload.type = std::move( payload.type);
+                     auto id = queue::enqueue( queue, message);
+                     std::cout << id << '\n';
+                  };
 
-                  return message;
-               }();
+                  common::buffer::payload::binary::stream( std::cin, dispatch);
+               }
 
-               auto id = queue::enqueue( queue, message);
+               constexpr auto description = R"(
+enqueue buffer(s) to a queue from stdin
 
-               std::cout << id << '\n';
-            }
+Assumes a conformant buffer(s)
+
+Example:
+cat somefile.bin | casual queue --enqueue <queue-name>
+
+note: operation is atomic)";
+               
+            } // enqueue
+
+
 
             struct Empty : public std::runtime_error
             {
                using std::runtime_error::runtime_error;
             };
 
-            void dequeue( const std::string& queue)
+            namespace dequeue
             {
-               const auto message = queue::dequeue( queue);
-
-               if( ! message.empty())
+               void invoke( const std::string& queue)
                {
-                  auto& payload = message.front().payload;
-                  common::buffer::payload::binary::stream( 
-                     common::buffer::Payload{ std::move( payload.type), std::move( payload.data)}, 
-                     std::cout);
+                  const auto message = queue::dequeue( queue);
+
+                  if( ! message.empty())
+                  {
+                     auto& payload = message.front().payload;
+                     common::buffer::payload::binary::stream( 
+                        common::buffer::Payload{ std::move( payload.type), std::move( payload.data)}, 
+                        std::cout);
+                  }
+                  else
+                  {
+                     throw Empty{ "queue is empty"};
+                  }
                }
-               else
-               {
-                  throw Empty{ "queue is empty"};
-               }
-            }
+               constexpr auto description = R"(
+dequeue buffer from a queue to stdout
+
+Example:
+casual queue --dequeue <queue-name> > somefile.bin
+
+note: operation is atomic)";
+
+            } // dequeue
 
 
-            void restore( const std::vector< std::string>& queues)
+
+            namespace consume
             {
-               auto affected = queue::restore::queue( queues);
+               void invoke( const std::string& queue)
+               {
+                  auto message = queue::dequeue( queue);
 
-               auto formatter = format::restored();
-               formatter.print( std::cout, affected);
-            }
+                  while( ! message.empty())
+                  {
+                     auto& payload = message.front().payload;
+                     common::buffer::payload::binary::stream( 
+                        common::buffer::Payload{ std::move( payload.type), std::move( payload.data)}, 
+                        std::cout);
+
+                     message = queue::dequeue( queue);
+                  }
+               }
+
+               constexpr auto description = R"(
+consumes a queue to stdout, dequeues until the queue is empty
+
+Example:
+casual queue --consume <queue-name> > somefile.bin 
+
+note: operation is atomic)";
+               
+            } // consume
+
+            namespace restore
+            {
+               void invoke( const std::vector< std::string>& queues)
+               {
+                  auto affected = queue::restore::queue( queues);
+
+                  auto formatter = format::restored();
+                  formatter.print( std::cout, affected);
+               }
+
+               constexpr auto description = R"("restores messages to queue
+
+Messages will be restored to the queue they first was enqueued to (within the same queue-group)
+
+Example:
+casual queue --restore <queue-name>)";
+               
+            } // restore  
+            
+
 
             void state( const common::optional< std::string>& format)
             {
@@ -330,24 +394,10 @@ namespace casual
                      common::argument::Option( &queue::list_remote_queues, { "-r", "--list-remote"}, "list all remote discovered queues"),
                      common::argument::Option( &queue::list_groups, { "-g", "--list-groups"}, "list information of all groups in current domain"),
                      common::argument::Option( &queue::list_messages, complete_queues, { "-m", "--list-messages"}, "list information of all messages of a queue"),
-                     common::argument::Option( &queue::local::restore, complete_queues, { "--restore"}, 
-                        "restores messages to queue\n\nthat has been rolled back to error queue\n  casual queue --restore <queue-name>"),
-                     common::argument::Option( &local::enqueue, complete_queues, { "-e", "--enqueue"}, R"(
-enqueue buffer to a queue from stdin
-
-Assumes a conformant buffer
-
-Example:
-cat somefile.bin | casual queue --enqueue <queue-name>
-
-note: operation is atomic)"),
-                     common::argument::Option( &local::dequeue, complete_queues, { "-d", "--dequeue"}, R"(
-dequeue buffer from a queue to stdout
-
-Example:
-casual queue --dequeue <queue-name> > somefile.bin
-
-note: operation is atomic)"),
+                     common::argument::Option( local::restore::invoke, complete_queues, { "--restore"}, local::restore::description),
+                     common::argument::Option( &local::enqueue::invoke, complete_queues, { "-e", "--enqueue"}, local::enqueue::description),
+                     common::argument::Option( &local::dequeue::invoke, complete_queues, { "-d", "--dequeue"}, local::dequeue::description),
+                     common::argument::Option( &local::consume::invoke, complete_queues, { "--consume"}, local::consume::description),
                      common::argument::Option( &queue::local::state, complete_state, {"--state"}, "queue state"),
                   };
                }

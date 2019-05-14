@@ -11,9 +11,6 @@
 
 #include "common/argument.h"
 
-#include "xatmi.h"
-
-
 #include <iostream>
 
 namespace casual
@@ -43,26 +40,29 @@ and prints this to stdout.)",
                parse( argc, argv);
             }
 
-            buffer::field::internal::payload::stream( 
-               common::buffer::payload::binary::stream( std::cin), 
-               std::cout, format);
+            auto pipe = []( auto& format)
+            {
+               buffer::field::internal::payload::stream( 
+                  common::buffer::payload::binary::stream( std::cin), 
+                  std::cout, format);
+            };
+
+            // allways wait for at least one payload
+            pipe( format);
+
+            // consume until end of file
+            while( std::cin.peek() != std::istream::traits_type::eof())
+               pipe( format);
 
          }
       } // <unnamed>
    } // local
 } // casual
 
-
-
 int main(int argc, char **argv)
 {
-   try
+   return casual::common::exception::guard( [&]()
    {
       casual::local::main( argc, argv);
-      return 0;
-   }
-   catch( ...)
-   {
-      return casual::common::exception::handle( std::cerr);
-   }
+   });
 }
