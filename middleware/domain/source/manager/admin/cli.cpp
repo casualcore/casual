@@ -546,26 +546,25 @@ for all servers and executables
 
          namespace admin 
          {
-            namespace arg = common::argument;
-
+            
             struct cli::Implementation
             {
-               arg::Group options()
+               argument::Group options()
                {
                   auto complete_state = []( auto values, bool){
                      return std::vector< std::string>{ "json", "yaml", "xml", "ini"};
                   };
 
-                  return arg::Group{ [](){}, { "domain"}, "local casual domain related administration",
-                     arg::Option( &local::action::list_servers, { "-ls", "--list-servers"}, "list all servers"),
-                     arg::Option( &local::action::list_executable, { "-le", "--list-executables"}, "list all executables"),
-                     arg::Option( &local::action::list_instances, { "-li", "--list-instances"}, "list all instances"),
-                     arg::Option( &local::action::scale_instances, local::action::scale_instances_completion, { "-si", "--scale-instances"}, "<alias> <#> scale executable instances"),
-                     arg::Option( &local::action::shutdown, { "-s", "--shutdown"}, "shutdown the domain"),
-                     arg::Option( &local::action::boot, { "-b", "--boot"}, "boot domain -"),
-                     arg::Option( &local::action::set::environment::call, local::action::set::environment::complete, { "--set-environment"}, local::action::set::environment::description)( arg::cardinality::any{}),
-                     arg::Option( &local::action::persist::configuration, { "-p", "--persist-state"}, "persist current state"),
-                     arg::Option( &local::action::state, complete_state, { "--state"}, "domain state")
+                  return argument::Group{ [](){}, { "domain"}, "local casual domain related administration",
+                     argument::Option( &local::action::list_servers, { "-ls", "--list-servers"}, "list all servers"),
+                     argument::Option( &local::action::list_executable, { "-le", "--list-executables"}, "list all executables"),
+                     argument::Option( &local::action::list_instances, { "-li", "--list-instances"}, "list all instances"),
+                     argument::Option( &local::action::scale_instances, local::action::scale_instances_completion, { "-si", "--scale-instances"}, "<alias> <#> scale executable instances"),
+                     argument::Option( &local::action::shutdown, { "-s", "--shutdown"}, "shutdown the domain"),
+                     argument::Option( &local::action::boot, { "-b", "--boot"}, "boot domain -"),
+                     argument::Option( &local::action::set::environment::call, local::action::set::environment::complete, { "--set-environment"}, local::action::set::environment::description)( argument::cardinality::any{}),
+                     argument::Option( &local::action::persist::configuration, { "-p", "--persist-state"}, "persist current state"),
+                     argument::Option( &local::action::state, complete_state, { "--state"}, "domain state")
                   };
                }
             };

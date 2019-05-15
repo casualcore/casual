@@ -32,10 +32,8 @@ namespace casual
 
          namespace available
          {
-            //!
             //! If requested queue is not found (advertised), we will wait until it's
             //! available, and then block.
-            //!
             //! @{
             Message dequeue( const std::string& queue);
             Message dequeue( const std::string& queue, const Selector& selector);

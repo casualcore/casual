@@ -89,7 +89,7 @@ namespace casual
          EXPECT_TRUE( group.has( "group"));
          EXPECT_TRUE( ! group.has( "--key"));
 
-         group.invoke( "group", {});
+         group.assign( "group", {});
 
          EXPECT_TRUE( group.has( "--key"));
       }
@@ -106,7 +106,7 @@ namespace casual
          EXPECT_TRUE( ! group.has( "--a"));
          EXPECT_TRUE( ! group.has( "--b"));
          
-         group.invoke( "group", {});
+         group.assign( "group", {});
 
          EXPECT_TRUE( group.has( "--a"));
          EXPECT_TRUE( group.has( "--b"));
@@ -127,7 +127,7 @@ namespace casual
          EXPECT_TRUE( g2.has( "group"));
          EXPECT_TRUE( ! g2.has( "--a"));
          
-         g1.invoke( "group", {});
+         g1.assign( "group", {});
 
          EXPECT_TRUE( g1.has( "--a"));
 
@@ -145,10 +145,10 @@ namespace casual
                argument::Option{ local::invocable_0, { "--a"}, "a"}}};
 
          EXPECT_TRUE( g1.has( "g1"));
-         g1.invoke( "g1", {});
+         g1.assign( "g1", {});
 
          EXPECT_TRUE( g1.has( "g2"));
-         g1.invoke( "g2", {});
+         g1.assign( "g2", {});
 
          EXPECT_TRUE( g1.has( "--a"));
       }
@@ -594,6 +594,31 @@ namespace casual
          EXPECT_TRUE( value == 42);
       }
 
+      TEST( common_argument_parse, group_invoked_callback__expect_options_to_be_set)
+      {
+         unittest::Trace trace;
+
+         bool g = false;
+         int value{};
+
+         auto invoked = [&]()
+         {
+            EXPECT_TRUE( g);
+            EXPECT_TRUE( value == 42);
+         };
+
+         argument::Parse parse{ "description", 
+            argument::Group{ invoked, [&g](){ g = true;}, { "-g"}, "description",
+               argument::Option( std::tie( value), {"-a"}, "description")   
+            }
+         };
+          
+         EXPECT_NO_THROW({
+            parse( { "-g", "-a", "42"});
+         });
+         
+      }
+
       TEST( common_argument_parse, option_1__values_0__expect_throw)
       {
          unittest::Trace trace;
@@ -724,34 +749,7 @@ namespace casual
          }, argument::exception::user::Help);
       }
 
-      namespace local
-      {
-         namespace
-         {
-            /*
-            auto group_c1_opt_c1_v2()
-            {
-               return argument::Group{ local::invocable_0, { "-g1"}, "", 
-                     argument::Option{ local::invocable_2, { "-g1o1"}, ""}( argument::cardinality::One{})
-                  }( argument::cardinality::One{});
 
-            }
-            */
-
-
-
-            /*
-            auto bind_to_stdout( std::ostream& out)
-            {
-               auto origin = std::cout.rdbuf( out.rdbuf());
-
-               return execute::scope( [=](){
-                  std::cout.rdbuf( origin);
-               });
-            }
-            */
-         } // <unnamed>
-      } // local
 
       TEST( common_argument_parse, complex__)
       {
@@ -759,7 +757,6 @@ namespace casual
 
          int a;
          long b;;
-
 
          argument::Parse parse{ "description", 
             argument::Group{ local::invocable_0, { "some-group"}, "group\ndescription\nblabla bla",

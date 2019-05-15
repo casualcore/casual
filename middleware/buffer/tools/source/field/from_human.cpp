@@ -13,8 +13,6 @@
 
 #include "common/argument.h"
 
-#include "xatmi.h"
-
 #include <iostream>
 
 namespace casual
@@ -25,20 +23,20 @@ namespace casual
       std::string format;
 
       {
-         auto complete_format = []( auto values, bool) -> std::vector< std::string>{
+         auto complete_format = []( auto values, bool) -> std::vector< std::string>
+         {
             return { "json", "yaml", "xml", "ini"};
          };
 
-         common::argument::Parse parse{ R"(
+         common::argument::Parse{ R"(
 
 human readable --> casual-fielded-buffer
 
-reads from stdin an assumes a human readable structure in the supplied format
+reads from stdin and assumes a human readable structure in the supplied format
 for a casual-fielded-buffer, and transform this to an actual casual-fielded-buffer,
 and prints this to stdout.)",
-            common::argument::Option( std::tie( format), complete_format, { "--format"}, "which format to expect on stdin")
-         };
-         parse( argc, argv);
+            common::argument::Option( std::tie( format), complete_format, { "--format"}, "which format to expect on stdin"),
+         }( argc, argv);
       }
 
       common::buffer::payload::binary::stream( 
@@ -52,13 +50,8 @@ and prints this to stdout.)",
 
 int main(int argc, char **argv)
 {
-   try
+   return casual::common::exception::guard( [&]()
    {
       casual::main( argc, argv);
-      return 0;
-   }
-   catch( ...)
-   {
-      return casual::common::exception::handle( std::cerr);
-   }
+   });
 }

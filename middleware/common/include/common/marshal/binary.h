@@ -182,11 +182,13 @@ namespace casual
             {
                using policy_type = P;
 
-               basic_input( platform::binary::type& buffer)
-                  : m_buffer( buffer), m_offset( 0)
-               {
+               basic_input( platform::binary::type& buffer, platform::size::type offset)
+                  : m_buffer( buffer), m_offset( offset)
+               {}
 
-               }
+               basic_input( platform::binary::type& buffer)
+                  : basic_input( buffer, 0)
+               {}
 
 
                template< typename T>

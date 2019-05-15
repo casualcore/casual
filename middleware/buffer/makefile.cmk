@@ -57,11 +57,7 @@ casual_field_make_header = LinkExecutable( 'bin/casual_field_make_header',
 install_bin.append( casual_field_make_header)
 
 
-
-
-#
 # Unittest
-#
 LinkUnittest( 'bin/test-buffer',
    [
     Compile( 'unittest/source/test_field_buffer.cpp'),
@@ -74,13 +70,7 @@ LinkUnittest( 'bin/test-buffer',
     lib_buffer, 'casual-common', 'casual-xatmi', 'casual-unittest'
    ])  
    
-
-
-
-#
 # Sample
-#
-
 exe_field_sample = LinkExecutable( 'bin/casual_buffer_protocol_sample',
     [
      Compile( 'sample/protocol/source/field.cpp'),
@@ -110,7 +100,7 @@ binary = LinkExecutable( 'bin/casual-buffer-field-from-human',
     [ 
      'casual-common', 
      'casual-serviceframework', 
-     'casual-xatmi', 
+     #'casual-xatmi', 
       lib_buffer
     ])
     
@@ -124,16 +114,27 @@ binary = LinkExecutable( 'bin/casual-buffer-field-to-human',
     [ 
      'casual-common', 
      'casual-serviceframework', 
-     'casual-xatmi', 
+     #'casual-xatmi', 
       lib_buffer
     ])
     
 install_bin.append( binary)
 
+binary = LinkExecutable( 'bin/casual-buffer-duplicate', 
+    [
+     Compile( 'tools/source/duplicate.cpp'),
+    ], 
+    [ 
+     'casual-common', 
+     #'casual-serviceframework', 
+     #'casual-xatmi', 
+     # lib_buffer
+    ])
+    
+install_bin.append( binary)
 
-#
+
 # Install
-#
 Install( install_lib, '$(CASUAL_HOME)/lib')
 Install( install_bin, '$(CASUAL_HOME)/bin')
 Install( install_include, '$(CASUAL_HOME)/include/buffer')

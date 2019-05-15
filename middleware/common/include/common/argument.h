@@ -86,35 +86,38 @@ namespace casual
                   return *this;
                }
                
-               void invoke( const std::string& key, range_type values) { m_callable->invoke( key, values);}
+               void assign( const std::string& key, range_type values) { m_callable->assign( key, values);}
+               void invoke() { m_callable->invoke();}
                std::vector< std::string> complete( range_type values, bool help) const { return m_callable->complete( values, help);}
                Cardinality cardinality() const { return m_callable->cardinality();}
 
             private:
-               struct base 
+               struct concept 
                {
-                  virtual ~base() = default;
-                  virtual void invoke( const std::string& key, range_type values) = 0;
+                  virtual ~concept() = default;
+                  virtual void assign( const std::string& key, range_type values) = 0;
+                  virtual void invoke() = 0;
                   virtual std::vector< std::string> complete( range_type values, bool help) const = 0;
                   virtual Cardinality cardinality() const = 0;
-                  virtual std::unique_ptr< base> copy() const = 0;
+                  virtual std::unique_ptr< concept> copy() const = 0;
                };
 
                template< typename C>
-               struct model : base
+               struct model : concept
                {
                   model( C callable) : m_callable( std::move( callable)) {}
 
-                  void invoke( const std::string& key, range_type values) override { m_callable.invoke( key, values);}
+                  void assign( const std::string& key, range_type values) override { m_callable.assign( key, values);}
+                  void invoke() override { m_callable.invoke();}
                   std::vector< std::string> complete( range_type values, bool help) const override { return m_callable.complete( values, help);}
 
                   Cardinality cardinality() const override { return m_callable.cardinality();}
 
-                  std::unique_ptr< base> copy() const override { return std::make_unique< model>( *this); }
+                  std::unique_ptr< concept> copy() const override { return std::make_unique< model>( *this); }
                private:
                   C m_callable;
                };
-               std::unique_ptr< base> m_callable;
+               std::unique_ptr< concept> m_callable;
             };
 
 
@@ -175,7 +178,8 @@ namespace casual
                inline bool next( const std::string& key) const { return m_handler->next( key);}
                //! @}
 
-               inline void invoke( const std::string& key, range_type values) { m_handler->invoke( key, values);}
+               inline void assign( const std::string& key, range_type values) { m_handler->assign( key, values);}
+               inline void invoke() { m_handler->invoke();}
                
                inline detail::Invoked completion( const std::string& key, range_type values) { return m_handler->completion( key, values);}
 
@@ -189,12 +193,13 @@ namespace casual
 
 
             private:
-               struct base 
+               struct concept 
                {
-                  virtual ~base() = default;
+                  virtual ~concept() = default;
                   virtual bool has( const std::string& key) const = 0;
                   virtual bool next( const std::string& key) const = 0;
-                  virtual void invoke( const std::string& key, range_type values) = 0;
+                  virtual void assign( const std::string& key, range_type values) = 0;
+                  virtual void invoke() = 0;
                   virtual detail::Invoked completion( const std::string& key, range_type values) = 0;
 
                   virtual const std::vector< std::string>& keys() const  = 0;
@@ -204,17 +209,18 @@ namespace casual
 
                   virtual void validate() const = 0;
 
-                  virtual std::unique_ptr< base> copy() const = 0;
+                  virtual std::unique_ptr< concept> copy() const = 0;
                };
 
                template< typename H>
-               struct model : base
+               struct model : concept
                {
                   model( H handler) : m_handler( std::move( handler)) {}
 
                   bool has( const std::string& key) const override { return m_handler.has( key);}
                   bool next( const std::string& key) const override { return m_handler.next( key);}
-                  void invoke( const std::string& key, range_type values) override { m_handler.invoke( key, values);}
+                  void assign( const std::string& key, range_type values) override { m_handler.assign( key, values);}
+                  void invoke() override { m_handler.invoke();}
                   detail::Invoked completion( const std::string& key, range_type values) override { return m_handler.completion( key, values);}
 
                   inline const std::vector< std::string>& keys() const override { return m_handler.keys();} 
@@ -225,7 +231,7 @@ namespace casual
                   
                   inline void validate() const override { return selective_validate( m_handler);}
 
-                  std::unique_ptr< base> copy() const override { return std::make_unique< model>( *this); }
+                  std::unique_ptr< concept> copy() const override { return std::make_unique< model>( *this); }
                private:
                   template< typename T>
                   using has_validate = decltype( std::declval< T&>().validate());
@@ -244,14 +250,11 @@ namespace casual
 
                   H m_handler;
                };
-               std::unique_ptr< base> m_handler;
+               std::unique_ptr< concept> m_handler;
             };
-
-
 
             namespace invoke
             {
-
                namespace implementation 
                {
 
@@ -425,23 +428,35 @@ namespace casual
 
                   template< typename C>
                   struct Invoke< C, std::enable_if_t< traits::is::function< C>::value>> 
-                     : value_holder< typename traits::function< C>::decayed>
                   {
-                     using base_type =  value_holder< typename traits::function< C>::decayed>;
+                     using value_type = value_holder< typename traits::function< C>::decayed>;
                      
                      Invoke( C callable) : m_callable( std::move( callable)) {}
 
-                     void invoke( const std::string& key, range_type values) 
+                     void assign( const std::string& key, range_type values)
+                     {
+                        value_type holder;
+                        holder.assign( key, values);
+                        m_values.push_back( std::move( holder)); 
+                     };
+
+                     void invoke() 
                      { 
-                        base_type::assign( key, values); 
-                        common::apply( m_callable, base_type::arguments);
-
-                        // clear arguments for the possible next invocation
-                        base_type::arguments = {};
-
+                        auto apply = [&]( auto& tuple)
+                        {
+                           common::apply( m_callable, tuple.arguments);
+                        };
+                        algorithm::for_each( m_values, apply);
                      }
+
+                     auto cardinality() const 
+                     {
+                        return value_type{}.cardinality();
+                     }
+
                   private:
                      C m_callable;
+                     std::vector< value_type> m_values;
                   };
 
                   template< typename T> 
@@ -450,14 +465,15 @@ namespace casual
                      using base_type = value_holder< T>;
                      using base_type::base_type;
 
-                     void invoke( const std::string& key, range_type values) { base_type::assign( key, values); }
+                     void invoke() { /* no-op */ }
                   };
 
-                  template< typename Call, typename Compl> 
+                  template< typename Call, typename Completer> 
                   struct Completion : Invoke< Call>
                   {
                      using base_type = Invoke< Call>;
-                     Completion( Call callable, Compl completer) : base_type( std::move( callable)), m_completer( std::move( completer))
+                     Completion( Call callable, Completer completer) 
+                        : base_type( std::move( callable)), m_completer( std::move( completer))
                      {}
 
                      std::vector< std::string> complete( range_type values, bool help) const
@@ -466,7 +482,7 @@ namespace casual
                      }
 
                   private:
-                     Compl m_completer;
+                     Completer m_completer;
                   };
 
                   namespace completer
@@ -499,7 +515,6 @@ namespace casual
                template< typename Call>
                Invoke create( Call&& callable)
                {
-                  
                   return create( std::forward< Call>( callable), implementation::completer::Default());
                }
 
@@ -534,11 +549,16 @@ namespace casual
                   }, key);
                }
 
-               inline void invoke( const std::string& key, range_type values)
+               inline void assign( const std::string& key, range_type values)
                {
                   apply( [&key, values]( auto& found){ 
-                     found.invoke( key, values);
+                     found.assign( key, values);
                   }, key);
+               }
+
+               inline void invoke()
+               {
+                  algorithm::for_each( m_handlers, []( auto& h){ h.invoke();});
                }
              
                std::vector< Representation> representation() const 
@@ -570,10 +590,8 @@ namespace casual
 
                   assert( found);
 
-                  //
                   // make sure we prioritize the found option the next time, to give a more intuitive semantic
                   // if the same option is used in different "groups"
-                  //
                   algorithm::rotate( m_handlers, found);
 
                   return applier( m_handlers.front());
@@ -628,11 +646,11 @@ namespace casual
             {
 
                template< typename I>
-               inline void invoke( I&& invocable, const std::string& key, range_type values) 
+               inline void assign( I&& invocable, const std::string& key, range_type values) 
                { 
-                  validate::cardinality( key, m_cardinality, m_invoked + 1);
-                  invocable.invoke( key, values);
-                  ++m_invoked;
+                  validate::cardinality( key, m_cardinality, m_assigned + 1);
+                  invocable.assign( key, values);
+                  ++m_assigned;
                }
 
                Cardinality cardinality() const { return m_cardinality;}
@@ -642,18 +660,18 @@ namespace casual
                {
                   auto result = *this;
                   result.m_cardinality = cardinality;
-                  result.m_invoked = 0;
+                  result.m_assigned = 0;
                   return result;
                }
 
                inline void validate( const std::string& key) const 
                { 
-                  validate::cardinality( key, m_cardinality, m_invoked);
+                  validate::cardinality( key, m_cardinality, m_assigned);
                }
 
             private:
                Cardinality m_cardinality;
-               size_type m_invoked = 0;
+               size_type m_assigned = 0;
             };
 
 
@@ -698,10 +716,15 @@ namespace casual
 
             inline bool next( const std::string& key) const { return has( key);}
 
-            inline void invoke( const std::string& key, range_type values) 
+            inline void assign( const std::string& key, range_type values) 
             { 
                assert( has( key));
-               m_cardinality.invoke( m_invocable, key, values);
+               m_cardinality.assign( m_invocable, key, values);
+            }
+
+            inline void invoke()
+            {
+               m_invocable.invoke();
             }
 
             template< size_type min, size_type max>
@@ -751,6 +774,18 @@ namespace casual
 
          struct Group : detail::basic_keys
          {
+            struct Invoked : std::function< void()> 
+            {
+               using std::function< void()>::function;
+            };
+
+            template< typename C, typename... Os>
+            Group( Invoked invoked, C&& invocable, std::vector< std::string> keys, std::string description, Os&&... options) 
+               : detail::basic_keys( std::move( keys), std::move( description)),
+                 m_invoked{ std::move( invoked)},
+                 m_invocable( detail::invoke::create( std::forward< C>( invocable))),
+                 m_content( detail::Holder::construct( std::forward< Os>( options)...)) 
+            {}
 
             template< typename C, typename... Os>
             Group( C&& invocable, std::vector< std::string> keys, std::string description, Os&&... options) 
@@ -769,18 +804,27 @@ namespace casual
                return m_content.has( key) || basic_keys::has( key);
             }
 
-            inline void invoke( const std::string& key, range_type values) 
+            inline void assign( const std::string& key, range_type values) 
             { 
                if( ! m_invoke_content)
                {
-                  m_invocable.invoke( key, values);
+                  m_invocable.assign( key, values);
                   m_invoke_content = true;
                }
                else 
                {
-                  m_content.invoke( key, values);
+                  m_content.assign( key, values);
                }
             }
+
+            inline void invoke()
+            {
+               m_invocable.invoke();
+               m_content.invoke();
+
+               if( m_invoke_content && m_invoked)
+                  m_invoked();
+            } 
 
             detail::Invoked completion( const std::string& key, range_type values)
             {
@@ -829,6 +873,7 @@ namespace casual
 
          private:
 
+            Invoked m_invoked;
             detail::Invoke m_invocable;
             detail::Holder m_content;
             detail::basic_cardinality m_cardinality;
@@ -878,10 +923,10 @@ namespace casual
                m_policy.overrides( arguments, callback( *this));
 
                detail::traverse( m_options, arguments, []( auto& option, auto& key, auto argument){
-                  option.invoke( key, argument);
+                  option.assign( key, argument);
                });
-
                m_options.validate();
+               m_options.invoke();
             }
 
          private:
