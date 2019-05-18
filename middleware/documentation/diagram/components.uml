@@ -1,0 +1,27 @@
+@startuml file1
+
+entity "domain-manager" as domain
+
+entity "service-manager"  as service
+entity "transaction-manager" as transaction
+entity "gateway-manager" as gateway
+entity "queue-manager" as queue
+
+
+service --> domain
+transaction --> domain
+gateway --> domain
+queue --> domain
+
+transaction --> service
+gateway --> service 
+queue --> service
+domain ..> service
+
+queue --> transaction
+gateway --> transaction
+gateway --> queue
+
+
+@enduml
+
