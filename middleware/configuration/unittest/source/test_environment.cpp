@@ -11,8 +11,7 @@
 #include "configuration/environment.h"
 #include "configuration/common.h"
 
-#include "serviceframework/archive/create.h"
-#include "serviceframework/log.h"
+#include "common/serialize/create.h"
 
 #include <fstream>
 
@@ -74,9 +73,9 @@ namespace casual
                common::file::scoped::Path name{ common::file::name::unique( common::directory::temporary() + "/domain", extension)};
                
                common::file::Output file{ name};
-               auto archive = serviceframework::archive::create::writer::from( file.extension(), file);
+               auto archive = common::serialize::create::writer::from( file.extension(), file);
                
-               archive << CASUAL_MAKE_NVP( environment);
+               archive << CASUAL_NAMED_VALUE( environment);
 
                return name;
             }
@@ -117,7 +116,7 @@ namespace casual
 
          //env_file.release();
 
-         EXPECT_TRUE( result == origin.variables) << "result: " << CASUAL_MAKE_NVP( result) << "refered: " << CASUAL_MAKE_NVP( refered);
+         EXPECT_TRUE( result == origin.variables) << "result: " << CASUAL_NAMED_VALUE( result) << "refered: " << CASUAL_NAMED_VALUE( refered);
       }
 
 
@@ -163,20 +162,20 @@ namespace casual
          first.variables = local::variables();
          auto first_file = local::serialize( first, GetParam());
 
-         common::log::line( configuration::log, CASUAL_MAKE_NVP( first));
+         common::log::line( configuration::log, "first: ", first);
 
          Environment second;
          second.variables = local::variables();
          second.files.push_back( first_file);
          auto second_file = local::serialize( second, GetParam());
 
-         common::log::line( configuration::log, CASUAL_MAKE_NVP( second));
+         common::log::line( configuration::log, "second: ", second);
 
          Environment third;
          third.variables = local::variables();
          third.files.push_back( second_file);
 
-         common::log::line( configuration::log, CASUAL_MAKE_NVP( third));
+         common::log::line( configuration::log, "third: ", third);
 
 
          auto expected = first.variables;
@@ -188,7 +187,7 @@ namespace casual
 
          auto result = environment::fetch( third);
 
-         EXPECT_TRUE( result == expected) << CASUAL_MAKE_NVP( result);
+         EXPECT_TRUE( result == expected) << CASUAL_NAMED_VALUE( result);
       }
 
 

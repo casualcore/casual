@@ -846,10 +846,10 @@ namespace casual
 
          auto restored = database.restore( queue.id);
 
-         EXPECT_TRUE( restored == 1) << "restored: " << restored;
+         EXPECT_TRUE( restored == 1) << CASUAL_NAMED_VALUE( restored);
          {
             auto reply = database.dequeue( local::request(queue));
-            ASSERT_TRUE( reply.message.size() == 1) << "reply: " << reply;
+            ASSERT_TRUE( reply.message.size() == 1) << CASUAL_NAMED_VALUE( reply);
             EXPECT_TRUE( reply.message.at( 0).payload == message.message.payload);
          }
       }
@@ -941,7 +941,7 @@ namespace casual
 
          auto pending = database.get_pending();
 
-         ASSERT_TRUE( pending.size() == 1) << "queue: " << database.queues().at( 2);
+         ASSERT_TRUE( pending.size() == 1) << CASUAL_NAMED_VALUE( database.queues().at( 2));
          EXPECT_TRUE( pending.at( 0).id == queue.id);
          EXPECT_TRUE( pending.at( 0).count == 1);
       }

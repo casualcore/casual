@@ -48,9 +48,7 @@ namespace casual
 
             };
 
-            //!
             //! Represent a remote gateway that exports 0..* queues
-            //!
             struct Remote
             {
                Remote();
@@ -74,37 +72,33 @@ namespace casual
                size_type order = 0;
 
                friend bool operator < ( const Queue& lhs, const Queue& rhs);
-               friend std::ostream& operator << ( std::ostream& out, const Queue& value);
+
+               CASUAL_CONST_CORRECT_SERIALIZE_WRITE({
+                  CASUAL_SERIALIZE( process);
+                  CASUAL_SERIALIZE( queue);
+                  CASUAL_SERIALIZE( order);
+               })
             };
-
-
-            
 
             std::unordered_map< std::string, std::vector< Queue>> queues;
 
             std::deque< common::message::queue::lookup::Request> pending;
 
-
             std::vector< Group> groups;
             std::vector< Remote> remotes;
-
             std::string group_executable;
 
 
             std::vector< common::strong::process::id> processes() const;
 
-            //!
             //! Removes all queues associated with the process
             //!
             //! @param pid process id
-            //!
             void remove_queues( common::strong::process::id pid);
 
-            //!
             //! Removes the process (group/gateway) and all queues associated with the process
             //!
             //! @param pid process id
-            //!
             void remove( common::strong::process::id pid);
 
             void update( common::message::queue::concurrent::Advertise& message);

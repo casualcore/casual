@@ -15,7 +15,7 @@
 #include "common/transaction/resource.h"
 
 
-#include "serviceframework/namevaluepair.h"
+#include "common/serialize/macro.h"
 
 namespace casual
 {

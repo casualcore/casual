@@ -11,8 +11,8 @@
 #include "configuration/message/transform.h"
 
 #include "common/domain.h"
+#include "common/exception/casual.h"
 
-#include "serviceframework/log.h"
 
 namespace casual
 {

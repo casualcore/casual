@@ -7,8 +7,8 @@
 #include "service/manager/admin/cli.h"
 
 
-#include "serviceframework/namevaluepair.h"
-#include "serviceframework/archive/create.h"
+#include "common/serialize/macro.h"
+#include "common/serialize/create.h"
 #include "serviceframework/service/protocol/call.h"
 
 #include "service/manager/admin/managervo.h"
@@ -53,13 +53,13 @@ namespace casual
                std::vector< std::string> reset( const std::vector< std::string>& services)
                {
                   serviceframework::service::protocol::binary::Call call;
-                  call << CASUAL_MAKE_NVP( services);
+                  call << CASUAL_NAMED_VALUE( services);
 
                   auto reply = call( admin::service::name::metric::reset());
 
                   std::vector< std::string> result;
 
-                  reply >> CASUAL_MAKE_NVP( result);
+                  reply >> CASUAL_NAMED_VALUE( result);
 
                   return result;
                }
@@ -79,7 +79,7 @@ namespace casual
                serviceframework::service::protocol::binary::Call call;
                auto reply = call( casual::domain::manager::admin::service::name::state);
 
-               reply >> CASUAL_MAKE_NVP( state.domain);
+               reply >> CASUAL_NAMED_VALUE( state.domain);
 
                state.service = admin::api::state();
 
@@ -572,8 +572,8 @@ namespace casual
             {
                auto state = admin::api::state();
 
-               auto archive = serviceframework::archive::create::writer::from( format.value_or( ""), std::cout);
-               archive << CASUAL_MAKE_NVP( state);
+               auto archive = common::serialize::create::writer::from( format.value_or( ""), std::cout);
+               archive << CASUAL_NAMED_VALUE( state);
             }
 
 

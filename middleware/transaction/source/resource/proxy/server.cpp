@@ -15,13 +15,10 @@
 #include "common/argument.h"
 #include "common/environment.h"
 
-#include "serviceframework/log.h"
-
-
 
 int casual_start_reource_proxy( struct casual_resource_proxy_service_argument* serverArguments)
 {
-   casual::common::log::line( casual::serviceframework::log::error, "deprecated entry point 'casual_start_reource_proxy', please regenerate the resource proxy");
+   casual::common::log::line( casual::common::log::category::error, "deprecated entry point 'casual_start_reource_proxy', please regenerate the resource proxy");
    return casual_start_resource_proxy( serverArguments);
 }
 

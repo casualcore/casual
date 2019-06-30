@@ -9,6 +9,7 @@
 
 
 #include "configuration/resource/property.h"
+#include "common/file.h"
 
 namespace casual
 {
@@ -24,7 +25,7 @@ namespace casual
 
                resources_type example();
 
-               void write( const resources_type& resurces, const std::string& file);
+               void write( const resources_type& resources, const std::string& file);
 
                common::file::scoped::Path temporary(const resources_type& resources, const std::string& extension);
 

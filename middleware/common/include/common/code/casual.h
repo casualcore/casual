@@ -30,12 +30,11 @@ namespace casual
             invalid_version,
          };
 
-         //static_assert( static_cast< int>( signal::ok) == 0, "signal::ok has to be 0");
 
          std::error_code make_error_code( casual code);
 
-         common::log::Stream& stream( casual code);
-
+         
+         log::Stream& stream( casual code);
 
       } // code
    } // common

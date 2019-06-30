@@ -23,11 +23,11 @@ declaration:
         - name: service
           type: std::string
         - name: callId
-          type: serviceframework::platform::Uuid
+          type: common::platform::Uuid
         - name: start
-          type: serviceframework::platform::time_point
+          type: common::platform::time_point
         - name: end
-          type: serviceframework::platform::time_point
+          type: common::platform::time_point
 
   - server:
       name: RequestServer

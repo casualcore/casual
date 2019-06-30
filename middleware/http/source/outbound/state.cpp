@@ -21,14 +21,6 @@ namespace casual
       {
          namespace state
          {
-            std::ostream& operator << ( std::ostream& out, const Node& value)
-            {
-               return out << "{ url: " << value.url 
-                  << ", headers: " << *value.headers
-                  << ", discard-transaction:" << value.discard_transaction
-                  << '}';
-            }
-
             namespace pending
             {
                void Request::State::Header::Request::add( const common::service::header::Fields& header)
@@ -59,21 +51,7 @@ namespace casual
                }
 
                Request::Request() : m_easy( curl::easy::create()) {}
-
-               
-               std::ostream& operator << ( std::ostream& out, const Request::State& value)
-               {
-                  return out << "{ destination: " << value.destination
-                     << ", payload: " << value.payload
-                     << '}';
-               }
-
-               std::ostream& operator << ( std::ostream& out, const Request& value)
-               {
-                  return out << "{ state: " << value.state()
-                     << ", easy: " << value.easy()
-                     << '}';
-               }
+            
             } // pending
 
             Pending::Pending() : m_multi( curl::multi::create())
@@ -143,7 +121,7 @@ namespace casual
                metric.process = common::process::handle();
                metric.code = code.result;
                
-               // not transctions over http...
+               // not transactions over http...
                // metric.trid
 
                metric.start = request.state().start;

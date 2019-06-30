@@ -115,9 +115,9 @@ namespace casual
                connections.push_back( tcp::retry::connect( address, { { std::chrono::milliseconds{ 1}, 0}}));
             }
 
-            for( auto& s : connections)
+            for( auto& socket : connections)
             {
-               EXPECT_TRUE( local::boolean( s)) << "socket: " << s;
+               EXPECT_TRUE( local::boolean( socket)) << CASUAL_NAMED_VALUE( socket);
             }
          }
 

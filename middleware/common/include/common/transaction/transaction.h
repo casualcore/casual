@@ -36,7 +36,7 @@ namespace casual
             };
 
             Transaction();
-            Transaction( ID trid);
+            explicit Transaction( ID trid);
 
             ID trid;
 

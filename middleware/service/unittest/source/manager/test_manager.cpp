@@ -65,7 +65,7 @@ domain:
 
                   manager::admin::StateVO serviceReply;
 
-                  reply >> CASUAL_MAKE_NVP( serviceReply);
+                  reply >> CASUAL_NAMED_VALUE( serviceReply);
 
                   return serviceReply;
                }

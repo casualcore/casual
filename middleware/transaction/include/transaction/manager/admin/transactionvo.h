@@ -10,8 +10,8 @@
 
 
 
-#include "serviceframework/namevaluepair.h"
-#include "serviceframework/platform.h"
+#include "common/serialize/macro.h"
+#include "common/platform.h"
 #include "common/metric.h"
 #include "common/process.h"
 
@@ -27,8 +27,8 @@ namespace casual
             {
             struct Metric
             {
-               using time_unit = serviceframework::platform::time::unit;
-               serviceframework::platform::size::type count = 0;
+               using time_unit = common::platform::time::unit;
+               common::platform::size::type count = 0;
                time_unit total{};
 
                struct Limit 
@@ -38,16 +38,16 @@ namespace casual
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
                   {
-                     archive & CASUAL_MAKE_NVP( min);
-                     archive & CASUAL_MAKE_NVP( max);
+                     CASUAL_SERIALIZE( min);
+                     CASUAL_SERIALIZE( max);
                   })
                } limit;
 
                CASUAL_CONST_CORRECT_SERIALIZE(
                {
-                  archive & CASUAL_MAKE_NVP( count);
-                  archive & CASUAL_MAKE_NVP( total);
-                  archive & CASUAL_MAKE_NVP( limit);
+                  CASUAL_SERIALIZE( count);
+                  CASUAL_SERIALIZE( total);
+                  CASUAL_SERIALIZE( limit);
                })
             };
 
@@ -58,8 +58,8 @@ namespace casual
 
                CASUAL_CONST_CORRECT_SERIALIZE(
                {
-                  archive & CASUAL_MAKE_NVP( resource);
-                  archive & CASUAL_MAKE_NVP( roundtrip);
+                  CASUAL_SERIALIZE( resource);
+                  CASUAL_SERIALIZE( roundtrip);
                })
             };
 
@@ -88,10 +88,10 @@ namespace casual
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
                   {
-                     archive & CASUAL_MAKE_NVP( id);
-                     archive & CASUAL_MAKE_NVP( process);
-                     archive & CASUAL_MAKE_NVP( state);
-                     archive & CASUAL_MAKE_NVP( metrics);
+                     CASUAL_SERIALIZE( id);
+                     CASUAL_SERIALIZE( process);
+                     CASUAL_SERIALIZE( state);
+                     CASUAL_SERIALIZE( metrics);
                   })
 
                   inline friend bool operator < ( const Instance& lhs,  const Instance& rhs)
@@ -111,21 +111,21 @@ namespace casual
                   std::string key;
                   std::string openinfo;
                   std::string closeinfo;
-                  serviceframework::platform::size::type concurency = 0;
+                  common::platform::size::type concurency = 0;
                   Metrics metrics;
 
                   std::vector< Instance> instances;
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
                   {
-                     archive & CASUAL_MAKE_NVP( id);
-                     archive & CASUAL_MAKE_NVP( name);
-                     archive & CASUAL_MAKE_NVP( key);
-                     archive & CASUAL_MAKE_NVP( openinfo);
-                     archive & CASUAL_MAKE_NVP( closeinfo);
-                     archive & CASUAL_MAKE_NVP( concurency);
-                     archive & CASUAL_MAKE_NVP( metrics);
-                     archive & CASUAL_MAKE_NVP( instances);
+                     CASUAL_SERIALIZE( id);
+                     CASUAL_SERIALIZE( name);
+                     CASUAL_SERIALIZE( key);
+                     CASUAL_SERIALIZE( openinfo);
+                     CASUAL_SERIALIZE( closeinfo);
+                     CASUAL_SERIALIZE( concurency);
+                     CASUAL_SERIALIZE( metrics);
+                     CASUAL_SERIALIZE( instances);
                   })
 
                   inline friend bool operator < ( const Proxy& lhs,  const Proxy& rhs) { return lhs.id < rhs.id;}
@@ -138,28 +138,28 @@ namespace casual
                struct Request
                {
                   resource::id_type resource;
-                  serviceframework::platform::Uuid correlation;
+                  common::Uuid correlation;
                   long type;
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
                   {
-                     archive & CASUAL_MAKE_NVP( resource);
-                     archive & CASUAL_MAKE_NVP( correlation);
-                     archive & CASUAL_MAKE_NVP( type);
+                     CASUAL_SERIALIZE( resource);
+                     CASUAL_SERIALIZE( correlation);
+                     CASUAL_SERIALIZE( type);
                   })
                };
 
                struct Reply
                {
                   std::vector< common::process::Handle> destinations;
-                  serviceframework::platform::Uuid correlation;
+                  common::Uuid correlation;
                   long type;
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
                   {
-                     archive & CASUAL_MAKE_NVP( destinations);
-                     archive & CASUAL_MAKE_NVP( correlation);
-                     archive & CASUAL_MAKE_NVP( type);
+                     CASUAL_SERIALIZE( destinations);
+                     CASUAL_SERIALIZE( correlation);
+                     CASUAL_SERIALIZE( type);
                   })
                };
 
@@ -176,10 +176,10 @@ namespace casual
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
                   {
-                     archive & CASUAL_MAKE_NVP( type);
-                     archive & CASUAL_MAKE_NVP( owner);
-                     archive & CASUAL_MAKE_NVP( global);
-                     archive & CASUAL_MAKE_NVP( branch);
+                     CASUAL_SERIALIZE( type);
+                     CASUAL_SERIALIZE( owner);
+                     CASUAL_SERIALIZE( global);
+                     CASUAL_SERIALIZE( branch);
                   })
                };
 
@@ -189,9 +189,9 @@ namespace casual
 
                CASUAL_CONST_CORRECT_SERIALIZE(
                {
-                  archive & CASUAL_MAKE_NVP( trid);
-                  archive & CASUAL_MAKE_NVP( resources);
-                  archive & CASUAL_MAKE_NVP( state);
+                  CASUAL_SERIALIZE( trid);
+                  CASUAL_SERIALIZE( resources);
+                  CASUAL_SERIALIZE( state);
                })
 
             };
@@ -205,8 +205,8 @@ namespace casual
                
                   CASUAL_CONST_CORRECT_SERIALIZE(
                   {
-                     archive & CASUAL_MAKE_NVP( id);
-                     archive & CASUAL_MAKE_NVP( owner);
+                     CASUAL_SERIALIZE( CASUAL_NAMED_VALUE( id));
+                     CASUAL_SERIALIZE( CASUAL_NAMED_VALUE( owner));
                   })
                };
 
@@ -216,8 +216,8 @@ namespace casual
 
                CASUAL_CONST_CORRECT_SERIALIZE(
                {
-                  archive & CASUAL_MAKE_NVP( global);
-                  archive & CASUAL_MAKE_NVP( branches);
+                  CASUAL_SERIALIZE( CASUAL_NAMED_VALUE( global));
+                  CASUAL_SERIALIZE( CASUAL_NAMED_VALUE( branches));
                })
             };
 
@@ -225,23 +225,23 @@ namespace casual
             {
                struct update_t
                {
-                  serviceframework::platform::size::type prepare = 0;
-                  serviceframework::platform::size::type remove = 0;
+                  common::platform::size::type prepare = 0;
+                  common::platform::size::type remove = 0;
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
                   {
-                     archive & CASUAL_MAKE_NVP( prepare);
-                     archive & CASUAL_MAKE_NVP( remove);
+                     CASUAL_SERIALIZE( prepare);
+                     CASUAL_SERIALIZE( remove);
                   })
 
                } update;
 
-               serviceframework::platform::size::type writes = 0;
+               common::platform::size::type writes = 0;
 
                CASUAL_CONST_CORRECT_SERIALIZE(
                {
-                  archive & CASUAL_MAKE_NVP( update);
-                  archive & CASUAL_MAKE_NVP( writes);
+                  CASUAL_SERIALIZE( update);
+                  CASUAL_SERIALIZE( writes);
                })
             };
 
@@ -266,12 +266,12 @@ namespace casual
 
                CASUAL_CONST_CORRECT_SERIALIZE(
                {
-                  archive & CASUAL_MAKE_NVP( resources);
-                  archive & CASUAL_MAKE_NVP( transactions);
-                  archive & CASUAL_MAKE_NVP( persistent.replies);
-                  archive & CASUAL_MAKE_NVP( persistent.requests);
-                  archive & CASUAL_MAKE_NVP( pending.requests);
-                  archive & CASUAL_MAKE_NVP( log);
+                  CASUAL_SERIALIZE( resources);
+                  CASUAL_SERIALIZE( transactions);
+                  CASUAL_SERIALIZE( persistent.replies);
+                  CASUAL_SERIALIZE( persistent.requests);
+                  CASUAL_SERIALIZE( pending.requests);
+                  CASUAL_SERIALIZE( log);
                })
             };
 
@@ -280,12 +280,12 @@ namespace casual
                struct Instances
                {
                   std::string name;
-                  serviceframework::platform::size::type instances;
+                  common::platform::size::type instances;
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
                   {
-                     archive & CASUAL_MAKE_NVP( name);
-                     archive & CASUAL_MAKE_NVP( instances);
+                     CASUAL_SERIALIZE( name);
+                     CASUAL_SERIALIZE( instances);
                   })
 
                   inline friend bool operator == ( const Instances& lhs, const Instances& rhs) { return lhs.name == rhs.name;}

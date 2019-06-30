@@ -53,7 +53,17 @@ namespace casual
                      std::int64_t count;
 
                      //! size of the logical complete message
-                     std::int64_t complete_size;
+                     std::int64_t size;
+
+                     // for logging only
+                     CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
+                     {
+                        CASUAL_SERIALIZE( type);
+                        CASUAL_SERIALIZE( correlation);
+                        CASUAL_SERIALIZE( offset);
+                        CASUAL_SERIALIZE( count);
+                        CASUAL_SERIALIZE( size);
+                     })
                   };
 
                   constexpr std::int64_t max_message_size() { return platform::ipc::transport::size;}
@@ -85,10 +95,10 @@ namespace casual
 
                   inline Transport() = default;
 
-                  inline Transport( common::message::Type type, size_type complete_size)
+                  inline Transport( common::message::Type type, size_type size)
                   {
                      message.header.type = type;
-                     message.header.complete_size = complete_size;
+                     message.header.size = size;
                   }
 
                   //! @return the message type
@@ -99,8 +109,8 @@ namespace casual
                      return range::make( std::begin( message.payload), message.header.count);
                   }
 
-                  inline const correlation_type& correlation() const { return message.header.correlation;}
-                  inline correlation_type& correlation() { return message.header.correlation;}
+                  inline const auto& correlation() const { return message.header.correlation;}
+                  inline auto& correlation() { return message.header.correlation;}
 
                   //! @return payload size
                   inline size_type payload_size() const { return message.header.count;}
@@ -110,7 +120,7 @@ namespace casual
                   inline size_type payload_offset() const { return message.header.offset;}
 
                   //! @return the size of the complete logical message
-                  inline size_type complete_size() const { return message.header.complete_size;}
+                  inline size_type complete_size() const { return message.header.size;}
 
                   //! @return the total size of the transport message including header.
                   inline size_type size() const { return transport::header_size() + payload_size();}
@@ -126,7 +136,7 @@ namespace casual
                   //!
                   //! @return true if this transport message is the last of the logical message.
                   //! @attention this does not give any guarantees that no more transport messages will arrive...
-                  inline bool last() const { return message.header.offset + message.header.count == message.header.complete_size;}
+                  inline bool last() const { return message.header.offset + message.header.count == message.header.size;}
 
                   auto begin() { return std::begin( message.payload);}
                   inline auto begin() const { return std::begin( message.payload);}
@@ -164,7 +174,13 @@ namespace casual
 
                inline explicit operator bool () const { return ! m_socket.empty();}
 
-               friend std::ostream& operator << ( std::ostream& out, const Handle& rhs);
+               // for logging only
+               CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
+               {
+                  CASUAL_SERIALIZE_NAME( m_socket, "socket");
+                  CASUAL_SERIALIZE_NAME( m_ipc, "ipc");
+               })
+
             private:
                Socket m_socket;
                strong::ipc::id m_ipc;
@@ -305,7 +321,12 @@ namespace casual
                   inline Handle& handle() { return m_handle;}
                   inline auto descriptor() const { return m_handle.socket().descriptor();}
 
-                  friend std::ostream& operator << ( std::ostream& out, const Connector& rhs);
+                  // for logging only
+                  CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
+                  {
+                     CASUAL_SERIALIZE_NAME( m_handle, "handle");
+                  })
+
                private:
                   Handle m_handle;
                };
@@ -340,7 +361,12 @@ namespace casual
                   inline void reconnect() const { throw; }
                   inline void clear() { m_destination = Address{ strong::ipc::id{}};}
 
-                  friend std::ostream& operator << ( std::ostream& out, const Connector& rhs);
+                  // for logging only
+                  CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
+                  {
+                     CASUAL_SERIALIZE_NAME( m_destination, "destination");
+                  })
+
                protected:
                   Address m_destination;
                };

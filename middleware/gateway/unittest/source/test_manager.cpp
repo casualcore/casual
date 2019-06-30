@@ -82,7 +82,7 @@ domain:
                   auto reply = call( manager::admin::service::name::state());
 
                   manager::admin::vo::State result;
-                  reply >> CASUAL_MAKE_NVP( result);
+                  reply >> CASUAL_NAMED_VALUE( result);
 
                   return result;
                }

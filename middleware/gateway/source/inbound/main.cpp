@@ -138,7 +138,7 @@ namespace casual
                   template< typename M> 
                   void add_message( M&& message)
                   {
-                     buffer.add( common::marshal::complete( std::forward< M>( message)));
+                     buffer.add( common::serialize::native::complete( std::forward< M>( message)));
 
                      if( buffer.congested())
                         directive.read.remove( external.inbound.connector().socket().descriptor());

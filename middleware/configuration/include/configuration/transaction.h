@@ -8,8 +8,9 @@
 #pragma once
 
 
-#include "serviceframework/namevaluepair.h"
-#include "serviceframework/platform.h"
+#include "common/serialize/macro.h"
+#include "common/platform.h"
+#include "common/optional.h"
 
 #include <string>
 #include <vector>
@@ -25,12 +26,12 @@ namespace casual
             struct Default
             {
                std::string key;
-               serviceframework::platform::size::type instances = 1;
+               common::platform::size::type instances = 1;
 
                CASUAL_CONST_CORRECT_SERIALIZE
                (
-                  archive & CASUAL_MAKE_NVP( key);
-                  archive & CASUAL_MAKE_NVP( instances);
+                  CASUAL_SERIALIZE( key);
+                  CASUAL_SERIALIZE( instances);
                )
             };
          } // resource
@@ -38,22 +39,22 @@ namespace casual
          struct Resource
          {
             std::string name;
-            serviceframework::optional< std::string> key;
-            serviceframework::optional< serviceframework::platform::size::type> instances;
+            common::optional< std::string> key;
+            common::optional< common::platform::size::type> instances;
             
             std::string note;
 
-            serviceframework::optional< std::string> openinfo;
-            serviceframework::optional< std::string> closeinfo;
+            common::optional< std::string> openinfo;
+            common::optional< std::string> closeinfo;
 
             CASUAL_CONST_CORRECT_SERIALIZE
             (
-               archive & CASUAL_MAKE_NVP( name);
-               archive & CASUAL_MAKE_NVP( key);
-               archive & CASUAL_MAKE_NVP( instances);
-               archive & CASUAL_MAKE_NVP( note);
-               archive & CASUAL_MAKE_NVP( openinfo);
-               archive & CASUAL_MAKE_NVP( closeinfo);
+               CASUAL_SERIALIZE( name);
+               CASUAL_SERIALIZE( key);
+               CASUAL_SERIALIZE( instances);
+               CASUAL_SERIALIZE( note);
+               CASUAL_SERIALIZE( openinfo);
+               CASUAL_SERIALIZE( closeinfo);
             )
 
             Resource& operator += ( const resource::Default& rhs);
@@ -69,7 +70,7 @@ namespace casual
 
                CASUAL_CONST_CORRECT_SERIALIZE
                (
-                  archive & CASUAL_MAKE_NVP( resource);
+                  CASUAL_SERIALIZE( resource);
                )
             };
 
@@ -89,9 +90,9 @@ namespace casual
 
             CASUAL_CONST_CORRECT_SERIALIZE
             (
-               archive & serviceframework::name::value::pair::make( "default", manager_default);
-               archive & CASUAL_MAKE_NVP( log);
-               archive & CASUAL_MAKE_NVP( resources);
+               CASUAL_SERIALIZE_NAME( manager_default, "default");
+               CASUAL_SERIALIZE( log);
+               CASUAL_SERIALIZE( resources);
             )
 
             friend Manager& operator += ( Manager& lhs, const Manager& rhs);

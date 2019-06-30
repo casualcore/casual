@@ -95,7 +95,6 @@ install_libs.append( target)
 pending_executable = LinkExecutable( 'bin/casual-domain-pending-message',
     [
       Compile( 'source/pending/message/main.cpp'),
-      Compile( 'source/pending/message/message.cpp'),
     ],
     [
      pending_library,
@@ -193,7 +192,7 @@ target_test_delay = LinkUnittest( 'bin/test-casual-domain-delay',
 
 #
 # We execute 'target_domain_delay' from test-casual-domain-delay, so
-# we need to meke sure target_domain_delay is built before
+# we need to make sure target_domain_delay is built before
 #
 Dependencies( target_test_delay, [ target_delay_message ])
 

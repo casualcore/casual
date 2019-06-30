@@ -8,6 +8,7 @@
 #include "tools/common.h"
 
 #include "common/algorithm.h"
+#include "common/string.h"
 #include "common/exception/system.h"
 
 namespace casual

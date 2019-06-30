@@ -21,7 +21,7 @@
 #include "common/exception/handle.h"
 
 #include "serviceframework/service/protocol/call.h"
-#include "serviceframework/archive/create.h"
+#include "common/serialize/create.h"
 #include "serviceframework/log.h"
 
 
@@ -57,7 +57,7 @@ namespace casual
             auto reply = call( manager::admin::service::name::state());
 
             manager::admin::State result;
-            reply >> CASUAL_MAKE_NVP( result);
+            reply >> CASUAL_NAMED_VALUE( result);
 
             return result;
          }
@@ -65,11 +65,11 @@ namespace casual
          std::vector< manager::admin::Message> messages( const std::string& queue)
          {
             serviceframework::service::protocol::binary::Call call;
-            call << CASUAL_MAKE_NVP( queue);
+            call << CASUAL_NAMED_VALUE( queue);
             auto reply = call( manager::admin::service::name::list_messages());
 
             std::vector< manager::admin::Message> result;
-            reply >> CASUAL_MAKE_NVP( result);
+            reply >> CASUAL_NAMED_VALUE( result);
 
             return result;
          }
@@ -363,8 +363,8 @@ casual queue --restore <queue-name>)";
             {
                auto state = call::state();
 
-               auto archive = serviceframework::archive::create::writer::from( format.value(), std::cout);
-               archive << CASUAL_MAKE_NVP( state);
+               auto archive = common::serialize::create::writer::from( format.value(), std::cout);
+               archive << CASUAL_NAMED_VALUE( state);
             }
          } // <unnamed>
       } // local

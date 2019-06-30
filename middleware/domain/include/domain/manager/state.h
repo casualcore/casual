@@ -21,9 +21,7 @@
 
 #include "configuration/environment.h"
 
-
-#include "serviceframework/namevaluepair.h"
-#include "serviceframework/archive/archive.h"
+#include "common/serialize/macro.h"
 
 #include <unordered_map>
 #include <vector>
@@ -31,26 +29,6 @@
 
 namespace casual
 {
-
-   namespace serviceframework
-   {
-      namespace archive
-      {
-         template< typename I, typename T>
-         void serialize( Reader& archive, common::value::basic_id< I, T>& value, const char* name)
-         {
-            I integer;
-            archive >> name::value::pair::make( name, integer);
-            value = common::value::basic_id< I, T>{ integer};
-         }
-
-         template< typename I, typename T>
-         void serialize( Writer& archive, const common::value::basic_id< I, T>& value, const char* name)
-         {
-            archive << name::value::pair::make( name, value.value());
-         }
-      } // archive
-   } // serviceframework
 
    namespace domain
    {
@@ -69,8 +47,6 @@ namespace casual
                using type = common::value::basic_id< size_type, common::value::id::policy::unique_initialize< size_type, Tag, 0>>;
                
             } // id
-
-
 
             struct Group
             {
@@ -91,10 +67,7 @@ namespace casual
 
                friend bool operator == ( const Group& lhs, Group::id_type id) { return lhs.id == id;}
                friend bool operator == ( Group::id_type id, const Group& rhs) { return id == rhs.id;}
-
                friend bool operator == ( const Group& lhs, const std::string& name) { return lhs.name == name;}
-
-               friend std::ostream& operator << ( std::ostream& out, const Group& value);
 
                struct boot
                {
@@ -109,11 +82,11 @@ namespace casual
                //! For persistent state
                CASUAL_CONST_CORRECT_SERIALIZE
                (
-                  archive & CASUAL_MAKE_NVP( id);
-                  archive & CASUAL_MAKE_NVP( name);
-                  archive & CASUAL_MAKE_NVP( note);
-                  archive & CASUAL_MAKE_NVP( dependencies);
-                  archive & CASUAL_MAKE_NVP( resources);
+                  CASUAL_SERIALIZE( id);
+                  CASUAL_SERIALIZE( name);
+                  CASUAL_SERIALIZE( note);
+                  CASUAL_SERIALIZE( dependencies);
+                  CASUAL_SERIALIZE( resources);
                )
             };
 
@@ -147,16 +120,16 @@ namespace casual
                //! For persistent state
                CASUAL_CONST_CORRECT_SERIALIZE
                (
-                  archive & CASUAL_MAKE_NVP( id);
-                  archive & CASUAL_MAKE_NVP( alias);
-                  archive & CASUAL_MAKE_NVP( path);
-                  archive & CASUAL_MAKE_NVP( arguments);
-                  archive & CASUAL_MAKE_NVP( note);
+                  CASUAL_SERIALIZE( id);
+                  CASUAL_SERIALIZE( alias);
+                  CASUAL_SERIALIZE( path);
+                  CASUAL_SERIALIZE( arguments);
+                  CASUAL_SERIALIZE( note);
 
-                  archive & CASUAL_MAKE_NVP( memberships);
-                  archive & serviceframework::name::value::pair::make(  "environment_variables", environment.variables);
-                  archive & CASUAL_MAKE_NVP( restart);
-                  archive & CASUAL_MAKE_NVP( restarts);
+                  CASUAL_SERIALIZE( memberships);
+                  CASUAL_SERIALIZE_NAME( environment.variables, "environment_variables");
+                  CASUAL_SERIALIZE( restart);
+                  CASUAL_SERIALIZE( restarts);
                )
             };
 
@@ -193,14 +166,10 @@ namespace casual
                friend bool operator == ( const Instance& lhs, common::strong::process::id pid) { return lhs.handle == pid;}
                friend bool operator < ( const Instance& lhs, const Instance& rhs) { return lhs.state < rhs.state;}
 
-
-
-               friend std::ostream& operator << ( std::ostream& out, const Instance& value)
-               {
-                  return out << "{ handle: " << value.handle
-                        << ", state: " << value.state
-                        << '}';
-               }
+               CASUAL_CONST_CORRECT_SERIALIZE({
+                  CASUAL_SERIALIZE( handle);
+                  CASUAL_SERIALIZE( state);
+               })
             };
 
 
@@ -232,10 +201,12 @@ namespace casual
                const_instances_range shutdownable() const;
 
                void scale( size_type instances);
-
                void remove( pid_type instance);
 
-               friend std::ostream& operator << ( std::ostream& out, const Executable& value);
+               CASUAL_CONST_CORRECT_SERIALIZE({
+                  Process::serialize( archive);
+                  CASUAL_SERIALIZE( instances);
+               })
             };
 
             struct Server : Process
@@ -279,8 +250,6 @@ namespace casual
 
                bool connect( common::process::Handle process);
 
-               friend std::ostream& operator << ( std::ostream& out, const Server& value);
-
                friend bool operator == ( const Server& lhs, common::strong::process::id rhs);
 
                //! For persistent state
@@ -289,11 +258,11 @@ namespace casual
                {
                   Process::serialize( archive);
 
-                  archive & CASUAL_MAKE_NVP( resources);
-                  archive & CASUAL_MAKE_NVP( restrictions);
+                  CASUAL_SERIALIZE( resources);
+                  CASUAL_SERIALIZE( restrictions);
 
                   auto instances_count = instances.size();
-                  archive & CASUAL_MAKE_NVP( instances_count);
+                  CASUAL_SERIALIZE( instances_count);
                   instances.resize( instances_count);
                }
 
@@ -302,11 +271,11 @@ namespace casual
                {
                   Process::serialize( archive);
 
-                  archive & CASUAL_MAKE_NVP( resources);
-                  archive & CASUAL_MAKE_NVP( restrictions);
+                  CASUAL_SERIALIZE( resources);
+                  CASUAL_SERIALIZE( restrictions);
 
                   auto instances_count = instances.size();
-                  archive & CASUAL_MAKE_NVP( instances_count);
+                  CASUAL_SERIALIZE( instances_count);
                }
             };
 
@@ -321,7 +290,10 @@ namespace casual
 
                void log( std::ostream& out, const State& state) const;
 
-               friend std::ostream& operator << ( std::ostream& out, const Batch& value);
+               CASUAL_CONST_CORRECT_SERIALIZE_WRITE({
+                  CASUAL_SERIALIZE( executables);
+                  CASUAL_SERIALIZE( servers);
+               })
             };
             static_assert( common::traits::is_movable< Batch>::value, "not movable");
 
@@ -384,11 +356,11 @@ namespace casual
                //! For persistent state
                CASUAL_CONST_CORRECT_SERIALIZE
                (
-                  archive & CASUAL_MAKE_NVP( master);
-                  archive & CASUAL_MAKE_NVP( transaction);
-                  archive & CASUAL_MAKE_NVP( queue);
-                  archive & CASUAL_MAKE_NVP( global);
-                  archive & CASUAL_MAKE_NVP( gateway);
+                  CASUAL_SERIALIZE( master);
+                  CASUAL_SERIALIZE( transaction);
+                  CASUAL_SERIALIZE( queue);
+                  CASUAL_SERIALIZE( global);
+                  CASUAL_SERIALIZE( gateway);
                )
 
             } group_id;
@@ -451,18 +423,17 @@ namespace casual
             //! @return resource names
             std::vector< std::string> resources( common::strong::process::id pid);
 
-            friend std::ostream& operator << ( std::ostream& out, const State& state);
 
             //! For persistent state
             CASUAL_CONST_CORRECT_SERIALIZE
             (
-               archive & CASUAL_MAKE_NVP( manager_id);
-               archive & CASUAL_MAKE_NVP( groups);
-               archive & CASUAL_MAKE_NVP( servers);
-               archive & CASUAL_MAKE_NVP( executables);
-               archive & CASUAL_MAKE_NVP( group_id);
-               archive & CASUAL_MAKE_NVP( environment);
-               archive & CASUAL_MAKE_NVP( configuration);
+               CASUAL_SERIALIZE( manager_id);
+               CASUAL_SERIALIZE( groups);
+               CASUAL_SERIALIZE( servers);
+               CASUAL_SERIALIZE( executables);
+               CASUAL_SERIALIZE( group_id);
+               CASUAL_SERIALIZE( environment);
+               CASUAL_SERIALIZE( configuration);
             )
 
             bool mandatory_prepare = true;

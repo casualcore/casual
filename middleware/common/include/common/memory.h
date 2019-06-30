@@ -66,7 +66,10 @@ namespace casual
 
 
          template< typename T>
-         std::enable_if_t< traits::is_trivially_copyable< traits::remove_cvref_t< T>>::value, size_type>
+         std::enable_if_t< 
+            traits::is_trivially_copyable< traits::remove_cvref_t< T>>::value
+            && ! traits::is::binary::like< traits::remove_cvref_t< T>>::value, 
+         size_type>
          append( T&& value, platform::binary::type& destination)
          {
             auto first = reinterpret_cast< const platform::character::type*>( &value);
@@ -76,6 +79,20 @@ namespace casual
                   std::end( destination),
                   first,
                   last);
+
+            return destination.size();
+         }
+
+         template< typename T>
+         std::enable_if_t< 
+            traits::is::binary::like< traits::remove_cvref_t< T>>::value, 
+         size_type>
+         append( T&& value, platform::binary::type& destination)
+         {
+            destination.insert(
+                  std::end( destination),
+                  std::begin( value),
+                  std::end( value));
 
             return destination.size();
          }
@@ -99,6 +116,23 @@ namespace casual
             assert( std::distance( first, last) >=  size);
 
             std::memcpy( &value, &(*first), size);
+
+            return offset + size;
+         }
+
+         template< typename S, typename T>
+         std::enable_if_t< 
+            traits::is::binary::like< traits::remove_cvref_t< T>>::value, 
+         size_type>
+         copy( S&& source, size_type offset, T&& value)
+         {
+            auto size = std::distance( std::begin( value), std::end( value));
+            auto first = std::begin( source) + offset;
+            auto last = first + size;
+
+            assert( std::end( source) >= last);
+
+            std::copy( first, last, std::begin( value));
 
             return offset + size;
          }

@@ -16,9 +16,11 @@
 #include "common/communication/tcp.h"
 #include "common/communication/select.h"
 #include "common/execute.h"
+#include "common/stream.h"
 
 #include "common/message/service.h"
 #include "common/message/handle.h"
+
 
 
 namespace casual

@@ -9,8 +9,9 @@
 
 
 
-#include "serviceframework/namevaluepair.h"
-#include "serviceframework/platform.h"
+#include "common/serialize/macro.h"
+#include "common/platform.h"
+#include "common/optional.h"
 
 #include <vector>
 #include <string>
@@ -37,23 +38,23 @@ namespace casual
 
                CASUAL_CONST_CORRECT_SERIALIZE
                (
-                  archive & CASUAL_MAKE_NVP( include);
-                  archive & CASUAL_MAKE_NVP( library);
+                  CASUAL_SERIALIZE( include);
+                  CASUAL_SERIALIZE( library);
                )
 
             } paths;
 
-            serviceframework::optional< std::string> note;
+            common::optional< std::string> note;
 
 
             CASUAL_CONST_CORRECT_SERIALIZE
             (
-               archive & CASUAL_MAKE_NVP( key);
-               archive & CASUAL_MAKE_NVP( server);
-               archive & CASUAL_MAKE_NVP( xa_struct_name);
-               archive & CASUAL_MAKE_NVP( libraries);
-               archive & CASUAL_MAKE_NVP( paths);
-               archive & CASUAL_MAKE_NVP( note);
+               CASUAL_SERIALIZE( key);
+               CASUAL_SERIALIZE( server);
+               CASUAL_SERIALIZE( xa_struct_name);
+               CASUAL_SERIALIZE( libraries);
+               CASUAL_SERIALIZE( paths);
+               CASUAL_SERIALIZE( note);
             )
          };
 

@@ -29,17 +29,16 @@ LibraryPaths([
 
 install_lib = []
 install_bin = []
+install_example_bin = []
 install_headers = []
 
 
 common_archive = LinkArchive( 'bin/casual-gateway-common',
     [
         Compile( 'source/environment.cpp'),
-        Compile( 'source/outbound/route.cpp'),
         Compile( 'source/outbound/error/reply.cpp'),
         Compile( 'source/inbound/buffer.cpp'),
         Compile( 'source/transform.cpp'),
-        Compile( 'source/message.cpp'),
         Compile( 'source/manager/listen.cpp'),
         Compile( 'source/common.cpp'),
     ])
@@ -119,24 +118,35 @@ target_unittest = LinkUnittest( 'bin/test-casual-gateway',
 # Make sure we link the executables before we run the unittest
 Dependencies( target_unittest, install_bin)
 
+# protocol example
+protocol_objects = [
+    Compile( 'source/documentation/protocol/example.cpp')
+]
 
-tartet = LinkExecutable( "documentation/protocol/bin/markdown-protocol",
-    [
-        Compile( 'documentation/protocol/source/markdown.cpp')
-    ],
-    [
-        'casual-common'
-    ])
 
-target = LinkExecutable( "documentation/protocol/bin/binary-protocol",
+
+target = LinkExecutable( "bin/casual-gateway-markdown-protocol",
     [
-        Compile( 'documentation/protocol/source/binary.cpp')
-    ],
+        Compile( 'source/documentation/protocol/markdown.cpp')
+    ] + protocol_objects,
     [
         'casual-common'
     ])
 
+install_example_bin.append( target)
 
+target = LinkExecutable( "bin/casual-gateway-binary-protocol",
+    [
+        Compile( 'source/documentation/protocol/binary.cpp')
+    ] + protocol_objects,
+    [
+        'casual-common'
+    ])
+
+install_example_bin.append( target)
+
+
+Install( install_example_bin,'$(CASUAL_HOME)/example/bin')
 Install( install_bin,'$(CASUAL_HOME)/bin')
 Install( install_lib,'$(CASUAL_HOME)/lib')
 Install( install_headers,'$(CASUAL_HOME)/include')

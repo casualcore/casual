@@ -92,13 +92,6 @@ namespace casual
                std::swap( lhs.m_correlation, rhs.m_correlation);
             }
 
-            std::ostream& operator << ( std::ostream& out, const Lookup& value)
-            {
-               return out << "{ service: " << value.m_service
-                  << ", correlation: " << value.m_correlation
-                  << '}';
-            }
-
             bool Lookup::update( Reply&& reply)
             {
                log::line( verbose::log, "reply: ", reply);

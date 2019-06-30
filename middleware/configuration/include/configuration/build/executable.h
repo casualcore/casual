@@ -8,8 +8,7 @@
 
 #include "configuration/build/resource.h"
 
-#include "serviceframework/namevaluepair.h"
-#include "serviceframework/platform.h"
+#include "common/serialize/macro.h"
 
 #include <vector>
 
@@ -36,8 +35,8 @@ namespace casual
 
             CASUAL_CONST_CORRECT_SERIALIZE
             (
-               archive & CASUAL_MAKE_NVP( resources);
-               archive & CASUAL_MAKE_NVP( entrypoint);
+               CASUAL_SERIALIZE( resources);
+               CASUAL_SERIALIZE( entrypoint);
             )
 
          };

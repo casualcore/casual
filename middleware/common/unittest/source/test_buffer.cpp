@@ -11,7 +11,7 @@
 #include "common/buffer/pool.h"
 
 #include "common/message/service.h"
-#include "common/marshal/binary.h"
+#include "common/serialize/native/binary.h"
 
 
 #include "xatmi.h"
@@ -83,7 +83,7 @@ namespace casual
 
             EXPECT_NO_THROW({
                auto send = pool::Holder::instance().get( inbound);
-               EXPECT_TRUE( send.reserved == 1024);
+               EXPECT_TRUE( send.reserved() == 1024);
             });
 
             pool::Holder::instance().clear();
@@ -172,7 +172,7 @@ namespace casual
 
             auto holder = buffer::pool::Holder::instance().get( handle, 100);
 
-            EXPECT_TRUE( holder.transport == 100);
+            EXPECT_TRUE( holder.transport() == 100);
             EXPECT_TRUE( holder.payload().memory.size() == 128) << "holder.payload.memory.size(): " << holder.payload().memory.size();
             EXPECT_TRUE( holder.payload().memory.data() == info);
 
@@ -195,11 +195,11 @@ namespace casual
 
                message::service::call::caller::Request message( buffer::pool::Holder::instance().get( handle, 100));
 
-               EXPECT_TRUE( message.buffer.transport == 100);
+               EXPECT_TRUE( message.buffer.transport() == 100);
                EXPECT_TRUE( message.buffer.payload().memory.size() == 128) << "message.buffer.payload.memory.size(): " << message.buffer.payload().memory.size();
                EXPECT_TRUE( message.buffer.payload().memory.data() == info);
 
-               marshal::binary::Output output( marshal_buffer);
+               serialize::native::binary::Output output( marshal_buffer);
                output << message;
 
                buffer::pool::Holder::instance().deallocate( handle);
@@ -211,7 +211,7 @@ namespace casual
 
                message::service::call::callee::Request message;
 
-               marshal::binary::Input input( marshal_buffer);
+               serialize::native::binary::Input input( marshal_buffer);
                input >> message;
 
                EXPECT_TRUE( message.buffer.type == type);
@@ -220,6 +220,31 @@ namespace casual
             }
          }
 
+         TEST( casual_common_buffer_type, serialize__payload_Send)
+         {
+            common::unittest::Trace trace;
+            
+            platform::binary::type buffer;
+            
+            buffer::Payload payload;
+            {
+               payload.type = "foo";
+               payload.memory = unittest::random::binary( 256);
+            }
+            {
+               serialize::native::binary::Output output( buffer);
+               output << buffer::payload::Send{ payload};
+            }
+
+            {
+               buffer::Payload serialized;
+               serialize::native::binary::Input input( buffer);
+               input >> serialized;
+
+               EXPECT_TRUE( payload.type == serialized.type);
+               EXPECT_TRUE( algorithm::equal( payload.memory, serialized.memory)); 
+            }
+         }
 
          TEST( casual_common_buffer_type, serialize_empty_payload)
          {
@@ -255,8 +280,10 @@ namespace casual
             auto serialized = buffer::payload::binary::stream( stream);
 
             EXPECT_TRUE( payload.type == serialized.type);
-            EXPECT_TRUE( algorithm::equal( payload.memory, serialized.memory));         
+            EXPECT_TRUE( algorithm::equal( payload.memory, serialized.memory));    
          }
+
+
 
 
          TEST( casual_common_buffer_type, serialize_payload__dispatch)
@@ -281,6 +308,9 @@ namespace casual
             
             buffer::payload::binary::stream( stream, dispatch);
          }
+
+
+
 
          TEST( casual_common_buffer_type, serialize_10_payload__dispatch)
          {

@@ -53,7 +53,7 @@ namespace casual
                         vo::Entry vo;
                         vo.setService( row.get< std::string>(0));
                         vo.setParentService( row.get< std::string>( 1));
-                        serviceframework::platform::Uuid callId( row.get< std::string>( 2));
+                        common::Uuid callId( row.get< std::string>( 2));
                         vo.setCallId( callId);
                         //vo.setTransactionId( local::getValue( *row, "transactionid"));
 
@@ -65,7 +65,6 @@ namespace casual
                      }
 
                      return result;
-
                   }
 
                   namespace service
@@ -76,7 +75,7 @@ namespace casual
 
                         auto result = serviceframework::service::user( protocol, &local::select);
 
-                        protocol << CASUAL_MAKE_NVP( result);
+                        protocol << CASUAL_NAMED_VALUE( result);
                         return protocol.finalize();
                      }
                   } // service
@@ -87,9 +86,7 @@ namespace casual
 
             void main( int argc, char **argv)
             {
-               //
                // get database from arguments
-               //
 
                {
                   using namespace casual::common::argument;
@@ -119,14 +116,9 @@ namespace casual
 
 int main( int argc, char **argv)
 {
-   try
+   return casual::common::exception::guard( [&]()
    {
       casual::event::service::monitor::main( argc, argv);
-      return 0;
-   }
-   catch( ...)
-   {
-      return casual::common::exception::handle();
-   }
+   });
 }
 

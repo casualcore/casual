@@ -52,10 +52,10 @@ namespace casual
 
                   }
 
-                  template< typename D, typename M, typename C = marshal::binary::create::Output>
+                  template< typename D, typename M, typename C = serialize::native::binary::create::Output>
                   auto send( const D& device, M&& message, platform::size::type count = 1)
                   {
-                     return send( device, marshal::complete( std::forward< M>( message)), count);
+                     return send( device, serialize::native::complete( std::forward< M>( message)), count);
                   }
                } // eventually
 
@@ -64,11 +64,11 @@ namespace casual
                   pipe::Address reply;
                   platform::binary::type data;
 
-                  CASUAL_CONST_CORRECT_MARSHAL(
+                  CASUAL_CONST_CORRECT_SERIALIZE(
                   {
-                     base_type::marshal( archive);
-                     archive & reply;
-                     archive & data;
+                     base_type::serialize( archive);
+                     CASUAL_SERIALIZE( reply);
+                     CASUAL_SERIALIZE( data);
                   })
 
                };

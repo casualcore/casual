@@ -9,7 +9,7 @@
 
 
 
-#include "serviceframework/archive/archive.h"
+#include "common/serialize/archive.h"
 
 #include "common/service/invoke.h"
 #include "common/functional.h"
@@ -30,8 +30,8 @@ namespace casual
 
             namespace io
             {
-               using readers_type = std::vector< archive::Reader*>;
-               using writers_type = std::vector< archive::Writer*>;
+               using readers_type = std::vector< common::serialize::Reader*>;
+               using writers_type = std::vector< common::serialize::Writer*>;
 
                struct Input
                {
@@ -56,7 +56,7 @@ namespace casual
 
             template< typename P>
             Protocol( P&& protocol)
-               : Protocol{ std::make_unique< Implementation< P>>( std::move( protocol))}
+               : Protocol{ std::make_unique< model< P>>( std::move( protocol))}
             {
             }
 
@@ -90,14 +90,14 @@ namespace casual
             template< typename P, typename... Args>
             static Protocol emplace( Args&&... args)
             {
-               return { std::make_unique< Implementation< P>>( std::forward< Args>( args)...)};
+               return { std::make_unique< model< P>>( std::forward< Args>( args)...)};
             }
 
          private:
 
-            struct Base
+            struct concept
             {
-               virtual ~Base() = default;
+               virtual ~concept() = default;
                virtual protocol::io::Input& input() = 0;
                virtual protocol::io::Output& output() = 0;
                virtual bool call() const = 0;
@@ -111,10 +111,10 @@ namespace casual
             Protocol( std::unique_ptr< P>&& implementation) : m_implementation( std::move( implementation)) {}
 
             template< typename Protocol>
-            struct Implementation : Base
+            struct model : concept
             {
                template< typename... Args>
-               Implementation( Args&&... args) : m_protocol{ std::forward< Args>( args)...} {}
+               model( Args&&... args) : m_protocol{ std::forward< Args>( args)...} {}
 
                protocol::io::Input& input() override { return m_protocol.input();}
                protocol::io::Output& output() override { return m_protocol.output();}
@@ -142,7 +142,7 @@ namespace casual
                }
             }
 
-            std::unique_ptr< Base> m_implementation;
+            std::unique_ptr< concept> m_implementation;
 
          };
 
@@ -173,7 +173,7 @@ namespace casual
                static auto call( Protocol&& protocol, F&& function, Args&&... args)
                {
                   auto result = service::user( protocol, std::forward< F>( function), std::forward< Args>( args)...);
-                  protocol << CASUAL_MAKE_NVP( result);
+                  protocol << CASUAL_NAMED_VALUE( result);
                   return protocol.finalize();
                }
             };

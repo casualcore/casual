@@ -25,7 +25,7 @@
 #include "common/communication/instance.h"
 
 #include "serviceframework/service/protocol/call.h"
-#include "serviceframework/namevaluepair.h"
+#include "common/serialize/macro.h"
 #include "serviceframework/log.h"
 
 #include "domain/manager/unittest/process.h"
@@ -103,7 +103,7 @@ domain:
                   auto reply = call( manager::admin::service::name::state());
 
                   manager::admin::State result;
-                  reply >> CASUAL_MAKE_NVP( result);
+                  reply >> CASUAL_NAMED_VALUE( result);
 
                   return result;
                }
@@ -111,11 +111,11 @@ domain:
                std::vector< manager::admin::Message> messages( const std::string& queue)
                {
                   serviceframework::service::protocol::binary::Call call;
-                  call << CASUAL_MAKE_NVP( queue);
+                  call << CASUAL_NAMED_VALUE( queue);
                   auto reply = call( manager::admin::service::name::list_messages());
 
                   std::vector< manager::admin::Message> result;
-                  reply >> CASUAL_MAKE_NVP( result);
+                  reply >> CASUAL_NAMED_VALUE( result);
 
                   return result;
                }
@@ -165,7 +165,7 @@ domain:
             common::message::queue::lookup::Reply reply;
             common::communication::ipc::blocking::receive( common::communication::ipc::inbound::device(), reply);
 
-            EXPECT_TRUE( reply.queue) << "reply: " << reply;
+            EXPECT_TRUE( reply.queue) << CASUAL_NAMED_VALUE( reply);
          }
       }
 
@@ -192,7 +192,7 @@ domain:
             common::message::queue::lookup::Reply reply;
             common::communication::ipc::blocking::receive( common::communication::ipc::inbound::device(), reply);
 
-            EXPECT_FALSE( reply.queue) << "reply: " << reply;
+            EXPECT_FALSE( reply.queue) << CASUAL_NAMED_VALUE( reply);
          }
       }
 
@@ -273,7 +273,7 @@ domain:
          auto& info = information.at( 0);
          EXPECT_TRUE( info.id == id);
          EXPECT_TRUE( local::compare( info.attributes.available, now));
-         EXPECT_TRUE( info.attributes.properties == "poop") << "info: " << CASUAL_MAKE_NVP( info);
+         EXPECT_TRUE( info.attributes.properties == "poop") << "info: " << CASUAL_NAMED_VALUE( info);
          EXPECT_TRUE( info.attributes.reply == "queueA2");
          EXPECT_TRUE( info.payload.type == common::buffer::type::binary());
          EXPECT_TRUE( info.payload.size == common::range::size( payload));
@@ -317,7 +317,7 @@ domain:
 
          ASSERT_TRUE( messages.size() == 1);
          auto& message = messages.at( 0);
-         EXPECT_TRUE( message.id == id) << "message: " << CASUAL_MAKE_NVP( message);
+         EXPECT_TRUE( message.id == id) << "message: " << CASUAL_NAMED_VALUE( message);
          EXPECT_TRUE( local::compare( message.attributes.available, now));
          EXPECT_TRUE( message.attributes.properties == "poop");
          EXPECT_TRUE( message.attributes.reply == "queueA2");

@@ -9,7 +9,7 @@
 
 
 
-#include "common/marshal/binary.h"
+#include "common/serialize/native/binary.h"
 #include "common/process.h"
 #include "common/communication/ipc.h"
 
@@ -32,11 +32,11 @@ namespace casual
 
                template< typename M>
                Message( M&& message, destinations_type destinations)
-                  : Message{ marshal::complete( std::forward< M>( message)), std::move( destinations)} {}
+                  : Message{ serialize::native::complete( std::forward< M>( message)), std::move( destinations)} {}
 
                template< typename M>
                Message( M&& message, destination_type destination)
-                  : Message{ marshal::complete( std::forward< M>( message)), destinations_type{ destination}} {}
+                  : Message{ serialize::native::complete( std::forward< M>( message)), destinations_type{ destination}} {}
 
                
                Message() = default;
@@ -55,13 +55,11 @@ namespace casual
                destinations_type destinations;
                communication::message::Complete complete;
 
-               CASUAL_CONST_CORRECT_MARSHAL(
+               CASUAL_CONST_CORRECT_SERIALIZE(
                {
-                  archive & destinations;
-                  archive & complete;
+                  CASUAL_SERIALIZE( destinations);
+                  CASUAL_SERIALIZE( complete);
                })
-
-               friend std::ostream& operator << ( std::ostream& out, const Message& value);
             };
 
 

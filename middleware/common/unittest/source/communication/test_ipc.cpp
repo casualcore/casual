@@ -58,7 +58,7 @@ namespace casual
                         }
                         ipc::message::Transport transport;
                         transport.message.header.type = type;
-                        transport.message.header.complete_size = payload.size();
+                        transport.message.header.size = payload.size();
                         transport.message.header.count = std::distance( current, last);
                         transport.message.header.offset = std::distance( std::begin( payload), current);
 
@@ -193,7 +193,7 @@ namespace casual
                }
 
                message::Complete complete{ transport.type(), transport.correlation(), transport.complete_size(), transport};
-               marshal::complete( complete, receive_message);
+               serialize::native::complete( complete, receive_message);
             }
 
             EXPECT_TRUE( ( algorithm::equal( receive_message.payload, send_message.payload)));
@@ -229,7 +229,7 @@ namespace casual
                }
                complete.add( transport);
 
-               marshal::complete( complete, receive_message);
+               serialize::native::complete( complete, receive_message);
             }
 
             EXPECT_TRUE( ( algorithm::equal( receive_message.payload, send_message.payload)));
@@ -332,10 +332,10 @@ namespace casual
                   
                   platform::size::type index = 0;
 
-                  CASUAL_CONST_CORRECT_MARSHAL(
+                  CASUAL_CONST_CORRECT_SERIALIZE(
                   {
-                     unittest::Message::marshal( archive);
-                     archive & index;
+                     unittest::Message::serialize( archive);
+                     CASUAL_SERIALIZE( index);
                   })
                };
 
@@ -358,7 +358,7 @@ namespace casual
                   {
                      ipc::blocking::receive( ipc::inbound::device(), message);
                      EXPECT_TRUE( message.index == index);
-                     EXPECT_TRUE( message.payload == origin.payload);
+                     EXPECT_TRUE( message.payload == origin.payload) << "\n" << CASUAL_NAMED_VALUE( message) << "\n" << CASUAL_NAMED_VALUE( origin);
                   }
 
                   sender.join();

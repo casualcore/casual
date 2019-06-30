@@ -75,7 +75,7 @@ namespace casual
             auto& service = model.services.at( 1);
 
             EXPECT_TRUE( service.name == "s2");
-            EXPECT_TRUE( service.transaction.value() == "auto") << CASUAL_MAKE_NVP( service.transaction);
+            EXPECT_TRUE( service.transaction.value() == "auto") << CASUAL_NAMED_VALUE( service.transaction);
          }
 
          TEST_P( configuration_build_server, service_s3__expect__specified_function)

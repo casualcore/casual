@@ -9,6 +9,7 @@
 
 
 #include "configuration/build/server.h"
+#include "common/file.h"
 
 namespace casual
 {

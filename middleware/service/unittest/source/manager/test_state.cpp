@@ -42,7 +42,7 @@ namespace casual
                state.update( message);
             }
 
-            EXPECT_TRUE( state.instances.sequential.empty()) << "state.instances.sequential.size(): "<< state.instances.sequential.begin()->second.process;
+            EXPECT_TRUE( state.instances.sequential.empty()) << CASUAL_NAMED_VALUE( state.instances.sequential);
             EXPECT_TRUE( state.instances.concurrent.empty());
          }
 
@@ -58,7 +58,7 @@ namespace casual
             }
 
             EXPECT_TRUE( state.instances.sequential.empty());
-            EXPECT_TRUE( state.instances.concurrent.empty()) << "state.instances.concurrent.size(): "<< state.instances.concurrent.begin()->second.process;
+            EXPECT_TRUE( state.instances.concurrent.empty()) << CASUAL_NAMED_VALUE( state.instances.concurrent);
          }
 
          TEST( service_manager_state, advertise_local_service__expect_service_and_instance_added)

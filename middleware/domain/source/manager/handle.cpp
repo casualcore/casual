@@ -287,7 +287,7 @@ namespace casual
 
                      friend std::ostream& operator << ( std::ostream& out, const Boot& value)
                      {
-                        return out << "{ done: " << value.done() << ", batch: " << value.m_batch << '}';
+                        return stream::write( out, "{ done: ", value.done(), ", batch: ", value.m_batch, '}');
                      }
 
                   private:

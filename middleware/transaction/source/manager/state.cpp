@@ -87,25 +87,6 @@ namespace casual
                   return false;
                }
 
-               std::ostream& operator << ( std::ostream& out, const Proxy& value)
-               {
-                  return out << "{ id: " << value.id
-                        << ", concurency: " << value.concurency
-                        << ", key: " << value.key
-                        << ", openinfo: \"" << value.openinfo
-                        << "\", closeinfo: \"" << value.closeinfo
-                        << "\", instances: " << common::range::make( value.instances)
-                        << '}';
-               }
-
-               std::ostream& operator << ( std::ostream& out, const Proxy::Instance& value)
-               {
-                  return out << "{ id: " << value.id
-                        << ", process: " << value.process
-                        << ", state: " << value.state()
-                        << '}';
-               }
-
                std::ostream& operator << ( std::ostream& out, const Proxy::Instance::State& value)
                {
                   auto state_switch = [&]()
@@ -270,13 +251,6 @@ namespace casual
             return out << stringify( value);
          }
 
-         std::ostream& operator << ( std::ostream& out, const Transaction::Resource& value) 
-         { 
-            return out << "{ id: " << value.id
-               << ", stage: " << value.stage
-               << ", result: " << Transaction::Resource::convert( value.result)
-               << '}';
-         }
 
          std::vector< common::strong::resource::id> Transaction::Branch::involved() const
          {
@@ -306,12 +280,6 @@ namespace casual
             return algorithm::accumulate( resources, Resource::Result::xa_RDONLY, severe_result);
          }
 
-         std::ostream& operator << ( std::ostream& out, const Transaction::Branch& value)
-         {
-            return out << "{ trid: " << value.trid
-               << ", resources: " << value.resources
-               << '}';
-         }
 
          common::platform::size::type Transaction::resource_count() const noexcept
          {
@@ -338,15 +306,6 @@ namespace casual
             return Resource::convert( algorithm::accumulate( branches, Resource::Result::xa_RDONLY, severe_branch_results));
          }
 
-
-         std::ostream& operator << ( std::ostream& out, const Transaction& value)
-         {
-            return out << "{ global: " << value.global
-               << ", branches: " << value.branches
-               << ", correlation: " << value.correlation
-               << ", remote-resource: " << value.resource
-               << '}';
-         }
 
          State::State( std::string database) : persistent( std::move( database)) {}
 

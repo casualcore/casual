@@ -39,7 +39,13 @@ namespace casual
 
                Connection accept() const;
 
-               friend std::ostream& operator << ( std::ostream& out, const Entry& value);
+               
+               CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
+               { 
+                  CASUAL_NAMED_VALUE_NAME( m_address, "address");
+                  CASUAL_NAMED_VALUE_NAME( m_socket, "socket");
+                  CASUAL_NAMED_VALUE_NAME( m_limit, "limit");
+               })
 
             private:
                common::communication::tcp::Address m_address;

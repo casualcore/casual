@@ -8,7 +8,7 @@
 #pragma once
 
 
-#include "common/marshal/marshal.h"
+#include "common/serialize/macro.h"
 #include "common/exception/system.h"
 #include "common/string.h"
 #include "common/traits.h"
@@ -100,10 +100,7 @@ namespace casual
             return out << "0x" << std::hex << flags.m_flags << std::dec;
          }
 
-         CASUAL_CONST_CORRECT_MARSHAL(
-            archive & m_flags;
-         )
-
+         CASUAL_FORWARD_SERIALIZE( m_flags)
 
       private:
 

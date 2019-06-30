@@ -18,7 +18,7 @@
 #include "common/algorithm.h"
 #include "common/metric.h"
 
-#include "common/marshal/complete.h"
+#include "common/serialize/native/complete.h"
 
 
 
@@ -87,6 +87,9 @@ namespace casual
                         shutdown
                      };
 
+                     friend std::ostream& operator << ( std::ostream& out, const State& value);
+
+
                      id::type id;
                      common::process::Handle process;
 
@@ -96,6 +99,15 @@ namespace casual
                      State state() const;
 
                      inline friend bool operator == ( const Instance& lhs, common::strong::process::id rhs) { return lhs.process.pid == rhs;}
+
+                     CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
+                     { 
+                        CASUAL_NAMED_VALUE( id);
+                        CASUAL_NAMED_VALUE( process);
+                        CASUAL_NAMED_VALUE( metrics);
+                        CASUAL_NAMED_VALUE_NAME( m_state, "state");
+                     })
+
                   private:
                      State m_state = State::absent;
 
@@ -128,18 +140,22 @@ namespace casual
 
                   bool remove_instance( common::strong::process::id pid);
 
-
-                  friend bool operator < ( const Proxy& lhs, const Proxy& rhs)
-                  {
-                     return lhs.id < rhs.id;
-                  }
-
+                  inline friend bool operator < ( const Proxy& lhs, const Proxy& rhs) { return lhs.id < rhs.id;}
                   friend bool operator == ( const Proxy& lhs, id::type rhs) { return lhs.id == rhs; }
                   friend bool operator == ( id::type lhs, const Proxy& rhs) { return lhs == rhs.id; }
 
-                  friend std::ostream& operator << ( std::ostream& out, const Proxy& value);
-                  friend std::ostream& operator << ( std::ostream& out, const Proxy::Instance& value);
-                  friend std::ostream& operator << ( std::ostream& out, const Proxy::Instance::State& value);
+                  CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
+                  { 
+                     CASUAL_NAMED_VALUE( id);
+                     CASUAL_NAMED_VALUE( key);
+                     CASUAL_NAMED_VALUE( openinfo);
+                     CASUAL_NAMED_VALUE( closeinfo);
+                     CASUAL_NAMED_VALUE( concurency);
+                     CASUAL_NAMED_VALUE( metrics);
+                     CASUAL_NAMED_VALUE( instances);
+                     CASUAL_NAMED_VALUE( name);
+                     CASUAL_NAMED_VALUE( note);
+                  })
                };
 
                namespace external
@@ -170,7 +186,7 @@ namespace casual
                {
                   template< typename M>
                   Request( resource::id::type resource, M&& message) 
-                     : resource( resource),  message( common::marshal::complete( std::forward< M>( message))) {}
+                     : resource( resource),  message( common::serialize::native::complete( std::forward< M>( message))) {}
 
                   resource::id::type resource;
                   common::communication::message::Complete message;
@@ -294,7 +310,13 @@ namespace casual
                inline friend bool operator == ( const Resource& lhs, const Resource& rhs) { return lhs.id == rhs.id; }
                inline friend bool operator == ( const Resource& lhs, id_type id) { return lhs.id == id; }
 
-               friend std::ostream& operator << ( std::ostream& out, const Resource& value);
+               CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
+               { 
+                  CASUAL_NAMED_VALUE( id);
+                  CASUAL_NAMED_VALUE( stage);
+                  CASUAL_NAMED_VALUE( result);
+                  CASUAL_NAMED_VALUE_NAME( done(), "done");
+               })
             };
 
             struct Branch
@@ -322,7 +344,13 @@ namespace casual
 
                inline friend bool operator == ( const Branch& lhs, const common::transaction::ID& rhs) { return lhs.trid == rhs;}
 
-               friend std::ostream& operator << ( std::ostream& out, const Branch& value);
+               CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
+               { 
+                  CASUAL_NAMED_VALUE( trid);
+                  CASUAL_NAMED_VALUE( resources);
+                  CASUAL_NAMED_VALUE_NAME( results(), "results");
+                  CASUAL_NAMED_VALUE_NAME( stage(), "stage");
+               })
             };
 
 
@@ -367,7 +395,17 @@ namespace casual
             common::code::xa results() const;
 
             inline friend bool operator == ( const Transaction& lhs, const global::ID& rhs) { return lhs.global == rhs;}
-            friend std::ostream& operator << ( std::ostream& out, const Transaction& value);
+
+            CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
+            { 
+               CASUAL_NAMED_VALUE( global);
+               CASUAL_NAMED_VALUE( branches);
+               CASUAL_NAMED_VALUE( started);
+               CASUAL_NAMED_VALUE( deadline);
+               CASUAL_NAMED_VALUE( correlation);
+               CASUAL_NAMED_VALUE( resource);
+               
+            })
          };
 
 

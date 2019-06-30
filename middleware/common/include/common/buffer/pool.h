@@ -148,9 +148,7 @@ namespace casual
 
                      log::line( log::category::buffer, "pool::release - payload: ", buffer.payload, " - transport: ", buffer.transport( user_size));
 
-                     //
                      // Adjust the buffer size, with regards to the user size
-                     //
                      buffer.payload.memory.erase( std::begin( buffer.payload.memory) + buffer.transport( user_size), std::end( buffer.payload.memory));
                      return std::move( buffer.payload);
                   }
@@ -162,8 +160,6 @@ namespace casual
 
                   pool_type m_pool;
                };
-
-
 
 
                platform::buffer::raw::type m_inbound = nullptr;
@@ -229,13 +225,10 @@ namespace casual
 
                void deallocate( platform::buffer::raw::immutable::type handle);
 
-               //!
                //! Adopts the payload in 'service-invoke' context. So we keep track of
                //! inbound buffer (which is 'special' in XATMI). Otherwise it's the same semantics
                //! as insert
-               //!
                platform::buffer::raw::type adopt( Payload&& payload);
-
 
                std::tuple< platform::buffer::raw::type, platform::buffer::raw::size::type> insert( Payload&& payload);
 
@@ -269,13 +262,9 @@ namespace casual
 
                   auto& payload = m_pool.back().payload;
 
-                  //
                   // Make sure we've got a handle
-                  //
                   if( ! payload.memory.data())
-                  {
                      payload.memory.reserve( 1);
-                  }
 
                   return payload.memory.data();
                }
@@ -290,13 +279,9 @@ namespace casual
 
                      payload.memory.resize( size);
 
-                     //
                      // Make sure we've got a handle
-                     //
                      if( ! payload.memory.data())
-                     {
                         payload.memory.reserve( 1);
-                     }
 
                      return payload.memory.data();
                   }
@@ -314,9 +299,7 @@ namespace casual
                   auto found = find( handle);
 
                   if( found)
-                  {
                      m_pool.erase( std::begin( found));
-                  }
                }
 
 
@@ -325,9 +308,7 @@ namespace casual
                   m_pool.emplace_back( std::move( payload));
 
                   if( ! m_pool.back().payload.memory.data())
-                  {
                      m_pool.back().payload.memory.reserve( 1);
-                  }
 
                   return m_pool.back().payload.memory.data();
                }
@@ -337,9 +318,8 @@ namespace casual
                   auto found = find( handle);
 
                   if( found)
-                  {
                      return *found;
-                  }
+
                   throw exception::xatmi::invalid::Argument{ "failed to find buffer"};
                }
 
@@ -361,12 +341,10 @@ namespace casual
 
                void clear()
                {
-                  //
                   // We don't do any automatic cleanup, since the user could have a
                   // global handle to some buffer.
                   //
                   // To look at the previous implementation see commit: 2655a5b61813e628153535ec05082c3582eb86f1
-                  //
                }
 
             protected:

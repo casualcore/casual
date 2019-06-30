@@ -30,6 +30,7 @@ namespace casual
             namespace invalid
             {
                
+               
                using configuration_base = base< code::casual::invalid_configuration>;
                struct Configuration : configuration_base
                {
@@ -48,6 +49,10 @@ namespace casual
                };
 
                using Version = base< code::casual::invalid_version>;
+
+               using Node = base< code::casual::invalid_node>;
+               using Document = base< code::casual::invalid_document>;
+               
             } // invalid
 
          } // casual 

@@ -7,8 +7,7 @@
 
 #include "common/buffer/type.h"
 #include "common/exception/xatmi.h"
-#include "common/marshal/network.h"
-#include "common/network/byteorder.h"
+#include "common/serialize/native/network.h"
 #include "common/log.h"
 
 #include "xatmi/extended.h"
@@ -89,7 +88,11 @@ namespace casual
 
          std::ostream& operator << ( std::ostream& out, const Payload& value)
          {
-            return out << "{ type: " << value.type << ", memory: " << static_cast< const void*>( value.memory.data()) << ", size: " << value.memory.size() << '}';
+            return out << "{ type: " << value.type 
+               << ", memory: " << static_cast< const void*>( value.memory.data()) 
+               << ", size: " << value.memory.size() 
+               << ", capacity: " << value.memory.capacity() 
+               << '}';
          }
 
 
@@ -105,7 +108,7 @@ namespace casual
 
                   platform::binary::type binary;
                   {
-                     common::marshal::binary::network::Output archive{ binary};
+                     common::serialize::native::binary::network::Output archive{ binary};
                      archive << value;
                   }
                   out.write( binary.data(), binary.size());
@@ -143,7 +146,7 @@ namespace casual
                            // consume the size of the string, payload type.
                            fill_for( binary, count);
                            {
-                              common::marshal::binary::network::Input archive{ binary};
+                              common::serialize::native::binary::network::Input archive{ binary};
                               archive >> size;
                            }
 
@@ -157,7 +160,7 @@ namespace casual
 
                               fill_for( binary, network::byteorder::bytes< platform::size::type>());
                               
-                              common::marshal::binary::network::Input archive{ binary, offset};
+                              common::serialize::native::binary::network::Input archive{ binary, offset};
                               archive >> memory_size;
 
                               // consume the full buffer
@@ -166,7 +169,7 @@ namespace casual
                         }
                         
                         // now we got the full payload, serialize it
-                        common::marshal::binary::network::Input archive{ binary};
+                        common::serialize::native::binary::network::Input archive{ binary};
                         archive >> payload;
 
                         return payload;
@@ -195,10 +198,14 @@ namespace casual
 
             } // binary
 
+
             std::ostream& operator << ( std::ostream& out, const Send& value)
             {
-               return out << "{ payload: " << value.payload() << ", transport: " << value.transport << ", reserved: " << value.reserved <<'}';
+               return out << "{ payload: " << value.payload() 
+                  << ", transport: " << value.transport()
+                  <<'}';
             }
+
          }
 
          Buffer::Buffer( Payload payload) : payload( std::move( payload)) {}
@@ -213,9 +220,7 @@ namespace casual
          platform::binary::size::type Buffer::transport( platform::binary::size::type user_size) const
          {
             if( user_size > reserved())
-            {
                throw exception::xatmi::invalid::Argument{ "user supplied size is larger than the buffer actual size"};
-            }
 
             return user_size;
          }
@@ -225,6 +230,7 @@ namespace casual
          {
             return payload.memory.size();
          }
+
 
       } // buffer
    } // common

@@ -39,7 +39,7 @@ namespace casual
 
                   serviceframework::service::Model model;
 
-                  reply >> CASUAL_MAKE_NVP( model);
+                  reply >> CASUAL_NAMED_VALUE( model);
 
                   return model;
                });

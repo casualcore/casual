@@ -32,7 +32,7 @@ namespace casual
             {
                template< typename M, typename ID>
                auto get( M& map, ID&& id) ->
-                std::enable_if_t< common::traits::container::is_associative< M>::value, decltype( map.at( id))>
+                std::enable_if_t< common::traits::is::container::associative::like< M>::value, decltype( map.at( id))>
                {
                   auto found = common::algorithm::find( map, id);
 
@@ -45,7 +45,7 @@ namespace casual
 
                template< typename C, typename ID>
                auto get( C& container, ID&& id) ->
-                std::enable_if_t< common::traits::container::is_sequence< C>::value, decltype( *std::begin( container))>
+                std::enable_if_t< common::traits::is::container::sequence::like< C>::value, decltype( *std::begin( container))>
                {
                   auto found = common::algorithm::find( container, id);
 
@@ -154,13 +154,6 @@ namespace casual
                   return lhs.order < rhs.order;
                }
 
-               std::ostream& operator << ( std::ostream& out, const Concurrent& value)
-               {
-                  return out << "{ process: " << value.process
-                     << ", order: " << value.order
-                     << '}';
-               }
-
                std::ostream& operator << ( std::ostream& out, Sequential::State value)
                {
                   switch( value)
@@ -172,37 +165,10 @@ namespace casual
                   return out << "unknown";
                }
 
-               std::ostream& operator << ( std::ostream& out, const Sequential& value)
-               {
-                  auto state = value.state();
-
-                  out << "{ state: " << state
-                     << ", process: " << value.process;
-
-                  if( state == Sequential::State::busy)
-                  {
-                     out  << ", service: " << *value.m_service
-                        << ", correlation: " << value.correlation()
-                        << ", caller: " << value.caller();
-                  }
-
-                  return out << '}';
-               }
-
             } // instance
 
             namespace service
             {
-
-               std::ostream& operator << ( std::ostream& out, const Pending& value)
-               {
-                  return out << "{ request: " << value.request
-                     << ", when: " << value.when.time_since_epoch().count()
-                     << '}';
-               }
-
-
-
                namespace instance
                {
                   bool operator < ( const Concurrent& lhs, const Concurrent& rhs)
@@ -304,15 +270,6 @@ namespace casual
                }
                return {};
             }
-
-            std::ostream& operator << ( std::ostream& out, const Service& service)
-            {
-               return out << "{ name: " << service.information.name
-                     << ", type: " << service.information.category
-                     << ", transaction: " << service.information.transaction
-                     << ", timeout: " << service.information.timeout.count()
-                     << "}";
-             }
 
          } // state
 
@@ -464,9 +421,7 @@ namespace casual
             }
             else
             {
-               //
                // Assume that it's a remote instances
-               //
                local::remove_process( instances.concurrent, services, pid);
             }
          }

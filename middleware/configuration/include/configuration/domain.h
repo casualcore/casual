@@ -9,8 +9,8 @@
 
 
 
-#include "serviceframework/namevaluepair.h"
-#include "serviceframework/platform.h"
+#include "common/serialize/macro.h"
+#include "common/platform.h"
 
 
 #include "configuration/server.h"
@@ -43,10 +43,10 @@ namespace casual
 
                CASUAL_CONST_CORRECT_SERIALIZE
                (
-                  archive & CASUAL_MAKE_NVP( environment);
-                  archive & CASUAL_MAKE_NVP( server);
-                  archive & CASUAL_MAKE_NVP( executable);
-                  archive & CASUAL_MAKE_NVP( service);
+                  CASUAL_SERIALIZE( environment);
+                  CASUAL_SERIALIZE( server);
+                  CASUAL_SERIALIZE( executable);
+                  CASUAL_SERIALIZE( service);
                )
 
                Default& operator += ( const Default& rhs);
@@ -71,15 +71,16 @@ namespace casual
 
             CASUAL_CONST_CORRECT_SERIALIZE
             (
-               archive & CASUAL_MAKE_NVP( name);
-               archive & serviceframework::name::value::pair::make( "default", manager_default);
-               archive & CASUAL_MAKE_NVP( transaction);
-               archive & CASUAL_MAKE_NVP( groups);
-               archive & CASUAL_MAKE_NVP( servers);
-               archive & CASUAL_MAKE_NVP( executables);
-               archive & CASUAL_MAKE_NVP( services);
-               archive & CASUAL_MAKE_NVP( gateway);
-               archive & CASUAL_MAKE_NVP( queue);
+               CASUAL_SERIALIZE( name);
+               CASUAL_SERIALIZE_NAME( manager_default, "default");
+               CASUAL_SERIALIZE( transaction);
+               CASUAL_SERIALIZE( groups);
+               CASUAL_SERIALIZE( servers);
+               CASUAL_SERIALIZE( executables);
+               CASUAL_SERIALIZE( services);
+               CASUAL_SERIALIZE( gateway);
+               CASUAL_SERIALIZE( queue);
+
             )
 
             Manager& operator += ( const Manager& rhs);
@@ -91,11 +92,9 @@ namespace casual
 
          Manager get( const std::vector< std::string>& files);
 
-
          //! Complement with defaults and validates
          //!
          //! @param configuration domain configuration
-         //!
          void finalize( Manager& configuration);
 
       } // domain

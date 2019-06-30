@@ -17,6 +17,8 @@
 #include "common/algorithm.h"
 #include "common/process.h"
 
+#include "common/serialize/value/customize.h"
+
 
 #include <string>
 #include <ostream>
@@ -36,6 +38,7 @@ namespace casual
 {
    namespace common
    {
+
       namespace transaction
       {
          using xid_type = XID;
@@ -57,7 +60,7 @@ namespace casual
             //! Initialize with null-xid
             //! @{
             ID() noexcept;
-            ID( const process::Handle& owner);
+            explicit ID( const process::Handle& owner);
             //! @}
 
             explicit ID( const xid_type& xid);
@@ -81,6 +84,7 @@ namespace casual
             //! @return true if XID is not null
             explicit operator bool() const;
 
+
             //! @return owner/creator of the transaction
             const process::Handle& owner() const;
             void owner( const process::Handle& handle);
@@ -93,11 +97,15 @@ namespace casual
                return ! ( lhs == rhs);
             }
 
-            template< typename M>
-            friend void casual_marshal_value( const ID& value, M& marshler);
+            //template< typename T, typename A, typename E>
+            //friend struct serialize::customize::Value;
 
-            template< typename M>
-            friend void casual_unmarshal_value( ID& value, M& unmarshler);
+            CASUAL_CONST_CORRECT_SERIALIZE(
+            {
+               CASUAL_SERIALIZE_NAME( m_owner, "owner");
+               CASUAL_SERIALIZE( xid);
+            })
+
 
             //! The XA-XID object.
             //!
@@ -131,10 +139,21 @@ namespace casual
             {
                using range_type = decltype( view::binary::make( std::declval< const xid_type&>().data));
 
+               namespace detail
+               {
+                  template< typename X>
+                  auto data( X&& xid) 
+                  {
+                     return view::binary::make( xid.data, xid.data + xid.gtrid_length + xid.bqual_length);
+                  }
+               } // detail
+
                //! @return a (binary) range that represent the data part of the xid, global + branch
                //! @{
-               range_type data( const ID& id);
-               range_type data( const xid_type& id);
+               inline auto data( const xid_type& xid) { return detail::data( xid);}
+               inline auto data( const ID& id) { return data( id.xid);}
+               inline auto data( xid_type& xid) { return detail::data( xid);}
+               inline auto data( ID& id) { return data( id.xid);}
                //! @}
 
                //! @return a (binary) range that represent the global part of the xid
@@ -151,45 +170,38 @@ namespace casual
 
             } // range
          } // id
-
-         //! Overload for transaction::Id
-         //! @{
-         template< typename M>
-         void casual_marshal_value( const ID& value, M& marshler)
-         {
-            marshler << value.xid.formatID;
-
-            if( value)
-            {
-               marshler << value.m_owner;
-
-               marshler << value.xid.gtrid_length;
-               marshler << value.xid.bqual_length;
-
-               marshler.append( id::range::data( value));
-            }
-         }
-
-         template< typename M>
-         void casual_unmarshal_value( ID& value, M& unmarshler)
-         {
-            unmarshler >> value.xid.formatID;
-
-            if( value)
-            {
-               unmarshler >> value.m_owner;
-
-               unmarshler >> value.xid.gtrid_length;
-               unmarshler >> value.xid.bqual_length;
-
-               unmarshler.consume(
-                  std::begin( value.xid.data),
-                  value.xid.gtrid_length + value.xid.bqual_length);
-            }
-         }
-         //! @}
-
       } // transaction
+
+      namespace serialize
+      {
+         namespace customize
+         {
+            namespace composit
+            {
+               //! specialization for XID
+               //! @{
+               template< typename A>
+               struct Value< XID, A>
+               {
+                  template< typename V>  
+                  static void serialize( A& archive, V&& xid)
+                  {
+                     CASUAL_SERIALIZE_NAME( xid.formatID, "formatID");
+
+                     if( ! transaction::id::null( xid))
+                     {
+                        CASUAL_SERIALIZE_NAME( xid.gtrid_length, "gtrid_length");
+                        CASUAL_SERIALIZE_NAME( xid.bqual_length, "bqual_length");
+                        CASUAL_SERIALIZE_NAME( transaction::id::range::data( xid), "data");
+                     }
+                  }
+               };
+               //! @}
+            } // composit
+            
+         } // customize
+      } // serialize
+
    } // common
 } // casual
 

@@ -26,14 +26,9 @@ namespace casual
 
          struct Task
          {
-
             template< typename T>
-            Task( T&& task) : m_holder{ make( std::forward< T>( task))} {}
-
+            explicit Task( T&& task) : m_holder{ make( std::forward< T>( task))} {}
             ~Task();
-
-            Task( Task&&) noexcept = default;
-            Task& operator = ( Task&&) noexcept = default;
 
             void start();
 
@@ -44,9 +39,9 @@ namespace casual
 
          private:
 
-            struct base_task
+            struct concept
             {
-               virtual ~base_task() = default;
+               virtual ~concept() = default;
                virtual void start() = 0;
                virtual bool done() const = 0;
                virtual bool started() const = 0;
@@ -55,12 +50,12 @@ namespace casual
 
 
             template< typename T>
-            struct basic_task : base_task
+            struct model : concept
             {
-               basic_task( T task) : m_task( std::move( task)) {}
-               ~basic_task() = default;
+               explicit model( T task) : m_task( std::move( task)) {}
+               ~model() = default;
 
-               enum class State : char
+               enum class State : short
                {
                   not_started,
                   started,
@@ -94,12 +89,12 @@ namespace casual
             };
 
             template< typename T>
-            static std::unique_ptr< base_task> make( T&& task)
+            static std::unique_ptr< concept> make( T&& task)
             {
-               return std::make_unique< basic_task< T>>( std::forward< T>( task));
+               return std::make_unique< model< T>>( std::forward< T>( task));
             }
 
-            std::unique_ptr< base_task> m_holder;
+            std::unique_ptr< concept> m_holder;
 
          };
 
@@ -113,7 +108,7 @@ namespace casual
                void add( T&& task)
                {
 
-                  m_tasks.push_back( std::forward< T>( task));
+                  m_tasks.emplace_back( std::forward< T>( task));
 
                   common::log::line( domain::log, "added task: ", m_tasks.back());
 

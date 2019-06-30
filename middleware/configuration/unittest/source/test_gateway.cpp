@@ -11,7 +11,7 @@
 #include "configuration/example/domain.h"
 
 #include "serviceframework/log.h"
-#include "serviceframework/archive/create.h"
+#include "common/serialize/create.h"
 
 
 
@@ -42,8 +42,8 @@ namespace casual
          auto gateway = domain::get( { example::temporary( example::domain(), GetParam())}).gateway;
 
          ASSERT_TRUE( gateway.listeners.size() == 4);
-         EXPECT_TRUE( gateway.listeners.at( 0).address == "localhost:7779") << CASUAL_MAKE_NVP( gateway);
-         ASSERT_TRUE( gateway.connections.size() == 3) << CASUAL_MAKE_NVP( gateway);
+         EXPECT_TRUE( gateway.listeners.at( 0).address == "localhost:7779") << CASUAL_NAMED_VALUE( gateway);
+         ASSERT_TRUE( gateway.connections.size() == 3) << CASUAL_NAMED_VALUE( gateway);
 
       }
 
@@ -68,11 +68,11 @@ namespace casual
          // serialize and deserialize
          auto gateway = domain::get( { example::temporary( example::domain(), GetParam())}).gateway;
 
-         EXPECT_TRUE( gateway.connections.at( 0).restart.value() == true) << CASUAL_MAKE_NVP( gateway);
+         EXPECT_TRUE( gateway.connections.at( 0).restart.value() == true) << CASUAL_NAMED_VALUE( gateway);
 
-         EXPECT_TRUE( gateway.connections.at( 1).restart.value() == true) << CASUAL_MAKE_NVP( gateway);
+         EXPECT_TRUE( gateway.connections.at( 1).restart.value() == true) << CASUAL_NAMED_VALUE( gateway);
 
-         EXPECT_TRUE( gateway.connections.at( 2).restart.value() == false) << CASUAL_MAKE_NVP( gateway);
+         EXPECT_TRUE( gateway.connections.at( 2).restart.value() == false) << CASUAL_NAMED_VALUE( gateway);
 
       }
 

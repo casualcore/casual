@@ -15,7 +15,7 @@
 #include "common/algorithm.h"
 #include "common/environment/variable.h"
 
-#include "common/marshal/marshal.h"
+#include "common/serialize/macro.h"
 
 
 #include <string>
@@ -55,8 +55,6 @@ namespace casual
             inline friend bool operator != ( const Handle& lhs, const Handle& rhs) { return !( lhs == rhs);}
             friend bool operator < ( const Handle& lhs, const Handle& rhs);
 
-            friend std::ostream& operator << ( std::ostream& out, const Handle& value);
-
             //! extended equality
             inline friend bool operator == ( const Handle& lhs, const strong::process::id& rhs) { return lhs.pid == rhs;}
             inline friend bool operator == ( const strong::process::id& lhs, const Handle& rhs) { return rhs == lhs;}
@@ -68,10 +66,10 @@ namespace casual
                return pid && ipc;
             }
 
-            CASUAL_CONST_CORRECT_MARSHAL(
+            CASUAL_CONST_CORRECT_SERIALIZE(
             {
-               archive & pid;
-               archive & ipc;
+               CASUAL_SERIALIZE( pid);
+               CASUAL_SERIALIZE( ipc);
             })
          };
 
@@ -137,7 +135,12 @@ namespace casual
 
                   bool done();
 
-                  friend std::ostream& operator << ( std::ostream& out, const Pattern& value);
+                  // for logging only
+                  CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
+                  {
+                     CASUAL_SERIALIZE_NAME( m_time, "time");
+                     CASUAL_SERIALIZE_NAME( m_quantity, "quantity");
+                  })
 
                private:
                   common::platform::time::unit m_time;
@@ -148,7 +151,11 @@ namespace casual
 
                bool operator () ();
 
-               friend std::ostream& operator << ( std::ostream& out, const Sleep& value);
+               // for logging only
+               CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
+               {
+                  CASUAL_SERIALIZE_NAME( m_pattern, "pattern");
+               })
 
             private:
                std::vector< Pattern> m_pattern;
@@ -200,7 +207,7 @@ namespace casual
          {
             struct Exit
             {
-               enum class Reason : char
+               enum class Reason : short
                {
                   core,
                   exited,
@@ -224,13 +231,12 @@ namespace casual
                friend bool operator < ( const Exit& lhs, const Exit& rhs);
 
                friend std::ostream& operator << ( std::ostream& out, const Reason& value);
-               friend std::ostream& operator << ( std::ostream& out, const Exit& terminated);
 
-               CASUAL_CONST_CORRECT_MARSHAL(
+               CASUAL_CONST_CORRECT_SERIALIZE(
                {
-                  archive & pid;
-                  archive & status;
-                  archive & reason;
+                  CASUAL_SERIALIZE( pid);
+                  CASUAL_SERIALIZE( status);
+                  CASUAL_SERIALIZE( reason);
                })
 
             };
@@ -282,7 +288,11 @@ namespace casual
          inline const process::Handle& handle() const noexcept { return m_handle;}
          void handle( const process::Handle& handle);
 
-         friend std::ostream& operator << ( std::ostream& out, const Process& value);
+         // for logging only
+         CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
+         {
+            CASUAL_SERIALIZE_NAME( m_handle, "handle");
+         })
 
       private:
          process::Handle m_handle;

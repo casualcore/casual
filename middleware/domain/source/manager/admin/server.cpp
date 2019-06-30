@@ -154,7 +154,7 @@ namespace casual
                         auto protocol = serviceframework::service::protocol::deduce( std::move( parameter));
 
                         std::vector< vo::scale::Instances> instances;
-                        protocol >> CASUAL_MAKE_NVP( instances);
+                        protocol >> CASUAL_NAMED_VALUE( instances);
 
                         return serviceframework::service::user( std::move( protocol), &scale::instances, state, instances);
                      }
@@ -182,7 +182,7 @@ namespace casual
                            auto protocol = serviceframework::service::protocol::deduce( std::move( parameter));
 
                            vo::set::Environment environment;
-                           protocol >> CASUAL_MAKE_NVP( environment);
+                           protocol >> CASUAL_NAMED_VALUE( environment);
 
                            return serviceframework::service::user(
                               std::move( protocol),

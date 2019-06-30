@@ -34,19 +34,15 @@ namespace casual
                {
                   std::vector< common::message::Type> types;
 
-                  CASUAL_CONST_CORRECT_MARSHAL(
-                     base_begin::marshal( archive);
-                     archive & types;
+                  CASUAL_CONST_CORRECT_SERIALIZE(
+                     base_begin::serialize( archive);
+                     CASUAL_SERIALIZE( types);
                   )
-
-                  friend std::ostream& operator << ( std::ostream& out, const Begin& value);
                };
 
                using base_end = basic_event< common::message::Type::event_subscription_end>;
                struct End : base_end
                {
-
-                  friend std::ostream& operator << ( std::ostream& out, const End& value);
                };
                
 
@@ -61,10 +57,9 @@ namespace casual
                   {
                      common::Uuid identification;
 
-                     CASUAL_CONST_CORRECT_MARSHAL(
-                        base_connect::marshal( archive);
-                        archive & process;
-                        archive & identification;
+                     CASUAL_CONST_CORRECT_SERIALIZE(
+                        base_connect::serialize( archive);
+                        CASUAL_SERIALIZE( identification);
                      )
 
                   };                  
@@ -74,36 +69,45 @@ namespace casual
                using base_error = basic_event< common::message::Type::event_domain_error>;
                struct Error : base_error
                {
+                  enum class Severity : short
+                  {
+                     fatal, // shutting down
+                     error, // keep going
+                     warning
+                  };
+
+                  inline friend std::ostream& operator << ( std::ostream& out, Severity value)
+                  {
+                     switch( value)
+                     {
+                        case Severity::fatal: return out << "fatal";
+                        case Severity::error: return out << "error";
+                        case Severity::warning: return out << "warning";
+                        default: return out << "unknown";
+                     }
+                  }
+
                   std::string message;
                   std::string executable;
                   strong::process::id pid;
                   std::vector< std::string> details;
 
-                  enum class Severity : char
-                  {
-                     fatal, // shutting down
-                     error, // keep going
-                     warning
-                  } severity = Severity::error;
+                  Severity severity = Severity::error;
 
-                  CASUAL_CONST_CORRECT_MARSHAL(
-                     base_error::marshal( archive);
-                     archive & message;
-                     archive & executable;
-                     archive & pid;
-                     archive & details;
-                     archive & severity;
+                  CASUAL_CONST_CORRECT_SERIALIZE(
+                     base_error::serialize( archive);
+                     CASUAL_SERIALIZE( message);
+                     CASUAL_SERIALIZE( executable);
+                     CASUAL_SERIALIZE( pid);
+                     CASUAL_SERIALIZE( details);
+                     CASUAL_SERIALIZE( severity);
                   )
-
-                  friend std::ostream& operator << ( std::ostream& out, Severity value);
-                  friend std::ostream& operator << ( std::ostream& out, const Error& value);
                };
-
-
 
                using base_group = basic_event< common::message::Type::event_domain_group>;
                struct Group : base_group
                {
+
                   enum class Context : int
                   {
                      boot_start,
@@ -116,12 +120,13 @@ namespace casual
                   std::string name;
                   Context context;
 
-                  CASUAL_CONST_CORRECT_MARSHAL(
-                     base_group::marshal( archive);
-                     archive & id;
-                     archive & name;
-                     archive & context;
+                  CASUAL_CONST_CORRECT_SERIALIZE(
+                     base_group::serialize( archive);
+                     CASUAL_SERIALIZE( id);
+                     CASUAL_SERIALIZE( name);
+                     CASUAL_SERIALIZE( context);
                   )
+
                };
 
                template< common::message::Type type>
@@ -129,9 +134,9 @@ namespace casual
                {
                   common::domain::Identity domain;
 
-                  CASUAL_CONST_CORRECT_MARSHAL(
-                     basic_event< type>::marshal( archive);
-                     archive & domain;
+                  CASUAL_CONST_CORRECT_SERIALIZE(
+                     basic_event< type>::serialize( archive);
+                     CASUAL_SERIALIZE( domain);
                   )
                };
 
@@ -160,14 +165,12 @@ namespace casual
                   std::string path;
                   std::vector< strong::process::id> pids;
 
-                  CASUAL_CONST_CORRECT_MARSHAL(
-                     base_spawn::marshal( archive);
-                     archive & alias;
-                     archive & path;
-                     archive & pids;
+                  CASUAL_CONST_CORRECT_SERIALIZE(
+                     base_spawn::serialize( archive);
+                     CASUAL_SERIALIZE( alias);
+                     CASUAL_SERIALIZE( path);
+                     CASUAL_SERIALIZE( pids);
                   )
-
-                  friend std::ostream& operator << ( std::ostream& out, const Spawn& value);
                };
 
                using base_exit = basic_event< common::message::Type::event_process_exit>;
@@ -178,15 +181,11 @@ namespace casual
 
                   common::process::lifetime::Exit state;
 
-                  CASUAL_CONST_CORRECT_MARSHAL(
-                     base_exit::marshal( archive);
-                     archive & state;
+                  CASUAL_CONST_CORRECT_SERIALIZE(
+                     base_exit::serialize( archive);
+                     CASUAL_SERIALIZE( state);
                   )
-
-                  friend std::ostream& operator << ( std::ostream& out, const Exit& value);
                };
-               static_assert( traits::is_movable< Exit>::value, "not movable");
-
 
             } // process
 
@@ -207,47 +206,39 @@ namespace casual
 
                   auto duration() const noexcept { return end - start;}
 
-                  CASUAL_CONST_CORRECT_MARSHAL
+                  CASUAL_CONST_CORRECT_SERIALIZE
                   (
-                     archive & service;
-                     archive & parent;
-                     archive & process;
-                     archive & execution;
-                     archive & trid;
-                     archive & start;
-                     archive & end;
-                     archive & code;
+                     CASUAL_SERIALIZE( service);
+                     CASUAL_SERIALIZE( parent);
+                     CASUAL_SERIALIZE( process);
+                     CASUAL_SERIALIZE( execution);
+                     CASUAL_SERIALIZE( trid);
+                     CASUAL_SERIALIZE( start);
+                     CASUAL_SERIALIZE( end);
+                     CASUAL_SERIALIZE( code);
                   )
-
-                  friend std::ostream& operator << ( std::ostream& out, const Metric& value);
                };
-
 
                struct Call : basic_event< Type::event_service_call>
                {
                   Metric metric;
 
-                  CASUAL_CONST_CORRECT_MARSHAL
+                  CASUAL_CONST_CORRECT_SERIALIZE
                   (
-                     basic_event< Type::event_service_call>::marshal( archive);
-                     archive & metric;
+                     basic_event< Type::event_service_call>::serialize( archive);
+                     CASUAL_SERIALIZE( metric);
                   )
-
-                  friend std::ostream& operator << ( std::ostream& out, const Call& value);
                };
-               static_assert( traits::is_movable< Call>::value, "not movable");
 
                struct Calls : basic_event< Type::event_service_calls>
                {
                   std::vector< Metric> metrics;
 
-                  CASUAL_CONST_CORRECT_MARSHAL
+                  CASUAL_CONST_CORRECT_SERIALIZE
                   (
-                     basic_event< Type::event_service_calls>::marshal( archive);
-                     archive & metrics;
+                     basic_event< Type::event_service_calls>::serialize( archive);
+                     CASUAL_SERIALIZE( metrics);
                   )
-
-                  friend std::ostream& operator << ( std::ostream& out, const Calls& value);
                };
         
             } // service

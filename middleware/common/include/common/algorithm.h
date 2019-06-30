@@ -188,14 +188,6 @@ namespace casual
          }
 
 
-         template< typename R, typename OutIter, typename = std::enable_if_t< 
-            common::traits::iterator::is_output< OutIter>::value
-            && common::traits::is::iterable< R>::value>>
-         auto copy( R&& range, OutIter output)
-         {
-            return std::copy( std::begin( range), std::end( range), output);
-         }
-
          namespace detail
          {
             template< typename T>
@@ -211,7 +203,7 @@ namespace casual
                   return std::back_inserter( value);
                }
 
-               template< typename I, std::enable_if_t< traits::iterator::is_output< I>::value, int> = 0> 
+               template< typename I, std::enable_if_t< traits::is::output::iterator< I>::value, int> = 0> 
                auto iterator( I value)
                {
                   return value;
@@ -224,8 +216,31 @@ namespace casual
                {
                   return std::begin( value);
                }
-
             } // output
+
+            template< typename R, typename Out> 
+            auto copy( R&& range, Out&& output, traits::priority::tag< 0>) -> decltype( std::copy( std::begin( range), std::end( range), output))
+            {
+               return std::copy( std::begin( range), std::end( range), output);
+            }
+
+            template< typename R, typename Out> 
+            auto copy( R&& range, Out&& output, traits::priority::tag< 1>) 
+               -> decltype( std::copy( std::begin( range), std::end( range), std::begin( output)), std::forward< Out>( output))
+            {
+               std::copy( std::begin( range), std::end( range), std::begin( output));
+               return std::forward< Out>( output);
+            }
+
+            template< typename R, typename Out> 
+            auto copy( R&& range, Out&& output, traits::priority::tag< 2>) 
+               -> decltype( output.resize( std::distance( std::begin( range), std::end( range))), std::forward< Out>( output))
+            {
+               output.resize( std::distance( std::begin( range), std::end( range)));
+               std::copy( std::begin( range), std::end( range), std::begin( output));
+               return std::forward< Out>( output);
+            }
+            
 
          } // detail
 
@@ -234,28 +249,11 @@ namespace casual
          //! @attention the possible content in `output` is truncated and overwritten
          //! 
          //! @return output
-         //! @{
-         template< typename R, typename Out, typename std::enable_if_t< 
-            detail::is_resize_copy< Out>
-            && common::traits::is::iterable< R>::value, int> = 0>
-         decltype( auto) copy( R&& range, Out&& output)
+         template< typename R, typename Out> 
+         auto copy( R&& range, Out&& output) -> decltype( detail::copy( std::forward< R>( range), std::forward< Out>( output), traits::priority::tag< 2>{}))
          {
-            auto size = std::distance( std::begin( range), std::end( range));
-            output.resize( size);
-            std::copy( std::begin( range), std::end( range), std::begin( output));
-            return std::forward< Out>( output);
+            return detail::copy( std::forward< R>( range), std::forward< Out>( output), traits::priority::tag< 2>{});
          }
-
-         template< typename R, typename Out, typename std::enable_if_t< 
-            ! detail::is_resize_copy< Out> && traits::has::push_back< Out>::value
-            && common::traits::is::iterable< R>::value, int> = 0>
-         decltype( auto) copy( R&& range, Out&& output)
-         {
-            output.clear();
-            std::copy( std::begin( range), std::end( range), std::back_inserter( output));
-            return std::forward< Out>( output);
-         }
-         //! @}
 
 
 
@@ -335,8 +333,8 @@ namespace casual
             template< typename R, typename O, typename T>
             auto transform( R&& range, O&& output, T transform, range::category::output_iterator)
             {
-               auto last = std::transform( std::begin( range), std::end( range), output, transform);
-               return range::make( last - range::size( range), last);;
+               std::transform( std::begin( range), std::end( range), output, transform);
+               return std::forward< O>( output);
             }
          }
 
@@ -612,7 +610,7 @@ namespace casual
 
          //! associate container specialization
          template< typename R, typename T,
-            std::enable_if_t< common::traits::container::is_associative< std::decay_t< R>>::value>* dummy = nullptr>
+            std::enable_if_t< common::traits::is::container::associative::like< std::decay_t< R>>::value, int> = 0>
          auto find( R&& range, const T& value)
          {
             return range::make( range.find( value), std::end( range));
@@ -620,7 +618,7 @@ namespace casual
 
          //! non associate container specialization
          template< typename R, typename T,
-            std::enable_if_t< ! common::traits::container::is_associative< std::decay_t< R>>::value>* dummy = nullptr>
+            std::enable_if_t< ! common::traits::is::container::associative::like< std::decay_t< R>>::value, int> = 0>
          auto find( R&& range, const T& value)
          {
             return range::make( std::find( std::begin( range), std::end( range), value), std::end( range));

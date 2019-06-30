@@ -15,6 +15,7 @@
 #include "common/server/handle/call.h"
 #include "common/event/send.h"
 #include "common/communication/instance.h"
+#include "common/exception/casual.h"
 
 #include "domain/pending/message/send.h"
 

@@ -8,9 +8,9 @@
 #pragma once
 
 
-
-#include "serviceframework/namevaluepair.h"
-#include "serviceframework/platform.h"
+#include "common/serialize/macro.h"
+#include "common/platform.h"
+#include "common/optional.h"
 
 #include <string>
 #include <vector>
@@ -25,13 +25,13 @@ namespace casual
          {
             struct Limit
             {
-               serviceframework::optional< serviceframework::platform::size::type> size;
-               serviceframework::optional< serviceframework::platform::size::type> messages;
+               common::optional< common::platform::size::type> size;
+               common::optional< common::platform::size::type> messages;
 
                CASUAL_CONST_CORRECT_SERIALIZE
                (
-                  archive & CASUAL_MAKE_NVP( size);
-                  archive & CASUAL_MAKE_NVP( messages);
+                  CASUAL_SERIALIZE( size);
+                  CASUAL_SERIALIZE( messages);
                )
             };
 
@@ -41,7 +41,7 @@ namespace casual
 
                CASUAL_CONST_CORRECT_SERIALIZE
                (
-                  archive & CASUAL_MAKE_NVP( limit);
+                  CASUAL_SERIALIZE( limit);
                )
             };
 
@@ -50,14 +50,14 @@ namespace casual
          struct Listener
          {
             std::string address;
-            serviceframework::optional< listener::Limit> limit;
+            common::optional< listener::Limit> limit;
             std::string note;
 
             CASUAL_CONST_CORRECT_SERIALIZE
             (
-               archive & CASUAL_MAKE_NVP( address);
-               archive & CASUAL_MAKE_NVP( limit);
-               archive & CASUAL_MAKE_NVP( note);
+               CASUAL_SERIALIZE( address);
+               CASUAL_SERIALIZE( limit);
+               CASUAL_SERIALIZE( note);
             )
 
             Listener& operator += ( const listener::Default& rhs);
@@ -75,27 +75,27 @@ namespace casual
 
                CASUAL_CONST_CORRECT_SERIALIZE
                (
-                  archive & CASUAL_MAKE_NVP( restart);
-                  archive & CASUAL_MAKE_NVP( address);
+                  CASUAL_SERIALIZE( restart);
+                  CASUAL_SERIALIZE( address);
                )
             };
          } // connection
 
          struct Connection
          {
-            serviceframework::optional< std::string> address;
+            common::optional< std::string> address;
             std::vector< std::string> services;
             std::vector< std::string> queues;
             std::string note;
-            serviceframework::optional< bool> restart;
+            common::optional< bool> restart;
 
             CASUAL_CONST_CORRECT_SERIALIZE
             (
-               archive & CASUAL_MAKE_NVP( address);
-               archive & CASUAL_MAKE_NVP( services);
-               archive & CASUAL_MAKE_NVP( queues);
-               archive & CASUAL_MAKE_NVP( restart);
-               archive & CASUAL_MAKE_NVP( note);
+               CASUAL_SERIALIZE( address);
+               CASUAL_SERIALIZE( services);
+               CASUAL_SERIALIZE( queues);
+               CASUAL_SERIALIZE( restart);
+               CASUAL_SERIALIZE( note);
             )
 
             Connection& operator += ( const connection::Default& rhs);
@@ -112,8 +112,8 @@ namespace casual
 
                CASUAL_CONST_CORRECT_SERIALIZE
                (
-                  archive & CASUAL_MAKE_NVP( listener);
-                  archive & CASUAL_MAKE_NVP( connection);
+                  CASUAL_SERIALIZE( listener);
+                  CASUAL_SERIALIZE( connection);
                )
             };
          } // manager
@@ -127,9 +127,9 @@ namespace casual
 
             CASUAL_CONST_CORRECT_SERIALIZE
             (
-               archive & serviceframework::name::value::pair::make( "default", manager_default);
-               archive & CASUAL_MAKE_NVP( listeners);
-               archive & CASUAL_MAKE_NVP( connections);
+               CASUAL_SERIALIZE_NAME( manager_default, "default");
+               CASUAL_SERIALIZE( listeners);
+               CASUAL_SERIALIZE( connections);
             )
 
             //! Complement with defaults and validates

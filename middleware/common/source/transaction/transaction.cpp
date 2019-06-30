@@ -89,7 +89,8 @@ namespace casual
 
          std::ostream& operator << ( std::ostream& out, const Transaction& rhs)
          {
-            return out << "{trid: " << rhs.trid << ", state: " << rhs.state <<
+            return out << "{trid: " << rhs.trid 
+                  << ", state: " << rhs.state <<
                   ", timeout: " << rhs.timout <<
                   ", involved: " << rhs.m_involved <<
                   ", dynamic: " << rhs.m_dynamic <<

@@ -114,14 +114,9 @@ namespace casual
 
 int main( int argc, char **argv)
 {
-   try
+   return casual::common::exception::guard( [&]()
    {
       casual::event::log::local::main( argc, argv);
-      return 0;
-   }
-   catch( ...)
-   {
-      return casual::common::exception::handle();
-   }
+   });
 
 }

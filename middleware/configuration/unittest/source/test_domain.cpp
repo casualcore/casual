@@ -14,8 +14,8 @@
 
 
 
-#include "serviceframework/log.h"
-#include "serviceframework/archive/create.h"
+#include "common/serialize/line.h"
+#include "common/serialize/create.h"
 
 
 namespace casual
@@ -48,7 +48,7 @@ namespace casual
          // serialize and deserialize
          auto domain = domain::get( { example::temporary( example::domain(), GetParam())});
 
-         EXPECT_TRUE( domain.groups.size() == 3) << CASUAL_MAKE_NVP( domain.groups);
+         EXPECT_TRUE( domain.groups.size() == 3) << CASUAL_NAMED_VALUE( domain.groups);
       }
 
       TEST_P( configuration_domain, default_server)
@@ -58,7 +58,7 @@ namespace casual
          // serialize and deserialize
          auto domain = domain::get( { example::temporary( example::domain(), GetParam())});
 
-         EXPECT_TRUE( domain.manager_default.server.instances == 1) << CASUAL_MAKE_NVP( domain.manager_default.server.instances); //<< CASUAL_MAKE_NVP( path.release());
+         EXPECT_TRUE( domain.manager_default.server.instances == 1) << CASUAL_NAMED_VALUE( domain.manager_default.server.instances); //<< CASUAL_NAMED_VALUE( path.release());
          EXPECT_TRUE( domain.manager_default.server.restart == true);
 
 
@@ -94,7 +94,7 @@ namespace casual
          auto domain = domain::get( { example::temporary( example::domain(), GetParam())});
 
          ASSERT_TRUE( domain.servers.size() == 5) << "size: " << domain.servers.size();
-         EXPECT_TRUE( domain.servers.at( 2).instances.value() == 10) << CASUAL_MAKE_NVP( domain.servers);
+         EXPECT_TRUE( domain.servers.at( 2).instances.value() == 10) << CASUAL_NAMED_VALUE( domain.servers);
 
       }
 

@@ -28,7 +28,6 @@ namespace casual
    {
       namespace manager
       {
-
          namespace ipc
          {
             const common::communication::ipc::Helper& device()
@@ -36,13 +35,10 @@ namespace casual
                static communication::ipc::Helper singleton{ communication::error::handler::callback::on::Terminate{ &handle::process::exit}};
                return singleton;
             }
-
-
          } // ipc
 
          namespace handle
          {
-
             namespace local
             {
                namespace

@@ -39,7 +39,7 @@ namespace casual
 
                      auto result = serviceframework::service::user( protocol, &transform::state, state);
 
-                     protocol << CASUAL_MAKE_NVP( result);
+                     protocol << CASUAL_NAMED_VALUE( result);
                      return protocol.finalize();
                   }
 
@@ -50,11 +50,11 @@ namespace casual
                         auto protocol = serviceframework::service::protocol::deduce( std::move( parameter));
 
                         std::vector< admin::scale::Instances> instances;
-                        protocol >> CASUAL_MAKE_NVP( instances);
+                        protocol >> CASUAL_NAMED_VALUE( instances);
 
                         auto result = serviceframework::service::user( protocol, &action::resource::instances, state, std::move( instances));
 
-                        protocol << CASUAL_MAKE_NVP( result);
+                        protocol << CASUAL_NAMED_VALUE( result);
                         return protocol.finalize();
 
                      }

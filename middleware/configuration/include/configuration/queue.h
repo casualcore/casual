@@ -9,8 +9,9 @@
 
 
 
-#include "serviceframework/namevaluepair.h"
-#include "serviceframework/platform.h"
+#include "common/serialize/macro.h"
+#include "common/platform.h"
+#include "common/optional.h"
 
 #include <string>
 #include <vector>
@@ -26,11 +27,11 @@ namespace casual
          {
             struct Default
             {
-               serviceframework::platform::size::type retries = 0;
+               common::platform::size::type retries = 0;
 
                CASUAL_CONST_CORRECT_SERIALIZE
                (
-                  archive & CASUAL_MAKE_NVP( retries);
+                  CASUAL_SERIALIZE( retries);
                )
             };
          } // queue
@@ -38,14 +39,14 @@ namespace casual
          struct Queue
          {
             std::string name;
-            serviceframework::optional< serviceframework::platform::size::type> retries;
+            common::optional< common::platform::size::type> retries;
             std::string note;
 
             CASUAL_CONST_CORRECT_SERIALIZE
             (
-               archive & CASUAL_MAKE_NVP( name);
-               archive & CASUAL_MAKE_NVP( retries);
-               archive & CASUAL_MAKE_NVP( note);
+               CASUAL_SERIALIZE( name);
+               CASUAL_SERIALIZE( retries);
+               CASUAL_SERIALIZE( note);
             )
 
             Queue& operator += ( const queue::Default& value);
@@ -56,16 +57,16 @@ namespace casual
          struct Group
          {
             std::string name;
-            serviceframework::optional< std::string> queuebase;
+            common::optional< std::string> queuebase;
             std::string note;
             std::vector< Queue> queues;
 
             CASUAL_CONST_CORRECT_SERIALIZE
             (
-               archive & CASUAL_MAKE_NVP( name);
-               archive & CASUAL_MAKE_NVP( queuebase);
-               archive & CASUAL_MAKE_NVP( note);
-               archive & CASUAL_MAKE_NVP( queues);
+               CASUAL_SERIALIZE( name);
+               CASUAL_SERIALIZE( queuebase);
+               CASUAL_SERIALIZE( note);
+               CASUAL_SERIALIZE( queues);
             )
 
             friend bool operator < ( const Group& lhs, const Group& rhs);
@@ -83,8 +84,8 @@ namespace casual
 
                CASUAL_CONST_CORRECT_SERIALIZE
                (
-                  archive & CASUAL_MAKE_NVP( queue);
-                  archive & CASUAL_MAKE_NVP( directory);
+                  CASUAL_SERIALIZE( queue);
+                  CASUAL_SERIALIZE( directory);
                )
             };
          } // manager
@@ -96,8 +97,8 @@ namespace casual
 
             CASUAL_CONST_CORRECT_SERIALIZE
             (
-               archive & serviceframework::name::value::pair::make( "default", manager_default);
-               archive & CASUAL_MAKE_NVP( groups);
+               CASUAL_SERIALIZE_NAME( manager_default, "default");
+               CASUAL_SERIALIZE( groups);
             )
 
             //! Complement with defaults and validates

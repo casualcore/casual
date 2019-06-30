@@ -25,12 +25,9 @@ namespace casual
 
          auto size = sizeof( Uuid::uuid_type);
 
-         //
          // Check to see that the memory is exactly the same
-         //
          EXPECT_TRUE( memcmp( id.xid.data, gtrid.get(), size) == 0);
          EXPECT_TRUE( memcmp( id.xid.data + size, bqual.get(), size) == 0);
-
       }
 
 
@@ -60,7 +57,7 @@ namespace casual
 
          auto trid = transaction::id::create();
 
-         EXPECT_TRUE( trid.owner() == process::handle()) << "trid.owner(): " << trid.owner() << '\n' << "process::handle()" << process::handle() << '\n';
+         EXPECT_TRUE( trid.owner() == process::handle()) << CASUAL_NAMED_VALUE( trid) << '\n' << CASUAL_NAMED_VALUE( process::handle()) << '\n';
 
       }
 

@@ -87,7 +87,6 @@ namespace casual
             //! trid server is invoked with
             //! @{
             transaction::ID caller;
-            //! @}
 
             void update( message::service::call::Reply& state);
 
@@ -99,7 +98,6 @@ namespace casual
 
             //! @return true if @p correlation is associated with an active transaction
             bool associated( const Uuid& correlation);
-
 
             void configure( std::vector< resource::Link> resources, std::vector< std::string> names);
 
@@ -129,7 +127,6 @@ namespace casual
             };
 
             Commit_Return m_commit_return = Commit_Return::completed;
-
 
 
             struct resources_type

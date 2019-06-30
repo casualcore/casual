@@ -38,7 +38,7 @@ namespace casual
          // serialize and deserialize
          auto queue = domain::get( { example::temporary( example::domain(), GetParam())}).queue;
 
-         EXPECT_TRUE( queue.groups.size() == 3) << CASUAL_MAKE_NVP( queue);
+         EXPECT_TRUE( queue.groups.size() == 3) << CASUAL_NAMED_VALUE( queue);
       }
 
 
@@ -50,8 +50,8 @@ namespace casual
          auto& group =  manager.groups.at( 0);
 
          EXPECT_TRUE( group.name == "groupA");
-         EXPECT_TRUE( group.queuebase.has_value()) << CASUAL_MAKE_NVP( group);
-         ASSERT_TRUE( group.queues.size() == 4) << CASUAL_MAKE_NVP( group);
+         EXPECT_TRUE( group.queuebase.has_value()) << CASUAL_NAMED_VALUE( group);
+         ASSERT_TRUE( group.queues.size() == 4) << CASUAL_NAMED_VALUE( group);
          {
             auto& queue = group.queues.at( 0);
             EXPECT_TRUE( queue.name == "q_A1");
@@ -156,8 +156,8 @@ namespace casual
          manager.groups.at( 0).queues.at( 0).name = "a";
 
          queue::unittest::default_values( manager);
-         ASSERT_TRUE( manager.groups.at( 0).queues.at( 0).retries.has_value()) << CASUAL_MAKE_NVP( manager);
-         EXPECT_TRUE( manager.groups.at( 0).queues.at( 0).retries.value() == 42) << CASUAL_MAKE_NVP( manager);
+         ASSERT_TRUE( manager.groups.at( 0).queues.at( 0).retries.has_value()) << CASUAL_NAMED_VALUE( manager);
+         EXPECT_TRUE( manager.groups.at( 0).queues.at( 0).retries.value() == 42) << CASUAL_NAMED_VALUE( manager);
       }
 
 

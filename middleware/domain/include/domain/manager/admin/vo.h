@@ -7,8 +7,8 @@
 #pragma once
 
 
-#include "serviceframework/namevaluepair.h"
-#include "serviceframework/platform.h"
+#include "common/serialize/macro.h"
+#include "common/platform.h"
 
 #include "configuration/environment.h"
 
@@ -39,11 +39,11 @@ namespace casual
                      std::vector< std::string> resources;
 
                      CASUAL_CONST_CORRECT_SERIALIZE({
-                        archive & CASUAL_MAKE_NVP( id);
-                        archive & CASUAL_MAKE_NVP( name);
-                        archive & CASUAL_MAKE_NVP( note);
-                        archive & CASUAL_MAKE_NVP( resources);
-                        archive & CASUAL_MAKE_NVP( dependencies);
+                        CASUAL_SERIALIZE( id);
+                        CASUAL_SERIALIZE( name);
+                        CASUAL_SERIALIZE( note);
+                        CASUAL_SERIALIZE( resources);
+                        CASUAL_SERIALIZE( dependencies);
                      })
 
                   };
@@ -65,7 +65,7 @@ namespace casual
                         std::vector< std::string> variables;
 
                         CASUAL_CONST_CORRECT_SERIALIZE({
-                           archive & CASUAL_MAKE_NVP( variables);
+                           CASUAL_SERIALIZE( variables);
                         })
 
                      } environment;
@@ -74,15 +74,15 @@ namespace casual
                      size_type restarts = 0;
 
                      CASUAL_CONST_CORRECT_SERIALIZE({
-                        archive & CASUAL_MAKE_NVP( id);
-                        archive & CASUAL_MAKE_NVP( alias);
-                        archive & CASUAL_MAKE_NVP( path);
-                        archive & CASUAL_MAKE_NVP( arguments);
-                        archive & CASUAL_MAKE_NVP( note);
-                        archive & CASUAL_MAKE_NVP( memberships);
-                        archive & CASUAL_MAKE_NVP( environment);
-                        archive & CASUAL_MAKE_NVP( restart);
-                        archive & CASUAL_MAKE_NVP( restarts);
+                        CASUAL_SERIALIZE( id);
+                        CASUAL_SERIALIZE( alias);
+                        CASUAL_SERIALIZE( path);
+                        CASUAL_SERIALIZE( arguments);
+                        CASUAL_SERIALIZE( note);
+                        CASUAL_SERIALIZE( memberships);
+                        CASUAL_SERIALIZE( environment);
+                        CASUAL_SERIALIZE( restart);
+                        CASUAL_SERIALIZE( restarts);
                      })
 
                      inline friend bool operator < ( const Process& lhs, const Process& rhs) { return lhs.id < rhs.id;}
@@ -110,8 +110,8 @@ namespace casual
                      friend bool operator == ( const Instance& lhs, const H& rhs) { return common::process::id( lhs.handle) == common::process::id( rhs);}
 
                      CASUAL_CONST_CORRECT_SERIALIZE({
-                        archive & CASUAL_MAKE_NVP( handle);
-                        archive & CASUAL_MAKE_NVP( state);
+                        CASUAL_SERIALIZE( handle);
+                        CASUAL_SERIALIZE( state);
                      })
                   };
 
@@ -122,7 +122,7 @@ namespace casual
 
                      CASUAL_CONST_CORRECT_SERIALIZE({
                         Process::serialize( archive);
-                        archive & CASUAL_MAKE_NVP( instances);
+                        CASUAL_SERIALIZE( instances);
                      })
                   };
 
@@ -136,9 +136,9 @@ namespace casual
 
                      CASUAL_CONST_CORRECT_SERIALIZE({
                         Process::serialize( archive);
-                        archive & CASUAL_MAKE_NVP( instances);
-                        archive & CASUAL_MAKE_NVP( resources);
-                        archive & CASUAL_MAKE_NVP( restriction);
+                        CASUAL_SERIALIZE( instances);
+                        CASUAL_SERIALIZE( resources);
+                        CASUAL_SERIALIZE( restriction);
                      })
                   };
 
@@ -155,17 +155,17 @@ namespace casual
 
                         CASUAL_CONST_CORRECT_SERIALIZE(
                         {
-                           archive & CASUAL_MAKE_NVP( listeners);
+                           CASUAL_SERIALIZE( listeners);
                         })
 
                      } event;
 
                      CASUAL_CONST_CORRECT_SERIALIZE(
                      {
-                        archive & CASUAL_MAKE_NVP( groups);
-                        archive & CASUAL_MAKE_NVP( executables);
-                        archive & CASUAL_MAKE_NVP( servers);
-                        archive & CASUAL_MAKE_NVP( event);
+                        CASUAL_SERIALIZE( groups);
+                        CASUAL_SERIALIZE( executables);
+                        CASUAL_SERIALIZE( servers);
+                        CASUAL_SERIALIZE( event);
                      })
 
                   };
@@ -180,8 +180,8 @@ namespace casual
 
                         CASUAL_CONST_CORRECT_SERIALIZE
                         (
-                           archive & CASUAL_MAKE_NVP( alias);
-                           archive & CASUAL_MAKE_NVP( instances);
+                           CASUAL_SERIALIZE( alias);
+                           CASUAL_SERIALIZE( instances);
                         )
                      };
                   } // scale
@@ -195,8 +195,8 @@ namespace casual
 
                         CASUAL_CONST_CORRECT_SERIALIZE
                         (
-                           archive & CASUAL_MAKE_NVP( variables);
-                           archive & CASUAL_MAKE_NVP( aliases);
+                           CASUAL_SERIALIZE( CASUAL_NAMED_VALUE( variables));
+                           CASUAL_SERIALIZE( CASUAL_NAMED_VALUE( aliases));
                         )
                      };
                      

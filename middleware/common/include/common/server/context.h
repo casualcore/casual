@@ -47,7 +47,6 @@ namespace casual
                {
                   platform::buffer::raw::type data = nullptr;
                   platform::buffer::raw::size::type size = 0;
-
                } buffer;
 
                struct State
@@ -61,7 +60,6 @@ namespace casual
                   std::string service;
 
                } forward;
-
 
                friend std::ostream& operator << ( std::ostream& out, const Jump& value);
             };

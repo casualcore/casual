@@ -12,8 +12,8 @@
 #include "common/communication/message.h"
 
 #include "common/message/dispatch.h"
-#include "common/marshal/binary.h"
-#include "common/marshal/complete.h"
+#include "common/serialize/native/binary.h"
+#include "common/serialize/native/complete.h"
 #include "common/exception/signal.h"
 #include "common/exception/system.h"
 #include "common/predicate.h"
@@ -84,7 +84,7 @@ namespace casual
             using cache_type = std::vector< message::Complete>;
             using cache_range_type =  range::type_t< cache_type>;
 
-            template< typename Connector, typename Unmarshal = marshal::binary::create::Input>
+            template< typename Connector, typename Deserialize = serialize::native::binary::create::Input>
             struct Device
             {
 
@@ -95,10 +95,10 @@ namespace casual
                using blocking_policy = typename connector_type::blocking_policy;
                using non_blocking_policy = typename connector_type::non_blocking_policy;
 
-               using unmarshal_type = Unmarshal;
+               using deserialize_type = Deserialize;
                using error_type = std::function<void()>;
 
-               using handler_type = common::message::dispatch::basic_handler< Unmarshal>;
+               using handler_type = common::message::dispatch::basic_handler< deserialize_type>;
 
                template< typename... Args>
                Device( Args&&... args) : m_connector{ std::forward< Args>( args)...} {}
@@ -223,12 +223,12 @@ namespace casual
 
                //! Tries to find a message with the same type as @p message
                //!
-               //! @return true if we found one, and message is unmarshaled. false otherwise.
+               //! @return true if we found one, and message is deserialized. false otherwise.
                //! @note depending on the policy it may not ever return false (ie with a blocking policy)
                template< typename M, typename P>
                bool receive( M& message, P&& policy, const error_type& handler = nullptr)
                {
-                  return unmarshal(
+                  return deserialize(
                         this->next(
                               common::message::type( message),
                               std::forward< P>( policy),
@@ -238,12 +238,12 @@ namespace casual
 
                //! Tries to find a message that has the same type and @p correlation
                //!
-               //! @return true if we found one, and message is unmarshaled. false otherwise.
+               //! @return true if we found one, and message is deserialized. false otherwise.
                //! @note depending on the policy it may not ever return false (ie with a blocking policy)
                template< typename M, typename P>
                bool receive( M& message, const Uuid& correlation, P&& policy, const error_type& handler = nullptr)
                {
-                  return unmarshal(
+                  return deserialize(
                         this->next(
                               common::message::type( message),
                               correlation,
@@ -281,9 +281,7 @@ namespace casual
                //! push a complete message to the cache
                inline Uuid put( message::Complete&& message)
                {
-                  //
                   // Make sure we consume messages from the real queue first.
-                  //
                   flush();
 
                   m_cache.push_back( std::move( message));
@@ -293,7 +291,7 @@ namespace casual
                template< typename M>
                Uuid push( M&& message)
                {
-                  return put( marshal::complete( std::forward< M>( message), marshal::create::reverse_t< unmarshal_type>{}));
+                  return put( serialize::native::complete( std::forward< M>( message), serialize::native::create::reverse_t< deserialize_type>{}));
                }
 
                //! flushes the messages on the device into cache. (ie, make the device writable if it was full)
@@ -321,20 +319,21 @@ namespace casual
                const connector_type& connector() const { return m_connector;}
 
 
-               inline friend std::ostream& operator << ( std::ostream& out, const Device& device)
+               CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
                {
-                  return out << "{ connector: " << device.m_connector << ", cache: "
-                        << range::make( device.m_cache) << ", discarded: " << range::make( device.m_discarded) << "}";
-               }
+                  CASUAL_SERIALIZE_NAME( m_connector, "connector");
+                  CASUAL_SERIALIZE_NAME( m_cache, "cache");
+                  CASUAL_SERIALIZE_NAME( m_discarded, "discarded");
+               })
 
             private:
 
                template< typename C, typename M>
-               bool unmarshal( C&& complete, M& message)
+               bool deserialize( C&& complete, M& message)
                {
                   if( complete)
                   {
-                     marshal::complete( complete, message, unmarshal_type{});
+                     serialize::native::complete( complete, message, deserialize_type{});
                      return true;
                   }
                   return false;
@@ -399,7 +398,7 @@ namespace casual
          namespace outbound
          {
             //! Doesn't do much. More for symmetry with inbound
-            template< typename Connector, typename Marshal = marshal::binary::create::Output>
+            template< typename Connector, typename Serialize = serialize::native::binary::create::Output>
             struct Device
             {
                using connector_type = Connector;
@@ -407,7 +406,7 @@ namespace casual
                using blocking_policy = typename connector_type::blocking_policy;
                using non_blocking_policy = typename connector_type::non_blocking_policy;
 
-               using marshal_type = Marshal;
+               using serialize_type = Serialize;
 
                using error_type = std::function<void()>;
 
@@ -429,7 +428,7 @@ namespace casual
 
                //! Tries to send a message to the connector @p message
                //!
-               //! @return true if we found one, and message is unmarshaled. false otherwise.
+               //! @return true if we found one, and message is deserialized. false otherwise.
                //! @note depending on the policy it may not ever return false (ie with a blocking policy)
                template< typename M, typename P>
                Uuid send( M&& message, P&& policy, const error_type& handler = nullptr)
@@ -443,8 +442,8 @@ namespace casual
                      common::message::type( message), 
                      message.correlation ? message.correlation : uuid::make());
 
-                  auto marshal = marshal_type()( complete.payload);
-                  marshal << message;
+                  auto serialize = serialize_type()( complete.payload);
+                  serialize << message;
 
                   return apply(
                         std::forward< P>( policy),
@@ -464,10 +463,10 @@ namespace casual
                   return send( message, non_blocking_policy{}, handler);
                }
 
-               inline friend std::ostream& operator << ( std::ostream& out, const Device& device)
+               CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
                {
-                  return out << "{ connector: " << device.m_connector << "}";
-               }
+                  CASUAL_SERIALIZE_NAME( m_connector, "connector");
+               })
 
             private:
 

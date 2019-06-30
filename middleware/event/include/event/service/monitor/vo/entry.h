@@ -7,22 +7,18 @@
 #pragma once
 
 
-#include "serviceframework/pimpl.h"
+#include "common/pimpl.h"
  
 
-// 
 // std
-//
 #include <memory>
     
-//
 // Forwards
-//
 namespace casual 
 { 
-   namespace serviceframework 
+   namespace common 
    { 
-      namespace archive 
+      namespace serialize 
       {
          class Reader;
          class Writer;
@@ -32,9 +28,9 @@ namespace casual
     
 //## includes protected section begin [200.10]
 
-#include <serviceframework/platform.h>
-#include <string>
+#include "common/uuid.h"
 
+#include <string>
 //## includes protected section end   [200.10]
 
 //## additional declarations protected section begin [200.20]
@@ -81,23 +77,19 @@ namespace casual
                   void setService( std::string value);
 
 
-                  serviceframework::platform::Uuid getCallId() const;
-                  void setCallId( serviceframework::platform::Uuid value);
+                  common::Uuid getCallId() const;
+                  void setCallId( common::Uuid value);
 
 
-                  serviceframework::platform::time::point::type getStart() const;
-                  void setStart( serviceframework::platform::time::point::type value);
+                  common::platform::time::point::type getStart() const;
+                  void setStart( common::platform::time::point::type value);
 
 
-                  serviceframework::platform::time::point::type getEnd() const;
-                  void setEnd( serviceframework::platform::time::point::type value);
+                  common::platform::time::point::type getEnd() const;
+                  void setEnd( common::platform::time::point::type value);
 
-
-
-
-                  void serialize( casual::serviceframework::archive::Reader& archive);
-
-                  void serialize( casual::serviceframework::archive::Writer& archive) const;
+                  void serialize( casual::common::serialize::Reader& archive);
+                  void serialize( casual::common::serialize::Writer& archive) const;
 
                private:
 
@@ -106,7 +98,7 @@ namespace casual
                   //## additional private declarations protected section end   [200.200]
 
                   struct Implementation;
-                  casual::serviceframework::Pimpl< Implementation> pimpl;
+                  common::basic_pimpl< Implementation> pimpl;
                };
             } // vo
          } // service

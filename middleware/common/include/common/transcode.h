@@ -62,11 +62,9 @@ namespace casual
                target.resize( detail::encode( detail::data( source), detail::data( target)));
             }
 
-            //!
             //! @return Base64-encoded binary data of @p container
             //!
             //! @throw exception::Casual on failure
-            //!
             template< typename C>
             std::string encode( C&& container)
             {
@@ -75,13 +73,11 @@ namespace casual
                return result;
             }
 
-            //!
             //! @return Base64-encoded binary data of [first, last)
             //!
             //! @pre @p Iter has to be a random access iterator
             //!
             //! @throw exception::Casual on failure
-            //!
             template< typename Iter>
             auto encode( Iter first, Iter last) -> 
                std::enable_if_t< traits::is::iterator< Iter>::value, std::string>
@@ -89,16 +85,19 @@ namespace casual
                return encode( range::make( first, last));
             }
 
-            //!
             //! @return Base64-decoded binary data
             //!
             //! @throw exception::Casual on failure
-            //!
             platform::binary::type decode( const std::string& value);
+
+            // TODO performance: make it possible to decode to fixed memory
+            //  `b64_pton` seems to need additional space during decode, hence it's
+            //  not symmetric. Roll our own?
+
 
             //!
             //! decode Base64 to a binary representation
-            //!
+            //! @attention [first, last) needs to be bigger than the [first, result) (by some bytes...)
             //!
             template< typename Source, typename Iter>
             std::enable_if_t<
@@ -120,7 +119,6 @@ namespace casual
 
          namespace utf8
          {
-            //!
             //! @param value String encoded in local default codeset
             //!
             //! @return UTF-8-encoded string
@@ -128,10 +126,8 @@ namespace casual
             //! @throw exception::limit::Memory on resource failures
             //! @throw exception::system::invalid::Argument for bad input
             //! @throw exception::Casual on other failures
-            //!
             std::string encode( const std::string& value);
 
-            //!
             //! @param value The UTF-8 encoded string
             //!
             //! @return String encoded in local default codeset
@@ -139,23 +135,16 @@ namespace casual
             //! @throw exception::limit::Memory on resource failures
             //! @throw exception::system::invalid::Argument for bad input
             //! @throw exception::Casual on other failures
-            //!
             std::string decode( const std::string& value);
 
-
-
-            //!
             //! @param codeset String-encoding
             //!
             //! @return Whether the provided codeset exist in the system
             //!
             //! @throw exception::limit::Memory on resource failures
             //! @throw exception::Casual on other failures
-            //!
             bool exist( const std::string& codeset);
 
-
-            //!
             //! @param value String encoded in provided codeset
             //! @param codeset String-encoding
             //!
@@ -164,10 +153,8 @@ namespace casual
             //! @throw exception::limit::Memory on resource failures
             //! @throw exception::system::invalid::Argument for bad input
             //! @throw exception::Casual on other failures
-            //!
             std::string encode( const std::string& value, const std::string& codeset);
 
-            //!
             //! @param value The UTF-8 encoded string
             //! @param codeset Encoding for result
             //!
@@ -176,7 +163,6 @@ namespace casual
             //! @throw exception::limit::Memory on resource failures
             //! @throw exception::system::invalid::Argument for bad input
             //! @throw exception::Casual on other failures
-            //!
             std::string decode( const std::string& value, const std::string& codeset);
 
          } // utf8
@@ -191,13 +177,11 @@ namespace casual
             } // detail
 
 
-            //!
             //! encode binary sequence [first, last) to hex-representation
             //!
             //! @param first start of binary
             //! @param last end of binary (exclusive)
             //! @return hex-encoded string of [first, last)
-            //!
             template< typename Iter>
             std::enable_if_t< traits::is::binary::iterator< Iter>::value, std::string>
             encode( Iter first, Iter last)
@@ -222,27 +206,21 @@ namespace casual
                return encode( out, std::begin( range), std::end( range));
             }
 
-            //!
             //! encode binary @p container to hex-representation
             //!
             //! @param container binary representation
             //! @return hex-encoded string of @p container
-            //!
             template< typename C>
             std::string encode( C&& container)
             {
                return encode( std::begin( container), std::end( container));
             }
 
-
-            //!
             //! decode hex-string to a binary representation
             //!
             //! @param value hex-string
             //! @return binary representation of @p value
-            //!
             platform::binary::type decode( const std::string& value);
-
 
             template< typename Source, typename Iter>
             std::enable_if_t< 
@@ -259,12 +237,9 @@ namespace casual
                detail::decode( cast_source( std::begin( source)), cast_source( std::end( source)), cast_target( first));
             }
 
-
-            //!
             //! decode hex-string to a binary representation
             //!
             //! @return binary representation of @p value
-            //!
             template< typename Source, typename Target>
             std::enable_if_t< 
                traits::is::string::like< Source>::value

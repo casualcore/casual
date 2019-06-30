@@ -111,15 +111,26 @@ domain:
 
                      environment::reset();
                   }
-
-                     
+   
                   //! domain root directory
                   common::unittest::directory::temporary::Scoped home;
                   std::function< void( const std::string&)> callback;
+
+                  CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
+                  {
+                     CASUAL_SERIALIZE( home);
+                  })
+
                } environment;
 
                std::vector< common::file::scoped::Path> files;
                common::Process process;
+
+               CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
+               {
+                  CASUAL_SERIALIZE( files);
+                  CASUAL_SERIALIZE( process);
+               })
 
             };
 
@@ -145,10 +156,7 @@ domain:
 
             std::ostream& operator << ( std::ostream& out, const Process& value)
             {
-               return out << "{ home: " << value.m_implementation->environment.home
-                  << ", files: " << value.m_implementation->files
-                  << ", process: " << value.m_implementation->process 
-                  << '}';
+               return common::stream::write( out, *value.m_implementation);
             }
              
 
@@ -159,8 +167,14 @@ domain:
                   common::Trace trace{ "domain::manager::unittest::process::wait"};
 
                   auto handler = device.handler(
+                     []( const message::event::domain::boot::Begin& event)
+                     {
+                        log::line( log::debug, "event: ", event);
+                        common::domain::identity( event.domain);
+                     },
                      []( const message::event::domain::boot::End& event)
                      {
+                        log::line( log::debug, "event: ", event);
                         throw event.process;
                      },
                      []( const message::event::domain::Error& error)
@@ -171,7 +185,6 @@ domain:
                         }
                      },
                      common::message::handle::Discard< common::message::event::domain::Group>{},
-                     common::message::handle::Discard< common::message::event::domain::boot::Begin>{},
                      common::message::handle::Discard< common::message::event::domain::shutdown::Begin>{},
                      common::message::handle::Discard< common::message::event::domain::shutdown::End>{},
                      common::message::handle::Discard< common::message::event::domain::server::Connect>{},

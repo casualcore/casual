@@ -150,12 +150,6 @@ namespace casual
             return std::tie( lhs.pid, lhs.ipc) < std::tie( rhs.pid, rhs.ipc);
          }
 
-         std::ostream& operator << ( std::ostream& out, const Handle& value)
-         {
-            return out << "{ pid: " << value.pid << ", ipc: " << value.ipc << '}';
-         }
-
-
 
          const Uuid& uuid()
          {
@@ -225,13 +219,6 @@ namespace casual
                return --m_quantity == 0;
             }
 
-            std::ostream& operator << ( std::ostream& out, const Sleep::Pattern& value)
-            {
-               return out << "{ duration: " << value.m_time.count() << "us, quantity: " << value.m_quantity
-                     << '}';
-            }
-
-
             Sleep::Sleep( std::initializer_list< Pattern> pattern) : m_pattern( std::move( pattern))
             {
                // We reverse the patterns so we can go from the back
@@ -249,11 +236,6 @@ namespace casual
                   return true;
                }
                return false;
-            }
-
-            std::ostream& operator << ( std::ostream& out, const Sleep& value)
-            {
-               return out << "{ pattern: " << range::make( value.m_pattern) << '}';
             }
 
          } // pattern
@@ -657,11 +639,6 @@ namespace casual
                return out;
             }
 
-            std::ostream& operator << ( std::ostream& out, const Exit& terminated)
-            {
-               return out << "{ pid: " << terminated.pid << ", reason: " << terminated.reason << '}';
-            }
-
             std::vector< lifetime::Exit> ended()
             {
                Trace trace{ "process::lifetime::ended"};
@@ -765,12 +742,6 @@ namespace casual
             throw exception::system::invalid::Process{ string::compose( "trying to update process with different pids: ", m_handle.pid, " != ", handle.pid)};
 
          m_handle = handle;
-      }
-
-      std::ostream& operator << ( std::ostream& out, const Process& value)
-      {
-         return out << "{ handle: " << value.m_handle 
-            << '}';
       }
 
    } // common

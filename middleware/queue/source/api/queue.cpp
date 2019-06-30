@@ -13,6 +13,7 @@
 #include "queue/common/transform.h"
 #include "queue/manager/admin/services.h"
 
+#include "common/range.h"
 #include "common/buffer/type.h"
 #include "common/buffer/pool.h"
 #include "common/message/dispatch.h"
@@ -20,7 +21,6 @@
 #include "common/transaction/context.h"
 #include "common/communication/ipc.h"
 #include "common/execute.h"
-
 
 #include "serviceframework/service/protocol/call.h"
 #include "serviceframework/log.h"
@@ -45,7 +45,7 @@ namespace casual
                } // exception
 
                template< typename M>
-               serviceframework::platform::Uuid enqueue( const queue::Lookup& lookup, M&& message)
+               common::Uuid enqueue( const queue::Lookup& lookup, M&& message)
                {
                   Trace trace( "casual::queue::enqueue");
 
@@ -207,7 +207,7 @@ namespace casual
             } // <unnamed>
          } // local
 
-         serviceframework::platform::Uuid enqueue( const std::string& queue, const Message& message)
+         common::Uuid enqueue( const std::string& queue, const Message& message)
          {
             Trace trace( "casual::queue::enqueue");
 
@@ -295,9 +295,9 @@ namespace casual
                // To hold reference data, so we don't need to copy the buffer.
                struct Payload
                {
-                  template< typename T, typename Iter>
-                  Payload( T  type, Iter first, Iter last)
-                    : type(std::move( type)), data( first, last)
+                  template< typename T, typename Range>
+                  Payload( T  type, Range range)
+                    : type(std::move( type)), data( std::begin( range), std::end( range))
                   {
 
                   }
@@ -306,20 +306,20 @@ namespace casual
                   Payload& operator = ( Payload&&) = default;
 
                   std::string type;
-                  serviceframework::platform::binary::type data;
+                  common::platform::binary::type data;
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
                   {
-                     archive & CASUAL_MAKE_NVP( type);
-                     archive & CASUAL_MAKE_NVP( data);
+                     CASUAL_SERIALIZE( type);
+                     CASUAL_SERIALIZE( data);
                   })
                };
 
                using Message = basic_message< Payload>;
 
-            } // reference
+            } // copy
 
-            serviceframework::platform::Uuid enqueue( const std::string& queue, const Message& message)
+            common::Uuid enqueue( const std::string& queue, const Message& message)
             {
                Trace trace{ "casual::queue::xatmi::enqueue"};
 
@@ -336,7 +336,7 @@ namespace casual
                //         we probably need to change the interface for 'binary' in write-archives (to take a range, or iterator first, last)
                copy::Message send_message{
                   message.id, message.attributes,
-                    { send.payload().type, send.payload().memory.begin(), send.payload().memory.begin() + send.transport}};
+                  { send.payload().type, common::range::make( std::begin( send.payload().memory), send.transport())}};
 
                return local::enqueue( lookup, send_message);
             }
@@ -476,12 +476,12 @@ namespace casual
                for( auto& queue : queues)
                {
                   serviceframework::service::protocol::binary::Call call;
-                  call << CASUAL_MAKE_NVP( queue);
+                  call << CASUAL_NAMED_VALUE( queue);
 
                   auto reply = call( manager::admin::service::name::restore());
 
                   std::vector< manager::admin::Affected> result;
-                  reply >> CASUAL_MAKE_NVP( result);
+                  reply >> CASUAL_NAMED_VALUE( result);
 
                   common::algorithm::transform( result, affected, []( const manager::admin::Affected& a){
                      Affected result;

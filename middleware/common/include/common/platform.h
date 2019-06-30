@@ -335,6 +335,18 @@ namespace casual
          namespace binary
          {
             using type = std::vector< char>;
+            using pointer = decltype( std::declval< binary::type>().data());
+
+            namespace value
+            {
+               using type = std::remove_reference_t< decltype( std::declval< binary::type>().at( 0))>;
+
+            } // value
+
+            namespace immutable
+            {
+               using pointer = decltype( std::declval< const binary::type>().data());
+            } // immutable
 
             namespace size
             {
@@ -349,17 +361,17 @@ namespace casual
          {
             namespace raw
             {
-               using type = char*;
+               using type = binary::pointer;
 
                namespace size
                {
-                  using type = platform::size::type;;
+                  using type = platform::size::type;
                } // size
 
 
                namespace immutable
                {
-                  using type = const char*;
+                  using type = binary::immutable::pointer;
                } // immutable
 
                inline type external( immutable::type buffer)
@@ -385,6 +397,12 @@ namespace casual
             } // point
 
             using unit = point::type::duration;
+            
+            namespace serialization
+            {
+               using unit = std::chrono::nanoseconds;
+            } // serialization
+
             namespace limit
             {
                constexpr auto zero() noexcept { return std::chrono::duration_cast< time::unit>( std::chrono::nanoseconds::zero());}
@@ -404,43 +422,6 @@ namespace casual
 
       } // platform
    } // common
-
-   //! Overload for time_type
-   //! @{
-
-   template< typename R, typename P, typename M>
-   void casual_marshal_value( const std::chrono::duration< R, P>& value, M& marshler)
-   {
-      marshler << std::chrono::duration_cast< common::platform::time::unit>( value).count();
-   }
-
-   template< typename R, typename P, typename M>
-   void casual_unmarshal_value( std::chrono::duration< R, P>& value, M& unmarshler)
-   {
-      common::platform::time::unit::rep representation;
-
-      unmarshler >> representation;
-      value = std::chrono::duration_cast< std::chrono::duration< R, P>>( common::platform::time::unit( representation));
-   }
-
-
-   template< typename M>
-   void casual_marshal_value( const common::platform::time::point::type& value, M& marshler)
-   {
-      const auto time = value.time_since_epoch().count();
-      marshler << time;
-   }
-
-   template< typename M>
-   void casual_unmarshal_value( common::platform::time::point::type& value, M& unmarshler)
-   {
-      common::platform::time::point::type::rep representation;
-      unmarshler >> representation;
-      value = common::platform::time::point::type( common::platform::time::point::type::duration( representation));
-   }
-   //! @}
-
-
 
 } // casual
 

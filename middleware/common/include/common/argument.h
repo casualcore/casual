@@ -284,8 +284,8 @@ namespace casual
 
                   template< typename T> 
                   struct value_traits< T, std::enable_if_t< 
-                     traits::container::is_sequence< T>::value
-                     && ! traits::container::is_string< T>::value>>
+                     traits::is::container::sequence::like< T>::value
+                     && ! traits::is::string::like< T>::value>>
                   {
                      using value_type = std::decay_t< decltype( *std::begin( std::declval< T&>()))>;
                      using value_cardinality = decltype( value_traits< value_type>::cardinality());

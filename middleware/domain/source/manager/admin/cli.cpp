@@ -20,7 +20,7 @@
 #include "common/communication/instance.h"
 
 #include "serviceframework/service/protocol/call.h"
-#include "serviceframework/archive/create.h"
+#include "common/serialize/create.h"
 #include "serviceframework/log.h"
 
 namespace casual
@@ -215,7 +215,7 @@ namespace casual
 
                      admin::vo::State serviceReply;
 
-                     reply >> CASUAL_MAKE_NVP( serviceReply);
+                     reply >> CASUAL_NAMED_VALUE( serviceReply);
 
                      return serviceReply;
                   }
@@ -224,13 +224,13 @@ namespace casual
                   auto scale_instances( const std::vector< admin::vo::scale::Instances>& instances)
                   {
                      serviceframework::service::protocol::binary::Call call;
-                     call << CASUAL_MAKE_NVP( instances);
+                     call << CASUAL_NAMED_VALUE( instances);
 
                      auto reply = call( admin::service::name::scale::instances);
 
                      std::vector< admin::vo::scale::Instances> serviceReply;
 
-                     reply >> CASUAL_MAKE_NVP( serviceReply);
+                     reply >> CASUAL_NAMED_VALUE( serviceReply);
 
                      return serviceReply;
                   }
@@ -316,13 +316,13 @@ namespace casual
                      auto environment( const admin::vo::set::Environment& environment)
                      {
                         serviceframework::service::protocol::binary::Call call;
-                        call << CASUAL_MAKE_NVP( environment);
+                        call << CASUAL_NAMED_VALUE( environment);
 
                         auto reply = call( admin::service::name::set::environment);
 
                         std::vector< std::string> serviceReply;
 
-                        reply >> CASUAL_MAKE_NVP( serviceReply);
+                        reply >> CASUAL_NAMED_VALUE( serviceReply);
 
                         return serviceReply;
                      }
@@ -535,9 +535,9 @@ for all servers and executables
                   void state( const common::optional< std::string>& format)
                   {
                      auto state = call::state();
-                     auto archive = serviceframework::archive::create::writer::from( format.value_or( ""), std::cout);
+                     auto archive = common::serialize::create::writer::from( format.value_or( ""), std::cout);
 
-                     archive << CASUAL_MAKE_NVP( state);
+                     archive << CASUAL_NAMED_VALUE( state);
                   }
                } // action
 

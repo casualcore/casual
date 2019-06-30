@@ -10,6 +10,7 @@
 #include "common/algorithm.h"
 #include "common/functional.h"
 
+#include "serialize/line.h"
 
 #include <ostream>
 
@@ -19,9 +20,13 @@ namespace casual
    {
       namespace stream
       {
+
+         template< typename S, typename... Ts>
+         S& write( S& stream, Ts&&... ts);
+
          template< typename T, typename Enable = void>
          struct has_formatter : std::false_type{};
-
+         
          //! Specialization for iterables, to log ranges
          template< typename C> 
          struct has_formatter< C, std::enable_if_t< 
@@ -38,47 +43,12 @@ namespace casual
 
                   algorithm::for_each_interleave( 
                      range,
-                     [&out]( auto& v){ out << v;},
+                     [&out]( auto& v){ stream::write( out, v);},
                      [&out](){ out << ", ";}
                   );
 
                   out << ']';
                }
-            };
-         };
-
-         //! specialization for tuple
-         template< typename C> 
-         struct has_formatter< C, std::enable_if_t< 
-            traits::is::tuple< C>::value>>
-            : std::true_type
-         {
-            struct formatter
-            {
-               template< typename T>
-               void operator () ( std::ostream& out, T&& tuple) const
-               { 
-                  out << '[';
-                  auto dispatch = [&out]( auto&&... parameters){
-                     formatter::log( out, parameters...);
-                  };
-                  common::apply( dispatch, std::forward< T>( tuple));
-                  out << ']';
-               }
-            private:
-
-               //! 3 overloads so we can deduce when to put a ', ' delimiter
-               //! @{
-
-               template< typename T, typename... Ts>
-               static void log( std::ostream& out, T&& value, Ts&&... ts) { out << value << ", "; log( out, std::forward< Ts>( ts)...);}
-
-               template< typename T>
-               static void log( std::ostream& out, T&& value) { out << value;}
-
-               static void log( std::ostream& out) { /* no op */}
-               //! @}
-
             };
          };
 
@@ -129,50 +99,119 @@ namespace casual
             };
          };
 
+         //! Specialization for serial
+         template< typename T>
+         struct has_formatter< T, std::enable_if_t< serialize::traits::is::named::value< T>::value>>
+            : std::true_type
+         {
+            struct formatter
+            {
+               template< typename C>
+               void operator () ( std::ostream& out, C&& value) const
+               {
+                  stream::write( out, value.name(), ": ", value.value());
+               }
+            };
+         };
+
          namespace detail
          {
-            template< typename S>
-            void part( S& stream)
+
+            // just a helper to get rid of syntax
+            template< typename S, typename T> 
+            auto formatter( S& out, T&& value) 
+               -> decltype( typename stream::has_formatter< traits::remove_cvref_t< T>>::formatter{}( out, std::forward< T>( value)))
             {
+               typename stream::has_formatter< traits::remove_cvref_t< T>>::formatter{}( out, std::forward< T>( value));
             }
+
+            // lowest priority, take all that doesn't have a formatter, but can be serialized with serialize::line::Writer
+            template< typename T> 
+            auto indirection( std::ostream& out, T&& value, traits::priority::tag< 0>) 
+               -> decltype( std::declval< serialize::line::Writer&>() << std::forward< T>( value), void())
+            {
+               casual::common::serialize::line::Writer archive{ out};
+               archive << std::forward< T>( value);
+            }
+
+            // higher priority, takes all that have a defined formatter
+            template< typename T> 
+            auto indirection( std::ostream& out, T&& value, traits::priority::tag< 1>) 
+               -> decltype( (void)formatter( out, std::forward< T>( value)), void())
+            {
+               formatter( out, std::forward< T>( value));
+            }
+
+            // highest priority, takes all that have a defined ostream operator
+            template< typename T> 
+            auto indirection( std::ostream& out, T&& value, traits::priority::tag< 2>) 
+               -> decltype( out << std::forward< T>( value), void())
+            {
+               out << std::forward< T>( value);
+            }
+
+
+            template< typename S>
+            void part( S& stream) {}
 
             template< typename S, typename T>
             void part( S& stream, T&& value)
             {
-               stream << std::forward< T>( value);
+               indirection( stream, std::forward< T>( value), traits::priority::tag< 2>{});
             }
 
-            template< typename S, typename Arg, typename... Args>
-            void part( S& stream, Arg&& arg, Args&&... args)
+            template< typename S, typename T, typename... Ts>
+            void part( S& stream, T&& value, Ts&&... ts) 
             {
-               detail::part( stream, std::forward< Arg>( arg));
-               detail::part( stream, std::forward< Args>( args)...);
+               detail::part( stream, std::forward< T>( value));
+               detail::part( stream, std::forward< Ts>( ts)...);
             }
+
          } // detail
 
-         template< typename S, typename... Args>
-         S& write( S& stream, Args&&... args)
+         template< typename S, typename... Ts>
+         S& write( S& stream, Ts&&... ts)
          {
-            detail::part( stream, std::forward< Args>( args)...);
+            detail::part( stream, std::forward< Ts>( ts)...);
             return stream;
          }
-         
       } // stream
    } // common
 } // casual
 
 namespace std
 {
-   // extended stream operator for std... This is not legal if I understand it correct,
-   // but I find it hard to see what damage it could do, since it is restricted to the 
+   // extended stream operator for std... as I understand it, but I find it 
+   // hard to see what damage it could do, since it is restricted to the 
    // customization point 'casual::common::log::has_formatter', so we roll with it...
    template< typename T> 
-   enable_if_t< casual::common::stream::has_formatter< casual::common::traits::remove_cvref_t< T>>::value, ostream&>
-   operator << ( ostream& out, T&& value)
+   std::enable_if_t< 
+      casual::common::stream::has_formatter< casual::common::traits::remove_cvref_t< T>>::value
+      , 
+      std::ostream&>
+   operator << ( std::ostream& out, T&& value)
    {
       using namespace casual::common;
       typename stream::has_formatter< traits::remove_cvref_t< T>>::formatter{}( out, std::forward< T>( value));
       return out;
    }
-   
 } // std
+ 
+
+/*
+// global stream operator for the type that has casual::common::log::has_formatter defined
+// we only accept type that fullfill the customization point 'casual::common::log::has_formatter'
+// could be some ambiguity, but we roll with it...
+template< typename T> 
+std::enable_if_t< 
+   casual::common::stream::has_formatter< casual::common::traits::remove_cvref_t< T>>::value
+   , 
+   std::ostream&>
+operator << ( std::ostream& out, T&& value)
+{
+   using namespace casual::common;
+   typename stream::has_formatter< traits::remove_cvref_t< T>>::formatter{}( out, std::forward< T>( value));
+   return out;
+}
+ */
+

@@ -66,11 +66,10 @@ namespace casual
 
                bool empty() const { return m_points.empty();}
 
-               friend std::ostream& operator << ( std::ostream& out, const basic_routing& value)
-               {
-                  return out << "{ points: " << common::range::make( value.m_points)
-                     << '}';
-               }
+               CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
+               { 
+                  CASUAL_NAMED_VALUE_NAME( m_points, "points");
+               })
 
             private:
                container_type m_points;
@@ -84,8 +83,13 @@ namespace casual
                common::Uuid correlation;
                common::process::Handle destination;
                common::message::Type type;
-
-               friend std::ostream& operator << ( std::ostream& out, const Point& value);
+               
+               CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
+               { 
+                  CASUAL_NAMED_VALUE( correlation);
+                  CASUAL_NAMED_VALUE( destination);
+                  CASUAL_NAMED_VALUE( type);
+               })
             };
 
             using Route = basic_routing< Point>;
@@ -109,7 +113,14 @@ namespace casual
                   std::string parent;
                   common::platform::time::point::type start;
 
-                  friend std::ostream& operator << ( std::ostream& out, const Point& value);
+                  CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
+                  { 
+                     CASUAL_NAMED_VALUE( correlation);
+                     CASUAL_NAMED_VALUE( destination);
+                     CASUAL_NAMED_VALUE( service);
+                     CASUAL_NAMED_VALUE( parent);
+                     CASUAL_NAMED_VALUE( start);
+                  })
                };
 
                using Route = basic_routing< Point>;

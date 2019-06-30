@@ -11,14 +11,11 @@
 #include "serviceframework/service/protocol.h"
 #include "serviceframework/service/model.h"
 
-#include "serviceframework/archive/yaml.h"
-#include "serviceframework/archive/binary.h"
-#include "serviceframework/archive/json.h"
-#include "serviceframework/archive/xml.h"
-#include "serviceframework/archive/ini.h"
-#include "serviceframework/archive/log.h"
-#include "serviceframework/archive/service.h"
+#include "serviceframework/service/protocol/describe.h"
 #include "serviceframework/log.h"
+
+#include "common/serialize/archive.h"
+#include "common/serialize/log.h"
 
 namespace casual
 {
@@ -65,8 +62,8 @@ namespace casual
                   static const std::string& type();
 
                private:
-                  archive::Reader m_reader;
-                  archive::Writer m_writer;
+                  common::serialize::Reader m_reader;
+                  common::serialize::Writer m_writer;
 
                };
 
@@ -80,8 +77,8 @@ namespace casual
                   static const std::string& type();
 
                private:
-                  archive::Reader m_reader;
-                  archive::Writer m_writer;
+                  common::serialize::Reader m_reader;
+                  common::serialize::Writer m_writer;
                };
 
                class Json : public Base
@@ -94,8 +91,8 @@ namespace casual
                   static const std::string& type();
 
                private:
-                  archive::Reader m_reader;
-                  archive::Writer m_writer;
+                  common::serialize::Reader m_reader;
+                  common::serialize::Writer m_writer;
                };
 
                class Xml : public Base
@@ -108,8 +105,8 @@ namespace casual
                   static const std::string& type();
 
                private:
-                  archive::Reader m_reader;
-                  archive::Writer m_writer;
+                  common::serialize::Reader m_reader;
+                  common::serialize::Writer m_writer;
                };
 
                class Ini : public Base
@@ -121,11 +118,9 @@ namespace casual
                   static const std::string& type();
 
                private:
-                  archive::Reader m_reader;
-                  archive::Writer m_writer;
+                  common::serialize::Reader m_reader;
+                  common::serialize::Writer m_writer;
                };
-
-
 
                namespace parameter
                {
@@ -135,7 +130,8 @@ namespace casual
                   public:
                      using base_type = B;
 
-                     Log( protocol::parameter_type&& parameter) : base_type( std::move( parameter)), m_writer( archive::log::writer( log::parameter))
+                     Log( protocol::parameter_type&& parameter) 
+                        : base_type( std::move( parameter)), m_writer( common::serialize::log::writer( log::parameter))
                      {
                         this->m_input.writers.push_back( &m_writer);
                         this->m_output.writers.push_back( &m_writer);
@@ -144,7 +140,7 @@ namespace casual
                      Log( Log&&) = default;
 
                   private:
-                     archive::Writer m_writer;
+                     common::serialize::Writer m_writer;
 
                   };
                } // parameter
@@ -177,16 +173,16 @@ namespace casual
 
                   Model m_model;
 
-                  archive::Reader m_prepare = archive::service::describe::prepare();
+                  common::serialize::Reader m_prepare = service::protocol::describe::prepare();
 
                   struct writer_t
                   {
                      writer_t( Model& model) 
-                        : input( archive::service::describe::writer( model.arguments.input)), 
-                          output( archive::service::describe::writer( model.arguments.output)) {}
+                        : input( service::protocol::describe::writer( model.arguments.input)), 
+                          output( service::protocol::describe::writer( model.arguments.output)) {}
 
-                     archive::Writer input;
-                     archive::Writer output;
+                     common::serialize::Writer input;
+                     common::serialize::Writer output;
                   } m_writer;
 
                   service::Protocol m_protocol;

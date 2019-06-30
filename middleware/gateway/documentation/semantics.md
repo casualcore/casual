@@ -7,7 +7,7 @@ Aims to try to give an overview on how the communication works between `casual` 
 
 The following diagram illustrates the startup procedure
 
-![startup](diagram/domain-startup.svg "Starup procedure")
+![startup](diagram/domain-startup.svg "Startup procedure")
 
 
 ## call absent service

@@ -14,6 +14,7 @@
 #include "common/environment.h"
 #include "common/uuid.h"
 #include "common/exception/handle.h"
+#include "common/exception/casual.h"
 
 
 #include <fstream>

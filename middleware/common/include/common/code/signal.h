@@ -33,12 +33,8 @@ namespace casual
             pipe = cast::underlying( common::signal::Type::pipe),
          };
 
-         //using signal = common::signal::Type;
-
-         //static_assert( static_cast< int>( signal::ok) == 0, "signal::ok has to be 0");
 
          std::error_code make_error_code( signal code);
-
          common::log::Stream& stream( signal code);
 
 

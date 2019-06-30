@@ -44,7 +44,7 @@ http:
 
 )");
             auto model = configuration::get( file);
-            EXPECT_TRUE( model.services.size() == 1) << CASUAL_MAKE_NVP( model);
+            EXPECT_TRUE( model.services.size() == 1) << CASUAL_NAMED_VALUE( model);
             EXPECT_TRUE( model.services.at( 0).name == "a");
             EXPECT_TRUE( model.services.at( 0).url == "a/b.se");
          }
@@ -63,7 +63,7 @@ http:
           value: bla
 )");
             auto model = configuration::get( file);
-            EXPECT_TRUE( model.casual_default.service.headers.size() == 1) << CASUAL_MAKE_NVP( model);
+            EXPECT_TRUE( model.casual_default.service.headers.size() == 1) << CASUAL_NAMED_VALUE( model);
             EXPECT_TRUE( model.casual_default.service.headers.at( 0).name == "xyz");
             EXPECT_TRUE( model.casual_default.service.headers.at( 0).value == "bla");
          }
@@ -80,7 +80,7 @@ http:
        discard_transaction: true
 )");
             auto model = configuration::get( file);
-            EXPECT_TRUE( model.casual_default.service.discard_transaction == true) << CASUAL_MAKE_NVP( model);
+            EXPECT_TRUE( model.casual_default.service.discard_transaction == true) << CASUAL_NAMED_VALUE( model);
          }
 
          TEST( http_outbound_configuration, default_discard_transaction__false)
@@ -95,7 +95,7 @@ http:
        discard_transaction: false
 )");
             auto model = configuration::get( file);
-            EXPECT_TRUE( model.casual_default.service.discard_transaction == false) << CASUAL_MAKE_NVP( model);
+            EXPECT_TRUE( model.casual_default.service.discard_transaction == false) << CASUAL_NAMED_VALUE( model);
          }
 
 
@@ -112,7 +112,7 @@ http:
 )");
             auto model = configuration::get( file);
             ASSERT_TRUE( model.services.size() == 1);
-            EXPECT_TRUE( model.services.at( 0).discard_transaction.value() == true) << CASUAL_MAKE_NVP( model);
+            EXPECT_TRUE( model.services.at( 0).discard_transaction.value() == true) << CASUAL_NAMED_VALUE( model);
          }
 
          TEST( http_outbound_configuration, service_discard_transaction__false)
@@ -128,8 +128,8 @@ http:
 )");
             auto model = configuration::get( file);
             //model.services.at( 0).discard_transaction = true;
-            ASSERT_TRUE( model.services.size() == 1) << CASUAL_MAKE_NVP( model);
-            EXPECT_TRUE( model.services.at( 0).discard_transaction.value() == false) << CASUAL_MAKE_NVP( model);
+            ASSERT_TRUE( model.services.size() == 1) << CASUAL_NAMED_VALUE( model);
+            EXPECT_TRUE( model.services.at( 0).discard_transaction.value() == false) << CASUAL_NAMED_VALUE( model);
          }
 
 

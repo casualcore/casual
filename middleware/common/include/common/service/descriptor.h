@@ -44,14 +44,14 @@ namespace casual
                friend bool operator == ( descriptor::type cd, const basic_information& d) { return cd == d.descriptor;}
                friend bool operator == ( const basic_information& d, descriptor::type cd) { return cd == d.descriptor;}
 
-               friend std::ostream& operator << ( std::ostream& out, const basic_information& value)
+               CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
                {
-                  return out << "{ id: " << value.descriptor
-                        << ", active: " << value.active
-                        << ", correlation: " << value.correlation
-                        << ", " << static_cast< const Information&>( value)
-                        << '}';
-               }
+                  CASUAL_SERIALIZE( active);
+                  CASUAL_SERIALIZE( descriptor);
+                  CASUAL_SERIALIZE( correlation);
+                  Information::serialize( archive);
+               })
+
             };
 
             template< typename Information>
@@ -76,11 +76,11 @@ namespace casual
                   }).empty();
                }
 
-               friend std::ostream& operator << ( std::ostream& out, const Holder& value)
+               CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
                {
-                  return out << "{ descriptors: " << value.m_descriptors
-                        << '}';
-               }
+                  CASUAL_SERIALIZE_NAME( m_descriptors, "descriptors");
+               })
+
 
             private:
                descriptor_type& reserve()
@@ -109,7 +109,6 @@ namespace casual
                auto& descriptor = reserve();
 
                descriptor.correlation = correlation;
-
                return descriptor;
             }
 
@@ -120,24 +119,20 @@ namespace casual
                auto found = algorithm::find( m_descriptors, descriptor);
 
                if( found)
-               {
                   found->active = false;
-               }
                else
-               {
                   throw exception::xatmi::invalid::Descriptor{ string::compose( "invalid descriptor: ", descriptor)};
-               }
             }
 
             template< typename I>
             typename Holder< I>::descriptor_type& Holder< I>::get( descriptor::type descriptor)
             {
                auto found = algorithm::find( m_descriptors, descriptor);
+               
                if( found && found->active)
-               {
                   return *found;
-               }
-               throw exception::xatmi::invalid::Descriptor{ string::compose( "invalid call descriptor: ", descriptor)};
+               else 
+                  throw exception::xatmi::invalid::Descriptor{ string::compose( "invalid call descriptor: ", descriptor)};
             }
 
 

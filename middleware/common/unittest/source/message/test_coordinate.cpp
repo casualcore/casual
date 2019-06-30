@@ -43,6 +43,12 @@ namespace casual
 
                   Uuid correlation;
                   bool sent = false;
+
+                  CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
+                  {
+                     CASUAL_SERIALIZE( correlation);
+                     CASUAL_SERIALIZE( sent);
+                  })
                };
 
                using Coordinate = message::Coordinate< Policy>;
@@ -93,7 +99,7 @@ namespace casual
                coordinate.accumulate( reply);
             }
 
-            EXPECT_TRUE( coordinate.policy().sent == true) << "coordinate: " << coordinate; 
+            EXPECT_TRUE( coordinate.policy().sent == true) << CASUAL_NAMED_VALUE( coordinate); 
          }
 
          TEST( common_message_coordinate, send_2_destination__accumulate_1__expect_no_coordination)
@@ -178,7 +184,7 @@ namespace casual
 
             {
                coordinate.remove( strong::process::id{ 42});
-               EXPECT_TRUE( coordinate.policy().sent == true) << "coordinate: " << coordinate;
+               EXPECT_TRUE( coordinate.policy().sent == true) << CASUAL_NAMED_VALUE( coordinate);
             }
 
 

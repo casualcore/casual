@@ -25,57 +25,30 @@
 
 namespace casual
 {
-
    namespace common
    {
       namespace string
       {
-
-         //!
          //! splits a range
          //!
          //! @param line line to be splittet
          //! @param delimiter the value to use as a splitter
          //!
          //! @return the splitted range.
-         //!
          std::vector< std::string> split( const std::string& line, typename std::string::value_type delimiter = ' ');
 
 
          namespace adjacent
          {
-            //!
             //! splits a range, and ignores adjacent delimiters
             //!
             //! @param line line to be splittet
             //! @param delimiter the value to use as a splitter
             //!
             //! @return the splitted range.
-            //!
             std::vector< std::string> split( const std::string& line, typename std::string::value_type delimiter = ' ');
 
          } // adjacent
-
-
-         /*
-          * regex not implemented in gcc 4.7.2...
-         inline std::vector< std::string> split( const std::string& line, const std::regex& regexp)
-         {
-            std::vector< std::string> result;
-
-            std::copy( std::sregex_token_iterator( std::begin( line), std::end( line), regexp, -1),
-                  std::sregex_token_iterator(),
-                  std::back_inserter( result));
-
-            return result;
-         }
-
-         inline std::vector< std::string> split( const std::string& line, const std::string& regexp)
-         {
-            return split( line, std::regex( regexp));
-         }
-         */
-
 
          template< typename R>
          std::string join( R&& range)
@@ -133,9 +106,7 @@ namespace casual
             return algorithm::includes( "0123456789", view);
          }
 
-         //!
          //! composes a string from several parts, using the stream operator
-         //!
          template< typename... Parts>
          inline std::string compose( Parts&&... parts)
          {
@@ -199,13 +170,8 @@ namespace casual
 
          inline std::string to_string( const bool value) { std::ostringstream out; out << std::boolalpha << value; return out.str();}
 
-         // TODO: Why do we specialize 'long' ?
-         //inline std::string to_string( const long value) { return std::to_string( value);}
-
          template< typename T>
          std::string to_string( const T& value) { std::ostringstream out; out << value; return out.str();}
-
-
 
       } // detail
 
@@ -240,11 +206,7 @@ namespace casual
          {
             return internal::name( typeid( value));
          }
-
       } // type
-
-
-
    } // common
 } // casual
 

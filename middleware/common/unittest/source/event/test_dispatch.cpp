@@ -39,7 +39,7 @@ namespace casual
          auto pending = collection( event);
 
          // we have no 'subscription', hence no targets, hence pending is interpret as sent.
-         EXPECT_TRUE( pending.sent()) << "pending: " << pending;
+         EXPECT_TRUE( pending.sent()) << CASUAL_NAMED_VALUE( pending);
       }
 
       TEST( common_event_dispatch, collection_subscribe_error)
@@ -59,7 +59,7 @@ namespace casual
             collection.subscription( begin);
          }
 
-         EXPECT_TRUE( collection.active< message::event::domain::Error>()) << "collection: " << collection;
+         EXPECT_TRUE( collection.active< message::event::domain::Error>()) << CASUAL_NAMED_VALUE( collection);
          EXPECT_TRUE( ! collection.active< message::event::process::Spawn>());
          EXPECT_TRUE( ! collection.active< message::event::process::Exit>());
       }
@@ -84,7 +84,7 @@ namespace casual
             collection.subscription( begin);
          }
 
-         EXPECT_TRUE( collection.active< message::event::domain::Error>()) << "collection: " << collection;
+         EXPECT_TRUE( collection.active< message::event::domain::Error>()) << CASUAL_NAMED_VALUE( collection);
          EXPECT_TRUE( collection.active< message::event::process::Spawn>());
          EXPECT_TRUE( collection.active< message::event::process::Exit>());
       }
@@ -113,7 +113,7 @@ namespace casual
             collection.subscription( end);
          }
 
-         EXPECT_TRUE( ! collection.active< message::event::domain::Error>()) << "collection: " << collection << " process: " << process::handle();
+         EXPECT_TRUE( ! collection.active< message::event::domain::Error>()) << CASUAL_NAMED_VALUE( collection) << " " << CASUAL_NAMED_VALUE( process::handle());
          EXPECT_TRUE( ! collection.active< message::event::process::Spawn>());
          EXPECT_TRUE( ! collection.active< message::event::process::Exit>());
       }

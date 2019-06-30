@@ -32,7 +32,7 @@ namespace casual
                      auto reply = call( service::name::state());
 
                      StateVO result;
-                     reply >> CASUAL_MAKE_NVP( result);
+                     reply >> CASUAL_NAMED_VALUE( result);
 
                      return result;
                   }

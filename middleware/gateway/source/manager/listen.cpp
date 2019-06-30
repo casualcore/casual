@@ -35,17 +35,7 @@ namespace casual
                return { common::communication::tcp::socket::accept( m_socket), m_limit};
             }
 
-            std::ostream& operator << ( std::ostream& out, const Entry& value)
-            {
-               return out << "{ address: " << value.m_address
-                  << ", limit: " <<  value.m_limit 
-                  << ", socket: " <<  value.m_socket
-                  << '}';
-            }
-
          } // listen
-
       } // manager
-
    } // gateway
 } // casual

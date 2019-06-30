@@ -11,7 +11,7 @@
 #include "common/message/event.h"
 
 #include "common/communication/message.h"
-#include "common/marshal/complete.h"
+#include "common/serialize/native/complete.h"
 
 #include "common/message/pending.h"
 
@@ -86,16 +86,15 @@ namespace casual
 
             common::message::pending::Message create( const Event& event) const
             {
-               return pending( marshal::complete( event));
+               return pending( serialize::native::complete( event));
             }
 
-            friend std::ostream& operator << ( std::ostream& out, const Dispatch& value)
+            // for logging only
+            CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
             {
-               return out << "{ event: " << Event::type()
-                     << ", subscribers: " << range::make( value.m_subscribers)
-                     << '}';
-            }
-
+               CASUAL_SERIALIZE_NAME( Event::type(), "event");
+               CASUAL_SERIALIZE_NAME( m_subscribers, "subscribers");
+            })
          };
 
          namespace dispatch
@@ -178,13 +177,13 @@ namespace casual
                template< typename E>
                void print( std::ostream& out, E&&) const
                {
-                  out << event< E>();
+                  stream::write( out, event< E>());
                }
 
                template< typename E, typename... Es>
                void print( std::ostream& out, E&&, Es&&...) const
                {
-                  out << event< E>() << ", ";
+                  stream::write( out, event< E>(), ", ");
                   print( out, Es{}...);
                }
 

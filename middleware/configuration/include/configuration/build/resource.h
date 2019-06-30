@@ -7,7 +7,7 @@
 #pragma once
 
 
-#include "serviceframework/namevaluepair.h"
+#include "common/serialize/macro.h"
 #include <string>
 
 namespace casual
@@ -26,8 +26,8 @@ namespace casual
 
             CASUAL_CONST_CORRECT_SERIALIZE
             (
-               archive & CASUAL_MAKE_NVP( key);
-               archive & CASUAL_MAKE_NVP( name);
+               CASUAL_SERIALIZE( key);
+               CASUAL_SERIALIZE( name);
             )
          };
       } // build

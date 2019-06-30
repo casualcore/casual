@@ -165,7 +165,6 @@ namespace casual
             return lhs.xid == rhs;
          }
 
-
          std::ostream& operator << ( std::ostream& out, const ID& id)
          {
             if( out && id)
@@ -226,16 +225,6 @@ namespace casual
                {
                   return range_type{ xid.data + xid.gtrid_length,
                         xid.data + xid.gtrid_length + xid.bqual_length};
-               }
-
-               range_type data( const xid_type& xid)
-               {
-                  return range_type{ xid.data, xid.data + xid.gtrid_length + xid.bqual_length};
-               }
-
-               range_type data( const ID& id)
-               {
-                  return data( id.xid);
                }
 
                range_type global( const ID& id)

@@ -29,20 +29,16 @@ namespace casual
                using State = Reply::State;
 
                Lookup() noexcept;
-               
-               
+                              
                //! Lookup an entry point for the @p service
                Lookup( std::string service);
 
-
-               //!
                //! Lookup an entry point for the @p service
                //! using a specific context
                //!  * regular
                //!  * no_reply
                //!  * forward
                //!  * gateway
-               //!
                Lookup( std::string service, Context context);
 
                ~Lookup();
@@ -52,8 +48,14 @@ namespace casual
 
 
                friend void swap( Lookup& lhs, Lookup& rhs);
-               friend std::ostream& operator << ( std::ostream& out, const Lookup& value);
 
+               // for logging only
+               CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
+               {
+                  CASUAL_SERIALIZE_NAME( m_service, "service");
+                  CASUAL_SERIALIZE_NAME( m_correlation, "correlation");
+                  CASUAL_SERIALIZE_NAME( m_reply, "reply");
+               })
 
             protected:
 
@@ -69,14 +71,12 @@ namespace casual
          {
             using detail::Lookup::Lookup;
 
-            //!
             //! @return the reply from the `service-manager`
             //!    can only be either idle (reserved) or busy.
             //!
             //!    if busy, a second invocation will block until it's idle
             //!
             //! @throws common::exception::xatmi::service::no::Entry if the service is not present or discovered
-            //!
             const Reply& operator () ();
          };
 
@@ -103,7 +103,6 @@ namespace casual
                   //!
                   //! if( lookup)
                   //!   some_function( std::move( lookup));
-                  //! 
                   operator service::Lookup () &&;
            
                };

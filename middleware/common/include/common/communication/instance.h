@@ -111,7 +111,12 @@ namespace casual
                      inline const process::Handle& process() const { return m_process;}
                      inline const ipc::Address& destination() const { return m_connector.destination();}
 
-                     friend std::ostream& operator << ( std::ostream& out, const base_connector& rhs);
+                     CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
+                     {
+                        CASUAL_SERIALIZE_NAME( m_process, "process");
+                        CASUAL_SERIALIZE_NAME( m_connector, "connector");
+                        CASUAL_SERIALIZE_NAME( m_socket, "socket");
+                     })
 
                   protected:
                      inline void reset( process::Handle process)
@@ -134,15 +139,14 @@ namespace casual
 
                      //! clear the connector
                      void clear();
-                     
-                     friend std::ostream& operator << ( std::ostream& out, const basic_connector& rhs)
-                     {
-                        return out << "{ destination: " << rhs.m_process.ipc
-                           << ", identity: " << rhs.m_identity
-                           << ", environment: " << rhs.m_environment
-                           << '}';
-                     }
 
+                     CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
+                     {
+                        base_connector::serialize( archive);
+                        CASUAL_SERIALIZE_NAME( m_identity, "identity");
+                        CASUAL_SERIALIZE_NAME( m_environment, "environment");
+                     })
+                     
                   private:
                      Uuid m_identity;
                      std::string m_environment;

@@ -12,7 +12,7 @@
 #include "common/message/type.h"
 
 #include "common/communication/message.h"
-#include "common/marshal/complete.h"
+#include "common/serialize/native/complete.h"
 
 #include "common/uuid.h"
 #include "common/process.h"
@@ -35,11 +35,11 @@ namespace casual
                common::platform::time::unit delay;
                common::communication::message::Complete message;
 
-               CASUAL_CONST_CORRECT_MARSHAL(
+               CASUAL_CONST_CORRECT_SERIALIZE(
                {
-                  archive & destination;
-                  archive & delay;
-                  archive & message;
+                  CASUAL_SERIALIZE( destination);
+                  CASUAL_SERIALIZE( delay);
+                  CASUAL_SERIALIZE( message);
                })
                friend std::ostream& operator << ( std::ostream& out, const Request& rhs);
             };
@@ -53,7 +53,7 @@ namespace casual
                Request request;
                request.destination = destination;
                request.delay = std::chrono::duration_cast< common::platform::time::unit>( delay);
-               request.message = common::marshal::complete( std::move( message));
+               request.message = common::serialize::native::complete( std::move( message));
 
                send( request);
 

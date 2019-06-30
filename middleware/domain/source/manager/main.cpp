@@ -5,13 +5,11 @@
 //!
 
 
-
 #include "domain/manager/manager.h"
 
-
 #include "common/exception/handle.h"
+#include "common/exception/casual.h"
 #include "common/argument.h"
-
 
 namespace casual
 {

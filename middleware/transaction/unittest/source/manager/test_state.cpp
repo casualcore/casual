@@ -57,7 +57,7 @@ namespace casual
             ASSERT_TRUE( branch.resources.size() == 2);
          }
 
-         EXPECT_TRUE( transaction.stage() == manager::Transaction::Resource::Stage::involved) << "transaction: " << transaction;
+         EXPECT_TRUE( transaction.stage() == manager::Transaction::Resource::Stage::involved) << CASUAL_NAMED_VALUE( transaction);
       }
 
       TEST( transaction_manager_state_transaction, stage__1_branch__rm__1_involved__1__prepare_requested___gives__involved)
@@ -76,7 +76,7 @@ namespace casual
             branch.resources.back().stage = manager::Transaction::Resource::Stage::prepare_requested;
          }
 
-         EXPECT_TRUE( transaction.stage() == manager::Transaction::Resource::Stage::involved) << "transaction: " << transaction;
+         EXPECT_TRUE( transaction.stage() == manager::Transaction::Resource::Stage::involved) << CASUAL_NAMED_VALUE( transaction);
       }
 
       TEST( transaction_manager_state_transaction, stage__branch1__rm1_involved__branch2__rm2_prepare_requested___gives__involved)
@@ -101,7 +101,7 @@ namespace casual
             branch.resources.back().stage = manager::Transaction::Resource::Stage::prepare_requested;
          }
 
-         EXPECT_TRUE( transaction.stage() == manager::Transaction::Resource::Stage::involved) << "transaction: " << transaction;
+         EXPECT_TRUE( transaction.stage() == manager::Transaction::Resource::Stage::involved) << CASUAL_NAMED_VALUE( transaction);
       }
 
       TEST( transaction_manager_state_transaction, stage__branch1__rm1_involved_rm2_prepare_requested__branch2__rm2_prepare_requested___gives__involved)
@@ -131,7 +131,7 @@ namespace casual
 
 
          EXPECT_TRUE( transaction.resource_count() == 3);
-         EXPECT_TRUE( transaction.stage() == manager::Transaction::Resource::Stage::involved) << "transaction: " << transaction;
+         EXPECT_TRUE( transaction.stage() == manager::Transaction::Resource::Stage::involved) << CASUAL_NAMED_VALUE( transaction);
       }
    } // transaction
 } // casual

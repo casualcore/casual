@@ -83,9 +83,7 @@ namespace casual
                            {
                               Trace trace{ "http::outbound::request::local::send::transcode::payload transcode_base64"};
 
-                              platform::binary::type buffer;
-                              std::swap( buffer, payload.memory);
-
+                              auto buffer = std::exchange( payload.memory, {});
                               common::transcode::base64::encode( buffer, payload.memory);
 
                               return std::move( payload);

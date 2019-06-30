@@ -39,7 +39,7 @@ namespace casual
 
                         auto result = serviceframework::service::user( protocol, function, state);
 
-                        protocol << CASUAL_MAKE_NVP( result);
+                        protocol << CASUAL_NAMED_VALUE( result);
                         return protocol.finalize();
                      }
 

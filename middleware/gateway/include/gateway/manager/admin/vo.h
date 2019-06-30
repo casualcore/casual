@@ -7,8 +7,8 @@
 #pragma once
 
 
-#include "serviceframework/namevaluepair.h"
-#include "serviceframework/platform.h"
+#include "common/serialize/macro.h"
+#include "common/platform.h"
 
 #include "common/domain.h"
 
@@ -50,8 +50,8 @@ namespace casual
                         
                         CASUAL_CONST_CORRECT_SERIALIZE(
                         {
-                           archive & CASUAL_MAKE_NVP( local);
-                           archive & CASUAL_MAKE_NVP( peer);
+                           CASUAL_SERIALIZE( local);
+                           CASUAL_SERIALIZE( peer);
                         })
                      };
 
@@ -67,11 +67,11 @@ namespace casual
 
                      CASUAL_CONST_CORRECT_SERIALIZE(
                      {
-                        archive & CASUAL_MAKE_NVP( bound);
-                        archive & CASUAL_MAKE_NVP( runlevel);
-                        archive & CASUAL_MAKE_NVP( process);
-                        archive & CASUAL_MAKE_NVP( remote);
-                        archive & CASUAL_MAKE_NVP( address);
+                        CASUAL_SERIALIZE( bound);
+                        CASUAL_SERIALIZE( runlevel);
+                        CASUAL_SERIALIZE( process);
+                        CASUAL_SERIALIZE( remote);
+                        CASUAL_SERIALIZE( address);
                      })
 
                      friend bool operator < ( const Connection& lhs, const Connection& rhs)
@@ -91,8 +91,8 @@ namespace casual
                         
                         CASUAL_CONST_CORRECT_SERIALIZE(
                         {
-                           archive & CASUAL_MAKE_NVP( size);
-                           archive & CASUAL_MAKE_NVP( messages);
+                           CASUAL_SERIALIZE( size);
+                           CASUAL_SERIALIZE( messages);
                         })
                      };
 
@@ -103,8 +103,8 @@ namespace casual
 
                         CASUAL_CONST_CORRECT_SERIALIZE(
                         {
-                           archive & CASUAL_MAKE_NVP( host);
-                           archive & CASUAL_MAKE_NVP( port);
+                           CASUAL_SERIALIZE( host);
+                           CASUAL_SERIALIZE( port);
                         })
                      };
 
@@ -113,8 +113,8 @@ namespace casual
 
                      CASUAL_CONST_CORRECT_SERIALIZE(
                      {
-                        archive & CASUAL_MAKE_NVP( limit);
-                        archive & CASUAL_MAKE_NVP( address);
+                        CASUAL_SERIALIZE( limit);
+                        CASUAL_SERIALIZE( address);
                      })
 
                   };
@@ -127,8 +127,8 @@ namespace casual
 
                      CASUAL_CONST_CORRECT_SERIALIZE(
                      {
-                        archive & CASUAL_MAKE_NVP( connections);
-                        archive & CASUAL_MAKE_NVP( listeners);
+                        CASUAL_SERIALIZE( connections);
+                        CASUAL_SERIALIZE( listeners);
                      })
 
                   };

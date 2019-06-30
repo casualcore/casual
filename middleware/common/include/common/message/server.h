@@ -34,10 +34,10 @@ namespace casual
                {
                   Uuid uuid;
 
-                  CASUAL_CONST_CORRECT_MARSHAL(
+                  CASUAL_CONST_CORRECT_SERIALIZE(
                   {
-                     basic_id< Type::server_ping_reply>::marshal( archive);
-                     archive & uuid;
+                     basic_id< Type::server_ping_reply>::serialize( archive);
+                     CASUAL_SERIALIZE( uuid);
                   })
                };
                static_assert( traits::is_movable< Reply>::value, "not movable");

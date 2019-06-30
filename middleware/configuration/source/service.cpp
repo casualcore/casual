@@ -6,6 +6,7 @@
 
 
 #include "configuration/service.h"
+#include "common/algorithm.h"
 
 
 namespace casual

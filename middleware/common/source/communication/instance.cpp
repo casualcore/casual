@@ -217,15 +217,6 @@ namespace casual
                      } // <unnamed>
                   } // local
 
-                  std::ostream& operator << ( std::ostream& out, const base_connector& rhs)
-                  {
-                     return out << "{ process: " << rhs.m_process
-                        << ", connector: " << rhs.m_connector
-                        << ", socket: " << rhs.m_socket
-                        << '}';
-                  }
-
-
                   template< fetch::Directive directive>
                   basic_connector< directive>::basic_connector( const Uuid& identity, std::string environment)
                      : base_connector( local::fetch( identity, environment, directive)),
@@ -430,9 +421,7 @@ namespace casual
                      {
                         Connector::Connector()
                         : detail::base_connector{ local::reconnect( [](){
-                           return common::domain::singleton::read(
-                                 process::pattern::Sleep{ { std::chrono::milliseconds{ 100}, 10}}
-                           ).process;
+                           return common::domain::singleton::read().process;
                         })}
                         {
                            log::line( verbose::log, "connector: ", *this);
@@ -443,9 +432,7 @@ namespace casual
                            Trace trace{ "communication::instance::outbound::domain::manager::optional::Connector::reconnect"};
 
                            reset( local::reconnect( [](){
-                              return common::domain::singleton::read(
-                                    process::pattern::Sleep{ { std::chrono::milliseconds{ 100}, 10}}
-                              ).process;
+                              return common::domain::singleton::read().process;
                            }));
 
                            log::line( verbose::log, "connector: ", *this);

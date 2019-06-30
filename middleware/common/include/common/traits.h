@@ -39,14 +39,18 @@ namespace casual
          template< typename...>
          using void_t = void;
 
-         template< typename...>
-         using try_to_instantiate = void;
+         namespace priority
+         {
+            template< size_t I> 
+            struct tag : tag<I-1> {};
+            
+            template<> 
+            struct tag< 0> {};
+         } // priority
 
          namespace detect
          {
-            //
             // Taken pretty much straight of from N4502
-            //
 
             namespace detail
             {
@@ -114,19 +118,19 @@ namespace casual
                {
                   using type = std::tuple_element_t< index, std::tuple< Args...>>;
                };
-
-
             };
-
          }
 
          namespace has
          {
-            template< typename T> 
-            using call_operator_exists = decltype( &T::operator());
+            namespace detail
+            {
+               template< typename T> 
+               using call_operator = decltype( &T::operator());               
+            } // detail
 
             template< typename T>
-            using call_operator = detect::is_detected< call_operator_exists, T>;
+            using call_operator = detect::is_detected< detail::call_operator, T>;
          }
 
          template<typename T, typename Enable = void>
@@ -136,235 +140,43 @@ namespace casual
          struct function< T, std::enable_if_t< has::call_operator< T>::value>> 
             : public function< decltype( &T::operator())>
          {
-
          };
 
          template<typename T>
          struct function< std::reference_wrapper< T>> : public function< T>
          {
-
          };
 
-         //!
          //! const functor specialization
-         //!
          template< typename C, typename R, typename ...Args>
          struct function< R(C::*)(Args...) const> : public detail::function< R, Args...>
          {
          };
 
-         //!
          //! non const functor specialization
-         //!
          template< typename C, typename R, typename ...Args>
          struct function< R(C::*)(Args...)> : public detail::function< R, Args...>
          {
          };
 
-         //!
          //! free function specialization
-         //!
          template< typename R, typename ...Args>
          struct function< R(*)(Args...)> : public detail::function< R, Args...>
          {
          };
 
 
-
-         //!
          //! Removes cv and references
-         //!
          template< typename T>
          struct remove_cvref
          {
             using type = std::remove_cv_t< std::remove_reference_t< T>>;
          };
 
-
-         //!
          //! Removes cv and references
-         //!
          template< typename T>
          using remove_cvref_t = typename remove_cvref< T>::type;
 
-
-
-         namespace container
-         {
-            namespace category
-            {
-               struct container {};
-               struct traversable : container {};
-
-               struct associative : traversable {};
-               struct unordered : associative {};
-
-               struct sequence : traversable {};
-               struct continuous : sequence {};
-
-               
-               struct native_array : continuous {};
-               struct array : native_array {};
-
-               struct adaptor : container{};
-
-               struct string_like : continuous {};
-               struct string_array : string_like {};
-               struct string : string_like {};
-            } // category
-
-            namespace detail
-            {
-               template< typename Category>
-               struct category_traits
-               {
-                  using category = Category;
-               };
-
-               template< typename Container, typename Category>
-               struct traits : category_traits< Category>
-               {
-                  using iterator = decltype( std::begin( std::declval< Container&>()));
-                  using tag = typename std::iterator_traits< iterator>::iterator_category;
-               };
-
-            } // detail
-
-            template< typename T>
-            struct traits { using category = void; using iterator = void; using tag = void;};
-
-
-
-            template< typename T, std::size_t size>
-            struct traits< std::array< T, size>> : detail::traits< std::array< T, size>, container::category::array>{};
-
-            template< typename T, std::size_t size>
-            struct traits< T[ size]> : detail::traits< T[ size], container::category::native_array>{};
-
-            template< std::size_t size>
-            struct traits< char[ size]> : detail::traits< char[ size], container::category::string_array>{};
-            template< std::size_t size>
-            struct traits< unsigned char[ size]> : detail::traits< unsigned char[ size], container::category::string_array>{};
-            template< std::size_t size>
-            struct traits< signed char[ size]> : detail::traits< signed char[ size], container::category::string_array>{};
-
-            template<>
-            struct traits< std::string> : detail::traits< std::string, container::category::string>{};
-
-            template< typename T>
-            struct traits< std::vector< T>> : detail::traits< std::vector< T>, container::category::continuous>{};
-            template< typename T>
-            struct traits< std::deque< T>> : detail::traits< std::deque< T>, container::category::sequence>{};
-            template< typename T>
-            struct traits< std::list< T>> : detail::traits< std::list< T>, container::category::sequence>{};
-
-
-            template< typename T>
-            struct traits< std::set< T>> : detail::traits< std::set< T>, container::category::associative>{};
-            template<  typename K, typename V>
-            struct traits< std::map< K, V>> : detail::traits< std::map< K, V>, container::category::associative>{};
-            template< typename T>
-            struct traits< std::multiset< T>> : detail::traits< std::multiset< T>, container::category::associative>{};
-            template<  typename K, typename V>
-            struct traits< std::multimap< K, V>> : detail::traits< std::multimap< K, V>, container::category::associative>{};
-
-            template< typename T>
-            struct traits< std::unordered_set< T>> : detail::traits< std::unordered_set< T>, container::category::unordered>{};
-            template<  typename K, typename V>
-            struct traits< std::unordered_map< K, V>> : detail::traits< std::unordered_map< K, V>, container::category::unordered>{};
-            template< typename T>
-            struct traits< std::unordered_multiset< T>> : detail::traits< std::unordered_multiset< T>, container::category::unordered>{};
-            template<  typename K, typename V>
-            struct traits< std::unordered_multimap< K, V>> : detail::traits< std::unordered_multimap< K, V>, container::category::unordered>{};
-
-
-            template< typename T, typename Container>
-            struct traits< std::stack< T, Container>> : detail::category_traits< container::category::adaptor>{};
-            template< typename T, typename Container>
-            struct traits< std::queue< T, Container>> : detail::category_traits< container::category::adaptor>{};
-            template< typename T, typename Container>
-            struct traits< std::priority_queue< T, Container>> : detail::category_traits< container::category::adaptor>{};
-
-            template< typename T>
-            using category_t = typename traits< T>::category;
-
-
-            template< typename Container, typename Category>
-            struct is_category : bool_constant<
-               std::is_base_of< Category, category_t< remove_cvref_t< Container>>>::value> {};
-
-            template< typename Container>
-            struct is_container : is_category< Container, category::container> {};
-
-            template< typename Container>
-            struct is_associative : is_category< Container, category::associative> {};
-
-            template< typename Container>
-            struct is_unordered : is_category< Container, category::unordered> {};
-
-            template< typename Container>
-            struct is_sequence : is_category< Container, category::sequence> {};
-
-            template< typename Container>
-            struct is_adaptor : is_category< Container, category::adaptor> {};
-
-            template< typename Container>
-            struct is_array : is_category< Container, category::array> {};
-
-            template< typename Container>
-            struct is_string : is_category< Container, category::string_like> {};
-
-
-         } // container
-
-
-         namespace iterator
-         {
-            //!
-            //! SFINAE friendly iterator_traits
-            //! @{
-
-            template< typename T>
-            using has_category = typename std::iterator_traits< std::remove_reference_t< T>>::iterator_category;
-
-            template< typename  T, bool = detect::is_detected< has_category, T>::value>
-            struct traits : std::iterator_traits< std::remove_reference_t< T>> {};
-
-            template<class T>
-            struct traits<T, false> {};
-
-            //! @}
-
-            template< typename T>
-            using has_reference = typename std::iterator_traits< std::remove_reference_t< T>>::reference;
-
-            namespace detail
-            {
-               template< typename Iter, typename Tag, bool = detect::is_detected< has_category, Iter>::value>
-               struct is_tag : bool_constant<
-                  std::is_base_of< Tag, typename iterator::traits< std::remove_reference_t< Iter>>::iterator_category>::value> {};
-
-               template< typename Iter, typename Tag>
-               struct is_tag< Iter, Tag, false> : std::false_type {};
-            }
-
-
-            template< typename Iter>
-            struct is_random_access : detail::is_tag< Iter, std::random_access_iterator_tag> {};
-
-            template< typename Iter>
-            struct is_output : bool_constant<
-               ( 
-                  detail::is_tag< Iter, std::output_iterator_tag>::value
-                  || 
-                  (
-                     detail::is_tag< Iter, std::forward_iterator_tag>::value
-                     && ! std::is_const< detect::detected_t< has_reference, Iter>>::value
-                  )
-               )
-               > {};
-
-         } // iterator
 
          template< typename T> 
          struct type 
@@ -524,11 +336,23 @@ namespace casual
                template< typename T>
                using push_back = decltype( std::declval< T&>().push_back( *std::begin( std::declval< T&>())));
 
-               template< typename T, typename A>
-               using serialize = decltype( std::declval< T&>().serialize( std::declval< A&>()));
-
                template< typename T> 
                using ostream_stream_operator = decltype( std::declval< std::ostream&>() << std::declval< T&>());
+
+               namespace value
+               {
+                  template< typename T>
+                  using insert = decltype( std::declval< T&>().insert( *std::begin( std::declval< T&>())));
+               } // value
+
+               template< typename T>
+               using flush = decltype( std::declval< T&>().flush());
+
+               namespace tuple
+               {
+                  template< typename T>
+                  using size = decltype( std::tuple_size< T>::value);
+               } // tuple
 
             } // detail
 
@@ -541,19 +365,31 @@ namespace casual
             template< typename T>
             using empty = detect::is_detected< detail::empty, T>;
 
-
             template< typename T>
             using insert = detect::is_detected< detail::insert, T>;
 
+            namespace value
+            {
+               template< typename T>
+               using insert = detect::is_detected< detail::value::insert, T>;
+            } // value
 
             template< typename T>
             using push_back = detect::is_detected< detail::push_back, T>;
 
-            template< typename T, typename A>
-            using serialize = detect::is_detected< detail::serialize, T, A>;
-
             template< typename T>
             using ostream_stream_operator = detect::is_detected< detail::ostream_stream_operator, T>;
+
+            template< typename T>
+            using flush = detect::is_detected< detail::flush, T>;
+            
+            namespace tuple
+            {
+               template< typename T>
+               using size = detect::is_detected< detail::tuple::size, T>;
+            } // tuple
+            
+
          } // has
 
          namespace is
@@ -563,28 +399,41 @@ namespace casual
                template< typename T> 
                using function = decltype( function< T>::arguments());
 
-               template< typename T>
-                using tuple = decltype( std::tuple_size< T>::value);
-
                template< typename T> 
                using optional = decltype( std::declval< T&>().has_value());
 
                template< typename T>
                using iterable = std::tuple< decltype( std::begin( std::declval< T&>())), decltype( std::end( std::declval< T&>()))>;
 
+               template< typename T> 
+               using iterator = typename std::iterator_traits< std::remove_reference_t< T>>::iterator_category;
+
                template< typename T>
                using iterator_value = decltype( *std::begin( std::declval< T&>()));
+
+               namespace output
+               {
+                  template< typename T> 
+                  using iterator = decltype( *( std::declval< T&>()++) = *std::declval< T&>());
+                  
+               } // output
                
             } // detail
 
             template< typename T>
             using function = detect::is_detected< detail::function, T>;
 
+            template< typename T>
+            using iterable = detect::is_detected< detail::iterable, T>;
 
             template< typename T>
-            using tuple = detect::is_detected< detail::tuple, T>;
+            using iterator = detect::is_detected< detail::iterator, T>;
+
+            template< typename T>
+            using tuple = bool_constant< has::tuple::size< T>::value && ! is::iterable< T>::value>;
 
             static_assert( is::tuple< std::tuple< int, int>>::value, "");
+            static_assert( is::tuple< std::pair< int, int>>::value, "");
             static_assert( ! is::tuple< int>::value, "");
 
 
@@ -592,15 +441,21 @@ namespace casual
             using optional_like = detect::is_detected< detail::optional, T>;
 
 
-            template< typename T>
-            using iterable = detect::is_detected< detail::iterable, T>;
 
-            template< typename T>
-            using iterator = detect::is_detected< traits::iterator::has_category, T>;
+            namespace output
+            {
+               template< typename T>
+               using iterator = detect::is_detected< detail::output::iterator, T>;
+               
+            } // output
             
             template< typename T>
             using char_type = bool_constant< is_any< 
                remove_cvref_t< T>, char, unsigned char, signed char>::value>;
+
+            template< typename T>
+            using char_pointer = bool_constant< std::is_pointer< T>::value 
+               && is::char_type< decltype( *T())>::value>;
 
             namespace string
             {
@@ -626,6 +481,39 @@ namespace casual
                using like = bool_constant< is::iterable< T>::value 
                   && is::binary::value< detect::detected_t< detail::iterator_value, T>>::value>;
             } // binary
+
+
+            namespace container
+            {
+               namespace sequence
+               {
+                  template< typename T>
+                  using like = bool_constant< is::iterable< T>::value 
+                     && has::resize< T>::value>;
+                  
+               } // sequence
+
+               namespace associative
+               {
+                  template< typename T>
+                  using like = bool_constant< is::iterable< T>::value 
+                     && has::value::insert< T>::value>;
+                  
+               } // associative
+
+               namespace array
+               {
+                  template< typename T>
+                  using like = bool_constant< 
+                     std::is_array< T>::value 
+                     || ( is::iterable< T>::value && has::tuple::size< T>::value)
+                  >;
+               } // fixed
+
+               template< typename T>
+               using like = bool_constant< is::container::sequence::like< T>::value 
+                  || is::container::associative::like< T>::value>;
+            } // container
 
             namespace reverse
             {

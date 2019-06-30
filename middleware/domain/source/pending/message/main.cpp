@@ -65,7 +65,7 @@ namespace casual
 
                         void operator () ( message::Request& message)
                         {
-                           Trace trace{ "eventually::send::local::handle::Request"};
+                           Trace trace{ "domain::pending::message::local::handle::Request"};
 
                            log::line( verbose::log, "message: ", message);
                            
@@ -80,7 +80,7 @@ namespace casual
 
                      void timeout( State& state)
                      {
-                        Trace trace{ "eventually::send::local::handle::timeout"};
+                        Trace trace{ "domain::pending::message::local::handle::timeout"};
 
                         // we block all signals during non-blocking-send
                         signal::thread::scope::Block block;
@@ -111,7 +111,7 @@ namespace casual
                      
                   void start()
                   {
-                     Trace trace{ "eventually::send::local::start"};
+                     Trace trace{ "domain::pending::message::local::start"};
 
                      State state;
 
@@ -148,22 +148,14 @@ namespace casual
 
             int main( int argc, const char **argv)
             {
-               try 
-               {  
-                  local::start();
-               }
-               catch( ...)
+               return common::exception::guard( []()
                {
-                  return common::exception::handle();
-               }
-               return 0;
+                  local::start();
+               });
             }
          } // message
-         
       } // pending
-
    } // domain
-
 } // casual
 
 int main( int argc, const char **argv)

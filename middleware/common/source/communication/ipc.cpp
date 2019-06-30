@@ -37,14 +37,13 @@ namespace casual
 
                std::ostream& operator << ( std::ostream& out, const Transport& value)
                {
-                  return out << "{ type: " << value.type()
-                     << ", correlation: " << uuid::string( value.correlation())
-                     << ", offset: " << value.payload_offset()
-                     << ", payload.size: " << value.payload_size()
-                     << ", complete_size: " << value.complete_size()
-                     << ", header-size: " << transport::header_size()
-                     << ", transport-size: " <<  value.size()
-                     << ", max-size: " << transport::max_message_size() << "}";
+                  return stream::write( out, 
+                     "{ header: " , value.message.header
+                     , ", payload.size: " , value.payload_size()
+                     , ", header-size: " , transport::header_size()
+                     , ", transport-size: " ,  value.size()
+                     , ", max-size: " , transport::max_message_size() 
+                     , '}');
                }
             } // message
 
@@ -68,11 +67,6 @@ namespace casual
             }
 
             Handle::~Handle() = default;
-
-            std::ostream& operator << ( std::ostream& out, const Handle& rhs)
-            {
-               return out << "{ ipc: " << rhs.m_ipc << ", socket: " << rhs.m_socket << '}';
-            }
 
 
             Address::Address( strong::ipc::id ipc)
@@ -394,9 +388,7 @@ namespace casual
                         transport.assign( range::make( part_begin, part_end));
                         transport.message.header.offset = std::distance( std::begin( complete.payload), part_begin);
 
-                        //
                         // send the physical message
-                        //
                         if( ! native::blocking::send( socket, destination, transport))
                         {
                            return uuid::empty();
@@ -463,9 +455,7 @@ namespace casual
                            transport.assign( range::make( part_begin, part_end));
                            transport.message.header.offset = std::distance( std::begin( complete.payload), part_begin);
 
-                           //
                            // send the physical message
-                           //
                            if( ! native::non::blocking::send( socket, destination, transport))
                            {
                               return uuid::empty();
@@ -532,11 +522,6 @@ namespace casual
                   }
                }
 
-               std::ostream& operator << ( std::ostream& out, const Connector& rhs)
-               {
-                  return out << "{ handle: " << rhs.m_handle
-                     << '}';
-               }
 
                Device& device()
                {
@@ -551,12 +536,6 @@ namespace casual
                Connector::Connector( strong::ipc::id ipc) 
                   : m_destination{ ipc}
                {
-               }
-
-               std::ostream& operator << ( std::ostream& out, const Connector& rhs)
-               {
-                  return out << "{ destination: " << rhs.m_destination
-                     << '}';
                }
 
             } // outbound

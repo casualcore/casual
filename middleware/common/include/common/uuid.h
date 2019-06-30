@@ -12,7 +12,11 @@
 
 #include "common/platform.h"
 #include "common/view/string.h"
+#include "common/view/binary.h"
 #include "common/range.h"
+
+#include "common/serialize/macro.h"
+#include "common/serialize/value.h"
 
 #include <string>
 
@@ -36,8 +40,6 @@ namespace casual
          Uuid( const uuid_type& uuid);
          explicit Uuid( view::String string);
 
-
-
          inline const uuid_type& get() const { return m_uuid;}
          inline uuid_type& get() { return m_uuid;}
 
@@ -50,8 +52,8 @@ namespace casual
 
          bool empty() const;
 
-
-         friend std::ostream& operator << ( std::ostream& out, const Uuid& uuid);
+         // forward serialization
+         CASUAL_FORWARD_SERIALIZE( m_uuid)
 
          friend bool operator < ( const Uuid& lhs, const Uuid& rhs);
          friend bool operator == ( const Uuid& lhs, const Uuid& rhs);
@@ -59,19 +61,7 @@ namespace casual
          friend bool operator == ( const Uuid& lhs, const Uuid::uuid_type& rhs);
          friend bool operator == ( const Uuid::uuid_type& rhs, const Uuid& lhs);
 
-
-
-         template< typename A>
-         void marshal( A& archive)
-         {
-            archive & m_uuid;
-         }
-
-         template< typename A>
-         void marshal( A& archive) const
-         {
-            archive & m_uuid;
-         }
+         friend std::ostream& operator << ( std::ostream& out, const Uuid& uuid);
 
       private:
          uuid_type m_uuid = {};
@@ -89,7 +79,11 @@ namespace casual
          const Uuid& empty();
          bool empty( const Uuid& uuid);
       } // uuid
+
    } // common
+
+   common::Uuid operator"" _uuid ( const char* data);
+
 } // casual
 
 

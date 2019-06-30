@@ -84,10 +84,7 @@ namespace casual
 
                         struct addrinfo* information = nullptr;
 
-
-                        //
                         // resolve the address
-                        //
                         {
                            struct addrinfo hints{ };
 
@@ -136,20 +133,15 @@ namespace casual
                      {
                         Trace trace( "common::communication::tcp::local::socket::connect");
 
-                        //
                         // We block all signals while we're doing one connect attempt
-                        //
                         //common::signal::thread::scope::Block block;
 
                         return create( address,[]( Socket& s, const addrinfo& info)
                               {
                                  Trace trace( "common::communication::tcp::local::socket::connect lambda");
 
-                                 //
                                  // To avoid possible TIME_WAIT from previous
                                  // possible connections
-                                 //
-                                 //
                                  s.set( communication::socket::option::reuse_address< true>{});
                                  s.set( communication::socket::option::linger{ std::chrono::seconds{ 1}});
 
@@ -162,30 +154,26 @@ namespace casual
                      {
                         Trace trace( "common::communication::tcp::local::socket::local");
 
-                        //
                         // We block all signals while we're trying to set up a listener...
-                        //
                         //common::signal::thread::scope::Block block;
 
                         static const Flags< Flag> flags{ Flag::address_config, Flag::passive};
 
                         return create( address,[]( Socket& s, const addrinfo& info)
-                              {
-                                 Trace trace( "common::communication::tcp::local::socket::local lambda");
+                        {
+                           Trace trace( "common::communication::tcp::local::socket::local lambda");
 
-                                 //
-                                 // To avoid possible TIME_WAIT from previous
-                                 // possible connections
-                                 //
-                                 // This might get not get desired results though
-                                 //
-                                 // Checkout SO_LINGER as well
-                                 //
-                                 s.set( communication::socket::option::reuse_address< true>{});
-                                 s.set( communication::socket::option::linger{ std::chrono::seconds{ 1}});
+                           // To avoid possible TIME_WAIT from previous
+                           // possible connections
+                           //
+                           // This might get not get desired results though
+                           //
+                           // Checkout SO_LINGER as well
+                           s.set( communication::socket::option::reuse_address< true>{});
+                           s.set( communication::socket::option::linger{ std::chrono::seconds{ 1}});
 
-                                 return ::bind( s.descriptor().value(), info.ai_addr, info.ai_addrlen) != -1;
-                              }, flags);
+                           return ::bind( s.descriptor().value(), info.ai_addr, info.ai_addrlen) != -1;
+                        }, flags);
                      }
 
 
@@ -248,17 +236,10 @@ namespace casual
 
             Address::Address( Port port) : port{ std::move( port)}
             {
-
             }
 
             Address::Address( Host host, Port port) : host{ std::move( host)}, port{ std::move( port)}
             {
-
-            }
-
-            std::ostream& operator << ( std::ostream& out, const Address& value)
-            {
-               return out << "{ host: " << value.host << ", port: " << value.port << '}';
             }
 
             namespace socket
@@ -308,9 +289,7 @@ namespace casual
 
                   auto result = local::socket::local( address);
 
-                  //
                   // queuesize could (probably) be set to zero as well (in casual-context)
-                  //
                   posix::result( ::listen( result.descriptor().value(), platform::tcp::listen::backlog));
 
                   return result;
@@ -410,9 +389,7 @@ namespace casual
 
                            if( bytes == 0)
                            {
-                              //
                               // Fake an error-description
-                              //
                               throw exception::system::communication::unavailable::Pipe{};
                            }
 
@@ -446,9 +423,7 @@ namespace casual
                         }
                      };
 
-                     //
                      // First we send the header
-                     //
                      {
                         auto header = complete.header();
 
@@ -458,9 +433,7 @@ namespace casual
                         local_send( socket.descriptor(), first, last, flags);
                      }
 
-                     //
                      // Now we can send the payload
-                     //
                      {
                         local_send( socket.descriptor(), complete.payload.data(), complete.payload.data() + complete.payload.size(), flags);
                      }
@@ -486,9 +459,7 @@ namespace casual
 
                      auto current = reinterpret_cast< char*>( &header);
 
-                     //
                      // First we get the header
-                     //
                      {
                         const auto header_end = current + communication::message::complete::network::header::size();
 
@@ -498,9 +469,7 @@ namespace casual
 
                      }
 
-                     //
                      // Now we can get the payload
-                     //
 
                      communication::message::Complete message{ header};
 
@@ -581,12 +550,6 @@ namespace casual
             {
 
             }
-
-            std::ostream& operator << ( std::ostream& out, const base_connector& rhs)
-            {
-               return out << "{ socket: " << rhs.m_socket << '}';
-            }
-
 
          } // tcp
       } // communication

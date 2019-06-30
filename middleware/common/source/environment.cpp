@@ -257,16 +257,17 @@ namespace casual
 
                   std::string singleton = get_domain() + "/.casual/singleton";
 
-                  friend std::ostream& operator << ( std::ostream& out, const Paths& value)
+                  
+                  CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
                   {
-                     return out << "{ domain: " << std::quoted( value.domain)
-                        << ", tmp: " << std::quoted( value.tmp)
-                        << ", casual: " << std::quoted( value.casual)
-                        << ", log: " << std::quoted( value.log)
-                        << ", ipc: " << std::quoted( value.ipc)
-                        << ", singleton: " << std::quoted( value.singleton)
-                        << '}';
-                  }
+                     CASUAL_SERIALIZE( domain);
+                     CASUAL_SERIALIZE( detail);
+                     CASUAL_SERIALIZE( tmp);
+                     CASUAL_SERIALIZE( casual);
+                     CASUAL_SERIALIZE( log);
+                     CASUAL_SERIALIZE( ipc);
+                     CASUAL_SERIALIZE( singleton);
+                  })
 
                private:
                   static std::string get_domain()

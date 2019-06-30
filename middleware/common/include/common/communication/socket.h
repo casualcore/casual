@@ -84,11 +84,9 @@ namespace casual
             inline bool empty() const noexcept { return m_descriptor.empty();}
             inline explicit operator bool () const noexcept { return ! empty();}
 
-            //!
             //! Releases the responsibility of the socket
             //!
             //! @return descriptor
-            //!
             descriptor_type release() noexcept;
 
             descriptor_type descriptor() const noexcept;
@@ -101,8 +99,11 @@ namespace casual
                Socket::option( option.level(), option.option(), &value, sizeof( std::decay_t< decltype( value)>));
             }
 
-            friend std::ostream& operator << ( std::ostream& out, const Socket& value);
-
+            // for logging only
+            CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
+            {
+               CASUAL_SERIALIZE_NAME( m_descriptor, "descriptor");
+            })
 
          private:
 
@@ -113,12 +114,10 @@ namespace casual
 
          namespace socket
          {
-            //!
             //! Duplicates the descriptor
             //!
             //! @param descriptor to be duplicated
             //! @return socket that owns the descriptor
-            //!
             Socket duplicate( descriptor_type descriptor);
 
          } // socket

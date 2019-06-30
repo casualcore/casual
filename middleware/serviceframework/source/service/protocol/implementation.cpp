@@ -8,6 +8,13 @@
 #include "serviceframework/service/protocol/implementation.h"
 #include "serviceframework/log.h"
 
+#include "common/serialize/binary.h"
+#include "common/serialize/json.h"
+#include "common/serialize/xml.h"
+#include "common/serialize/yaml.h"
+#include "common/serialize/ini.h"
+#include "common/serialize/log.h"
+
 #include "common/execution.h"
 #include "common/exception/handle.h"
 
@@ -42,7 +49,7 @@ namespace casual
                {
                   Trace trace{ "protocol::Base::finalize"};
 
-                  common::log::line( log::sf, "result: ", m_result);
+                  common::log::line( log::debug, "result: ", m_result);
 
                   return std::move( m_result);
                }
@@ -62,8 +69,8 @@ namespace casual
 
                Binary::Binary( protocol::parameter_type&& parameter)
                   : Base( std::move( parameter)),
-                     m_reader( archive::binary::reader( m_parameter.payload.memory)), 
-                     m_writer( archive::binary::writer( m_result.payload.memory))
+                     m_reader( common::serialize::binary::reader( m_parameter.payload.memory)), 
+                     m_writer( common::serialize::binary::writer( m_result.payload.memory))
                {
                   Trace trace{ "protocol::Binary::Binary"};
 
@@ -83,17 +90,15 @@ namespace casual
 
                Yaml::Yaml( protocol::parameter_type&& parameter)
                   : Base( std::move( parameter)),
-                    m_reader( archive::yaml::relaxed::reader( m_parameter.payload.memory)),
-                    m_writer( archive::yaml::writer( m_result.payload.memory))
+                    m_reader( common::serialize::yaml::relaxed::reader( m_parameter.payload.memory)),
+                    m_writer( common::serialize::yaml::writer( m_result.payload.memory))
                {
                   Trace trace{ "protocol::Yaml::Yaml"};
 
                   m_input.readers.push_back( &m_reader);
                   m_output.writers.push_back( &m_writer);
 
-                  //
                   // We don't need the request-buffer any more, we can use the memory though...
-                  //
                   m_result.payload = std::move( m_parameter.payload);
                   m_result.payload.memory.clear();
                }
@@ -114,20 +119,17 @@ namespace casual
 
                Json::Json( protocol::parameter_type&& parameter)
                   : Base( std::move( parameter)),
-                    m_reader( archive::json::relaxed::reader( m_parameter.payload.memory)),
-                    m_writer( archive::json::writer( m_result.payload.memory))
+                    m_reader( common::serialize::json::relaxed::reader( m_parameter.payload.memory)),
+                    m_writer( common::serialize::json::writer( m_result.payload.memory))
                {
                   Trace trace{ "protocol::Json::Json"};
 
                   m_input.readers.push_back( &m_reader);
                   m_output.writers.push_back( &m_writer);
 
-                  //
                   // We don't need the request-buffer any more, we can use the memory though...
-                  //
                   m_result.payload = std::move( m_parameter.payload);
                   m_result.payload.memory.clear();
-
                }
 
                const std::string& Json::type()
@@ -147,17 +149,15 @@ namespace casual
 
                Xml::Xml( protocol::parameter_type&& parameter)
                   : Base( std::move( parameter)),
-                    m_reader( archive::xml::relaxed::reader( m_parameter.payload.memory)),
-                    m_writer( archive::xml::writer( m_result.payload.memory))
+                    m_reader( common::serialize::xml::relaxed::reader( m_parameter.payload.memory)),
+                    m_writer( common::serialize::xml::writer( m_result.payload.memory))
                {
                   Trace trace{ "protocol::Xml::Xml"};
 
                   m_input.readers.push_back( &m_reader);
                   m_output.writers.push_back( &m_writer);
 
-                  //
                   // We don't need the request-buffer any more, we can use the memory though...
-                  //
                   m_result.payload = std::move( m_parameter.payload);
                   m_result.payload.memory.clear();
 
@@ -180,17 +180,15 @@ namespace casual
 
                Ini::Ini( protocol::parameter_type&& parameter)
                : Base( std::move( parameter)),
-                 m_reader( archive::ini::relaxed::reader( m_parameter.payload.memory)),
-                 m_writer( archive::ini::writer( m_result.payload.memory))
+                 m_reader( common::serialize::ini::relaxed::reader( m_parameter.payload.memory)),
+                 m_writer( common::serialize::ini::writer( m_result.payload.memory))
                {
                   Trace trace{ "protocol::Ini::Ini"};
 
                   m_input.readers.push_back( &m_reader);
                   m_output.writers.push_back( &m_writer);
 
-                  //
                   // We don't need the request-buffer any more, we can use the memory though...
-                  //
                   m_result.payload = std::move( m_parameter.payload);
                   m_result.payload.memory.clear();
                }
@@ -207,7 +205,6 @@ namespace casual
                {
                   return common::buffer::type::ini();
                }
-
 
 
                Describe::Describe( service::Protocol&& protocol)
@@ -254,7 +251,7 @@ namespace casual
                {
                   Trace trace{ "protocol::Describe::finalize"};
 
-                  m_protocol << name::value::pair::make( "model", m_model);
+                  m_protocol << common::serialize::named::value::make( m_model, "model");
 
                   return m_protocol.finalize();
                }

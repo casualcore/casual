@@ -49,9 +49,7 @@ namespace casual
 
                   Pending();
 
-                  //!
                   //! Reserves a descriptor and associates it to message-correlation
-                  //!
                   Descriptor& reserve( const Uuid& correlation);
 
                   void unreserve( descriptor_type descriptor);
@@ -61,17 +59,13 @@ namespace casual
                   const Descriptor& get( descriptor_type descriptor) const;
                   const Descriptor& get( const Uuid& correlation) const;
 
-                  //!
                   //! Tries to discard descriptor, throws if fail.
-                  //!
                   void discard( descriptor_type descriptor);
 
                   signal::timer::Deadline deadline( descriptor_type descriptor, const platform::time::point::type& now) const;
 
-                  //!
                   //! @returns true if there are no pending replies or associated transactions.
                   //!  Thus, it's ok to do a service-forward
-                  //!
                   bool empty() const;
 
                private:

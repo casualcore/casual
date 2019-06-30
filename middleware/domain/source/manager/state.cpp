@@ -36,35 +36,11 @@ namespace casual
                   }
                } // ipc
 
-
-               template< typename T>
-               void print_executables( std::ostream& out, const T& value)
-               {
-                  out << "id: " << value.id
-                     << ", alias: " << value.alias
-                     << ", path: " << value.path
-                     << ", arguments: " << value.arguments
-                     << ", restart: " << value.restart
-                     << ", memberships: " << value.memberships
-                     << ", instances: " << value.instances;
-               }
-
             } // <unnamed>
          } // local
 
          namespace state
          {
-
-
-            std::ostream& operator << ( std::ostream& out, const Group& value)
-            {
-               return out << "{ id: " << value.id
-                     << ", name: " << value.name
-                     << ", dependencies: " << value.dependencies
-                     << ", resources: " << value.resources
-                     << '}';
-            }
-
             namespace instance
             {
                std::ostream& operator << ( std::ostream& out, State value)
@@ -131,9 +107,7 @@ namespace casual
 
                         auto running = std::get< 0>( split);
 
-                        //
                         // Do we scale in, or scale out?
-                        //
                         if( running.size() < count)
                         {
                            count -= running.size();
@@ -219,13 +193,6 @@ namespace casual
             }
 
 
-            std::ostream& operator << ( std::ostream& out, const Executable& value)
-            {
-               out << "{ ";
-               manager::local::print_executables( out, value);
-               return out << '}';
-            }
-
             Server::instance_type Server::instance( common::strong::process::id pid) const
             {
                auto found = algorithm::find_if( instances, [pid]( auto& p){
@@ -308,14 +275,6 @@ namespace casual
             }
 
 
-            std::ostream& operator << ( std::ostream& out, const Server& value)
-            {
-               out << "{ ";
-               manager::local::print_executables( out, value);
-               return out << ", resources: " << value.resources
-                  << ", restrictions: " << value.restrictions
-                  << '}';
-            }
 
             bool operator == ( const Server& lhs, common::strong::process::id rhs)
             {
@@ -327,31 +286,24 @@ namespace casual
 
             void Batch::log( std::ostream& out, const State& state) const
             {
-               out << "{ group: " << group;
+               stream::write( out, "{ group: ", group);
 
                auto delimiter = [&out](){ out << ", ";};
 
                out << ", servers: [";
                algorithm::for_each_interleave( servers, [&out,&state]( auto id){
-                  out << state.server( id);
+                  stream::write( out,  state.server( id));
                }, delimiter);
 
                out << "], executables: [";
                algorithm::for_each_interleave( executables, [&out,&state]( auto id){
-                  out << state.executable( id);
+                  stream::write( out, state.executable( id));
                }, delimiter);
 
                out << "]}";
             }
 
 
-            std::ostream& operator << ( std::ostream& out, const Batch& value)
-            {
-               return out << "{ group: " << value.group
-                     << ", servers: " << value.servers
-                     << ", executables: " << value.executables
-                     << '}';
-            }
 
          } // state
 
@@ -661,15 +613,6 @@ namespace casual
 
             return range::to_vector( algorithm::unique( algorithm::sort( resources)));
          }
-
-         std::ostream& operator << ( std::ostream& out, const State& state)
-         {
-            return out << "{ groups: " << state.groups
-               << ", executables: " << state.executables
-               << ", tasks: " << state.tasks
-                  << '}';
-         }
-
 
       } // manager
    } // domain

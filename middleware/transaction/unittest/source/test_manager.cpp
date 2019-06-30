@@ -133,7 +133,7 @@ resources:
                      auto reply = call( manager::admin::service::name::state());
 
                      manager::admin::State result;
-                     reply >> CASUAL_MAKE_NVP( result);
+                     reply >> CASUAL_NAMED_VALUE( result);
 
                      return result;
                   }
@@ -423,7 +423,7 @@ domain:
          ASSERT_TRUE( rm1.instances.size() == 2);
          EXPECT_TRUE( rm1.id == local::rm_1);
          EXPECT_TRUE( rm1.name == "rm1");
-         EXPECT_TRUE( rm1.metrics.resource.count == 1) << "rm: " << rm1;
+         EXPECT_TRUE( rm1.metrics.resource.count == 1) << CASUAL_NAMED_VALUE( rm1);
       }
 
       TEST( transaction_manager, begin_commit_transaction__1_resources_involved__2_times___expect_one_phase_commit_optimization)
@@ -475,7 +475,7 @@ domain:
          ASSERT_TRUE( rm1.instances.size() == 2);
          EXPECT_TRUE( rm1.id == local::rm_1);
          EXPECT_TRUE( rm1.name == "rm1");
-         EXPECT_TRUE( rm1.metrics.resource.count == 1) << "rm: " << rm1;
+         EXPECT_TRUE( rm1.metrics.resource.count == 1) << CASUAL_NAMED_VALUE( rm1);
       }
       namespace local
       {
@@ -646,7 +646,7 @@ domain:
          EXPECT_TRUE( local::rollback() == common::code::tx::ok);
 
          state = local::admin::call::state();
-         EXPECT_TRUE( state.transactions.empty()) << "state: " << state;
+         EXPECT_TRUE( state.transactions.empty()) << CASUAL_NAMED_VALUE( state);
 
          auto proxies = local::accumulate_metrics( state);
          auto& rm1 = proxies.at( 0);
@@ -654,7 +654,7 @@ domain:
 
          ASSERT_TRUE( rm1.instances.size() == 2);
          EXPECT_TRUE( rm1.id == local::rm_1);
-         EXPECT_TRUE( rm1.metrics.resource.count == 1) << "rm1.metrics.resource: " << rm1.metrics.resource;
+         EXPECT_TRUE( rm1.metrics.resource.count == 1) << CASUAL_NAMED_VALUE( rm1.metrics.resource);
 
          ASSERT_TRUE( rm2.instances.size() == 2);
          EXPECT_TRUE( rm2.id == local::rm_2);
@@ -1170,8 +1170,8 @@ domain:
 
             communication::ipc::blocking::receive( communication::ipc::inbound::device(), message);
 
-            EXPECT_TRUE( message.trid == trid) << "message: " << message;
-            EXPECT_TRUE( message.state == common::code::tx::ok) << "state: " << message.state;
+            EXPECT_TRUE( message.trid == trid) << CASUAL_NAMED_VALUE( message);
+            EXPECT_TRUE( message.state == common::code::tx::ok) << CASUAL_NAMED_VALUE( message.state);
          }
       }
 
@@ -1262,8 +1262,8 @@ domain:
 
             communication::ipc::blocking::receive( communication::ipc::inbound::device(), message);
 
-            EXPECT_TRUE( message.trid == trid) << "message: " << message;
-            EXPECT_TRUE( message.state == common::code::xa::ok) << "state: " << message.state;
+            EXPECT_TRUE( message.trid == trid) << CASUAL_NAMED_VALUE( message);
+            EXPECT_TRUE( message.state == common::code::xa::ok) << CASUAL_NAMED_VALUE( message.state);
          }
       }
 
@@ -1353,8 +1353,8 @@ domain:
 
             communication::ipc::blocking::receive( communication::ipc::inbound::device(), message);
 
-            EXPECT_TRUE( message.trid == trid) << "message: " << message;
-            EXPECT_TRUE( message.state == common::code::xa::rollback_other) << "state: " << message.state;
+            EXPECT_TRUE( message.trid == trid) << CASUAL_NAMED_VALUE( message);
+            EXPECT_TRUE( message.state == common::code::xa::rollback_other) << CASUAL_NAMED_VALUE( message.state);
          }
       }
 
@@ -1395,7 +1395,7 @@ domain:
          ASSERT_TRUE( rm1.instances.size() == 2);
          EXPECT_TRUE( rm1.id == local::rm_1);
          EXPECT_TRUE( rm1.name == "rm1");
-         EXPECT_TRUE( rm1.metrics.resource.count == 1) << "rm: " << rm1;
+         EXPECT_TRUE( rm1.metrics.resource.count == 1) << CASUAL_NAMED_VALUE( rm1);
       }
 
    
@@ -1446,7 +1446,7 @@ domain:
          ASSERT_TRUE( rm1.instances.size() == 2);
          EXPECT_TRUE( rm1.id == local::rm_1);
          EXPECT_TRUE( rm1.name == "rm1");
-         EXPECT_TRUE( rm1.metrics.resource.count == 4) << "rm: " << rm1;  // 2 prepare, 2 commit
+         EXPECT_TRUE( rm1.metrics.resource.count == 4) << CASUAL_NAMED_VALUE( rm1);  // 2 prepare, 2 commit
       }
 
       TEST( transaction_manager_branch, begin_commit_transaction__rm1_involved__rm2_branched_involved___expect_tpc)
@@ -1494,7 +1494,7 @@ domain:
          ASSERT_TRUE( rm1.instances.size() == 2);
          EXPECT_TRUE( rm1.id == local::rm_1);
          EXPECT_TRUE( rm1.name == "rm1");
-         EXPECT_TRUE( rm1.metrics.resource.count == 2) << "rm: " << rm1;  // 1 prepare, 1 commit
+         EXPECT_TRUE( rm1.metrics.resource.count == 2) << CASUAL_NAMED_VALUE( rm1);  // 1 prepare, 1 commit
       }
 
       TEST( transaction_manager_branch, remote_transaction__branched_rm1_involved____expect_original_trid_prepare_reply)

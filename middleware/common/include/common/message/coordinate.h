@@ -33,25 +33,20 @@ namespace casual
                   {
                      auto found = algorithm::find( m_pids, pid);
 
-                     if( found)
-                     {
-                        m_pids.erase( std::begin( found));
-                        return true;
-                     }
-                     return false;
-
+                     if( ! found)
+                        return false;
+                     
+                     m_pids.erase( std::begin( found));
+                     return true;
                   }
 
-                  inline bool done() const
+                  inline bool done() const { return m_pids.empty();}
+
+                  // for logging only
+                  CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
                   {
-                     return m_pids.empty();
-                  }
-
-                  friend std::ostream& operator << ( std::ostream& out, const Message& value)
-                  {
-                     return out << "{ pids: " << value.m_pids
-                        << '}';
-                  }
+                     CASUAL_SERIALIZE_NAME( m_pids, "pids");
+                  })
 
                private:
                   std::vector< strong::process::id> m_pids;
@@ -128,11 +123,12 @@ namespace casual
 
             platform::size::type size() const { return m_messages.size();}
 
-            friend std::ostream& operator << ( std::ostream& out, const Coordinate& value)
+            // for logging only
+            CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
             {
-               return out << "{ messages: " << value.m_messages
-                  << '}';
-            }
+               CASUAL_SERIALIZE_NAME( m_messages, "messages");
+               CASUAL_SERIALIZE_NAME( m_policy, "policy");
+            })
 
          private:
 
@@ -151,13 +147,13 @@ namespace casual
                message_policy_type policy;
                message_type message;
 
-               inline friend std::ostream& operator << ( std::ostream& out, const holder_type& value)
+               // for logging only
+               CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
                {
-                  return out << "{ ipc: " << value.ipc
-                     << ", message: " << value.message
-                     << ", policy: " << value.policy
-                     << '}';
-               }
+                  CASUAL_SERIALIZE( ipc);
+                  CASUAL_SERIALIZE( policy);
+                  CASUAL_SERIALIZE( message);
+               })
             };
 
 

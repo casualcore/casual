@@ -1,11 +1,45 @@
-# interdomain protocol examples
+# gateway interdomain protocol
 
-This directory contains binary dumps of examples of every interdomain message that casual uses.
 
-Main objective is to help other implementations to verify and unittest.
+* [definition](../protocol.maintenance.md)
 
-## naming convention
+It is possible to produce the markdown on the fly via `casual-gateway-markdown-protocol`
 
-`<message-name>.<message-type>.bin`
+Example: 
+
+```shell 
+host# $CASUAL_HOME/example/bin/casual-gateway-markdown-protocol > protocol.md
+```
+
+## binary examples
+
+Use the binary dump example generator.
+
+``` shell
+example/bin/casual-gateway-binary-protocol --help
+NAME
+   casual-gateway-binary-protocol
+
+DESCRIPTION
+  binary dump examples for interdomain protocol
+
+OPTIONS     c  value                                  vc  description                                             
+----------  -  -------------------------------------  --  --------------------------------------------------------
+-b, --base  ?                                          1  base path for the generated files                       
+--format    ?  [ini, jsn, json, log, xml, yaml, yml]   1  format for optional descriptive generated representation
+--help      ?                                          *  use --help <option> to see further details     
+
+```
+
+Example: 
+
+```
+host# $CASUAL_HOME/example/bin/casual-gateway-binary-protocol --base 'path/to/destination' --format json
+```
+
+### naming convention
+
+`<message-name>.<protocol-version>.<message-type>.bin`
+
 
 

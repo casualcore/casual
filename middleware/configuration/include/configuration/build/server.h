@@ -9,8 +9,9 @@
 
 #include "configuration/build/resource.h"
 
-#include "serviceframework/namevaluepair.h"
-#include "serviceframework/platform.h"
+#include "common/serialize/macro.h"
+#include "common/platform.h"
+#include "common/optional.h"
 
 #include <algorithm>
 #include <string>
@@ -29,7 +30,6 @@ namespace casual
             {
                struct Default
                {
-                  //!
                   //! Can be:
                   //! - 'auto' Join current transaction, or start a new one if there is no current.
                   //! - 'join' Join current transaction if there is one.
@@ -38,20 +38,17 @@ namespace casual
                   //! - 'none' Don't start or join any transaction
                   //!
                   //! default is 'auto'
-                  //!
-                  serviceframework::optional< std::string> transaction;
+                  common::optional< std::string> transaction;
 
-                  //!
                   //! Arbitrary category.
                   //!
                   //! @attention categories starting with '.' is reserved by casual
-                  //!
-                  serviceframework::optional< std::string> category;
+                  common::optional< std::string> category;
 
                   CASUAL_CONST_CORRECT_SERIALIZE
                   (
-                     archive & CASUAL_MAKE_NVP( transaction);
-                     archive & CASUAL_MAKE_NVP( category);
+                     CASUAL_SERIALIZE( transaction);
+                     CASUAL_SERIALIZE( category);
                   )
                };
 
@@ -60,12 +57,12 @@ namespace casual
             struct Service : service::Default
             {
                std::string name;
-               serviceframework::optional< std::string> function;
+               common::optional< std::string> function;
 
                CASUAL_CONST_CORRECT_SERIALIZE
                (
-                  archive & CASUAL_MAKE_NVP( name);
-                  archive & CASUAL_MAKE_NVP( function);
+                  CASUAL_SERIALIZE( name);
+                  CASUAL_SERIALIZE( function);
                   service::Default::serialize( archive);
                )
             };
@@ -80,28 +77,25 @@ namespace casual
 
                   CASUAL_CONST_CORRECT_SERIALIZE
                   (
-                     archive & CASUAL_MAKE_NVP( service);
+                     CASUAL_SERIALIZE( service);
                   )
                };
             } // server
 
             struct Server
             {
-
-               //!
                //! Default for all services
-               //!
                server::Default server_default;
 
                std::vector< Resource> resources;
                std::vector< Service> services;
 
-               CASUAL_CONST_CORRECT_SERIALIZE
-               (
-                  archive & serviceframework::name::value::pair::make( "default", server_default);
-                  archive & CASUAL_MAKE_NVP( resources);
-                  archive & CASUAL_MAKE_NVP( services);
-               )
+               CASUAL_CONST_CORRECT_SERIALIZE(
+               {
+                  CASUAL_SERIALIZE_NAME( server_default, "default");
+                  CASUAL_SERIALIZE( resources);
+                  CASUAL_SERIALIZE( services);
+               })
             };
 
             Server get( const std::string& file);

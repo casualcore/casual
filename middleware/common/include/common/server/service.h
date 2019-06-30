@@ -44,12 +44,19 @@ namespace casual
             //! Only to be able to compare 'c-functions', which we have to do according to the XATMI-spec
             const void* compare = nullptr;
 
-            friend std::ostream& operator << ( std::ostream& out, const Service& service);
-
             friend bool operator == ( const Service& lhs, const Service& rhs);
             friend bool operator == ( const Service& lhs, const void* rhs);
             friend bool operator != ( const Service& lhs, const Service& rhs);
             friend bool operator == ( const Service& lhs, const std::string& rhs);
+
+            // for logging only
+            CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
+            {
+               CASUAL_SERIALIZE( name);
+               CASUAL_SERIALIZE( transaction);
+               CASUAL_SERIALIZE( category);
+               CASUAL_SERIALIZE( compare);
+            })
 
          };
 

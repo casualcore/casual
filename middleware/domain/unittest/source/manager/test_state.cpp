@@ -111,7 +111,7 @@ domain:
 
 )" );
 
-            EXPECT_TRUE( state.variables( state.executables.at( 0)).size() == 2) << CASUAL_MAKE_NVP( state.environment);
+            EXPECT_TRUE( state.variables( state.executables.at( 0)).size() == 2) << CASUAL_NAMED_VALUE( state.environment);
          }
 
          TEST( domain_state_environemnt, default_2___explict_2___expect_4_variables)
@@ -141,7 +141,7 @@ domain:
 )" );
 
             auto result = state.variables( state.executables.at( 0));
-            ASSERT_TRUE( result.size() == 4) << CASUAL_MAKE_NVP( result);
+            ASSERT_TRUE( result.size() == 4) << CASUAL_NAMED_VALUE( result);
             EXPECT_TRUE( result.at( 0) == "a=1");
             EXPECT_TRUE( result.at( 3) == "d=4");
          }
@@ -173,7 +173,7 @@ domain:
             auto bootorder = state.bootorder();
             auto& global = local::find_batch( state, bootorder, ".global");
 
-            EXPECT_TRUE( global.executables.size() == 1) << ".global: " << global;
+            EXPECT_TRUE( global.executables.size() == 1) << CASUAL_NAMED_VALUE( global);
             auto id = global.executables.at( 0);
             EXPECT_TRUE( state.executable( id).path == "echo" );
          }
@@ -203,7 +203,7 @@ domain:
 
             {
                auto& batch = local::find_batch( state, bootorder, ".global");
-               ASSERT_TRUE( batch.executables.size() == 1) << "state: " << state << "\nbatch: " << batch;
+               ASSERT_TRUE( batch.executables.size() == 1) << CASUAL_NAMED_VALUE( state) << "\n" << CASUAL_NAMED_VALUE( batch);
                EXPECT_TRUE( state.executable( batch.executables.at( 0)).path == "exe2");
             }
             {
@@ -318,7 +318,7 @@ domain:
             executable.instances.resize( 5);
 
             EXPECT_TRUE( executable.spawnable().size() == 5);
-            EXPECT_TRUE( executable.shutdownable().empty()) << "executable: " << executable;
+            EXPECT_TRUE( executable.shutdownable().empty()) << CASUAL_NAMED_VALUE( executable);
          }
 
          TEST( domain_state_instances, server_default)
@@ -339,7 +339,7 @@ domain:
             server.instances.resize( 5);
 
             EXPECT_TRUE( server.spawnable().size() == 5);
-            EXPECT_TRUE( server.shutdownable().empty()) << "server: " << server;
+            EXPECT_TRUE( server.shutdownable().empty()) << CASUAL_NAMED_VALUE( server);
          }
 
       } // manager

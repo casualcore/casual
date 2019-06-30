@@ -9,7 +9,7 @@
 
 
 
-#include "common/marshal/marshal.h"
+#include "common/serialize/macro.h"
 #include "common/string.h"
 
 #include <string>
@@ -34,23 +34,19 @@ namespace casual
                   std::string key;
                   std::string value;
 
-                  //!
                   //! case insensitive equal on key
-                  //!
                   bool equal( const std::string& key) const;
 
                   //! @returns <key> : <value>  
                   std::string http() const;
 
-                  CASUAL_CONST_CORRECT_MARSHAL(
+                  CASUAL_CONST_CORRECT_SERIALIZE(
                   {
-                     archive & key;
-                     archive & value;
+                     CASUAL_SERIALIZE( key);
+                     CASUAL_SERIALIZE( value);
                   })
 
                   friend bool operator == (  const Field& lhs, const Field& rhs);
-                  friend std::ostream& operator << ( std::ostream& out, const Field& value);
-
                };
 
                
@@ -59,18 +55,13 @@ namespace casual
                   using fields_type = std::vector< header::Field>;
                   using fields_type::fields_type;
 
-                  //!
                   //! @param key to find
                   //! @return true if field with @p key exists
-                  //!
                   bool exists( const std::string& key) const; 
                
-                  //!
-                  //!
                   //! @param key to be found
                   //! @return the value associated with the key
                   //! @throws exception::system::invalid::Argument if key is not found.
-                  //!
                   const std::string& at( const std::string& key) const;
 
                   template< typename T>
@@ -79,12 +70,8 @@ namespace casual
                      return from_string< T>( at( key));
                   }
 
-
-                  //!
-                  //!
                   //! @param key to be found
                   //! @return the value associated with the key, if not found, @p default_value is returned
-                  //!
                   std::string at( const std::string& key, const std::string& default_value) const;
                
                   template< typename T>
@@ -95,20 +82,12 @@ namespace casual
 
                   optional< const std::string&> find( const std::string& key) const;
 
-                  //!
                   //! Same semantics as std::map[]  
-                  //!
                   std::string& operator[] ( const std::string& key );
 
-                  //!
                   //! Same semantics as at
-                  //!
                   const std::string& operator[]( const std::string& key ) const;
-
-                  CASUAL_CONST_CORRECT_MARSHAL(
-                  {
-                     archive & container();
-                  })
+                  
 
                   inline fields_type& container() { return *this;}
                   inline const fields_type& container() const { return *this;}

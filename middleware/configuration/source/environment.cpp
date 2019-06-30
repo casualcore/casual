@@ -9,7 +9,7 @@
 #include "common/environment.h"
 #include "common/algorithm.h"
 
-#include "serviceframework/archive/create.h"
+#include "common/serialize/create.h"
 
 namespace casual
 {
@@ -35,9 +35,9 @@ namespace casual
 
             // Create the reader and deserialize configuration
             common::file::Input file{ name};
-            auto reader = serviceframework::archive::create::reader::consumed::from( file.extension(), file);
+            auto reader = common::serialize::create::reader::consumed::from( file.extension(), file);
 
-            reader >> CASUAL_MAKE_NVP( environment);
+            reader >> CASUAL_NAMED_VALUE( environment);
             reader.validate();
 
             return environment;

@@ -13,11 +13,9 @@
 #include "common/environment.h"
 #include "common/terminal.h"
 #include "common/exception/handle.h"
-
+#include "common/serialize/create.h"
 
 #include "serviceframework/service/protocol/call.h"
-#include "serviceframework/archive/log.h"
-#include "serviceframework/archive/create.h"
 
 
 namespace casual
@@ -45,7 +43,7 @@ namespace casual
 
                         admin::State result;
 
-                        reply >> CASUAL_MAKE_NVP( result);
+                        reply >> CASUAL_NAMED_VALUE( result);
 
                         return result;
                      }
@@ -57,12 +55,12 @@ namespace casual
                         {
                            serviceframework::service::protocol::binary::Call call;
 
-                           call << CASUAL_MAKE_NVP( instances);
+                           call << CASUAL_NAMED_VALUE( instances);
                            auto reply = call( service::name::scale::instances());
 
                            std::vector< admin::resource::Proxy> result;
 
-                           reply >> CASUAL_MAKE_NVP( result);
+                           reply >> CASUAL_NAMED_VALUE( result);
 
                            return result;
                         }
@@ -277,12 +275,12 @@ namespace casual
                      {
                         auto state = call::state();
 
-                        auto debug = serviceframework::archive::log::writer( std::cout);
+                        auto debug = common::serialize::log::writer( std::cout);
 
-                        debug << CASUAL_MAKE_NVP( state.pending.requests);
-                        debug << CASUAL_MAKE_NVP( state.persistent.requests);
-                        debug << CASUAL_MAKE_NVP( state.persistent.replies);
-                        debug << CASUAL_MAKE_NVP( state.log);
+                        debug << CASUAL_NAMED_VALUE( state.pending.requests);
+                        debug << CASUAL_NAMED_VALUE( state.persistent.requests);
+                        debug << CASUAL_NAMED_VALUE( state.persistent.replies);
+                        debug << CASUAL_NAMED_VALUE( state.log);
 
                      }
 
@@ -339,9 +337,9 @@ namespace casual
                      void state( const common::optional< std::string>& format)
                      {
                         auto state = call::state();
-                        auto archive = serviceframework::archive::create::writer::from( format.value_or( ""), std::cout);
+                        auto archive = common::serialize::create::writer::from( format.value_or( ""), std::cout);
 
-                        archive << CASUAL_MAKE_NVP( state);
+                        archive << CASUAL_NAMED_VALUE( state);
                      }
 
                   } // dispatch

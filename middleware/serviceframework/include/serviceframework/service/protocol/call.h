@@ -8,10 +8,8 @@
 #pragma once
 
 
-
 #include "serviceframework/service/call.h"
-
-#include "serviceframework/archive/binary.h"
+#include "common/serialize/binary.h"
 
 namespace casual
 {
@@ -156,7 +154,7 @@ namespace casual
                   {
                      struct Input
                      {
-                        Input( service::payload_type& payload) : m_archive( archive::binary::writer( payload.memory))
+                        Input( service::payload_type& payload) : m_archive( common::serialize::binary::writer( payload.memory))
                         {
                         }
                         auto& archive() { return m_archive;}
@@ -164,18 +162,18 @@ namespace casual
                         static const std::string& type() { return common::buffer::type::binary();};
 
                      private:
-                        archive::Writer m_archive;
+                        common::serialize::Writer m_archive;
                      };
 
                      struct Result
                      {
                         template< typename R>
-                        Result( R& result) : m_archive( archive::binary::reader( result.buffer.memory)) {}
+                        Result( R& result) : m_archive( common::serialize::binary::reader( result.buffer.memory)) {}
 
-                        archive::Reader& archive() { return m_archive;}
+                        common::serialize::Reader& archive() { return m_archive;}
 
                      private:
-                        archive::Reader m_archive;
+                        common::serialize::Reader m_archive;
 
                      };
                   } // policy

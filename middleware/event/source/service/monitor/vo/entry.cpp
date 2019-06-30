@@ -8,9 +8,7 @@
       
 
 #include "event/service/monitor/vo/entry.h"
-
-#include <serviceframework/archive/archive.h>
-
+#include "common/serialize/archive.h"
 
 //## includes protected section begin [200.20]
 
@@ -44,11 +42,11 @@ namespace casual
                   {
                      //## additional serialization protected section begin [200.impl.serial.10]
                      //## additional serialization protected section end   [200.impl.serial.10]
-                     archive & CASUAL_MAKE_NVP( parentService);
-                     archive & CASUAL_MAKE_NVP( service);
-                     archive & CASUAL_MAKE_NVP( callId);
-                     archive & CASUAL_MAKE_NVP( start);
-                     archive & CASUAL_MAKE_NVP( end);
+                     CASUAL_SERIALIZE( parentService);
+                     CASUAL_SERIALIZE( service);
+                     CASUAL_SERIALIZE( callId);
+                     CASUAL_SERIALIZE( start);
+                     CASUAL_SERIALIZE( end);
                      //## additional serialization protected section begin [200.impl.serial.20]
                      //## additional serialization protected section end   [200.impl.serial.20]
                   }
@@ -57,9 +55,9 @@ namespace casual
                   //## additional attributes protected section end   [200.impl.attr.10]
                   std::string parentService;
                   std::string service;
-                  serviceframework::platform::Uuid callId;
-                  serviceframework::platform::time::point::type start;
-                  serviceframework::platform::time::point::type end;
+                  common::Uuid callId;
+                  common::platform::time::point::type start;
+                  common::platform::time::point::type end;
                   //## additional attributes protected section begin [200.impl.attr.20]
                   //## additional attributes protected section end   [200.impl.attr.20]
 
@@ -88,15 +86,15 @@ namespace casual
                {
                   return pimpl->service;
                }
-               serviceframework::platform::Uuid Entry::getCallId() const
+               common::Uuid Entry::getCallId() const
                {
                   return pimpl->callId;
                }
-               serviceframework::platform::time::point::type Entry::getStart() const
+               common::platform::time::point::type Entry::getStart() const
                {
                   return pimpl->start;
                }
-               serviceframework::platform::time::point::type Entry::getEnd() const
+               common::platform::time::point::type Entry::getEnd() const
                {
                   return pimpl->end;
                }
@@ -110,26 +108,26 @@ namespace casual
                {
                   pimpl->service = value;
                }
-               void Entry::setCallId( serviceframework::platform::Uuid value)
+               void Entry::setCallId( common::Uuid value)
                {
                   pimpl->callId = value;
                }
-               void Entry::setStart( serviceframework::platform::time::point::type value)
+               void Entry::setStart( common::platform::time::point::type value)
                {
                   pimpl->start = value;
                }
-               void Entry::setEnd( serviceframework::platform::time::point::type value)
+               void Entry::setEnd( common::platform::time::point::type value)
                {
                   pimpl->end = value;
                }
 
 
-               void Entry::serialize( casual::serviceframework::archive::Reader& archive)
+               void Entry::serialize( casual::common::serialize::Reader& archive)
                {
                    pimpl->serialize( archive);
                }
 
-               void Entry::serialize( casual::serviceframework::archive::Writer& archive) const
+               void Entry::serialize( casual::common::serialize::Writer& archive) const
                {
                    pimpl->serialize( archive);
                }

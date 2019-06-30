@@ -140,6 +140,32 @@ namespace casual
          tpfree( buffer);
       }
 
+      namespace local
+      {
+         namespace
+         {
+            auto allocate( platform::size::type size = 128)
+            {
+               auto buffer = tpalloc( X_OCTET, nullptr, size);
+               unittest::random::range( range::make( buffer, size));
+               return buffer;
+            }
+
+            bool call( const std::string& service, platform::size::type size = 128)
+            {
+               auto buffer = allocate( size);
+               auto len = tptypes( buffer, nullptr, nullptr);
+               auto code = tpcall( service.c_str(), buffer, size, &buffer, &len, 0);
+
+               tpfree( buffer);
+
+               return code == 0;
+            }
+
+
+         } // <unnamed>
+      } // local
+
       TEST( casual_xatmi, tpacall_buffer_null__expect_expect_ok)
       {
          common::unittest::Trace trace;
@@ -158,7 +184,7 @@ namespace casual
 
          local::Domain domain;
 
-         auto buffer = tpalloc( X_OCTET, nullptr, 128);
+         auto buffer = local::allocate( 128);
 
          EXPECT_TRUE( tpacall( "casual/example/echo", buffer, 128, TPNOREPLY | TPNOTRAN) == 0) << "tperrno: " << tperrnostring( tperrno);
 
@@ -203,7 +229,7 @@ namespace casual
 
          local::Domain domain;
 
-         auto buffer = tpalloc( X_OCTET, nullptr, 128);
+         auto buffer = local::allocate( 128);
          auto len = tptypes( buffer, nullptr, nullptr);
 
          EXPECT_TRUE( tpcall( "casual/example/echo", buffer, 128, &buffer, &len, 0) == 0) << "tperrno: " << tperrnostring( tperrno);
@@ -211,6 +237,27 @@ namespace casual
          tpfree( buffer);
       }
 
+      TEST( casual_xatmi, tpcall_service_echo__1MiB_buffer___expect_ok)
+      {
+         common::unittest::Trace trace;
+
+         local::Domain domain;
+
+         constexpr auto size = 1024 * 1024;
+
+         auto input = local::allocate( size);
+         auto output = local::allocate( 128);
+
+
+         auto len = tptypes( output, nullptr, nullptr);
+
+         EXPECT_TRUE( tpcall( "casual/example/echo", input, size, &output, &len, 0) == 0) << "tperrno: " << tperrnostring( tperrno);
+
+         EXPECT_TRUE( algorithm::equal( range::make( input, size), range::make( output, len)));
+
+         tpfree( input);
+         tpfree( output);
+      }
 
       TEST( casual_xatmi, tpacall_service_echo__no_transaction__tpcancel___expect_ok)
       {
@@ -364,26 +411,6 @@ namespace casual
          tpfree( buffer);
       }
 
-      namespace local
-      {
-         namespace
-         {
-
-            bool call( const std::string& service)
-            {
-               auto buffer = tpalloc( X_OCTET, nullptr, 128);
-               auto len = tptypes( buffer, nullptr, nullptr);
-
-               auto code = tpcall( service.c_str(), buffer, 128, &buffer, &len, 0);
-
-               tpfree( buffer);
-
-               return code == 0;
-            }
-
-
-         } // <unnamed>
-      } // local
 
       TEST( casual_xatmi, tpcall_service_urcode__expect_ok__urcode_42)
       {

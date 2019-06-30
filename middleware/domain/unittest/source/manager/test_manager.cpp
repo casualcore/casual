@@ -13,21 +13,16 @@
 #include "domain/manager/manager.h"
 #include "domain/manager/admin/vo.h"
 #include "domain/manager/admin/server.h"
-
+#include "domain/manager/unittest/process.h"
 
 #include "common/string.h"
 #include "common/environment.h"
 #include "common/service/lookup.h"
 #include "common/event/listen.h"
 #include "common/execute.h"
+#include "common/serialize/binary.h"
 
 #include "common/communication/instance.h"
-
-//#include "serviceframework/service/protocol/call.h"
-#include "serviceframework/archive/binary.h"
-#include "serviceframework/log.h"
-
-#include "domain/manager/unittest/process.h"
 
 #include <fstream>
 
@@ -219,7 +214,7 @@ domain:
                   template< typename A, typename T, typename... Ts>
                   void serialize( A& archive, T&& value, Ts&&... ts)
                   {
-                     archive << CASUAL_MAKE_NVP( std::forward< T>( value));
+                     archive << CASUAL_NAMED_VALUE( std::forward< T>( value));
                      serialize( archive, std::forward< Ts>( ts)...);
                   }
                   template< typename R, typename... Ts> 
@@ -232,7 +227,7 @@ domain:
                         request.service.name = std::move( service);
                         request.buffer.type = common::buffer::type::binary();
 
-                        auto archive = serviceframework::archive::binary::writer( request.buffer.memory);
+                        auto archive = common::serialize::binary::writer( request.buffer.memory);
                         serialize( archive, std::forward< Ts>( arguments)...);
 
                         return communication::ipc::blocking::send( communication::instance::outbound::domain::manager::device(), request);
@@ -241,10 +236,10 @@ domain:
 
                      common::message::service::call::Reply reply;
                      communication::ipc::blocking::receive( communication::ipc::inbound::device(), reply, correlation);
-                     auto archive = serviceframework::archive::binary::reader( reply.buffer.memory);
+                     auto archive = common::serialize::binary::reader( reply.buffer.memory);
 
                      R result;
-                     archive >> CASUAL_MAKE_NVP( result);
+                     archive >> CASUAL_NAMED_VALUE( result);
 
                      return result;
                   }
@@ -312,10 +307,10 @@ domain:
 
             auto state = local::call::state();
 
-            ASSERT_TRUE( state.servers.size() == 1) << CASUAL_MAKE_NVP( state);
-            EXPECT_TRUE( state.servers.at( 0).instances.size() == 1) << CASUAL_MAKE_NVP( state);
-            ASSERT_TRUE( state.executables.size() == 1) << CASUAL_MAKE_NVP( state);
-            EXPECT_TRUE( state.executables.at( 0).instances.size() == 5) << CASUAL_MAKE_NVP( state);
+            ASSERT_TRUE( state.servers.size() == 1) << CASUAL_NAMED_VALUE( state);
+            EXPECT_TRUE( state.servers.at( 0).instances.size() == 1) << CASUAL_NAMED_VALUE( state);
+            ASSERT_TRUE( state.executables.size() == 1) << CASUAL_NAMED_VALUE( state);
+            EXPECT_TRUE( state.executables.at( 0).instances.size() == 5) << CASUAL_NAMED_VALUE( state);
 
          }
 
@@ -333,7 +328,7 @@ domain:
             auto state = local::call::state();
 
             ASSERT_TRUE( state.executables.size() == 1);
-            EXPECT_TRUE( state.executables.at( 0).instances.size() == 10) << CASUAL_MAKE_NVP( state);
+            EXPECT_TRUE( state.executables.at( 0).instances.size() == 10) << CASUAL_NAMED_VALUE( state);
          }
 
          TEST( casual_domain_manager, long_running_processes_5__scale_in_to_0___expect_0)
@@ -351,7 +346,7 @@ domain:
             ASSERT_TRUE( state.executables.size() == 1);
 
             // not deterministic how long it takes for the processes to terminate.
-            // EXPECT_TRUE( state.executables.at( 0).instances.size() == 0) << CASUAL_MAKE_NVP( state);
+            // EXPECT_TRUE( state.executables.at( 0).instances.size() == 0) << CASUAL_NAMED_VALUE( state);
          }
 
 
@@ -372,9 +367,9 @@ domain:
 
             auto state = local::call::state();
 
-            ASSERT_TRUE( state.servers.size() == 2) << CASUAL_MAKE_NVP( state);
-            EXPECT_TRUE( state.servers.at( 0).instances.size() == 1) << CASUAL_MAKE_NVP( state);
-            EXPECT_TRUE( state.servers.at( 1).instances.size() == 1) << CASUAL_MAKE_NVP( state);
+            ASSERT_TRUE( state.servers.size() == 2) << CASUAL_NAMED_VALUE( state);
+            EXPECT_TRUE( state.servers.at( 0).instances.size() == 1) << CASUAL_NAMED_VALUE( state);
+            EXPECT_TRUE( state.servers.at( 1).instances.size() == 1) << CASUAL_NAMED_VALUE( state);
             EXPECT_TRUE( state.servers.at( 1).alias == "test-simple-server");
 
          }
@@ -400,13 +395,13 @@ domain:
             communication::instance::connect( communication::instance::identity::service::manager);
 
             auto instances = local::call::scale( "test-simple-server", 1);
-            ASSERT_TRUE( instances.size() == 1) << "instances: " << CASUAL_MAKE_NVP( instances);
+            ASSERT_TRUE( instances.size() == 1) << "instances: " << CASUAL_NAMED_VALUE( instances);
 
             // Consume the request and send reply.
             {
                message::domain::process::prepare::shutdown::Request request;
                EXPECT_TRUE( communication::ipc::blocking::receive( communication::ipc::inbound::device(), request));
-               EXPECT_TRUE( request.processes.size() == 1) << "request: " << request;
+               EXPECT_TRUE( request.processes.size() == 1) << CASUAL_NAMED_VALUE( request);
 
                auto reply = message::reverse::type( request);
                reply.processes = std::move( request.processes);
@@ -580,7 +575,7 @@ domain:
             state.executables = algorithm::trim( state.executables, algorithm::remove_if( state.executables, local::predicate::Manager{}));
 
 
-            ASSERT_TRUE( state.executables.size() == 4 * 5) << CASUAL_MAKE_NVP( state);
+            ASSERT_TRUE( state.executables.size() == 4 * 5) << CASUAL_NAMED_VALUE( state);
 
             for( auto& instance : state.executables)
             {

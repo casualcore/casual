@@ -5,9 +5,6 @@
 //!
 
 
-
-#include <gtest/gtest.h>
-
 #include "common/unittest.h"
 
 #include "buffer/field.h"
@@ -63,13 +60,15 @@ namespace casual
 
       TEST( casual_field_buffer, pool)
       {
+         common::unittest::Trace trace;
+
          auto type = common::buffer::type::combine( CASUAL_FIELD);
          auto handle = buffer::pool::Holder::instance().allocate( type, 666);
 
          auto buffer = buffer::pool::Holder::instance().get( handle, 0);
 
-         EXPECT_TRUE( buffer.transport == 0) << "transport: " <<  buffer.transport;
-         EXPECT_TRUE( buffer.reserved == 666) << "reserved: " <<  buffer.reserved;
+         EXPECT_TRUE( buffer.transport() == 0) << "transport: " <<  buffer.transport();
+         EXPECT_TRUE( buffer.reserved() == 666) << "reserved: " <<  buffer.reserved();
          EXPECT_TRUE( buffer.payload().type == type) << "buffer.type: " << buffer.payload().type;
 
          buffer::pool::Holder::instance().deallocate( handle);
@@ -98,6 +97,8 @@ namespace casual
 
       TEST( casual_field_buffer, use_with_invalid_buffer__expecting_invalid_buffer)
       {
+         common::unittest::Trace trace;
+         
          char* invalid = nullptr;
 
          EXPECT_TRUE( casual_field_explore_buffer( nullptr, nullptr, nullptr) == CASUAL_FIELD_INVALID_HANDLE);
@@ -144,6 +145,8 @@ namespace casual
 
       TEST( casual_field_buffer, use_with_wrong_buffer__expecting_invalid_buffer)
       {
+         common::unittest::Trace trace;
+
          auto buffer = tpalloc( CASUAL_BUFFER_BINARY_TYPE, CASUAL_BUFFER_BINARY_SUBTYPE, 128);
          ASSERT_TRUE( buffer != nullptr);
 
@@ -154,6 +157,8 @@ namespace casual
 
       TEST( casual_field_buffer, add_binary_data_with_negative_size__expecting_invalid_argument)
       {
+         common::unittest::Trace trace;
+
          auto buffer = tpalloc( CASUAL_FIELD, "", 0);
          ASSERT_TRUE( buffer != nullptr);
 
@@ -164,6 +169,8 @@ namespace casual
 
       TEST( casual_field_buffer, allocate_with_zero_size__expecting_success)
       {
+         common::unittest::Trace trace;
+
          auto buffer = tpalloc( CASUAL_FIELD, "", 0);
          ASSERT_TRUE( buffer != nullptr);
 
@@ -175,6 +182,8 @@ namespace casual
 
       TEST( casual_field_buffer, reallocate_with_larger_size__expecting_success)
       {
+         common::unittest::Trace trace;
+
          auto buffer = tpalloc( CASUAL_FIELD, "", 64);
          ASSERT_TRUE( buffer != nullptr);
 
@@ -195,6 +204,8 @@ namespace casual
 
       TEST( casual_field_buffer, reallocate_with_smaller_size__expecting_success)
       {
+         common::unittest::Trace trace;
+
          auto buffer = tpalloc( CASUAL_FIELD, "", 128);
          ASSERT_TRUE( buffer != nullptr);
 
@@ -226,6 +237,8 @@ namespace casual
 
       TEST( casual_field_buffer, reallocate_with_invalid_handle__expecting_nullptr)
       {
+         common::unittest::Trace trace;
+
          auto buffer = tpalloc( CASUAL_FIELD, "", 128);
          ASSERT_TRUE( buffer != nullptr);
 
@@ -238,6 +251,8 @@ namespace casual
 
       TEST( casual_field_buffer, allocate_with_small_size_and_write_much__expecting_increased_size)
       {
+         common::unittest::Trace trace;
+
          auto buffer = tpalloc( CASUAL_FIELD, "", 64);
          ASSERT_TRUE( buffer != nullptr);
 
@@ -253,6 +268,8 @@ namespace casual
 
       TEST( casual_field_buffer, add_and_get__expecting_success)
       {
+         common::unittest::Trace trace;
+
          auto buffer = tpalloc( CASUAL_FIELD, "", 512);
          ASSERT_TRUE( buffer != nullptr);
 
@@ -314,6 +331,8 @@ namespace casual
 
       TEST( casual_field_buffer, add_and_get_several_occurrences__expecting_success)
       {
+         common::unittest::Trace trace;
+
          auto buffer = tpalloc( CASUAL_FIELD, "", 512);
          ASSERT_TRUE( buffer != nullptr);
 
@@ -346,6 +365,8 @@ namespace casual
 
       TEST( casual_field_buffer, add_one_and_get_two_occurrences__expecting_no_occurrence)
       {
+         common::unittest::Trace trace;
+
          auto buffer = tpalloc( CASUAL_FIELD, "", 512);
          ASSERT_TRUE( buffer != nullptr);
 
@@ -360,6 +381,8 @@ namespace casual
 
       TEST( casual_field_buffer, add_short_with_id_of_long__expecting_invalid_argument)
       {
+         common::unittest::Trace trace;
+
          auto buffer = tpalloc( CASUAL_FIELD, "", 512);
          ASSERT_TRUE( buffer != nullptr);
 
@@ -370,6 +393,8 @@ namespace casual
 
       TEST( casual_field_buffer, add_short_with_invalid_id__expecting_invalid_id)
       {
+         common::unittest::Trace trace;
+
          auto buffer = tpalloc( CASUAL_FIELD, "", 512);
          ASSERT_TRUE( buffer != nullptr);
 
@@ -382,6 +407,8 @@ namespace casual
 
       TEST( casual_field_buffer, get_type_from_id__expecting_success)
       {
+         common::unittest::Trace trace;
+
          int type;
          EXPECT_TRUE( casual_field_type_of_id( FLD_LONG1, &type) == CASUAL_FIELD_SUCCESS);
          EXPECT_TRUE( type == CASUAL_FIELD_LONG);
@@ -389,6 +416,8 @@ namespace casual
 
       TEST( casual_field_buffer, type_from_invalid_id__expecting_invalid_id)
       {
+         common::unittest::Trace trace;
+
          int type;
          EXPECT_TRUE( casual_field_type_of_id( 0, &type) == CASUAL_FIELD_INVALID_ARGUMENT);
          EXPECT_TRUE( casual_field_type_of_id( -1, &type) == CASUAL_FIELD_INVALID_ARGUMENT);
@@ -396,6 +425,8 @@ namespace casual
 
       TEST( casual_field_buffer, remove_occurrence_with_invalid_id__expecting_invalid_argument)
       {
+         common::unittest::Trace trace;
+
          auto buffer = tpalloc( CASUAL_FIELD, "", 512);
          ASSERT_TRUE( buffer != nullptr);
 
@@ -408,6 +439,8 @@ namespace casual
 
       TEST( casual_field_buffer, remove_occurrence_with_no_occurrence__expecting_no_occurrence)
       {
+         common::unittest::Trace trace;
+
          auto buffer = tpalloc( CASUAL_FIELD, "", 512);
          ASSERT_TRUE( buffer != nullptr);
 
@@ -419,6 +452,8 @@ namespace casual
 
       TEST( casual_field_buffer, add_and_remove_occurrence__expecting_success)
       {
+         common::unittest::Trace trace;
+
          auto buffer = tpalloc( CASUAL_FIELD, "", 512);
          ASSERT_TRUE( buffer != nullptr);
 
@@ -430,6 +465,8 @@ namespace casual
 
       TEST( casual_field_buffer, add_two_and_remove_first_occurrence_and_get_second_as_first__expecting_success)
       {
+         common::unittest::Trace trace;
+
          auto buffer = tpalloc( CASUAL_FIELD, "", 512);
          ASSERT_TRUE( buffer != nullptr);
 
@@ -445,6 +482,8 @@ namespace casual
 
       TEST( casual_field_buffer, add_twp_and_remove_second_occurrence_and_first_second_as_first__expecting_success)
       {
+         common::unittest::Trace trace;
+
          auto buffer = tpalloc( CASUAL_FIELD, "", 512);
          ASSERT_TRUE( buffer != nullptr);
 
@@ -461,6 +500,8 @@ namespace casual
 
       TEST( casual_field_buffer, remove_all_occurrences_and_check_existence__expecting_no_occurrence)
       {
+         common::unittest::Trace trace;
+
          auto buffer = tpalloc( CASUAL_FIELD, "", 512);
          ASSERT_TRUE( buffer != nullptr);
 
@@ -475,6 +516,8 @@ namespace casual
 
       TEST( casual_field_buffer, add_to_source_and_copy_buffer_and_get_from_target__expecting_success)
       {
+         common::unittest::Trace trace;
+
          auto source = tpalloc( CASUAL_FIELD, "", 64);
          ASSERT_TRUE( source != nullptr);
 
@@ -509,6 +552,8 @@ namespace casual
 
       TEST( casual_field_buffer, test_some_iteration)
       {
+         common::unittest::Trace trace;
+
          auto buffer = tpalloc( CASUAL_FIELD, "", 128);
 
          ASSERT_TRUE( buffer != nullptr);
@@ -575,6 +620,8 @@ namespace casual
 
       TEST_F( casual_field_buffer_repository, get_name_from_id_from_group_one__expecting_success)
       {
+         common::unittest::Trace trace;
+
          const char* name;
          ASSERT_TRUE( casual_field_name_of_id( FLD_SHORT1, &name) == CASUAL_FIELD_SUCCESS);
          EXPECT_STREQ( name, "FLD_SHORT1");
@@ -582,11 +629,15 @@ namespace casual
 
       TEST_F( casual_field_buffer_repository, get_name_from_id_to_null__expecting_success_and_no_crasch)
       {
+         common::unittest::Trace trace;
+
          ASSERT_TRUE( casual_field_name_of_id( FLD_SHORT1, nullptr) == CASUAL_FIELD_SUCCESS);
       }
 
       TEST_F( casual_field_buffer_repository, get_name_from_id_from_group_two__expecting_success)
       {
+         common::unittest::Trace trace;
+
          const char* name;
          ASSERT_TRUE( casual_field_name_of_id( FLD_DOUBLE2, &name) == CASUAL_FIELD_SUCCESS);
          EXPECT_STREQ( name, "FLD_DOUBLE2");
@@ -594,6 +645,8 @@ namespace casual
 
       TEST_F( casual_field_buffer_repository, get_id_from_name_from_group_one__expecting_success)
       {
+         common::unittest::Trace trace;
+
          long id;
          ASSERT_TRUE( casual_field_id_of_name( "FLD_SHORT2", &id) == CASUAL_FIELD_SUCCESS);
          EXPECT_EQ( id, FLD_SHORT2);
@@ -601,11 +654,15 @@ namespace casual
 
       TEST_F( casual_field_buffer_repository, get_id_from_name_to_null__expecting_success_and_no_crasch)
       {
+         common::unittest::Trace trace;
+
          ASSERT_TRUE( casual_field_id_of_name( "FLD_SHORT2", nullptr) == CASUAL_FIELD_SUCCESS);
       }
 
       TEST_F( casual_field_buffer_repository, get_id_from_name_from_group_two__expecting_success)
       {
+         common::unittest::Trace trace;
+
          long id;
          ASSERT_TRUE( casual_field_id_of_name( "FLD_DOUBLE3", &id) == CASUAL_FIELD_SUCCESS);
          EXPECT_EQ( id, FLD_DOUBLE3);
@@ -613,18 +670,24 @@ namespace casual
 
       TEST_F( casual_field_buffer_repository, get_name_from_non_existing_id__expecting_unkown_id)
       {
+         common::unittest::Trace trace;
+
          const char* name;
          ASSERT_TRUE( casual_field_name_of_id( 666, &name) == CASUAL_FIELD_OUT_OF_BOUNDS);
       }
 
       TEST_F( casual_field_buffer_repository, get_id_from_non_existing_name__expecting_unknown_id)
       {
+         common::unittest::Trace trace;
+
          long id;
          ASSERT_TRUE( casual_field_id_of_name( "NON_EXISTING_NAME", &id) == CASUAL_FIELD_OUT_OF_BOUNDS);
       }
 
       TEST_F( casual_field_buffer_repository, get_name_from_invalid_id__expecting_invalid_argument)
       {
+         common::unittest::Trace trace;
+
          const char* name;
          const auto result = casual_field_name_of_id( -666, &name);
          EXPECT_TRUE( result == CASUAL_FIELD_OUT_OF_BOUNDS) << result;
@@ -632,6 +695,8 @@ namespace casual
 
       TEST_F( casual_field_buffer_repository, get_id_from_null_name__expecting_invalid_argument)
       {
+         common::unittest::Trace trace;
+
          long id;
          const auto result = casual_field_id_of_name( nullptr, &id);
          EXPECT_TRUE( result == CASUAL_FIELD_INVALID_ARGUMENT) << result;
@@ -639,6 +704,8 @@ namespace casual
 
       TEST_F( casual_field_buffer_repository, get_id_from_invalid_name__expecting_invalid_argument)
       {
+         common::unittest::Trace trace;
+
          long id;
          const auto result = casual_field_id_of_name( "CSL_FLD_STRNG", &id);
          EXPECT_TRUE( result == CASUAL_FIELD_OUT_OF_BOUNDS) << result;
@@ -646,6 +713,8 @@ namespace casual
 
       TEST_F( casual_field_buffer_repository, get_name_of_type__expecting_success)
       {
+         common::unittest::Trace trace;
+
          const char* name = nullptr;
          EXPECT_TRUE( casual_field_name_of_type( CASUAL_FIELD_SHORT, &name) == CASUAL_FIELD_SUCCESS);
          EXPECT_STREQ( name, "short");
@@ -665,6 +734,8 @@ namespace casual
 
       TEST_F( casual_field_buffer_repository, get_name_of_invalid_type__expecting_invalid_argument)
       {
+         common::unittest::Trace trace;
+
          const char* name = nullptr;
          const auto result = casual_field_name_of_type( 666, &name);
          EXPECT_TRUE( result == CASUAL_FIELD_OUT_OF_BOUNDS) << result;
@@ -672,12 +743,16 @@ namespace casual
 
       TEST_F( casual_field_buffer_repository, get_name_of_type_to_null__expecting_success_and_no_crasch)
       {
+         common::unittest::Trace trace;
+
          const auto result = casual_field_name_of_type( CASUAL_FIELD_STRING, nullptr);
          EXPECT_TRUE( result == CASUAL_FIELD_SUCCESS) << result;
       }
 
       TEST_F( casual_field_buffer_repository, get_type_of_name__expecting_success)
       {
+         common::unittest::Trace trace;
+
          int type = -1;
          EXPECT_TRUE( casual_field_type_of_name( "short", &type) == CASUAL_FIELD_SUCCESS);
          EXPECT_EQ( type, CASUAL_FIELD_SHORT);
@@ -697,6 +772,8 @@ namespace casual
 
       TEST_F( casual_field_buffer_repository, get_type_of_invalid_name__expecting_invalid_argument)
       {
+         common::unittest::Trace trace;
+
          int type = -1;
          const auto result = casual_field_type_of_name( "666", &type);
          EXPECT_TRUE( result == CASUAL_FIELD_OUT_OF_BOUNDS) << result;
@@ -704,11 +781,15 @@ namespace casual
 
       TEST_F( casual_field_buffer_repository, get_type_of_name_to_null__expecting_success_and_no_crasch)
       {
+         common::unittest::Trace trace;
+
          EXPECT_TRUE( casual_field_type_of_name( "string", nullptr) == CASUAL_FIELD_SUCCESS);
       }
 
       TEST_F( casual_field_buffer_repository, print__expecting_success)
       {
+         common::unittest::Trace trace;
+
          auto buffer = tpalloc( CASUAL_FIELD, "", 512);
          ASSERT_TRUE( buffer != nullptr);
 
@@ -727,6 +808,8 @@ namespace casual
 
       TEST_F( casual_field_buffer_repository, dump__correct_transformation)
       {
+         common::unittest::Trace trace;
+
          auto buffer = tpalloc( CASUAL_FIELD, "", 512);
          ASSERT_TRUE( buffer != nullptr);
 
@@ -751,6 +834,8 @@ namespace casual
 
       TEST_F( casual_field_buffer_repository, DISABLED_match__expecting_match)
       {
+         common::unittest::Trace trace;
+
          auto buffer = tpalloc( CASUAL_FIELD, "", 512);
          ASSERT_TRUE( buffer != nullptr);
 
@@ -768,6 +853,8 @@ namespace casual
 
       TEST_F( casual_field_buffer_repository, DISABLED_match__expecting_optimized_match)
       {
+         common::unittest::Trace trace;
+
          auto buffer = tpalloc( CASUAL_FIELD, "", 512);
          ASSERT_TRUE( buffer != nullptr);
 
@@ -792,6 +879,8 @@ namespace casual
 
       TEST( casual_field_buffer, add_three_remove_two_field_and_then_iterate__expecting_third_as_first)
       {
+         common::unittest::Trace trace;
+
          auto buffer = tpalloc( CASUAL_FIELD, "", 512);
          ASSERT_TRUE( buffer != nullptr);
 
@@ -817,6 +906,8 @@ namespace casual
 
       TEST( casual_field_buffer, add_three_remove_middle_field_and_then_iterate__expecting_third_as_second)
       {
+         common::unittest::Trace trace;
+
          auto buffer = tpalloc( CASUAL_FIELD, "", 512);
          ASSERT_TRUE( buffer != nullptr);
 
@@ -843,6 +934,8 @@ namespace casual
 
       TEST( casual_field_buffer, get_pod_size__expecting_correct_sizes)
       {
+         common::unittest::Trace trace;
+
 
          long size = 0;
          EXPECT_FALSE( casual_field_plain_type_host_size( CASUAL_FIELD_SHORT, &size));
@@ -863,6 +956,8 @@ namespace casual
 
       TEST( casual_field_buffer, minimum_need__expecting_correct_results)
       {
+         common::unittest::Trace trace;
+
          long size = 0;
 
          EXPECT_TRUE( casual_field_minimum_need( CASUAL_FIELD_NO_ID, &size) == CASUAL_FIELD_INVALID_ARGUMENT);
@@ -890,6 +985,8 @@ namespace casual
 
       TEST( casual_field_buffer, add_values_as_void_and_get_as_type__expecting_success)
       {
+         common::unittest::Trace trace;
+
          auto buffer = tpalloc( CASUAL_FIELD, "", 512);
          ASSERT_TRUE( buffer != nullptr);
 
@@ -956,6 +1053,8 @@ namespace casual
 
       TEST( casual_field_buffer, add_values_as_type_and_get_as_void__expecting_success)
       {
+         common::unittest::Trace trace;
+
          auto buffer = tpalloc( CASUAL_FIELD, "", 512);
          ASSERT_TRUE( buffer != nullptr);
 
@@ -1035,6 +1134,8 @@ namespace casual
 
       TEST( casual_field_buffer, add_short_and_then_update_it__expecting_updated_value_on_get)
       {
+         common::unittest::Trace trace;
+
          auto buffer = tpalloc( CASUAL_FIELD, "", 512);
          ASSERT_TRUE( buffer != nullptr);
 
@@ -1061,6 +1162,8 @@ namespace casual
 
       TEST( casual_field_buffer, add_string_of_certain_size_and_update_it__expecting_equality)
       {
+         common::unittest::Trace trace;
+
          auto buffer = tpalloc( CASUAL_FIELD, "", 512);
          ASSERT_TRUE( buffer != nullptr);
 
@@ -1121,6 +1224,8 @@ namespace casual
 
       TEST( casual_field_buffer, count_occurrences__expecting_correct_numbers)
       {
+         common::unittest::Trace trace;
+
          auto buffer = tpalloc( CASUAL_FIELD, "", 512);
          ASSERT_TRUE( buffer != nullptr);
 
@@ -1145,6 +1250,8 @@ namespace casual
 
       TEST( casual_field_buffer, serialize_buffer__expecting_success)
       {
+         common::unittest::Trace trace;
+
          auto source = tpalloc( CASUAL_FIELD, "", 512);
          ASSERT_TRUE( source != nullptr);
 
@@ -1176,6 +1283,8 @@ namespace casual
 
       TEST( casual_field_buffer, serialize_invalid_buffer__expecting_failure)
       {
+         common::unittest::Trace trace;
+
          auto source = tpalloc( CASUAL_FIELD, "", 512);
          ASSERT_TRUE( source != nullptr);
 
@@ -1202,6 +1311,8 @@ namespace casual
 
       TEST( casual_field_buffer, DISABLED_performance__expecting_good_enough_speed)
       {
+         common::unittest::Trace trace;
+
          for( long idx = 0; idx < 100000; ++idx)
          {
             auto buffer = tpalloc( CASUAL_FIELD, "", 5120);
@@ -1252,6 +1363,8 @@ namespace casual
 
       TEST( casual_field_buffer, casual_field_type_of_id)
       {
+         common::unittest::Trace trace;
+
          int type = 0;
          EXPECT_TRUE( casual_field_type_of_id( FLD_CHAR1, &type) == CASUAL_FIELD_SUCCESS);
          EXPECT_TRUE( type == CASUAL_FIELD_CHAR);

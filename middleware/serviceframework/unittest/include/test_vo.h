@@ -9,15 +9,12 @@
 
 
 
-#include "serviceframework/namevaluepair.h"
-#include "serviceframework/archive/archive.h"
+#include "common/serialize/macro.h"
+#include "common/serialize/archive.h"
 
-#include "serviceframework/platform.h"
-#include "serviceframework/pimpl.h"
-
+#include "common/pimpl.h"
 
 #include <functional>
-
 
 namespace casual
 {
@@ -38,19 +35,19 @@ namespace casual
          std::string m_string = "foo";
          short m_short = 256;
          long long m_longlong = std::numeric_limits< long long>::max();
-         serviceframework::platform::time::point::type m_time = serviceframework::platform::time::point::type::max();
+         common::platform::time::point::type m_time = common::platform::time::point::type::max();
 
-         serviceframework::optional< long> m_optional = 42;
+         common::optional< long> m_optional = 42;
 
          CASUAL_CONST_CORRECT_SERIALIZE
          (
-            archive & CASUAL_MAKE_NVP( m_bool);
-            archive & CASUAL_MAKE_NVP( m_long);
-            archive & CASUAL_MAKE_NVP( m_string);
-            archive & CASUAL_MAKE_NVP( m_short);
-            archive & CASUAL_MAKE_NVP( m_longlong);
-            archive & CASUAL_MAKE_NVP( m_time);
-            archive & CASUAL_MAKE_NVP( m_optional);
+            CASUAL_SERIALIZE( m_bool);
+            CASUAL_SERIALIZE( m_long);
+            CASUAL_SERIALIZE( m_string);
+            CASUAL_SERIALIZE( m_short);
+            CASUAL_SERIALIZE( m_longlong);
+            CASUAL_SERIALIZE( m_time);
+            CASUAL_SERIALIZE( m_optional);
          )
 
          static std::string yaml()
@@ -108,21 +105,21 @@ value:
 
          CASUAL_CONST_CORRECT_SERIALIZE
          (
-            archive & CASUAL_MAKE_NVP( m_string);
-            archive & CASUAL_MAKE_NVP( m_values);
-            archive & CASUAL_MAKE_NVP( m_tuple);
+            CASUAL_SERIALIZE( m_string);
+            CASUAL_SERIALIZE( m_values);
+            CASUAL_SERIALIZE( m_tuple);
          )
       };
 
 
       struct Binary : public SimpleVO
       {
-         serviceframework::platform::binary::type m_binary;
+         common::platform::binary::type m_binary;
 
          CASUAL_CONST_CORRECT_SERIALIZE
          (
             SimpleVO::serialize( archive);
-            archive & CASUAL_MAKE_NVP( m_binary);
+            CASUAL_SERIALIZE( m_binary);
          )
       };
 
@@ -153,13 +150,13 @@ value:
 
 
 
-            void serialize( serviceframework::archive::Reader& reader);
-            void serialize( serviceframework::archive::Writer& writer) const;
+            void serialize( common::serialize::Reader& reader);
+            void serialize( common::serialize::Writer& writer) const;
 
 
          private:
             class Implementation;
-            serviceframework::Pimpl< Implementation> m_pimpl;
+            common::basic_pimpl< Implementation> m_pimpl;
          };
 
       } // pimpl

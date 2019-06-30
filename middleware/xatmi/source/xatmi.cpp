@@ -97,8 +97,7 @@ long tptypes( const char* const ptr, char* const type, char* const subtype)
          casual::common::algorithm::copy_max( std::get< 1>( combined), destination);
       }
 
-      return buffer.reserved;
-
+      return buffer.reserved();
    }
    catch( ...)
    {

@@ -13,6 +13,7 @@
 #include "common/exception/handle.h"
 
 #include <utility>
+#include <functional>
 
 namespace casual 
 {

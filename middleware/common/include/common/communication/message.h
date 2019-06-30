@@ -54,8 +54,13 @@ namespace casual
                      static_assert( sizeof( network_uuid_type) == 16, "Wrong size for uuid");
                      static_assert( sizeof( network_size_type) ==  8, "Wrong size for size");
 
-                     friend std::ostream& operator << ( std::ostream& out, const Header& value);
 
+                     CASUAL_CONST_CORRECT_SERIALIZE(
+                     {
+                        CASUAL_SERIALIZE( type);
+                        CASUAL_SERIALIZE( correlation);
+                        CASUAL_SERIALIZE( size);
+                     })
                   };
 
                   static_assert( std::is_trivially_copyable< Header>::value, "Complete::Header needs to be trivially copyable" );
@@ -67,8 +72,6 @@ namespace casual
                   } // header
 
                } // network
-
-
             } // complete
 
             struct Complete
@@ -89,10 +92,7 @@ namespace casual
                   add( std::forward< Chunk>( chunk));
                }
 
-
-
                complete::network::Header header() const;
-
 
                Complete( Complete&&) noexcept;
                Complete& operator = ( Complete&&) noexcept;
@@ -111,26 +111,19 @@ namespace casual
                Uuid correlation;
                payload_type payload;
 
-
-
-
                //! @param transport
                template< typename Chunk>
                void add( Chunk&& chunk)
                {
-
                   const auto size = std::distance( std::begin( chunk), std::end( chunk));
 
-                  //
                   // Some sanity checks
-                  //
                   if( Complete::size() < offset( chunk) + size)
                   {
                      throw exception::system::invalid::Argument{
                         string::compose( "added chunk is out of bounds - size: ", payload.size())
                      };
                   }
-
 
                   auto destination = range::make( std::begin( payload) + offset( chunk), size);
 
@@ -149,14 +142,11 @@ namespace casual
 
                      if( splitted)
                      {
-                        //
                         // chunk is out of order
-                        //
                         m_unhandled.push_back( splitted);
                      }
                   }
 
-                  //
                   // Remove those who have been handled.
                   //
                   // This should work, doesn't on g++ 5.4
@@ -167,25 +157,19 @@ namespace casual
                   m_unhandled.erase( last, std::end( m_unhandled));
                }
 
-
-
                inline const std::vector< range_type>& unhandled() { return m_unhandled;}
 
-               //!
                //! So we can send complete messages as part of other
                //! messages
-               //!
-               CASUAL_CONST_CORRECT_MARSHAL(
+               CASUAL_CONST_CORRECT_SERIALIZE(
                {
-                  archive & type;
-                  archive & correlation;
-                  archive & payload;
+                  CASUAL_SERIALIZE( type);
+                  CASUAL_SERIALIZE( correlation);
+                  CASUAL_SERIALIZE( payload);
                })
-
 
                friend std::ostream& operator << ( std::ostream& out, const Complete& value);
                friend void swap( Complete& lhs, Complete& rhs);
-
 
                friend bool operator == ( const Complete& complete, const Uuid& correlation);
                friend inline bool operator == ( const Uuid& correlation, const Complete& complete)
@@ -199,14 +183,9 @@ namespace casual
 
             static_assert( traits::is_movable< Complete>::value, "not movable");
 
-
-
          } // message
-
       } // communication
-
    } // common
-
 } // casual
 
 

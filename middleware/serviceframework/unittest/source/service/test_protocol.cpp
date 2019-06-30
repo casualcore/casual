@@ -7,13 +7,10 @@
 
 #include <gtest/gtest.h>
 
-
 #include "serviceframework/service/protocol.h"
-#include "serviceframework/archive/create.h"
-
+#include "common/serialize/create.h"
 
 #include "../../include/test_vo.h"
-
 
 #include "common/unittest.h"
 
@@ -41,8 +38,8 @@ namespace casual
             {
                auto result = prepare( std::move( protocol));
 
-               auto writer = archive::create::writer::from( result.payload.type, result.payload.memory);
-               writer << CASUAL_MAKE_NVP( value);
+               auto writer = common::serialize::create::writer::from( result.payload.type, result.payload.memory);
+               writer << CASUAL_NAMED_VALUE( value);
 
                return result;
             }
@@ -75,7 +72,7 @@ namespace casual
 
          {
             long value = 0;
-            protocol >> CASUAL_MAKE_NVP( value);
+            protocol >> CASUAL_NAMED_VALUE( value);
 
             EXPECT_TRUE( value == some_long) << "value: " << value;
          }
@@ -96,7 +93,7 @@ namespace casual
 
          {
             test::SimpleVO value;
-            protocol >> CASUAL_MAKE_NVP( value);
+            protocol >> CASUAL_NAMED_VALUE( value);
 
             EXPECT_TRUE( value.m_bool == false);
             EXPECT_TRUE( value.m_long == 42);
@@ -116,7 +113,7 @@ namespace casual
             value.m_long = 42;
             value.m_string = "poop";
 
-            protocol << CASUAL_MAKE_NVP( value);
+            protocol << CASUAL_NAMED_VALUE( value);
          }
 
          auto result = protocol.finalize();
@@ -124,8 +121,8 @@ namespace casual
          {
             test::SimpleVO value;
 
-            auto reader = archive::create::reader::strict::from( result.payload.type, result.payload.memory);
-            reader >> CASUAL_MAKE_NVP( value);
+            auto reader = common::serialize::create::reader::strict::from( result.payload.type, result.payload.memory);
+            reader >> CASUAL_NAMED_VALUE( value);
 
             EXPECT_TRUE( value.m_bool == false);
             EXPECT_TRUE( value.m_long == 42);

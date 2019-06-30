@@ -12,7 +12,7 @@
 #include "common/transaction/id.h"
 #include "common/service/type.h"
 
-#include "common/marshal/marshal.h"
+#include "common/serialize/macro.h"
 
 
 #include <type_traits>
@@ -25,7 +25,6 @@ namespace casual
       {
          enum class Type : platform::ipc::message::type
          {
-            //
             // message type can't be 0!
             // We use 0 to indicate absent message
             absent_message = 0,
@@ -237,12 +236,11 @@ namespace casual
             //! The execution-id
             mutable Uuid execution;
 
-            CASUAL_CONST_CORRECT_MARSHAL(
+            CASUAL_CONST_CORRECT_SERIALIZE(
             {
                // correlation is part of ipc::message::Complete, and is
                // handled by the ipc-abstraction (marshaled 'on the side')
-
-               archive & execution;
+               CASUAL_SERIALIZE( execution);
             })
          };
 
@@ -250,10 +248,10 @@ namespace casual
          template< typename Message, message::Type message_type>
          struct type_wrapper : Message, basic_message< message_type>
          {
-            CASUAL_CONST_CORRECT_MARSHAL(
+            CASUAL_CONST_CORRECT_SERIALIZE(
             {
-               basic_message< message_type>::marshal( archive);
-               Message::marshal( archive);
+               basic_message< message_type>::serialize( archive);
+               Message::serialize( archive);
             })
          };
 
@@ -270,14 +268,11 @@ namespace casual
             platform::time::point::type start;
             platform::time::point::type end;
 
-            CASUAL_CONST_CORRECT_MARSHAL(
+            CASUAL_CONST_CORRECT_SERIALIZE(
             {
-               archive & start;
-               archive & end;
+               CASUAL_SERIALIZE( start);
+               CASUAL_SERIALIZE( end);
             })
-
-            friend std::ostream& operator << ( std::ostream& out, const Statistics& message);
-
          };
 
 
@@ -300,11 +295,11 @@ namespace casual
                common::process::Handle process = common::process::handle();
                bool reply = false;
 
-               CASUAL_CONST_CORRECT_MARSHAL(
+               CASUAL_CONST_CORRECT_SERIALIZE(
                {
-                  base_type::marshal( archive);
-                  archive & process;
-                  archive & reply;
+                  base_type::serialize( archive);
+                  CASUAL_SERIALIZE( process);
+                  CASUAL_SERIALIZE( reply);
                })
             };
             static_assert( traits::is_movable< Request>::value, "not movable");
@@ -318,16 +313,12 @@ namespace casual
          {
             common::process::Handle process;
 
-            CASUAL_CONST_CORRECT_MARSHAL(
+            CASUAL_CONST_CORRECT_SERIALIZE(
             {
-               basic_message< type>::marshal( archive);
-               archive & process;
+               basic_message< type>::serialize( archive);
+               CASUAL_SERIALIZE( process);
             })
 
-            friend std::ostream& operator << ( std::ostream& out, const basic_request& value) 
-            {
-               return out << "{ process: " << value.process << '}';
-            }
          };
 
          template< message::Type type>
@@ -335,17 +326,16 @@ namespace casual
          {
             common::process::Handle process;
 
-            CASUAL_CONST_CORRECT_MARSHAL(
+            CASUAL_CONST_CORRECT_SERIALIZE(
             {
-               basic_message< type>::marshal( archive);
-               archive & process;
+               basic_message< type>::serialize( archive);
+               CASUAL_SERIALIZE( process);
             })
          };
 
 
          namespace server
          {
-
             template< message::Type type>
             struct basic_id : basic_request< type>
             {
@@ -353,18 +343,17 @@ namespace casual
 
             namespace connect
             {
-
                template< message::Type type>
                struct basic_request : basic_id< type>
                {
                   std::string path;
                   Uuid identification;
 
-                  CASUAL_CONST_CORRECT_MARSHAL(
+                  CASUAL_CONST_CORRECT_SERIALIZE(
                   {
-                     basic_id< type>::marshal( archive);
-                     archive & path;
-                     archive & identification;
+                     basic_id< type>::serialize( archive);
+                     CASUAL_SERIALIZE( path);
+                     CASUAL_SERIALIZE( identification);
                   })
                };
 
@@ -380,10 +369,10 @@ namespace casual
 
                   Directive directive = Directive::start;
 
-                  CASUAL_CONST_CORRECT_MARSHAL(
+                  CASUAL_CONST_CORRECT_SERIALIZE(
                   {
-                     basic_message< type>::marshal( archive);
-                     archive & directive;
+                     basic_message< type>::serialize( archive);
+                     CASUAL_SERIALIZE( directive);
                   })
                };
             } // connect
@@ -409,12 +398,12 @@ namespace casual
                   std::vector< std::string> arguments;
                   std::vector< std::string> environment;
 
-                  CASUAL_CONST_CORRECT_MARSHAL(
+                  CASUAL_CONST_CORRECT_SERIALIZE(
                   {
-                     basic_message< Type::process_spawn_request>::marshal( archive);
-                     archive & executable;
-                     archive & arguments;
-                     archive & environment;
+                     basic_message< Type::process_spawn_request>::serialize( archive);
+                     CASUAL_SERIALIZE( executable);
+                     CASUAL_SERIALIZE( arguments);
+                     CASUAL_SERIALIZE( environment);
                   })
                };
                static_assert( traits::is_movable< Request>::value, "not movable");

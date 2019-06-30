@@ -8,11 +8,9 @@
 #pragma once
 
 
-
-#include "serviceframework/namevaluepair.h"
-#include "serviceframework/platform.h"
+#include "common/serialize/macro.h"
+#include "common/platform.h"
 #include "common/domain.h"
-
 
 
 namespace casual
@@ -23,7 +21,7 @@ namespace casual
       {
          namespace admin
          {
-            using size_type = serviceframework::platform::size::type;
+            using size_type = common::platform::size::type;
 
 
             struct Group
@@ -36,9 +34,9 @@ namespace casual
 
                CASUAL_CONST_CORRECT_SERIALIZE(
                {
-                  archive & CASUAL_MAKE_NVP( process);
-                  archive & CASUAL_MAKE_NVP( name);
-                  archive & CASUAL_MAKE_NVP( queuebase);
+                  CASUAL_SERIALIZE( process);
+                  CASUAL_SERIALIZE( name);
+                  CASUAL_SERIALIZE( queuebase);
                })
             };
             namespace remote
@@ -50,8 +48,8 @@ namespace casual
    
                   CASUAL_CONST_CORRECT_SERIALIZE(
                   {
-                     archive & CASUAL_MAKE_NVP( process);
-                     archive & CASUAL_MAKE_NVP( order);
+                     CASUAL_SERIALIZE( process);
+                     CASUAL_SERIALIZE( order);
                   })
                };
 
@@ -62,8 +60,8 @@ namespace casual
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
                   {
-                     archive & CASUAL_MAKE_NVP( name);
-                     archive & CASUAL_MAKE_NVP( pid);
+                     CASUAL_SERIALIZE( name);
+                     CASUAL_SERIALIZE( pid);
                   })
 
                   inline friend bool operator < ( const Queue& lhs, const Queue& rhs)
@@ -87,30 +85,30 @@ namespace casual
                };
 
 
-               serviceframework::strong::process::id group;
-               serviceframework::strong::queue::id id;
+               common::strong::process::id group;
+               common::strong::queue::id id;
                std::string name;
                Type type;
                size_type retries;
-               serviceframework::strong::queue::id error;
+               common::strong::queue::id error;
 
                size_type count;
                size_type size;
                size_type uncommitted;
-               serviceframework::platform::time::point::type timestamp;
+               common::platform::time::point::type timestamp;
 
                CASUAL_CONST_CORRECT_SERIALIZE(
                {
-                  archive & CASUAL_MAKE_NVP( group);
-                  archive & CASUAL_MAKE_NVP( id);
-                  archive & CASUAL_MAKE_NVP( name);
-                  archive & CASUAL_MAKE_NVP( type);
-                  archive & CASUAL_MAKE_NVP( retries);
-                  archive & CASUAL_MAKE_NVP( error);
-                  archive & CASUAL_MAKE_NVP( count);
-                  archive & CASUAL_MAKE_NVP( size);
-                  archive & CASUAL_MAKE_NVP( uncommitted);
-                  archive & CASUAL_MAKE_NVP( timestamp);
+                  CASUAL_SERIALIZE( group);
+                  CASUAL_SERIALIZE( id);
+                  CASUAL_SERIALIZE( name);
+                  CASUAL_SERIALIZE( type);
+                  CASUAL_SERIALIZE( retries);
+                  CASUAL_SERIALIZE( error);
+                  CASUAL_SERIALIZE( count);
+                  CASUAL_SERIALIZE( size);
+                  CASUAL_SERIALIZE( uncommitted);
+                  CASUAL_SERIALIZE( timestamp);
                })
 
                inline friend bool operator < ( const Queue& lhs, const Queue& rhs)
@@ -126,41 +124,35 @@ namespace casual
 
             struct Message
             {
-
-
-               serviceframework::platform::Uuid id;
-               serviceframework::strong::queue::id queue;
-               serviceframework::strong::queue::id origin;
-               serviceframework::platform::binary::type trid;
+               common::Uuid id;
+               common::strong::queue::id queue;
+               common::strong::queue::id origin;
+               common::platform::binary::type trid;
                size_type state;
                std::string reply;
                size_type redelivered;
                std::string type;
 
-               serviceframework::platform::time::point::type available;
-               serviceframework::platform::time::point::type timestamp;
+               common::platform::time::point::type available;
+               common::platform::time::point::type timestamp;
 
                size_type size;
 
-
                CASUAL_CONST_CORRECT_SERIALIZE(
                {
-                  archive & CASUAL_MAKE_NVP( id);
-                  archive & CASUAL_MAKE_NVP( queue);
-                  archive & CASUAL_MAKE_NVP( origin);
-                  archive & CASUAL_MAKE_NVP( trid);
-                  archive & CASUAL_MAKE_NVP( state);
-                  archive & CASUAL_MAKE_NVP( reply);
-                  archive & CASUAL_MAKE_NVP( redelivered);
-                  archive & CASUAL_MAKE_NVP( type);
-                  archive & CASUAL_MAKE_NVP( available);
-                  archive & CASUAL_MAKE_NVP( timestamp);
-                  archive & CASUAL_MAKE_NVP( size);
+                  CASUAL_SERIALIZE( id);
+                  CASUAL_SERIALIZE( queue);
+                  CASUAL_SERIALIZE( origin);
+                  CASUAL_SERIALIZE( trid);
+                  CASUAL_SERIALIZE( state);
+                  CASUAL_SERIALIZE( reply);
+                  CASUAL_SERIALIZE( redelivered);
+                  CASUAL_SERIALIZE( type);
+                  CASUAL_SERIALIZE( available);
+                  CASUAL_SERIALIZE( timestamp);
+                  CASUAL_SERIALIZE( size);
                })
-
             };
-
-
 
             struct State
             {
@@ -174,17 +166,17 @@ namespace casual
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
                   {
-                     archive & CASUAL_MAKE_NVP( domains);
-                     archive & CASUAL_MAKE_NVP( queues);
+                     CASUAL_SERIALIZE( domains);
+                     CASUAL_SERIALIZE( queues);
                   })
 
                } remote;
 
                CASUAL_CONST_CORRECT_SERIALIZE(
                {
-                  archive & CASUAL_MAKE_NVP( groups);
-                  archive & CASUAL_MAKE_NVP( queues);
-                  archive & CASUAL_MAKE_NVP( remote);
+                  CASUAL_SERIALIZE( groups);
+                  CASUAL_SERIALIZE( queues);
+                  CASUAL_SERIALIZE( remote);
                })
 
             };
@@ -194,13 +186,13 @@ namespace casual
             {
                struct
                {
-                  serviceframework::strong::queue::id id;
+                  common::strong::queue::id id;
                   std::string name;
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
                   {
-                     archive & CASUAL_MAKE_NVP( id);
-                     archive & CASUAL_MAKE_NVP( name);
+                     CASUAL_SERIALIZE( id);
+                     CASUAL_SERIALIZE( name);
                   })
                } queue;
 
@@ -209,8 +201,8 @@ namespace casual
 
                CASUAL_CONST_CORRECT_SERIALIZE(
                {
-                  archive & CASUAL_MAKE_NVP( queue);
-                  archive & CASUAL_MAKE_NVP( restored);
+                  CASUAL_SERIALIZE( queue);
+                  CASUAL_SERIALIZE( restored);
                })
             };
 

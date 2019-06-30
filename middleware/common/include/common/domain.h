@@ -8,7 +8,7 @@
 #pragma once
 
 
-#include "common/marshal/marshal.h"
+#include "common/serialize/macro.h"
 #include "common/uuid.h"
 #include "common/file.h"
 #include "common/process.h"
@@ -31,12 +31,10 @@ namespace casual
             Uuid id;
             std::string name;
 
-            CASUAL_CONST_CORRECT_MARSHAL({
-               archive & id;
-               archive & name;
+            CASUAL_CONST_CORRECT_SERIALIZE({
+               CASUAL_SERIALIZE( id);
+               CASUAL_SERIALIZE( name);
             })
-
-            friend std::ostream& operator << ( std::ostream& out, const Identity& value);
 
             friend bool operator == ( const Identity& lhs, const Identity& rhs);
             inline friend bool operator != ( const Identity& lhs, const Identity& rhs) { return ! ( lhs == rhs);}
@@ -61,16 +59,14 @@ namespace casual
                process::Handle process;
                Identity identity;
 
-               friend std::ostream& operator << ( std::ostream& out, const Result& value);
+               CASUAL_CONST_CORRECT_SERIALIZE_WRITE({
+                  CASUAL_SERIALIZE( process);
+                  CASUAL_SERIALIZE( identity);
+               })
             };
 
-            Result read( const std::string& path, process::pattern::Sleep retries);
             Result read( const std::string& path);
-
-            Result read( process::pattern::Sleep retries);
             Result read();
-
-            
 
          } // singleton
 

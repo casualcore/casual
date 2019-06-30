@@ -54,7 +54,7 @@ namespace casual
 
          auto groups = transform::groups( local::state());
 
-         ASSERT_TRUE( groups.size() == 2) << CASUAL_MAKE_NVP( groups);
+         ASSERT_TRUE( groups.size() == 2) << CASUAL_NAMED_VALUE( groups);
 
       }
 

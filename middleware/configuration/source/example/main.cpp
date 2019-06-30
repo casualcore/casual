@@ -11,8 +11,8 @@
 #include "configuration/example/build/server.h"
 #include "configuration/example/resource/property.h"
 
-#include "serviceframework/namevaluepair.h"
-#include "serviceframework/archive/create.h"
+#include "common/serialize/macro.h"
+#include "common/serialize/create.h"
 
 
 #include "common/argument.h"

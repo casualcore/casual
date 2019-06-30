@@ -14,10 +14,9 @@
 #include "common/process.h"
 #include "common/exception/system.h"
 #include "common/exception/handle.h"
+#include "common/serialize/log.h"
 #include "configuration/resource/property.h"
 
-
-#include "serviceframework/log.h"
 
 #include <string>
 #include <iostream>
@@ -102,8 +101,8 @@ int main( int argc, char** argv)
 
                            CASUAL_CONST_CORRECT_SERIALIZE
                            (
-                              archive & CASUAL_MAKE_NVP( link);
-                              archive & CASUAL_MAKE_NVP( compile);
+                              CASUAL_SERIALIZE( link);
+                              CASUAL_SERIALIZE( compile);
                            )
 
                         } directives;
@@ -117,13 +116,13 @@ int main( int argc, char** argv)
 
                         CASUAL_CONST_CORRECT_SERIALIZE
                         (
-                           archive & CASUAL_MAKE_NVP( output);
-                           archive & CASUAL_MAKE_NVP( key);
-                           archive & CASUAL_MAKE_NVP( directives);
-                           archive & CASUAL_MAKE_NVP( compiler);
-                           archive & CASUAL_MAKE_NVP( verbose);
-                           archive & CASUAL_MAKE_NVP( keep_source);
-                           archive & CASUAL_MAKE_NVP( properties_file);
+                           CASUAL_SERIALIZE( output);
+                           CASUAL_SERIALIZE( key);
+                           CASUAL_SERIALIZE( directives);
+                           CASUAL_SERIALIZE( compiler);
+                           CASUAL_SERIALIZE( verbose);
+                           CASUAL_SERIALIZE( keep_source);
+                           CASUAL_SERIALIZE( properties_file);
 
                         )
                      };
@@ -217,7 +216,7 @@ int main( int argc, char** argv)
 
                            if( settings.verbose)
                            {
-                              std::cout << '\n' << CASUAL_MAKE_NVP( settings);
+                              std::cout << '\n'; //common::serialize::log::writer( std::cout) << CASUAL_NAMED_VALUE( settings);
                            }
                         }
 
@@ -225,7 +224,7 @@ int main( int argc, char** argv)
 
                         if( settings.verbose)
                         {
-                           std::cout << '\n' << CASUAL_MAKE_NVP( xa_switch) << '\n';
+                           std::cout << '\n'; // common::serialize::log::writer( std::cout) << CASUAL_NAMED_VALUE( xa_switch) << '\n';
                         }
 
                         if( settings.output.empty())

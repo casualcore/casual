@@ -11,7 +11,8 @@
 
 #include "queue/api/message.h"
 
-#include "serviceframework/platform.h"
+#include "common/platform.h"
+#include "common/uuid.h"
 
 
 namespace casual
@@ -20,7 +21,7 @@ namespace casual
    {
       inline namespace v1  {
 
-      serviceframework::platform::Uuid enqueue( const std::string& queue, const Message& message);
+      common::Uuid enqueue( const std::string& queue, const Message& message);
 
       std::vector< Message> dequeue( const std::string& queue);
       std::vector< Message> dequeue( const std::string& queue, const Selector& selector);
@@ -53,7 +54,7 @@ namespace casual
       namespace xatmi
       {
 
-         serviceframework::platform::Uuid enqueue( const std::string& queue, const Message& message);
+         common::Uuid enqueue( const std::string& queue, const Message& message);
 
          std::vector< Message> dequeue( const std::string& queue);
          std::vector< Message> dequeue( const std::string& queue, const Selector& selector);
@@ -65,7 +66,7 @@ namespace casual
          struct Affected
          {
             std::string queue;
-            serviceframework::platform::size::type restored = 0;
+            common::platform::size::type restored = 0;
          };
 
          std::vector< Affected> queue( const std::vector< std::string>& queues);

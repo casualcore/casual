@@ -9,6 +9,7 @@
 
 #include "common/signal.h"
 #include "common/execution.h"
+#include "common/communication/ipc.h"
 
 namespace casual
 {
@@ -25,6 +26,8 @@ namespace casual
             { 
                execution::reset();
                signal::clear();
+
+               communication::ipc::inbound::device().clear();
             }
 
             Scope::~Scope() { signal::clear();}

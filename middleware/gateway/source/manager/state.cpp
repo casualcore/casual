@@ -37,8 +37,8 @@ namespace casual
                   case base_connection::Runlevel::online: { return out << "online";}
                   case base_connection::Runlevel::offline: { return out << "offline";}
                   case base_connection::Runlevel::error: { return out << "error";}
-                  default: return out << "unknown";
                }
+               return out << "unknown";
             }
 
             bool base_connection::running() const
@@ -54,13 +54,6 @@ namespace casual
                }
             }
 
-            namespace inbound
-            {
-               std::ostream& operator << ( std::ostream& out, const Connection& value)
-               {
-                  return out << "{ runlevel: " << value.runlevel << ", process: " << value.process << ", remote: " << value.remote << '}';
-               }
-            }
 
             namespace outbound
             {
@@ -74,16 +67,6 @@ namespace casual
                   common::log::line( log, "manager::state::outbound::reset: ", *this);
                }
 
-               std::ostream& operator << ( std::ostream& out, const Connection& value)
-               {
-                  return out << "{ runlevel: " << value.runlevel
-                        << ", process: " << value.process
-                        << ", remote: " << value.remote
-                        << ", restart: " << value.restart
-                        << ", order: " << value.order
-                        << ", services: " << range::make( value.services)
-                        << '}';
-               }
             }
 
             namespace coordinate
@@ -169,20 +152,9 @@ namespace casual
                case State::Runlevel::startup: { return out << "startup";}
                case State::Runlevel::online: { return out << "online";}
                case State::Runlevel::shutdown: { return out << "shutdown";}
-               default: return out << "unknown";
             }
+            return out << "unknown";
          }
-
-         std::ostream& operator << ( std::ostream& out, const State& value)
-         {
-            return out << "{ runlevel: " << value.runlevel
-               << ", listeners: " << range::make( value.listeners())
-               << ", outbound: " << range::make( value.connections.outbound)
-               << ", inbound: " << range::make( value.connections.inbound)
-               << '}';
-
-         }
-
       } // manager
    } // gateway
 } // casual

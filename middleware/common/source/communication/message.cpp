@@ -42,19 +42,6 @@ namespace casual
                   } // <unnamed>
                } // host
 
-               namespace network
-               {
-                  std::ostream& operator << ( std::ostream& out, const Header& value)
-                  {
-                     return out  <<
-                        "{ type: " << host::header::type( value) <<
-                        ", correlation: " << uuid::string( value.correlation) <<
-                        ", size: " << host::header::size( value) <<
-                        '}';
-                  }
-
-               } // network
-
             } // complete
 
             Complete::Complete() = default;

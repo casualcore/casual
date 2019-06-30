@@ -36,13 +36,13 @@ namespace casual
                      std::string openinfo;
                      std::string closeinfo;
 
-                     CASUAL_CONST_CORRECT_MARSHAL(
-                        archive & name;
-                        archive & key;
-                        archive & instances;
-                        archive & note;
-                        archive & openinfo;
-                        archive & closeinfo;
+                     CASUAL_CONST_CORRECT_SERIALIZE(
+                        CASUAL_SERIALIZE( name);
+                        CASUAL_SERIALIZE( key);
+                        CASUAL_SERIALIZE( instances);
+                        CASUAL_SERIALIZE( note);
+                        CASUAL_SERIALIZE( openinfo);
+                        CASUAL_SERIALIZE( closeinfo);
                      )
                   };
 
@@ -51,10 +51,10 @@ namespace casual
                      std::string log;
                      std::vector< Resource> resources;
 
-                     CASUAL_CONST_CORRECT_MARSHAL
+                     CASUAL_CONST_CORRECT_SERIALIZE
                      (
-                        archive & log;
-                        archive & resources;
+                        CASUAL_SERIALIZE( log);
+                        CASUAL_SERIALIZE( resources);
                      )
                   };
 
@@ -71,20 +71,20 @@ namespace casual
                         platform::size::type size = 0;
                         platform::size::type messages = 0;
 
-                        CASUAL_CONST_CORRECT_MARSHAL
+                        CASUAL_CONST_CORRECT_SERIALIZE
                         (
-                           archive & size;
-                           archive & messages;
+                           CASUAL_SERIALIZE( size);
+                           CASUAL_SERIALIZE( messages);
                         )
                      };
 
                      std::string address;
                      Limit limit;
 
-                     CASUAL_CONST_CORRECT_MARSHAL
+                     CASUAL_CONST_CORRECT_SERIALIZE
                      (
-                        archive & address;
-                        archive & limit;
+                        CASUAL_SERIALIZE( address);
+                        CASUAL_SERIALIZE( limit);
                      )
                   };
 
@@ -97,13 +97,13 @@ namespace casual
                      std::vector< std::string> queues;
 
 
-                     CASUAL_CONST_CORRECT_MARSHAL
+                     CASUAL_CONST_CORRECT_SERIALIZE
                      (
-                        archive & restart;
-                        archive & address;
-                        archive & note;
-                        archive & services;
-                        archive & queues;
+                        CASUAL_SERIALIZE( restart);
+                        CASUAL_SERIALIZE( address);
+                        CASUAL_SERIALIZE( note);
+                        CASUAL_SERIALIZE( services);
+                        CASUAL_SERIALIZE( queues);
                      )
                   };
 
@@ -112,10 +112,10 @@ namespace casual
                      std::vector< Listener> listeners;
                      std::vector< Connection> connections;
 
-                     CASUAL_CONST_CORRECT_MARSHAL
+                     CASUAL_CONST_CORRECT_SERIALIZE
                      (
-                        archive & listeners;
-                        archive & connections;
+                        CASUAL_SERIALIZE( listeners);
+                        CASUAL_SERIALIZE( connections);
                      )
                   };
 
@@ -134,11 +134,11 @@ namespace casual
                      platform::size::type retries = 0;
                      std::string note;
 
-                     CASUAL_CONST_CORRECT_MARSHAL
+                     CASUAL_CONST_CORRECT_SERIALIZE
                      (
-                        archive & name;
-                        archive & retries;
-                        archive & note;
+                        CASUAL_SERIALIZE( name);
+                        CASUAL_SERIALIZE( retries);
+                        CASUAL_SERIALIZE( note);
                      )
                   };
 
@@ -149,12 +149,12 @@ namespace casual
                      std::string note;
                      std::vector< Queue> queues;
 
-                     CASUAL_CONST_CORRECT_MARSHAL
+                     CASUAL_CONST_CORRECT_SERIALIZE
                      (
-                        archive & name;
-                        archive & queuebase;
-                        archive & note;
-                        archive & queues;
+                        CASUAL_SERIALIZE( name);
+                        CASUAL_SERIALIZE( queuebase);
+                        CASUAL_SERIALIZE( note);
+                        CASUAL_SERIALIZE( queues);
                      )
                   };
 
@@ -162,9 +162,9 @@ namespace casual
                   {
                      std::vector< Group> groups;
 
-                     CASUAL_CONST_CORRECT_MARSHAL
+                     CASUAL_CONST_CORRECT_SERIALIZE
                      (
-                        archive & groups;
+                        CASUAL_SERIALIZE( groups);
                      )
                   };
 
@@ -182,11 +182,11 @@ namespace casual
                      common::platform::time::unit timeout = common::platform::time::unit::zero();
                      std::vector< std::string> routes;
 
-                     CASUAL_CONST_CORRECT_MARSHAL
+                     CASUAL_CONST_CORRECT_SERIALIZE
                      (
-                        archive & name;
-                        archive & timeout;
-                        archive & routes;
+                        CASUAL_SERIALIZE( name);
+                        CASUAL_SERIALIZE( timeout);
+                        CASUAL_SERIALIZE( routes);
                      )
                   };
 
@@ -197,10 +197,10 @@ namespace casual
 
                      std::vector< Service> services;
 
-                     CASUAL_CONST_CORRECT_MARSHAL
+                     CASUAL_CONST_CORRECT_SERIALIZE
                      (
-                        archive & default_timeout;
-                        archive & services;
+                        CASUAL_SERIALIZE( default_timeout);
+                        CASUAL_SERIALIZE( services);
                      )
                   };
 
@@ -217,13 +217,13 @@ namespace casual
                   service::Manager service;
 
 
-                  CASUAL_CONST_CORRECT_MARSHAL
+                  CASUAL_CONST_CORRECT_SERIALIZE
                   (
-                     archive & name;
-                     archive & transaction;
-                     archive & gateway;
-                     archive & queue;
-                     archive & service;
+                     CASUAL_SERIALIZE( name);
+                     CASUAL_SERIALIZE( transaction);
+                     CASUAL_SERIALIZE( gateway);
+                     CASUAL_SERIALIZE( queue);
+                     CASUAL_SERIALIZE( service);
                   )
                };
                static_assert( traits::is_movable< Domain>::value, "not movable");
@@ -241,9 +241,9 @@ namespace casual
                {
                   Domain domain;
 
-                  CASUAL_CONST_CORRECT_MARSHAL(
-                     base_reply::marshal( archive);
-                     archive & domain;
+                  CASUAL_CONST_CORRECT_SERIALIZE(
+                     base_reply::serialize( archive);
+                     CASUAL_SERIALIZE( domain);
                   )
 
                };
@@ -270,31 +270,31 @@ namespace casual
                            std::string name;
                            std::vector< std::string> routes;
 
-                           CASUAL_CONST_CORRECT_MARSHAL(
+                           CASUAL_CONST_CORRECT_SERIALIZE(
                            {
-                              archive & name;
-                              archive & routes;
+                              CASUAL_SERIALIZE( name);
+                              CASUAL_SERIALIZE( routes);
                            })
                         };
 
                         std::vector< std::string> restrictions;
                         std::vector< Route> routes;
 
-                        CASUAL_CONST_CORRECT_MARSHAL(
+                        CASUAL_CONST_CORRECT_SERIALIZE(
                         {
-                           archive & restrictions;
-                           archive & routes;
+                           CASUAL_SERIALIZE( restrictions);
+                           CASUAL_SERIALIZE( routes);
                         })
                      };
 
                      std::vector< std::string> resources;
                      Service service;
 
-                     CASUAL_CONST_CORRECT_MARSHAL(
+                     CASUAL_CONST_CORRECT_SERIALIZE(
                      {
-                        base_reply::marshal( archive);
-                        archive & resources;
-                        archive & service;
+                        base_reply::serialize( archive);
+                        CASUAL_SERIALIZE( resources);
+                        CASUAL_SERIALIZE( service);
                      })
                   };
 
@@ -311,14 +311,12 @@ namespace casual
                      common::process::Handle process;
                      Uuid identification;
 
-                     CASUAL_CONST_CORRECT_MARSHAL(
+                     CASUAL_CONST_CORRECT_SERIALIZE(
                      {
-                        base_type::marshal( archive);
-                        archive & process;
-                        archive & identification;
+                        base_type::serialize( archive);
+                        CASUAL_SERIALIZE( process);
+                        CASUAL_SERIALIZE( identification);
                      })
-
-                     friend std::ostream& operator << ( std::ostream& out, const Request& value);
                   };
                   static_assert( traits::is_movable< Request>::value, "not movable");
 
@@ -331,16 +329,24 @@ namespace casual
                         shutdown
                      };
 
+                     inline friend std::ostream& operator << ( std::ostream& out, Directive value)
+                     {
+                        switch( value)
+                        {
+                           case Directive::start: return out << "start";
+                           case Directive::singleton: return out << "singleton";
+                           case Directive::shutdown: return out << "shutdown";
+                           default: return out << "unknown";
+                        }
+                     }
+
                      Directive directive = Directive::start;
 
-                     CASUAL_CONST_CORRECT_MARSHAL(
+                     CASUAL_CONST_CORRECT_SERIALIZE(
                      {
-                        base_type::marshal( archive);
-                        archive & directive;
+                        base_type::serialize( archive);
+                        CASUAL_SERIALIZE( directive);
                      })
-
-                     friend std::ostream& operator << ( std::ostream& out, const Directive& value);
-                     friend std::ostream& operator << ( std::ostream& out, const Reply& value);
                   };
                   static_assert( traits::is_movable< Reply>::value, "not movable");
 
@@ -351,29 +357,37 @@ namespace casual
 
                namespace lookup
                {
-                  using base_reqeust = message::basic_request< Type::domain_process_lookup_request>;
-                  struct Request : base_reqeust
+                  using base_request = message::basic_request< Type::domain_process_lookup_request>;
+                  struct Request : base_request
                   {
-                     enum class Directive : char
+                     enum class Directive : short
                      {
                         wait,
                         direct
                      };
 
+                     inline friend std::ostream& operator << ( std::ostream& out, Directive value)
+                     {
+                        switch( value)
+                        {
+                           case Directive::wait: return out << "wait";
+                           case Directive::direct: return out << "direct";
+                           default: return out << "unknown";
+                        }
+                     }
+
                      Uuid identification;
                      strong::process::id pid;
                      Directive directive = Directive::wait;
 
-                     CASUAL_CONST_CORRECT_MARSHAL(
+                     CASUAL_CONST_CORRECT_SERIALIZE(
                      {
-                        base_reqeust::marshal( archive);
-                        archive & identification;
-                        archive & pid;
-                        archive & directive;
+                        base_request::serialize( archive);
+                        CASUAL_SERIALIZE( identification);
+                        CASUAL_SERIALIZE( pid);
+                        CASUAL_SERIALIZE( directive);
                      })
 
-                     friend std::ostream& operator << ( std::ostream& out, Directive value);
-                     friend std::ostream& operator << ( std::ostream& out, const Request& value);
                   };
                   static_assert( traits::is_movable< Request>::value, "not movable");
 
@@ -383,10 +397,10 @@ namespace casual
                   {
                      Uuid identification;
 
-                     CASUAL_CONST_CORRECT_MARSHAL(
+                     CASUAL_CONST_CORRECT_SERIALIZE(
                      {
-                        base_reply::marshal( archive);
-                        archive & identification;
+                        base_reply::serialize( archive);
+                        CASUAL_SERIALIZE( identification);
                      })
                   };
                   static_assert( traits::is_movable< Reply>::value, "not movable");
@@ -404,13 +418,11 @@ namespace casual
 
                         std::vector< common::process::Handle> processes;
 
-                        CASUAL_CONST_CORRECT_MARSHAL(
+                        CASUAL_CONST_CORRECT_SERIALIZE(
                         {
-                           base_request::marshal( archive);
-                           archive & processes;
+                           base_request::serialize( archive);
+                           CASUAL_SERIALIZE( processes);
                         })
-
-                        friend std::ostream& operator << ( std::ostream& out, const Request& value);
                      };
 
                      using base_reply = basic_request< Type::domain_process_prepare_shutdown_reply>;
@@ -420,21 +432,17 @@ namespace casual
 
                         std::vector< common::process::Handle> processes;
 
-                        CASUAL_CONST_CORRECT_MARSHAL(
+                        CASUAL_CONST_CORRECT_SERIALIZE(
                         {
-                           base_reply::marshal( archive);
-                           archive & processes;
+                           base_reply::serialize( archive);
+                           CASUAL_SERIALIZE( processes);
                         })
-
-                        friend std::ostream& operator << ( std::ostream& out, const Reply& value);
                      };
 
 
                   } // shutdown
                } // prepare
-
             } // process
-
          } // domain
 
          namespace reverse

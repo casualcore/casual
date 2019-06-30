@@ -10,8 +10,8 @@
 
 #include "configuration/environment.h"
 
-#include "serviceframework/namevaluepair.h"
-#include "serviceframework/platform.h"
+#include "common/serialize/macro.h"
+#include "common/optional.h"
 
 namespace casual
 {
@@ -21,17 +21,17 @@ namespace casual
       {
          struct Default
          {
-            serviceframework::platform::size::type instances = 1;
+            common::platform::size::type instances = 1;
             std::vector< std::string> memberships;
             Environment environment;
             bool restart = false;
 
             CASUAL_CONST_CORRECT_SERIALIZE
             (
-               archive & CASUAL_MAKE_NVP( instances);
-               archive & CASUAL_MAKE_NVP( restart);
-               archive & CASUAL_MAKE_NVP( memberships);
-               archive & CASUAL_MAKE_NVP( environment);
+               CASUAL_SERIALIZE( CASUAL_NAMED_VALUE( instances));
+               CASUAL_SERIALIZE( CASUAL_NAMED_VALUE( restart));
+               CASUAL_SERIALIZE( CASUAL_NAMED_VALUE( memberships));
+               CASUAL_SERIALIZE( CASUAL_NAMED_VALUE( environment));
             )
          };
 
@@ -40,28 +40,28 @@ namespace casual
       struct Executable
       {
          std::string path;
-         serviceframework::optional< std::string> alias;
-         serviceframework::optional< std::string> note;
+         common::optional< std::string> alias;
+         common::optional< std::string> note;
 
-         serviceframework::optional< std::vector< std::string>> arguments;
+         common::optional< std::vector< std::string>> arguments;
 
-         serviceframework::optional< serviceframework::platform::size::type> instances;
-         serviceframework::optional< std::vector< std::string>> memberships;
-         serviceframework::optional< Environment> environment;
-         serviceframework::optional< bool> restart;
+         common::optional< common::platform::size::type> instances;
+         common::optional< std::vector< std::string>> memberships;
+         common::optional< Environment> environment;
+         common::optional< bool> restart;
 
          CASUAL_CONST_CORRECT_SERIALIZE
          (
             
-            archive & CASUAL_MAKE_NVP( path);
-            archive & CASUAL_MAKE_NVP( alias);
-            archive & CASUAL_MAKE_NVP( note);
-            archive & CASUAL_MAKE_NVP( arguments);
+            CASUAL_SERIALIZE( CASUAL_NAMED_VALUE( path));
+            CASUAL_SERIALIZE( CASUAL_NAMED_VALUE( alias));
+            CASUAL_SERIALIZE( CASUAL_NAMED_VALUE( note));
+            CASUAL_SERIALIZE( CASUAL_NAMED_VALUE( arguments));
 
-            archive & CASUAL_MAKE_NVP( instances);
-            archive & CASUAL_MAKE_NVP( memberships);
-            archive & CASUAL_MAKE_NVP( environment);
-            archive & CASUAL_MAKE_NVP( restart);
+            CASUAL_SERIALIZE( CASUAL_NAMED_VALUE( instances));
+            CASUAL_SERIALIZE( CASUAL_NAMED_VALUE( memberships));
+            CASUAL_SERIALIZE( CASUAL_NAMED_VALUE( environment));
+            CASUAL_SERIALIZE( CASUAL_NAMED_VALUE( restart));
             
          )
 

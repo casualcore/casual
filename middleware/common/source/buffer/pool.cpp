@@ -22,14 +22,14 @@ namespace casual
 
             Holder::Base& Holder::find( const std::string& type)
             {
-               auto pool = algorithm::find_if( m_pools, [&]( std::unique_ptr< Base>& b){
+               auto pool = algorithm::find_if( m_pools, [&]( std::unique_ptr< Base>& b)
+               {
                   return b->manage( type);
                });
 
                if( ! pool)
-               {
                   throw exception::xatmi::buffer::type::Input{};
-               }
+
                return **pool;
             }
 
@@ -40,9 +40,8 @@ namespace casual
                });
 
                if( ! pool)
-               {
                   throw exception::xatmi::invalid::Argument{ "buffer not valid"};
-               }
+
                return **pool;
             }
 
@@ -55,29 +54,18 @@ namespace casual
 
             platform::buffer::raw::type Holder::allocate( const std::string& type, platform::binary::size::type size)
             {
-               auto buffer = find( type).allocate( type, size);
-
-               if( log::category::buffer)
-               {
-                  log::line( log::category::buffer, "allocate type: ", type, " size: ", size, " @", static_cast< const void*>( buffer));
-               }
-               return buffer;
+               log::line( log::category::buffer, "allocate: type: ", type, ", size: ", size);
+               return find( type).allocate( type, size);
             }
 
             platform::buffer::raw::type Holder::reallocate( platform::buffer::raw::immutable::type handle, platform::binary::size::type size)
             {
+               log::line( log::category::buffer, "reallocate: handle: ", static_cast< const void*>( handle), ", size: ", size);
+
                auto buffer = find( handle).reallocate( handle, size);
 
-               if( log::category::buffer)
-               {
-                  log::line( log::category::buffer, "reallocate size: ", size, 
-                     " from @", static_cast< const void*>( handle), " to ", static_cast< const void*>( buffer));
-               }
-
                if( handle == m_inbound)
-               {
                   m_inbound = buffer;
-               }
 
                return buffer;
             }
@@ -93,26 +81,20 @@ namespace casual
 
                log::line( log::category::buffer, "deallocate @", static_cast< const void*>( handle));
 
-               //
                // according to the XATMI-spec it's a no-op for tpfree for the inbound-buffer...
-               //
                if( handle != m_inbound && handle != nullptr)
-               {
                   find( handle).deallocate( handle);
-               }
             }
 
             platform::buffer::raw::type Holder::adopt( Payload&& payload)
             {
                Trace trace{ "buffer::pool::adopt"};
 
-               //
                // This is the only place where a buffer is consumed by the pool, hence can only happen
                // during service-invocation.
                //
                // Keep track of the inbound buffer given to the user. This is a
                // 'special' buffer according to the XATMI-spec.
-               //
                m_inbound = std::get< 0>( insert( std::move( payload)));
 
                return m_inbound;
@@ -143,18 +125,15 @@ namespace casual
             payload::Send Holder::get( platform::buffer::raw::immutable::type handle, platform::binary::size::type user_size)
             {
                if( handle == nullptr)
-               {
                   return null_payload();
-               }
+
                return find( handle).get( handle, user_size);
             }
 
             payload::Send Holder::get( platform::buffer::raw::immutable::type handle)
             {
                if( handle == nullptr)
-               {
                   return null_payload();
-               }
 
                return find( handle).get( handle);
             }
@@ -163,15 +142,14 @@ namespace casual
             Payload Holder::release( platform::buffer::raw::immutable::type handle)
             {
                if( handle == nullptr)
-               {
                   return null_payload();
-               }
 
                auto result = find( handle).release( handle);
 
-               if( m_inbound == handle) m_inbound = nullptr;
+               if( m_inbound == handle) 
+                  m_inbound = nullptr;
 
-               log::line( log::category::buffer, "release type: ", result.type, " size: ", result.memory.size(), " @", static_cast< const void*>( result.memory.data()));
+               log::line( log::category::buffer, "released ", result);
 
                return result;
             }
@@ -179,15 +157,14 @@ namespace casual
             Payload Holder::release( platform::buffer::raw::immutable::type handle, platform::binary::size::type size)
             {
                if( handle == nullptr)
-               {
                   return null_payload();
-               }
 
                auto result = find( handle).release( handle, size);
 
-               if( m_inbound == handle) m_inbound = nullptr;
+               if( m_inbound == handle) 
+                  m_inbound = nullptr;
 
-               log::line( log::category::buffer, "release type: ", result.type, " size: ", result.memory.size(), " @", static_cast< const void*>( result.memory.data()));
+               log::line( log::category::buffer, "released ", result);
 
                return result;
             }

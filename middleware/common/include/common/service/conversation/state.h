@@ -13,6 +13,8 @@
 
 #include "common/message/conversation.h"
 
+#include "common/serialize/macro.h"
+
 namespace casual
 {
 
@@ -28,7 +30,7 @@ namespace casual
                {
                   struct Information
                   {
-                     enum class Duplex : char
+                     enum class Duplex : short
                      {
                         send,
                         receive,
@@ -41,8 +43,24 @@ namespace casual
                      Duplex duplex = Duplex::receive;
                      bool initiator = false;
 
-                     friend std::ostream& operator << ( std::ostream& out, const Duplex& value);
-                     friend std::ostream& operator << ( std::ostream& out, const Information& value);
+                     inline friend std::ostream& operator << ( std::ostream& out, Duplex value)
+                     {
+                        switch( value)
+                        {
+                           case Duplex::receive: return out << "receive";
+                           case Duplex::send: return out << "send";
+                           case Duplex::terminated: return out << "terminated";
+                        }
+                        return out << "unknown...";
+                     }
+                     
+                     // for loging
+                     CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
+                     {
+                        CASUAL_SERIALIZE( route);
+                        CASUAL_SERIALIZE( duplex);
+                        CASUAL_SERIALIZE( initiator);
+                     })
                   };
 
                } // descriptor
@@ -51,8 +69,6 @@ namespace casual
 
             struct State
             {
-               State();
-
                using holder_type =  service::descriptor::Holder< state::descriptor::Information>;
                using descriptor_type = typename holder_type::descriptor_type;
 

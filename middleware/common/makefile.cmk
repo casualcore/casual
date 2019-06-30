@@ -30,7 +30,8 @@ IncludePaths( [
     '../transaction/include',
     '../serviceframework/include',
     '../buffers/include',
-    '$(CASUAL_OPTIONAL_INCLUDE_PATHS)'
+    '$(CASUAL_REPOSITORY_ROOT)/thirdparty/rapidjson/include',
+    '$(CASUAL_OPTIONAL_INCLUDE_PATHS)',
     ]
     + platform_specific_include_paths)
 
@@ -62,7 +63,6 @@ casual_common_objectfiles = [
     Compile( 'source/service/call/context.cpp'),
     Compile( 'source/service/call/state.cpp'),
     Compile( 'source/service/conversation/context.cpp'),
-    Compile( 'source/service/conversation/state.cpp'),
     
     Compile( 'source/service/lookup.cpp'),
     Compile( 'source/service/header.cpp'),
@@ -85,21 +85,10 @@ casual_common_objectfiles = [
     
     Compile( 'source/communication/message.cpp'),
     Compile( 'source/communication/log.cpp'),
-    
-    
-    
-    Compile( 'source/message/type.cpp'),
+        
     Compile( 'source/message/handle.cpp'),
-    Compile( 'source/message/service.cpp'),
-    Compile( 'source/message/server.cpp'),
-    Compile( 'source/message/queue.cpp'),
-    Compile( 'source/message/transaction.cpp'),
-    Compile( 'source/message/domain.cpp'),
-    Compile( 'source/message/gateway.cpp'),
-    Compile( 'source/message/conversation.cpp'),
     Compile( 'source/message/pending.cpp'),
-    Compile( 'source/message/event.cpp'),
-    
+
     Compile( 'source/event/listen.cpp'),
     Compile( 'source/event/dispatch.cpp'),
     Compile( 'source/event/send.cpp'),
@@ -146,12 +135,23 @@ casual_common_objectfiles = [
     Compile( 'source/argument.cpp'),
     Compile( 'source/argument/cardinality.cpp'),
     Compile( 'source/terminal.cpp'),
+
+    Compile( 'source/serialize/archive.cpp'),
+    Compile( 'source/serialize/line.cpp'),
+    Compile( 'source/serialize/log.cpp'),
+    Compile( 'source/serialize/ini.cpp'),
+    Compile( 'source/serialize/json.cpp'),
+    Compile( 'source/serialize/xml.cpp'),
+    Compile( 'source/serialize/yaml.cpp'),
+    Compile( 'source/serialize/binary.cpp'),
+    Compile( 'source/serialize/create.cpp'),
+    
 ]
 
 
 common = LinkLibrary( 'bin/casual-common', 
 	casual_common_objectfiles,
-	platform_specific_libs)
+	platform_specific_libs + [ 'yaml-cpp', 'pugixml'])
 
 install_libs.append( common)
 
@@ -201,11 +201,9 @@ target_simple_process = LinkExecutable( 'bin/simple_process',
     )	
 	
    
-#
 # unittest
-#
 unittest_objectfiles = [
-    Compile( 'unittest/source/test_conformance.cpp'),  
+    Compile( 'unittest/source/test_conformance.cpp'),
     
     Compile( 'unittest/source/test_algorithm.cpp'),
     Compile( 'unittest/source/test_range.cpp'),
@@ -219,7 +217,6 @@ unittest_objectfiles = [
     Compile( 'unittest/source/test_signal.cpp'),
                          
     Compile( 'unittest/source/test_buffer.cpp'),
-    Compile( 'unittest/source/test_marshal.cpp'),
  
     Compile( 'unittest/source/test_uuid.cpp'),
     Compile( 'unittest/source/test_file.cpp'),
@@ -244,21 +241,16 @@ unittest_objectfiles = [
 
     Compile( 'unittest/source/message/test_dispatch.cpp'),
     Compile( 'unittest/source/message/test_coordinate.cpp'),
+    Compile( 'unittest/source/message/test_pending.cpp'),
     
-    
-    #Compile( 'unittest/source/server/test_context.cpp'),
     Compile( 'unittest/source/server/test_service.cpp'),
     Compile( 'unittest/source/server/test_arguments.cpp'),
     
     Compile( 'unittest/source/service/test_header.cpp'),
-    #Compile( 'unittest/source/service/conversation/test_context.cpp'),
-
-    #Compile( 'unittest/source/test_mockup.cpp'),
     
     Compile( 'unittest/source/transaction/test_id.cpp'),
     Compile( 'unittest/source/transaction/test_context.cpp'),
    
-    
     Compile( 'unittest/source/event/test_dispatch.cpp'),
     Compile( 'unittest/source/event/test_listen.cpp'),
     
@@ -273,7 +265,23 @@ unittest_objectfiles = [
     Compile( 'unittest/source/test_argument.cpp'),
     Compile( 'unittest/source/test_metric.cpp'),
 
-    #Compile( 'unittest/source/communication/test_pipe.cpp'),
+    Compile( 'unittest/source/serialize/test_traits.cpp'),
+    Compile( 'unittest/source/serialize/test_macro.cpp'),
+    Compile( 'unittest/source/serialize/test_line.cpp'),
+    Compile( 'unittest/source/serialize/test_archive.cpp'),
+    Compile( 'unittest/source/serialize/test_consumed.cpp'),
+    Compile( 'unittest/source/serialize/test_create.cpp'),
+    Compile( 'unittest/source/serialize/test_ini.cpp'),
+    Compile( 'unittest/source/serialize/test_json.cpp'),
+    Compile( 'unittest/source/serialize/test_log.cpp'),
+    Compile( 'unittest/source/serialize/test_xml.cpp'),
+    Compile( 'unittest/source/serialize/test_yaml.cpp'),
+    Compile( 'unittest/source/serialize/test_relaxed_write_read.cpp'),
+    Compile( 'unittest/source/serialize/test_write_read.cpp'),
+    Compile( 'unittest/source/serialize/native/test_binary.cpp'),
+    Compile( 'unittest/source/serialize/named/test_value.cpp'),
+    
+    
 ]
 
 

@@ -7,10 +7,9 @@
 
 #include "serviceframework/service/protocol.h"
 #include "serviceframework/service/protocol/implementation.h"
-
-#include "serviceframework/exception.h"
 #include "serviceframework/log.h"
 
+#include "common/exception/system.h"
 
 namespace casual
 {
@@ -63,18 +62,15 @@ namespace casual
                {
                   if( local::describe( parameter))
                   {
-                     common::log::line( log::sf, "casual-service-describe protocol");
+                     common::log::line( log::debug, "casual-service-describe protocol");
 
-                     //
                      // service-describe protocol
-                     //
                      return protocol::implementation::Describe( found->second( std::move( parameter)));
                   }
 
-
                   return found->second( std::move( parameter));
                }
-               throw serviceframework::exception::Validation( "no suitable protocol was found for type: " + parameter.payload.type);
+               throw common::exception::system::invalid::Argument( "no suitable protocol was found for type: " + parameter.payload.type);
             }
 
 

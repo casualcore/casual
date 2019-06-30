@@ -21,10 +21,11 @@
 #include "common/transcode.h"
 #include "common/execute.h"
 
+#include "common/serialize/create.h"
 
 
-#include "serviceframework/namevaluepair.h"
-#include "serviceframework/archive/create.h"
+
+//#include "common/serialize/create.h"
 
 #include <cstring>
 
@@ -79,9 +80,7 @@ namespace casual
                template<typename... A>
                Buffer( A&&... arguments) : common::buffer::Buffer( std::forward<A>( arguments)...)
                {
-                  //
                   // Create an index upon creation
-                  //
 
                   const auto begin = payload.memory.begin();
                   const auto end = payload.memory.end();
@@ -98,10 +97,7 @@ namespace casual
                   }
 
                   if( cursor > end)
-                  {
-                     // Something is fishy
                      throw common::exception::xatmi::invalid::Argument{"Buffer is comprised"};
-                  }
                }
 
                void shrink()
@@ -140,21 +136,15 @@ namespace casual
                   return payload.memory.data();
                }
 
-               //!
                //! Implement Buffer::transport
-               //!
                size_type transport( const common::platform::binary::size::type user_size) const
                {
-                  //
                   // Just ignore user-size all together
-                  //
 
                   return utilized();
                }
 
-               //!
                //! Implement Buffer::reserved
-               //!
                size_type reserved() const
                {
                   return capacity();
@@ -162,10 +152,7 @@ namespace casual
 
             };
 
-
-            //
             // Might be named Pool as well
-            //
             class Allocator : public common::buffer::pool::basic_pool<Buffer>
             {
             public:
@@ -174,9 +161,7 @@ namespace casual
 
                static const types_type& types()
                {
-                  //
                   // The types this pool can manage
-                  //
                   static const types_type result{ common::buffer::type::combine( CASUAL_FIELD)};
                   return result;
                }
@@ -187,6 +172,8 @@ namespace casual
 
                   // GCC returns null for std::vector::data with capacity zero
                   m_pool.back().capacity( size ? size : 1);
+
+                  common::log::line( verbose::log, "allocated buffer: ", m_pool.back());
 
                   return m_pool.back().handle();
                }
@@ -206,20 +193,18 @@ namespace casual
                      result->capacity( size ? size : 1);
                   }
 
+                  common::log::line( verbose::log, "reallocated buffer: ", *result);
+
                   return result->handle();
                }
 
             };
-
          } // <unnamed>
-
       } // field
-
    } // buffer
 
-   //
+
    // Register and define the type that can be used to get the custom pool
-   //
    template class common::buffer::pool::Registration< casual::buffer::field::Allocator>;
 
 
@@ -233,13 +218,6 @@ namespace casual
          namespace
          {
 
-/*
-            struct trace : common::trace::basic::Scope
-            {
-               template<decltype(sizeof("")) size>
-               explicit trace( const char (&information)[size]) : Scope( information, common::log::internal::buffer) {}
-            };
-*/
             namespace error
             {
                int handle() noexcept
@@ -293,32 +271,22 @@ namespace casual
 
                   try
                   {
-                     //
                      // Append id to buffer
-                     //
                      append( buffer, id);
 
-                     //
                      // Append size to buffer
-                     //
                      append( buffer, size);
 
-                     //
                      // Append data to buffer
-                     //
                      append( buffer, data, size);
 
-                     //
                      // Append current offset to index
-                     //
                      buffer.index[id].push_back( used);
 
                   }
                   catch( ...)
                   {
-                     //
                      // Make sure to reset the size in case of exception
-                     //
                      buffer.utilized( used);
                      throw;
                   }
@@ -353,15 +321,11 @@ namespace casual
                   {
                      auto& buffer = pool_type::pool.get( *handle);
 
-                     //
                      // Make sure to update the handle regardless
-                     //
                      const auto synchronize = common::execute::scope
                      ( [&]() { *handle = buffer.handle();});
 
-                     //
                      // Append the data
-                     //
                      append( buffer, id, std::forward<A>( arguments)...);
 
                   }
@@ -424,9 +388,7 @@ namespace casual
                   {
                      const auto& buffer = pool_type::pool.get( handle);
 
-                     //
                      // Select the data
-                     //
                      select( buffer, id, occurrence, std::forward<A>( arguments)...);
 
                   }
@@ -451,21 +413,15 @@ namespace casual
 
                   const auto offset = occurrences.at( occurrence);
 
-                  //
                   // Get the size of the value
-                  //
                   const auto size = decode<size_type>( buffer.handle() + offset + size_offset);
 
-                  //
                   // Remove the data from the buffer
-                  //
                   buffer.payload.memory.erase(
                      buffer.payload.memory.begin() + offset,
                      buffer.payload.memory.begin() + offset + data_offset + size);
 
-                  //
                   // Remove entry from index
-                  //
 
                   occurrences.erase( occurrences.begin() + occurrence);
 
@@ -474,12 +430,10 @@ namespace casual
                      buffer.index.erase( id);
                   }
 
-                  //
                   // Update offsets beyond this one
                   //
                   // The index and the actual buffer may not be in same order
                   // and thus we need to go through the whole index
-                  //
 
                   for( auto& field : buffer.index)
                   {
@@ -547,23 +501,16 @@ namespace casual
                template<typename M, typename I>
                void update( M& memory, I& index, const item_type id, const size_type occurrence, const_data_type data, const size_type size)
                {
-                  //
                   // Get the offset to where the field begin
-                  //
                   const auto offset = index.at( id).at( occurrence);
 
                   const auto current = decode<size_type>( memory.data() + offset + size_offset);
 
-
-                  //
                   // With equal sizes, stuff could be optimized ... but no
-                  //
 
-                  //
                   // Erase the old and insert the new ... and yes, it
                   // could be done more efficient but the whole idea
                   // with this functionality is rather stupid
-                  //
 
                   memory.insert(
                      memory.erase(
@@ -571,9 +518,7 @@ namespace casual
                         memory.begin() + offset + data_offset + current),
                      data, data + size);
 
-                  //
                   // Write the new size (afterwards since above can throw)
-                  //
 
                   const auto encoded = common::network::byteorder::encode( size);
                   std::copy(
@@ -581,12 +526,10 @@ namespace casual
                      reinterpret_cast<const_data_type>( &encoded) + sizeof( encoded),
                      memory.begin() + offset + size_offset);
 
-                  //
                   // Update offsets beyond this one
                   //
                   // The index and the actual buffer may not be in same order
                   // and thus we need to go through the whole index
-                  //
 
                   for( auto& field : index)
                   {
@@ -612,9 +555,7 @@ namespace casual
                template<typename M, typename I, typename T>
                void update( M& memory, I& index, const item_type id, const size_type occurrence, const T value)
                {
-                  //
                   // Could be optimized, but ... no
-                  //
                   const auto encoded = common::network::byteorder::encode( value);
                   update( memory, index, id, occurrence, reinterpret_cast<const_data_type>( &encoded), sizeof( encoded));
                }
@@ -635,15 +576,13 @@ namespace casual
                   {
                      auto& buffer = pool_type::pool.get( *handle);
 
-                     //
                      // Make sure to update the handle regardless
-                     //
-                     const auto synchronize = common::execute::scope
-                     ( [&]() { *handle = buffer.handle();});
+                     const auto synchronize = common::execute::scope( [&]() 
+                     { 
+                        *handle = buffer.handle();
+                     });
 
-                     //
                      // Update the data
-                     //
                      update( buffer.payload.memory, buffer.index, id, occurrence, std::forward<A>( arguments)...);
 
                   }
@@ -806,9 +745,7 @@ namespace casual
                      {
                         if( static_cast<std::size_t>(++index) < current->second.size())
                         {
-                           //
                            // Then we are ok
-                           //
                         }
                         else
                         {
@@ -826,9 +763,7 @@ namespace casual
                      }
                      else
                      {
-                        //
                         // We couldn't even find the previous one
-                        //
                         return CASUAL_FIELD_INVALID_ARGUMENT;
                      }
 
@@ -1333,16 +1268,13 @@ namespace casual
                      item_type id; // relative id
                      std::string name;
                      std::string type;
-                     //std::string comment;
-
-                     template< typename A>
-                     void serialize( A& archive)
+                     
+                     CASUAL_CONST_CORRECT_SERIALIZE(
                      {
-                        archive & CASUAL_MAKE_NVP( id);
-                        archive & CASUAL_MAKE_NVP( name);
-                        archive & CASUAL_MAKE_NVP( type);
-                        //archive & CASUAL_MAKE_NVP( comment);
-                     }
+                        CASUAL_SERIALIZE( id);
+                        CASUAL_SERIALIZE( name);
+                        CASUAL_SERIALIZE( type);
+                     })
                   };
 
                   struct group
@@ -1350,12 +1282,11 @@ namespace casual
                      item_type base = 0;
                      std::vector< field> fields;
 
-                     template< typename A>
-                     void serialize( A& archive)
+                     CASUAL_CONST_CORRECT_SERIALIZE(
                      {
-                        archive & CASUAL_MAKE_NVP( base);
-                        archive & CASUAL_MAKE_NVP( fields);
-                     }
+                        CASUAL_SERIALIZE( base);
+                        CASUAL_SERIALIZE( fields);
+                     })
                   };
 
 
@@ -1370,9 +1301,9 @@ namespace casual
                      decltype(fetch_groups()) groups;
 
                      common::file::Input file{ common::environment::variable::get( "CASUAL_FIELD_TABLE")};
-                     auto archive = serviceframework::archive::create::reader::relaxed::from( file.extension(), file);
+                     auto archive = common::serialize::create::reader::relaxed::from( file.extension(), file);
                      
-                     archive >> CASUAL_MAKE_NVP( groups);
+                     archive >> CASUAL_NAMED_VALUE( groups);
 
                      return groups;
                   }
@@ -1496,39 +1427,38 @@ namespace casual
                   {
                      const auto name = "name";
 
-                     archive << serviceframework::name::value::pair::make( name, id_to_name().at( id));
+                     archive << common::serialize::named::value::make( id_to_name().at( id), name);
 
                      const auto value = "value";
 
-                     using serviceframework::name::value::pair::make;
+                     using common::serialize::named::value::make;
 
                      const auto data = occurrence + data_offset;
                      const auto size = occurrence + size_offset;
 
-
                      switch( id / CASUAL_FIELD_TYPE_BASE)
                      {
                      case CASUAL_FIELD_SHORT:
-                        archive << make( value, decode<short>( data));
+                        archive << make( decode<short>( data), value);
                         break;
                      case CASUAL_FIELD_LONG:
-                        archive << make( value, decode<long>( data));
+                        archive << make( decode<long>( data), value);
                         break;
                      case CASUAL_FIELD_CHAR:
-                        archive << make( value, *(data));
+                        archive << make( *(data), value);
                         break;
                      case CASUAL_FIELD_FLOAT:
-                        archive << make( value, decode<float>( data));
+                        archive << make( decode<float>( data), value);
                         break;
                      case CASUAL_FIELD_DOUBLE:
-                        archive << make( value, decode<double>( data));
+                        archive << make( decode<double>( data), value);
                         break;
                      case CASUAL_FIELD_STRING:
-                        archive << make( value, std::string( data));
+                        archive << make( std::string( data), value);
                         break;
                      case CASUAL_FIELD_BINARY:
                      default:
-                        archive << make( value, std::vector<char>( data, data + decode<size_type>( size)));
+                        archive << make( std::vector<char>( data, data + decode<size_type>( size)), value);
                         break;
                      }
                   }
@@ -1542,11 +1472,9 @@ namespace casual
                   void serialize( A& archive)
                   {
                      std::string name;
-                     archive >> CASUAL_MAKE_NVP( name);
+                     archive >> CASUAL_NAMED_VALUE( name);
 
                      casual_field_id_of_name( name.c_str(), &m_id);
-
-                     using serviceframework::name::value::pair::make;
 
                      switch( m_id / CASUAL_FIELD_TYPE_BASE)
                      {
@@ -1570,7 +1498,7 @@ namespace casual
                         break;
                      case CASUAL_FIELD_BINARY:
                      default:
-                        archive >> serviceframework::name::value::pair::make( "value", m_value);
+                        archive >> common::serialize::named::value::make( m_value, "value");
                         break;
                      }
                   }
@@ -1611,14 +1539,14 @@ namespace casual
                   void assign( A& archive)
                   {
                      m_value.resize( sizeof( T));
-                     archive >> serviceframework::name::value::pair::make( "value", *reinterpret_cast< T*>( m_value.data()));
+                     archive >> common::serialize::named::value::make( *reinterpret_cast< T*>( m_value.data()), "value");
                   }
 
                   template< typename A>
                   void assign_string( A& archive)
                   {
                      std::string value;
-                     archive >> CASUAL_MAKE_NVP( value);
+                     archive >> CASUAL_NAMED_VALUE( value);
                      common::algorithm::copy( value, m_value);
                   }
 
@@ -1677,7 +1605,7 @@ namespace casual
 
                   common::log::line( verbose::log, "buffer.payload.type: ", buffer.payload.type, " - protocol: ", protocol);
 
-                  auto archive = serviceframework::archive::create::writer::from( protocol, stream);
+                  auto archive = common::serialize::create::writer::from( protocol, stream);
 
                   std::vector< write> fields;
 
@@ -1689,7 +1617,7 @@ namespace casual
                      }
                   }
 
-                  archive << CASUAL_MAKE_NVP( fields);
+                  archive << CASUAL_NAMED_VALUE( fields);
                }
 
                common::buffer::Payload stream( std::istream& stream, const std::string& protocol)
@@ -1698,10 +1626,10 @@ namespace casual
 
                   log::line( verbose::log, "protocol: ", protocol);
 
-                  auto archive = serviceframework::archive::create::reader::relaxed::from( protocol, stream);
+                  auto archive = common::serialize::create::reader::relaxed::from( protocol, stream);
 
                   std::vector< read> fields;
-                  archive >> CASUAL_MAKE_NVP( fields);
+                  archive >> CASUAL_NAMED_VALUE( fields);
                   archive.validate();
 
                   Dispatch dispatch;

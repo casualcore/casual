@@ -28,7 +28,8 @@ namespace casual
 
          namespace clean
          {
-            //! tries to clean all signals when scope is entered and exited
+            //! tries to clean all signals when scope is entered and exited.
+            //! also clears the default inbound ipc device.
             struct Scope
             {
                Scope();

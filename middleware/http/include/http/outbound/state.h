@@ -39,8 +39,13 @@ namespace casual
                std::string url;
                std::shared_ptr< const common::service::header::Fields> headers;
                bool discard_transaction = false;
-
-               friend std::ostream& operator << ( std::ostream& out, const Node& value);
+               
+               CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
+               { 
+                  CASUAL_NAMED_VALUE( url);
+                  CASUAL_NAMED_VALUE( headers);
+                  CASUAL_NAMED_VALUE( discard_transaction);
+               })
             };
 
 
@@ -87,7 +92,17 @@ namespace casual
                         offset = 0;
                      }
 
-                     friend std::ostream& operator << ( std::ostream& out, const State& value);
+                     CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
+                     { 
+                        CASUAL_NAMED_VALUE( payload);
+                        CASUAL_NAMED_VALUE( offset);
+                        CASUAL_NAMED_VALUE( destination);
+                        CASUAL_NAMED_VALUE( correlation);
+                        CASUAL_NAMED_VALUE( execution);
+                        CASUAL_NAMED_VALUE( start);
+                        CASUAL_NAMED_VALUE( service);
+                        CASUAL_NAMED_VALUE( parent);
+                     })
 
                   private:
                      
@@ -102,7 +117,11 @@ namespace casual
                   
                   inline friend bool operator == ( const Request& lhs, curl::type::native::easy rhs) { return lhs.m_easy.get() == rhs;}
 
-                  friend std::ostream& operator << ( std::ostream& out, const Request& value);
+                  CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
+                  { 
+                     CASUAL_NAMED_VALUE_NAME( m_easy, "easy");
+                     CASUAL_NAMED_VALUE_NAME( m_state, "state");
+                  })
 
                private:
                   curl::type::easy m_easy;
@@ -151,8 +170,6 @@ namespace casual
             {
                state::Pending requests;
             } pending;
-
-            
 
             struct 
             {

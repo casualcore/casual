@@ -34,15 +34,6 @@ namespace casual
             return function( std::move( argument));
          }
 
-         std::ostream& operator << ( std::ostream& out, const Service& service)
-         {
-            return out << "{ name: " << service.name
-                  << ", category: " << service.category
-                  << ", transaction: " << service.transaction
-                  << ", compare: " << service.compare
-                  << '}';
-         }
-
          bool operator == ( const Service& lhs, const Service& rhs)
          {
             return lhs == rhs.compare;

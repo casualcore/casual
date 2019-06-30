@@ -13,8 +13,7 @@
 #include "common/environment.h"
 #include "common/algorithm.h"
 
-#include "serviceframework/archive/create.h"
-#include "serviceframework/log.h"
+#include "common/serialize/create.h"
 
 #include <algorithm>
 
@@ -85,7 +84,7 @@ namespace casual
                      auto executables = range::to_reference( configuration.executables);
 
                      // add servers to the same range
-                     algorithm::copy( configuration.servers, executables);
+                     algorithm::copy( configuration.servers, std::back_inserter( executables));
 
                      auto has_alias = []( const Executable& e){
                         return e.alias.has_value() && ! e.alias.value().empty();
@@ -136,8 +135,8 @@ namespace casual
                   Manager domain;
                   // Create the archive and deserialize configuration
                   common::file::Input stream( file);
-                  auto archive = serviceframework::archive::create::reader::consumed::from( stream.extension(), stream);
-                  archive >> CASUAL_MAKE_NVP( domain);
+                  auto archive = common::serialize::create::reader::consumed::from( stream.extension(), stream);
+                  archive >> CASUAL_NAMED_VALUE( domain);
 
                   // validate if the user has stuff that we didn't consume
                   archive.validate();

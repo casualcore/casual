@@ -18,9 +18,7 @@ namespace casual
    {
       namespace log
       {
-         //!
          //! Log with category 'casual.common'
-         //!
          extern log::Stream debug;
       } // log
 

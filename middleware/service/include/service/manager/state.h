@@ -90,15 +90,18 @@ namespace casual
 
                   inline friend bool operator == ( const base_instance& lhs, const base_instance& rhs) { return lhs.process == rhs.process;}
                   inline friend bool operator < ( const base_instance& lhs, const base_instance& rhs) { return lhs.process.pid < rhs.process.pid;}
-
                   inline friend bool operator == ( const base_instance& lhs, common::strong::process::id rhs) { return lhs.process.pid == rhs;}
+
+                  CASUAL_CONST_CORRECT_SERIALIZE_WRITE({
+                     CASUAL_NAMED_VALUE( process);
+                  })
                };
 
 
 
                struct Sequential : base_instance
                {
-                  enum class State : char
+                  enum class State : short
                   {
                      idle,
                      busy,
@@ -140,7 +143,16 @@ namespace casual
                   //! @}
 
                   friend std::ostream& operator << ( std::ostream& out, State value);
-                  friend std::ostream& operator << ( std::ostream& out, const Sequential& value);
+
+                  CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
+                  {
+                     base_instance::serialize( archive);   
+                     CASUAL_NAMED_VALUE_NAME( m_last, "last");
+                     CASUAL_NAMED_VALUE_NAME( m_service, "service");
+                     CASUAL_NAMED_VALUE_NAME( m_caller, "caller");
+                     CASUAL_NAMED_VALUE_NAME( m_correlation, "correlation");
+                     CASUAL_NAMED_VALUE_NAME( m_services, "services");
+                  })
 
                private:
                   common::platform::time::point::type m_last = common::platform::time::point::type::min();
@@ -160,7 +172,11 @@ namespace casual
 
                   friend bool operator < ( const Concurrent& lhs, const Concurrent& rhs);
 
-                  friend std::ostream& operator << ( std::ostream& out, const Concurrent& value);
+                  CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
+                  {
+                     base_instance::serialize( archive);   
+                     CASUAL_NAMED_VALUE( order);
+                  })
                };
 
             } // instance
@@ -178,7 +194,12 @@ namespace casual
                   common::message::service::lookup::Request request;
                   common::platform::time::point::type when;
 
-                  friend std::ostream& operator << ( std::ostream& out, const Pending& value);
+
+                  CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
+                  { 
+                     CASUAL_NAMED_VALUE( request);
+                     CASUAL_NAMED_VALUE( when);
+                  })
                };
 
 
@@ -250,6 +271,12 @@ namespace casual
                   //! @return true if any of the instances is active (not exiting).
                   bool active() const;
 
+                  CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
+                  { 
+                     CASUAL_NAMED_VALUE( sequential);
+                     CASUAL_NAMED_VALUE( concurrent);
+                  })
+
                } instances;
 
                common::message::service::call::Service information;
@@ -279,13 +306,21 @@ namespace casual
                friend bool operator == ( const Service& lhs, const Service& rhs) { return lhs.information.name == rhs.information.name;}
                friend bool operator < ( const Service& lhs, const Service& rhs) { return lhs.information.name < rhs.information.name;}
 
-               friend std::ostream& operator << ( std::ostream& out, const Service& service);
 
                inline size_type remote_invocations() const { return m_remote_invocations;}
 
                inline const common::platform::time::point::type& last() const { return m_last;}
                inline void last( common::platform::time::point::type now) { m_last = now;}
 
+
+               CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
+               { 
+                  CASUAL_NAMED_VALUE( instances);
+                  CASUAL_NAMED_VALUE( information);
+                  CASUAL_NAMED_VALUE( pending);
+                  CASUAL_NAMED_VALUE_NAME( m_last, "last");
+                  CASUAL_NAMED_VALUE_NAME( m_remote_invocations, "remote_invocations");
+               })
 
             private:
 

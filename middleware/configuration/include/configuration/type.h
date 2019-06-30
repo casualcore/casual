@@ -8,7 +8,7 @@
 #pragma once
 
 
-#include "serviceframework/namevaluepair.h"
+#include "common/serialize/macro.h"
 
 namespace casual
 {

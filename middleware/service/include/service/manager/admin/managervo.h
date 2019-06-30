@@ -8,8 +8,9 @@
 #pragma once
 
 
-#include "serviceframework/namevaluepair.h"
-#include "serviceframework/platform.h"
+#include "common/serialize/macro.h"
+#include "common/platform.h"
+#include "common/process.h"
 
 
 namespace casual
@@ -28,7 +29,7 @@ namespace casual
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
                   {
-                     archive & CASUAL_MAKE_NVP( process);
+                     CASUAL_SERIALIZE( process);
                   })
 
                   friend bool operator < ( const Base& lhs, const Base& rhs) { return lhs.process.pid < rhs.process.pid;}
@@ -52,13 +53,12 @@ namespace casual
                   CASUAL_CONST_CORRECT_SERIALIZE(
                   {
                      Base::serialize( archive);
-                     archive & CASUAL_MAKE_NVP( state);
+                     CASUAL_SERIALIZE( state);
                   })
                };
 
                struct ConcurrentVO : Base
                {
-
                };
 
             } // instance
@@ -68,7 +68,7 @@ namespace casual
             {
                struct Metric
                {
-                  serviceframework::platform::size::type count = 0;
+                  common::platform::size::type count = 0;
                   std::chrono::nanoseconds total = std::chrono::nanoseconds::zero();
 
                   struct Limit 
@@ -78,16 +78,16 @@ namespace casual
 
                      CASUAL_CONST_CORRECT_SERIALIZE(
                      {
-                        archive & CASUAL_MAKE_NVP( min);
-                        archive & CASUAL_MAKE_NVP( max);
+                        CASUAL_SERIALIZE( min);
+                        CASUAL_SERIALIZE( max);
                      })
                   } limit;
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
                   {
-                     archive & CASUAL_MAKE_NVP( count);
-                     archive & CASUAL_MAKE_NVP( total);
-                     archive & CASUAL_MAKE_NVP( limit);
+                     CASUAL_SERIALIZE( count);
+                     CASUAL_SERIALIZE( total);
+                     CASUAL_SERIALIZE( limit);
                   })
                };
 
@@ -96,23 +96,23 @@ namespace casual
 
                   struct Local
                   {
-                     serviceframework::strong::process::id pid;
+                     common::strong::process::id pid;
 
                      CASUAL_CONST_CORRECT_SERIALIZE(
                      {
-                        archive & CASUAL_MAKE_NVP( pid);
+                        CASUAL_SERIALIZE( pid);
                      })
                   };
 
                   struct Remote
                   {
-                     serviceframework::strong::process::id pid;
-                     serviceframework::platform::size::type hops;
+                     common::strong::process::id pid;
+                     common::platform::size::type hops;
 
                      CASUAL_CONST_CORRECT_SERIALIZE(
                      {
-                        archive & CASUAL_MAKE_NVP( pid);
-                        archive & CASUAL_MAKE_NVP( hops);
+                        CASUAL_SERIALIZE( pid);
+                        CASUAL_SERIALIZE( hops);
                      })
                   };
 
@@ -126,12 +126,12 @@ namespace casual
                std::string name;
                std::chrono::nanoseconds timeout;
                std::string category;
-               serviceframework::platform::size::type transaction = 0;
+               common::platform::size::type transaction = 0;
 
                service::Metric metrics;
                service::Metric pending;
 
-               serviceframework::platform::size::type remote_invocations = 0;
+               common::platform::size::type remote_invocations = 0;
                common::platform::time::point::type last;
 
 
@@ -142,22 +142,22 @@ namespace casual
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
                   {
-                     archive & CASUAL_MAKE_NVP( sequential);
-                     archive & CASUAL_MAKE_NVP( concurrent);
+                     CASUAL_SERIALIZE( sequential);
+                     CASUAL_SERIALIZE( concurrent);
                   })
                } instances;
 
                CASUAL_CONST_CORRECT_SERIALIZE(
                {
-                  archive & CASUAL_MAKE_NVP( name);
-                  archive & CASUAL_MAKE_NVP( timeout);
-                  archive & CASUAL_MAKE_NVP( category);
-                  archive & CASUAL_MAKE_NVP( transaction);
-                  archive & CASUAL_MAKE_NVP( metrics);
-                  archive & CASUAL_MAKE_NVP( pending);
-                  archive & CASUAL_MAKE_NVP( remote_invocations);
-                  archive & CASUAL_MAKE_NVP( last);
-                  archive & CASUAL_MAKE_NVP( instances);
+                  CASUAL_SERIALIZE( name);
+                  CASUAL_SERIALIZE( timeout);
+                  CASUAL_SERIALIZE( category);
+                  CASUAL_SERIALIZE( transaction);
+                  CASUAL_SERIALIZE( metrics);
+                  CASUAL_SERIALIZE( pending);
+                  CASUAL_SERIALIZE( remote_invocations);
+                  CASUAL_SERIALIZE( last);
+                  CASUAL_SERIALIZE( instances);
                })
             };
 
@@ -168,8 +168,8 @@ namespace casual
 
                CASUAL_CONST_CORRECT_SERIALIZE(
                {
-                  archive & CASUAL_MAKE_NVP( requested);
-                  archive & CASUAL_MAKE_NVP( process);
+                  CASUAL_SERIALIZE( requested);
+                  CASUAL_SERIALIZE( process);
                })
             };
 
@@ -182,8 +182,8 @@ namespace casual
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
                   {
-                     archive & CASUAL_MAKE_NVP( sequential);
-                     archive & CASUAL_MAKE_NVP( concurrent);
+                     CASUAL_SERIALIZE( sequential);
+                     CASUAL_SERIALIZE( concurrent);
                   })
 
                } instances;
@@ -194,9 +194,9 @@ namespace casual
 
                CASUAL_CONST_CORRECT_SERIALIZE(
                {
-                  archive & CASUAL_MAKE_NVP( instances);
-                  archive & CASUAL_MAKE_NVP( services);
-                  archive & CASUAL_MAKE_NVP( pending);
+                  CASUAL_SERIALIZE( instances);
+                  CASUAL_SERIALIZE( services);
+                  CASUAL_SERIALIZE( pending);
                })
 
             };

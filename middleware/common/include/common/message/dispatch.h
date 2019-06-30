@@ -11,8 +11,8 @@
 #include "common/execution.h"
 #include "common/communication/message.h"
 #include "common/traits.h"
-#include "common/marshal/complete.h"
-#include "common/log/category.h"
+#include "common/serialize/native/complete.h"
+#include "common/log/stream.h"
 
 
 #include <map>
@@ -91,16 +91,11 @@ namespace casual
                   return std::move( lhs);
                }
 
-               friend std::ostream& operator << ( std::ostream& out, const basic_handler& value)
+               // for logging only
+               CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
                {
-                  if( out)
-                  {
-                     auto types = value.types();
-                     return out << "{ types: " << range::make( types)
-                           << '}';
-                  }
-                  return out;
-               }
+                  CASUAL_SERIALIZE_NAME( m_handlers, "handlers");
+               })
 
             private:
 
@@ -123,16 +118,16 @@ namespace casual
                   return false;
                }
 
-               class base_handler
+               class concept
                {
                public:
-                  virtual ~base_handler() = default;
+                  virtual ~concept() = default;
                   virtual void dispatch( communication::message::Complete& complete) = 0;
                };
 
 
                template< typename H>
-               class handle_holder : public base_handler
+               class model : public concept
                {
                public:
 
@@ -148,18 +143,18 @@ namespace casual
                   using message_type = std::decay_t< typename traits_type::template argument< 0>::type>;
 
 
-                  handle_holder( handle_holder&&) = default;
-                  handle_holder& operator = ( handle_holder&&) = default;
+                  model( model&&) = default;
+                  model& operator = ( model&&) = default;
 
 
-                  handle_holder( handler_type&& handler) : m_handler( std::move( handler)) {}
+                  model( handler_type&& handler) : m_handler( std::move( handler)) {}
 
 
                   void dispatch( communication::message::Complete& complete) override
                   {
                      message_type message;
 
-                     marshal::complete( complete, message, unmarshal_type{});
+                     serialize::native::complete( complete, message, unmarshal_type{});
                      execution::id( message.execution);
 
                      m_handler( message);
@@ -171,13 +166,13 @@ namespace casual
                };
 
 
-               using handlers_type = std::map< message_type, std::unique_ptr< base_handler>>;
+               using handlers_type = std::map< message_type, std::unique_ptr< concept>>;
 
 
                template< typename H>
                static void add( handlers_type& result, H&& handler)
                {
-                  using handle_type = handle_holder< typename std::decay< H>::type>;
+                  using handle_type = model< typename std::decay< H>::type>;
 
                   auto holder = std::make_unique< handle_type>( std::forward< H>( handler));
 

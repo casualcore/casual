@@ -33,9 +33,7 @@ namespace casual
                {
                   Trace trace( "common::communication::tcp::local::socket::duplicate");
 
-                  //
                   // We block all signals while we're trying to duplicate the descriptor
-                  //
                   //common::signal::thread::scope::Block block;
 
                   const auto copy = socket::descriptor_type( check::result( ::dup( descriptor.value())));
@@ -47,7 +45,8 @@ namespace casual
                
             } // <unnamed>
          } // local
-         Socket::Socket( descriptor_type descriptor) noexcept : m_descriptor( std::move( descriptor)) {}
+         Socket::Socket( descriptor_type descriptor) noexcept 
+            : m_descriptor( std::move( descriptor)) {}
 
          Socket::~Socket() noexcept
          {
@@ -73,8 +72,6 @@ namespace casual
             : m_descriptor{ local::duplicate( other.m_descriptor)}
          {
          }
-
-
 
          void Socket::option( int level, int optname, const void *optval, size_type optlen)
          {
@@ -102,12 +99,6 @@ namespace casual
 
             return std::exchange( m_descriptor, {});
          }
-
-         std::ostream& operator << ( std::ostream& out, const Socket& value)
-         {
-            return out << "{ descriptor: " << value.m_descriptor << '}';
-         }
-
 
          namespace socket
          {

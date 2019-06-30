@@ -72,7 +72,6 @@ namespace casual
                }
             }
 
-
             std::ostream& operator << ( std::ostream& out, const Queue& queue)
             {
                return out << "{ tasks: " << queue.m_tasks << '}';

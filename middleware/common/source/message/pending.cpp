@@ -36,11 +36,6 @@ namespace casual
                algorithm::trim( destinations, algorithm::remove( destinations, pid));
             }
 
-            std::ostream& operator << ( std::ostream& out, const Message& value)
-            {
-               return out << "{ destinations: " << value.destinations << ", complete: " << value.complete << "}";
-            }
-
             namespace non
             {
                namespace blocking

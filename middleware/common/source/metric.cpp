@@ -74,22 +74,11 @@ namespace casual
          };
       }
 
-
       bool operator == ( const Metric& lhs, const Metric& rhs)
       {
          auto tie = []( auto& v){ return std::tie( v.count, v.total, v.limit.min, v.limit.max);};
          return tie( lhs) == tie( rhs);
       }
 
-      std::ostream& operator << ( std::ostream& out, const Metric::Limit& value)
-      {
-         return stream::write( out, "{ min: ", value.min, ", max: ", value.max, '}');
-      }
-
-
-      std::ostream& operator << ( std::ostream& out, const Metric& value)
-      {
-         return stream::write( out, "{ count: ", value.count, ", total: ", value.total, ", limit: ", value.limit, '}');
-      }
    } // common
 } // casual

@@ -14,8 +14,8 @@
 #include "common/server/service.h"
 
 
-#include "serviceframework/namevaluepair.h"
-#include "serviceframework/archive/create.h"
+#include "common/serialize/macro.h"
+#include "common/serialize/create.h"
 
 #include <xatmi.h>
 
@@ -51,10 +51,10 @@ namespace casual
 
                            CASUAL_CONST_CORRECT_SERIALIZE(
                            {
-                              archive & CASUAL_MAKE_NVP( service);
-                              archive & CASUAL_MAKE_NVP( type);
-                              archive & CASUAL_MAKE_NVP( match);
-                              archive & CASUAL_MAKE_NVP( result);
+                              CASUAL_SERIALIZE( CASUAL_NAMED_VALUE( service));
+                              CASUAL_SERIALIZE( CASUAL_NAMED_VALUE( type));
+                              CASUAL_SERIALIZE( CASUAL_NAMED_VALUE( match));
+                              CASUAL_SERIALIZE( CASUAL_NAMED_VALUE( result));
                            })
                         };
 
@@ -62,7 +62,7 @@ namespace casual
 
                         CASUAL_CONST_CORRECT_SERIALIZE(
                         {
-                           archive & CASUAL_MAKE_NVP( entries);
+                           CASUAL_SERIALIZE( CASUAL_NAMED_VALUE( entries));
                         })
                      };
 
@@ -106,8 +106,8 @@ namespace casual
                         configuration::Model mockup;
 
                         common::file::Input stream( file);
-                        auto archive = serviceframework::archive::create::reader::consumed::from( stream.extension(), stream);
-                        archive >> CASUAL_MAKE_NVP( mockup);
+                        auto archive = common::serialize::create::reader::consumed::from( stream.extension(), stream);
+                        archive >> CASUAL_NAMED_VALUE( mockup);
 
                         return mockup;
                      }

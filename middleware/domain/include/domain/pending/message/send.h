@@ -8,9 +8,7 @@
 
 
 #include "common/message/pending.h"
-
 #include "common/communication/message.h"
-#include "common/marshal/complete.h"
 
 namespace casual
 {

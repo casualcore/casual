@@ -4,11 +4,13 @@
 //! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
+
 #include "common/service/header.h"
 
 #include "common/algorithm.h"
 #include "common/exception/system.h"
 #include "common/log.h"
+#include "common/serialize/line.h"
 
 namespace casual
 {
@@ -25,7 +27,7 @@ namespace casual
                   namespace
                   {
                      template< typename F>
-                     auto find( F& fields, const std::string& key) // -> decltype( range::make( header::fields()))
+                     auto find( F& fields, const std::string& key)
                      {
                         return algorithm::find_if( fields, [&]( const Field& f){
                            return f.equal( key);
@@ -33,7 +35,7 @@ namespace casual
                      }
 
                      template< typename F>
-                     decltype( auto) find_at( F& fields, const std::string& key) // -> decltype( range::make( header::fields()))
+                     decltype( auto) find_at( F& fields, const std::string& key)
                      {
                         auto found = find( fields, key);
                         
@@ -49,11 +51,6 @@ namespace casual
                bool operator == (  const Field& lhs, const Field& rhs)
                {
                   return lhs.equal( rhs.key);
-               }
-
-               std::ostream& operator << ( std::ostream& out, const Field& value)
-               {
-                  return out << "{ key: " << value.key << ", value: " << value.value << '}';
                }
 
                bool Field::equal( const std::string& value) const
