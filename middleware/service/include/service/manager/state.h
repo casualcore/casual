@@ -93,7 +93,7 @@ namespace casual
                   inline friend bool operator == ( const base_instance& lhs, common::strong::process::id rhs) { return lhs.process.pid == rhs;}
 
                   CASUAL_CONST_CORRECT_SERIALIZE_WRITE({
-                     CASUAL_NAMED_VALUE( process);
+                     CASUAL_SERIALIZE( process);
                   })
                };
 
@@ -147,15 +147,15 @@ namespace casual
                   CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
                   {
                      base_instance::serialize( archive);   
-                     CASUAL_NAMED_VALUE_NAME( m_last, "last");
-                     CASUAL_NAMED_VALUE_NAME( m_service, "service");
-                     CASUAL_NAMED_VALUE_NAME( m_caller, "caller");
-                     CASUAL_NAMED_VALUE_NAME( m_correlation, "correlation");
-                     CASUAL_NAMED_VALUE_NAME( m_services, "services");
+                     CASUAL_SERIALIZE_NAME( m_last, "last");
+                     CASUAL_SERIALIZE_NAME( m_service, "service");
+                     CASUAL_SERIALIZE_NAME( m_caller, "caller");
+                     CASUAL_SERIALIZE_NAME( m_correlation, "correlation");
+                     CASUAL_SERIALIZE_NAME( m_services, "services");
                   })
 
                private:
-                  common::platform::time::point::type m_last = common::platform::time::point::type::min();
+                  common::platform::time::point::type m_last = common::platform::time::point::limit::zero();
                   state::Service* m_service = nullptr;
                   common::process::Handle m_caller;
                   common::Uuid m_correlation;
@@ -175,7 +175,7 @@ namespace casual
                   CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
                   {
                      base_instance::serialize( archive);   
-                     CASUAL_NAMED_VALUE( order);
+                     CASUAL_SERIALIZE( order);
                   })
                };
 
@@ -197,8 +197,8 @@ namespace casual
 
                   CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
                   { 
-                     CASUAL_NAMED_VALUE( request);
-                     CASUAL_NAMED_VALUE( when);
+                     CASUAL_SERIALIZE( request);
+                     CASUAL_SERIALIZE( when);
                   })
                };
 
@@ -227,8 +227,10 @@ namespace casual
                      inline const common::process::Handle& process() const { return get().process;}
                      inline auto state() const { return get().state();}
 
-
                      inline friend bool operator == ( const Sequential& lhs, common::strong::process::id rhs) { return lhs.process().pid == rhs;}
+
+                     // forward to reference_wrapper
+                     CASUAL_FORWARD_SERIALIZE( get());
                   };
 
                   using remote_base = std::reference_wrapper< state::instance::Concurrent>;
@@ -244,6 +246,9 @@ namespace casual
 
                      inline friend bool operator == ( const Concurrent& lhs, common::strong::process::id rhs) { return lhs.process().pid == rhs;}
                      friend bool operator < ( const Concurrent& lhs, const Concurrent& rhs);
+
+                     // forward to reference_wrapper
+                     CASUAL_FORWARD_SERIALIZE( get());
 
                   private:
                      size_type m_hops = 0;
@@ -273,9 +278,10 @@ namespace casual
 
                   CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
                   { 
-                     CASUAL_NAMED_VALUE( sequential);
-                     CASUAL_NAMED_VALUE( concurrent);
+                     CASUAL_SERIALIZE( sequential);
+                     CASUAL_SERIALIZE( concurrent);
                   })
+
 
                } instances;
 
@@ -315,11 +321,11 @@ namespace casual
 
                CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
                { 
-                  CASUAL_NAMED_VALUE( instances);
-                  CASUAL_NAMED_VALUE( information);
-                  CASUAL_NAMED_VALUE( pending);
-                  CASUAL_NAMED_VALUE_NAME( m_last, "last");
-                  CASUAL_NAMED_VALUE_NAME( m_remote_invocations, "remote_invocations");
+                  CASUAL_SERIALIZE( instances);
+                  CASUAL_SERIALIZE( information);
+                  CASUAL_SERIALIZE( pending);
+                  CASUAL_SERIALIZE_NAME( m_last, "last");
+                  CASUAL_SERIALIZE_NAME( m_remote_invocations, "remote_invocations");
                })
 
             private:
@@ -331,7 +337,7 @@ namespace casual
 
                void partition_remote_instances();
 
-               common::platform::time::point::type m_last = common::platform::time::point::type::min();
+               common::platform::time::point::type m_last = common::platform::time::point::limit::zero();
                size_type m_remote_invocations = 0;
             };
          } // state
@@ -407,7 +413,7 @@ namespace casual
             //! Resets metrics for the provided services, if empty all metrics are reseted.
             //! @param services
             //!
-            //! @return the services that was reseted.
+            //! @return the services that was reset.
             std::vector< std::string> metric_reset( std::vector< std::string> services);
 
             //! find a service from name

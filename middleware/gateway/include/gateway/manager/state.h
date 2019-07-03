@@ -32,7 +32,6 @@ namespace casual
             
             struct base_connection
             {
-
                enum class Runlevel
                {
                   absent,
@@ -47,6 +46,12 @@ namespace casual
                {
                   std::string local;
                   std::string peer;
+
+                  CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
+                  { 
+                     CASUAL_SERIALIZE( local);
+                     CASUAL_SERIALIZE( peer);
+                  })
                };
 
 
@@ -65,10 +70,10 @@ namespace casual
 
                CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
                { 
-                  CASUAL_NAMED_VALUE( process);
-                  CASUAL_NAMED_VALUE( remote);
-                  CASUAL_NAMED_VALUE( address);
-                  CASUAL_NAMED_VALUE( runlevel);
+                  CASUAL_SERIALIZE( process);
+                  CASUAL_SERIALIZE( remote);
+                  CASUAL_SERIALIZE( address);
+                  CASUAL_SERIALIZE( runlevel);
                })
             };
 
@@ -99,10 +104,10 @@ namespace casual
                   CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
                   { 
                      base_connection::serialize( archive);
-                     CASUAL_NAMED_VALUE( services);
-                     CASUAL_NAMED_VALUE( queues);
-                     CASUAL_NAMED_VALUE( order);
-                     CASUAL_NAMED_VALUE( restart);
+                     CASUAL_SERIALIZE( services);
+                     CASUAL_SERIALIZE( queues);
+                     CASUAL_SERIALIZE( order);
+                     CASUAL_SERIALIZE( restart);
                   })
                };
 
@@ -112,6 +117,12 @@ namespace casual
             {
                std::vector< outbound::Connection> outbound;
                std::vector< inbound::Connection> inbound;
+
+               CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
+               {
+                  CASUAL_SERIALIZE( outbound);
+                  CASUAL_SERIALIZE( inbound);
+               })
             };
 
             namespace coordinate
@@ -125,6 +136,9 @@ namespace casual
 
                      void accumulate( message_type& message, common::message::gateway::domain::discover::Reply& reply);
                      void send( common::strong::ipc::id queue, message_type& message);
+
+                     // nothing to "log"
+                     CASUAL_CONST_CORRECT_SERIALIZE_WRITE()
                   };
 
                   using Discover = common::message::Coordinate< Policy>;
@@ -163,7 +177,7 @@ namespace casual
 
                CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
                { 
-                  CASUAL_NAMED_VALUE( outbound);
+                  CASUAL_SERIALIZE( outbound);
                })
 
             } discover;
@@ -172,11 +186,11 @@ namespace casual
 
             CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
             { 
-               CASUAL_NAMED_VALUE( directive);
-               CASUAL_NAMED_VALUE( connections);
-               CASUAL_NAMED_VALUE( discover);
-               CASUAL_NAMED_VALUE_NAME( m_listeners, "listeners");
-               CASUAL_NAMED_VALUE_NAME( m_descriptors, "descriptors");
+               CASUAL_SERIALIZE( directive);
+               CASUAL_SERIALIZE( connections);
+               CASUAL_SERIALIZE( discover);
+               CASUAL_SERIALIZE_NAME( m_listeners, "listeners");
+               CASUAL_SERIALIZE_NAME( m_descriptors, "descriptors");
             })
 
          private:

@@ -104,7 +104,7 @@ namespace casual
                ~Scoped();
 
             private:
-               platform::time::point::type m_old = platform::time::point::type::min();
+               platform::time::point::type m_old;
                move::Active m_active;
 
             };

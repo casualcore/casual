@@ -19,11 +19,10 @@
 #include "common/transcode.h"
 #include "common/execute.h"
 #include "common/exception/handle.h"
+#include "common/serialize/create.h"
 
 #include "serviceframework/service/protocol/call.h"
-#include "common/serialize/create.h"
 #include "serviceframework/log.h"
-
 
 #include <iostream>
 
@@ -38,11 +37,11 @@ namespace casual
 
          std::string timestamp( const platform::time::point::type& time)
          {
-            if( time != platform::time::point::type::min())
+            if( time != platform::time::point::limit::zero())
             {
                return chronology::local( time);
             }
-            return {};
+            return "-";;
          }
 
 

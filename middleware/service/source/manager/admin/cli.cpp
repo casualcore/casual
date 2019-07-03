@@ -217,20 +217,15 @@ namespace casual
 
                   base_instances( instances_type& instances) : m_instances( instances) {}
 
-
                   template< typename T>
                   range_type instances( const std::vector< T>& instances) const
                   {
-                     //
                      // We want to find the intersection between the argument instances and the
                      // total instances we hold
-                     //
-
                      return std::get< 0>( algorithm::intersection( m_instances, instances, []( const normalized::Instance& ni, const T& i){
                         return ni.process.pid == i.pid;
                      }));
                   }
-
 
                   instances_type& m_instances;
                };
@@ -283,7 +278,6 @@ namespace casual
                      }
                   };
 
-
                } // local
 
                namespace remote
@@ -296,13 +290,8 @@ namespace casual
                      }
                   };
 
-
                } // remote
-
-
-
             } // instances
-
 
             struct format_instances
             {
@@ -381,7 +370,11 @@ namespace casual
                   return std::chrono::duration_cast< time_type>( value.pending.total / value.metrics.count).count();
                };
 
-               auto format_last = []( const admin::ServiceVO& value){
+               auto format_last = []( const admin::ServiceVO& value) -> std::string
+               {
+                  if( value.last == common::platform::time::point::limit::zero())
+                     return "-";
+
                   return common::chronology::local( value.last);
                };
 
@@ -399,7 +392,7 @@ namespace casual
                   terminal::format::column( "PAT", format_avg_pending_time, terminal::color::magenta, terminal::format::Align::right),
                   terminal::format::column( "RI", format::instance::remote::total{}, terminal::color::cyan, terminal::format::Align::right),
                   terminal::format::column( "RC", std::mem_fn( &admin::ServiceVO::remote_invocations), terminal::color::cyan, terminal::format::Align::right),
-                  terminal::format::column( "last", format_last, terminal::color::blue, terminal::format::Align::right)
+                  terminal::format::column( "last", format_last, terminal::color::blue, terminal::format::Align::left)
                );
             }
 
@@ -497,7 +490,6 @@ namespace casual
 
             void services( std::ostream& out, admin::StateVO& state, Service type)
             {
-
                auto split = algorithm::partition( state.services, []( const admin::ServiceVO& s){
                      return s.category != common::service::category::admin();});
 

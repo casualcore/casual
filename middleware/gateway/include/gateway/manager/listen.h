@@ -42,9 +42,9 @@ namespace casual
                
                CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
                { 
-                  CASUAL_NAMED_VALUE_NAME( m_address, "address");
-                  CASUAL_NAMED_VALUE_NAME( m_socket, "socket");
-                  CASUAL_NAMED_VALUE_NAME( m_limit, "limit");
+                  CASUAL_SERIALIZE_NAME( m_address, "address");
+                  CASUAL_SERIALIZE_NAME( m_socket, "socket");
+                  CASUAL_SERIALIZE_NAME( m_limit, "limit");
                })
 
             private:

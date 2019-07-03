@@ -225,9 +225,91 @@ namespace casual
 
                EXPECT_TRUE( ! xid_target.null());
                EXPECT_TRUE( xid_target == xid_source);
-
             }
 
+            TYPED_TEST( casual_serialize_native_binary, serialization_unit_min)
+            {
+               common::unittest::Trace trace;
+
+               using input_type = typename TestFixture::input_type;
+               using output_type = typename TestFixture::output_type;
+
+               const auto expected = platform::time::serialization::unit::zero();
+
+               platform::binary::type buffer;
+               {
+                  auto output = output_type{}( buffer);
+                  output << expected;
+               }
+
+               platform::time::serialization::unit target;
+               {
+                  auto input = input_type{}( buffer);
+                  input >> target;
+               }
+               
+               EXPECT_TRUE( target == expected) 
+                  << CASUAL_NAMED_VALUE( target.count()) 
+                  << "\n" << CASUAL_NAMED_VALUE( expected.count());
+
+               EXPECT_TRUE( target == platform::time::serialization::unit::zero());
+            }
+
+            TYPED_TEST( casual_serialize_native_binary, time_unit_min)
+            {
+               common::unittest::Trace trace;
+
+               using input_type = typename TestFixture::input_type;
+               using output_type = typename TestFixture::output_type;
+
+               const auto expected = platform::time::unit::zero();
+
+               platform::binary::type buffer;
+               {
+                  auto output = output_type{}( buffer);
+                  output << expected;
+               }
+
+               platform::time::unit target;
+               {
+                  auto input = input_type{}( buffer);
+                  input >> target;
+               }
+               
+               EXPECT_TRUE( target == expected) 
+                  << CASUAL_NAMED_VALUE( target.count()) 
+                  << "\n" << CASUAL_NAMED_VALUE( expected.count());
+
+               EXPECT_TRUE( target == platform::time::unit::zero());
+            }
+
+            TYPED_TEST( casual_serialize_native_binary, time_point_min)
+            {
+               common::unittest::Trace trace;
+
+               using input_type = typename TestFixture::input_type;
+               using output_type = typename TestFixture::output_type;
+
+               const platform::time::point::type expected;
+
+               platform::binary::type buffer;
+               {
+                  auto output = output_type{}( buffer);
+                  output << expected;
+               }
+
+               platform::time::point::type target;
+               {
+                  auto input = input_type{}( buffer);
+                  input >> target;
+               }
+               
+               EXPECT_TRUE( target == expected) 
+                  << CASUAL_NAMED_VALUE( target.time_since_epoch().count()) 
+                  << "\n" << CASUAL_NAMED_VALUE( expected.time_since_epoch().count());
+
+               EXPECT_TRUE( target.time_since_epoch().count() == 0);
+            }
 
             TYPED_TEST( casual_serialize_native_binary, message_call)
             {

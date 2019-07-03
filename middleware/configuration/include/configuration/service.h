@@ -23,7 +23,7 @@ namespace casual
 
             CASUAL_CONST_CORRECT_SERIALIZE
             (
-               CASUAL_SERIALIZE( CASUAL_NAMED_VALUE( timeout));
+               CASUAL_SERIALIZE( timeout);
             )
          };
 

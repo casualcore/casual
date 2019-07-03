@@ -20,8 +20,8 @@ namespace casual
       {
          struct Limit
          {
-            platform::time::unit min = platform::time::limit::zero();
-            platform::time::unit max = platform::time::limit::zero();
+            platform::time::unit min = platform::time::unit::zero();
+            platform::time::unit max = platform::time::unit::zero();
 
             Limit& operator += ( platform::time::unit duration);
             Limit& operator += ( const Limit& rhs);
@@ -36,7 +36,7 @@ namespace casual
          };
 
          platform::size::type count = 0;
-         platform::time::unit total = platform::time::limit::zero();
+         platform::time::unit total = platform::time::unit::zero();
          Limit limit;
 
 

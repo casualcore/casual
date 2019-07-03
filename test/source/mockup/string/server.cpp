@@ -51,10 +51,10 @@ namespace casual
 
                            CASUAL_CONST_CORRECT_SERIALIZE(
                            {
-                              CASUAL_SERIALIZE( CASUAL_NAMED_VALUE( service));
-                              CASUAL_SERIALIZE( CASUAL_NAMED_VALUE( type));
-                              CASUAL_SERIALIZE( CASUAL_NAMED_VALUE( match));
-                              CASUAL_SERIALIZE( CASUAL_NAMED_VALUE( result));
+                              CASUAL_SERIALIZE( service);
+                              CASUAL_SERIALIZE( type);
+                              CASUAL_SERIALIZE( match);
+                              CASUAL_SERIALIZE( result);
                            })
                         };
 
@@ -62,7 +62,7 @@ namespace casual
 
                         CASUAL_CONST_CORRECT_SERIALIZE(
                         {
-                           CASUAL_SERIALIZE( CASUAL_NAMED_VALUE( entries));
+                           CASUAL_SERIALIZE( entries);
                         })
                      };
 

@@ -34,11 +34,11 @@ namespace casual
 
          std::string timestamp( const platform::time::point::type& time)
          {
-            if( time != platform::time::point::type::min())
+            if( time != platform::time::point::limit::zero())
             {
                return chronology::local( time);
             }
-            return {};
+            return "-";
          }
 
 

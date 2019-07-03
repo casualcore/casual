@@ -35,6 +35,8 @@ namespace casual
 
                   bool ready( strong::file::descriptor::id descriptor) const;
 
+                  friend std::ostream& operator << ( std::ostream& out, const Set& value);
+
                private:
                   ::fd_set m_set;
                };
@@ -42,6 +44,11 @@ namespace casual
             struct Directive 
             {
                directive::Set read;
+
+               CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
+               { 
+                  CASUAL_SERIALIZE( read);
+               })
             };
 
             namespace dispatch

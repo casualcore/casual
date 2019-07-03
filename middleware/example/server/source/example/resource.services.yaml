@@ -1,0 +1,30 @@
+
+
+server:
+
+  default:
+    service:
+
+      # transation characteristics
+      # Can be one of the following
+      # - auto : if a transaction is present join it, else start a new one (default)
+      # - join : if a transaction is present join it,
+      # - none : don't join any transaction
+      # - atomic : start a new transaction regardless.
+      # - branch : if a transaction is present branch it, else start a new one
+      transaction: auto
+      category: example
+
+  
+  resources:
+    - key: rm-mockup
+      name: example-resource-server
+
+  services:
+    - name: casual/example/resource/echo
+      function: casual_example_resource_echo
+
+    - name: casual/example/resource/branch/echo
+      function: casual_example_resource_echo
+      transaction: branch
+

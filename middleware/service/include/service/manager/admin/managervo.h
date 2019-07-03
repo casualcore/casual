@@ -132,7 +132,7 @@ namespace casual
                service::Metric pending;
 
                common::platform::size::type remote_invocations = 0;
-               common::platform::time::point::type last;
+               common::platform::time::point::type last = common::platform::time::point::limit::zero();
 
 
                struct

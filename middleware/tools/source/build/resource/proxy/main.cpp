@@ -215,22 +215,16 @@ int main( int argc, char** argv)
                            }( argc, argv);
 
                            if( settings.verbose)
-                           {
-                              std::cout << '\n'; //common::serialize::log::writer( std::cout) << CASUAL_NAMED_VALUE( settings);
-                           }
+                              common::log::line( std::cout, CASUAL_NAMED_VALUE( settings));
                         }
 
                         auto xa_switch = local::configuration( settings);
 
                         if( settings.verbose)
-                        {
-                           std::cout << '\n'; // common::serialize::log::writer( std::cout) << CASUAL_NAMED_VALUE( xa_switch) << '\n';
-                        }
+                           common::log::line( std::cout, '\n', CASUAL_NAMED_VALUE( xa_switch));
 
                         if( settings.output.empty())
-                        {
                            settings.output = xa_switch.server;
-                        }
 
                         // Generate file
                         common::file::scoped::Path path( common::file::name::unique( "rm_proxy_", ".cpp"));

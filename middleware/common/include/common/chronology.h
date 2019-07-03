@@ -22,6 +22,7 @@ namespace casual
       {
          std::string local();
          std::string local( const platform::time::point::type& time);
+         void local( std::ostream& out, const platform::time::point::type& time);
          std::string universal();
          std::string universal( const platform::time::point::type& time);
 
@@ -80,6 +81,18 @@ namespace casual
          struct has_formatter< std::chrono::duration< R, P>> : std::true_type
          {
             using formatter = chronology::format;
+         };
+
+         template<>
+         struct has_formatter< platform::time::point::type> : std::true_type
+         {
+            struct formatter
+            {
+               void operator () ( std::ostream& out, const platform::time::point::type& time) const
+               {
+                  chronology::local( out, time);
+               }
+            };
          };
       } // stream
 

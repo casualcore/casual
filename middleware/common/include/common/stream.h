@@ -10,7 +10,7 @@
 #include "common/algorithm.h"
 #include "common/functional.h"
 
-#include "serialize/line.h"
+#include "common/serialize/line.h"
 
 #include <ostream>
 
@@ -110,6 +110,21 @@ namespace casual
                void operator () ( std::ostream& out, C&& value) const
                {
                   stream::write( out, value.name(), ": ", value.value());
+               }
+            };
+         };
+
+         //! Specialization for reference_wrapper
+         template< typename T>
+         struct has_formatter< std::reference_wrapper< T>>
+            : std::true_type
+         {
+            struct formatter
+            {
+               template< typename C>
+               void operator () ( std::ostream& out, C&& value) const
+               {
+                  stream::write( out, value.get());
                }
             };
          };

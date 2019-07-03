@@ -26,10 +26,6 @@ else:
 IncludePaths( [ 
     'include',
     '../xatmi/include',
-    '../buffers/include',
-    '../transaction/include',
-    '../serviceframework/include',
-    '../buffers/include',
     '$(CASUAL_REPOSITORY_ROOT)/thirdparty/rapidjson/include',
     '$(CASUAL_OPTIONAL_INCLUDE_PATHS)',
     ]

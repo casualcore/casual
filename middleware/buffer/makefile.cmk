@@ -100,7 +100,6 @@ binary = LinkExecutable( 'bin/casual-buffer-field-from-human',
     [ 
      'casual-common', 
      'casual-serviceframework', 
-     #'casual-xatmi', 
       lib_buffer
     ])
     
@@ -114,7 +113,6 @@ binary = LinkExecutable( 'bin/casual-buffer-field-to-human',
     [ 
      'casual-common', 
      'casual-serviceframework', 
-     #'casual-xatmi', 
       lib_buffer
     ])
     
@@ -126,13 +124,30 @@ binary = LinkExecutable( 'bin/casual-buffer-duplicate',
     ], 
     [ 
      'casual-common', 
-     #'casual-serviceframework', 
-     #'casual-xatmi', 
-     # lib_buffer
     ])
     
 install_bin.append( binary)
 
+
+binary = LinkExecutable( 'bin/casual-buffer-generic-compose', 
+    [
+     Compile( 'tools/source/generic/compose.cpp'),
+    ], 
+    [ 
+     'casual-common', 
+    ])
+    
+install_bin.append( binary)
+
+binary = LinkExecutable( 'bin/casual-buffer-generic-extract', 
+    [
+     Compile( 'tools/source/generic/extract.cpp'),
+    ], 
+    [ 
+     'casual-common', 
+    ])
+    
+install_bin.append( binary)
 
 # Install
 Install( install_lib, '$(CASUAL_HOME)/lib')

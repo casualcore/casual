@@ -247,7 +247,7 @@ namespace casual
                metric = {};
                pending = {};
                m_remote_invocations = 0;
-               m_last = common::platform::time::point::type::min();
+               m_last = common::platform::time::point::limit::zero();
             }
 
             common::process::Handle Service::reserve( 
@@ -336,7 +336,7 @@ namespace casual
                      if( found->second.information.transaction != service.transaction)
                         found->second.information.transaction = service.transaction;
 
-                     log::line( log, "found: ", found->second);
+                     log::line( log, "found: ", *found);
 
                      return found->second;
                   }
@@ -554,9 +554,8 @@ namespace casual
             auto found = algorithm::find( services, name);
 
             if( found)
-            {
                return &found->second;
-            }
+
             return nullptr;
          }
 

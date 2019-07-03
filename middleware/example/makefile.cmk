@@ -33,6 +33,22 @@ target = LinkServer( 'server/bin/casual-example-server',
 
 install_bin.append( target)
 
+# make sure we got a resource property file available when we build with a resource 
+Environment( 'CASUAL_RESOURCE_CONFIGURATION_FILE', '../configuration/example/resource/property.yaml')
+
+target = LinkServer( 'server/bin/casual-example-resource-server',
+    [ 
+       Compile( 'server/source/example/resource.cpp')
+    ],
+    [ 
+        'casual-common',
+        'casual-buffer'
+    ],
+    'server/source/example/resource.services.yaml')
+
+install_bin.append( target)
+
+
 target = LinkExecutable( 'server/bin/casual-example-error-server',
     [ 
        Compile( 'server/source/example/error.cpp')

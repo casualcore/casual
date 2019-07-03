@@ -104,12 +104,7 @@ namespace casual
 
                               message.buffer = std::move( request.buffer);
                               message.code = service::code::get( request.service.name);
-
-
-
-
                            }
-
 
                            ack.metric.end = platform::time::clock::type::now();
                            communication::ipc::blocking::send( communication::instance::outbound::service::manager::device(), ack);

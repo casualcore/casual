@@ -176,14 +176,7 @@ namespace casual
 
       void Manager::start()
       {
-         try
-         {
-            local::message::pump( m_state);
-         }
-         catch( ...)
-         {
-            common::exception::handle();
-         }
+         local::message::pump( m_state);
       }
 
    } // service

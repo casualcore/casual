@@ -28,10 +28,10 @@ namespace casual
 
             CASUAL_CONST_CORRECT_SERIALIZE
             (
-               CASUAL_SERIALIZE( CASUAL_NAMED_VALUE( instances));
-               CASUAL_SERIALIZE( CASUAL_NAMED_VALUE( restart));
-               CASUAL_SERIALIZE( CASUAL_NAMED_VALUE( memberships));
-               CASUAL_SERIALIZE( CASUAL_NAMED_VALUE( environment));
+               CASUAL_SERIALIZE( instances);
+               CASUAL_SERIALIZE( restart);
+               CASUAL_SERIALIZE( memberships);
+               CASUAL_SERIALIZE( environment);
             )
          };
 
@@ -52,16 +52,14 @@ namespace casual
 
          CASUAL_CONST_CORRECT_SERIALIZE
          (
-            
-            CASUAL_SERIALIZE( CASUAL_NAMED_VALUE( path));
-            CASUAL_SERIALIZE( CASUAL_NAMED_VALUE( alias));
-            CASUAL_SERIALIZE( CASUAL_NAMED_VALUE( note));
-            CASUAL_SERIALIZE( CASUAL_NAMED_VALUE( arguments));
-
-            CASUAL_SERIALIZE( CASUAL_NAMED_VALUE( instances));
-            CASUAL_SERIALIZE( CASUAL_NAMED_VALUE( memberships));
-            CASUAL_SERIALIZE( CASUAL_NAMED_VALUE( environment));
-            CASUAL_SERIALIZE( CASUAL_NAMED_VALUE( restart));
+            CASUAL_SERIALIZE( path);
+            CASUAL_SERIALIZE( alias);
+            CASUAL_SERIALIZE( note);
+            CASUAL_SERIALIZE( arguments);
+            CASUAL_SERIALIZE( instances);
+            CASUAL_SERIALIZE( memberships);
+            CASUAL_SERIALIZE( environment);
+            CASUAL_SERIALIZE( restart);
             
          )
 

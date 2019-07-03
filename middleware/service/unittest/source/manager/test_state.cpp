@@ -31,6 +31,15 @@ namespace casual
             EXPECT_TRUE( arguments.services.at( 0).name == admin::service::name::state());
          }
 
+         TEST( service_manager_state, default_ctor_state_Service)
+         {
+            common::unittest::Trace trace;
+
+            manager::state::Service service;
+
+            EXPECT_TRUE( service.last() == common::platform::time::point::limit::zero()) << CASUAL_NAMED_VALUE( service);
+         }
+
          TEST( service_manager_state, advertise_empty_invalid_local__expect_no_op)
          {
             common::unittest::Trace trace;

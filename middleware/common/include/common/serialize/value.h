@@ -553,16 +553,16 @@ namespace casual
             template< typename V> 
             static void write( A& archive, V&& value, const char* name)
             {
-               value::write( archive, std::chrono::duration_cast< common::platform::time::serialization::unit>( value).count(), name);
+               value::write( archive, std::chrono::duration_cast< platform::time::serialization::unit>( value).count(), name);
             }
 
             static bool read( A& archive, value_type& value, const char* name)
             {
-               common::platform::time::serialization::unit::rep representation;
+               platform::time::serialization::unit::rep representation;
 
                if( value::read( archive, representation, name))
                {
-                  value = std::chrono::duration_cast< value_type>( common::platform::time::serialization::unit( representation));
+                  value = std::chrono::duration_cast< value_type>( platform::time::serialization::unit{ representation});
                   return true;
                }
                return false;
@@ -572,17 +572,20 @@ namespace casual
          template< typename A>
          struct Value< common::platform::time::point::type, A>
          {
-            static void write( A& archive, common::platform::time::point::type value, const char* name)
+            static void write( A& archive, platform::time::point::type value, const char* name)
             {
-               value::write( archive, value.time_since_epoch(), name);
+               value::write(
+                  archive, 
+                  std::chrono::time_point_cast< platform::time::serialization::unit>( value).time_since_epoch(), 
+                  name);
             }
 
-            static bool read( A& archive, common::platform::time::point::type& value, const char* name)
+            static bool read( A& archive, platform::time::point::type& value, const char* name)
             {
-               common::platform::time::serialization::unit duration;
+               platform::time::serialization::unit duration;
                if( value::read( archive, duration, name))
                {
-                  value = common::platform::time::point::type( std::chrono::duration_cast< common::platform::time::unit>( duration));
+                  value = platform::time::point::type{ std::chrono::duration_cast< platform::time::unit>( duration)};
                   return true;
                }
                return false;

@@ -21,30 +21,16 @@ namespace casual
 
    namespace service
    {
-      int main( int argc, char** argv)
+      void main( int argc, char** argv)
       {
-         try
-         {
+         manager::Settings settings;
 
-            manager::Settings settings;
+         argument::Parse{ "casual-service-manager",
+            argument::Option( std::tie( settings.forward), { "--forward"}, "path to the forward instance - mainly for unittest")
+         }( argc, argv);
 
-            {
-               argument::Parse parse{ "casual-service-manager",
-                  argument::Option( std::tie( settings.forward), { "--forward"}, "path to the forward instance - mainly for unittest")
-               };
-               parse( argc, argv);
-            }
-
-            Manager manager( std::move( settings));
-            manager.start();
-
-         }
-         catch( ...)
-         {
-            return casual::common::exception::handle();
-
-         }
-         return 0;
+         Manager manager( std::move( settings));
+         manager.start();
       }
    } // service
 
@@ -53,5 +39,8 @@ namespace casual
 
 int main( int argc, char** argv)
 {
-   return casual::service::main( argc, argv);
+   return casual::common::exception::guard( [=]()
+   {  
+      casual::service::main( argc, argv);
+   });
 }

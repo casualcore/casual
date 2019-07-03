@@ -205,8 +205,8 @@ namespace casual
                
                   CASUAL_CONST_CORRECT_SERIALIZE(
                   {
-                     CASUAL_SERIALIZE( CASUAL_NAMED_VALUE( id));
-                     CASUAL_SERIALIZE( CASUAL_NAMED_VALUE( owner));
+                     CASUAL_SERIALIZE( id);
+                     CASUAL_SERIALIZE( owner);
                   })
                };
 
@@ -216,8 +216,8 @@ namespace casual
 
                CASUAL_CONST_CORRECT_SERIALIZE(
                {
-                  CASUAL_SERIALIZE( CASUAL_NAMED_VALUE( global));
-                  CASUAL_SERIALIZE( CASUAL_NAMED_VALUE( branches));
+                  CASUAL_SERIALIZE( global);
+                  CASUAL_SERIALIZE( branches);
                })
             };
 

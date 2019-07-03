@@ -49,6 +49,11 @@ namespace casual
                {
                   return FD_ISSET( descriptor.value(), &m_set);
                }
+
+               std::ostream& operator << ( std::ostream& out, const Set& value)
+               {
+                  return out << "{}";
+               }
   
             } // directive
 

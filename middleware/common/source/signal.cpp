@@ -426,7 +426,7 @@ namespace casual
             {
                if( m_active)
                {
-                  if( m_old == platform::time::point::type::min())
+                  if( m_old == platform::time::point::limit::zero())
                   {
                      timer::unset();
                   }

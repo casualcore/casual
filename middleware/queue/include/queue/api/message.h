@@ -31,7 +31,7 @@ namespace casual
          std::string reply;
 
          //! When the message is available, in absolute time.
-         common::platform::time::point::type available = common::platform::time::point::type::min();
+         common::platform::time::point::type available = common::platform::time::point::limit::zero();
 
          CASUAL_CONST_CORRECT_SERIALIZE(
          {

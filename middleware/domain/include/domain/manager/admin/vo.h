@@ -195,8 +195,8 @@ namespace casual
 
                         CASUAL_CONST_CORRECT_SERIALIZE
                         (
-                           CASUAL_SERIALIZE( CASUAL_NAMED_VALUE( variables));
-                           CASUAL_SERIALIZE( CASUAL_NAMED_VALUE( aliases));
+                           CASUAL_SERIALIZE( variables);
+                           CASUAL_SERIALIZE( aliases);
                         )
                      };
                      

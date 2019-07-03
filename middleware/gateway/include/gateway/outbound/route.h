@@ -68,7 +68,7 @@ namespace casual
 
                CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
                { 
-                  CASUAL_NAMED_VALUE_NAME( m_points, "points");
+                  CASUAL_SERIALIZE_NAME( m_points, "points");
                })
 
             private:
@@ -86,9 +86,9 @@ namespace casual
                
                CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
                { 
-                  CASUAL_NAMED_VALUE( correlation);
-                  CASUAL_NAMED_VALUE( destination);
-                  CASUAL_NAMED_VALUE( type);
+                  CASUAL_SERIALIZE( correlation);
+                  CASUAL_SERIALIZE( destination);
+                  CASUAL_SERIALIZE( type);
                })
             };
 
@@ -115,11 +115,11 @@ namespace casual
 
                   CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
                   { 
-                     CASUAL_NAMED_VALUE( correlation);
-                     CASUAL_NAMED_VALUE( destination);
-                     CASUAL_NAMED_VALUE( service);
-                     CASUAL_NAMED_VALUE( parent);
-                     CASUAL_NAMED_VALUE( start);
+                     CASUAL_SERIALIZE( correlation);
+                     CASUAL_SERIALIZE( destination);
+                     CASUAL_SERIALIZE( service);
+                     CASUAL_SERIALIZE( parent);
+                     CASUAL_SERIALIZE( start);
                   })
                };
 

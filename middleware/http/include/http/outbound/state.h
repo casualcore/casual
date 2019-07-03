@@ -62,7 +62,7 @@ namespace casual
                      common::process::Handle destination;
                      common::Uuid correlation;
                      common::Uuid execution;
-                     common::platform::time::point::type start = common::platform::time::point::type::min();
+                     common::platform::time::point::type start = common::platform::time::point::limit::zero();
                      std::string service;
                      std::string parent;
 

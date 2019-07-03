@@ -19,7 +19,7 @@ namespace casual
          {
             auto min( platform::time::unit lhs, platform::time::unit rhs)
             {
-               if( lhs == platform::time::limit::zero())
+               if( lhs == platform::time::unit::zero())
                   return rhs;
                
                return std::min( lhs, rhs);
