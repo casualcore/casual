@@ -25,12 +25,7 @@ namespace casual
             inline auto make_error_code( std::errc code) { return std::make_error_code( code);}
          } // detail 
 
-         struct base : std::system_error
-         {
-            using std::system_error::system_error;
-
-            friend std::ostream& operator << ( std::ostream& out, const base& value);
-         };
+         using base = std::system_error;
 
          template< typename Enum>
          class base_error : public base

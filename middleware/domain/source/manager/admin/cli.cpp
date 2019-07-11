@@ -262,7 +262,7 @@ namespace casual
                      };
 
                      common::process::spawn(
-                           common::environment::variable::get( common::environment::variable::name::home()) + "/bin/casual-domain-manager",
+                           common::environment::directory::casual() + "/bin/casual-domain-manager",
                            get_arguments( files));
 
                      events();

@@ -316,14 +316,8 @@ int main( int argc, char** argv)
 
 int main( int argc, char **argv)
 {
-   try
+   return casual::common::exception::guard( [=]()
    {
       casual::tools::build::local::main( argc, argv);
-   }
-   catch( ...)
-   {
-      return casual::common::exception::handle( std::cerr);
-   }
-
-   return 0;
+   });
 }

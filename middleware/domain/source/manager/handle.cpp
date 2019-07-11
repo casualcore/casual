@@ -448,7 +448,7 @@ namespace casual
                   {
                      Trace trace{ "domain::manager::handle::start::pending::message"};
 
-                     auto process = common::Process{ string::compose( "${CASUAL_HOME}/bin/", casual::domain::pending::message::environment::executable)};
+                     auto process = common::Process{ string::compose( common::environment::directory::casual(), "/bin/", casual::domain::pending::message::environment::executable)};
 
                      // wait for connect
                      casual::domain::pending::message::Connect connect;

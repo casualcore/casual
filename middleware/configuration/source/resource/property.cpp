@@ -25,6 +25,8 @@ namespace casual
          {
             std::vector< Property> get( const std::string& name)
             {
+               common::log::line( verbose::log, "name: ", name);
+
                std::vector< Property> resources;
 
                // Create the reader and deserialize configuration

@@ -24,6 +24,7 @@ lib_xatmi = LinkLibrary( 'bin/casual-xatmi',
       Compile( 'source/xatmi/executable.cpp'),
       Compile( 'source/xatmi/conversation.cpp'),
       Compile( 'source/xatmi/call.cpp'),
+      #Compile( 'source/xatmi/queue.cpp'),
       Compile( 'source/xatmi/internal/code.cpp'),
       Compile( 'source/xatmi/internal/log.cpp'),
       Compile( 'source/xa.cpp'),
@@ -47,6 +48,9 @@ install_include.append( 'include/tx.h')
 install_include.append( ( 'include/xa/code.h', 'xa'))
 install_include.append( ( 'include/xa/flag.h', 'xa'))
 install_include.append( 'include/xa.h')
+
+
+
 
 #
 # unittest

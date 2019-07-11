@@ -204,8 +204,6 @@ namespace casual
                }
 
             } // process
-
-
          } // variable
 
          namespace local

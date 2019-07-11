@@ -48,54 +48,48 @@ namespace casual
          namespace ax
          {
                   
-            int handle()
+            code::ax handle()
             {
                try
                {
                   throw;
                }
-
-               //
                // ax stuff
-               //
                catch( const exception& exception)
                {
                   log::line( code::stream( exception.type()), exception);
-                  return exception.code().value();
+                  return exception.type();
                }
                catch( ...)
                {
                   local::handle::unexpected();
                }
 
-               return static_cast< int>( code::ax::error);
+               return code::ax::error;
             }
          } // xa
 
          namespace xa
          {
                   
-            int handle()
+            code::xa handle()
             {
                try
                {
                   throw;
                }
-
-               //
                // xa stuff
-               //
                catch( const exception& exception)
                {
                   log::line( code::stream( exception.type()), exception);
-                  return exception.code().value();
+                  return exception.type();
                }
                catch( ...)
                {
                   local::handle::unexpected();
                }
 
-               return static_cast< int>( code::xa::resource_fail);
+               return code::xa::resource_fail;
             }
          } // xa
       } // exception

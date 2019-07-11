@@ -42,6 +42,7 @@ common = LinkLibrary( 'bin/casual-queue-common',
     Compile( 'source/common/log.cpp'),
     Compile( 'source/common/transform.cpp'),
     Compile( 'source/common/queue.cpp'),
+    Compile( 'source/code.cpp'),
    ],
    [ 'casual-common', ])
  
@@ -110,6 +111,19 @@ queue_api = LinkLibrary( 'bin/casual-queue-api',
 
 install_lib.append( queue_api)
 
+# c-api
+queue_c_api = LinkLibrary( 'bin/casual-queue-c-api', 
+   [
+       Compile( 'source/c/queue.cpp'),
+   ],
+   [
+    common,
+    queue_api,
+    'casual-common', 
+    ])
+
+install_lib.append( queue_c_api)
+Install( 'include/casual/queue/c/queue.h', '$(CASUAL_HOME)/include/casual/queue/c/')
 
 
 
@@ -152,22 +166,23 @@ install_lib.append( target)
 test_casual_queue = LinkUnittest( 'unittest/bin/test-casual-queue', 
     [
      Compile( 'unittest/source/test_transform.cpp'),
-     #Compile( 'unittest/source/manager/test_handle.cpp'),
      Compile( 'unittest/source/group/test_database.cpp'),
      Compile( 'unittest/source/test_queue.cpp'),
+     Compile( 'unittest/source/api/test_c.cpp'),
     ],
     [
      group_archive,
      manager_archive,
      common,
      queue_api,
+     queue_c_api,
      'casual-common',
      'casual-serviceframework',
      'casual-configuration',
      'sqlite3',
      'casual-unittest',
      'casual-domain-unittest',
-     
+     'casual-xatmi',
      ]  
 )
 

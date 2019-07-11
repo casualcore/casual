@@ -102,8 +102,6 @@ casual_common_objectfiles = [
     Compile( 'source/code/casual.cpp'),
     Compile( 'source/code/convert.cpp'),
     
-    
-    Compile( 'source/exception/common.cpp'),
     Compile( 'source/exception/system.cpp'),
     Compile( 'source/exception/handle.cpp'),
     Compile( 'source/exception/xa.cpp'),

@@ -11,7 +11,6 @@ IncludePaths([
 LibraryPaths([
     'bin',
     '../common/bin',
-    '../xatmi/bin',
     '$(CASUAL_OPTIONAL_LIBRARY_PATHS)',
     ])
 
@@ -28,7 +27,7 @@ lib_serviceframework = LinkLibrary( 'bin/casual-serviceframework',
         Compile( 'source/log.cpp'),
         
     ],
-    ['casual-common', 'casual-xatmi',])
+    ['casual-common',])
 
 install_lib.append( lib_serviceframework)
 
@@ -45,7 +44,7 @@ LinkUnittest( 'bin/test-casual-serviceframework',
         Compile( 'unittest/source/service/test_protocol.cpp'),
         Compile( 'unittest/source/service/protocol/test_describe.cpp'),
     ],
-	[ lib_serviceframework, 'casual-xatmi', 'casual-common', 'casual-unittest'])
+	[ lib_serviceframework, 'casual-common', 'casual-unittest'])
 
 #
 # Install

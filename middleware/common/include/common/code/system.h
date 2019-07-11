@@ -21,9 +21,7 @@ namespace casual
 
       namespace code
       {
-
          using system = std::errc;
-
 
          common::log::Stream& stream( system code);
 
@@ -31,9 +29,7 @@ namespace casual
          {
             namespace system
             {
-               //!
                //! returns the last error code from errno
-               //!
                code::system error();
             } // system
 

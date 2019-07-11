@@ -22,7 +22,7 @@ extern "C"
       }
       catch( ...)
       {
-         return casual::common::exception::ax::handle();
+         return casual::common::cast::underlying( casual::common::exception::ax::handle());
       }
    }
 
@@ -35,7 +35,7 @@ extern "C"
       }
       catch( ...)
       {
-         return casual::common::exception::ax::handle();
+         return casual::common::cast::underlying( casual::common::exception::ax::handle());
       }
    }
 }

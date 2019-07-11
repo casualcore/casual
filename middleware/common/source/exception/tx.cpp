@@ -69,13 +69,13 @@ namespace casual
                   log::line( code::stream( exception.type()), exception);
                   return exception.type();
                }
-               catch( const exception::base& exception)
+               catch( const common::exception::base& exception)
                {
                   log::line( log::category::error, exception);
                }
                catch( const std::exception& exception)
                {
-                  log::line( log::category::error, exception.what());
+                  log::line( log::category::error, exception);
                }
 
                return code::tx::fail;

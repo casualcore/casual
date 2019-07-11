@@ -12,6 +12,7 @@
 #include "queue/common/queue.h"
 #include "queue/common/transform.h"
 #include "queue/manager/admin/services.h"
+#include "queue/exception.h"
 
 #include "common/range.h"
 #include "common/buffer/type.h"
@@ -35,14 +36,6 @@ namespace casual
          {
             namespace
             {
-
-               namespace exception
-               {
-                  struct Lookup : common::exception::system::invalid::Argument
-                  {
-                     using common::exception::system::invalid::Argument::Argument;
-                  };
-               } // exception
 
                template< typename M>
                common::Uuid enqueue( const queue::Lookup& lookup, M&& message)
@@ -78,9 +71,8 @@ namespace casual
                   auto group = lookup();
 
                   if( ! group.process.ipc)
-                  {
-                     throw common::exception::system::invalid::Argument{ "failed to look up queue"};
-                  }
+                     throw exception::no::Queue{ "failed to look up queue"};
+
                   request.queue = group.queue;
 
                   common::log::line( verbose::log, "request: ", request);
@@ -90,7 +82,6 @@ namespace casual
 
                   return id;
                }
-
 
                std::vector< Message> dequeue( const queue::Lookup& lookup, const Selector& selector, bool block = false)
                {
@@ -103,7 +94,7 @@ namespace casual
                   auto group = lookup();
 
                   if( ! group)
-                     throw exception::Lookup{ "failed to lookup queue: " + lookup.name()};
+                     throw exception::no::Queue{ "failed to lookup queue: " + lookup.name()};
 
 
                   auto forget_blocking = common::execute::scope( [&]()
@@ -175,7 +166,7 @@ namespace casual
                         }
 
                         if( reply.correlation != correlation)
-                           throw common::exception::system::invalid::Argument{ "correlation mismatch"};
+                           throw exception::System{ "correlation mismatch"};
 
                         common::algorithm::transform( reply.message, result, queue::transform::Message{});
 
@@ -248,7 +239,7 @@ namespace casual
                auto message = local::dequeue( lookup, selector, true);
 
                if( message.empty())
-                  throw common::exception::system::communication::no::message::Absent{ "failed to get message from queue: " + queue};
+                  throw exception::no::Message{ "failed to get message from queue: " + queue};
 
                return std::move( message.front());
             }
@@ -276,7 +267,7 @@ namespace casual
                      {
                         return blocking::dequeue( queue, selector);
                      }
-                     catch( const local::exception::Lookup&)
+                     catch( const exception::no::Queue&)
                      {
                         common::log::line( verbose::log, queue, " - queue not available yet"); 
                      }
@@ -400,7 +391,7 @@ namespace casual
 
                if( queue.order > 0)
                {
-                  throw common::exception::system::invalid::Argument{ "not possible to peek a remote queue"};
+                  throw exception::invalid::Argument{ "not possible to peek a remote queue"};
                }
 
                request.queue = queue.queue;
@@ -445,7 +436,7 @@ namespace casual
 
                if( queue.order > 0)
                {
-                  throw common::exception::system::invalid::Argument{ "not possible to peek a remote queue"};
+                  throw exception::invalid::Argument{ "not possible to peek a remote queue"};
                }
 
                auto reply = common::communication::ipc::call( queue.process.ipc, request);

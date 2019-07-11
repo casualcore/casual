@@ -161,8 +161,8 @@ namespace casual
             Payload( common::platform::buffer::raw::type buffer)
               : buffer( buffer), size( 0) {}
 
-            common::platform::buffer::raw::type buffer;
-            common::platform::buffer::raw::size::type size;
+            common::platform::buffer::raw::type buffer = nullptr;
+            common::platform::buffer::raw::size::type size = 0;
          };
 
          using Message = basic_message< Payload>;

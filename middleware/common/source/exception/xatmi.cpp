@@ -37,10 +37,7 @@ namespace casual
                {
                   throw;
                }
-
-               //
                // xatmi stuff
-               //
                catch( const exception& exception)
                {
                   local::log( exception);

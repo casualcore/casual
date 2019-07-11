@@ -25,7 +25,7 @@ namespace casual
             template< code::ax error>
             using base = common::exception::basic_error< exception, error>;
 
-            int handle();
+            code::ax handle();
          } // xa 
 
          namespace xa 
@@ -36,7 +36,7 @@ namespace casual
             template< code::xa error>
             using base = common::exception::basic_error< exception, error>;
 
-            int handle();
+            code::xa handle();
          } // xa 
       } // exception 
    } // common

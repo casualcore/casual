@@ -99,7 +99,7 @@ namespace casual
             };
          };
 
-         //! Specialization for serial
+         //! Specialization for named
          template< typename T>
          struct has_formatter< T, std::enable_if_t< serialize::traits::is::named::value< T>::value>>
             : std::true_type
@@ -110,6 +110,34 @@ namespace casual
                void operator () ( std::ostream& out, C&& value) const
                {
                   stream::write( out, value.name(), ": ", value.value());
+               }
+            };
+         };
+
+
+
+         //! Specialization for std::exception
+         template< typename T>
+         struct has_formatter< T, std::enable_if_t< std::is_base_of< std::exception, T>::value>>
+            : std::true_type
+         {
+            struct formatter
+            {
+
+               template< typename C>
+               void operator () ( std::ostream& out, C&& value) const
+               {
+                  indirection( out, value);
+               }
+
+               static void indirection( std::ostream& out, const std::exception& value)
+               {
+                  stream::write( out, value.what());
+               }
+
+               static void indirection( std::ostream& out, const std::system_error& value)
+               {
+                  stream::write( out, value.code(), " ", value.what());
                }
             };
          };
@@ -213,20 +241,5 @@ namespace std
 } // std
  
 
-/*
-// global stream operator for the type that has casual::common::log::has_formatter defined
-// we only accept type that fullfill the customization point 'casual::common::log::has_formatter'
-// could be some ambiguity, but we roll with it...
-template< typename T> 
-std::enable_if_t< 
-   casual::common::stream::has_formatter< casual::common::traits::remove_cvref_t< T>>::value
-   , 
-   std::ostream&>
-operator << ( std::ostream& out, T&& value)
-{
-   using namespace casual::common;
-   typename stream::has_formatter< traits::remove_cvref_t< T>>::formatter{}( out, std::forward< T>( value));
-   return out;
-}
- */
+
 

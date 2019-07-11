@@ -5,7 +5,6 @@
 //!
 
 
-#include <gtest/gtest.h>
 #include "common/unittest.h"
 
 #include "queue/group/group.h"
@@ -14,6 +13,7 @@
 #include "queue/api/queue.h"
 #include "queue/manager/admin/queuevo.h"
 #include "queue/manager/admin/services.h"
+#include "queue/exception.h"
 
 #include "common/process.h"
 #include "common/message/gateway.h"
@@ -349,15 +349,13 @@ domain:
 
             remote.queues.emplace_back( "remote-queue");
 
-            
-
             common::communication::ipc::blocking::send( 
                common::communication::instance::outbound::queue::manager::device(), remote);
          }
 
          EXPECT_THROW({
             queue::peek::information( "remote-queue");
-         }, common::exception::system::invalid::Argument);
+         }, queue::exception::invalid::Argument);
       }
 
       TEST( casual_queue, enqueue_1_message__dequeue_1_message)

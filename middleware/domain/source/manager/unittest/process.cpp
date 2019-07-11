@@ -60,7 +60,7 @@ namespace casual
                Implementation( const std::vector< std::string>& configuration, std::function< void( const std::string&)> callback = nullptr)
                   : environment( std::move( callback)),
                   files( local::configuration::files( configuration)),
-                  process{ "${CASUAL_HOME}/bin/casual-domain-manager", {
+                  process{ common::environment::directory::casual() + "/bin/casual-domain-manager", {
                      "--event-ipc", common::string::compose( common::communication::ipc::inbound::ipc()),
                      "--configuration-files", local::configuration::names( files),
                      "--bare", "true" }}
