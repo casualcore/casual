@@ -22,6 +22,8 @@ struct casual_buffer_t
    long size;
 };
 
+typedef struct casual_buffer_t casual_buffer_t;
+
 /* constants  
  */
 #define CASUAL_QUEUE_NO_SELECTOR -1l
