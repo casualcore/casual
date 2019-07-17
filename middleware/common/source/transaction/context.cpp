@@ -195,7 +195,7 @@ namespace casual
             const auto process = process::handle();
 
             return ! algorithm::find_if( m_transactions, [&]( const Transaction& transaction){
-               return ! transaction.trid.null() && transaction.trid.owner() != process;
+               return ! transaction.trid.null() && transaction.trid.owner() == process;
             }).empty();
          }
 

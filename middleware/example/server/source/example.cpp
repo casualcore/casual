@@ -27,6 +27,11 @@ namespace casual
                tpreturn( TPSUCCESS, 0, info->data, info->len, 0);
             }
 
+            void casual_example_forward_echo( TPSVCINFO* info)
+            {
+               casual_service_forward( "casual/example/echo", info->data, info->len);
+            }
+
             void casual_example_conversation( TPSVCINFO* info)
             {
                tpreturn( TPSUCCESS, 0, info->data, info->len, 0);

@@ -237,6 +237,39 @@ namespace casual
          tpfree( buffer);
       }
 
+      TEST( casual_xatmi, no_trid__tpcall_service_forward_echo__auto_tran____expect_TPESVCERR)
+      {
+         common::unittest::Trace trace;
+
+         local::Domain domain;
+
+         auto buffer = local::allocate( 128);
+         auto len = tptypes( buffer, nullptr, nullptr);
+
+         EXPECT_TRUE( tpcall( "casual/example/forward/echo", buffer, 128, &buffer, &len, 0) == -1);
+         EXPECT_TRUE( tperrno == TPESVCERR) << "tperrno: " << tperrnostring( tperrno);
+
+         tpfree( buffer);
+      }
+
+      TEST( casual_xatmi, trid__tpcall_service_forward_echo__auto_tran____expect_OK)
+      {
+         common::unittest::Trace trace;
+
+         local::Domain domain;
+
+         EXPECT_TRUE( tx_begin() == TX_OK);
+
+         auto buffer = local::allocate( 128);
+         auto len = tptypes( buffer, nullptr, nullptr);
+
+         EXPECT_TRUE( tpcall( "casual/example/forward/echo", buffer, 128, &buffer, &len, 0) == 0) << "tperrno: " << tperrnostring( tperrno);
+
+         EXPECT_TRUE( tx_rollback() == TX_OK);
+
+         tpfree( buffer);
+      }
+
       TEST( casual_xatmi, tpcall_service_echo__1MiB_buffer___expect_ok)
       {
          common::unittest::Trace trace;
