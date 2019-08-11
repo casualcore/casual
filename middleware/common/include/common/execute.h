@@ -10,6 +10,7 @@
 
 
 #include "common/move.h"
+#include "common/traits.h"
 #include "common/exception/handle.h"
 
 #include <utility>
@@ -29,9 +30,11 @@ namespace casual
          {
             using execute_type = E;
 
+            
+
             basic_scope( execute_type&& execute) : m_execute( std::move( execute)) {}
 
-            ~basic_scope()
+            ~basic_scope() noexcept
             {
                try
                {
@@ -43,8 +46,17 @@ namespace casual
                }
             }
 
-            basic_scope( basic_scope&&) noexcept = default;
-            basic_scope& operator = ( basic_scope&&) noexcept = default;
+            // Why does not this work?
+            // error: exception specification of explicitly defaulted move assignment operator does not match the calculated one
+            // 
+            // move::Active is notrow, so it should work.
+            //
+            // using traits_type = traits::type< execute_type>;
+            // basic_scope( basic_scope&&) noexcept( traits_type::nothrow_move_construct) = default;
+            // basic_scope& operator = ( basic_scope&&) noexcept( traits_type::nothrow_move_assign) = default;
+
+            basic_scope( basic_scope&&) = default;
+            basic_scope& operator = ( basic_scope&&) = default;
 
             //! executes the actions ones.
             //! no-op if already executed
@@ -70,7 +82,7 @@ namespace casual
          template< typename E>
          auto scope( E&& executor)
          {
-            return basic_scope< E>{ std::forward< E>( executor)};
+            return basic_scope< traits::remove_cvref_t< E>>{ std::forward< E>( executor)};
          }
 
          //! Execute @p executor once

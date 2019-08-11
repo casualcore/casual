@@ -229,22 +229,24 @@ namespace casual
                      {
                         manager::admin::vo::Executable::instance_type operator () ( const manager::state::Executable::instance_type& value)
                         {
-                           manager::admin::vo::Executable::instance_type result;
-
-                           result.handle = value.handle;
-                           result.state = state( value.state);
-                           return result;
+                           return transform< manager::admin::vo::Executable::instance_type>( value);
                         }
 
                         manager::admin::vo::Server::instance_type operator () ( const manager::state::Server::instance_type& value)
                         {
-                           manager::admin::vo::Server::instance_type result;
-
-                           result.handle = value.handle;
-                           result.state = state( value.state);
-                           return result;
+                           return transform< manager::admin::vo::Server::instance_type>( value);
                         }
                      private:
+                        template< typename R, typename T> 
+                        R transform( const T& value)
+                        {
+                           R result;
+                           result.handle = value.handle;
+                           result.state = state( value.state);
+                           result.spawnpoint = value.spawnpoint;
+                           return result;
+                        }
+
                         template< typename S>
                         manager::admin::vo::instance::State state( S state)
                         {

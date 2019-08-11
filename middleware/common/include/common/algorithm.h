@@ -575,6 +575,18 @@ namespace casual
             return std::forward< R>( range);
          }
 
+         //! applies `functor` on all elements that are equal to `value`
+         template< typename R, typename V, typename F>
+         decltype( auto) for_each_equal( R&& range, V&& value, F functor)
+         {
+            for( auto&& element : range)
+            {
+               if( element == value)
+                  functor( element);
+            }
+            return std::forward< R>( range);
+         }
+
          template< typename R, typename N, typename F>
          auto for_each_n( R&& range, N n, F functor) -> decltype( range::make( std::forward< R>( range)))
          {
@@ -1096,6 +1108,29 @@ namespace casual
                   return detail::back( container, std::forward< Ts>( ts)...);
                }
             } // move
+            namespace emplace
+            {
+               namespace detail
+               {
+                  template< typename C> 
+                  void back( C& container) {}
+
+                  template< typename C, typename T, typename... Ts> 
+                  void back( C& container, T&& t, Ts&&... ts)
+                  {
+                     container.emplace_back( std::forward< T>( t)); 
+                     back( container, std::forward< Ts>( ts)...);
+                  }
+               } // detail
+
+               template< typename C, typename... Ts>
+               C initialize( Ts&&... ts)
+               {
+                  C result;
+                  detail::back( result, std::forward< Ts>( ts)...);
+                  return result;
+               }
+            } // emplace
          } // container
       } // algorithm
 

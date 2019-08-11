@@ -34,14 +34,16 @@ common_archive = LinkArchive( 'bin/casual-domain-common',
 
 manager_archive = LinkArchive( 'bin/casual-domain-manager', 
  [
-    Compile( 'source/manager/manager.cpp'),
+    Compile( 'source/manager/ipc.cpp'),
+    Compile( 'source/manager/task.cpp'),
+    Compile( 'source/manager/task/create.cpp'),
     Compile( 'source/manager/state.cpp'),
     Compile( 'source/manager/handle.cpp'),
     Compile( 'source/manager/admin/server.cpp'),
-    Compile( 'source/manager/task.cpp'),
     Compile( 'source/manager/configuration.cpp'),
     Compile( 'source/manager/persistent.cpp'),
     Compile( 'source/transform.cpp'),
+    Compile( 'source/manager/manager.cpp'),
 ])
 
 

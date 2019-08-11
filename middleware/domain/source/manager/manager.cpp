@@ -101,19 +101,7 @@ namespace casual
 
          void Manager::start()
          {
-            try
-            {
-               local::message::pump( m_state);
-            }
-            catch( const exception::casual::Shutdown&)
-            {
-               m_state.runlevel( State::Runlevel::shutdown);
-            }
-            catch( ...)
-            {
-               exception::handle();
-               m_state.runlevel( State::Runlevel::error);
-            }
+            local::message::pump( m_state);
          }
 
       } // manager

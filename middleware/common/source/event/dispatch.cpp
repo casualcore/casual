@@ -19,7 +19,7 @@ namespace casual
 
          common::message::pending::Message base_dispatch::pending( common::communication::message::Complete&& complete) const
          {
-            Trace trace{ "common::event::base_dispatch::post"};
+            Trace trace{ "common::event::base_dispatch::pending"};
 
             return common::message::pending::Message{
                std::move( complete),

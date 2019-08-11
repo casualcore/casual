@@ -184,6 +184,24 @@ namespace casual
 
                      message::dispatch::blocking::pump( handler, device);
                   }
+
+                  void conditional( device_type& device, std::function< bool()> done, handler_type&& handler)
+                  {
+                     const auto types = handler.types();
+                     while( true)
+                     {
+                        if( done())
+                           return;
+
+                        while( handler( device.next( types, typename device_type::non_blocking_policy{})))
+                        {
+                           if( done())
+                              return;
+                        }
+
+                        handler( device.next( types, typename device_type::blocking_policy{}));
+                     }
+                  }
                } // detail
             } // subscription
          } // no

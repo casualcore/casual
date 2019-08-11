@@ -50,8 +50,6 @@ namespace casual
 
                   struct Process
                   {
-                     using pid_type = common::strong::process::id;
-
                      id_type id;
                      std::string alias;
                      std::string path;
@@ -106,12 +104,14 @@ namespace casual
                   {
                      H handle;
                      instance::State state = instance::State::scale_out;
+                     common::platform::time::point::type spawnpoint;
 
                      friend bool operator == ( const Instance& lhs, const H& rhs) { return common::process::id( lhs.handle) == common::process::id( rhs);}
 
                      CASUAL_CONST_CORRECT_SERIALIZE({
                         CASUAL_SERIALIZE( handle);
                         CASUAL_SERIALIZE( state);
+                        CASUAL_SERIALIZE( spawnpoint);
                      })
                   };
 
@@ -185,6 +185,32 @@ namespace casual
                         )
                      };
                   } // scale
+
+                  namespace restart
+                  {
+                     struct Instances
+                     {
+                        std::string alias;
+
+                        CASUAL_CONST_CORRECT_SERIALIZE({
+                           CASUAL_SERIALIZE( alias);
+                        })
+                     };
+                     
+                     struct Result
+                     {
+                        std::string alias;
+                        common::strong::task::id task;
+                        std::vector< common::strong::process::id> pids;
+
+                        CASUAL_CONST_CORRECT_SERIALIZE({
+                           CASUAL_SERIALIZE( alias);
+                           CASUAL_SERIALIZE( task);
+                           CASUAL_SERIALIZE( pids);
+                        })
+                     };
+                  
+                  } // restart
 
                   namespace set
                   {

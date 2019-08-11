@@ -35,8 +35,8 @@ namespace casual
                      {
                         std::vector< vo::scale::Instances> result;
 
-                        auto scale_entities = [&]( auto& instance, auto& entities){
-
+                        auto scale_entities = [&]( auto& instance, auto& entities)
+                        {
                            auto found = algorithm::find_if( entities, [&instance]( auto& e){
                               return e.alias == instance.alias;
                            });
@@ -64,6 +64,27 @@ namespace casual
                      }
 
                   } // scale
+
+                  namespace restart
+                  {
+                     std::vector< vo::restart::Result> instances( manager::State& state, std::vector< vo::restart::Instances> instances)
+                     {
+                        Trace trace{ "domain::manager::admin::local::restart::instances"};
+
+                        auto result = handle::restart::instances( state, algorithm::transform( instances, []( auto& i){ return std::move( i.alias);}));
+
+                        auto transform = []( auto& v)
+                        {
+                           vo::restart::Result result;
+                           result.alias = std::move( v.alias);
+                           result.pids = std::move( v.pids);
+                           result.task = v.task;
+                           return result;
+                        };
+
+                        return algorithm::transform( result, transform);                        
+                     }
+                  } // restart
 
                   namespace set
                   {
@@ -156,7 +177,20 @@ namespace casual
                         std::vector< vo::scale::Instances> instances;
                         protocol >> CASUAL_NAMED_VALUE( instances);
 
-                        return serviceframework::service::user( std::move( protocol), &scale::instances, state, instances);
+                        return serviceframework::service::user( std::move( protocol), &scale::instances, state, std::move( instances));
+                     }
+
+                     auto restart( manager::State& state)
+                     {
+                        return [&state]( common::service::invoke::Parameter&& parameter)
+                        {
+                           auto protocol = serviceframework::service::protocol::deduce( std::move( parameter));
+                           
+                           std::vector< vo::restart::Instances> instances;
+                           protocol >> CASUAL_NAMED_VALUE( instances);
+
+                           return serviceframework::service::user( std::move( protocol), &restart::instances, state, std::move( instances));
+                        };
                      }
 
 
@@ -207,6 +241,11 @@ namespace casual
                      },
                      { service::name::scale::instances,
                            std::bind( &local::service::scale, std::placeholders::_1, std::ref( state)),
+                           common::service::transaction::Type::none,
+                           common::service::category::admin()
+                     },
+                     { service::name::restart::instances,
+                           local::service::restart( state),
                            common::service::transaction::Type::none,
                            common::service::category::admin()
                      },

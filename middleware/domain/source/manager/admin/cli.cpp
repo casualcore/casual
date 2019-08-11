@@ -235,6 +235,23 @@ namespace casual
                      return serviceReply;
                   }
 
+                  namespace restart
+                  {
+                     auto instances( const std::vector< admin::vo::restart::Instances>& instances)
+                     {
+                        serviceframework::service::protocol::binary::Call call;
+                        call << CASUAL_NAMED_VALUE( instances);
+
+                        auto reply = call( admin::service::name::restart::instances);
+
+                        std::vector< admin::vo::restart::Result> serviceReply;
+                        reply >> CASUAL_NAMED_VALUE( serviceReply);
+
+                        return serviceReply;
+                     }
+                     
+                  } // restart
+
                   void boot( const std::vector< std::string>& files)
                   {
 
@@ -432,10 +449,8 @@ namespace casual
                   */
 
 
-                  void scale_instances( const std::tuple< std::string, int>& mandatory, const std::vector< std::tuple< std::string, int>>& values)
-                  {
-                     std::vector< admin::vo::scale::Instances> result;
-                      
+                  void scale_instances( const std::vector< std::tuple< std::string, int>>& values)
+                  {   
                      auto transform = []( auto& value){
                         admin::vo::scale::Instances result;
                         result.alias = std::get< 0>( value);
@@ -443,10 +458,7 @@ namespace casual
                         return result;
                      };
 
-                     result.push_back( transform( mandatory));
-                     common::algorithm::transform( values, result, transform);
-
-                     call::scale_instances( result);
+                     call::scale_instances( common::algorithm::transform( values, transform));
                   }
                 
 
@@ -460,6 +472,66 @@ namespace casual
                      else
                         return { "<value>"};
                   };
+
+                  namespace restart
+                  {
+                     void instances( std::vector< std::string> values)
+                     {
+                        auto transform = []( auto& value){
+                           admin::vo::restart::Instances result;
+                           result.alias = std::move( value);
+                           return result;
+                        };
+
+                        // register for events
+                        auto unregister = common::event::scope::subscribe( 
+                           common::process::handle(), { message::Type::event_domain_task_end, message::Type::event_domain_task_begin});
+
+                        auto result = call::restart::instances( common::algorithm::transform( values, transform));
+
+                        // listen for events
+                        common::event::no::subscription::conditional( 
+                           [ &result] () { return result.empty();}, // will end if true
+                           [ &result]( const message::event::domain::task::Begin& task)
+                           {
+                              auto found = algorithm::filter( result, [id = task.id]( auto& r) { return id == r.task;});
+
+                              algorithm::for_each( found, [&task]( auto& started)
+                              {
+                                 std::cout << terminal::color::blue << "task[" << task.id << "] " 
+                                    << terminal::color::green << "begin "
+                                    << terminal::color::yellow << started.alias
+                                    << terminal::color::white << " " << started.pids << '\n';
+                              });
+                           },
+                           [ &result]( const message::event::domain::task::End& task)
+                           {
+                              auto split = algorithm::partition( result, [id = task.id]( auto& r) { return id != r.task;});
+                              // remove correlated task
+                              algorithm::trim( result, std::get< 0>( split));
+
+                              // print the removed
+                              algorithm::for_each( std::get< 1>( split), [&task]( auto& done)
+                              {
+                                 std::cout << terminal::color::blue << "task[" << task.id << "] " 
+                                    << terminal::color::green << "done "
+                                    << terminal::color::yellow << done.alias << '\n';
+                              });
+                           }
+                        );
+
+                        
+                     };
+
+                     auto completion = []( auto values, bool help) -> std::vector< std::string>
+                     {
+                        if( help)
+                           return { "<alias>"};
+                        
+                        return fetch_aliases();
+                     };
+                     
+                  } // restart
 
                   namespace set
                   {
@@ -559,7 +631,8 @@ for all servers and executables
                      argument::Option( &local::action::list_servers, { "-ls", "--list-servers"}, "list all servers"),
                      argument::Option( &local::action::list_executable, { "-le", "--list-executables"}, "list all executables"),
                      argument::Option( &local::action::list_instances, { "-li", "--list-instances"}, "list all instances"),
-                     argument::Option( &local::action::scale_instances, local::action::scale_instances_completion, { "-si", "--scale-instances"}, "<alias> <#> scale executable instances"),
+                     argument::Option( argument::option::one::many( &local::action::scale_instances), local::action::scale_instances_completion, { "-si", "--scale-instances"}, "<alias> <#> scale executable instances"),
+                     argument::Option( argument::option::one::many( &local::action::restart::instances), local::action::restart::completion, { "-ri", "--restart-instances"}, "<alias> restart instances for the given aliases"),
                      argument::Option( &local::action::shutdown, { "-s", "--shutdown"}, "shutdown the domain"),
                      argument::Option( &local::action::boot, { "-b", "--boot"}, "boot domain -"),
                      argument::Option( &local::action::set::environment::call, local::action::set::environment::complete, { "--set-environment"}, local::action::set::environment::description)( argument::cardinality::any{}),

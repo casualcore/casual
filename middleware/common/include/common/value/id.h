@@ -31,6 +31,8 @@ namespace casual
                   { 
                      return value++;
                   }
+
+                  constexpr static native_type initalized() { return start;} 
                   
                   static native_type value;
                };
@@ -48,6 +50,7 @@ namespace casual
                   using native_type = typename ID::value_type;
                   return ID{ id::detail::sequence< native_type, ID, start>::next()};
                }
+
             };
 
             namespace policy
@@ -68,6 +71,8 @@ namespace casual
                   { 
                      return sequence::next();
                   }
+
+                  constexpr static auto moved() noexcept { return sequence::initalized();}
                };
 
             } // policy
@@ -90,8 +95,8 @@ namespace casual
             constexpr basic_id() noexcept( nothrow_construct) : m_value{ policy_type::initialize()} {}
             constexpr explicit basic_id( common::traits::by_value_or_const_ref_t< T> value) noexcept( traits::nothrow_move_construct) : m_value{ std::move( value)} {}
 
-            constexpr basic_id( basic_id&& rhs) noexcept( traits::nothrow_move_construct) : m_value{ std::exchange( rhs.m_value, policy_type::initialize())} {};
-            constexpr basic_id& operator = ( basic_id&& rhs) noexcept( traits::nothrow_move_assign) { m_value = std::exchange( rhs.m_value, policy_type::initialize()); return *this;};
+            constexpr basic_id( basic_id&& rhs) noexcept( traits::nothrow_move_construct) : m_value{ std::exchange( rhs.m_value, selective_moved< policy_type>())} {};
+            constexpr basic_id& operator = ( basic_id&& rhs) noexcept( traits::nothrow_move_assign) { m_value = std::exchange( rhs.m_value, selective_moved< policy_type>()); return *this;};
             constexpr basic_id( const basic_id&) noexcept( traits::nothrow_copy_construct) = default;
             constexpr basic_id& operator = ( const basic_id& rhs) noexcept( traits::nothrow_copy_assign) = default;
 
@@ -114,6 +119,23 @@ namespace casual
             value_type& underlaying() noexcept { return m_value;}
 
          protected:
+               template< typename policy>
+               using has_moved = decltype( policy::moved());
+
+               template< typename policy>
+               static auto selective_moved() -> 
+                  std::enable_if_t< common::traits::detect::is_detected< has_moved, policy>::value, T>
+               {
+                  return policy::moved();
+               }
+
+               template< typename policy>
+               static auto selective_moved() -> 
+                  std::enable_if_t< ! common::traits::detect::is_detected< has_moved, policy>::value, T>
+               {
+                  return policy::initialize();
+               }
+
             value_type m_value;
          };
 

@@ -188,6 +188,8 @@ domain:
                      common::message::handle::Discard< common::message::event::domain::shutdown::Begin>{},
                      common::message::handle::Discard< common::message::event::domain::shutdown::End>{},
                      common::message::handle::Discard< common::message::event::domain::server::Connect>{},
+                     common::message::handle::Discard< common::message::event::domain::task::Begin>{},
+                     common::message::handle::Discard< common::message::event::domain::task::End>{},
                      common::message::handle::Discard< common::message::event::process::Spawn>{},
                      common::message::handle::Discard< common::message::event::process::Exit>{}
                   );
@@ -198,7 +200,7 @@ domain:
                   }
                   catch( const common::process::Handle& process)
                   {
-                     log::line( log::debug, "domain manager booted: ", process);
+                     log::line( verbose::log, "domain manager booted: ", process);
                      return process;
                   }
                   return {};
