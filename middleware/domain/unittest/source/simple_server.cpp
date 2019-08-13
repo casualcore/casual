@@ -16,24 +16,16 @@ namespace casual
    {
       namespace
       {
-         int main(int argc, char **argv)
+         void main(int argc, char **argv)
          {
-            try
-            {
-               common::communication::instance::connect();
+            common::communication::instance::connect();
 
-               auto handler = common::communication::ipc::inbound::device().handler(
-                     common::message::handle::Ping{},
-                     common::message::handle::Shutdown{}
-               );
+            auto handler = common::communication::ipc::inbound::device().handler(
+                  common::message::handle::Ping{},
+                  common::message::handle::Shutdown{}
+            );
 
-               common::message::dispatch::blocking::pump( handler, common::communication::ipc::inbound::device());
-            }
-            catch( ...)
-            {
-               return common::exception::handle();
-            }
-            return 0;
+            common::message::dispatch::blocking::pump( handler, common::communication::ipc::inbound::device());
          }
 
       } // <unnamed>
@@ -43,6 +35,9 @@ namespace casual
 
 int main(int argc, char **argv)
 {
-   return casual::local::main( argc, argv);
+   return casual::common::exception::guard( [&]()
+   {
+      casual::local::main( argc, argv);
+   });
 }
 

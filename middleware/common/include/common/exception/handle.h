@@ -36,8 +36,21 @@ namespace casual
             }
          }
 
+         template< typename F> 
+         auto guard( std::ostream& out, F&& callable)
+         {
+            try 
+            {
+               callable();
+               return 0;
+            }
+            catch( ...)
+            {
+               return exception::handle( out);
+            }
+         }
 
-      } // error
+      } // exception
    } // common
 } // casual
 

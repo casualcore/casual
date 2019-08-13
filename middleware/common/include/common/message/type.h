@@ -41,6 +41,8 @@ namespace casual
             process_lookup_request,
             process_lookup_reply,
 
+
+            // domain
             DOMAIN_BASE = 1000,
             domain_scale_executable,
             domain_process_connect_request,
@@ -104,8 +106,10 @@ namespace casual
             event_domain_server_connect,
             event_domain_group,
 
-            event_process_spawn,
-            event_process_exit,
+            event_domain_process_spawn,
+            event_domain_process_exit,
+            event_domain_task_begin,
+            event_domain_task_end,
             EVENT_DOMAIN_BASE_END,
 
             EVENT_SERVICE_BASE = 4200,
@@ -311,6 +315,9 @@ namespace casual
          template< message::Type type>
          struct basic_request : basic_message< type>
          {
+            basic_request() = default;
+            inline basic_request( common::process::Handle process) : process{ std::move( process)} {}
+
             common::process::Handle process;
 
             CASUAL_CONST_CORRECT_SERIALIZE(
@@ -324,6 +331,9 @@ namespace casual
          template< message::Type type>
          struct basic_reply : basic_message< type>
          {
+            basic_reply() = default;
+            inline basic_reply( common::process::Handle process) : process{ std::move( process)} {}
+
             common::process::Handle process;
 
             CASUAL_CONST_CORRECT_SERIALIZE(

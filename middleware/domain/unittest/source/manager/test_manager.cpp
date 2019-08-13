@@ -260,6 +260,22 @@ domain:
                      return scale( { { alias, instances}});
                   }
 
+                  std::vector< admin::vo::restart::Result> restart( const std::vector< admin::vo::restart::Instances>& instances)
+                  {
+                     return call< std::vector< admin::vo::restart::Result>>( admin::service::name::restart::instances, instances);
+                  }
+
+                  std::vector< admin::vo::restart::Result> restart( std::vector< std::string> aliases)
+                  {
+                     auto transform = []( auto& a) 
+                     {
+                        admin::vo::restart::Instances result;
+                        result.alias = std::move( a);
+                        return result;
+                     };
+                     return restart( algorithm::transform( aliases, transform));
+                  }
+
                } // call
 
 
@@ -311,8 +327,8 @@ domain:
             EXPECT_TRUE( state.servers.at( 0).instances.size() == 1) << CASUAL_NAMED_VALUE( state);
             ASSERT_TRUE( state.executables.size() == 1) << CASUAL_NAMED_VALUE( state);
             EXPECT_TRUE( state.executables.at( 0).instances.size() == 5) << CASUAL_NAMED_VALUE( state);
-
          }
+
 
 
          TEST( casual_domain_manager, state_long_running_processes_5__scale_out_to_10___expect_10)
@@ -590,10 +606,120 @@ domain:
             }
          }
 
+         namespace local
+         {
+            namespace
+            {
+               namespace find
+               {
+                  auto alias = []( auto& entities, auto& alias)
+                  {
+                     return algorithm::find_if( entities, [&alias]( auto& e)
+                     {
+                        return e.alias == alias;
+                     });
+                  };
+               } // find
+
+               namespace predicate
+               {
+                  auto spawnpont = []( auto& timepoint)
+                  {
+                     return [&timepoint]( auto& instance)
+                     {
+                        return timepoint < instance.spawnpoint; 
+                     };
+                  };
+                  
+               } // predicate
+            } // <unnamed>
+         } // local
+         TEST( casual_domain_manager, restart_executable)
+         {
+            common::unittest::Trace trace;
+
+            constexpr auto configuration = R"(
+domain:
+  name: simple-server
+  executables:
+    - alias: sleep
+      path: sleep
+      arguments: [60]
+      instances: 2
+)";
+
+            unittest::Process manager{ { configuration}};
+
+            auto now = platform::time::clock::type::now();
+
+            // register for events
+            auto unregister = common::event::scope::subscribe( common::process::handle(), { message::Type::event_domain_task_end});
+
+            auto result = local::call::restart( { "sleep"});
+            
+            // listen for events
+            common::event::no::subscription::conditional( 
+               [ &result] () { return result.empty();}, // will end if true
+               [ &result]( const message::event::domain::task::End& task)
+               {
+                  // remove correlated task
+                  algorithm::trim( result, algorithm::remove_if( result, [id = task.id]( auto& r) { return id == r.task;}));
+               }
+            );
+
+            auto state = local::call::state();
+
+            auto found = local::find::alias( state.executables, "sleep");
+
+            ASSERT_TRUE( found.size() == 1) << CASUAL_NAMED_VALUE( found);
+            // all instances should have a spawnpoint later than before the restart
+            EXPECT_TRUE( algorithm::all_of( found->instances, local::predicate::spawnpont( now))) << CASUAL_NAMED_VALUE( found) << "\n" << CASUAL_NAMED_VALUE( now);
+         }
+
+
+         TEST( casual_domain_manager, restart_server)
+         {
+            common::unittest::Trace trace;
+
+            constexpr auto configuration = R"(
+domain:
+  name: simple-server
+  servers:
+    - path: ./bin/test-simple-server
+      alias: simple-server
+      instances: 2
+
+)";
+
+            unittest::Process manager{ { configuration}};
+
+            auto now = platform::time::clock::type::now();
+
+            // register for events
+            auto unregister = common::event::scope::subscribe( common::process::handle(), { message::Type::event_domain_task_end});
+
+            auto result = local::call::restart( { "simple-server"});
+            
+            // listen for events
+            common::event::no::subscription::conditional( 
+               [ &result] () { return result.empty();}, // will end if true
+               [ &result]( const message::event::domain::task::End& task)
+               {
+                  // remove correlated task
+                  algorithm::trim( result, algorithm::remove_if( result, [id = task.id]( auto& r) { return id == r.task;}));
+               }
+            );
+
+            auto state = local::call::state();
+
+            auto found = local::find::alias( state.servers, "simple-server");
+
+            ASSERT_TRUE( found.size() == 1) << CASUAL_NAMED_VALUE( found);
+            // all instances should have a spawnpoint later than before the restart
+            EXPECT_TRUE( algorithm::all_of( found->instances, local::predicate::spawnpont( now))) << CASUAL_NAMED_VALUE( found) << "\n" << CASUAL_NAMED_VALUE( now);
+         }
 
       } // manager
 
    } // domain
-
-
 } // casual

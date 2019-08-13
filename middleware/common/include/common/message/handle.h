@@ -21,9 +21,7 @@ namespace casual
       {
          namespace handle
          {
-            //!
             //! Handles and discard a given message type
-            //!
             template< typename M>
             struct Discard
             {
@@ -37,25 +35,19 @@ namespace casual
                }
             };
 
-            //!
             //! Replies to a ping message
-            //!
             struct Ping
             {
                void operator () ( server::ping::Request& message);
             };
 
 
-            inline auto ping() -> Ping
+            inline auto ping()
             {
                return Ping{};
             }
 
-
-
-            //!
             //! @throws exception::casual::Shutdown if message::shutdown::Request is dispatched
-            //!
             struct Shutdown
             {
                using message_type = message::shutdown::Request;
@@ -63,9 +55,7 @@ namespace casual
                void operator () ( message_type& message);
             };
 
-            //!
             //! Dispatch and assigns a given message
-            //!
             template< typename M>
             struct Assign
             {

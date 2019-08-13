@@ -40,7 +40,6 @@ namespace casual
          //! Holds pid and ipc-queue for a given process
          struct Handle
          {
-            using queue_handle = strong::ipc::id;
 
             Handle() = default;
             inline explicit Handle( strong::process::id pid) : pid{ pid} {}

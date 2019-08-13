@@ -33,6 +33,11 @@ namespace casual
                      constexpr auto instances = ".casual/domain/scale/instances";
                   } // scale
 
+                  namespace restart
+                  {
+                     constexpr auto instances = ".casual/domain/restart/instances";
+                  } // restart
+
                   constexpr auto shutdown = ".casual/domain/shutdown";
 
                   namespace configuration

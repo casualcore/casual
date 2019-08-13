@@ -105,9 +105,17 @@ namespace casual
    
             using id = value::Optional< platform::queue::native::type, platform::queue::native::invalid, tag::type>;
             
-         } // ipc
+         } // queue
 
-
+         namespace task
+         {
+            namespace tag
+            {
+               struct type{};
+            } // tag
+   
+            using id = value::Optional< platform::size::type, 0l, tag::type>;
+         } // task
 
 
       } // strong 

@@ -184,7 +184,8 @@ namespace casual
                      common::message::handle::ping()
                   );
 
-                  handler( ipc.blocking_next());
+                  while( ! handler( ipc.blocking_next()))
+                     ; // if we don't have hander, we just continue
 
                   // We don't need to send forget, since it went as it should.
                   forget_blocking.release();

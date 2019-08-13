@@ -578,8 +578,6 @@ namespace casual
 
          bool State::execute()
          {
-            tasks.execute();
-
             return ! ( runlevel() >= Runlevel::shutdown && tasks.empty());
          }
 

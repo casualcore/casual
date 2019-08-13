@@ -9,7 +9,8 @@
 
 
 #include "domain/manager/state.h"
-
+#include "domain/manager/ipc.h"
+#include "domain/manager/task.h"
 
 #include "common/message/type.h"
 #include "common/message/domain.h"
@@ -22,19 +23,9 @@ namespace casual
    {
       namespace manager
       {
-         namespace ipc
-         {
-            const common::communication::ipc::Helper& device();
-         } // ipc
-
-
-
-
          namespace handle
          {
-
             using dispatch_type = decltype( ipc::device().handler());
-
 
             namespace mandatory
             {
@@ -44,7 +35,6 @@ namespace casual
                } // boot
 
             } // mandatory
-
 
             void boot( State& state);
             void shutdown( State& state);
@@ -58,10 +48,6 @@ namespace casual
             } // start
 
             
-
-
-
-
             struct Base
             {
                Base( State& state);
@@ -78,13 +64,24 @@ namespace casual
                void operator () ( common::message::shutdown::Request& message);
             };
 
+            namespace task
+            {
+               namespace event
+               {
+                  struct Done : Base 
+                  {
+                     using Base::Base;
+                     void operator () ( common::message::event::domain::task::End& message);
+                  };
+               } // event
+            } // task
 
             namespace scale
             {
+               void shutdown( State& state, std::vector< common::process::Handle> processes);
 
                void instances( State& state, state::Server& server);
                void instances( State& state, state::Executable& executable);
-
 
                namespace prepare
                {
@@ -97,7 +94,19 @@ namespace casual
 
             } // scale
 
+            
 
+            namespace restart
+            {
+               struct Result
+               {
+                  std::string alias;
+                  common::strong::task::id task;
+                  std::vector< common::strong::process::id> pids;
+               };
+
+               std::vector< Result> instances( State& state, std::vector< std::string> aliases);
+            } // restart
 
             namespace event
             {
@@ -119,7 +128,6 @@ namespace casual
 
                } // subscription
 
-
                namespace process
                {
                   void exit( const common::process::lifetime::Exit& exit);
@@ -140,7 +148,6 @@ namespace casual
                };
 
             } // event
-
 
             namespace process
             {
@@ -179,9 +186,7 @@ namespace casual
                };
 
             } // configuration
-
          } // handle
-
 
          handle::dispatch_type handler( State& state);
 

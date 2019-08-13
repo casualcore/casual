@@ -120,11 +120,8 @@ namespace casual
                std::unique_ptr< concept> m_callable;
             };
 
-
-            //!
             //! A representation of an "option" and possible it's nested structure
             //! used when producing help and auto-complete information (and possible other stuff)
-            //!
             struct Representation
             {  
                Representation( Invoke invocable) : invocable( std::move( invocable)) {}
@@ -279,9 +276,9 @@ namespace casual
                          value = from_string< T>( *values);
                          return ++values;
                      }
-
                   };
 
+                  // container sequences
                   template< typename T> 
                   struct value_traits< T, std::enable_if_t< 
                      traits::is::container::sequence::like< T>::value
@@ -309,11 +306,15 @@ namespace casual
                      }
                   };
 
-
+                  // tuple
                   template< typename T> 
                   struct value_traits< T, std::enable_if_t< traits::is::tuple< T>::value>>
                   {
-                     constexpr static auto cardinality() { return tuple_cardinality( T{});};
+                     constexpr static auto cardinality() 
+                     { 
+                        using cardinality_t = decltype( tuple_cardinality( std::declval< T&>()));
+                        return cardinality_t{};
+                     };
 
                      static range_type assign( range_type values, T& result) 
                      { 
@@ -321,6 +322,7 @@ namespace casual
                      }
                   };
 
+                  // optional like
                   template< typename T> 
                   struct value_traits< T, std::enable_if_t< traits::is::optional_like< T>::value>>
                   {
@@ -468,35 +470,40 @@ namespace casual
                      void invoke() { /* no-op */ }
                   };
 
-                  template< typename Call, typename Completer> 
-                  struct Completion : Invoke< Call>
+
+                  namespace completion
                   {
-                     using base_type = Invoke< Call>;
-                     Completion( Call callable, Completer completer) 
-                        : base_type( std::move( callable)), m_completer( std::move( completer))
-                     {}
-
-                     std::vector< std::string> complete( range_type values, bool help) const
-                     {  
-                        return m_completer( values, help);
-                     }
-
-                  private:
-                     Completer m_completer;
-                  };
-
-                  namespace completer
-                  {
-                     struct Default
+                     template< typename Call, typename Completer> 
+                     struct Custom : Invoke< Call>
                      {
-                        std::vector< std::string> operator () ( range_type values, bool help) const 
-                        {
+                        using base_type = Invoke< Call>;
+                        Custom( Call callable, Completer completer) 
+                           : base_type( std::move( callable)), m_completer( std::move( completer))
+                        {}
+
+                        std::vector< std::string> complete( range_type values, bool help) const
+                        {  
+                           return m_completer( values, help);
+                        }
+
+                     private:
+                        Completer m_completer;
+                     };
+
+                     template< typename Call> 
+                     struct Default : Invoke< Call>
+                     {
+                        using base_type = Invoke< Call>;
+                        Default( Call callable) 
+                           : base_type( std::move( callable))
+                        {}
+
+                        std::vector< std::string> complete( range_type values, bool help) const
+                        {  
                            if( help)
                            {
-                              if( cardinality() == cardinality::zero{}) return {};
-                              if( cardinality() == cardinality::zero_one{}) return { string::compose( '[', reserved::name::suggestions::value(), ']')};
-                              if( cardinality() == cardinality::one{}) return { reserved::name::suggestions::value()};
-                              return { string::compose( reserved::name::suggestions::value(), "...")};
+                              if( base_type::cardinality() == cardinality::zero{}) return {};
+                              return { reserved::name::suggestions::value()};
                            }
                            return { reserved::name::suggestions::value()};
                         }
@@ -508,14 +515,14 @@ namespace casual
                template< typename Call, typename Compl>
                Invoke create( Call&& callable, Compl&& completer)
                {
-                  return Invoke{ implementation::Completion< std::decay_t< Call>, std::decay_t< Compl>>( 
+                  return Invoke{ implementation::completion::Custom< std::decay_t< Call>, std::decay_t< Compl>>( 
                      std::forward< Call>( callable), std::forward< Compl>( completer))};                  
                }
 
                template< typename Call>
                Invoke create( Call&& callable)
                {
-                  return create( std::forward< Call>( callable), implementation::completer::Default());
+                  return Invoke{ implementation::completion::Default< std::decay_t< Call>>( std::forward< Call>( callable))};
                }
 
             } // invoke
@@ -736,9 +743,6 @@ namespace casual
                return result;
             }
 
-            inline auto cardinality() const { return m_cardinality.cardinality();}
-
-
             inline auto operator + ( Option rhs) 
             {
                return detail::Holder::construct( *this, std::move( rhs));
@@ -952,6 +956,49 @@ namespace casual
                   value = ! value;
                };
             }
+
+            namespace one
+            {
+               namespace detail
+               {
+                  template< typename T, 
+                     std::enable_if_t< 
+                        traits::is::function< T>::value
+                        && traits::function< T>::arguments() == 1
+                        && std::is_same< typename traits::function< T>::result_type, void>::value,
+                     int> = 0> 
+                  auto many( T&& callable)
+                  {
+                     using rest_type = traits::remove_cvref_t< typename traits::function< T>::template argument< 0>::type>;
+                     using first_type = traits::iterable::value_t< rest_type>;
+
+                     return [ callable = std::forward< T>( callable)]( first_type first, rest_type rest)
+                     {
+                        rest.insert( std::begin( rest), std::move( first));
+                        callable( std::move( rest));
+                     };
+                  }
+
+                  template< typename T>
+                  auto many( std::vector< T>& values)
+                  {
+                     return [&values]( T first, std::vector< T> rest)
+                     {
+                        values.reserve( values.size() + rest.size() + 1);
+                        values.push_back( std::move( first));
+                        algorithm::move( std::move( rest), values);
+                     };
+                  }
+
+               } // detail
+
+               template< typename T> 
+               auto many( T&& dispatch) -> decltype( detail::many( std::forward< T>( dispatch)))
+               {
+                  return detail::many( std::forward< T>( dispatch));
+               }
+
+            } // one
 
          } // option
          

@@ -60,6 +60,25 @@ namespace casual
          EXPECT_TRUE( option.has( "--key"));
       }
 
+      TEST( common_argument_option_one_many, value_vector)
+      {
+         unittest::Trace trace;
+
+         std::vector< int> values;
+
+         argument::Option option{ argument::option::one::many( values), { "-a"}, "test"};
+
+         EXPECT_TRUE( option.representation().invocable.cardinality() == argument::cardinality::one_many{}) << "option.representation(): " << option.representation();
+
+         std::vector< std::string> arguments{ "1", "2", "3"};
+
+         option.assign( "-a", range::make( arguments));
+         option.invoke();
+
+         EXPECT_TRUE(( values == std::vector< int>{ 1, 2, 3}));
+      }
+
+
 
       TEST( common_argument_group, expect__has_key)
       {
@@ -159,7 +178,7 @@ namespace casual
 
          argument::Option o1{ local::invocable_0, { "--a"}, "a"};
 
-         EXPECT_TRUE( o1.cardinality() == argument::cardinality::zero_one{});
+         EXPECT_TRUE( o1.representation().cardinality == argument::cardinality::zero_one{});
       }
 
       TEST( common_argument_option, fixed_cardinality__expect_3_3)
@@ -168,7 +187,7 @@ namespace casual
 
          auto o1 = argument::Option{ local::invocable_0, { "--a"}, "a"}( argument::cardinality::fixed< 3>{});
 
-         EXPECT_TRUE( o1.cardinality() == argument::cardinality::fixed< 3>{});
+         EXPECT_TRUE( o1.representation().cardinality == argument::cardinality::fixed< 3>{});
       }
 
       TEST( common_argument_invoke, tuple_1__expect_cardinality_1)

@@ -417,7 +417,7 @@ namespace casual
                   using iterator = decltype( *( std::declval< T&>()++) = *std::declval< T&>());
                   
                } // output
-               
+    
             } // detail
 
             template< typename T>
@@ -467,6 +467,8 @@ namespace casual
                using iterator = bool_constant< is::iterator< T>::value 
                   && is::char_type< decltype( *std::declval< T>())>::value>;
             } // string
+
+
 
             namespace binary
             {

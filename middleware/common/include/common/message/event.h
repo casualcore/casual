@@ -23,16 +23,16 @@ namespace casual
          {
             inline namespace v1 {
 
-            template< common::message::Type type> 
-            using basic_event = common::message::basic_request< type>;
+            template< Type type> 
+            using basic_event = message::basic_request< type>;
 
             namespace subscription
             {
 
-               using base_begin = basic_event< common::message::Type::event_subscription_begin>;
+               using base_begin = basic_event< Type::event_subscription_begin>;
                struct Begin : base_begin
                {
-                  std::vector< common::message::Type> types;
+                  std::vector< Type> types;
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
                      base_begin::serialize( archive);
@@ -40,7 +40,7 @@ namespace casual
                   )
                };
 
-               using base_end = basic_event< common::message::Type::event_subscription_end>;
+               using base_end = basic_event< Type::event_subscription_end>;
                struct End : base_end
                {
                };
@@ -50,12 +50,28 @@ namespace casual
 
             namespace domain
             {
+               namespace task
+               {
+                  template< Type type> 
+                  struct basic_task : basic_event< type>
+                  {
+                     strong::task::id id;
+
+                     CASUAL_CONST_CORRECT_SERIALIZE({
+                         basic_event< type>::serialize( archive);
+                        CASUAL_SERIALIZE( id);
+                     })
+                  };
+                  using Begin = basic_task< Type::event_domain_task_begin>;
+                  using End = basic_task< Type::event_domain_task_end>;
+               } // task
+
                namespace server
                {
-                  using base_connect = basic_event< common::message::Type::event_domain_server_connect>;
+                  using base_connect = basic_event< Type::event_domain_server_connect>;
                   struct Connect : base_connect
                   {
-                     common::Uuid identification;
+                     Uuid identification;
 
                      CASUAL_CONST_CORRECT_SERIALIZE(
                         base_connect::serialize( archive);
@@ -66,7 +82,7 @@ namespace casual
 
                } // server
 
-               using base_error = basic_event< common::message::Type::event_domain_error>;
+               using base_error = basic_event< Type::event_domain_error>;
                struct Error : base_error
                {
                   enum class Severity : short
@@ -104,10 +120,9 @@ namespace casual
                   )
                };
 
-               using base_group = basic_event< common::message::Type::event_domain_group>;
+               using base_group = basic_event< Type::event_domain_group>;
                struct Group : base_group
                {
-
                   enum class Context : int
                   {
                      boot_start,
@@ -129,7 +144,7 @@ namespace casual
 
                };
 
-               template< common::message::Type type>
+               template< Type type>
                struct basic_procedure : basic_event< type>
                {
                   common::domain::Identity domain;
@@ -143,14 +158,14 @@ namespace casual
 
                namespace boot
                {
-                  struct Begin : basic_procedure< common::message::Type::event_domain_boot_begin>{};
-                  struct End : basic_procedure< common::message::Type::event_domain_boot_end>{};
+                  struct Begin : basic_procedure< Type::event_domain_boot_begin>{};
+                  struct End : basic_procedure< Type::event_domain_boot_end>{};
                } // boot
 
                namespace shutdown
                {
-                  struct Begin : basic_procedure< common::message::Type::event_domain_shutdown_begin>{};
-                  struct End : basic_procedure< common::message::Type::event_domain_shutdown_end>{};
+                  struct Begin : basic_procedure< Type::event_domain_shutdown_begin>{};
+                  struct End : basic_procedure< Type::event_domain_shutdown_end>{};
                } // shutdown
 
             } // domain
@@ -158,7 +173,7 @@ namespace casual
 
             namespace process
             {
-               using base_spawn = basic_event< common::message::Type::event_process_spawn>;
+               using base_spawn = basic_event< Type::event_domain_process_spawn>;
                struct Spawn : base_spawn
                {
                   std::string alias;
@@ -173,11 +188,11 @@ namespace casual
                   )
                };
 
-               using base_exit = basic_event< common::message::Type::event_process_exit>;
+               using base_exit = basic_event< Type::event_domain_process_exit>;
                struct Exit : base_exit
                {
                   Exit() = default;
-                  Exit( common::process::lifetime::Exit state) : state( std::move( state)) {}
+                  Exit( common::process::lifetime::Exit state) : base_exit{ common::process::handle()}, state( std::move( state)) {}
 
                   common::process::lifetime::Exit state;
 
@@ -196,13 +211,13 @@ namespace casual
                   std::string service;
                   std::string parent;
                   common::process::Handle process;
-                  common::Uuid execution;
+                  Uuid execution;
                   common::transaction::ID trid;
 
-                  common::platform::time::point::type start;
-                  common::platform::time::point::type end;
+                  platform::time::point::type start;
+                  platform::time::point::type end;
 
-                  common::code::xatmi code;
+                  code::xatmi code;
 
                   auto duration() const noexcept { return end - start;}
 

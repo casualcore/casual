@@ -120,24 +120,26 @@ namespace casual
                            {
                               case 0: return std::string{};
                               case 1: return information.front();
-                              default: return string::compose( range::make( information));
+                              default: return string::compose( information);
                            }
                         };
 
-                        auto print_option_cardinality = []( const auto& r){
-                           if( r.cardinality == cardinality::zero_one{}) return std::string{ "?"};
-                           if( r.cardinality == cardinality::one_many{}) return std::string{ "+"};
-                           if( r.cardinality == cardinality::any{}) return std::string{ "*"};
+                        auto print_option_cardinality = []( const auto& r) -> std::string
+                        {
+                           if( r.cardinality == cardinality::zero_one{}) return "?";
+                           if( r.cardinality == cardinality::one_many{}) return "+";
+                           if( r.cardinality == cardinality::any{}) return "*";
                            if( r.cardinality.fixed()) return to_string( r.cardinality.min());
                            return string::compose( r.cardinality);
                         };
 
-                        auto print_value_cardinality = []( const auto& r){
+                        auto print_value_cardinality = []( const auto& r) -> std::string
+                        {
                            auto cardinality = r.invocable.cardinality();
-                           if( cardinality == cardinality::zero{}) return std::string{};
-                           if( cardinality == cardinality::zero_one{}) return std::string{ "?"};
-                           if( cardinality == cardinality::one_many{}) return std::string{ "+"};
-                           if( cardinality == cardinality::any{}) return std::string{ "*"};
+                           if( cardinality == cardinality::zero{}) return {};
+                           if( cardinality == cardinality::zero_one{}) return "?";
+                           if( cardinality == cardinality::one_many{}) return "+";
+                           if( cardinality == cardinality::any{}) return "*";
                            if( cardinality.fixed()) return to_string( cardinality.min());
                            return string::compose( cardinality);
                         };
@@ -209,6 +211,10 @@ namespace casual
 
                   void invoke( range_type arguments, std::vector< detail::Representation> options, const std::string& description)
                   {
+                     Trace trace{ "common::argument::local::help::invoke"};
+                     
+                     log::line( log::debug, "options", options);
+
                      std::cout << std::setw( 0);
 
                      options.push_back( representation());
@@ -281,13 +287,9 @@ namespace casual
                   {
                      Trace trace{ "common::argument::local::completion::map_invoked"};
 
-
-
-                     //
                      // We'll try to remove all options that is 'completed', and only keep those that is 
                      // available for the user. An option is completed if its used at least as many times as the
                      // cardinality indicates
-                     //
 
                      std::vector< Mapper> result;
 

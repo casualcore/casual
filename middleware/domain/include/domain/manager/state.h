@@ -157,10 +157,12 @@ namespace casual
 
                handle_type handle;
                state_type state = state_type::scale_out;
+               common::platform::time::point::type spawnpoint = common::platform::time::point::limit::zero();
 
                void spawned( common::strong::process::id pid)
                {
                   policy_type::spawned( pid, *this);
+                  spawnpoint = common::platform::time::clock::type::now();
                }
 
                friend bool operator == ( const Instance& lhs, common::strong::process::id pid) { return lhs.handle == pid;}
@@ -169,6 +171,7 @@ namespace casual
                CASUAL_CONST_CORRECT_SERIALIZE({
                   CASUAL_SERIALIZE( handle);
                   CASUAL_SERIALIZE( state);
+                  CASUAL_SERIALIZE( spawnpoint);
                })
             };
 
@@ -244,7 +247,6 @@ namespace casual
 
                void scale( size_type instances);
 
-
                instance_type instance( common::strong::process::id pid) const;
                instance_type remove( common::strong::process::id pid);
 
@@ -297,6 +299,10 @@ namespace casual
             };
             static_assert( common::traits::is_movable< Batch>::value, "not movable");
 
+            namespace is
+            {
+               bool singleton( common::strong::process::id pid);
+            } // is
 
          } // state
 
@@ -368,6 +374,8 @@ namespace casual
             common::event::dispatch::Collection<
                common::message::event::process::Spawn,
                common::message::event::process::Exit,
+               common::message::event::domain::task::Begin,
+               common::message::event::domain::task::End,
                common::message::event::domain::boot::Begin,
                common::message::event::domain::boot::End,
                common::message::event::domain::shutdown::Begin,
@@ -376,6 +384,8 @@ namespace casual
                common::message::event::domain::Error,
                common::message::event::domain::server::Connect
             > event;
+
+      
 
             //! global/default environment variables
             casual::configuration::Environment environment;
