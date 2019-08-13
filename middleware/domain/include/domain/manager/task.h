@@ -176,8 +176,9 @@ namespace casual
             
             ~Task();
 
-            Task( Task&&) noexcept = default;
-            Task& operator = ( Task&&) noexcept = default;
+            
+            Task( Task&&) = default; // noexcept is deduced
+            Task& operator = ( Task&&) = default; // noexcept is deduced
 
             std::vector< task::event::Callback> operator() ( State& state);
 
