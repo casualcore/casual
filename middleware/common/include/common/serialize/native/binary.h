@@ -61,24 +61,25 @@ namespace casual
                };
 
                template< typename P>
-               struct basic_output
+               struct basic_writer
                {
+                  constexpr static auto archive_type = archive::Type::static_order_type;
                   using policy_type = P;
 
-                  basic_output( platform::binary::type& buffer)
+                  basic_writer( platform::binary::type& buffer)
                      : m_buffer( buffer)
                   {
                      m_buffer.reserve( 128);
                   }
 
                   template< typename T>
-                  basic_output& operator & ( T&& value)
+                  basic_writer& operator & ( T&& value)
                   {
                      return *this << std::forward< T>( value);
                   }
 
                   template< typename T>
-                  basic_output& operator << ( T&& value)
+                  basic_writer& operator << ( T&& value)
                   {
                      serialize::value::write( *this, std::forward< T>( value), nullptr);
                      return *this;
@@ -89,14 +90,14 @@ namespace casual
                      write_size( size);
                   }
                   inline void container_end( const char*) { /* no op */}
-                  inline void composite_start( const char*) { /* no op */}
+                  inline bool composite_start( const char*) { return true;}
                   inline void composite_end(  const char* name) { /* no-op */ }
 
 
                   template< typename T> 
                   void write( T&& value, const char*) 
                   { 
-                     write( std::forward< T>( value));
+                     save( std::forward< T>( value));
                   }
 
                private:
@@ -111,23 +112,23 @@ namespace casual
                   }
 
                   template< typename T>
-                  auto write( T&& value) -> std::enable_if_t< std::is_arithmetic< common::traits::remove_cvref_t< T>>::value>
+                  auto save( T&& value) -> std::enable_if_t< std::is_arithmetic< common::traits::remove_cvref_t< T>>::value>
                   {
                      policy_type::write( std::forward< T>( value), m_buffer);
                   }
 
-                  void write( const std::string& value) 
+                  void save( const std::string& value) 
                   { 
                      write_size( value.size());
                      append( value);
                   }
-                  void write( const platform::binary::type& value) 
+                  void save( const platform::binary::type& value) 
                   { 
                      write_size( value.size());
                      append( value);
                   }
                   
-                  void write( view::immutable::Binary value) 
+                  void save( view::immutable::Binary value) 
                   {
                      append( value);
                   }
@@ -141,26 +142,27 @@ namespace casual
                };
 
 
-               using Output = basic_output< Policy>;
+               using Writer = basic_writer< Policy>;
 
                template< typename P>
-               struct basic_input
+               struct basic_reader
                {
+                  constexpr static auto archive_type = archive::Type::static_order_type;
                   using policy_type = P;
 
-                  basic_input( const platform::binary::type& buffer, platform::size::type offset)
+                  basic_reader( const platform::binary::type& buffer, platform::size::type offset)
                      : m_buffer( buffer), m_offset{ offset} {}
 
-                  basic_input( const platform::binary::type& buffer) : m_buffer( buffer){}
+                  basic_reader( const platform::binary::type& buffer) : m_buffer( buffer){}
 
                   template< typename T>
-                  basic_input& operator & ( T&& value)
+                  basic_reader& operator & ( T&& value)
                   {
                      return *this >> value;
                   }
 
                   template< typename T>
-                  basic_input& operator >> ( T&& value)
+                  basic_reader& operator >> ( T&& value)
                   {
                      serialize::value::read( *this, value, nullptr);
                      return *this;
@@ -176,9 +178,10 @@ namespace casual
                   inline void composite_end(  const char* name) {} // no-op
 
                   template< typename T> 
-                  void read( T&& value, const char*) 
+                  bool read( T&& value, const char*) 
                   { 
-                     read( value);
+                     load( value);
+                     return true;
                   }
 
                private:
@@ -195,24 +198,24 @@ namespace casual
                   }
 
                   template< typename T>
-                  auto read( T& value) -> std::enable_if_t< std::is_arithmetic< common::traits::remove_cvref_t< T>>::value>
+                  auto load( T& value) -> std::enable_if_t< std::is_arithmetic< common::traits::remove_cvref_t< T>>::value>
                   {
                      m_offset = policy_type::read( m_buffer, m_offset, value);
                   }
 
-                  void read( std::string& value)
+                  void load( std::string& value)
                   {
                      value.resize( read_size());
                      consume( value);
                   }
 
-                  void read( platform::binary::type& value)
+                  void load( platform::binary::type& value)
                   {
                      value.resize( read_size());
                      consume( value);
                   }
 
-                  void read( view::Binary value)
+                  void load( view::Binary value)
                   {
                      consume( value);
                   }
@@ -230,31 +233,30 @@ namespace casual
                   platform::size::type m_offset = 0;
                };
 
-               using Input = basic_input< Policy>;
+               using Reader = basic_reader< Policy>;
 
+               inline auto writer( platform::binary::type& buffer) { return binary::Writer{ buffer};}
+               inline auto reader( const platform::binary::type& buffer) { return binary::Reader{ buffer};}
 
                namespace create
                {
-                  struct Output
+                  struct Writer
                   {
-                     binary::Output operator () ( platform::binary::type& buffer) const
+                     inline auto operator () ( platform::binary::type& buffer) const
                      {
-                        return binary::Output{ buffer};
+                        return binary::writer( buffer);
                      }
                   };
 
-                  struct Input
+                  struct Reader
                   {
-                     binary::Input operator () ( platform::binary::type& buffer) const
+                     inline auto operator () ( const platform::binary::type& buffer) const
                      {
-                        return binary::Input{ buffer};
+                       return binary::reader( buffer);
                      }
                   };
-
-
 
                } // create
-
             } // binary
 
             namespace create
@@ -263,10 +265,10 @@ namespace casual
                struct reverse;
 
                template<>
-               struct reverse< binary::create::Output> { using type = binary::create::Input;};
+               struct reverse< binary::create::Writer> { using type = binary::create::Reader;};
 
                template<>
-               struct reverse< binary::create::Input> { using type = binary::create::Output;};
+               struct reverse< binary::create::Reader> { using type = binary::create::Writer;};
 
 
 
@@ -274,11 +276,6 @@ namespace casual
                using reverse_t = typename reverse< T>::type;
 
             } // create
-
-
-            
-
-
          
          } // native
       } // serialize

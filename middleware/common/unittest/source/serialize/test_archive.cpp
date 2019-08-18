@@ -11,6 +11,7 @@
 
 #include "common/serialize/macro.h"
 #include "common/serialize/binary.h"
+#include "common/serialize/native/binary.h"
 
 #include "common/log.h"
 
@@ -27,11 +28,21 @@ namespace casual
 {
 
 
+   TEST( serialize_binary_writer, archive_type)
+   {
+      common::platform::binary::type buffer;
+      auto writer = common::serialize::binary::writer( buffer);
+
+      EXPECT_TRUE( writer.archive_type == common::serialize::archive::Type::dynamic_type) << "writer.archive_type: " << writer.archive_type;
+      EXPECT_TRUE( writer.type() == common::serialize::archive::dynamic::Type::order_type) << "writer.type(): " << writer.type();
+   }
+
+
    TEST( serialize_binary_writer, serialize_pod)
    {
 
       common::platform::binary::type buffer;
-      auto writer = common::serialize::binary::writer( buffer);
+      auto writer = common::serialize::native::binary::writer( buffer);
 
       writer << CASUAL_NAMED_VALUE( 10);
    }
@@ -40,11 +51,11 @@ namespace casual
    {
 
       common::platform::binary::type buffer;
-      auto writer = common::serialize::binary::writer( buffer);
+      auto writer = common::serialize::native::binary::writer( buffer);
 
       writer << CASUAL_NAMED_VALUE( std::string{ "test"});
 
-      auto reader = common::serialize::binary::reader( buffer);
+      auto reader = common::serialize::native::binary::reader( buffer);
 
       std::string result;
 
@@ -61,11 +72,11 @@ namespace casual
    {
 
       common::platform::binary::type buffer;
-      auto writer = common::serialize::binary::writer( buffer);
+      auto writer = common::serialize::native::binary::writer( buffer);
 
       writer << CASUAL_NAMED_VALUE( 34L);
 
-      auto reader = common::serialize::binary::reader( buffer);
+      auto reader = common::serialize::native::binary::reader( buffer);
 
       long result;
 
@@ -81,7 +92,7 @@ namespace casual
    {
 
       common::platform::binary::type buffer;
-      auto writer = common::serialize::binary::writer( buffer);
+      auto writer = common::serialize::native::binary::writer( buffer);
 
 
       std::vector< long> someInts = { 1, 2, 3, 4 };
@@ -90,7 +101,7 @@ namespace casual
 
       std::vector< long> result;
 
-      auto reader = common::serialize::binary::reader( buffer);
+      auto reader = common::serialize::native::binary::reader( buffer);
 
       reader >> CASUAL_NAMED_VALUE( result);
 
@@ -107,7 +118,7 @@ namespace casual
    {
 
       common::platform::binary::type buffer;
-      auto writer = common::serialize::binary::writer( buffer);
+      auto writer = common::serialize::native::binary::writer( buffer);
 
       std::map< long, std::string> value = { { 1, "test 1"}, { 2, "test 2"}, { 3, "test 3"}, { 4, "test 4"} };
 
@@ -116,7 +127,7 @@ namespace casual
 
       std::map< long, std::string> result;
 
-      auto reader = common::serialize::binary::reader( buffer);
+      auto reader = common::serialize::native::binary::reader( buffer);
 
       reader >> CASUAL_NAMED_VALUE( result);
 
@@ -143,13 +154,13 @@ namespace casual
       )
    };
 
-   TEST( serialize_binary_reader_writer, serializible)
+   TEST( serialize_binary_reader_writer, serializable)
    {
 
       common::platform::binary::type buffer;
 
       {
-         auto writer = common::serialize::binary::writer( buffer);
+         auto writer = common::serialize::native::binary::writer( buffer);
 
          Serializible value;
          value.someLong = 23;
@@ -159,7 +170,7 @@ namespace casual
       }
 
       {
-         auto reader = common::serialize::binary::reader( buffer);
+         auto reader = common::serialize::native::binary::reader( buffer);
 
          Serializible value;
          reader >> CASUAL_NAMED_VALUE( value);
@@ -170,7 +181,7 @@ namespace casual
 
    }
 
-   TEST( serialize_binary_reader_writer, complex_serializible)
+   TEST( serialize_binary_reader_writer, complex_serializable)
    {
 
       common::platform::binary::type buffer;
@@ -186,13 +197,13 @@ namespace casual
 
          std::vector< test::Composite> range{ value, value, value, value};
 
-         auto writer = common::serialize::binary::writer( buffer);
+         auto writer = common::serialize::native::binary::writer( buffer);
          writer << CASUAL_NAMED_VALUE( range);
 
       }
 
       {
-         auto reader = common::serialize::binary::reader( buffer);
+         auto reader = common::serialize::native::binary::reader( buffer);
 
          std::vector< test::Composite> range;
          reader >> CASUAL_NAMED_VALUE( range);

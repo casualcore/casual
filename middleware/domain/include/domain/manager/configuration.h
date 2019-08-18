@@ -10,6 +10,8 @@
 
 #include "domain/manager/state.h"
 
+#include "configuration/domain.h"
+
 namespace casual
 {
    namespace domain
@@ -21,6 +23,9 @@ namespace casual
          {
 
             State state( const Settings& settings);
+
+            //! extract and transforms the current state to a 'configuration view'
+            casual::configuration::domain::Manager get( const State& state);
 
 
          } // configuration

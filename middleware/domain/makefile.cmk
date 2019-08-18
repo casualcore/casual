@@ -85,6 +85,7 @@ target = LinkLibrary( 'bin/casual-domain-admin-cli',
      manager_archive,
      common_archive,
      'casual-common',
+     'casual-configuration',
      'casual-serviceframework'
      ]
 )

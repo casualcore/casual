@@ -51,25 +51,30 @@ namespace casual
          {
             namespace
             {
-               struct Archive
+               namespace archive
                {
-                  using need_named = void;
-               };
+                  struct Named
+                  {
+                     constexpr static auto archive_type = serialize::archive::Type::static_need_named;
+                  };
+                  struct Order
+                  {
+                     constexpr static auto archive_type = serialize::archive::Type::static_order_type;
+                  };
+               } // archive
+               
             } // <unnamed>
          } // local
 
          TEST( casual_serialize_traits, need_named__true)
          {
-            EXPECT_TRUE( ( traits::need::named< local::Archive>::value));
+
+            EXPECT_TRUE( ( traits::need::named< local::archive::Named>::value));
          }
 
          TEST( casual_serialize_traits, need_named__false)
          {
-            struct Archive
-            {
-            };
-
-            EXPECT_FALSE( ( traits::need::named< Archive>::value));
+            EXPECT_TRUE( ( ! traits::need::named< local::archive::Order>::value));
          }
       } // serialize
    } // common

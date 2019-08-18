@@ -32,6 +32,8 @@ namespace casual
                   {
                   public:
 
+                     constexpr static auto archive_type = archive::Type::static_need_named;
+
                      static std::vector< std::string> keys() { return { "", "log"};}
 
                      Implementation();

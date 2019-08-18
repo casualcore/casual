@@ -146,7 +146,7 @@ namespace casual
 
                   struct Printer
                   {
-                     using need_named = void;
+                     constexpr static auto archive_type = common::serialize::archive::Type::static_need_named;
                      using is_network_normalizing = void;
 
                      Printer() = default;

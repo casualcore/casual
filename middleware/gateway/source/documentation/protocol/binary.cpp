@@ -48,7 +48,7 @@ namespace casual
                      {
                         auto file = local::file( message, base, "bin");
 
-                        auto complete = common::serialize::native::complete( message, common::serialize::native::binary::network::create::Output{});
+                        auto complete = common::serialize::native::complete( message, common::serialize::native::binary::network::create::Writer{});
 
                         auto header = complete.header();
                         file.write( reinterpret_cast< const char*>( &header), common::communication::message::complete::network::header::size());

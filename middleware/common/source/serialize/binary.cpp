@@ -20,6 +20,7 @@ namespace casual
       {
          namespace binary
          {
+            /*
             namespace local
             {
                namespace
@@ -28,19 +29,10 @@ namespace casual
                   {
                      using size_type = common::platform::size::type;
 
-                     struct Writer : native::binary::Output
+                     using writer_base = native::binary::Writer;
+                     struct Writer : writer_base
                      {
-                        using base_type = native::binary::Output;
-                        using base_type::base_type;
-
-
-                        //! @{
-                        //! No op
-                        void container_end( const char*) { /*no op*/}
-                        void composite_start( const char*) {  /*no op*/}
-                        void composite_end(  const char*) { /*no op*/}
-                        //! @}
-
+                        using writer_base::writer_base;
 
                         size_type container_start( const size_type size, const char*)
                         {
@@ -49,17 +41,10 @@ namespace casual
                         }
                      };
 
-
-                     struct Reader : native::binary::Input
+                     using reader_base = native::binary::Reader;
+                     struct Reader : reader_base
                      {
-                        using base_type = native::binary::Input;
-                        using base_type::base_type;
-
-                        //! @{
-                        //! No op
-                        void container_end( const char*) { /*no op*/}
-                        void composite_end(  const char*) { /*no op*/}
-                        //! @}
+                        using reader_base::reader_base;
 
                         bool composite_start( const char*) { return true;}
 
@@ -72,23 +57,23 @@ namespace casual
                         template< typename T> 
                         bool read( T& value, const char*)
                         {
-                           base_type::read( value, nullptr);
+                           reader_base::read( value, nullptr);
                            return true;
                         }
                      };
                   } // implementation
-
                } // <unnamed>
             } // local
+            */
 
             serialize::Reader reader( const common::platform::binary::type& source)
             {
-               return serialize::Reader::emplace< serialize::policy::Relaxed< local::implementation::Reader>>( source);
+               return serialize::Reader::emplace< native::binary::Reader>( source);
             }
 
             serialize::Writer writer( common::platform::binary::type& destination)
             {
-               return serialize::Writer::emplace< local::implementation::Writer>( destination);
+               return serialize::Writer::emplace< native::binary::Writer>( destination);
             }
 
          } // binary

@@ -31,6 +31,8 @@ namespace casual
    {
       namespace domain
       {
+         inline namespace v1 {
+            
          namespace manager
          {
             struct Default
@@ -97,6 +99,7 @@ namespace casual
          //! @param configuration domain configuration
          void finalize( Manager& configuration);
 
+      } // v1
       } // domain
 
    } // config

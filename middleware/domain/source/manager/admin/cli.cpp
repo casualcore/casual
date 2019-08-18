@@ -5,22 +5,23 @@
 //!
 #include "domain/manager/admin/cli.h"
 
-
-#include "common/event/listen.h"
 #include "domain/manager/admin/vo.h"
 #include "domain/manager/admin/server.h"
+#include "domain/common.h"
 
+#include "configuration/domain.h"
+
+#include "common/event/listen.h"
 #include "common/argument.h"
 #include "common/terminal.h"
 #include "common/environment.h"
 #include "common/exception/handle.h"
 #include "common/execute.h"
-
 #include "common/communication/ipc.h"
 #include "common/communication/instance.h"
+#include "common/serialize/create.h"
 
 #include "serviceframework/service/protocol/call.h"
-#include "common/serialize/create.h"
 #include "serviceframework/log.h"
 
 namespace casual
@@ -220,6 +221,7 @@ namespace casual
                      return serviceReply;
                   }
 
+            
 
                   auto scale_instances( const std::vector< admin::vo::scale::Instances>& instances)
                   {
@@ -328,14 +330,14 @@ namespace casual
                      events();
                   }
 
-                  namespace set
+                  namespace environment
                   {
-                     auto environment( const admin::vo::set::Environment& environment)
+                     auto set( const admin::vo::set::Environment& environment)
                      {
                         serviceframework::service::protocol::binary::Call call;
                         call << CASUAL_NAMED_VALUE( environment);
 
-                        auto reply = call( admin::service::name::set::environment);
+                        auto reply = call( admin::service::name::environment::set);
 
                         std::vector< std::string> serviceReply;
 
@@ -343,7 +345,28 @@ namespace casual
 
                         return serviceReply;
                      }
-                  } // set
+                  } // environment
+
+                  namespace configuration
+                  {
+                     auto get()
+                     {
+                        Trace trace{ "domain::manager::local::call::configuration::get"};
+
+                        auto reply = []()
+                        {  
+                           Trace trace{ "domain::manager::local::call::configuration::get call"};
+                           serviceframework::service::protocol::binary::Call call;
+                           return call( admin::service::name::configuration::get);
+                        }();
+                        
+
+                        casual::configuration::domain::Manager serviceReply;
+                        reply >> CASUAL_NAMED_VALUE( serviceReply);
+                        common::log::line( casual::domain::log, "serviceReply: ", serviceReply);
+                        return serviceReply;
+                     }
+                  } // configuration
                } // call
 
                namespace format
@@ -533,9 +556,9 @@ namespace casual
                      
                   } // restart
 
-                  namespace set
+                  namespace environment
                   {
-                     namespace environment
+                     namespace set
                      {
                         void call( const std::string& name, const std::string& value, std::vector< std::string> aliases)
                         {
@@ -543,7 +566,7 @@ namespace casual
                            environment.variables.variables.push_back( configuration::environment::Variable{ name, value});
                            environment.aliases = std::move( aliases);
 
-                           call::set::environment( environment);
+                           call::environment::set( environment);
                         }
 
                         auto complete = []( auto values, bool help) -> std::vector< std::string>
@@ -578,11 +601,8 @@ if 0 aliases are provided, the environment virable will be set
 for all servers and executables 
                         )";
 
-                     } // environment
-                  } // set
-
-
-
+                     } // set
+                  } // environment 
 
 
                   void boot( const std::vector< std::string>& files)
@@ -595,13 +615,21 @@ for all servers and executables
                      call::shutdown();
                   }
 
-                  namespace persist
+                  namespace configuration
                   {
-                     void configuration()
+                     void persist()
                      {
                         serviceframework::service::protocol::binary::Call{}( admin::service::name::configuration::persist);
                      }
-                  } // persist
+                     
+                     void get( const common::optional< std::string>& format)
+                     {
+                        auto domain = call::configuration::get();
+                        auto archive = common::serialize::create::writer::from( format.value_or( ""), std::cout);
+                        archive << CASUAL_NAMED_VALUE( domain);
+                     }
+
+                  } // configuration
 
 
                   void state( const common::optional< std::string>& format)
@@ -618,14 +646,11 @@ for all servers and executables
 
          namespace admin 
          {
-            
             struct cli::Implementation
             {
                argument::Group options()
                {
-                  auto complete_state = []( auto values, bool){
-                     return std::vector< std::string>{ "json", "yaml", "xml", "ini"};
-                  };
+                  auto complete_format = serialize::create::writer::complete::format();
 
                   return argument::Group{ [](){}, { "domain"}, "local casual domain related administration",
                      argument::Option( &local::action::list_servers, { "-ls", "--list-servers"}, "list all servers"),
@@ -635,9 +660,10 @@ for all servers and executables
                      argument::Option( argument::option::one::many( &local::action::restart::instances), local::action::restart::completion, { "-ri", "--restart-instances"}, "<alias> restart instances for the given aliases"),
                      argument::Option( &local::action::shutdown, { "-s", "--shutdown"}, "shutdown the domain"),
                      argument::Option( &local::action::boot, { "-b", "--boot"}, "boot domain -"),
-                     argument::Option( &local::action::set::environment::call, local::action::set::environment::complete, { "--set-environment"}, local::action::set::environment::description)( argument::cardinality::any{}),
-                     argument::Option( &local::action::persist::configuration, { "-p", "--persist-state"}, "persist current state"),
-                     argument::Option( &local::action::state, complete_state, { "--state"}, "domain state")
+                     argument::Option( &local::action::environment::set::call, local::action::environment::set::complete, { "--set-environment"}, local::action::environment::set::description)( argument::cardinality::any{}),
+                     argument::Option( &local::action::configuration::persist, { "-p", "--persist-state"}, "persist current state"),
+                     argument::Option( &local::action::configuration::get, complete_format, { "--configuration-get"}, "get configuration (as provided format)"),
+                     argument::Option( &local::action::state, complete_format, { "--state"}, "domain state (as provided format)")
                   };
                }
             };

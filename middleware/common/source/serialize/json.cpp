@@ -196,6 +196,8 @@ namespace casual
                      {
                      public:
 
+                        constexpr static auto archive_type = archive::Type::static_need_named;
+
                         static auto keys() { return local::keys();}
 
                         template< typename... Ts>
@@ -359,6 +361,8 @@ namespace casual
                      class Implementation
                      {
                      public:
+
+                        constexpr static auto archive_type = archive::Type::static_need_named;
 
                         static auto keys() { return local::keys();}
                         

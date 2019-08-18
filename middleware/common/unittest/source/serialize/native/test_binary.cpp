@@ -43,8 +43,8 @@ namespace casual
             };
 
             using marshal_types = ::testing::Types<
-                  IO< binary::create::Input, binary::create::Output>,
-                  IO< binary::network::create::Input, binary::network::create::Output>
+                  IO< binary::create::Reader, binary::create::Writer>,
+                  IO< binary::network::create::Reader, binary::network::create::Writer>
             >;
 
             TYPED_TEST_CASE(casual_serialize_native_binary, marshal_types);

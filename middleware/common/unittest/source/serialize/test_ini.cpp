@@ -11,6 +11,8 @@
 
 #include "common/serialize/ini.h"
 
+#include "common/unittest.h"
+
 #include <sstream>
 #include <locale>
 
@@ -43,10 +45,32 @@ namespace casual
          } // local
       } //
 
+      TEST( serviceframework_ini_archive, writer_archive_type)
+      {
+         common::unittest::Trace trace;
 
+         std::string buffer;
+         auto writer = serialize::ini::writer( buffer);
+
+         EXPECT_TRUE( writer.archive_type == common::serialize::archive::Type::dynamic_type) << "writer.archive_type: " << writer.archive_type;
+         EXPECT_TRUE( writer.type() == common::serialize::archive::dynamic::Type::named) << "writer.type(): " << writer.type();
+      }
+
+      TEST( serviceframework_ini_archive, reader_archive_type)
+      {
+         common::unittest::Trace trace;
+
+         std::string buffer;
+         auto reader = serialize::ini::strict::reader( buffer);
+
+         EXPECT_TRUE( reader.archive_type == common::serialize::archive::Type::dynamic_type) << "reader.archive_type: " << reader.archive_type;
+         EXPECT_TRUE( reader.type() == common::serialize::archive::dynamic::Type::named) << "reader.type(): " << reader.type();
+      }
 
       TEST( serviceframework_ini_archive, write_read_string_with_new_line)
       {
+         common::unittest::Trace trace;
+
          std::string ini;
          std::string source = "foo\nbar";
          local::value_to_string( source, ini);
@@ -58,6 +82,8 @@ namespace casual
 
       TEST( serviceframework_ini_archive, write_read_boolean)
       {
+         common::unittest::Trace trace;
+
          std::string ini;
          local::value_to_string( true, ini);
          bool target = false;
@@ -67,6 +93,8 @@ namespace casual
 
       TEST( serviceframework_ini_archive, write_read_decimal)
       {
+         common::unittest::Trace trace;
+
          std::string ini;
          float source = 3.14;
          local::value_to_string( source, ini);
@@ -77,6 +105,8 @@ namespace casual
 
       TEST( serviceframework_ini_archive, write_read_container)
       {
+         common::unittest::Trace trace;
+
          std::string ini;
          std::vector<long> source{ 1, 3, 5, 7 };
          local::value_to_string( source, ini);
@@ -143,6 +173,8 @@ namespace casual
 
          TEST( serviceframework_ini_archive, write_read_serializable)
          {
+            common::unittest::Trace trace;
+
             std::string ini;
             SomeVO source;
             source.boolean = true;
@@ -181,6 +213,8 @@ namespace casual
 
          TEST( serviceframework_ini_archive, test_control_characters)
          {
+            common::unittest::Trace trace;
+
             std::vector< char> result;
             for( short idx = 0; idx < 255; ++idx)
             {

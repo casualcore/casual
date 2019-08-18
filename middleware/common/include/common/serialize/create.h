@@ -78,22 +78,22 @@ namespace casual
                   template< typename C> 
                   auto make_shared( C&& creator)
                   {
-                     return std::make_shared< Model< C>>( std::move( creator));
+                     return std::make_shared< model< C>>( std::move( creator));
                   }
 
-                  struct Base 
+                  struct concept 
                   {
-                     virtual ~Base() = default;
+                     virtual ~concept() = default;
                      virtual serialize::Reader create( std::istream& stream) const  = 0;
                      virtual serialize::Reader create( const platform::binary::type& data) const = 0;
                   };
 
                   template< typename C> 
-                  struct Model : Base
+                  struct model : concept
                   {
                      using create_type = C;
 
-                     Model( create_type&& creator) : m_creator( std::move( creator)) {}
+                     model( create_type&& creator) : m_creator( std::move( creator)) {}
 
                      serialize::Reader create( std::istream& stream) const override 
                      { 
@@ -105,7 +105,7 @@ namespace casual
                      create_type m_creator;
                   };
 
-                  using model_holder = std::map< std::string, std::shared_ptr< const Base>>;
+                  using model_holder = std::map< std::string, std::shared_ptr< const concept>>;
 
                   model_holder m_creators;
                };
@@ -160,7 +160,7 @@ namespace casual
                };
 
                template< typename I> 
-               CASUAL_OPTION_UNUSED bool Registration< I>::m_dummy = consumed::Dispatch::instance().registration< I>( I::keys())
+               CASUAL_MAYBE_UNUSED bool Registration< I>::m_dummy = consumed::Dispatch::instance().registration< I>( I::keys())
                   && strict::Dispatch::instance().registration< I>( I::keys())
                   && relaxed::Dispatch::instance().registration< I>( I::keys());
 
@@ -320,22 +320,22 @@ namespace casual
                   template< typename C> 
                   auto make_shared( C&& creator)
                   {
-                     return std::make_shared< Model< C>>( std::move( creator));
+                     return std::make_shared< model< C>>( std::move( creator));
                   }
 
-                  struct Base 
+                  struct concept
                   {
-                     virtual ~Base() = default;
+                     virtual ~concept() = default;
                      virtual serialize::Writer create( std::ostream& stream) const  = 0;
                      virtual serialize::Writer create( platform::binary::type& data) const = 0;
                   };
 
                   template< typename C> 
-                  struct Model : Base
+                  struct model : concept
                   {
                      using create_type = C;
 
-                     Model( create_type&& creator) : m_creator( std::move( creator)) {}
+                     model( create_type&& creator) : m_creator( std::move( creator)) {}
 
                      serialize::Writer create( std::ostream& stream) const override { return m_creator( stream);}
                      serialize::Writer create( platform::binary::type& data) const override  { return m_creator( data);}
@@ -343,7 +343,7 @@ namespace casual
                   private:
                      create_type m_creator;
                   };
-                  using model_holder = std::map< std::string, std::shared_ptr< const Base>>;
+                  using model_holder = std::map< std::string, std::shared_ptr< const concept>>;
 
                   model_holder m_creators;
                };
@@ -362,7 +362,7 @@ namespace casual
                };
 
                template< typename I> 
-               CASUAL_OPTION_UNUSED bool Registration< I>::m_dummy = Dispatch::instance().registration< I>( I::keys());
+               CASUAL_MAYBE_UNUSED bool Registration< I>::m_dummy = Dispatch::instance().registration< I>( I::keys());
 
                namespace complete
                {

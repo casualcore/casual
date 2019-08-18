@@ -83,6 +83,23 @@ namespace casual
                return state;
             }
 
+
+            namespace local
+            {
+               namespace
+               {
+                  
+               } // <unnamed>
+            } // local
+
+
+            casual::configuration::domain::Manager get( const State& state)
+            {
+               Trace trace{ "domain::manager::configuration::get"};
+
+               return {};
+            }
+
          } // configuration
       } // manager
    } // domain

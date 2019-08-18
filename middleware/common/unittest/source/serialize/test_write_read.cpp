@@ -14,8 +14,8 @@
 #include "common/serialize/yaml.h"
 #include "common/serialize/xml.h"
 #include "common/serialize/ini.h"
-#include "common/serialize/binary.h"
 #include "common/serialize/line.h"
+#include "common/serialize/native/binary.h"
 
 #include "common/log.h"
 
@@ -131,10 +131,10 @@ namespace casual
             struct binary : base< platform::binary::type>
             {
                template< typename T>
-               static auto reader( T&& buffer) { return serialize::binary::reader( buffer);}
+               static auto reader( T&& buffer) { return serialize::native::binary::reader( buffer);}
 
                template< typename T>
-               static auto writer( T&& buffer) { return serialize::binary::writer( buffer);}
+               static auto writer( T&& buffer) { return serialize::native::binary::writer( buffer);}
             };
 
          } // policy

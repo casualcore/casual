@@ -425,9 +425,9 @@ namespace casual
 } // casual
 
 #if __GNUC__ > 4 || __clang_major__ > 4
-#define CASUAL_OPTION_UNUSED __attribute__((unused))
+#define CASUAL_MAYBE_UNUSED __attribute__((unused))
 #else
-#define CASUAL_OPTION_UNUSED
+#define CASUAL_MAYBE_UNUSED
 #endif
 
 

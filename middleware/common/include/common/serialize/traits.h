@@ -9,6 +9,8 @@
 #pragma once
 
 
+#include "common/serialize/archive/type.h"
+
 #include "common/traits.h"
 #include "common/platform.h"
 
@@ -24,6 +26,58 @@ namespace casual
          {
             using namespace common::traits;
 
+
+            namespace archive
+            {
+               namespace detail
+               {
+                  //template< typename A> 
+                  //constexpr auto type( priority::tag< 0>) { return serialize::archive::Type::static_order_type;}
+
+                  template< typename A> 
+                  constexpr auto type( priority::tag< 1>) -> decltype( A::archive_type) 
+                  {
+                     return A::archive_type;
+                  }
+
+               } // detail
+
+               template< typename A>
+               struct type 
+               {
+                  constexpr static auto value = detail::type< std::decay_t< A>>( priority::tag< 1>{});
+               };
+
+               namespace dynamic
+               {
+                  namespace detail
+                  {
+                     template< serialize::archive::Type>
+                     struct convert;
+
+                     template<>
+                     struct convert< serialize::archive::Type::static_need_named>
+                     {
+                        constexpr static auto value = serialize::archive::dynamic::Type::named;
+                     };
+
+                     template<>
+                     struct convert< serialize::archive::Type::static_order_type>
+                     {
+                        constexpr static auto value = serialize::archive::dynamic::Type::order_type;
+                     };
+                  } // detail
+
+                  template< typename A>
+                  struct convert 
+                  {
+                     constexpr static auto value = detail::convert< archive::type< A>::value>::value;
+                  };
+
+               } // dynamic
+               
+            } // archive
+
             namespace need
             {
                namespace detail
@@ -31,12 +85,11 @@ namespace casual
                   template< typename A>
                   using named = typename A::need_named;
                } // detail
-               
+
                template< typename A>
-               using named = detect::is_detected< detail::named, A>;
+               using named = bool_constant< archive::type< A>::value != serialize::archive::Type::static_order_type>;
 
             } // need
-
 
             namespace has
             {
