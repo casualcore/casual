@@ -105,7 +105,8 @@ namespace casual
 
             struct Transaction
             {
-               enum class State : short
+               // TODO: major-version change to short 
+               enum class State : char
                {
                   absent,
                   active = absent,
