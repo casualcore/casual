@@ -63,7 +63,8 @@ namespace casual
                template< typename P>
                struct basic_writer
                {
-                  constexpr static auto archive_type = archive::Type::static_order_type;
+                  inline constexpr static auto archive_type() { return archive::Type::static_order_type;}
+
                   using policy_type = P;
 
                   basic_writer( platform::binary::type& buffer)
@@ -147,7 +148,7 @@ namespace casual
                template< typename P>
                struct basic_reader
                {
-                  constexpr static auto archive_type = archive::Type::static_order_type;
+                  inline constexpr static auto archive_type() { return archive::Type::static_order_type;}
                   using policy_type = P;
 
                   basic_reader( const platform::binary::type& buffer, platform::size::type offset)

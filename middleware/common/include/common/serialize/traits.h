@@ -29,23 +29,11 @@ namespace casual
 
             namespace archive
             {
-               namespace detail
-               {
-                  //template< typename A> 
-                  //constexpr auto type( priority::tag< 0>) { return serialize::archive::Type::static_order_type;}
-
-                  template< typename A> 
-                  constexpr auto type( priority::tag< 1>) -> decltype( A::archive_type) 
-                  {
-                     return A::archive_type;
-                  }
-
-               } // detail
 
                template< typename A>
                struct type 
                {
-                  constexpr static auto value = detail::type< std::decay_t< A>>( priority::tag< 1>{});
+                  constexpr static auto value = std::decay_t< A>::archive_type();
                };
 
                namespace dynamic

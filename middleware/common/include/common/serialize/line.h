@@ -29,7 +29,7 @@ namespace casual
 
             struct Writer
             {
-               constexpr static auto archive_type = archive::Type::static_need_named;
+               inline constexpr static auto archive_type() { return archive::Type::static_need_named;}
 
                Writer( std::ostream& stream) : m_stream( stream) {}
 

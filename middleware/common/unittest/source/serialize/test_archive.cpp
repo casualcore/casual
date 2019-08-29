@@ -33,7 +33,7 @@ namespace casual
       common::platform::binary::type buffer;
       auto writer = common::serialize::binary::writer( buffer);
 
-      EXPECT_TRUE( writer.archive_type == common::serialize::archive::Type::dynamic_type) << "writer.archive_type: " << writer.archive_type;
+      EXPECT_TRUE( writer.archive_type() == common::serialize::archive::Type::dynamic_type) << "writer.archive_type: " << writer.archive_type();
       EXPECT_TRUE( writer.type() == common::serialize::archive::dynamic::Type::order_type) << "writer.type(): " << writer.type();
    }
 

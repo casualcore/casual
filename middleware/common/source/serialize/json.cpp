@@ -196,7 +196,7 @@ namespace casual
                      {
                      public:
 
-                        constexpr static auto archive_type = archive::Type::static_need_named;
+                        inline constexpr static auto archive_type() { return archive::Type::static_need_named;}
 
                         static auto keys() { return local::keys();}
 
@@ -362,7 +362,7 @@ namespace casual
                      {
                      public:
 
-                        constexpr static auto archive_type = archive::Type::static_need_named;
+                        inline constexpr static auto archive_type() { return archive::Type::static_need_named;}
 
                         static auto keys() { return local::keys();}
                         

@@ -28,7 +28,7 @@ namespace casual
          {
          public:
 
-            constexpr static auto archive_type = archive::Type::dynamic_type;
+            inline constexpr static auto archive_type() { return archive::Type::dynamic_type;}
 
             ~Reader();
 
@@ -168,7 +168,7 @@ namespace casual
          {
          public:
 
-            constexpr static auto archive_type = archive::Type::dynamic_type;
+            inline constexpr static auto archive_type() { return archive::Type::dynamic_type;}
 
             ~Writer();
 

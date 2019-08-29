@@ -55,11 +55,11 @@ namespace casual
                {
                   struct Named
                   {
-                     constexpr static auto archive_type = serialize::archive::Type::static_need_named;
+                     inline constexpr static auto archive_type() { return serialize::archive::Type::static_need_named;}
                   };
                   struct Order
                   {
-                     constexpr static auto archive_type = serialize::archive::Type::static_order_type;
+                     inline constexpr static auto archive_type() { return serialize::archive::Type::static_order_type;}
                   };
                } // archive
                
