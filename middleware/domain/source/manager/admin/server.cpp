@@ -252,6 +252,21 @@ namespace casual
                                  state);
                            };
                         }
+
+                        auto put( manager::State& state)
+                        {
+                           return [&state]( common::service::invoke::Parameter&& parameter)
+                           {
+                              auto protocol = serviceframework::service::protocol::deduce( std::move( parameter));
+
+                              casual::configuration::domain::Manager domain;
+                              protocol >> CASUAL_NAMED_VALUE( domain);
+
+                              return serviceframework::service::user( 
+                                 std::move( protocol),
+                                 [&](){ return casual::domain::manager::configuration::put( state, std::move( domain));});
+                           };
+                        }
                      } // configuration
 
                   } // service
@@ -288,6 +303,11 @@ namespace casual
                      },
                      { service::name::configuration::get,
                            local::service::configuration::get( state),
+                           common::service::transaction::Type::none,
+                           common::service::category::admin()
+                     },
+                     { service::name::configuration::put,
+                           local::service::configuration::put( state),
                            common::service::transaction::Type::none,
                            common::service::category::admin()
                      },

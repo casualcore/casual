@@ -45,6 +45,7 @@ namespace casual
                      constexpr auto persist = ".casual/domain/configuration/persist";
 
                      constexpr auto get = ".casual/domain/configuration/get";
+                     constexpr auto put = ".casual/domain/configuration/put";
 
                   } // configuration
 

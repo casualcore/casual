@@ -361,10 +361,25 @@ namespace casual
                         }();
                         
 
-                        casual::configuration::domain::Manager serviceReply;
-                        reply >> CASUAL_NAMED_VALUE( serviceReply);
-                        common::log::line( casual::domain::log, "serviceReply: ", serviceReply);
-                        return serviceReply;
+                        casual::configuration::domain::Manager casual_service_reply;
+                        reply >> CASUAL_NAMED_VALUE( casual_service_reply);
+                        common::log::line( casual::domain::log, "casual_service_reply: ", casual_service_reply);
+                        return casual_service_reply;
+                     }
+
+                     auto put( const casual::configuration::domain::Manager& domain)
+                     {
+                        auto reply = [&]()
+                        {
+                           serviceframework::service::protocol::binary::Call call;
+                           call << CASUAL_NAMED_VALUE( domain);
+                           return call( admin::service::name::configuration::put);
+                        }();
+                        
+                        std::vector< manager::admin::vo::Task> casual_service_reply;
+                        reply >> CASUAL_NAMED_VALUE( casual_service_reply);
+                        common::log::line( casual::domain::log, "casual_service_reply: ", casual_service_reply);
+                        return casual_service_reply;
                      }
                   } // configuration
                } // call
@@ -417,10 +432,18 @@ namespace casual
 
                      auto formatter = format::process< VO>();
 
-                     formatter.print( std::cout, algorithm::sort( processes));
+                     formatter.print( std::cout, processes);
                   }
 
                } // print
+
+               namespace predicate
+               {
+                  namespace less
+                  {
+                     auto alias = []( auto& l, auto& r){ return l.alias < r.alias;};
+                  } // equal
+               } // predicate
 
                namespace action
                {
@@ -452,14 +475,14 @@ namespace casual
                   {
                      auto state = call::state();
 
-                     print::processes( std::cout, state.executables);
+                     print::processes( std::cout, algorithm::sort( state.executables, predicate::less::alias));
                   }
 
                   void list_servers()
                   {
                      auto state = call::state();
 
-                     print::processes( std::cout, state.servers);
+                     print::processes( std::cout, algorithm::sort( state.servers, predicate::less::alias));
                   }
 
                   /*
@@ -471,30 +494,37 @@ namespace casual
                   }
                   */
 
-
-                  void scale_instances( const std::vector< std::tuple< std::string, int>>& values)
-                  {   
-                     auto transform = []( auto& value){
-                        admin::vo::scale::Instances result;
-                        result.alias = std::get< 0>( value);
-                        result.instances = std::get< 1>( value);
-                        return result;
-                     };
-
-                     call::scale_instances( common::algorithm::transform( values, transform));
-                  }
-                
-
-                  auto scale_instances_completion = []( auto values, bool help) -> std::vector< std::string>
+                  namespace scale
                   {
-                     if( help)
-                        return { "<alias> <#>"};
+                     namespace instances
+                     {
+                        void call( const std::vector< std::tuple< std::string, int>>& values)
+                        {   
+                           auto transform = []( auto& value){
+                              admin::vo::scale::Instances result;
+                              result.alias = std::get< 0>( value);
+                              result.instances = std::get< 1>( value);
+                              return result;
+                           };
+
+                           call::scale_instances( common::algorithm::transform( values, transform));
+                        }
                      
-                     if( values.size() % 2 == 0)
-                        return fetch_aliases();
-                     else
-                        return { "<value>"};
-                  };
+
+                        auto completion = []( auto values, bool help) -> std::vector< std::string>
+                        {
+                           if( help)
+                              return { "<alias> <#>"};
+                           
+                           if( values.size() % 2 == 0)
+                              return fetch_aliases();
+                           else
+                              return { "<value>"};
+                        };
+                     } // instances
+                  } // scale
+
+
 
                   namespace restart
                   {
@@ -629,6 +659,28 @@ for all servers and executables
                         archive << CASUAL_NAMED_VALUE( domain);
                      }
 
+                     namespace put
+                     {
+                        void call( const std::string& format)
+                        {
+                           casual::configuration::domain::Manager domain;
+                           auto archive = common::serialize::create::reader::consumed::from( format, std::cin);
+                           archive >> CASUAL_NAMED_VALUE( domain);
+
+                           auto tasks = call::configuration::put( domain); 
+                           common::log::line( casual::domain::log, "tasks: ", tasks);
+                        }
+
+                        constexpr auto description = R"(reads configuration from stdin and update the domain
+
+The semantics are similar to http PUT:
+ * every key that is found is treated as an update of that _entity_
+ * every key that is NOT found is treated as a new _entity_ and added to the current state 
+)";    
+                     } // put
+
+
+
                   } // configuration
 
 
@@ -650,20 +702,22 @@ for all servers and executables
             {
                argument::Group options()
                {
-                  auto complete_format = serialize::create::writer::complete::format();
+                  auto state_format = serialize::create::writer::complete::format();
+                  auto configuration_format = serialize::create::reader::complete::format();
 
                   return argument::Group{ [](){}, { "domain"}, "local casual domain related administration",
                      argument::Option( &local::action::list_servers, { "-ls", "--list-servers"}, "list all servers"),
                      argument::Option( &local::action::list_executable, { "-le", "--list-executables"}, "list all executables"),
                      argument::Option( &local::action::list_instances, { "-li", "--list-instances"}, "list all instances"),
-                     argument::Option( argument::option::one::many( &local::action::scale_instances), local::action::scale_instances_completion, { "-si", "--scale-instances"}, "<alias> <#> scale executable instances"),
+                     argument::Option( argument::option::one::many( &local::action::scale::instances::call), local::action::scale::instances::completion, { "-si", "--scale-instances"}, "<alias> <#> scale executable instances"),
                      argument::Option( argument::option::one::many( &local::action::restart::instances), local::action::restart::completion, { "-ri", "--restart-instances"}, "<alias> restart instances for the given aliases"),
                      argument::Option( &local::action::shutdown, { "-s", "--shutdown"}, "shutdown the domain"),
                      argument::Option( &local::action::boot, { "-b", "--boot"}, "boot domain -"),
                      argument::Option( &local::action::environment::set::call, local::action::environment::set::complete, { "--set-environment"}, local::action::environment::set::description)( argument::cardinality::any{}),
                      argument::Option( &local::action::configuration::persist, { "-p", "--persist-state"}, "persist current state"),
-                     argument::Option( &local::action::configuration::get, complete_format, { "--configuration-get"}, "get configuration (as provided format)"),
-                     argument::Option( &local::action::state, complete_format, { "--state"}, "domain state (as provided format)")
+                     argument::Option( &local::action::configuration::get, configuration_format, { "--configuration-get"}, "get configuration (as provided format)"),
+                     argument::Option( &local::action::configuration::put::call, configuration_format, { "--configuration-put"}, local::action::configuration::put::description),
+                     argument::Option( &local::action::state, state_format, { "--state"}, "domain state (as provided format)")
                   };
                }
             };

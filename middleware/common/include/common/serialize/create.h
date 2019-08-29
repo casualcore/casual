@@ -72,6 +72,11 @@ namespace casual
                   serialize::Reader create( const std::string& key, std::istream& input) { return detail::create( key, m_creators, input);}
                   serialize::Reader create( const std::string& key, const platform::binary::type& input) { return detail::create( key, m_creators, input);}
 
+                  std::vector< std::string> keys() const
+                  {
+                     return algorithm::transform( m_creators, []( auto& tuple){ return std::get< 0>( tuple);});
+                  }
+
                private:
                   basic_dispatch() = default;
 
@@ -164,6 +169,17 @@ namespace casual
                   && strict::Dispatch::instance().registration< I>( I::keys())
                   && relaxed::Dispatch::instance().registration< I>( I::keys());
 
+
+               namespace complete
+               {
+                  inline auto format() 
+                  {
+                     return []( auto values, bool)
+                     {
+                        return relaxed::Dispatch::instance().keys();
+                     };
+                  }
+               } // complete
 
             } // reader
 

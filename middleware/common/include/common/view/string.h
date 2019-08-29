@@ -54,6 +54,9 @@ namespace casual
 
             inline String( const std::string& other) noexcept : String( other.data(), other.size()) {}
             //String( std::string&&) noexcept = delete;
+            
+            //! @return concrete std::string
+            inline std::string value() const { return { begin(), end()};}
 
             inline friend bool operator == ( const String& lhs, const String& rhs) 
             {
@@ -66,6 +69,6 @@ namespace casual
             }
          };
 
-      } // string
+      } // view
    } // common
 } // casual

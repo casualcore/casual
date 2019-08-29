@@ -292,6 +292,8 @@ namespace casual
 
                void log( std::ostream& out, const State& state) const;
 
+               inline bool empty() const { return executables.empty() && servers.empty();}
+
                CASUAL_CONST_CORRECT_SERIALIZE_WRITE({
                   CASUAL_SERIALIZE( executables);
                   CASUAL_SERIALIZE( servers);

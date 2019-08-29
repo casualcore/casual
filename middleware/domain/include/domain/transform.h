@@ -27,6 +27,9 @@ namespace casual
             std::vector< common::environment::Variable> variables( const casual::configuration::Environment& environment);
          } // environment
 
+         std::vector< manager::state::Executable> executables( const std::vector< casual::configuration::Executable>& values, const std::vector< manager::state::Group>& groups);
+         std::vector< manager::state::Server> executables( const std::vector< casual::configuration::Server>& values, const std::vector< manager::state::Group>& groups);
+
       } // transform
    } // domain
 } // casual
