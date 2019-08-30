@@ -245,6 +245,8 @@ namespace casual
 
                      struct Implementation
                      {
+                        inline constexpr static auto archive_type() { return archive::Type::static_need_named;}
+
                         static auto keys() { return local::keys();}
 
 
@@ -480,6 +482,8 @@ namespace casual
                      class Implementation
                      {
                      public:
+
+                        inline constexpr static auto archive_type() { return archive::Type::static_need_named;}
 
                         static auto keys() { return local::keys();}
 

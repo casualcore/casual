@@ -6,6 +6,7 @@
 
 
 #include "domain/transform.h"
+#include "domain/manager/task.h"
 
 #include "configuration/domain.h"
 #include "configuration/message/transform.h"
@@ -127,61 +128,65 @@ namespace casual
 
                };
 
-
-               struct Executable
+               namespace transform
                {
-
-                  manager::state::Executable operator() ( const configuration::Executable& value, const std::vector< manager::state::Group>& groups)
+                  namespace detail
                   {
-                     return transform< manager::state::Executable>( value, groups);
-                  }
+                     template< typename R, typename C>
+                     R transform( const C& value, const std::vector< manager::state::Group>& groups)
+                     {
+                        R result;
 
-                  manager::state::Server operator() ( const configuration::Server& value, const std::vector< manager::state::Group>& groups)
+                        result.alias = value.alias.value_or( "");
+                        result.arguments = value.arguments.value_or( result.arguments);
+                        result.instances.resize( value.instances.value_or( 0));
+                        result.note = value.note.value_or( "");
+                        result.path = value.path;
+                        result.restart = value.restart.value_or( false);
+
+                        if( value.environment)
+                           result.environment.variables = casual::domain::transform::environment::variables( value.environment.value());
+
+                        if( value.memberships)
+                           result.memberships = local::membership( value.memberships.value(), groups);
+
+                        // If empty, we make it member of '.global'
+                        if( result.memberships.empty())
+                           result.memberships = local::membership( { ".global"}, groups);
+
+
+                        return result;
+                     }
+
+                     manager::state::Executable executable( const configuration::Executable& value, const std::vector< manager::state::Group>& groups)
+                     {
+                        return transform< manager::state::Executable>( value, groups);
+                     }
+
+                     manager::state::Server executable( const configuration::Server& value, const std::vector< manager::state::Group>& groups)
+                     {
+                        auto result = transform< manager::state::Server>( value, groups);
+
+                        if( value.resources)
+                           result.resources = value.resources.value();
+
+                        if( value.restrictions)
+                           result.restrictions = value.restrictions.value();
+
+                        return result;
+                     }
+                     
+                  } // detail
+
+                  auto executable( const std::vector< manager::state::Group>& groups)
                   {
-                     auto result = transform< manager::state::Server>( value, groups);
-
-                     if( value.resources)
-                        result.resources = value.resources.value();
-
-                     if( value.restrictions)
-                        result.restrictions = value.restrictions.value();
-
-                     return result;
+                     return [&groups]( auto& value)
+                     {
+                        return detail::executable( value, groups);
+                     };
                   }
+               } // transform
 
-               private:
-                  template< typename R, typename C>
-                  R transform( const C& value, const std::vector< manager::state::Group>& groups)
-                  {
-                     R result;
-
-                     result.alias = value.alias.value_or( "");
-                     result.arguments = value.arguments.value_or( result.arguments);
-                     result.instances.resize( value.instances.value_or( 0));
-                     result.note = value.note.value_or( "");
-                     result.path = value.path;
-                     result.restart = value.restart.value_or( false);
-
-                     if( value.environment)
-                        result.environment.variables = transform::environment::variables( value.environment.value());
-
-                     if( value.memberships)
-                        result.memberships = local::membership( value.memberships.value(), groups);
-
-                     // If empty, we make it member of '.global'
-                     if( result.memberships.empty())
-                        result.memberships = local::membership( { ".global"}, groups);
-
-
-                     return result;
-                  }
-               };
-
-               template< typename C>
-               auto executables( C&& values, const std::vector< manager::state::Group>& groups)
-               {
-                  return algorithm::transform( values, std::bind( Executable{}, std::placeholders::_1, std::ref( groups)));
-               }
 
                namespace vo
                {
@@ -289,10 +294,40 @@ namespace casual
                      }
 
                   };
+
+                  auto tasks( const manager::task::Queue& tasks)
+                  {
+                     manager::admin::vo::State::Tasks result;
+
+                     auto transform_task = []( auto& task)
+                     {
+                        manager::admin::vo::Task result;
+                        result.id = task.id();
+                        result.description = task.description();
+                        return result;
+                     };
+
+                     result.running = algorithm::transform( tasks.running(), transform_task);
+                     result.pending = algorithm::transform( tasks.pending(), transform_task);
+                     
+                     return result;
+                  }
+
                } // vo
 
             } // <unnamed>
          } // local
+
+         std::vector< manager::state::Executable> executables( const std::vector< casual::configuration::Executable>& values, const std::vector< manager::state::Group>& groups)
+         {
+            return algorithm::transform( values, local::transform::executable( groups));
+         }
+
+         std::vector< manager::state::Server> executables( const std::vector< casual::configuration::Server>& values, const std::vector< manager::state::Group>& groups)
+         {
+            return algorithm::transform( values, local::transform::executable( groups));
+         }
+
 
          manager::admin::vo::State state( const manager::State& state)
          {
@@ -301,6 +336,8 @@ namespace casual
             result.groups = algorithm::transform( state.groups, local::vo::Group{});
             result.servers = algorithm::transform( state.servers, local::vo::Executable{});
             result.executables = algorithm::transform( state.executables, local::vo::Executable{});
+            //result.event = local::vo::event( state.event);
+            result.tasks = local::vo::tasks( state.tasks);
 
             return result;
          }
@@ -390,8 +427,8 @@ namespace casual
                   result.servers.push_back( std::move( manager));
                }
 
-               algorithm::append( local::executables( domain.servers, result.groups), result.servers);
-               algorithm::append( local::executables( domain.executables, result.groups), result.executables);
+               algorithm::append( transform::executables( domain.servers, result.groups), result.servers);
+               algorithm::append( transform::executables( domain.executables, result.groups), result.executables);
 
                local::verify::Alias verify;
 
@@ -411,6 +448,8 @@ namespace casual
             }
 
          } // environment
+         
+
 
       } // transform
    } // domain

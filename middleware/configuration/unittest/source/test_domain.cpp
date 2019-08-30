@@ -16,12 +16,38 @@
 
 #include "common/serialize/line.h"
 #include "common/serialize/create.h"
+#include "common/serialize/native/binary.h"
 
 
 namespace casual
 {
    namespace configuration
    {
+
+
+      TEST( configuration_domain, domain_binary_serialize)
+      {
+         common::unittest::Trace trace;
+
+         auto buffer = []()
+         {
+            common::platform::binary::type buffer;
+            auto archive = common::serialize::native::binary::writer( buffer);
+            domain::Manager domain;
+            archive << CASUAL_NAMED_VALUE( domain);
+            return buffer;
+         }();
+
+         
+         EXPECT_NO_THROW({
+            auto archive = common::serialize::native::binary::reader( buffer);
+            domain::Manager domain;
+            archive >> CASUAL_NAMED_VALUE( domain);
+         });
+      }
+
+
+
       class configuration_domain : public ::testing::TestWithParam< const char*>
       {
       };
@@ -30,6 +56,26 @@ namespace casual
       INSTANTIATE_TEST_CASE_P( protocol,
             configuration_domain,
          ::testing::Values(".yaml", ".json", ".xml", ".ini"));
+
+      TEST_P( configuration_domain, domain_default_ctor_serialize)
+      {
+         common::unittest::Trace trace;
+         
+         // remove '.'
+         auto param = GetParam() + 1;
+
+         domain::Manager domain;
+         std::stringstream buffer;
+         {
+            auto output = common::serialize::create::writer::from( param, buffer);
+            output << CASUAL_NAMED_VALUE( domain);
+         }
+         
+         EXPECT_NO_THROW({
+            auto input = common::serialize::create::reader::relaxed::from( param, buffer);
+            input >> CASUAL_NAMED_VALUE( domain);
+         });
+      }
 
       TEST_P( configuration_domain, domain)
       {

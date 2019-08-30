@@ -22,16 +22,8 @@ namespace casual
 
    namespace domain
    {
-
       namespace manager
       {
-         Task::~Task() = default;
-
-         std::vector< task::event::Callback> Task::operator() ( State& state)
-         {
-            return m_concept->start( state, id());
-         }
-
          namespace task
          {
             namespace event
@@ -65,6 +57,25 @@ namespace casual
             } // event
 
 
+            namespace local
+            {
+               namespace
+               {
+                  namespace property
+                  {
+                     auto sequential() 
+                     {
+                        return []( const Task& task)
+                        {
+                           return task.property().execution == Task::Property::Execution::sequential;
+                        };
+                     }
+
+                  } // property
+               } // <unnamed>
+            } // local
+
+
             void done( const State& state, task::id::type id)
             {
                Trace trace{ "domain::manager::task::done"};
@@ -85,26 +96,59 @@ namespace casual
                ipc::push( event);
             }
 
-            task::id::type Queue::concurrent( State& state, Task&& task)
-            {
-               Trace trace{ "domain::manager::task::Queue::concurrent"};
-               log::line( verbose::log, "task: ", task);
+         } // task
 
-               return start( state, std::move( task));
+         std::ostream& operator << ( std::ostream& out, Task::Property::Execution value)
+         {
+            using Enum = Task::Property::Execution;
+            switch( value)
+            {
+               case Enum::concurrent: return out << "concurrent";
+               case Enum::sequential: return out << "sequential";
             }
-
-            task::id::type Queue::sequential( State& state, Task&& task)
+            return out << "<unknown>";
+         }
+         
+         std::ostream& operator << ( std::ostream& out, Task::Property::Completion value)
+         {
+            using Enum = Task::Property::Completion;
+            switch( value)
             {
-               Trace trace{ "domain::manager::task::Queue::sequential"};
+               case Enum::abortable: return out << "abortable";
+               case Enum::mandatory: return out << "mandatory";
+            }
+            return out << "<unknown>";
+         }
 
+         std::ostream& operator << ( std::ostream& out, Task::Property value)
+         {
+            return out << "{ execution: " << value.execution
+               << ", completion: " << value.completion
+               << '}';
+         }
+
+         namespace task 
+         {
+            task::id::type Queue::add( State& state, Task&& task)
+            {
+               Trace trace{ "domain::manager::task::Queue::add"};
                log::line( verbose::log, "task: ", task);
 
-               // if no running, we start this one directly
-               if( m_running.empty())
+               auto sequential = local::property::sequential();
+
+               if( ! sequential( task) || algorithm::none_of( m_running, sequential))
                   return start( state, std::move( task));
-               
+
                m_pending.push_back( std::move( task));
                return m_pending.back().id();
+            }
+
+            std::vector< task::id::type> Queue::add( State& state, std::vector< Task>&& tasks)
+            {
+               return algorithm::transform( tasks, [&]( auto& task)
+               {
+                  return add( state, std::move( task));
+               });
             }
 
             void Queue::event( State& state, const common::message::event::domain::task::End& event)
@@ -132,7 +176,7 @@ namespace casual
 
                auto is_mandatory = []( auto& task)
                {
-                  return task.type() == Task::Type::mandatory;
+                  return task.property().completion == Task::Property::Completion::mandatory;
                };
 
                // take care of pending

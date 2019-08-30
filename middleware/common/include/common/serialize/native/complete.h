@@ -19,8 +19,8 @@ namespace casual
       {
          namespace native
          {
-            template< typename M, typename C = binary::create::Output>
-            communication::message::Complete complete( M&& message, C creator = binary::create::Output{})
+            template< typename M, typename C = binary::create::Writer>
+            communication::message::Complete complete( M&& message, C creator = binary::create::Writer{})
             {
                if( ! message.execution)
                {
@@ -36,8 +36,8 @@ namespace casual
                return complete;
             }
 
-            template< typename M, typename C = binary::create::Input>
-            void complete( communication::message::Complete& complete, M& message, C creator = binary::create::Input{})
+            template< typename M, typename C = binary::create::Reader>
+            void complete( communication::message::Complete& complete, M& message, C creator = binary::create::Reader{})
             {
                using casual::common::message::type;
                assert( complete.type == type( message));
@@ -61,7 +61,7 @@ namespace casual
 
                message.correlation = complete.correlation;
 
-               serialize::native::binary::Input archive{ complete.payload};
+               auto archive = serialize::native::binary::reader( complete.payload);
                archive >> message;
 
                return complete;

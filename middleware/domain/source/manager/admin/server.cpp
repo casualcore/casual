@@ -8,6 +8,7 @@
 #include "domain/manager/admin/vo.h"
 #include "domain/manager/handle.h"
 #include "domain/manager/persistent.h"
+#include "domain/manager/configuration.h"
 #include "domain/transform.h"
 
 
@@ -161,23 +162,28 @@ namespace casual
 
                   namespace service
                   {
-                     common::service::invoke::Result state( common::service::invoke::Parameter&& parameter, manager::State& state)
+                     auto state( const manager::State& state)
                      {
-                        return serviceframework::service::user( 
-                           serviceframework::service::protocol::deduce( std::move( parameter)), 
-                           []( auto& state){ return casual::domain::transform::state( state);}, 
-                           state);
+                        return [&state]( common::service::invoke::Parameter&& parameter)
+                        {
+                           return serviceframework::service::user( 
+                              serviceframework::service::protocol::deduce( std::move( parameter)), 
+                              []( auto& state){ return casual::domain::transform::state( state);}, 
+                              state);
+                        };
                      }
 
-
-                     common::service::invoke::Result scale( common::service::invoke::Parameter&& parameter, manager::State& state)
+                     auto scale( manager::State& state)
                      {
-                        auto protocol = serviceframework::service::protocol::deduce( std::move( parameter));
+                        return [&state]( common::service::invoke::Parameter&& parameter)
+                        {
+                           auto protocol = serviceframework::service::protocol::deduce( std::move( parameter));
 
-                        std::vector< vo::scale::Instances> instances;
-                        protocol >> CASUAL_NAMED_VALUE( instances);
+                           std::vector< vo::scale::Instances> instances;
+                           protocol >> CASUAL_NAMED_VALUE( instances);
 
-                        return serviceframework::service::user( std::move( protocol), &scale::instances, state, std::move( instances));
+                           return serviceframework::service::user( std::move( protocol), &scale::instances, state, std::move( instances));
+                        };
                      }
 
                      auto restart( manager::State& state)
@@ -193,39 +199,75 @@ namespace casual
                         };
                      }
 
-
-                     common::service::invoke::Result shutdown( common::service::invoke::Parameter&& parameter, manager::State& state)
+                     auto shutdown( manager::State& state)
                      {
-                        return serviceframework::service::user( 
-                           serviceframework::service::protocol::deduce( std::move( parameter)), 
-                           &handle::shutdown, state);
-                     }
-
-                     common::service::invoke::Result persist( common::service::invoke::Parameter&& parameter, manager::State& state)
-                     {
-                        return serviceframework::service::user( 
-                           serviceframework::service::protocol::deduce( std::move( parameter)),
-                           []( auto& state){ return persistent::state::save( state);},
-                           state);
-                     }
-
-                     namespace set
-                     {
-                        common::service::invoke::Result environment( common::service::invoke::Parameter&& parameter, manager::State& state)
+                        return [&state]( common::service::invoke::Parameter&& parameter)
                         {
-                           auto protocol = serviceframework::service::protocol::deduce( std::move( parameter));
+                           return serviceframework::service::user( 
+                              serviceframework::service::protocol::deduce( std::move( parameter)), 
+                              &handle::shutdown, state);
+                        };
+                     }
 
-                           vo::set::Environment environment;
-                           protocol >> CASUAL_NAMED_VALUE( environment);
+                     namespace environment
+                     {
+                        auto set( manager::State& state)
+                        {
+                           return [&state]( common::service::invoke::Parameter&& parameter)
+                           {
+                              auto protocol = serviceframework::service::protocol::deduce( std::move( parameter));
 
-                           return serviceframework::service::user(
-                              std::move( protocol),
-                              &local::set::environment,
-                              state, 
-                              environment);
+                              vo::set::Environment environment;
+                              protocol >> CASUAL_NAMED_VALUE( environment);
+
+                              return serviceframework::service::user(
+                                 std::move( protocol),
+                                 &local::set::environment,
+                                 state, 
+                                 environment);
+                           };
                         }
-                     } // set
+                     } // environment
 
+                     namespace configuration
+                     {
+                        auto persist( const manager::State& state)
+                        {
+                           return [&state]( common::service::invoke::Parameter&& parameter)
+                           {
+                              return serviceframework::service::user( 
+                                 serviceframework::service::protocol::deduce( std::move( parameter)),
+                                 []( auto& state){ return persistent::state::save( state);},
+                                 state);
+                           };
+                        }
+
+                        auto get( const manager::State& state)
+                        {
+                           return [&state]( common::service::invoke::Parameter&& parameter)
+                           {
+                              return serviceframework::service::user( 
+                                 serviceframework::service::protocol::deduce( std::move( parameter)),
+                                 []( auto& state){ return casual::domain::manager::configuration::get( state);},
+                                 state);
+                           };
+                        }
+
+                        auto put( manager::State& state)
+                        {
+                           return [&state]( common::service::invoke::Parameter&& parameter)
+                           {
+                              auto protocol = serviceframework::service::protocol::deduce( std::move( parameter));
+
+                              casual::configuration::domain::Manager domain;
+                              protocol >> CASUAL_NAMED_VALUE( domain);
+
+                              return serviceframework::service::user( 
+                                 std::move( protocol),
+                                 [&](){ return casual::domain::manager::configuration::put( state, std::move( domain));});
+                           };
+                        }
+                     } // configuration
 
                   } // service
                } // <unnamed>
@@ -235,12 +277,12 @@ namespace casual
             {
                return { {
                      { service::name::state,
-                        std::bind( &local::service::state, std::placeholders::_1, std::ref( state)),
+                        local::service::state( state),
                         common::service::transaction::Type::none,
                         common::service::category::admin()
                      },
                      { service::name::scale::instances,
-                           std::bind( &local::service::scale, std::placeholders::_1, std::ref( state)),
+                           local::service::scale( state),
                            common::service::transaction::Type::none,
                            common::service::category::admin()
                      },
@@ -250,17 +292,27 @@ namespace casual
                            common::service::category::admin()
                      },
                      { service::name::shutdown,
-                           std::bind( &local::service::shutdown, std::placeholders::_1, std::ref( state)),
+                           local::service::shutdown( state),
                            common::service::transaction::Type::none,
                            common::service::category::admin()
                      },
                      { service::name::configuration::persist,
-                           std::bind( &local::service::persist, std::placeholders::_1, std::ref( state)),
+                           local::service::configuration::persist( state),
                            common::service::transaction::Type::none,
                            common::service::category::admin()
                      },
-                     { service::name::set::environment,
-                           std::bind( &local::service::set::environment, std::placeholders::_1, std::ref( state)),
+                     { service::name::configuration::get,
+                           local::service::configuration::get( state),
+                           common::service::transaction::Type::none,
+                           common::service::category::admin()
+                     },
+                     { service::name::configuration::put,
+                           local::service::configuration::put( state),
+                           common::service::transaction::Type::none,
+                           common::service::category::admin()
+                     },
+                     { service::name::environment::set,
+                           local::service::environment::set( state),
                            common::service::transaction::Type::none,
                            common::service::category::admin()
                      }

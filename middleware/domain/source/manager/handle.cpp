@@ -229,12 +229,10 @@ namespace casual
                   return event;
                });
 
-               algorithm::for_each( state.bootorder(), [&]( state::Batch& batch){
-                     state.tasks.sequential( state, manager::task::create::batch::boot( std::move( batch)));
-                  });
+               state.tasks.add( state, manager::task::create::batch::boot( state.bootorder()));
 
                // add a "sentinel" to fire an event when the boot is done
-               state.tasks.sequential( state, manager::task::create::done::boot());
+               state.tasks.add( state, manager::task::create::done::boot());
             }
 
             void shutdown( State& state)
@@ -265,12 +263,10 @@ namespace casual
                   }
                });
 
-               algorithm::for_each( state.shutdownorder(), [&]( state::Batch& batch){
-                     state.tasks.sequential( state, manager::task::create::batch::shutdown( std::move( batch)));
-                  });
+               state.tasks.add( state, manager::task::create::batch::shutdown( state.shutdownorder()));
 
                // add a "sentinel" to fire an event when the shutdown is done
-               state.tasks.sequential( state, manager::task::create::done::shutdown());
+               state.tasks.add( state, manager::task::create::done::shutdown());
             }
 
 
@@ -293,7 +289,7 @@ namespace casual
                
                log::line( verbose::log, "message: ", message);
 
-               state().tasks.sequential( state(), manager::task::create::shutdown());
+               state().tasks.add( state(), manager::task::create::shutdown());
             }
 
             namespace task
@@ -425,7 +421,7 @@ namespace casual
                      {
                         Result result;
                         result.pids = algorithm::transform( entity->instances, []( auto& i){ return common::process::id( i.handle);});
-                        result.task = state.tasks.concurrent( state, callable( state, entity->id));
+                        result.task = state.tasks.add( state, callable( state, entity->id));
                         result.alias = entity->alias;
                         return result;
                      };

@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include "common/serialize/archive/type.h"
 #include "common/serialize/named/value.h"
 #include "common/serialize/traits.h"
 #include "common/serialize/value.h"
@@ -27,7 +28,7 @@ namespace casual
          {
          public:
 
-            using need_named = void;
+            inline constexpr static auto archive_type() { return archive::Type::dynamic_type;}
 
             ~Reader();
 
@@ -62,6 +63,8 @@ namespace casual
             //! Validates the 'consumed' archive, if the implementation has a validate member function.
             //! It throws if there are information in the source that is not consumed by the object-model
             inline void validate() { m_protocol->validate();}
+
+            inline auto type() const { return m_type;};
 
          private:
 
@@ -136,11 +139,15 @@ namespace casual
                protocol_type m_protocol;
             };
 
-            Reader( std::unique_ptr< concept>&& base) : m_protocol( std::move( base)) {}
-
+            template< typename Protocol>
+            Reader( std::unique_ptr< model< Protocol>>&& model)
+               : m_protocol( std::move( model)), m_type{ traits::archive::dynamic::convert< Protocol>::value} {}
+            
             std::unique_ptr< concept> m_protocol;
-
+            archive::dynamic::Type m_type;
          };
+
+         static_assert( traits::archive::type< Reader>::value == archive::Type::dynamic_type, "");
 
          //! Reader interface
          template< typename V>
@@ -161,7 +168,7 @@ namespace casual
          {
          public:
 
-            using need_named = void;
+            inline constexpr static auto archive_type() { return archive::Type::dynamic_type;}
 
             ~Writer();
 
@@ -195,6 +202,8 @@ namespace casual
 
             //! Flushes the archive, if the implementation has a flush member function.
             inline void flush() { m_protocol->flush();}
+
+            inline auto type() const { return m_type;};
 
          private:
 
@@ -262,11 +271,16 @@ namespace casual
                protocol_type m_protocol;
             };
 
-            Writer( std::unique_ptr< concept>&& base) : m_protocol( std::move( base)) {}
+
+            template< typename Protocol>
+            Writer( std::unique_ptr< model< Protocol>>&& model) 
+               : m_protocol( std::move( model)), m_type{ traits::archive::dynamic::convert< Protocol>::value} {}
 
             std::unique_ptr< concept> m_protocol;
-
+            archive::dynamic::Type m_type;
          };
+
+         static_assert( traits::archive::type< Writer>::value == archive::Type::dynamic_type, "");
 
 
          template< typename V>

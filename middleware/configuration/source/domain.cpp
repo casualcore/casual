@@ -26,6 +26,7 @@ namespace casual
    {
       namespace domain
       {
+         inline namespace v1 {
 
          namespace local
          {
@@ -215,6 +216,8 @@ namespace casual
             return domain;
 
          }
+         
+      } // v1
       } // domain
 
    } // configuration

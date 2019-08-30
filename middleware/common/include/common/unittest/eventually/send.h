@@ -19,8 +19,8 @@ namespace casual
          {
             Uuid send( strong::ipc::id destination, communication::message::Complete&& complete);
 
-            template< typename M, typename C = serialize::native::binary::create::Output>
-            Uuid send( strong::ipc::id destination, M&& message, C creator = serialize::native::binary::create::Output{})
+            template< typename M, typename C = serialize::native::binary::create::Writer>
+            Uuid send( strong::ipc::id destination, M&& message, C creator = serialize::native::binary::create::Writer{})
             {
                return send( destination, serialize::native::complete( std::forward< M>( message), creator));
             }

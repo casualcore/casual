@@ -9,6 +9,7 @@
 
 #include "common/platform.h"
 #include "common/transcode.h"
+#include "common/log.h"
 
 #include <ostream>
 #include <iomanip>
@@ -21,7 +22,6 @@ namespace casual
       {
          namespace line
          {
-
 
             std::ostream& Writer::maybe_name( std::ostream& stream, const char* name)
             {

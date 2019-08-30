@@ -15,6 +15,7 @@ IncludePaths( [
 LibraryPaths( 
     [
         '../common/bin',
+        '../configuration/bin',
         '../domain/bin',
         '../service/bin',
         '../queue/bin',

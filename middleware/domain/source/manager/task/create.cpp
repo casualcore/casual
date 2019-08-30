@@ -90,9 +90,12 @@ namespace casual
                            });
                      };
 
-                     // this task is abortable
-                     return manager::Task{ string::compose( "restart server: ", server.alias), Task::Type::abortable, std::move( task)};
-
+                     // this task is concurrent-abortable
+                     return manager::Task{ string::compose( "restart server: ", server.alias), std::move( task), 
+                        {
+                           Task::Property::Execution::concurrent,
+                           Task::Property::Completion::abortable
+                        }};
                   }
 
                   manager::Task executable( State& state, state::Executable::id_type id)
@@ -155,8 +158,12 @@ namespace casual
                            });
                      };
 
-                     // this task is abortable
-                     return manager::Task{ string::compose( "restart executable: ", executable.alias), Task::Type::abortable, std::move( task)};
+                     // this task is concurrent-abortable
+                     return manager::Task{ string::compose( "restart executable: ", executable.alias), std::move( task),
+                        {
+                           Task::Property::Execution::concurrent,
+                           Task::Property::Completion::abortable
+                        }};
                   }
                } // restart
 
@@ -254,8 +261,17 @@ namespace casual
                         );
                      };
 
-                     // this task can not be aborted
-                     return manager::Task{ string::compose( "boot group ", batch.group), Task::Type::mandatory, std::move( task)};
+                     // this task sequential-mandatory
+                     return manager::Task{ string::compose( "boot group ", batch.group), std::move( task),                        
+                        {
+                           Task::Property::Execution::sequential,
+                           Task::Property::Completion::mandatory
+                        }};
+                  }
+
+                  std::vector< manager::Task> boot( std::vector< state::Batch> batch)
+                  {
+                     return algorithm::transform( batch, []( auto& batch){ return batch::boot( std::move( batch));});
                   }
 
                   manager::Task shutdown( state::Batch batch)
@@ -346,7 +362,16 @@ namespace casual
                      };
 
                      // this task can not be aborted
-                     return manager::Task{ string::compose( "shutdown group ", batch.group), Task::Type::mandatory, std::move( task)};
+                     return manager::Task{ string::compose( "shutdown group ", batch.group), std::move( task),                        
+                        {
+                           Task::Property::Execution::sequential,
+                           Task::Property::Completion::mandatory
+                        }};
+                  }
+
+                  std::vector< manager::Task> shutdown( std::vector< state::Batch> batch)
+                  {
+                     return algorithm::transform( batch, []( auto& batch){ return batch::shutdown( std::move( batch));});
                   }
                   
                } // batch
@@ -378,7 +403,11 @@ namespace casual
                         return {};
 
                      };
-                     return manager::Task{ "boot done", Task::Type::mandatory, std::move( task)};
+                     return manager::Task{ "boot done", std::move( task),                        
+                     {
+                        Task::Property::Execution::sequential,
+                        Task::Property::Completion::mandatory
+                     }};
                   }
 
                   manager::Task shutdown()
@@ -405,7 +434,11 @@ namespace casual
                         return {};
 
                      };
-                     return manager::Task{ "shutdown done", Task::Type::mandatory, std::move( task)};
+                     return manager::Task{ "shutdown done", std::move( task),                        
+                        {
+                           Task::Property::Execution::sequential,
+                           Task::Property::Completion::mandatory
+                        }};
                   }
                   
                } // done
@@ -424,8 +457,11 @@ namespace casual
                      return {};
                   };
 
-                  return manager::Task{ "shutdown trigger", Task::Type::mandatory, std::move( task)};
-
+                  return manager::Task{ "shutdown trigger", std::move( task),
+                     {
+                        Task::Property::Execution::sequential,
+                        Task::Property::Completion::mandatory
+                     }};
                }
 
             } // create

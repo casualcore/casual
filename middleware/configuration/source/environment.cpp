@@ -89,6 +89,17 @@ namespace casual
                return common::environment::Variable{ variable.key + '=' + variable.value};
             });
          }
+
+         std::vector< Variable> transform( const std::vector< common::environment::Variable>& variables)
+         {
+            return common::algorithm::transform( variables, []( auto& variable)
+            {
+               Variable result;
+               result.key = variable.name().value();
+               result.value = variable.value().value();
+               return result;
+            });
+         }
       } // environment
 
       Environment& Environment::operator += ( const Environment& value)

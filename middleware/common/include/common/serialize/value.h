@@ -465,31 +465,50 @@ namespace casual
             namespace optional
             {
                template< typename A, typename V> 
-               std::enable_if_t< traits::need::named< A>::value>
-               write( A& archive, V&& value, const char* name)
+               void write_named( A& archive, V&& value, const char* name)
                {
                   if( value)
                      value::write( archive, value.value(), name);
                }
-               
+
                template< typename A, typename V> 
-               std::enable_if_t< ! traits::need::named< A>::value>
-               write( A& archive, V&& value, const char*)
-               {  
+               void write_order_type( A& archive, V&& value)
+               {
                   if( value)
                   {
-                     archive.write( true);
+                     archive.write( true, nullptr);
                      value::write( archive, value.value(), nullptr);
                   }
                   else 
-                  {
-                     archive.write( false);
-                  }
+                     archive.write( false, nullptr);
+               }
+
+               template< typename A, typename V> 
+               std::enable_if_t< traits::archive::type< A>::value == archive::Type::static_need_named>
+               write( A& archive, V&& value, const char* name)
+               {
+                  write_named( archive, value, name);
+               }
+               
+               template< typename A, typename V> 
+               std::enable_if_t< traits::archive::type< A>::value == archive::Type::static_order_type>
+               write( A& archive, V&& value, const char*)
+               {  
+                  write_order_type( archive, value);
+               }
+
+               template< typename A, typename V> 
+               std::enable_if_t< traits::archive::type< A>::value == archive::Type::dynamic_type>
+               write( A& archive, V&& value, const char* name)
+               {  
+                  if( archive.type() == archive::dynamic::Type::named)
+                     write_named( archive, value, name);
+                  else
+                     write_order_type( archive, value);
                }
 
                template< typename A, typename V>
-               std::enable_if_t< traits::need::named< A>::value, bool>
-               read( A& archive, V& value, const char* name)
+               auto read_named( A& archive, V& value, const char* name)
                {
                   std::decay_t< decltype( value.value())> contained;
 
@@ -502,11 +521,10 @@ namespace casual
                }
 
                template< typename A, typename V>
-               std::enable_if_t< ! traits::need::named< A>::value, bool>
-               read( A& archive, V& value, const char*)
+               auto read_order_type( A& archive, V& value)
                {
                   bool not_empty = false;
-                  archive.read( not_empty);
+                  archive.read( not_empty, nullptr);
 
                   if( not_empty)
                   {
@@ -516,6 +534,30 @@ namespace casual
                   }
 
                   return not_empty;
+               }
+
+               template< typename A, typename V>
+               std::enable_if_t< traits::archive::type< A>::value == archive::Type::static_need_named, bool>
+               read( A& archive, V& value, const char* name)
+               {
+                  return read_named( archive, value, name);
+               }
+
+               template< typename A, typename V>
+               std::enable_if_t< traits::archive::type< A>::value == archive::Type::static_order_type, bool>
+               read( A& archive, V& value, const char*)
+               {
+                  return read_order_type( archive, value);
+               }
+
+               template< typename A, typename V>
+               std::enable_if_t< traits::archive::type< A>::value == archive::Type::dynamic_type, bool>
+               read( A& archive, V& value, const char* name)
+               {
+                  if( archive.type() == archive::dynamic::Type::named)
+                     return read_named( archive, value, name);
+                  else
+                     return read_order_type( archive, value);
                }
             } // optional
          } // detail

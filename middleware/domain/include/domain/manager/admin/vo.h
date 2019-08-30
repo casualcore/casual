@@ -143,11 +143,35 @@ namespace casual
                   };
 
 
+                  struct Task
+                  {
+                     common::strong::task::id id;
+                     std::string description;
+
+                     CASUAL_CONST_CORRECT_SERIALIZE
+                     (
+                        CASUAL_SERIALIZE( id);
+                        CASUAL_SERIALIZE( description);
+                     )
+                  };
+
                   struct State
                   {
                      std::vector< vo::Group> groups;
                      std::vector< vo::Executable> executables;
                      std::vector< vo::Server> servers;
+
+                     struct Tasks
+                     {
+                        std::vector< vo::Task> running;
+                        std::vector< vo::Task> pending;
+
+                        CASUAL_CONST_CORRECT_SERIALIZE(
+                        {
+                           CASUAL_SERIALIZE( running);
+                           CASUAL_SERIALIZE( pending);
+                        })
+                     } tasks;
 
                      struct
                      {
@@ -165,6 +189,7 @@ namespace casual
                         CASUAL_SERIALIZE( groups);
                         CASUAL_SERIALIZE( executables);
                         CASUAL_SERIALIZE( servers);
+                        CASUAL_SERIALIZE( tasks);
                         CASUAL_SERIALIZE( event);
                      })
 
@@ -227,8 +252,8 @@ namespace casual
                      };
                      
                   } // set
-
-               } // v1_0
+                  
+               } // v1
             } // vo
          } // admin
       } // manager

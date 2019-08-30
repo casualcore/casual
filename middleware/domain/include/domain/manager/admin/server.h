@@ -44,12 +44,15 @@ namespace casual
                   {
                      constexpr auto persist = ".casual/domain/configuration/persist";
 
+                     constexpr auto get = ".casual/domain/configuration/get";
+                     constexpr auto put = ".casual/domain/configuration/put";
+
                   } // configuration
 
-                  namespace set
+                  namespace environment
                   {
-                     constexpr auto environment = ".casual/domain/set/environment";
-                  } // set
+                     constexpr auto set = ".casual/domain/environment/set";
+                  } // environment
 
                } // name
             } // service

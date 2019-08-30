@@ -42,6 +42,7 @@ namespace casual
                catch( const common::exception::system::communication::Unavailable&)
                {
                   common::log::line( domain::log, "failed to send message - type: ", common::message::type( message), " to: ", process, " - action: ignore");
+                  common::log::line( domain::verbose::log, "message: ", message);
                }
             }
             

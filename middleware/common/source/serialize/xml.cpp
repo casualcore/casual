@@ -173,6 +173,8 @@ namespace casual
                      {
                      public:
 
+                        inline constexpr static auto archive_type() { return archive::Type::static_need_named;}
+
                         static auto keys() { return local::keys();}
 
                         //! @param node Normally a pugi::xml_document
@@ -325,6 +327,8 @@ namespace casual
                      class Implementation
                      {
                      public:
+
+                        inline constexpr static auto archive_type() { return archive::Type::static_need_named;}
 
                         static auto keys() { return local::keys();}
 

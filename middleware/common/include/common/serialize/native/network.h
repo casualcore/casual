@@ -115,25 +115,25 @@ namespace casual
 
                   };
 
-                  using Input = basic_input< Policy>;
+                  using Reader = basic_reader< Policy>;
 
-                  using Output = basic_output< Policy>;
+                  using Writer = basic_writer< Policy>;
 
                   namespace create
                   {
-                     struct Output
+                     struct Writer
                      {
-                        network::Output operator () ( platform::binary::type& buffer) const
+                        inline auto operator () ( platform::binary::type& buffer) const
                         {
-                           return network::Output{ buffer};
+                           return network::Writer{ buffer};
                         }
                      };
 
-                     struct Input
+                     struct Reader
                      {
-                        network::Input operator () ( platform::binary::type& buffer) const
+                        inline auto operator () ( platform::binary::type& buffer) const
                         {
-                           return network::Input{ buffer};
+                           return network::Reader{ buffer};
                         }
                      };
 
@@ -151,10 +151,10 @@ namespace casual
                namespace network
                {
                   template<>
-                  struct normalizing< serialize::native::binary::network::Input>: std::true_type {};
+                  struct normalizing< serialize::native::binary::network::Reader>: std::true_type {};
 
                   template<>
-                  struct normalizing< serialize::native::binary::network::Output>: std::true_type {};
+                  struct normalizing< serialize::native::binary::network::Writer>: std::true_type {};
                } // network
             } // is 
          } // traits

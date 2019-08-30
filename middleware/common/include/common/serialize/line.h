@@ -7,6 +7,7 @@
 #pragma once
 
 #include "common/serialize/value.h"
+#include "common/serialize/archive/type.h"
 
 #include <ostream>
 
@@ -28,7 +29,7 @@ namespace casual
 
             struct Writer
             {
-               using need_named = void;
+               inline constexpr static auto archive_type() { return archive::Type::static_need_named;}
 
                Writer( std::ostream& stream) : m_stream( stream) {}
 

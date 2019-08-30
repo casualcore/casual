@@ -21,12 +21,10 @@
 
 #include <string>
 
-
 namespace casual
 {
    namespace common
    {
-
       namespace communication
       {
          namespace tcp
@@ -219,7 +217,7 @@ namespace casual
                   using base_connector::base_connector;
                };
 
-               using Device = communication::inbound::Device< Connector, serialize::native::binary::network::create::Input>;
+               using Device = communication::inbound::Device< Connector, serialize::native::binary::network::create::Reader>;
 
             } // inbound
 
@@ -232,14 +230,14 @@ namespace casual
                   inline void reconnect() const { throw; }
                };
 
-               using Device = communication::outbound::Device< Connector,  serialize::native::binary::network::create::Output>;
+               using Device = communication::outbound::Device< Connector,  serialize::native::binary::network::create::Writer>;
 
                namespace blocking 
                {
                   template< typename M> 
                   auto send( const Socket& socket, M&& message)
                   {
-                     return native::send( socket, serialize::native::complete( std::forward< M>( message), serialize::native::binary::network::create::Output{}), {});
+                     return native::send( socket, serialize::native::complete( std::forward< M>( message), serialize::native::binary::network::create::Writer{}), {});
                   }
                } // blocking 
             } // outbound

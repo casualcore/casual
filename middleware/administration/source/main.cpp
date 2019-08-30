@@ -75,7 +75,7 @@ Where <option> is one of the listed below
 
 int main( int argc, char **argv)
 {
-   return casual::common::exception::guard( [=]()
+   return casual::common::exception::guard( std::cerr, [=]()
    {
       casual::admin::main( argc, argv);
    });

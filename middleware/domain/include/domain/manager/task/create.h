@@ -28,7 +28,9 @@ namespace casual
                namespace batch
                {
                   manager::Task boot( state::Batch batch);
+                  std::vector< manager::Task> boot( std::vector< state::Batch> batch);
                   manager::Task shutdown( state::Batch batch);
+                  std::vector< manager::Task> shutdown( std::vector< state::Batch> batch);
 
 
                } // batch

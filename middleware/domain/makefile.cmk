@@ -38,6 +38,7 @@ manager_archive = LinkArchive( 'bin/casual-domain-manager',
     Compile( 'source/manager/task.cpp'),
     Compile( 'source/manager/task/create.cpp'),
     Compile( 'source/manager/state.cpp'),
+    Compile( 'source/manager/state/create.cpp'),
     Compile( 'source/manager/handle.cpp'),
     Compile( 'source/manager/admin/server.cpp'),
     Compile( 'source/manager/configuration.cpp'),
@@ -85,6 +86,7 @@ target = LinkLibrary( 'bin/casual-domain-admin-cli',
      manager_archive,
      common_archive,
      'casual-common',
+     'casual-configuration',
      'casual-serviceframework'
      ]
 )

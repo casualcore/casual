@@ -8,7 +8,6 @@
 #pragma once
 
 
-
 #include "common/serialize/archive.h"
 #include "common/platform.h"
 

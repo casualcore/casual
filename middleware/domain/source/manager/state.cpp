@@ -8,6 +8,7 @@
 #include <utility>
 
 #include "domain/manager/state.h"
+#include "domain/manager/state/create.h"
 #include "domain/common.h"
 
 
@@ -307,81 +308,19 @@ namespace casual
 
          } // state
 
-         namespace local
-         {
-            namespace
-            {
-               namespace order
-               {
-                  std::vector< state::Batch> boot( State& state)
-                  {
-                     std::vector< state::Batch> result;
-
-                     std::vector< std::reference_wrapper< const state::Group>> groups;
-                     algorithm::append( state.groups, groups);
-                     algorithm::stable_sort( groups, state::Group::boot::Order{});
-
-                     std::vector< std::reference_wrapper< state::Server>> server_wrappers;
-                     std::vector< std::reference_wrapper< state::Executable>> excutable_wrappers;
-
-                     // We make sure we don't include our self in the boot sequence.
-                     algorithm::copy_if( state.servers, std::back_inserter( server_wrappers), [&state]( const auto& e){
-                        return e.id != state.manager_id;
-                     });
-
-                     algorithm::copy( state.executables, std::back_inserter( excutable_wrappers));
-
-                     auto executable = range::make( excutable_wrappers);
-                     auto servers = range::make( server_wrappers);
-
-                     // Reverse the order, so we 'consume' executable based on the group
-                     // that is the farthest in the dependency chain
-                     for( auto& group : algorithm::reverse( groups))
-                     {
-                        state::Batch batch{ group.get().id};
-
-                        auto extract = [&]( auto& entities, auto& output)
-                        {
-                           // Partition executables so we get the ones that has current group as a dependency
-                           auto slice = algorithm::stable_partition( entities, [&]( const auto& e){
-                              return static_cast< bool>( algorithm::find( e.get().memberships, group.get().id));
-                           });
-
-                           algorithm::transform( std::get< 0>( slice), output, []( auto& e){
-                              common::traits::iterable::value_t< decltype( output)> result;
-                              result = e.get().id;
-                              return result;
-                           });
-
-                           return std::get< 1>( slice);
-                        };
-
-                        servers = extract( servers, batch.servers);
-                        executable = extract( executable, batch.executables);
-
-                        result.push_back( std::move( batch));
-                     }
-
-                     // We reverse the result so the dependency order is correct
-                     return algorithm::reverse( result);
-                  }
-               } // order
-
-            } // <unnamed>
-         } // local
 
          std::vector< state::Batch> State::bootorder()
          {
             Trace trace{ "domain::manager::State::bootorder"};
 
-            return local::order::boot( *this);
+            return state::create::boot::order( servers, executables, groups);
          }
 
          std::vector< state::Batch> State::shutdownorder()
          {
             Trace trace{ "domain::manager::State::shutdownorder"};
 
-            return algorithm::reverse( local::order::boot( *this));
+            return algorithm::reverse( bootorder());
          }
 
 

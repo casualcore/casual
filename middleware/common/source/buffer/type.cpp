@@ -19,7 +19,6 @@ namespace casual
    {
       namespace buffer
       {
-
          namespace type
          {
             const std::string& x_octet() { static const auto name = combine( X_OCTET); return name;}
@@ -108,7 +107,7 @@ namespace casual
 
                   platform::binary::type binary;
                   {
-                     common::serialize::native::binary::network::Output archive{ binary};
+                     common::serialize::native::binary::network::Writer archive{ binary};
                      archive << value;
                   }
                   out.write( binary.data(), binary.size());
@@ -146,7 +145,7 @@ namespace casual
                            // consume the size of the string, payload type.
                            fill_for( binary, count);
                            {
-                              common::serialize::native::binary::network::Input archive{ binary};
+                              common::serialize::native::binary::network::Reader archive{ binary};
                               archive >> size;
                            }
 
@@ -160,7 +159,7 @@ namespace casual
 
                               fill_for( binary, network::byteorder::bytes< platform::size::type>());
                               
-                              common::serialize::native::binary::network::Input archive{ binary, offset};
+                              common::serialize::native::binary::network::Reader archive{ binary, offset};
                               archive >> memory_size;
 
                               // consume the full buffer
@@ -169,7 +168,7 @@ namespace casual
                         }
                         
                         // now we got the full payload, serialize it
-                        common::serialize::native::binary::network::Input archive{ binary};
+                        common::serialize::native::binary::network::Reader archive{ binary};
                         archive >> payload;
 
                         return payload;

@@ -157,74 +157,68 @@ namespace casual
 
          struct Task
          {
-            enum class Type : short
+            struct Property
             {
-               mandatory,
-               abortable
+               enum class Execution : short
+               {
+                  concurrent,
+                  sequential
+               };
+               friend std::ostream& operator << ( std::ostream& out, Execution value);
+
+               enum class Completion : short
+               {
+                  mandatory,
+                  abortable
+               };
+               friend std::ostream& operator << ( std::ostream& out, Completion value);
+
+               Execution execution = Execution::sequential;
+               Completion completion = Completion::mandatory;
+
+               friend std::ostream& operator << ( std::ostream& out, Property value);
             };
 
+
             template< typename T>
-            explicit Task( std::string description, Type type, T&& task) 
-               : m_concept{ std::make_unique< model< T>>( std::forward< T>( task))},
-               m_description{ std::move( description)},
-               m_type( type) {}
+            explicit Task( std::string description, T&& task, Property property) 
+               : m_task{ std::forward< T>( task)},
+               m_property( property),
+               m_description{ std::move( description)}
+               {}
 
             template< typename T>
             explicit Task( std::string description, T&& task) 
-               : m_concept{ std::make_unique< model< T>>( std::forward< T>( task))},
+               : m_task{ std::forward< T>( task)},
                m_description{ std::move( description)} {}
-            
-            ~Task();
-
             
             Task( Task&&) = default; // noexcept is deduced
             Task& operator = ( Task&&) = default; // noexcept is deduced
 
-            std::vector< task::event::Callback> operator() ( State& state);
-
             inline auto id() const { return m_id;}
-            inline auto type() const { return m_type;}
+            inline auto property() const { return m_property;}
             inline auto& description() const { return m_description;}
+
+            inline std::vector< task::event::Callback> operator() ( State& state) { return m_task( state, id());}
 
             inline friend bool operator == ( const Task& lhs, task::id::type rhs) { return lhs.m_id == rhs;}
             inline friend bool operator != ( const Task& lhs, task::id::type rhs) { return ! ( lhs.m_id == rhs);}
 
-            friend std::ostream& operator << ( std::ostream& out, Type value);
+            
 
             CASUAL_CONST_CORRECT_SERIALIZE_WRITE({
                CASUAL_SERIALIZE_NAME( m_id, "id");
-               CASUAL_SERIALIZE_NAME( m_type, "type");
+               CASUAL_SERIALIZE_NAME( m_property, "property");
                CASUAL_SERIALIZE_NAME( m_description, "description");
             })
 
-
-
          private:
-
-            struct concept
-            {
-               virtual ~concept() = default;
-               virtual std::vector< task::event::Callback> start( State& state, task::id::type id) = 0;
-            };
-
-            template< typename T>
-            struct model : concept
-            {
-               explicit model( T task) : m_task( std::move( task)) {}
-               ~model() = default;
-
-               std::vector< task::event::Callback> start( State& state, task::id::type id) override
-               {
-                  return m_task( state, id);
-               }
-
-               T m_task;
-            };
+            using task_function_type = std::function< std::vector< task::event::Callback>( State&, task::id::type)>;
 
             task::id::type m_id = common::value::id::sequence< task::id::type>::next();
-            std::unique_ptr< concept> m_concept;
+            task_function_type m_task;
+            Property m_property;
             std::string m_description;
-            Type m_type = Type::mandatory;
          };
 
 
@@ -232,16 +226,11 @@ namespace casual
          {
             struct Queue
             {
-               //! tasks that can be executed in a concurrent manner.
-               //! will start directly
+               //! 
+               //! will start directly, if no pending, or the task is concurrent-friendly
                //! @{
-               task::id::type concurrent( State& state, Task&& task);
-               //! @}
-
-               //! tasks that needs to be executed in a sequential manner.
-               //! will start directly iff no running tasks is present
-               //! @{
-               task::id::type sequential( State& state, Task&& task);
+               task::id::type add( State& state, Task&& task);
+               std::vector< task::id::type> add( State& state, std::vector< Task>&& tasks);
                //! @}
 
                inline bool empty() const { return m_running.empty() && m_pending.empty();}
@@ -262,6 +251,9 @@ namespace casual
                //! aborts all abortable tasks, regardless if they're running or not.
                void abort();
 
+               inline const auto& running() const { return m_running;}
+               inline const auto& pending() const { return m_pending;}
+
 
                CASUAL_CONST_CORRECT_SERIALIZE_WRITE({
                   CASUAL_SERIALIZE_NAME( m_events, "events");
@@ -271,6 +263,7 @@ namespace casual
 
             private:
                task::id::type start( State& state, Task&& task);
+               
 
                event::Dispatch m_events;
                std::vector< Task> m_running;

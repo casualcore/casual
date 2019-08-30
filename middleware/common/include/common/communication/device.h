@@ -84,7 +84,7 @@ namespace casual
             using cache_type = std::vector< message::Complete>;
             using cache_range_type =  range::type_t< cache_type>;
 
-            template< typename Connector, typename Deserialize = serialize::native::binary::create::Input>
+            template< typename Connector, typename Deserialize = serialize::native::binary::create::Reader>
             struct Device
             {
 
@@ -398,7 +398,7 @@ namespace casual
          namespace outbound
          {
             //! Doesn't do much. More for symmetry with inbound
-            template< typename Connector, typename Serialize = serialize::native::binary::create::Output>
+            template< typename Connector, typename Serialize = serialize::native::binary::create::Writer>
             struct Device
             {
                using connector_type = Connector;
