@@ -1,0 +1,33 @@
+$api-padding-left: 1%;
+
+.api-describer {
+
+
+  display: flex;
+  flex-direction: row;
+  //flex: 0 1 100%;
+
+  &__wrapper {
+    font-size: $property-name-font-size;
+    //width: 100%;
+
+
+  }
+
+  @for $i from 0 through 20 {
+    &__#{$i} {
+      padding-left: calc(#{$api-padding-left} * #{$i});
+    }
+  }
+
+  &__highlight {
+
+    color: $color-theme-tint-1;
+    margin-right: 0.75em;
+    font-weight: bold;
+  }
+
+  &__role {
+
+  }
+}

@@ -1,0 +1,76 @@
+
+.top {
+  position: fixed;
+  height: $top-navbar-height;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  z-index: 100;
+  overflow: hidden;
+  width: 100%;
+  color: $color-anchor-light;
+  box-sizing: border-box;
+  justify-content: space-between;
+  padding: 0 $top-side-padding 0;
+  background-color: $color-top-nav-background;
+  background-image: linear-gradient($color-side-nav-background, $color-top-nav-background);
+  align-items: center;
+
+
+}
+
+.top-left {
+  display: grid;
+  grid-template-columns: 1fr 100%;
+  //justify-content: space-between;
+  width: 100%;
+
+  align-items: start;
+  height: $top-navbar-height;
+
+  &__logo {
+
+    min-width: calc(#{$sidebar-width} - #{$top-side-padding});
+    width: 100%;
+    height: 100%;
+    filter: invert(100%);
+
+    a {
+      height: calc(#{$top-navbar-height} * 0.9);
+      content: url('assets/img/casual symbol BW.svg');
+    }
+
+  }
+
+  &__version {
+    height: 100%;
+
+    button {
+      padding: 0;
+      opacity: 0.5;
+      font-size: 10pt;
+      background: transparent;
+      border: none;
+      height: 100%;
+      text-align: left;
+
+      &:before {
+        content: "0.5.0";
+      }
+
+    }
+  }
+
+
+}
+
+.top-right {
+  width: 100%;
+  text-align: right;
+}
+
+.container-main {
+  overflow: hidden;
+  min-width: 50%;
+  box-sizing: border-box;
+
+}

@@ -1,0 +1,26 @@
+@import 'variables';
+@import 'type';
+@import 'colors';
+@import 'buttons';
+@import 'api';
+
+hr {
+  border: 0;
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+  &.divide {
+    position: relative;
+    margin: 0.4em;
+    left: -2em;
+  }
+
+}
+
+a {
+  color: $color-anchor;
+
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}

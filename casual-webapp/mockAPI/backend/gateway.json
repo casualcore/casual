@@ -1,0 +1,17 @@
+{
+    "result": {
+        "connections": [],
+        "listeners": [
+            {
+                "limit": {
+                    "size": 0,
+                    "messages": 0
+                },
+                "address": {
+                    "host": "0.0.0.0",
+                    "port": "7771"
+                }
+            }
+        ]
+    }
+}

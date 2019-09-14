@@ -1,0 +1,162 @@
+
+html, body {
+  //font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  //font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  height: 100%;
+  margin: 0;
+}
+
+#app {
+  height: 100% !important;
+}
+
+#content {
+  min-height: 100%;
+  padding-top: calc(#{$top-navbar-height} + 1em);
+  padding-left: calc(#{$sidebar-width} + 1em);
+  padding-right: 1em;
+}
+
+
+.container {
+  padding-left: 0;
+}
+
+.particle-row {
+
+  display: flex;
+  flex-direction: row;
+  -ms-flex: 0 0 100%;
+  flex: 0 0 100%;
+  //max-width: 100%;
+  //width: 100%;
+
+  //grid-template-columns: 1fr;
+
+}
+
+.particle-col {
+
+  display: flex;
+  margin-right: 2em;
+  flex-direction: column;
+
+  flex: 0 1 100%;
+  // border-right: 1px solid lightgrey;
+
+
+  &__xs {
+    flex: 0 0 15%;
+  }
+
+  &__sm {
+    flex: 0 0 25%;
+  }
+
+  &__md {
+    flex: 0 0 40%;
+  }
+
+  &__lg {
+    flex: 0 0 50%;
+  }
+
+}
+
+.particle-property {
+  //width: 100%;
+  position: relative;
+  //display: grid;
+  display: flex;
+  flex: 0 1 100%;
+  flex-direction: row;
+  //grid-auto-flow: column;
+  //margin-right: 2em;
+
+
+  &--name {
+
+    font-weight: $font-weight-bold;
+    display: inline-block;
+    font-size: $property-name-font-size;
+    flex: 0 0 30%;
+    padding-right: 2em;
+
+
+    text-align: end;
+    //padding-left: 2em;
+    //min-width: 10em;
+  }
+
+  &__property-content__wrapper {
+    width: 100%;
+    //text-align: left;
+
+  }
+  &--wrapper {
+    width: 100%;
+    //text-align: left;
+
+  }
+
+
+  &__property-content__item {
+
+
+    font-size: $property-item-font-size-l;
+    vertical-align: top;
+    margin-right: 2em;
+    //flex: 0 0 66%;
+    text-align: left;
+  }
+
+  ul {
+    padding: 0;
+  }
+
+  &__list-items {
+    list-style: none;
+    // flex: calc(100%);
+
+
+    li {
+      display: block;
+      font-size: 10pt;
+
+
+    }
+  }
+
+  a {
+    color: #0f6674;
+    text-decoration: none;
+  }
+}
+.property-content__wrapper {
+  width: 100%;
+
+}
+.property-content__item {
+
+
+  font-size: $property-item-font-size-l;
+  vertical-align: top;
+  margin-right: 2em;
+  //flex: 0 0 66%;
+  text-align: left;
+}
+
+span.scale-instance {
+  vertical-align: sub;
+  font-size: $font-size-lg;
+
+}
+
+.footer {
+  font-size: $property-name-font-size;
+  text-align: center;
+}
+
+.footer:before {
+  content: "\00a9";
+}

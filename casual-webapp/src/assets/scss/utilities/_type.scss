@@ -1,0 +1,61 @@
+$headings-font-weight: 500 !default;
+$font-family-sans-serif: Open Sans,Helvetica Neue,Helvetica,Arial,sans-serif;
+$font-family-base: $font-family-sans-serif !default;
+
+$font-size-base: 1rem !default; // Assumes the browser default, typically `16px`
+$spacer: 1rem;
+
+$headings-margin-bottom: $spacer / 2 !default;
+$headings-font-family: null !default;
+$headings-font-weight: 500 !default;
+$headings-line-height: 1.2 !default;
+$headings-color: null !default;
+
+$h1-font-size: $font-size-base * 2.5 !default;
+$h2-font-size: $font-size-base * 2 !default;
+$h3-font-size: $font-size-base * 1.75 !default;
+$h4-font-size: $font-size-base * 1.5 !default;
+$h5-font-size: $font-size-base * 1.25 !default;
+$h6-font-size: $font-size-base !default;
+
+$font-weight-normal: 400 !default;
+$font-weight-bold: 600 !default;
+
+$font-size-lg: 1.5rem;
+
+
+$property-name-font-size: 10pt;
+$property-item-font-size-l: 8pt;
+$property-item-font-size-m: 7pt;
+$property-item-font-size-s: 5pt;
+
+
+$font-weight-base: $font-weight-normal;
+
+h1, h2, h3, h4, h5, h6 {
+  margin-top: 0;
+  margin-bottom: $headings-margin-bottom;
+  font-family: $headings-font-family;
+  font-weight: $headings-font-weight;
+  line-height: $headings-line-height;
+  color: $headings-color;
+}
+
+body {
+  font-family: $font-family-base;
+  font-weight: $font-weight-base;
+  font-size: $font-size-base;
+}
+
+h1 {font-size: $h1-font-size;}
+h2 {font-size: $h2-font-size;}
+h3 {font-size: $h3-font-size;}
+h4 {font-size: $h4-font-size;}
+h5 {font-size: $h5-font-size;}
+h6 {font-size: $h6-font-size;}
+
+ul {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+

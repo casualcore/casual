@@ -1,0 +1,3162 @@
+{
+    "result": {
+        "groups": [
+            {
+                "id": 6,
+                "name": ".casual.master",
+                "note": "the master and (implicit) parent of all groups",
+                "resources": [],
+                "dependencies": []
+            },
+            {
+                "id": 7,
+                "name": ".casual.transaction",
+                "note": "",
+                "resources": [],
+                "dependencies": [
+                    6
+                ]
+            },
+            {
+                "id": 8,
+                "name": ".casual.queue",
+                "note": "",
+                "resources": [],
+                "dependencies": [
+                    7
+                ]
+            },
+            {
+                "id": 9,
+                "name": ".global",
+                "note": "user global group",
+                "resources": [],
+                "dependencies": [
+                    8,
+                    7
+                ]
+            },
+            {
+                "id": 21,
+                "name": "GRP_V_INF",
+                "note": "V-group for infra",
+                "resources": [],
+                "dependencies": [
+                    9
+                ]
+            },
+            {
+                "id": 23,
+                "name": "GRP_V_SYS",
+                "note": "V-group for infra",
+                "resources": [],
+                "dependencies": [
+                    9
+                ]
+            },
+            {
+                "id": 25,
+                "name": "casual-queue",
+                "note": "casual-queue resource group",
+                "resources": [
+                    "event-queue"
+                ],
+                "dependencies": [
+                    9
+                ]
+            },
+            {
+                "id": 27,
+                "name": "GRP_I_KUI",
+                "note": "I-group for KUI",
+                "resources": [
+                    "KI"
+                ],
+                "dependencies": [
+                    9
+                ]
+            },
+            {
+                "id": 29,
+                "name": "GRP_V_KUI",
+                "note": "V-group for KUI",
+                "resources": [],
+                "dependencies": [
+                    9,
+                    27
+                ]
+            },
+            {
+                "id": 33,
+                "name": ".casual.gateway",
+                "note": "",
+                "resources": [],
+                "dependencies": [
+                    6,
+                    7,
+                    8,
+                    9,
+                    21,
+                    23,
+                    25,
+                    27,
+                    29
+                ]
+            }
+        ],
+        "executables": [
+            {
+                "id": 323,
+                "alias": "casual-inbound-server",
+                "path": "${CASUAL_HOME}/nginx/sbin/nginx",
+                "arguments": [
+                    "-c",
+                    "/opt/casual/nginx/conf/nginx.conf",
+                    "-p",
+                    "/domains"
+                ],
+                "note": "nginx frontend",
+                "memberships": [
+                    29
+                ],
+                "environment": {
+                    "variables": []
+                },
+                "restart": false,
+                "restarts": 0,
+                "instances": [
+                    {
+                        "handle": 252,
+                        "state": 0
+                    }
+                ]
+            },
+            {
+                "id": 325,
+                "alias": "fk-nginx",
+                "path": "${APPDIR}/bin/fk-nginx/bin/nginx",
+                "arguments": [
+                    "-c",
+                    "/domains/appdir/bin/fk-nginx/conf/nginx.conf",
+                    "-p",
+                    "/domains/fk"
+                ],
+                "note": "fk-nginx frontend",
+                "memberships": [
+                    29
+                ],
+                "environment": {
+                    "variables": []
+                },
+                "restart": false,
+                "restarts": 0,
+                "instances": [
+                    {
+                        "handle": 253,
+                        "state": 0
+                    }
+                ]
+            }
+        ],
+        "servers": [
+            {
+                "id": 59,
+                "alias": "casual-domain-manager",
+                "path": "casual-domain-manager",
+                "arguments": [],
+                "note": "responsible for all executables in this domain",
+                "memberships": [
+                    6
+                ],
+                "environment": {
+                    "variables": []
+                },
+                "restart": false,
+                "restarts": 0,
+                "instances": [
+                    {
+                        "handle": {
+                            "pid": 148,
+                            "ipc": "b3Il//zYTminv7GTjWdyTw=="
+                        },
+                        "state": 0
+                    }
+                ],
+                "resources": [],
+                "restriction": []
+            },
+            {
+                "id": 61,
+                "alias": "casual-example-server",
+                "path": "${CASUAL_HOME}/example/bin/casual-example-server",
+                "arguments": [],
+                "note": "Arbitary information of this server",
+                "memberships": [
+                    9
+                ],
+                "environment": {
+                    "variables": []
+                },
+                "restart": false,
+                "restarts": 0,
+                "instances": [
+                    {
+                        "handle": {
+                            "pid": 162,
+                            "ipc": "oPHBK1CwTXSqNvsKyEfoZA=="
+                        },
+                        "state": 0
+                    }
+                ],
+                "resources": [],
+                "restriction": []
+            },
+            {
+                "id": 63,
+                "alias": "plamqserver",
+                "path": "${APPDIR}/bin/infrastruktur/bin/plamqserver",
+                "arguments": [],
+                "note": "",
+                "memberships": [
+                    9
+                ],
+                "environment": {
+                    "variables": []
+                },
+                "restart": false,
+                "restarts": 0,
+                "instances": [
+                    {
+                        "handle": {
+                            "pid": 163,
+                            "ipc": "QYuN+gZtQyS3kaLWTaMbDQ=="
+                        },
+                        "state": 0
+                    },
+                    {
+                        "handle": {
+                            "pid": 164,
+                            "ipc": "ixuv998nQEKCGeH2OVQWNQ=="
+                        },
+                        "state": 0
+                    }
+                ],
+                "resources": [
+                    "mq-resource"
+                ],
+                "restriction": []
+            },
+            {
+                "id": 65,
+                "alias": "plapostahandelseserver",
+                "path": "${APPDIR}/bin/infrastruktur/bin/plapostahandelseserver",
+                "arguments": [],
+                "note": "",
+                "memberships": [
+                    21
+                ],
+                "environment": {
+                    "variables": []
+                },
+                "restart": false,
+                "restarts": 0,
+                "instances": [
+                    {
+                        "handle": {
+                            "pid": 167,
+                            "ipc": "ZXI2XOtGStyaFD5QjVnnog=="
+                        },
+                        "state": 0
+                    }
+                ],
+                "resources": [],
+                "restriction": []
+            },
+            {
+                "id": 67,
+                "alias": "systuxedopingserver",
+                "path": "${APPDIR}/bin/infrastruktur/bin/systuxedopingserver",
+                "arguments": [],
+                "note": "",
+                "memberships": [
+                    23
+                ],
+                "environment": {
+                    "variables": []
+                },
+                "restart": false,
+                "restarts": 0,
+                "instances": [
+                    {
+                        "handle": {
+                            "pid": 169,
+                            "ipc": "fR2P4OeeR8CgneyRoNFlRQ=="
+                        },
+                        "state": 0
+                    },
+                    {
+                        "handle": {
+                            "pid": 170,
+                            "ipc": "FAjOQ/nAQC29+I7JJRK1FA=="
+                        },
+                        "state": 0
+                    }
+                ],
+                "resources": [],
+                "restriction": []
+            },
+            {
+                "id": 69,
+                "alias": "casual-http-outbound",
+                "path": "${CASUAL_HOME}/bin/casual-http-outbound",
+                "arguments": [
+                    "--configuration-files",
+                    "common_configuration/arendestyrning.services.yaml",
+                    "common_configuration/blankettlagret.services.yaml",
+                    "common_configuration/edok.services.yaml",
+                    "common_configuration/infrastruktur.services.yaml",
+                    "common_configuration/kund.services.yaml",
+                    "common_configuration/medialager.services.yaml",
+                    "common_configuration/regler.services.yaml",
+                    "common_configuration/omprovning-och-overklagan.services.yaml"
+                ],
+                "note": "",
+                "memberships": [
+                    9
+                ],
+                "environment": {
+                    "variables": []
+                },
+                "restart": false,
+                "restarts": 0,
+                "instances": [
+                    {
+                        "handle": {
+                            "pid": 165,
+                            "ipc": "l1sZdiMHT6q/YCOcSAGT/w=="
+                        },
+                        "state": 0
+                    }
+                ],
+                "resources": [],
+                "restriction": []
+            },
+            {
+                "id": 71,
+                "alias": "kiinfohanterare",
+                "path": "${APPDIR}/bin/kunskapinfo/bin/kiinfohanterare",
+                "arguments": [],
+                "note": "",
+                "memberships": [
+                    27
+                ],
+                "environment": {
+                    "variables": []
+                },
+                "restart": false,
+                "restarts": 0,
+                "instances": [
+                    {
+                        "handle": {
+                            "pid": 171,
+                            "ipc": "Rmm/y0HtSNGX+gRz/Yye0Q=="
+                        },
+                        "state": 0
+                    },
+                    {
+                        "handle": {
+                            "pid": 172,
+                            "ipc": "PmuE+XUtSb2sBTdWtibbcw=="
+                        },
+                        "state": 0
+                    }
+                ],
+                "resources": [],
+                "restriction": []
+            },
+            {
+                "id": 73,
+                "alias": "behinfohanterare",
+                "path": "${APPDIR}/bin/kunskapinfo/bin/behinfohanterare",
+                "arguments": [],
+                "note": "",
+                "memberships": [
+                    27
+                ],
+                "environment": {
+                    "variables": []
+                },
+                "restart": false,
+                "restarts": 0,
+                "instances": [
+                    {
+                        "handle": {
+                            "pid": 173,
+                            "ipc": "SB2GT3NkQLmUx4UuqgEg0w=="
+                        },
+                        "state": 0
+                    },
+                    {
+                        "handle": {
+                            "pid": 174,
+                            "ipc": "C8l6caDbSaihZe6lpOsG1A=="
+                        },
+                        "state": 0
+                    }
+                ],
+                "resources": [],
+                "restriction": []
+            },
+            {
+                "id": 75,
+                "alias": "fkuppgifter",
+                "path": "${APPDIR}/bin/kunskapinfo/bin/fkuppgifter",
+                "arguments": [],
+                "note": "",
+                "memberships": [
+                    27
+                ],
+                "environment": {
+                    "variables": []
+                },
+                "restart": false,
+                "restarts": 0,
+                "instances": [
+                    {
+                        "handle": {
+                            "pid": 175,
+                            "ipc": "iTzcEOTTTGK229YtdPs82Q=="
+                        },
+                        "state": 0
+                    },
+                    {
+                        "handle": {
+                            "pid": 176,
+                            "ipc": "UUV5ICbCR76CFIGwoi9gLg=="
+                        },
+                        "state": 0
+                    }
+                ],
+                "resources": [],
+                "restriction": []
+            },
+            {
+                "id": 77,
+                "alias": "fastighetinfohanterare",
+                "path": "${APPDIR}/bin/kunskapinfo/bin/fastighetinfohanterare",
+                "arguments": [],
+                "note": "",
+                "memberships": [
+                    27
+                ],
+                "environment": {
+                    "variables": []
+                },
+                "restart": false,
+                "restarts": 0,
+                "instances": [
+                    {
+                        "handle": {
+                            "pid": 177,
+                            "ipc": "U03b4WBwSCOsfri282kFKQ=="
+                        },
+                        "state": 0
+                    },
+                    {
+                        "handle": {
+                            "pid": 178,
+                            "ipc": "TsrvGQhKQCumYN9hbF5keA=="
+                        },
+                        "state": 0
+                    }
+                ],
+                "resources": [],
+                "restriction": []
+            },
+            {
+                "id": 79,
+                "alias": "kodinformationdiagnosserver",
+                "path": "${APPDIR}/bin/kunskapinfo/bin/kodinformationdiagnosserver",
+                "arguments": [],
+                "note": "",
+                "memberships": [
+                    27
+                ],
+                "environment": {
+                    "variables": []
+                },
+                "restart": false,
+                "restarts": 0,
+                "instances": [
+                    {
+                        "handle": {
+                            "pid": 179,
+                            "ipc": "jpo18u//S5qVSrI6+blbfg=="
+                        },
+                        "state": 0
+                    },
+                    {
+                        "handle": {
+                            "pid": 180,
+                            "ipc": "OlbKAq0PSwe088mAH12Ouw=="
+                        },
+                        "state": 0
+                    }
+                ],
+                "resources": [],
+                "restriction": []
+            },
+            {
+                "id": 81,
+                "alias": "kodinformationekonomiserver",
+                "path": "${APPDIR}/bin/kunskapinfo/bin/kodinformationekonomiserver",
+                "arguments": [],
+                "note": "",
+                "memberships": [
+                    27
+                ],
+                "environment": {
+                    "variables": []
+                },
+                "restart": false,
+                "restarts": 0,
+                "instances": [
+                    {
+                        "handle": {
+                            "pid": 181,
+                            "ipc": "Qgk/imbtRaGBJ6lFF9XxNg=="
+                        },
+                        "state": 0
+                    },
+                    {
+                        "handle": {
+                            "pid": 182,
+                            "ipc": "ZS7aUjPSQA6fMJcG83G9jg=="
+                        },
+                        "state": 0
+                    }
+                ],
+                "resources": [],
+                "restriction": []
+            },
+            {
+                "id": 83,
+                "alias": "kodinformationfastighetserver",
+                "path": "${APPDIR}/bin/kunskapinfo/bin/kodinformationfastighetserver",
+                "arguments": [],
+                "note": "",
+                "memberships": [
+                    27
+                ],
+                "environment": {
+                    "variables": []
+                },
+                "restart": false,
+                "restarts": 0,
+                "instances": [
+                    {
+                        "handle": {
+                            "pid": 183,
+                            "ipc": "TTKvSfgGRY6vNL2LmWmJCw=="
+                        },
+                        "state": 0
+                    },
+                    {
+                        "handle": {
+                            "pid": 184,
+                            "ipc": "wvCaXS90QkKf1B5Orfl73w=="
+                        },
+                        "state": 0
+                    }
+                ],
+                "resources": [],
+                "restriction": []
+            },
+            {
+                "id": 85,
+                "alias": "kodinformationkommunikationserver",
+                "path": "${APPDIR}/bin/kunskapinfo/bin/kodinformationkommunikationserver",
+                "arguments": [],
+                "note": "",
+                "memberships": [
+                    27
+                ],
+                "environment": {
+                    "variables": []
+                },
+                "restart": false,
+                "restarts": 0,
+                "instances": [
+                    {
+                        "handle": {
+                            "pid": 185,
+                            "ipc": "CfK6PyLIQe+ESOhyolrK2Q=="
+                        },
+                        "state": 0
+                    },
+                    {
+                        "handle": {
+                            "pid": 186,
+                            "ipc": "M9zhfKopTCasrFfQ42OSCg=="
+                        },
+                        "state": 0
+                    }
+                ],
+                "resources": [],
+                "restriction": []
+            },
+            {
+                "id": 87,
+                "alias": "kodinformationgeografiserver",
+                "path": "${APPDIR}/bin/kunskapinfo/bin/kodinformationgeografiserver",
+                "arguments": [],
+                "note": "",
+                "memberships": [
+                    27
+                ],
+                "environment": {
+                    "variables": []
+                },
+                "restart": false,
+                "restarts": 0,
+                "instances": [
+                    {
+                        "handle": {
+                            "pid": 187,
+                            "ipc": "RmIVk3EqQH+jQMS/66YhTg=="
+                        },
+                        "state": 0
+                    },
+                    {
+                        "handle": {
+                            "pid": 188,
+                            "ipc": "PJXLStldTbKw3h+EZkZlXw=="
+                        },
+                        "state": 0
+                    }
+                ],
+                "resources": [],
+                "restriction": []
+            },
+            {
+                "id": 89,
+                "alias": "kodinformationhandlaggningserver",
+                "path": "${APPDIR}/bin/kunskapinfo/bin/kodinformationhandlaggningserver",
+                "arguments": [],
+                "note": "",
+                "memberships": [
+                    27
+                ],
+                "environment": {
+                    "variables": []
+                },
+                "restart": false,
+                "restarts": 0,
+                "instances": [
+                    {
+                        "handle": {
+                            "pid": 189,
+                            "ipc": "pXDP35ijRj6EoxcI1FSMoA=="
+                        },
+                        "state": 0
+                    },
+                    {
+                        "handle": {
+                            "pid": 190,
+                            "ipc": "2UiZEkPFSamPu9fh5NPI1Q=="
+                        },
+                        "state": 0
+                    }
+                ],
+                "resources": [],
+                "restriction": []
+            },
+            {
+                "id": 91,
+                "alias": "kodinformationslagformanserver",
+                "path": "${APPDIR}/bin/kunskapinfo/bin/kodinformationslagformanserver",
+                "arguments": [],
+                "note": "",
+                "memberships": [
+                    27
+                ],
+                "environment": {
+                    "variables": []
+                },
+                "restart": false,
+                "restarts": 0,
+                "instances": [
+                    {
+                        "handle": {
+                            "pid": 191,
+                            "ipc": "jpjKypvmQbCi8yRkZSVMtg=="
+                        },
+                        "state": 0
+                    },
+                    {
+                        "handle": {
+                            "pid": 193,
+                            "ipc": "oQVtpdIxQJ687Slqgt2NKg=="
+                        },
+                        "state": 0
+                    }
+                ],
+                "resources": [],
+                "restriction": []
+            },
+            {
+                "id": 93,
+                "alias": "diagnosregisterinfohanterare",
+                "path": "${APPDIR}/bin/kunskapinfo/bin/diagnosregisterinfohanterare",
+                "arguments": [],
+                "note": "",
+                "memberships": [
+                    27
+                ],
+                "environment": {
+                    "variables": []
+                },
+                "restart": false,
+                "restarts": 0,
+                "instances": [
+                    {
+                        "handle": {
+                            "pid": 194,
+                            "ipc": "5lqkWn7bRyKhcy0MiIqbAg=="
+                        },
+                        "state": 0
+                    },
+                    {
+                        "handle": {
+                            "pid": 195,
+                            "ipc": "ZjkXa6WSRpS2EXlMO/p8Pg=="
+                        },
+                        "state": 0
+                    }
+                ],
+                "resources": [],
+                "restriction": []
+            },
+            {
+                "id": 95,
+                "alias": "beslutstextinfohanterare",
+                "path": "${APPDIR}/bin/kunskapinfo/bin/beslutstextinfohanterare",
+                "arguments": [],
+                "note": "",
+                "memberships": [
+                    27
+                ],
+                "environment": {
+                    "variables": []
+                },
+                "restart": false,
+                "restarts": 0,
+                "instances": [
+                    {
+                        "handle": {
+                            "pid": 196,
+                            "ipc": "Z+/q1TUISlGBs9eN1KW/Hg=="
+                        },
+                        "state": 0
+                    },
+                    {
+                        "handle": {
+                            "pid": 197,
+                            "ipc": "Eld+v+Q2RQe8r7i5loRf+A=="
+                        },
+                        "state": 0
+                    }
+                ],
+                "resources": [],
+                "restriction": []
+            },
+            {
+                "id": 97,
+                "alias": "postortsinfohanterare",
+                "path": "${APPDIR}/bin/kunskapinfo/bin/postortsinfohanterare",
+                "arguments": [],
+                "note": "",
+                "memberships": [
+                    27
+                ],
+                "environment": {
+                    "variables": []
+                },
+                "restart": false,
+                "restarts": 0,
+                "instances": [
+                    {
+                        "handle": {
+                            "pid": 198,
+                            "ipc": "Pu575ViwQ5WbsJ85oQ4NKw=="
+                        },
+                        "state": 0
+                    },
+                    {
+                        "handle": {
+                            "pid": 199,
+                            "ipc": "v28V8LmtS0qh86adzUBRxw=="
+                        },
+                        "state": 0
+                    }
+                ],
+                "resources": [],
+                "restriction": []
+            },
+            {
+                "id": 99,
+                "alias": "bevakninginfohanterare",
+                "path": "${APPDIR}/bin/kunskapinfo/bin/bevakninginfohanterare",
+                "arguments": [],
+                "note": "",
+                "memberships": [
+                    27
+                ],
+                "environment": {
+                    "variables": []
+                },
+                "restart": false,
+                "restarts": 0,
+                "instances": [
+                    {
+                        "handle": {
+                            "pid": 200,
+                            "ipc": "/I5l1sIARjGTmw8byd/RRg=="
+                        },
+                        "state": 0
+                    },
+                    {
+                        "handle": {
+                            "pid": 201,
+                            "ipc": "6GzYSKXpR0Sb2jcfGaeOaA=="
+                        },
+                        "state": 0
+                    }
+                ],
+                "resources": [],
+                "restriction": []
+            },
+            {
+                "id": 101,
+                "alias": "formanstypinfohanterare",
+                "path": "${APPDIR}/bin/kunskapinfo/bin/formanstypinfohanterare",
+                "arguments": [],
+                "note": "",
+                "memberships": [
+                    27
+                ],
+                "environment": {
+                    "variables": []
+                },
+                "restart": false,
+                "restarts": 0,
+                "instances": [
+                    {
+                        "handle": {
+                            "pid": 202,
+                            "ipc": "E6CJVs2MQyG914VcOBYsZg=="
+                        },
+                        "state": 0
+                    },
+                    {
+                        "handle": {
+                            "pid": 203,
+                            "ipc": "FnCxuEVlQpyFhtfpMJejog=="
+                        },
+                        "state": 0
+                    }
+                ],
+                "resources": [],
+                "restriction": []
+            },
+            {
+                "id": 103,
+                "alias": "kommtypinfohanterare",
+                "path": "${APPDIR}/bin/kunskapinfo/bin/kommtypinfohanterare",
+                "arguments": [],
+                "note": "",
+                "memberships": [
+                    27
+                ],
+                "environment": {
+                    "variables": []
+                },
+                "restart": false,
+                "restarts": 0,
+                "instances": [
+                    {
+                        "handle": {
+                            "pid": 204,
+                            "ipc": "3/D0CQn3QRW26d/SdmT1rw=="
+                        },
+                        "state": 0
+                    },
+                    {
+                        "handle": {
+                            "pid": 205,
+                            "ipc": "cfN6qwRUQ7aZiXApsGp0Lw=="
+                        },
+                        "state": 0
+                    }
+                ],
+                "resources": [],
+                "restriction": []
+            },
+            {
+                "id": 105,
+                "alias": "myndighetsinfohanterare",
+                "path": "${APPDIR}/bin/kunskapinfo/bin/myndighetsinfohanterare",
+                "arguments": [],
+                "note": "",
+                "memberships": [
+                    27
+                ],
+                "environment": {
+                    "variables": []
+                },
+                "restart": false,
+                "restarts": 0,
+                "instances": [
+                    {
+                        "handle": {
+                            "pid": 206,
+                            "ipc": "9I2dZL7WRziSiqIt2iKOZQ=="
+                        },
+                        "state": 0
+                    },
+                    {
+                        "handle": {
+                            "pid": 207,
+                            "ipc": "reUFB5FMS+2fNlovx8Iw7g=="
+                        },
+                        "state": 0
+                    }
+                ],
+                "resources": [],
+                "restriction": []
+            },
+            {
+                "id": 107,
+                "alias": "telefonnummerinfohanterare",
+                "path": "${APPDIR}/bin/kunskapinfo/bin/telefonnummerinfohanterare",
+                "arguments": [],
+                "note": "",
+                "memberships": [
+                    27
+                ],
+                "environment": {
+                    "variables": []
+                },
+                "restart": false,
+                "restarts": 0,
+                "instances": [
+                    {
+                        "handle": {
+                            "pid": 208,
+                            "ipc": "H6kuFhU3SiuJXX/otkqQCg=="
+                        },
+                        "state": 0
+                    },
+                    {
+                        "handle": {
+                            "pid": 209,
+                            "ipc": "/NIzOu9vQh6XFXBlMiQ95A=="
+                        },
+                        "state": 0
+                    }
+                ],
+                "resources": [],
+                "restriction": []
+            },
+            {
+                "id": 109,
+                "alias": "utbetfaminfohanterare",
+                "path": "${APPDIR}/bin/kunskapinfo/bin/utbetfaminfohanterare",
+                "arguments": [],
+                "note": "",
+                "memberships": [
+                    27
+                ],
+                "environment": {
+                    "variables": []
+                },
+                "restart": false,
+                "restarts": 0,
+                "instances": [
+                    {
+                        "handle": {
+                            "pid": 210,
+                            "ipc": "3c9ZeYpnQSa+RkCrUi2C6Q=="
+                        },
+                        "state": 0
+                    },
+                    {
+                        "handle": {
+                            "pid": 211,
+                            "ipc": "VuNJ5fX+REO32NZltoBQqw=="
+                        },
+                        "state": 0
+                    }
+                ],
+                "resources": [],
+                "restriction": []
+            },
+            {
+                "id": 111,
+                "alias": "lkomradenihanterare",
+                "path": "${APPDIR}/bin/kunskapinfo/bin/lkomradenihanterare",
+                "arguments": [],
+                "note": "",
+                "memberships": [
+                    27
+                ],
+                "environment": {
+                    "variables": []
+                },
+                "restart": false,
+                "restarts": 0,
+                "instances": [
+                    {
+                        "handle": {
+                            "pid": 212,
+                            "ipc": "I70deifrRZyXAnlfASAgYg=="
+                        },
+                        "state": 0
+                    },
+                    {
+                        "handle": {
+                            "pid": 213,
+                            "ipc": "4sywvKwcRmqAs0dlm+troQ=="
+                        },
+                        "state": 0
+                    }
+                ],
+                "resources": [],
+                "restriction": []
+            },
+            {
+                "id": 113,
+                "alias": "kontonummerinfohanterare",
+                "path": "${APPDIR}/bin/kunskapinfo/bin/kontonummerinfohanterare",
+                "arguments": [],
+                "note": "",
+                "memberships": [
+                    27
+                ],
+                "environment": {
+                    "variables": []
+                },
+                "restart": false,
+                "restarts": 0,
+                "instances": [
+                    {
+                        "handle": {
+                            "pid": 214,
+                            "ipc": "L0nH8L6/QcmapOSRmavWvg=="
+                        },
+                        "state": 0
+                    },
+                    {
+                        "handle": {
+                            "pid": 215,
+                            "ipc": "TXiiJgtPT5iNpSJoYh62iw=="
+                        },
+                        "state": 0
+                    }
+                ],
+                "resources": [],
+                "restriction": []
+            },
+            {
+                "id": 115,
+                "alias": "fareginfohanterare",
+                "path": "${APPDIR}/bin/kunskapinfo/bin/fareginfohanterare",
+                "arguments": [],
+                "note": "",
+                "memberships": [
+                    27
+                ],
+                "environment": {
+                    "variables": []
+                },
+                "restart": false,
+                "restarts": 0,
+                "instances": [
+                    {
+                        "handle": {
+                            "pid": 216,
+                            "ipc": "MvFpJFXPRY6w9YRliCjPHQ=="
+                        },
+                        "state": 0
+                    },
+                    {
+                        "handle": {
+                            "pid": 217,
+                            "ipc": "9p3BF8bdQrWN5rWKBwFZ8w=="
+                        },
+                        "state": 0
+                    }
+                ],
+                "resources": [],
+                "restriction": []
+            },
+            {
+                "id": 117,
+                "alias": "kodinformationavtalsregisterserver",
+                "path": "${APPDIR}/bin/kunskapinfo/bin/kodinformationavtalsregisterserver",
+                "arguments": [],
+                "note": "",
+                "memberships": [
+                    27
+                ],
+                "environment": {
+                    "variables": []
+                },
+                "restart": false,
+                "restarts": 0,
+                "instances": [
+                    {
+                        "handle": {
+                            "pid": 218,
+                            "ipc": "AM1+S8VMS+ms0ox6vue/oA=="
+                        },
+                        "state": 0
+                    },
+                    {
+                        "handle": {
+                            "pid": 219,
+                            "ipc": "pLN5jrrcS8qFEQ6cUESeAA=="
+                        },
+                        "state": 0
+                    }
+                ],
+                "resources": [],
+                "restriction": []
+            },
+            {
+                "id": 119,
+                "alias": "organisationsinfohanterare",
+                "path": "${APPDIR}/bin/kunskapinfo/bin/organisationsinfohanterare",
+                "arguments": [],
+                "note": "",
+                "memberships": [
+                    27
+                ],
+                "environment": {
+                    "variables": []
+                },
+                "restart": false,
+                "restarts": 0,
+                "instances": [
+                    {
+                        "handle": {
+                            "pid": 220,
+                            "ipc": "C/4B7/JgTBWtB2qF7Snvjg=="
+                        },
+                        "state": 0
+                    },
+                    {
+                        "handle": {
+                            "pid": 221,
+                            "ipc": "bh6wQpyzSZWN9RDP4yT0FA=="
+                        },
+                        "state": 0
+                    }
+                ],
+                "resources": [],
+                "restriction": []
+            },
+            {
+                "id": 121,
+                "alias": "kuiorganisationsinfosfhanterare",
+                "path": "${APPDIR}/bin/kunskapinfo/bin/kuiorganisationsinfosfhanterare",
+                "arguments": [],
+                "note": "",
+                "memberships": [
+                    27
+                ],
+                "environment": {
+                    "variables": []
+                },
+                "restart": false,
+                "restarts": 0,
+                "instances": [
+                    {
+                        "handle": {
+                            "pid": 222,
+                            "ipc": "joauXURoTAKnRgwUHYz02Q=="
+                        },
+                        "state": 0
+                    },
+                    {
+                        "handle": {
+                            "pid": 223,
+                            "ipc": "5/eGw2L7ToekDSJ3UINyuw=="
+                        },
+                        "state": 0
+                    }
+                ],
+                "resources": [],
+                "restriction": []
+            },
+            {
+                "id": 123,
+                "alias": "orginformationbehorighetprofilserver",
+                "path": "${APPDIR}/bin/kunskapinfo/bin/orginformationbehorighetprofilserver",
+                "arguments": [],
+                "note": "",
+                "memberships": [
+                    27
+                ],
+                "environment": {
+                    "variables": []
+                },
+                "restart": false,
+                "restarts": 0,
+                "instances": [
+                    {
+                        "handle": {
+                            "pid": 224,
+                            "ipc": "pn1aKS5rRcC7wRt+/zoRtA=="
+                        },
+                        "state": 0
+                    },
+                    {
+                        "handle": {
+                            "pid": 225,
+                            "ipc": "+4oof2xzQh6EFVrw9Rii9A=="
+                        },
+                        "state": 0
+                    }
+                ],
+                "resources": [],
+                "restriction": []
+            },
+            {
+                "id": 125,
+                "alias": "orginformationbehorighetserver",
+                "path": "${APPDIR}/bin/kunskapinfo/bin/orginformationbehorighetserver",
+                "arguments": [],
+                "note": "",
+                "memberships": [
+                    27
+                ],
+                "environment": {
+                    "variables": []
+                },
+                "restart": false,
+                "restarts": 0,
+                "instances": [
+                    {
+                        "handle": {
+                            "pid": 226,
+                            "ipc": "DdPxtXmdSj6FEmJ7iGAUzA=="
+                        },
+                        "state": 0
+                    },
+                    {
+                        "handle": {
+                            "pid": 227,
+                            "ipc": "b9OshTlGSTWsSrsh87ItRg=="
+                        },
+                        "state": 0
+                    }
+                ],
+                "resources": [],
+                "restriction": []
+            },
+            {
+                "id": 127,
+                "alias": "orginformationanvandareserver",
+                "path": "${APPDIR}/bin/kunskapinfo/bin/orginformationanvandareserver",
+                "arguments": [],
+                "note": "",
+                "memberships": [
+                    27
+                ],
+                "environment": {
+                    "variables": []
+                },
+                "restart": false,
+                "restarts": 0,
+                "instances": [
+                    {
+                        "handle": {
+                            "pid": 228,
+                            "ipc": "2cHy2zl+SSipIkvpLiz3Zg=="
+                        },
+                        "state": 0
+                    },
+                    {
+                        "handle": {
+                            "pid": 229,
+                            "ipc": "t+OA5R11RryAG3+35Cd0+A=="
+                        },
+                        "state": 0
+                    }
+                ],
+                "resources": [],
+                "restriction": []
+            },
+            {
+                "id": 129,
+                "alias": "kuiuppfoljningsinfohanterare",
+                "path": "${APPDIR}/bin/kunskapinfo/bin/kuiuppfoljningsinfohanterare",
+                "arguments": [],
+                "note": "",
+                "memberships": [
+                    27
+                ],
+                "environment": {
+                    "variables": []
+                },
+                "restart": false,
+                "restarts": 0,
+                "instances": [
+                    {
+                        "handle": {
+                            "pid": 230,
+                            "ipc": "mThITKtFSiyyV9X8ooziTQ=="
+                        },
+                        "state": 0
+                    },
+                    {
+                        "handle": {
+                            "pid": 231,
+                            "ipc": "WYId3BiYTiy2m+qiwi5kkg=="
+                        },
+                        "state": 0
+                    }
+                ],
+                "resources": [],
+                "restriction": []
+            },
+            {
+                "id": 131,
+                "alias": "behorighetsinfohanterare",
+                "path": "${APPDIR}/bin/kunskapinfo/bin/behorighetsinfohanterare",
+                "arguments": [],
+                "note": "",
+                "memberships": [
+                    27
+                ],
+                "environment": {
+                    "variables": []
+                },
+                "restart": false,
+                "restarts": 0,
+                "instances": [
+                    {
+                        "handle": {
+                            "pid": 232,
+                            "ipc": "wZEAs+fXQ9aFFdgqxRmo/A=="
+                        },
+                        "state": 0
+                    },
+                    {
+                        "handle": {
+                            "pid": 233,
+                            "ipc": "l/er4efeSauPA5PqZ9Ir0A=="
+                        },
+                        "state": 0
+                    }
+                ],
+                "resources": [],
+                "restriction": []
+            },
+            {
+                "id": 133,
+                "alias": "handlinfohanterare",
+                "path": "${APPDIR}/bin/kunskapinfo/bin/handlinfohanterare",
+                "arguments": [],
+                "note": "",
+                "memberships": [
+                    27
+                ],
+                "environment": {
+                    "variables": []
+                },
+                "restart": false,
+                "restarts": 0,
+                "instances": [
+                    {
+                        "handle": {
+                            "pid": 234,
+                            "ipc": "c+iBrLhMT9uFwDC3sLy9bg=="
+                        },
+                        "state": 0
+                    },
+                    {
+                        "handle": {
+                            "pid": 235,
+                            "ipc": "VLSNcaLVQeih20O4UmMYvw=="
+                        },
+                        "state": 0
+                    }
+                ],
+                "resources": [],
+                "restriction": []
+            },
+            {
+                "id": 135,
+                "alias": "orginformationbehorighetbestallningserver",
+                "path": "${APPDIR}/bin/kunskapinfo/bin/orginformationbehorighetbestallningserver",
+                "arguments": [],
+                "note": "",
+                "memberships": [
+                    27
+                ],
+                "environment": {
+                    "variables": []
+                },
+                "restart": false,
+                "restarts": 0,
+                "instances": [
+                    {
+                        "handle": {
+                            "pid": 236,
+                            "ipc": "d0boh5FOQKSLcN2BSKhDVg=="
+                        },
+                        "state": 0
+                    },
+                    {
+                        "handle": {
+                            "pid": 237,
+                            "ipc": "XMyu3KMYSD+b5Y0nw1hkEw=="
+                        },
+                        "state": 0
+                    }
+                ],
+                "resources": [],
+                "restriction": []
+            },
+            {
+                "id": 137,
+                "alias": "kuiarbetsomradeinfosfhanterare",
+                "path": "${APPDIR}/bin/kunskapinfo/bin/kuiarbetsomradeinfosfhanterare",
+                "arguments": [],
+                "note": "",
+                "memberships": [
+                    27
+                ],
+                "environment": {
+                    "variables": []
+                },
+                "restart": false,
+                "restarts": 0,
+                "instances": [
+                    {
+                        "handle": {
+                            "pid": 238,
+                            "ipc": "EI995/06Qw6O/5eNujjJaQ=="
+                        },
+                        "state": 0
+                    },
+                    {
+                        "handle": {
+                            "pid": 239,
+                            "ipc": "PsCdQttOR7+OK0OTb8o3qw=="
+                        },
+                        "state": 0
+                    }
+                ],
+                "resources": [],
+                "restriction": []
+            },
+            {
+                "id": 139,
+                "alias": "kodinformationformanserver",
+                "path": "${APPDIR}/bin/kunskapinfo/bin/kodinformationformanserver",
+                "arguments": [],
+                "note": "",
+                "memberships": [
+                    27
+                ],
+                "environment": {
+                    "variables": []
+                },
+                "restart": false,
+                "restarts": 0,
+                "instances": [
+                    {
+                        "handle": {
+                            "pid": 240,
+                            "ipc": "xNRWqPH0RXe1r1g9Sowenw=="
+                        },
+                        "state": 0
+                    },
+                    {
+                        "handle": {
+                            "pid": 241,
+                            "ipc": "AU2zilR8TCi27VC7NS4hqg=="
+                        },
+                        "state": 0
+                    }
+                ],
+                "resources": [],
+                "restriction": []
+            },
+            {
+                "id": 141,
+                "alias": "kuiinstruktionstextinfohanterare",
+                "path": "${APPDIR}/bin/kunskapinfo/bin/kuiinstruktionstextinfohanterare",
+                "arguments": [],
+                "note": "",
+                "memberships": [
+                    27
+                ],
+                "environment": {
+                    "variables": []
+                },
+                "restart": false,
+                "restarts": 0,
+                "instances": [
+                    {
+                        "handle": {
+                            "pid": 242,
+                            "ipc": "yHR8KDbzSd2hezRVS+zlrQ=="
+                        },
+                        "state": 0
+                    },
+                    {
+                        "handle": {
+                            "pid": 243,
+                            "ipc": "Y5WYkHdaQla/BrY6jqMILQ=="
+                        },
+                        "state": 0
+                    }
+                ],
+                "resources": [],
+                "restriction": []
+            },
+            {
+                "id": 143,
+                "alias": "kuibankinfohanterare",
+                "path": "${APPDIR}/bin/kunskapinfo/bin/kuibankinfohanterare",
+                "arguments": [],
+                "note": "",
+                "memberships": [
+                    27
+                ],
+                "environment": {
+                    "variables": []
+                },
+                "restart": false,
+                "restarts": 0,
+                "instances": [
+                    {
+                        "handle": {
+                            "pid": 244,
+                            "ipc": "AuGTdxtQQ6WuMY2R4YB4Gw=="
+                        },
+                        "state": 0
+                    },
+                    {
+                        "handle": {
+                            "pid": 245,
+                            "ipc": "tY2kgU6jSHaevb7LK1LxWA=="
+                        },
+                        "state": 0
+                    }
+                ],
+                "resources": [],
+                "restriction": []
+            },
+            {
+                "id": 145,
+                "alias": "kodinformationhelgdagarserver",
+                "path": "${APPDIR}/bin/kunskapinfo/bin/kodinformationhelgdagarserver",
+                "arguments": [],
+                "note": "",
+                "memberships": [
+                    27
+                ],
+                "environment": {
+                    "variables": []
+                },
+                "restart": false,
+                "restarts": 0,
+                "instances": [
+                    {
+                        "handle": {
+                            "pid": 246,
+                            "ipc": "9kxjWrg5QjyvLjSZZoV3/w=="
+                        },
+                        "state": 0
+                    },
+                    {
+                        "handle": {
+                            "pid": 247,
+                            "ipc": "KXaAiRX7S/CC3ngfNSSnzg=="
+                        },
+                        "state": 0
+                    }
+                ],
+                "resources": [],
+                "restriction": []
+            },
+            {
+                "id": 147,
+                "alias": "kodinformationskatteavdragserver",
+                "path": "${APPDIR}/bin/kunskapinfo/bin/kodinformationskatteavdragserver",
+                "arguments": [],
+                "note": "",
+                "memberships": [
+                    27
+                ],
+                "environment": {
+                    "variables": []
+                },
+                "restart": false,
+                "restarts": 0,
+                "instances": [
+                    {
+                        "handle": {
+                            "pid": 248,
+                            "ipc": "durMI92ATNKp5tnXF1QLyA=="
+                        },
+                        "state": 0
+                    },
+                    {
+                        "handle": {
+                            "pid": 249,
+                            "ipc": "GW406aVDRTq8yfAvcbQ4Xg=="
+                        },
+                        "state": 0
+                    }
+                ],
+                "resources": [],
+                "restriction": []
+            },
+            {
+                "id": 149,
+                "alias": "orginformationdistriktkontorserver",
+                "path": "${APPDIR}/bin/kunskapinfo/bin/orginformationdistriktkontorserver",
+                "arguments": [],
+                "note": "",
+                "memberships": [
+                    27
+                ],
+                "environment": {
+                    "variables": []
+                },
+                "restart": false,
+                "restarts": 0,
+                "instances": [
+                    {
+                        "handle": {
+                            "pid": 250,
+                            "ipc": "kgvlQn9NTE2Obgu8rSZhKg=="
+                        },
+                        "state": 0
+                    },
+                    {
+                        "handle": {
+                            "pid": 251,
+                            "ipc": "EfiI9Sw0Q7Wlvo6kc16ZOw=="
+                        },
+                        "state": 0
+                    }
+                ],
+                "resources": [],
+                "restriction": []
+            },
+            {
+                "id": 151,
+                "alias": "kihanterare",
+                "path": "${APPDIR}/bin/kunskapinfo/bin/kihanterare",
+                "arguments": [],
+                "note": "",
+                "memberships": [
+                    29
+                ],
+                "environment": {
+                    "variables": []
+                },
+                "restart": false,
+                "restarts": 0,
+                "instances": [
+                    {
+                        "handle": {
+                            "pid": 254,
+                            "ipc": "0oMTq48aQg+CRFEkx+Ye3Q=="
+                        },
+                        "state": 0
+                    },
+                    {
+                        "handle": {
+                            "pid": 255,
+                            "ipc": "HBnYCQGqQM23nhVqAq6y3g=="
+                        },
+                        "state": 0
+                    }
+                ],
+                "resources": [],
+                "restriction": []
+            },
+            {
+                "id": 153,
+                "alias": "behhanterare",
+                "path": "${APPDIR}/bin/kunskapinfo/bin/behhanterare",
+                "arguments": [],
+                "note": "",
+                "memberships": [
+                    29
+                ],
+                "environment": {
+                    "variables": []
+                },
+                "restart": false,
+                "restarts": 0,
+                "instances": [
+                    {
+                        "handle": {
+                            "pid": 257,
+                            "ipc": "7npI54/8QNCyETWnI+c2kg=="
+                        },
+                        "state": 0
+                    },
+                    {
+                        "handle": {
+                            "pid": 259,
+                            "ipc": "0HogpCRPQq2je5p5HLZsAg=="
+                        },
+                        "state": 0
+                    }
+                ],
+                "resources": [],
+                "restriction": []
+            },
+            {
+                "id": 155,
+                "alias": "diagnosregisterhanterare",
+                "path": "${APPDIR}/bin/kunskapinfo/bin/diagnosregisterhanterare",
+                "arguments": [],
+                "note": "",
+                "memberships": [
+                    29
+                ],
+                "environment": {
+                    "variables": []
+                },
+                "restart": false,
+                "restarts": 0,
+                "instances": [
+                    {
+                        "handle": {
+                            "pid": 260,
+                            "ipc": "+PjdXg54T3mr4/PBuawCYQ=="
+                        },
+                        "state": 0
+                    },
+                    {
+                        "handle": {
+                            "pid": 261,
+                            "ipc": "YRF7Kk3+Qpylcd/46v59DQ=="
+                        },
+                        "state": 0
+                    }
+                ],
+                "resources": [],
+                "restriction": []
+            },
+            {
+                "id": 157,
+                "alias": "beslutstexthanterare",
+                "path": "${APPDIR}/bin/kunskapinfo/bin/beslutstexthanterare",
+                "arguments": [],
+                "note": "",
+                "memberships": [
+                    29
+                ],
+                "environment": {
+                    "variables": []
+                },
+                "restart": false,
+                "restarts": 0,
+                "instances": [
+                    {
+                        "handle": {
+                            "pid": 262,
+                            "ipc": "BCsSBh4pRrKsQIY7yrApZw=="
+                        },
+                        "state": 0
+                    },
+                    {
+                        "handle": {
+                            "pid": 263,
+                            "ipc": "bGL3b1R+RfK6kACtdr8AAw=="
+                        },
+                        "state": 0
+                    }
+                ],
+                "resources": [],
+                "restriction": []
+            },
+            {
+                "id": 159,
+                "alias": "postortshanterare",
+                "path": "${APPDIR}/bin/kunskapinfo/bin/postortshanterare",
+                "arguments": [],
+                "note": "",
+                "memberships": [
+                    29
+                ],
+                "environment": {
+                    "variables": []
+                },
+                "restart": false,
+                "restarts": 0,
+                "instances": [
+                    {
+                        "handle": {
+                            "pid": 264,
+                            "ipc": "zGpf6su9QiarZ5NVTU0hPA=="
+                        },
+                        "state": 0
+                    },
+                    {
+                        "handle": {
+                            "pid": 265,
+                            "ipc": "tyE3vBYJQay+3wsrSam7vQ=="
+                        },
+                        "state": 0
+                    }
+                ],
+                "resources": [],
+                "restriction": []
+            },
+            {
+                "id": 161,
+                "alias": "bevakningshanterare",
+                "path": "${APPDIR}/bin/kunskapinfo/bin/bevakningshanterare",
+                "arguments": [],
+                "note": "",
+                "memberships": [
+                    29
+                ],
+                "environment": {
+                    "variables": []
+                },
+                "restart": false,
+                "restarts": 0,
+                "instances": [
+                    {
+                        "handle": {
+                            "pid": 266,
+                            "ipc": "jRjRwexuRyKmlwgWkh2EJA=="
+                        },
+                        "state": 0
+                    },
+                    {
+                        "handle": {
+                            "pid": 267,
+                            "ipc": "AfaxioXrSESgroTShJtUKg=="
+                        },
+                        "state": 0
+                    }
+                ],
+                "resources": [],
+                "restriction": []
+            },
+            {
+                "id": 163,
+                "alias": "fastighethanterare",
+                "path": "${APPDIR}/bin/kunskapinfo/bin/fastighethanterare",
+                "arguments": [],
+                "note": "",
+                "memberships": [
+                    29
+                ],
+                "environment": {
+                    "variables": []
+                },
+                "restart": false,
+                "restarts": 0,
+                "instances": [
+                    {
+                        "handle": {
+                            "pid": 268,
+                            "ipc": "VKrOCKgVRI6YLrGKAHBoLA=="
+                        },
+                        "state": 0
+                    },
+                    {
+                        "handle": {
+                            "pid": 269,
+                            "ipc": "dK8HNui6SfyU/ogkSUcjNQ=="
+                        },
+                        "state": 0
+                    }
+                ],
+                "resources": [],
+                "restriction": []
+            },
+            {
+                "id": 165,
+                "alias": "formanstyphanterare",
+                "path": "${APPDIR}/bin/kunskapinfo/bin/formanstyphanterare",
+                "arguments": [],
+                "note": "",
+                "memberships": [
+                    29
+                ],
+                "environment": {
+                    "variables": []
+                },
+                "restart": false,
+                "restarts": 0,
+                "instances": [
+                    {
+                        "handle": {
+                            "pid": 270,
+                            "ipc": "MyZqSQ3cTkKVBe/UIugrVQ=="
+                        },
+                        "state": 0
+                    },
+                    {
+                        "handle": {
+                            "pid": 271,
+                            "ipc": "pH6PVX7fS9eu3ufoK/0u6A=="
+                        },
+                        "state": 0
+                    }
+                ],
+                "resources": [],
+                "restriction": []
+            },
+            {
+                "id": 167,
+                "alias": "kommtyphanterare",
+                "path": "${APPDIR}/bin/kunskapinfo/bin/kommtyphanterare",
+                "arguments": [],
+                "note": "",
+                "memberships": [
+                    29
+                ],
+                "environment": {
+                    "variables": []
+                },
+                "restart": false,
+                "restarts": 0,
+                "instances": [
+                    {
+                        "handle": {
+                            "pid": 272,
+                            "ipc": "3Ew2TWKxQ32jNKpkCADekg=="
+                        },
+                        "state": 0
+                    },
+                    {
+                        "handle": {
+                            "pid": 273,
+                            "ipc": "A9bYQV9oRl+9uVOGga8iaQ=="
+                        },
+                        "state": 0
+                    }
+                ],
+                "resources": [],
+                "restriction": []
+            },
+            {
+                "id": 169,
+                "alias": "skatthanterare",
+                "path": "${APPDIR}/bin/kunskapinfo/bin/skatthanterare",
+                "arguments": [],
+                "note": "",
+                "memberships": [
+                    29
+                ],
+                "environment": {
+                    "variables": []
+                },
+                "restart": false,
+                "restarts": 0,
+                "instances": [
+                    {
+                        "handle": {
+                            "pid": 274,
+                            "ipc": "wRpxicOvTwSCKM1jXbDWUA=="
+                        },
+                        "state": 0
+                    },
+                    {
+                        "handle": {
+                            "pid": 275,
+                            "ipc": "F1s4RXoqRWK/LEetpgFtQQ=="
+                        },
+                        "state": 0
+                    }
+                ],
+                "resources": [],
+                "restriction": []
+            },
+            {
+                "id": 171,
+                "alias": "myndighetshanterare",
+                "path": "${APPDIR}/bin/kunskapinfo/bin/myndighetshanterare",
+                "arguments": [],
+                "note": "",
+                "memberships": [
+                    29
+                ],
+                "environment": {
+                    "variables": []
+                },
+                "restart": false,
+                "restarts": 0,
+                "instances": [
+                    {
+                        "handle": {
+                            "pid": 276,
+                            "ipc": "R8xgSIwERviGSNb4ygwM8Q=="
+                        },
+                        "state": 0
+                    },
+                    {
+                        "handle": {
+                            "pid": 277,
+                            "ipc": "xXfJS5Q1SO+xjW3v/3ZYvg=="
+                        },
+                        "state": 0
+                    }
+                ],
+                "resources": [],
+                "restriction": []
+            },
+            {
+                "id": 173,
+                "alias": "utbetfamhanterare",
+                "path": "${APPDIR}/bin/kunskapinfo/bin/utbetfamhanterare",
+                "arguments": [],
+                "note": "",
+                "memberships": [
+                    29
+                ],
+                "environment": {
+                    "variables": []
+                },
+                "restart": false,
+                "restarts": 0,
+                "instances": [
+                    {
+                        "handle": {
+                            "pid": 278,
+                            "ipc": "Ati+cG86S12Dl9aKyj2oTg=="
+                        },
+                        "state": 0
+                    },
+                    {
+                        "handle": {
+                            "pid": 279,
+                            "ipc": "NHM+qdwQSjiW2pmBSEX2ow=="
+                        },
+                        "state": 0
+                    }
+                ],
+                "resources": [],
+                "restriction": []
+            },
+            {
+                "id": 175,
+                "alias": "lkomradenvhanterare",
+                "path": "${APPDIR}/bin/kunskapinfo/bin/lkomradenvhanterare",
+                "arguments": [],
+                "note": "",
+                "memberships": [
+                    29
+                ],
+                "environment": {
+                    "variables": []
+                },
+                "restart": false,
+                "restarts": 0,
+                "instances": [
+                    {
+                        "handle": {
+                            "pid": 280,
+                            "ipc": "gXkfq2m4S6SPOouO0YH1FA=="
+                        },
+                        "state": 0
+                    },
+                    {
+                        "handle": {
+                            "pid": 281,
+                            "ipc": "za1I8EZrR8yhtsikuAZSAg=="
+                        },
+                        "state": 0
+                    }
+                ],
+                "resources": [],
+                "restriction": []
+            },
+            {
+                "id": 177,
+                "alias": "kontonummerhanterare",
+                "path": "${APPDIR}/bin/kunskapinfo/bin/kontonummerhanterare",
+                "arguments": [],
+                "note": "",
+                "memberships": [
+                    29
+                ],
+                "environment": {
+                    "variables": []
+                },
+                "restart": false,
+                "restarts": 0,
+                "instances": [
+                    {
+                        "handle": {
+                            "pid": 282,
+                            "ipc": "di4TFenfRESqJiEabyEJMQ=="
+                        },
+                        "state": 0
+                    },
+                    {
+                        "handle": {
+                            "pid": 283,
+                            "ipc": "2dsYZF1QSByEp4754bCqzw=="
+                        },
+                        "state": 0
+                    }
+                ],
+                "resources": [],
+                "restriction": []
+            },
+            {
+                "id": 179,
+                "alias": "fareghanterare",
+                "path": "${APPDIR}/bin/kunskapinfo/bin/fareghanterare",
+                "arguments": [],
+                "note": "",
+                "memberships": [
+                    29
+                ],
+                "environment": {
+                    "variables": []
+                },
+                "restart": false,
+                "restarts": 0,
+                "instances": [
+                    {
+                        "handle": {
+                            "pid": 284,
+                            "ipc": "W/r90evVSWy5JIddhaiPbw=="
+                        },
+                        "state": 0
+                    },
+                    {
+                        "handle": {
+                            "pid": 285,
+                            "ipc": "UmrLVYkNRB6XjCccFfYRTg=="
+                        },
+                        "state": 0
+                    }
+                ],
+                "resources": [],
+                "restriction": []
+            },
+            {
+                "id": 181,
+                "alias": "organisationshanterare",
+                "path": "${APPDIR}/bin/kunskapinfo/bin/organisationshanterare",
+                "arguments": [],
+                "note": "",
+                "memberships": [
+                    29
+                ],
+                "environment": {
+                    "variables": []
+                },
+                "restart": false,
+                "restarts": 0,
+                "instances": [
+                    {
+                        "handle": {
+                            "pid": 286,
+                            "ipc": "6vzpYNvwQY2aW+vOVH8qLg=="
+                        },
+                        "state": 0
+                    },
+                    {
+                        "handle": {
+                            "pid": 287,
+                            "ipc": "+nmQdxKKT3aEflDXlfynPg=="
+                        },
+                        "state": 0
+                    }
+                ],
+                "resources": [],
+                "restriction": []
+            },
+            {
+                "id": 183,
+                "alias": "kuiorganisationssfhanterare",
+                "path": "${APPDIR}/bin/kunskapinfo/bin/kuiorganisationssfhanterare",
+                "arguments": [],
+                "note": "",
+                "memberships": [
+                    29
+                ],
+                "environment": {
+                    "variables": []
+                },
+                "restart": false,
+                "restarts": 0,
+                "instances": [
+                    {
+                        "handle": {
+                            "pid": 288,
+                            "ipc": "0fjQ7pOqT+eBAHgbsfdbtw=="
+                        },
+                        "state": 0
+                    },
+                    {
+                        "handle": {
+                            "pid": 289,
+                            "ipc": "oJZFCRDFQti6EkgiJ6vntg=="
+                        },
+                        "state": 0
+                    }
+                ],
+                "resources": [],
+                "restriction": []
+            },
+            {
+                "id": 185,
+                "alias": "orgbehorighetbestallningserver",
+                "path": "${APPDIR}/bin/kunskapinfo/bin/orgbehorighetbestallningserver",
+                "arguments": [],
+                "note": "",
+                "memberships": [
+                    29
+                ],
+                "environment": {
+                    "variables": []
+                },
+                "restart": false,
+                "restarts": 0,
+                "instances": [
+                    {
+                        "handle": {
+                            "pid": 290,
+                            "ipc": "UYjg43G7QKeBTZc30x8YuA=="
+                        },
+                        "state": 0
+                    },
+                    {
+                        "handle": {
+                            "pid": 291,
+                            "ipc": "CKkv1hUdQmK0YZESHGLRBQ=="
+                        },
+                        "state": 0
+                    }
+                ],
+                "resources": [],
+                "restriction": []
+            },
+            {
+                "id": 187,
+                "alias": "orgbehorighetprofilserver",
+                "path": "${APPDIR}/bin/kunskapinfo/bin/orgbehorighetprofilserver",
+                "arguments": [],
+                "note": "",
+                "memberships": [
+                    29
+                ],
+                "environment": {
+                    "variables": []
+                },
+                "restart": false,
+                "restarts": 0,
+                "instances": [
+                    {
+                        "handle": {
+                            "pid": 292,
+                            "ipc": "w6Qty8rRQCqtBjcdfxveyQ=="
+                        },
+                        "state": 0
+                    },
+                    {
+                        "handle": {
+                            "pid": 293,
+                            "ipc": "PNZ1fRqTRa6nQOVcBaBBrQ=="
+                        },
+                        "state": 0
+                    }
+                ],
+                "resources": [],
+                "restriction": []
+            },
+            {
+                "id": 189,
+                "alias": "orgadministrationbehorighetserver",
+                "path": "${APPDIR}/bin/kunskapinfo/bin/orgadministrationbehorighetserver",
+                "arguments": [],
+                "note": "",
+                "memberships": [
+                    29
+                ],
+                "environment": {
+                    "variables": []
+                },
+                "restart": false,
+                "restarts": 0,
+                "instances": [
+                    {
+                        "handle": {
+                            "pid": 294,
+                            "ipc": "pYUVdQBFSqO327ca137lxA=="
+                        },
+                        "state": 0
+                    },
+                    {
+                        "handle": {
+                            "pid": 295,
+                            "ipc": "iVbWDCaWRr6I1uA4MTSzcA=="
+                        },
+                        "state": 0
+                    }
+                ],
+                "resources": [],
+                "restriction": []
+            },
+            {
+                "id": 191,
+                "alias": "orgadministrationanvandareserver",
+                "path": "${APPDIR}/bin/kunskapinfo/bin/orgadministrationanvandareserver",
+                "arguments": [],
+                "note": "",
+                "memberships": [
+                    29
+                ],
+                "environment": {
+                    "variables": []
+                },
+                "restart": false,
+                "restarts": 0,
+                "instances": [
+                    {
+                        "handle": {
+                            "pid": 296,
+                            "ipc": "lLQ9QGOrTNadZM8D6jfLmg=="
+                        },
+                        "state": 0
+                    },
+                    {
+                        "handle": {
+                            "pid": 297,
+                            "ipc": "BPHNy3SrSLSb5dD0W3U5Sg=="
+                        },
+                        "state": 0
+                    }
+                ],
+                "resources": [],
+                "restriction": []
+            },
+            {
+                "id": 193,
+                "alias": "kuiuppfoljningshanterare",
+                "path": "${APPDIR}/bin/kunskapinfo/bin/kuiuppfoljningshanterare",
+                "arguments": [],
+                "note": "",
+                "memberships": [
+                    29
+                ],
+                "environment": {
+                    "variables": []
+                },
+                "restart": false,
+                "restarts": 0,
+                "instances": [
+                    {
+                        "handle": {
+                            "pid": 298,
+                            "ipc": "wTf9RPJRTraCJ3BT5ekGKw=="
+                        },
+                        "state": 0
+                    },
+                    {
+                        "handle": {
+                            "pid": 299,
+                            "ipc": "cGB9UxFISmaSJuhmapYEjg=="
+                        },
+                        "state": 0
+                    }
+                ],
+                "resources": [],
+                "restriction": []
+            },
+            {
+                "id": 195,
+                "alias": "handlhanterare",
+                "path": "${APPDIR}/bin/kunskapinfo/bin/handlhanterare",
+                "arguments": [],
+                "note": "",
+                "memberships": [
+                    29
+                ],
+                "environment": {
+                    "variables": []
+                },
+                "restart": false,
+                "restarts": 0,
+                "instances": [
+                    {
+                        "handle": {
+                            "pid": 300,
+                            "ipc": "kneBoxm8SkiKCnAg3DIg7w=="
+                        },
+                        "state": 0
+                    },
+                    {
+                        "handle": {
+                            "pid": 301,
+                            "ipc": "p/E7ucqDQxOv1QUdxc18WA=="
+                        },
+                        "state": 0
+                    }
+                ],
+                "resources": [],
+                "restriction": []
+            },
+            {
+                "id": 197,
+                "alias": "ekaregisterhanterare",
+                "path": "${APPDIR}/bin/kunskapinfo/bin/ekaregisterhanterare",
+                "arguments": [],
+                "note": "",
+                "memberships": [
+                    29
+                ],
+                "environment": {
+                    "variables": []
+                },
+                "restart": false,
+                "restarts": 0,
+                "instances": [
+                    {
+                        "handle": {
+                            "pid": 302,
+                            "ipc": "/l3ycHupT0mL7dlObOb4XA=="
+                        },
+                        "state": 0
+                    },
+                    {
+                        "handle": {
+                            "pid": 303,
+                            "ipc": "b05+627DRtSG//TvjL5HaA=="
+                        },
+                        "state": 0
+                    }
+                ],
+                "resources": [],
+                "restriction": []
+            },
+            {
+                "id": 199,
+                "alias": "kuiarbetsomradesfhanterare",
+                "path": "${APPDIR}/bin/kunskapinfo/bin/kuiarbetsomradesfhanterare",
+                "arguments": [],
+                "note": "",
+                "memberships": [
+                    29
+                ],
+                "environment": {
+                    "variables": []
+                },
+                "restart": false,
+                "restarts": 0,
+                "instances": [
+                    {
+                        "handle": {
+                            "pid": 304,
+                            "ipc": "zf/7B1S5RMqJ0KF+S73wiQ=="
+                        },
+                        "state": 0
+                    },
+                    {
+                        "handle": {
+                            "pid": 305,
+                            "ipc": "OheyJSETRwqIBXjy5e/ZNQ=="
+                        },
+                        "state": 0
+                    }
+                ],
+                "resources": [],
+                "restriction": []
+            },
+            {
+                "id": 201,
+                "alias": "kuiinstruktionstexthanterare",
+                "path": "${APPDIR}/bin/kunskapinfo/bin/kuiinstruktionstexthanterare",
+                "arguments": [],
+                "note": "",
+                "memberships": [
+                    29
+                ],
+                "environment": {
+                    "variables": []
+                },
+                "restart": false,
+                "restarts": 0,
+                "instances": [
+                    {
+                        "handle": {
+                            "pid": 306,
+                            "ipc": "tboNv1fGSCqlFWuP2YipmA=="
+                        },
+                        "state": 0
+                    },
+                    {
+                        "handle": {
+                            "pid": 307,
+                            "ipc": "zcrD7+2rQzGUCvRQmkns0g=="
+                        },
+                        "state": 0
+                    }
+                ],
+                "resources": [],
+                "restriction": []
+            },
+            {
+                "id": 203,
+                "alias": "kuibankhanterare",
+                "path": "${APPDIR}/bin/kunskapinfo/bin/kuibankhanterare",
+                "arguments": [],
+                "note": "",
+                "memberships": [
+                    29
+                ],
+                "environment": {
+                    "variables": []
+                },
+                "restart": false,
+                "restarts": 0,
+                "instances": [
+                    {
+                        "handle": {
+                            "pid": 308,
+                            "ipc": "l8icxIe0QP2VJtqvZHJy9A=="
+                        },
+                        "state": 0
+                    },
+                    {
+                        "handle": {
+                            "pid": 309,
+                            "ipc": "xNY66OCrR7yelatTsNoOfw=="
+                        },
+                        "state": 0
+                    }
+                ],
+                "resources": [],
+                "restriction": []
+            },
+            {
+                "id": 205,
+                "alias": "kodfasaddiagnosserver",
+                "path": "${APPDIR}/bin/kunskapinfo/bin/kodfasaddiagnosserver",
+                "arguments": [],
+                "note": "",
+                "memberships": [
+                    29
+                ],
+                "environment": {
+                    "variables": []
+                },
+                "restart": false,
+                "restarts": 0,
+                "instances": [
+                    {
+                        "handle": {
+                            "pid": 310,
+                            "ipc": "mZqJIn77Q0C4GrlEd15oZA=="
+                        },
+                        "state": 0
+                    },
+                    {
+                        "handle": {
+                            "pid": 311,
+                            "ipc": "t0D42pQ0QWKn/yFM5OBArg=="
+                        },
+                        "state": 0
+                    }
+                ],
+                "resources": [],
+                "restriction": []
+            },
+            {
+                "id": 207,
+                "alias": "kodfasadekonomiserver",
+                "path": "${APPDIR}/bin/kunskapinfo/bin/kodfasadekonomiserver",
+                "arguments": [],
+                "note": "",
+                "memberships": [
+                    29
+                ],
+                "environment": {
+                    "variables": []
+                },
+                "restart": false,
+                "restarts": 0,
+                "instances": [
+                    {
+                        "handle": {
+                            "pid": 312,
+                            "ipc": "Hyf8VXP0TDe73iGc4IxkJg=="
+                        },
+                        "state": 0
+                    },
+                    {
+                        "handle": {
+                            "pid": 313,
+                            "ipc": "YzCqaonFR+yFTPZzlti47g=="
+                        },
+                        "state": 0
+                    }
+                ],
+                "resources": [],
+                "restriction": []
+            },
+            {
+                "id": 209,
+                "alias": "kodfasadfastighetserver",
+                "path": "${APPDIR}/bin/kunskapinfo/bin/kodfasadfastighetserver",
+                "arguments": [],
+                "note": "",
+                "memberships": [
+                    29
+                ],
+                "environment": {
+                    "variables": []
+                },
+                "restart": false,
+                "restarts": 0,
+                "instances": [
+                    {
+                        "handle": {
+                            "pid": 314,
+                            "ipc": "JKcji01tRf6UD1IFs7qjIQ=="
+                        },
+                        "state": 0
+                    },
+                    {
+                        "handle": {
+                            "pid": 315,
+                            "ipc": "zNIlOPPFTwS0OLaA73bjXA=="
+                        },
+                        "state": 0
+                    }
+                ],
+                "resources": [],
+                "restriction": []
+            },
+            {
+                "id": 211,
+                "alias": "kodadministrationgeografiserver",
+                "path": "${APPDIR}/bin/kunskapinfo/bin/kodadministrationgeografiserver",
+                "arguments": [],
+                "note": "",
+                "memberships": [
+                    29
+                ],
+                "environment": {
+                    "variables": []
+                },
+                "restart": false,
+                "restarts": 0,
+                "instances": [
+                    {
+                        "handle": {
+                            "pid": 316,
+                            "ipc": "r4DQdhkvTo2cI27TYvQZig=="
+                        },
+                        "state": 0
+                    },
+                    {
+                        "handle": {
+                            "pid": 317,
+                            "ipc": "39d0VV9HTVOUAqJB6itsvg=="
+                        },
+                        "state": 0
+                    }
+                ],
+                "resources": [],
+                "restriction": []
+            },
+            {
+                "id": 213,
+                "alias": "kodfasadkommunikationserver",
+                "path": "${APPDIR}/bin/kunskapinfo/bin/kodfasadkommunikationserver",
+                "arguments": [],
+                "note": "",
+                "memberships": [
+                    29
+                ],
+                "environment": {
+                    "variables": []
+                },
+                "restart": false,
+                "restarts": 0,
+                "instances": [
+                    {
+                        "handle": {
+                            "pid": 318,
+                            "ipc": "pBBUhBNlRzCnH6tROj1Rgg=="
+                        },
+                        "state": 0
+                    },
+                    {
+                        "handle": {
+                            "pid": 319,
+                            "ipc": "h1bKwVscTTWekSl3Gqzd3Q=="
+                        },
+                        "state": 0
+                    }
+                ],
+                "resources": [],
+                "restriction": []
+            },
+            {
+                "id": 215,
+                "alias": "kodfasadgeografiserver",
+                "path": "${APPDIR}/bin/kunskapinfo/bin/kodfasadgeografiserver",
+                "arguments": [],
+                "note": "",
+                "memberships": [
+                    29
+                ],
+                "environment": {
+                    "variables": []
+                },
+                "restart": false,
+                "restarts": 0,
+                "instances": [
+                    {
+                        "handle": {
+                            "pid": 320,
+                            "ipc": "4eEQIkHQSpiMK/OJY9nioA=="
+                        },
+                        "state": 0
+                    },
+                    {
+                        "handle": {
+                            "pid": 321,
+                            "ipc": "SmIzktZAQauk+17HgeEjfg=="
+                        },
+                        "state": 0
+                    }
+                ],
+                "resources": [],
+                "restriction": []
+            },
+            {
+                "id": 217,
+                "alias": "kodfasadhelgdagarserver",
+                "path": "${APPDIR}/bin/kunskapinfo/bin/kodfasadhelgdagarserver",
+                "arguments": [],
+                "note": "",
+                "memberships": [
+                    29
+                ],
+                "environment": {
+                    "variables": []
+                },
+                "restart": false,
+                "restarts": 0,
+                "instances": [
+                    {
+                        "handle": {
+                            "pid": 322,
+                            "ipc": "gaSJ+3DnTsuIUDTcf9HD6g=="
+                        },
+                        "state": 0
+                    },
+                    {
+                        "handle": {
+                            "pid": 323,
+                            "ipc": "UVUxC/4EQVSWFFCNE4zSGQ=="
+                        },
+                        "state": 0
+                    }
+                ],
+                "resources": [],
+                "restriction": []
+            },
+            {
+                "id": 219,
+                "alias": "kodadministrationskatteavdragserver",
+                "path": "${APPDIR}/bin/kunskapinfo/bin/kodadministrationskatteavdragserver",
+                "arguments": [],
+                "note": "",
+                "memberships": [
+                    29
+                ],
+                "environment": {
+                    "variables": []
+                },
+                "restart": false,
+                "restarts": 0,
+                "instances": [
+                    {
+                        "handle": {
+                            "pid": 324,
+                            "ipc": "LRrmrd4uSfWav2t5MbfmCw=="
+                        },
+                        "state": 0
+                    },
+                    {
+                        "handle": {
+                            "pid": 325,
+                            "ipc": "kNW9eVihTnWQiScAgE8Hvg=="
+                        },
+                        "state": 0
+                    }
+                ],
+                "resources": [],
+                "restriction": []
+            },
+            {
+                "id": 221,
+                "alias": "kodfasadskatteavdragserver",
+                "path": "${APPDIR}/bin/kunskapinfo/bin/kodfasadskatteavdragserver",
+                "arguments": [],
+                "note": "",
+                "memberships": [
+                    29
+                ],
+                "environment": {
+                    "variables": []
+                },
+                "restart": false,
+                "restarts": 0,
+                "instances": [
+                    {
+                        "handle": {
+                            "pid": 326,
+                            "ipc": "H0wiJsVxQNSeqr/Yb5a/IA=="
+                        },
+                        "state": 0
+                    },
+                    {
+                        "handle": {
+                            "pid": 327,
+                            "ipc": "low9lEOITRSiKCESjUtTzA=="
+                        },
+                        "state": 0
+                    }
+                ],
+                "resources": [],
+                "restriction": []
+            },
+            {
+                "id": 223,
+                "alias": "kodfasadstatiskinformationserver",
+                "path": "${APPDIR}/bin/kunskapinfo/bin/kodfasadstatiskinformationserver",
+                "arguments": [],
+                "note": "",
+                "memberships": [
+                    29
+                ],
+                "environment": {
+                    "variables": []
+                },
+                "restart": false,
+                "restarts": 0,
+                "instances": [
+                    {
+                        "handle": {
+                            "pid": 328,
+                            "ipc": "6AdrbegJSqyxGUVCGtaciw=="
+                        },
+                        "state": 0
+                    },
+                    {
+                        "handle": {
+                            "pid": 329,
+                            "ipc": "kR82sZNuSzW81uNVuotbTw=="
+                        },
+                        "state": 0
+                    }
+                ],
+                "resources": [],
+                "restriction": []
+            },
+            {
+                "id": 225,
+                "alias": "orgfasaddistriktkontorserver",
+                "path": "${APPDIR}/bin/kunskapinfo/bin/orgfasaddistriktkontorserver",
+                "arguments": [],
+                "note": "",
+                "memberships": [
+                    29
+                ],
+                "environment": {
+                    "variables": []
+                },
+                "restart": false,
+                "restarts": 0,
+                "instances": [
+                    {
+                        "handle": {
+                            "pid": 330,
+                            "ipc": "H/dACqUKQ76vQLjoK5FyJw=="
+                        },
+                        "state": 0
+                    },
+                    {
+                        "handle": {
+                            "pid": 331,
+                            "ipc": "nAWsLfTzQpqSTSHJb81ABg=="
+                        },
+                        "state": 0
+                    }
+                ],
+                "resources": [],
+                "restriction": []
+            },
+            {
+                "id": 227,
+                "alias": "orgfasadbehorighetserver",
+                "path": "${APPDIR}/bin/kunskapinfo/bin/orgfasadbehorighetserver",
+                "arguments": [],
+                "note": "",
+                "memberships": [
+                    29
+                ],
+                "environment": {
+                    "variables": []
+                },
+                "restart": false,
+                "restarts": 0,
+                "instances": [
+                    {
+                        "handle": {
+                            "pid": 332,
+                            "ipc": "2hd3aR7STxqRM+DRSWLbTA=="
+                        },
+                        "state": 0
+                    },
+                    {
+                        "handle": {
+                            "pid": 333,
+                            "ipc": "4ptQqDRMTrSwEjpb88UW3w=="
+                        },
+                        "state": 0
+                    }
+                ],
+                "resources": [],
+                "restriction": []
+            },
+            {
+                "id": 229,
+                "alias": "kodfasadslagformanserver",
+                "path": "${APPDIR}/bin/kunskapinfo/bin/kodfasadslagformanserver",
+                "arguments": [],
+                "note": "",
+                "memberships": [
+                    29
+                ],
+                "environment": {
+                    "variables": []
+                },
+                "restart": false,
+                "restarts": 0,
+                "instances": [
+                    {
+                        "handle": {
+                            "pid": 334,
+                            "ipc": "ZQAgJJ45S1Kj8B47htGilw=="
+                        },
+                        "state": 0
+                    },
+                    {
+                        "handle": {
+                            "pid": 335,
+                            "ipc": "JjdIcUn8QmurD+4CXrViqQ=="
+                        },
+                        "state": 0
+                    }
+                ],
+                "resources": [],
+                "restriction": []
+            },
+            {
+                "id": 231,
+                "alias": "orgadministrationdistriktkontorserver",
+                "path": "${APPDIR}/bin/kunskapinfo/bin/orgadministrationdistriktkontorserver",
+                "arguments": [],
+                "note": "",
+                "memberships": [
+                    29
+                ],
+                "environment": {
+                    "variables": []
+                },
+                "restart": false,
+                "restarts": 0,
+                "instances": [
+                    {
+                        "handle": {
+                            "pid": 336,
+                            "ipc": "EwxxLSLVSB+RJYm7xNGMYA=="
+                        },
+                        "state": 0
+                    },
+                    {
+                        "handle": {
+                            "pid": 337,
+                            "ipc": "ffI0tQcQSD67VRrqtgW3LA=="
+                        },
+                        "state": 0
+                    }
+                ],
+                "resources": [],
+                "restriction": []
+            },
+            {
+                "id": 233,
+                "alias": "orgfasadanvandareserver",
+                "path": "${APPDIR}/bin/kunskapinfo/bin/orgfasadanvandareserver",
+                "arguments": [],
+                "note": "",
+                "memberships": [
+                    29
+                ],
+                "environment": {
+                    "variables": []
+                },
+                "restart": false,
+                "restarts": 0,
+                "instances": [
+                    {
+                        "handle": {
+                            "pid": 338,
+                            "ipc": "abiQ5m/2R9S0vK5JWDpuRg=="
+                        },
+                        "state": 0
+                    },
+                    {
+                        "handle": {
+                            "pid": 339,
+                            "ipc": "Lo2IKff3SbKjctYmZM/Pjw=="
+                        },
+                        "state": 0
+                    }
+                ],
+                "resources": [],
+                "restriction": []
+            },
+            {
+                "id": 335,
+                "alias": "casual-service-manager",
+                "path": "${CASUAL_HOME}/bin/casual-service-manager",
+                "arguments": [],
+                "note": "service lookup and management",
+                "memberships": [
+                    6
+                ],
+                "environment": {
+                    "variables": []
+                },
+                "restart": false,
+                "restarts": 0,
+                "instances": [
+                    {
+                        "handle": {
+                            "pid": 149,
+                            "ipc": "j0J9OjwbRoek1vT6rEetPQ=="
+                        },
+                        "state": 0
+                    }
+                ],
+                "resources": [],
+                "restriction": []
+            },
+            {
+                "id": 425,
+                "alias": "casual-transaction-manager",
+                "path": "${CASUAL_HOME}/bin/casual-transaction-manager",
+                "arguments": [
+                    "--transaction-log",
+                    "${CASUAL_DOMAIN_HOME}/transaction/log.db"
+                ],
+                "note": "manage transaction in this domain",
+                "memberships": [
+                    7
+                ],
+                "environment": {
+                    "variables": []
+                },
+                "restart": false,
+                "restarts": 0,
+                "instances": [
+                    {
+                        "handle": {
+                            "pid": 151,
+                            "ipc": "1vKvvW8vRuWFZqUnMe6iRQ=="
+                        },
+                        "state": 0
+                    }
+                ],
+                "resources": [],
+                "restriction": []
+            },
+            {
+                "id": 427,
+                "alias": "casual-queue-manager",
+                "path": "${CASUAL_HOME}/bin/casual-queue-manager",
+                "arguments": [],
+                "note": "manage queues in this domain",
+                "memberships": [
+                    8
+                ],
+                "environment": {
+                    "variables": []
+                },
+                "restart": false,
+                "restarts": 0,
+                "instances": [
+                    {
+                        "handle": {
+                            "pid": 161,
+                            "ipc": "d+++vadxSkaxXEnZj8LxPg=="
+                        },
+                        "state": 0
+                    }
+                ],
+                "resources": [],
+                "restriction": []
+            },
+            {
+                "id": 429,
+                "alias": "casual-gateway-manager",
+                "path": "${CASUAL_HOME}/bin/casual-gateway-manager",
+                "arguments": [],
+                "note": "manage connections to and from other domains",
+                "memberships": [
+                    33
+                ],
+                "environment": {
+                    "variables": []
+                },
+                "restart": false,
+                "restarts": 0,
+                "instances": [
+                    {
+                        "handle": {
+                            "pid": 340,
+                            "ipc": "fgxRb6t6S6WLEJKgDfyX9A=="
+                        },
+                        "state": 0
+                    }
+                ],
+                "resources": [],
+                "restriction": []
+            }
+        ],
+        "event": {
+            "listeners": []
+        }
+    }
+}

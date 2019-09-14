@@ -1,0 +1,229 @@
+{
+    "result": {
+        "resources": [
+            {
+                "id": 1,
+                "name": "mq-resource",
+                "key": "MQSeries_XA_RMI",
+                "openinfo": "channel=FK.DUPLO.SVRCONN,trptype=tcp,conname=vsgqmdup1.sfa.se(1414),qmname=QMDUP",
+                "closeinfo": "",
+                "concurency": 3,
+                "metrics": {
+                    "resource": {
+                        "count": 0,
+                        "total": 0,
+                        "limit": {
+                            "min": 0,
+                            "max": 0
+                        }
+                    },
+                    "roundtrip": {
+                        "count": 0,
+                        "total": 0,
+                        "limit": {
+                            "min": 0,
+                            "max": 0
+                        }
+                    }
+                },
+                "instances": [
+                    {
+                        "id": 1,
+                        "process": {
+                            "pid": 152,
+                            "ipc": "c+zJZkwwTjqjdXbj7gb00A=="
+                        },
+                        "state": 2,
+                        "metrics": {
+                            "resource": {
+                                "count": 0,
+                                "total": 0,
+                                "limit": {
+                                    "min": 0,
+                                    "max": 0
+                                }
+                            },
+                            "roundtrip": {
+                                "count": 0,
+                                "total": 0,
+                                "limit": {
+                                    "min": 0,
+                                    "max": 0
+                                }
+                            }
+                        }
+                    },
+                    {
+                        "id": 1,
+                        "process": {
+                            "pid": 153,
+                            "ipc": "PyiVF4PuTp2VWmaKkSVkdQ=="
+                        },
+                        "state": 2,
+                        "metrics": {
+                            "resource": {
+                                "count": 0,
+                                "total": 0,
+                                "limit": {
+                                    "min": 0,
+                                    "max": 0
+                                }
+                            },
+                            "roundtrip": {
+                                "count": 0,
+                                "total": 0,
+                                "limit": {
+                                    "min": 0,
+                                    "max": 0
+                                }
+                            }
+                        }
+                    },
+                    {
+                        "id": 1,
+                        "process": {
+                            "pid": 154,
+                            "ipc": "nE4fjHHRRiiW2Twdd8OBvA=="
+                        },
+                        "state": 2,
+                        "metrics": {
+                            "resource": {
+                                "count": 0,
+                                "total": 0,
+                                "limit": {
+                                    "min": 0,
+                                    "max": 0
+                                }
+                            },
+                            "roundtrip": {
+                                "count": 0,
+                                "total": 0,
+                                "limit": {
+                                    "min": 0,
+                                    "max": 0
+                                }
+                            }
+                        }
+                    }
+                ]
+            },
+            {
+                "id": 2,
+                "name": "KI",
+                "key": "TMSUDB2",
+                "openinfo": "KI,tst001,${DBPASSWORD},suspend_cursor",
+                "closeinfo": "",
+                "concurency": 3,
+                "metrics": {
+                    "resource": {
+                        "count": 0,
+                        "total": 0,
+                        "limit": {
+                            "min": 0,
+                            "max": 0
+                        }
+                    },
+                    "roundtrip": {
+                        "count": 0,
+                        "total": 0,
+                        "limit": {
+                            "min": 0,
+                            "max": 0
+                        }
+                    }
+                },
+                "instances": [
+                    {
+                        "id": 2,
+                        "process": {
+                            "pid": 155,
+                            "ipc": "yHdKasNRQdKewQpvVmBmhg=="
+                        },
+                        "state": 2,
+                        "metrics": {
+                            "resource": {
+                                "count": 29,
+                                "total": 11341576,
+                                "limit": {
+                                    "min": 273925,
+                                    "max": 918216
+                                }
+                            },
+                            "roundtrip": {
+                                "count": 29,
+                                "total": 14491288,
+                                "limit": {
+                                    "min": 355070,
+                                    "max": 1030980
+                                }
+                            }
+                        }
+                    },
+                    {
+                        "id": 2,
+                        "process": {
+                            "pid": 156,
+                            "ipc": "DSTHS/RrQZGMOuySg2WG3Q=="
+                        },
+                        "state": 2,
+                        "metrics": {
+                            "resource": {
+                                "count": 0,
+                                "total": 0,
+                                "limit": {
+                                    "min": 0,
+                                    "max": 0
+                                }
+                            },
+                            "roundtrip": {
+                                "count": 0,
+                                "total": 0,
+                                "limit": {
+                                    "min": 0,
+                                    "max": 0
+                                }
+                            }
+                        }
+                    },
+                    {
+                        "id": 2,
+                        "process": {
+                            "pid": 157,
+                            "ipc": "AW6qvPJuQxy/0yjQ+8zqMg=="
+                        },
+                        "state": 2,
+                        "metrics": {
+                            "resource": {
+                                "count": 0,
+                                "total": 0,
+                                "limit": {
+                                    "min": 0,
+                                    "max": 0
+                                }
+                            },
+                            "roundtrip": {
+                                "count": 0,
+                                "total": 0,
+                                "limit": {
+                                    "min": 0,
+                                    "max": 0
+                                }
+                            }
+                        }
+                    }
+                ]
+            }
+        ],
+        "transactions": [],
+        "persistent.replies": [],
+        "persistent.requests": [],
+        "pending.requests": [],
+        "log": {
+            "update": {
+                "prepare": 0,
+                "remove": 0
+            },
+            "writes": 0
+        }
+    }
+}

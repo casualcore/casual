@@ -1,0 +1,33 @@
+.particle-top {
+
+  &__content {
+
+    display: flex;
+
+  }
+
+}
+
+.filter-attributes {
+  display: flex;
+}
+
+.page-title {
+  font-size: $font-size-lg;
+  margin-right: 3em;
+
+}
+
+$directionNames: row column;
+
+@each $dir in $directionNames {
+
+  .place--#{$dir} {
+    width: 100%;
+    display: flex;
+    flex-direction: $dir;
+    justify-content: space-evenly;
+
+
+  }
+}
