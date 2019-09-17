@@ -77,6 +77,8 @@ casual-make --no-colors -d -a --use-valgrind make && \
    cd /opt/casual && \
    tar cf /git/casual/casual-middleware.tar . && \
    cd /git/casual && python thirdparty/setup/install_nginx.py && \
+   cd /opt/casual && \
+   unzip -q /git/casual/casual-webapp.zip && \
    cd /opt/ && \
    tar cf casual-middleware.tar casual && \
    cp casual-middleware.tar /git/casual/. && \
@@ -136,7 +138,7 @@ performCoverageMeasuring()
 //
 def frontend_builder = '''#! /bin/sh
 cd /git/casual/casual-webapp
-npm ci && npm run build
+npm install && npm run build
 zip -q -r casual-webapp.zip dist
 '''
 
