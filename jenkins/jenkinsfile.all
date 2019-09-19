@@ -140,7 +140,7 @@ def frontend_builder = '''#! /bin/sh
 umask 000
 cd /git/casual/casual-webapp
 npm install && npm run build
-zip -q -r casual-webapp.zip dist
+cd /git/casual && zip -q -r casual-webapp.zip casual-webapp
 '''
 
 //
