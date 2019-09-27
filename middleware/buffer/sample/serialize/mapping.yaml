@@ -1,0 +1,29 @@
+mapping:
+  - key: some_key_1
+    note: some documentation
+
+    fields: 
+      - name: FLD_STRING1 # name of the field. 
+        size: 10 # size of the fixed string representation.
+        # alignment: "left"  <- default value
+        # padding: " " <- default value, if set, at least on char has to be set .
+      
+      - name: FLD_STRING2
+        size: 20
+        alignment: "left"
+        padding: "." # will be padded _to the right_ with '.'
+
+  - key: some_key_2
+    note: some documentation
+
+    fields: 
+      - name: FLD_LONG1
+        size: 10
+        alignment: "right"
+      
+      - name: FLD_STRING2
+        size: 20
+        alignment: "left"
+
+      # other yaml syntax for the same thing
+      - { name: FLD_SHORT1, size: 4}

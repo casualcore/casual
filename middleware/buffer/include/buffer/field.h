@@ -187,6 +187,35 @@ int casual_field_match_expression( const char* buffer, const void* regex, int* m
 /* experimental */
 int casual_field_free_expression( const void* regex);
 
+/**
+  converts a fielded buffer to string-represtenation
+
+  @param target first char of destination char buffer
+  @param size of the destination char buffer
+  @param key the key to the generated serialization implementation
+  @param buffer the fielded buffer
+
+  @return 
+   * CASUAL_FIELD_OUT_OF_BOUNDS if `target size` is not enough
+   * CASUAL_FIELD_INVALID_HANDLE if buffer is not a allocated fielded buffer
+*/
+int casual_field_to_string( char* target, long size, const char* key, const char* buffer);
+
+
+/**
+  converts a string-represtenation to a fielded buffer
+
+   @param key the key to the generated serialization implementation
+   @param buffer the fielded buffer to convert to
+   @param source pointer to first char of the source char buffer
+   @param size of the source char buffer
+
+  @return 
+   * CASUAL_FIELD_OUT_OF_BOUNDS if source does not contain all values to serialize
+   * CASUAL_FIELD_INVALID_HANDLE if buffer is not an allocated fielded buffer
+*/
+int casual_field_from_string( char** buffer, const char* key, const char* source, long size);
+
 #ifdef __cplusplus
 }
 #endif
