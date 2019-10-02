@@ -8,6 +8,7 @@
 #include "buffer/field.h"
 #include "buffer/internal/field.h"
 #include "buffer/internal/common.h"
+#include "buffer/internal/field/string.h"
 
 #include "common/environment.h"
 #include "common/exception/xatmi.h"
@@ -229,6 +230,10 @@ namespace casual
                   catch( const std::out_of_range&)
                   {
                      return CASUAL_FIELD_OUT_OF_BOUNDS;
+                  }
+                  catch( const std::invalid_argument&)
+                  {
+                     return CASUAL_FIELD_INVALID_ARGUMENT;
                   }
                   catch( const std::bad_alloc&)
                   {
@@ -2085,4 +2090,36 @@ int casual_field_free_expression( const void* regex)
 {
    delete reinterpret_cast<const std::regex*>(regex);
    return CASUAL_FIELD_SUCCESS;
+}
+
+
+int casual_field_to_string( char* target, long size, const char* key, const char* buffer)
+{
+   try
+   {
+      using stream_type = casual::buffer::internal::field::string::stream::Output;
+      casual::buffer::internal::field::string::convert::to( key, buffer, stream_type{ stream_type::view_type{ target, size}});
+   }
+   catch( ...)
+   {
+      return casual::buffer::field::error::handle();
+   }
+
+   return CASUAL_FIELD_SUCCESS;
+}
+
+int casual_field_from_string( char** buffer, const char* key, const char* source, long size)
+{
+   try
+   {
+      using stream_type = casual::buffer::internal::field::string::stream::Input;
+      casual::buffer::internal::field::string::convert::from( key, stream_type{ stream_type::view_type{ source, size}}, buffer);
+   }
+   catch( ...)
+   {
+      return casual::buffer::field::error::handle();
+   }
+
+   return CASUAL_FIELD_SUCCESS;
+
 }

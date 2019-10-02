@@ -30,6 +30,7 @@ lib_buffer = LinkLibrary( 'bin/casual-buffer',
      Compile( 'source/string.cpp'),
      
      Compile( 'source/common.cpp'),
+     Compile( 'source/internal/field/string.cpp'),
     ],
     [
      'casual-common', 'casual-serviceframework'
@@ -40,6 +41,7 @@ install_include.append( 'include/buffer/field.h')
 install_include.append( 'include/buffer/octet.h')
 install_include.append( 'include/buffer/order.h')
 install_include.append( 'include/buffer/string.h')
+Install( [ 'include/buffer/internal/field/string.h'], '$(CASUAL_HOME)/include/casual/buffer/internal/field')
 
 install_bin = []
 
@@ -65,6 +67,7 @@ LinkUnittest( 'bin/test-buffer',
     Compile( 'unittest/source/test_order_buffer.cpp'),
     Compile( 'unittest/source/test_string_buffer.cpp'),
     Compile( 'unittest/source/test_field_stream.cpp'),
+    Compile( 'unittest/source/internal/field/test_string.cpp'),
    ],
    [ 
     lib_buffer, 'casual-common', 'casual-xatmi', 'casual-unittest'
@@ -99,7 +102,6 @@ binary = LinkExecutable( 'bin/casual-buffer-field-from-human',
     ], 
     [ 
      'casual-common', 
-     'casual-serviceframework', 
       lib_buffer
     ])
     
@@ -112,7 +114,6 @@ binary = LinkExecutable( 'bin/casual-buffer-field-to-human',
     ], 
     [ 
      'casual-common', 
-     'casual-serviceframework', 
       lib_buffer
     ])
     
@@ -145,6 +146,17 @@ binary = LinkExecutable( 'bin/casual-buffer-generic-extract',
     ], 
     [ 
      'casual-common', 
+    ])
+    
+install_bin.append( binary)
+
+binary = LinkExecutable( 'bin/casual-buffer-field-serialize', 
+    [
+     Compile( 'tools/source/field/serialize.cpp'),
+    ], 
+    [ 
+     'casual-common',
+     lib_buffer
     ])
     
 install_bin.append( binary)
