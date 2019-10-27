@@ -52,10 +52,11 @@ install_lib.append( common)
 
 group_archive = LinkArchive( 'bin/casual-queue-group-archive',
     [
-   Compile( 'source/group/group.cpp'),
-   Compile( 'source/group/database.cpp'),
-   Compile( 'source/group/handle.cpp')
-])
+        Compile( 'source/group/group.cpp'),
+        Compile( 'source/group/state.cpp'),
+        Compile( 'source/group/database.cpp'),
+        Compile( 'source/group/handle.cpp')
+    ])
 
 
 queue_group = LinkExecutable( 'bin/casual-queue-group', 
@@ -160,6 +161,16 @@ target = LinkLibrary( 'bin/casual-queue-admin-cli',
  
 install_lib.append( target)
 
+
+# tools
+
+target = LinkExecutable( 'bin/casual-queue-upgrade',
+   [
+      Compile( 'tools/source/upgrade.cpp')
+   ],
+   [ common, 'casual-common', 'sqlite3'])
+
+install_bin.append( target)
 
 # Unittest
 

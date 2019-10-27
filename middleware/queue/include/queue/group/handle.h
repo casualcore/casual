@@ -11,6 +11,7 @@
 #include "queue/group/group.h"
 
 #include "common/message/queue.h"
+#include "common/message/signal.h"
 #include "common/message/dispatch.h"
 #include "common/message/transaction.h"
 #include "common/message/event.h"
@@ -24,13 +25,17 @@ namespace casual
       {
          namespace handle
          {
+
+            namespace ipc
+            {
+               const common::communication::ipc::Helper& device();
+            }
+
             struct Base
             {
-               Base( State& state) : m_state( state) {}
-
+               inline Base( State& state) : m_state( state) {}
             protected:
                State& m_state;
-
             };
          }
 
@@ -41,18 +46,17 @@ namespace casual
 
             void shutdown( State& state);
 
-            namespace persistent
-            {
-               //! sends all persistent messages, if any.
-               void send( State& state);
-            } // persistent
+
+            //! * persist the queuebase
+            //! * send pending replies, if any
+            //! * check if pending request has some messages to consume
+            void persist( State& state);
 
             namespace dead
             {
                struct Process : Base
                {
                   using Base::Base;
-
                   void operator() ( const common::message::event::process::Exit& message);
                };
             } // dead
@@ -63,12 +67,8 @@ namespace casual
                {
                   struct Request : Base
                   {
-
-                     using message_type = common::message::queue::information::queues::Request;
-
                      using Base::Base;
-
-                     void operator () ( message_type& message);
+                     void operator () ( common::message::queue::information::queues::Request& message);
                   };
 
                } // queues
@@ -77,11 +77,8 @@ namespace casual
                {
                   struct Request : Base
                   {
-                     using message_type = common::message::queue::information::messages::Request;
-
                      using Base::Base;
-
-                     void operator () ( message_type& message);
+                     void operator () ( common::message::queue::information::messages::Request& message);
                   };
 
                } // messages
@@ -92,39 +89,33 @@ namespace casual
             {
                struct Request : Base
                {
-                  using message_type = common::message::queue::enqueue::Request;
-
                   using Base::Base;
-
-                  void operator () ( message_type& message);
+                  void operator () ( common::message::queue::enqueue::Request& message);
                };
 
             } // enqueue
 
             namespace dequeue
             {
-
                struct Request : Base
                {
-                  using message_type = common::message::queue::dequeue::Request;
-
                   using Base::Base;
 
-                  void operator () ( message_type& message);
+                  //! @returns false if message is added to pending, true otherwise
+                  bool operator () ( common::message::queue::dequeue::Request& message);
+
+               private:
+                  bool handle( common::message::queue::dequeue::Request& message);
                };
 
-               bool request( State& state, Request::message_type& message);
+               
 
                namespace forget
                {
                   struct Request : Base
                   {
-                     using message_type = common::message::queue::dequeue::forget::Request;
-
                      using Base::Base;
-
-                     void operator () ( message_type& message);
-
+                     void operator () ( common::message::queue::dequeue::forget::Request& message);
                   };
 
                } // forget
@@ -137,11 +128,8 @@ namespace casual
                {
                   struct Request : Base
                   {
-                     using message_type = common::message::queue::peek::information::Request;
-
                      using Base::Base;
-
-                     void operator () ( message_type& message);
+                     void operator () ( common::message::queue::peek::information::Request& message);
                   };
                } // information
 
@@ -149,11 +137,8 @@ namespace casual
                {
                   struct Request : Base
                   {
-                     using message_type = common::message::queue::peek::messages::Request;
-
                      using Base::Base;
-
-                     void operator () ( message_type& message);
+                     void operator () ( common::message::queue::peek::messages::Request& message);
                   };
                } // messages
 
@@ -167,12 +152,8 @@ namespace casual
                   //! Invoked from the TM
                   struct Request : Base
                   {
-                     using message_type = common::message::transaction::resource::commit::Request;
-
                      using Base::Base;
-
-                     void operator () ( message_type& message);
-
+                     void operator () ( common::message::transaction::resource::commit::Request& message);
                   };
                }
 
@@ -183,12 +164,8 @@ namespace casual
                   //! This will always reply ok.
                   struct Request : Base
                   {
-                     using message_type = common::message::transaction::resource::prepare::Request;
-
                      using Base::Base;
-
-                     void operator () ( message_type& message);
-
+                     void operator () ( common::message::transaction::resource::prepare::Request& message);
                   };
                }
 
@@ -197,12 +174,8 @@ namespace casual
                   //! Invoked from the TM
                   struct Request : Base
                   {
-                     using message_type = common::message::transaction::resource::rollback::Request;
-
                      using Base::Base;
-
-                     void operator () ( message_type& message);
-
+                     void operator () ( common::message::transaction::resource::rollback::Request& message);
                   };
                }
             } // transaction
@@ -211,14 +184,20 @@ namespace casual
             {
                struct Request : Base
                {
-                  using message_type = common::message::queue::restore::Request;
-
                   using Base::Base;
-
-                  void operator () ( message_type& message);
+                  void operator () ( common::message::queue::restore::Request& message);
                };
 
             } // restore
+
+            namespace signal
+            {
+               struct Timeout : Base
+               {
+                  using Base::Base;
+                  void operator () ( const common::message::signal::Timeout&);
+               };
+            } // signal
 
          } // handle
 

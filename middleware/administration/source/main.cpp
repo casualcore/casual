@@ -73,7 +73,7 @@ Where <option> is one of the listed below
 } // casual
 
 
-int main( int argc, char **argv)
+int main( int argc, char** argv)
 {
    return casual::common::exception::guard( std::cerr, [=]()
    {

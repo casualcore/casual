@@ -54,6 +54,8 @@ namespace sql
          };
       }
 
+      using duration_type = std::chrono::microseconds;
+
 
       struct Blob
       {
@@ -99,15 +101,10 @@ namespace sql
          return sqlite3_bind_blob( statement, index, value, value_size, SQLITE_STATIC) == SQLITE_OK;
       }
 
-
-
-
       inline bool parameter_bind( sqlite3_stmt* statement, int index, int value)
       {
          return sqlite3_bind_int( statement, index, value) == SQLITE_OK;
       }
-
-
 
       inline bool parameter_bind( sqlite3_stmt* statement, int index, long value)
       {
@@ -124,12 +121,20 @@ namespace sql
          return sqlite3_bind_int64( statement, index, value) == SQLITE_OK;
       }
 
+      template< typename Rep, typename Period>
+      inline bool parameter_bind( sqlite3_stmt* statement, int index, const std::chrono::duration< Rep, Period>& value)
+      {
+         long long duration = std::chrono::duration_cast< duration_type>( value).count();
+         return parameter_bind( statement, index, duration);
+      }
+
       template< typename system_clock, typename duration>
       inline bool parameter_bind( sqlite3_stmt* statement, int index, const std::chrono::time_point< system_clock, duration>& value)
       {
-         long long time = std::chrono::time_point_cast< std::chrono::microseconds>( value).time_since_epoch().count();
+         long long time = std::chrono::time_point_cast< duration_type>( value).time_since_epoch().count();
          return parameter_bind( statement, index, time);
       }
+
 
       template< typename T>
       inline std::enable_if_t< std::is_enum< T>::value, bool>
@@ -190,14 +195,25 @@ namespace sql
       }
 
 
-      template< typename system_clock, typename duration>
-      inline void column_get( sqlite3_stmt* statement, int column, std::chrono::time_point< system_clock, duration>& value)
+      template< typename Clock, typename Duration>
+      inline void column_get( sqlite3_stmt* statement, int column, std::chrono::time_point< Clock, Duration>& value)
       {
          if( sqlite3_column_type( statement, column) != SQLITE_NULL)
          {
-            using time_point = std::chrono::time_point< system_clock, duration>;
-            std::chrono::microseconds us{ sqlite3_column_int64( statement, column)};
-            value = time_point( us);
+            using time_point = std::chrono::time_point< Clock, Duration>;
+            duration_type duration{ sqlite3_column_int64( statement, column)};
+            value = time_point( duration);
+         }
+      }
+
+
+      template< typename Rep, typename Period>
+      inline void column_get( sqlite3_stmt* statement, int column, std::chrono::duration< Rep, Period>& value)
+      {
+         if( sqlite3_column_type( statement, column) != SQLITE_NULL)
+         {
+            duration_type duration{ sqlite3_column_int64( statement, column)};
+            value = std::chrono::duration_cast< std::chrono::duration< Rep, Period>>( duration);
          }
       }
 
@@ -219,6 +235,14 @@ namespace sql
 
          Row( Row&&) = default;
          Row& operator = ( Row&&) = default;
+
+         template< typename T, int column = 0>
+         T get() const
+         {
+            T value;
+            column_get( m_statement.get(), column, value);
+            return value;
+         }
 
          template< typename T>
          T get( int column)
@@ -243,6 +267,42 @@ namespace sql
          std::shared_ptr< sqlite3_stmt> m_statement;
       };
 
+      namespace row
+      {
+         struct offset
+         {
+            constexpr offset( long count) : m_count{ count} {}
+            constexpr operator long () const  { return m_count;}
+            
+            long m_count;
+         };
+
+         namespace detail
+         {  
+            // sentinel
+            inline void get( database::Row& row, long index) {} 
+            
+            template< typename T, typename... Ts> 
+            void get( database::Row& row, long index, T&& value, Ts&&... ts)
+            {
+               row.get( index, std::forward< T>( value));
+               get( row, index + 1, std::forward< Ts>( ts)...);
+            }
+         } // detail 
+
+         template< typename... Ts> 
+         void get( database::Row& row, Ts&&... ts)
+         {
+            detail::get( row, 0, std::forward< Ts>( ts)...);
+         }
+
+         template< typename... Ts> 
+         void get( database::Row& row, row::offset offset, Ts&&... ts)
+         {
+            detail::get( row, offset, std::forward< Ts>( ts)...);
+         }
+
+      } // row
 
 
       struct Statement
@@ -305,9 +365,7 @@ namespace sql
             void execute()
             {
                if( sqlite3_step( m_statement.get()) != SQLITE_DONE)
-               {
                   throw exception::Query{ sqlite3_errmsg( m_handle.get())};
-               }
             }
 
          private:
@@ -342,13 +400,13 @@ namespace sql
          }
 
          template< typename ...Params>
-         Query query( Params&&... params)
+         Query query( Params&&... params) const
          {
             return Query{ m_handle, m_statement, std::forward< Params>( params)...};
          }
 
          template< typename ...Params>
-         void execute( Params&&... params)
+         void execute( Params&&... params) const
          {
             Query{ m_handle, m_statement, std::forward< Params>( params)...}.execute();
          }
@@ -357,6 +415,37 @@ namespace sql
          std::shared_ptr< sqlite3> m_handle;
          std::shared_ptr< sqlite3_stmt> m_statement;
       };
+
+      namespace query
+      {
+         //! @returns a vector with the fetched transformed values
+         //! example:  `auto values = sql::database::query::fetch( statement.query( a, b), []( sql::database::Row& row){ /* get values from row and construct and return value */})`
+         template< typename F> 
+         auto fetch( Statement::Query query, F&& functor)
+         {
+            sql::database::Row row;
+            std::vector< std::decay_t< decltype( functor( row))>> result;
+
+            while( query.fetch( row))
+               result.push_back( functor( row));
+
+            return result;
+         }
+
+         //! same as query::fetch but only fetches 0..1 rows.
+         template< typename F> 
+         auto first( Statement::Query query, F&& functor)
+         {
+            sql::database::Row row;
+            casual::common::optional< std::decay_t< decltype( functor( row))>> result;
+
+            if( query.fetch( row))
+               result = functor( row);
+
+            return result;
+         }
+
+      } // query
 
       struct Connection
       {
@@ -439,6 +528,14 @@ namespace sql
          void execute( const std::string& statement, Params&&... params)
          {
             query( statement, std::forward< Params>( params)...).execute();
+         }
+
+         void statement( const char* sql)
+         {
+            if( sqlite3_exec( m_handle.get(), sql, nullptr, nullptr, nullptr) != SQLITE_OK)
+            {
+               throw exception::Query{ sqlite3_errmsg( m_handle.get())};
+            }
          }
 
          //! @returns true if the table exists

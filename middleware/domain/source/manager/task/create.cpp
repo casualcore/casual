@@ -261,11 +261,11 @@ namespace casual
                         );
                      };
 
-                     // this task sequential-mandatory
+                     // this task sequential-removable
                      return manager::Task{ string::compose( "boot group ", batch.group), std::move( task),                        
                         {
                            Task::Property::Execution::sequential,
-                           Task::Property::Completion::mandatory
+                           Task::Property::Completion::removable
                         }};
                   }
 
@@ -406,7 +406,7 @@ namespace casual
                      return manager::Task{ "boot done", std::move( task),                        
                      {
                         Task::Property::Execution::sequential,
-                        Task::Property::Completion::mandatory
+                        Task::Property::Completion::removable
                      }};
                   }
 

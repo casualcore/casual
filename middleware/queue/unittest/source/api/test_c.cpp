@@ -48,21 +48,14 @@ domain:
            queuebase: ":memory:"
            queues:
             - name: A1
-              retries: 3
             - name: A2
-              retries: 3
             - name: A3
-              retries: 3
          - name: group_B
            queuebase: ":memory:"
            queues:
             - name: B1
-              retries: 3
             - name: B2
-              retries: 3
             - name: B3
-              retries: 3
-
 )";
             };
 

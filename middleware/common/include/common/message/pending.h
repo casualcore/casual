@@ -46,8 +46,11 @@ namespace casual
 
                auto type() const noexcept { return complete.type;}
 
+               //! @returns true if the message is sent to all destinations
+               //! @{
                bool sent() const;
                explicit operator bool () const;
+               //! @}
 
                void remove( strong::ipc::id ipc);
                void remove( strong::process::id pid);

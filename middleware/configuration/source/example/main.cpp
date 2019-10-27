@@ -66,43 +66,28 @@ namespace casual
 
          } // create
 
-         int main( int argc, char **argv)
+         void main( int argc, char **argv)
          {
-            try
-            {
-               using namespace common::argument;
+            using namespace common::argument;
 
-               Parse parse{
-                  R"(
+            Parse{
+               R"(
 Produces configuration examples from object models
 
 the output format will be deduced from file extension
 
 )",
-                  Option( &create::domain, { "-d", "--domain-file"}, "domain configuration example"),
-                  Option( &create::default_domain, { "-dd", "--default-domain-file"}, "default domain configuration example"),
+               Option( &create::domain, { "-d", "--domain-file"}, "domain configuration example"),
+               Option( &create::default_domain, { "-dd", "--default-domain-file"}, "default domain configuration example"),
 
-                  Option( &create::build::server, { "-b", "--build-server-file"}, "build server configuration example"),
-                  Option( &create::build::default_server, { "-db", "--default-build-server-file"}, "default build server configuration example"),
+               Option( &create::build::server, { "-b", "--build-server-file"}, "build server configuration example"),
+               Option( &create::build::default_server, { "-db", "--default-build-server-file"}, "default build server configuration example"),
 
-                  Option( &create::resource::property, { "-r", "--resource-property-file"}, "resource property configuration example"),
-                  Option( &create::resource::default_server, { "-dr", "--default-resource-property-file"}, "default resource property configuration example")
+               Option( &create::resource::property, { "-r", "--resource-property-file"}, "resource property configuration example"),
+               Option( &create::resource::default_server, { "-dr", "--default-resource-property-file"}, "default resource property configuration example")
 
-               };
+            }( argc, argv);
 
-               parse( argc, argv);
-
-               return 0;
-            }
-            catch( const std::exception& exception)
-            {
-               std::cerr << "exception: " << exception.what() << '\n';
-               return 20;
-            }
-            catch( ...)
-            {
-               return common::exception::handle();
-            }
          }
 
       } // example
@@ -113,5 +98,8 @@ the output format will be deduced from file extension
 
 int main( int argc, char **argv)
 {
-   return casual::configuration::example::main( argc, argv);
+   return casual::common::exception::guard( std::cerr, [=]()
+   {
+      casual::configuration::example::main( argc, argv);
+   });
 }

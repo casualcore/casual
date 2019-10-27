@@ -25,6 +25,16 @@ namespace casual
          {
             using size_type = platform::size::type;
 
+            namespace message
+            {
+               enum class State : int
+               {
+                  enqueued = 1,
+                  committed = 2,
+                  dequeued = 3,
+               };
+            } // message
+
             struct base_message_information
             {
                common::Uuid id;
@@ -60,40 +70,40 @@ namespace casual
 
             namespace lookup
             {
-               struct Request : basic_message< Type::queue_lookup_request>
+               using base_request = basic_request< Type::queue_lookup_request>;
+               struct Request : base_request
                {
-                  common::process::Handle process;
+                   using base_request::base_request;
+
                   std::string name;
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
                   {
-                     base_type::serialize( archive);
+                     base_request::serialize( archive);
                      CASUAL_SERIALIZE( process);
                      CASUAL_SERIALIZE( name);
                   })
                };
-               static_assert( traits::is_movable< Request>::value, "not movable");
 
-               struct Reply : basic_message< Type::queue_lookup_reply>
+               using base_reply = basic_reply< Type::queue_lookup_reply>;
+               struct Reply : base_reply
                {
-                  Reply() = default;
-                  Reply( common::process::Handle process) : process( std::move( process)) {}
+                  using base_reply::base_reply;
 
-                  common::process::Handle process;
                   strong::queue::id queue;
                   size_type order = 0;
 
                   explicit operator bool () const { return ! process.ipc.empty();}
 
                   CASUAL_CONST_CORRECT_SERIALIZE({
-                     CASUAL_SERIALIZE( process);
+                     base_reply::serialize( archive);
                      CASUAL_SERIALIZE( queue);
                      CASUAL_SERIALIZE( order);
                   })
 
                   bool local() const;
                };
-               static_assert( traits::is_movable< Reply>::value, "not movable");
+
             } // lookup
 
             namespace enqueue
@@ -198,37 +208,36 @@ namespace casual
                      CASUAL_SERIALIZE( message);
                   })
                };
-               static_assert( traits::is_movable< Reply>::value, "not movable");
 
                namespace forget
                {
-                  struct Request : basic_message< Type::queue_dequeue_forget_request>
+                  using base_request = basic_request< Type::queue_dequeue_forget_request>;
+                  struct Request : base_request
                   {
-                     common::process::Handle process;
+                     using base_request::base_request;
+
                      strong::queue::id queue;
                      std::string name;
 
                      CASUAL_CONST_CORRECT_SERIALIZE(
                      {
-                        base_type::serialize( archive);
-                        CASUAL_SERIALIZE( process);
+                        base_request::serialize( archive);
                         CASUAL_SERIALIZE( queue);
                         CASUAL_SERIALIZE( name);
                      })
                   };
-                  static_assert( traits::is_movable< Request>::value, "not movable");
 
-                  struct Reply : basic_message< Type::queue_dequeue_forget_reply>
+                  using base_reply = basic_message< Type::queue_dequeue_forget_reply>;
+                  struct Reply : base_reply
                   {
                      bool found = false;
 
                      CASUAL_CONST_CORRECT_SERIALIZE(
                      {
-                        base_type::serialize( archive);
+                        base_reply::serialize( archive);
                         CASUAL_SERIALIZE( found);
                      })
                   };
-                  static_assert( traits::is_movable< Reply>::value, "not movable");
 
                } // forget
 
@@ -240,74 +249,77 @@ namespace casual
             {
                enum class Type : int
                {
-                  group_error_queue = 1,
+                  queue = 1,
                   error_queue = 2,
-                  queue = 3,
+               };
+
+               struct Retry 
+               {
+                  size_type count = 0;
+                  platform::time::unit delay{};
+
+                  CASUAL_CONST_CORRECT_SERIALIZE(
+                  {
+                     CASUAL_SERIALIZE( count);
+                     CASUAL_SERIALIZE( delay);
+                  })
                };
 
 
                Queue() = default;
-               Queue( std::string name, size_type retries) : name( std::move( name)), retries( retries) {}
-               Queue( std::string name) : Queue( std::move( name), 0) {};
+               inline Queue( std::string name, Retry retry) : name{ std::move( name)}, retry{ retry} {}
+               inline Queue( std::string name) : name{ std::move( name)} {};
 
                strong::queue::id id;
                std::string name;
-               size_type retries = 0;
+               Retry retry;
                strong::queue::id error;
-               Type type = Type::queue;
-
-
+               inline Type type() const { return  error ? Type::queue : Type::error_queue;}
 
                CASUAL_CONST_CORRECT_SERIALIZE(
                {
                   CASUAL_SERIALIZE( id);
                   CASUAL_SERIALIZE( name);
-                  CASUAL_SERIALIZE( retries);
+                  CASUAL_SERIALIZE( retry);
                   CASUAL_SERIALIZE( error);
-                  CASUAL_SERIALIZE( type);
                })
+
+               inline friend bool operator == ( const Queue& lhs, strong::queue::id id) { return lhs.id == id;}
+               inline friend bool operator == ( const Queue& lhs, const std::string& name) { return lhs.name == name;}
 
                inline friend std::ostream& operator << ( std::ostream& out, Type value)
                {
                   switch( value)
                   {
-                     case Type::group_error_queue: return out << "group_error_queue";
                      case Type::error_queue: return out << "error_queue";
                      case Type::queue: return out << "queue";
-                     default: return out << "unknown";
                   }
+                  return out << "unknown";
                }
             };
-            static_assert( traits::is_movable< Queue>::value, "not movable");
-
-
 
 
             namespace information
             {
-
-               struct Queue : message::queue::Queue
+               using base_queue = common::message::queue::Queue;
+               struct Queue : base_queue
                {
                   size_type count = 0;
                   size_type size = 0;
                   size_type uncommitted = 0;
-                  size_type pending = 0;
                   platform::time::point::type timestamp;
-
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
                   {
-                     message::queue::Queue::serialize( archive);
+                     base_queue::serialize( archive);
                      CASUAL_SERIALIZE( count);
                      CASUAL_SERIALIZE( size);
                      CASUAL_SERIALIZE( uncommitted);
-                     CASUAL_SERIALIZE( pending);
                      CASUAL_SERIALIZE( timestamp);
                   })
                };
-               static_assert( traits::is_movable< Queue>::value, "not movable");
 
-               template< message::Type type>
+               template< common::message::Type type>
                struct basic_information : basic_message< type>
                {
                   std::string name;
@@ -329,7 +341,7 @@ namespace casual
                   strong::queue::id queue;
                   strong::queue::id origin;
                   platform::binary::type trid;
-                  size_type state;
+                  message::State state;
                   size_type redelivered;
                   platform::time::point::type timestamp;
 
@@ -616,6 +628,9 @@ namespace casual
 
             template<>
             struct type_traits< queue::lookup::Request> : detail::type< queue::lookup::Reply> {};
+
+            template<>
+            struct type_traits< queue::dequeue::forget::Request> : detail::type< queue::dequeue::forget::Reply> {};
 
 
             template<>

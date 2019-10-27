@@ -183,7 +183,8 @@ namespace casual
 
             queue_restore_request = QUEUE_BASE + 600,
             queue_restore_reply,
-
+            
+            // gateway
             GATEWAY_BASE = 7000,
             gateway_outbound_configuration_request,
             gateway_outbound_configuration_reply,
@@ -200,8 +201,9 @@ namespace casual
             gateway_domain_advertise,
             gateway_domain_id,
 
-
-
+            // signals as messages, used to postpone and normalize handling of signals
+            SIGNAL_BASE = 8000,
+            signal_timeout = SIGNAL_BASE,
 
             UNITTEST_BASE = 10000000, // avoid conflict with real messages
             unittest_message,

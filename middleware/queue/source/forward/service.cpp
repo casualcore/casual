@@ -44,9 +44,7 @@ namespace casual
 
                log::line( verbose::log, "message: ", message);
 
-               //
                // Prepare the xatmi-buffer
-               //
                common::buffer::Payload payload{
                   std::move( message.payload.type),
                   std::move( message.payload.data)};
@@ -97,31 +95,16 @@ namespace casual
 
          }
 
-         int main( int argc, char **argv)
+         void main( int argc, char **argv)
          {
-            try
-            {
+            Settings settings;
 
-               Settings settings;
+            using namespace casual::common::argument;
+            Parse{ "queue forward to service",
+               Option( settings.tie(), {"-f", "--forward"}, "--forward  <queue> <service> [<reply>]")
+            }( argc, argv);
 
-               {
-                  using namespace casual::common::argument;
-                  Parse parse{ "queue forward to service",
-                     Option( settings.tie(), {"-f", "--forward"}, "--forward  <queue> <service> [<reply>]")
-                  };
-                  parse( argc, argv);
-               }
-
-               start( std::move( settings));
-
-            }
-            catch( ...)
-            {
-               return common::exception::handle();
-
-            }
-            return 0;
-
+            start( std::move( settings));
          }
 
       } // forward
@@ -129,9 +112,12 @@ namespace casual
 } // casual
 
 
-int main( int argc, char **argv)
+int main( int argc, char** argv)
 {
-   return casual::queue::forward::main( argc, argv);
+   return casual::common::exception::guard( [=]()
+   {
+      casual::queue::forward::main( argc, argv);
+   });
 }
 
 

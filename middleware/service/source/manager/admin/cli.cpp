@@ -629,10 +629,10 @@ namespace casual
                   };
                   return common::argument::Group{ [](){}, { "service"}, "service related administration",
                      common::argument::Option{ &action::list_services, { "-ls", "--list-services"}, "list services"},
-                     common::argument::Option{ &action::list_service_legend, { "--list-services-legend"}, "legend for --list-services output"},
                      common::argument::Option{ &action::list_instances,  { "-li", "--list-instances"}, "list instances"},
                      common::argument::Option{ &action::metric::reset, action::services_completer,  { "-mr", "--metric-reset"}, "reset metrics for provided services, if no services provided, all metrics will be reset"},
                      common::argument::Option{ &action::list_admin_services,  { "--list-admin-services"}, "list casual administration services"},
+                     common::argument::Option{ &action::list_service_legend, { "--legend-list-services"}, "legend for --list-services output"},
                      common::argument::Option{ &action::output_state, complete_state, { "--state"}, "service state"},
                   };
                }

@@ -257,7 +257,7 @@ namespace casual
                };
         
             } // service
-
+            
             } // inline v1
          } // event
 

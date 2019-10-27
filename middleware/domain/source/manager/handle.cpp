@@ -530,6 +530,14 @@ namespace casual
                   {
                      return message;
                   });
+
+                  if( message.severity == decltype( message.severity)::fatal && state().runlevel() == State::Runlevel::startup)
+                  {
+                     // We're in a 'fatal' state, and the only thing we can do is to shutdown
+                     state().runlevel( State::Runlevel::error);
+                     handle::shutdown( state());
+                  }
+
                }
 
             } // event

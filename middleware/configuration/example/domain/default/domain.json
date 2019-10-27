@@ -57,9 +57,7 @@
         },
         "queue": {
             "default": {
-                "queue": {
-                    "retries": 0
-                },
+                "queue": {},
                 "directory": "${CASUAL_DOMAIN_HOME}/queue/groups"
             },
             "groups": []

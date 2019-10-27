@@ -12,6 +12,7 @@
 #include "configuration/domain.h"
 
 #include "common/event/listen.h"
+#include "common/message/handle.h"
 #include "common/argument.h"
 #include "common/terminal.h"
 #include "common/environment.h"
@@ -58,8 +59,12 @@ namespace casual
                                  message);
                         });
 
-                        common::communication::ipc::inbound::Device::handler_type event_handler{
-                           [&]( message::event::process::Spawn& m){
+                        common::communication::ipc::inbound::Device::handler_type event_handler
+                        {
+                           common::message::handle::discard< message::event::domain::task::Begin>(),
+                           common::message::handle::discard< message::event::domain::task::End>(),
+                           [&]( message::event::process::Spawn& m)
+                           {
                               group( std::cout) << "spawned: " << terminal::color::yellow << m.alias << " "
                                     << terminal::color::no_color << range::make( m.pids) << '\n';
                               for( auto pid : m.pids)
@@ -67,7 +72,8 @@ namespace casual
                                  m_alias_mapping[ pid] = m.alias;
                               }
                            },
-                           [&]( message::event::process::Exit& m){
+                           [&]( message::event::process::Exit& m)
+                           {
                               using reason_t = process::lifetime::Exit::Reason;
                               switch( m.state.reason)
                               {
@@ -83,7 +89,8 @@ namespace casual
                               }
 
                            },
-                           [&]( message::event::domain::server::Connect& m){
+                           [&]( message::event::domain::server::Connect& m)
+                           {
 
                               group( std::cout) << terminal::color::green << "connected: "
                                     <<  terminal::color::white << m.process.pid
@@ -91,18 +98,22 @@ namespace casual
 
 
                            },
-                           []( message::event::domain::boot::Begin& m){
+                           []( message::event::domain::boot::Begin& m)
+                           {
                                  std::cout << "boot domain: " << terminal::color::cyan << m.domain.name << terminal::color::no_color
                                        << " - id: " << terminal::color::yellow << m.domain.id << '\n';
                            },
-                           []( message::event::domain::boot::End& m){
+                           []( message::event::domain::boot::End& m)
+                           {
                               throw event::Done{};
                            },
-                           []( message::event::domain::shutdown::Begin& m){
+                           []( message::event::domain::shutdown::Begin& m)
+                           {
                                  std::cout << "shutdown domain: " << terminal::color::cyan << m.domain.name << terminal::color::no_color
                                        << " - id: " << terminal::color::yellow << m.domain.id << '\n';
                            },
-                           []( message::event::domain::shutdown::End& m){
+                           []( message::event::domain::shutdown::End& m)
+                           {
                               throw event::Done{};
                            },
                            []( message::event::domain::Error& m)
@@ -143,7 +154,8 @@ namespace casual
 
 
                            },
-                           [&]( message::event::domain::Group& m){
+                           [&]( message::event::domain::Group& m)
+                           {
                               using context_type = message::event::domain::Group::Context;
 
                               switch( m.context)
@@ -161,6 +173,7 @@ namespace casual
                                  }
                               }
                            }
+
                         };
 
                         try
@@ -678,8 +691,6 @@ The semantics are similar to http PUT:
  * every key that is NOT found is treated as a new _entity_ and added to the current state 
 )";    
                      } // put
-
-
 
                   } // configuration
 

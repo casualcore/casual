@@ -5,7 +5,7 @@
 //!
 
 
-#include "configuration/domain.h"
+#include "configuration/example/domain.h"
 
 #include "common/file.h"
 #include "common/serialize/macro.h"
@@ -261,82 +261,95 @@ namespace casual
 
             // queue
             {
-               domain.queue.manager_default.queue.retries = 0;
-
-               domain.queue.groups = {
-                  [](){
-                     queue::Group v;
-                     v.name = "groupA";
-                     v.note = "will get default queuebase: ${CASUAL_DOMAIN_HOME}/queue/groupA.gb";
-                     v.queues = {
-                        [](){
-                           queue::Queue v;
-                           v.name = "q_A1";
-                           return v;
-                        }(),
-                        [](){
-                           queue::Queue v;
-                           v.name = "q_A2";
-                           v.retries.emplace( 10);
-                           v.note = "after 10 rollbacked dequeues, message is moved to q_A2.error";
-                           return v;
-                        }(),
-                        [](){
-                           queue::Queue v;
-                           v.name = "q_A3";
-                           return v;
-                        }(),
-                        [](){
-                           queue::Queue v;
-                           v.name = "q_A4";
-                           return v;
-                        }(),
-                     };
-                     return v;
-                  }(),
-                  [](){
-                     queue::Group v;
-                     v.name = "groupB";
-                     v.queuebase.emplace( "/some/fast/disk/queue/groupB.qb");
-                     v.queues = {
-                        [](){
-                           queue::Queue v;
-                           v.name = "q_B1";
-                           return v;
-                        }(),
-                        [](){
-                           queue::Queue v;
-                           v.name = "q_B2";
-                           v.retries.emplace( 10);
-                           v.note = "after 10 rollbacked dequeues, message is moved to q_B2.error";
-                           return v;
-                        }(),
-                     };
-                     return v;
-                  }(),
-                  [](){
-                     queue::Group v;
-                     v.name = "groupC";
-                     v.queuebase.emplace( ":memory:");
-                     v.note = "group is an in-memory queue, hence no persistence";
-                     v.queues = {
-                        [](){
-                           queue::Queue v;
-                           v.name = "q_C1";
-                           return v;
-                        }(),
-                        [](){
-                           queue::Queue v;
-                           v.name = "q_C2";
-                           return v;
-                        }(),
-                     };
-                     return v;
-                  }(),
-               };
+               domain.queue = example::queue();
             }
 
             return domain;
+         }
+
+         configuration::queue::Manager queue()
+         {
+
+            configuration::queue::Manager queue;
+            queue.note.emplace( 
+               "retry.count - if number of rollbacks is greater, message is moved to error-queue : "
+               "retry.delay - the amount of time before the message is available for consumption, after rollback");
+
+            queue.manager_default.queue.retry.emplace( configuration::queue::Queue::Retry{ 3, std::string{ "20s"}});
+
+            queue.groups = {
+               [](){
+                  queue::Group v;
+                  v.name = "groupA";
+                  v.note.emplace( "will get default queuebase: ${CASUAL_DOMAIN_HOME}/queue/groupA.gb");
+                  v.queues = {
+                     [](){
+                        queue::Queue v;
+                        v.name = "q_A1";
+                        return v;
+                     }(),
+                     [](){
+                        queue::Queue v;
+                        v.name = "q_A2";
+                        v.retry.emplace( configuration::queue::Queue::Retry{ 10, std::string{ "100ms"}});
+                        v.note.emplace( "after 10 rollbacked dequeues, message is moved to q_A2.error");
+                        return v;
+                     }(),
+                     [](){
+                        queue::Queue v;
+                        v.name = "q_A3";
+                        return v;
+                     }(),
+                     [](){
+                        queue::Queue v;
+                        v.name = "q_A4";
+                        return v;
+                     }(),
+                  };
+                  return v;
+               }(),
+               [](){
+                  queue::Group v;
+                  v.name = "groupB";
+                  v.queuebase.emplace( "/some/fast/disk/queue/groupB.qb");
+                  v.queues = {
+                     [](){
+                        queue::Queue v;
+                        v.name = "q_B1";
+                        return v;
+                     }(),
+                     [](){
+                        queue::Queue v;
+                        v.name = "q_B2";
+                        v.retry.emplace( configuration::queue::Queue::Retry{ 20, std::nullopt});
+                        v.note.emplace( "after 20 rollbacked dequeues, message is moved to q_B2.error. retry.delay is 'inherited' from default, if any");
+                        return v;
+                     }(),
+                  };
+                  return v;
+               }(),
+               [](){
+                  queue::Group v;
+                  v.name = "groupC";
+                  v.queuebase.emplace( ":memory:");
+                  v.note.emplace( "group is an in-memory queue, hence no persistence");
+                  v.queues = {
+                     [](){
+                        queue::Queue v;
+                        v.name = "q_C1";
+                        return v;
+                     }(),
+                     [](){
+                        queue::Queue v;
+                        v.name = "q_C2";
+                        return v;
+                     }(),
+                  };
+                  return v;
+               }(),
+            };
+
+            return queue;
          }
 
          void write( const domain::Manager& domain, const std::string& name)

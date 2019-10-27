@@ -184,14 +184,14 @@ domain:
                            throw exception::casual::Shutdown{ string::compose( "fatal error: ", error)};
                         }
                      },
-                     common::message::handle::Discard< common::message::event::domain::Group>{},
-                     common::message::handle::Discard< common::message::event::domain::shutdown::Begin>{},
-                     common::message::handle::Discard< common::message::event::domain::shutdown::End>{},
-                     common::message::handle::Discard< common::message::event::domain::server::Connect>{},
-                     common::message::handle::Discard< common::message::event::domain::task::Begin>{},
-                     common::message::handle::Discard< common::message::event::domain::task::End>{},
-                     common::message::handle::Discard< common::message::event::process::Spawn>{},
-                     common::message::handle::Discard< common::message::event::process::Exit>{}
+                     common::message::handle::discard< common::message::event::domain::Group>(),
+                     common::message::handle::discard< common::message::event::domain::shutdown::Begin>(),
+                     common::message::handle::discard< common::message::event::domain::shutdown::End>(),
+                     common::message::handle::discard< common::message::event::domain::server::Connect>(),
+                     common::message::handle::discard< common::message::event::domain::task::Begin>(),
+                     common::message::handle::discard< common::message::event::domain::task::End>(),
+                     common::message::handle::discard< common::message::event::process::Spawn>(),
+                     common::message::handle::discard< common::message::event::process::Exit>()
                   );
 
                   try

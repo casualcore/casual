@@ -22,6 +22,16 @@ namespace casual
 
       using size_type = common::platform::size::type;
 
+      namespace message
+      {
+         enum class State : int
+         {
+            enqueued = 1,
+            committed = 2,
+            dequeued = 3,
+         };
+      } // message
+
       struct Attributes
       {
          //! Correlation information.
@@ -107,9 +117,10 @@ namespace casual
          {
             struct Information
             {
+               using State = queue::message::State;
                common::Uuid id;
                common::platform::binary::type trid;
-               size_type state;
+               State state;
 
                Attributes attributes;
 

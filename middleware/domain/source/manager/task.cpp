@@ -114,8 +114,9 @@ namespace casual
             using Enum = Task::Property::Completion;
             switch( value)
             {
-               case Enum::abortable: return out << "abortable";
                case Enum::mandatory: return out << "mandatory";
+               case Enum::removable: return out << "removable";
+               case Enum::abortable: return out << "abortable";
             }
             return out << "<unknown>";
          }
@@ -170,28 +171,47 @@ namespace casual
                }
             }
 
+            namespace local
+            {
+               namespace
+               {
+                  namespace has
+                  {
+                     auto completion = []( auto completion)
+                     {
+                        return [=]( auto& task)
+                        {
+                           return task.property().completion == completion;
+                        };
+                     };
+                  } // has
+                  
+               } // <unnamed>
+            } // local
+
             void Queue::abort()
             {
                Trace trace{ "domain::manager::task::Queue::abort"};
 
-               auto is_mandatory = []( auto& task)
-               {
-                  return task.property().completion == Task::Property::Completion::mandatory;
-               };
+               // remove all pending, if any.
+               Queue::remove();
 
-               // take care of pending
-               {
-                  auto split = algorithm::stable_partition( m_pending, is_mandatory);
-                  log::line( verbose::log, "pending aborted: ", std::get< 1>( split));
-                  algorithm::trim( m_pending, std::get< 0>( split));
-               }
+               // move all that is not abortable first, en remove the complement (abortable)
+               auto split = algorithm::partition( m_running, predicate::negate( local::has::completion( Task::Property::Completion::abortable)));
+               log::line( verbose::log, "running aborted: ", std::get< 1>( split));
+               algorithm::trim( m_running, std::get< 0>( split));
+            
+            }
 
-               // take care of running
-               {
-                  auto split = algorithm::partition( m_running, is_mandatory);
-                  log::line( verbose::log, "running aborted: ", std::get< 1>( split));
-                  algorithm::trim( m_running, std::get< 0>( split));
-               }  
+            void Queue::remove()
+            {
+               Trace trace{ "domain::manager::task::Queue::remove"};
+
+               // move all mandatory first, and remove the complement (not mandatory)
+               auto split = algorithm::stable_partition( m_pending, local::has::completion( Task::Property::Completion::mandatory));
+               log::line( verbose::log, "pending removed: ", std::get< 1>( split));
+               algorithm::trim( m_pending, std::get< 0>( split));
+
             }
 
             task::id::type Queue::start( State& state, Task&& task)

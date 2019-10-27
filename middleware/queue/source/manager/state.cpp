@@ -71,20 +71,6 @@ namespace casual
             });
 
             log::line( log, "queues: ", queues);
-
-            /*
-            if( log)
-            {
-               log << "queues: [";
-               for( auto& value : queues)
-               {
-                  log << "{ name: " << value.first
-                        << ", instancse: " << common::range::make( value.second) << ", ";
-               }
-               log << "]\n";
-            }
-            */
-
          }
 
          void State::remove( common::strong::process::id pid)

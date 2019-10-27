@@ -36,11 +36,10 @@ namespace casual
                static common::communication::ipc::Helper ipc{
                   common::communication::error::handler::callback::on::Terminate
                   {
-                     []( const common::process::lifetime::Exit& exit){
-                        //
+                     []( const common::process::lifetime::Exit& exit)
+                     {
                         // We put a dead process event on our own ipc device, that
                         // will be handled later on.
-                        //
                         common::message::event::process::Exit event{ exit};
                         common::communication::ipc::inbound::device().push( std::move( event));
                      }
@@ -64,22 +63,15 @@ namespace casual
                      // TODO: until we get "auto lambdas"
                      using group_type = decltype( *std::begin( groups));
 
-                     //
                      // Try to send it first with no blocking.
-                     //
-
                      auto busy = common::algorithm::partition( groups, [&]( group_type& g)
                            {
                               return ! ipc::device().non_blocking_send( g.queue, message);
                            });
 
-                     //
                      // Block for the busy ones, if any
-                     //
                      for( auto&& group : std::get< 0>( busy))
-                     {
                         ipc::device().blocking_send( group.queue, message);
-                     }
 
                   }
 
@@ -158,11 +150,13 @@ namespace casual
                   auto reply = common::message::reverse::type( message);
 
 
-                  auto send_reply = common::execute::scope( [&](){
+                  auto send_reply = common::execute::scope( [&]()
+                  {
+                     common::log::line( verbose::log, "reply.execution: ", reply.execution);
                      local::reply( message.process.ipc, reply);
                   });
 
-                  auto found =  common::algorithm::find( m_state.queues, message.name);
+                  auto found = common::algorithm::find( m_state.queues, message.name);
 
                   if( found && ! found->second.empty())
                   {
@@ -176,15 +170,11 @@ namespace casual
                   else
                   {
                      common::log::line( log, "queue not found - ", message.name);
-                     //
                      // TODO: Check if we have already have pending request for this queue.
                      // If so, we don't need to ask again.
                      // not sure if the semantics holds, so I don't implement it until we know.
-                     //
 
-                     //
                      // We didn't find the queue, let's ask our neighbors.
-                     //
 
                      common::message::gateway::domain::discover::Request request;
                      request.correlation = message.correlation;
@@ -198,9 +188,7 @@ namespace casual
 
                         log::line( log, "pending request added to pending: " , m_state.pending);
 
-                        //
                         // We don't send reply, we'll do it when we get the reply from the gateway.
-                        //
                         send_reply.release();
                      }
                   }
@@ -225,10 +213,14 @@ namespace casual
 
                      if( configuration)
                      {
-                        common::algorithm::transform( configuration->queues, reply.queues, []( auto& value){
+                        common::log::line( verbose::log, "configuration->queues: ", configuration->queues);
+                        
+                        common::algorithm::transform( configuration->queues, reply.queues, []( auto& value)
+                        {
                            common::message::queue::Queue result;
                            result.name = value.name;
-                           result.retries = value.retries;
+                           result.retry.count = value.retry.count;
+                           result.retry.delay = value.retry.delay;
                            return result;
                         });
                      }
@@ -267,9 +259,7 @@ namespace casual
                   }
                   else
                   {
-                     //
                      // We add the group
-                     //
                      m_state.groups.emplace_back( message.name, message.process);
                   }
                }
@@ -289,9 +279,7 @@ namespace casual
 
                   if( common::compare::any( message.directive, { directive_type::add, directive_type::replace}))
                   {
-                     //
                      // Queues has been added, we check if there are any pending
-                     //
 
                      auto split = common::algorithm::stable_partition( m_state.pending,[&]( auto& p){
 
@@ -348,10 +336,8 @@ namespace casual
 
                      common::log::line( verbose::log, "message: ", message);
 
-                     //
                      // outbound has already advertised the queues (if any), so we have that handled
                      // check if there are any pending lookups for this reply
-                     //
 
                      auto found = common::algorithm::find_if( m_state.pending, [&]( const auto& r){
                         return r.correlation == message.correlation;

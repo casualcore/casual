@@ -575,6 +575,17 @@ namespace casual
             return std::forward< R>( range);
          }
 
+         //! applies `functor` for all elements in `range` while `functor` returns true.
+         //! Hence, if `functor` returns false the invocation stops
+         template< typename R, typename F>
+         decltype( auto) for_each_while( R&& range, F functor)
+         {  
+            for( auto current = range::make( range); current && functor( *current); ++current)
+               ; // no-op
+            
+            return std::forward< R>( range);
+         }
+
          //! applies `functor` on all elements that are equal to `value`
          template< typename R, typename V, typename F>
          decltype( auto) for_each_equal( R&& range, V&& value, F functor)
@@ -591,13 +602,9 @@ namespace casual
          auto for_each_n( R&& range, N n, F functor) -> decltype( range::make( std::forward< R>( range)))
          {
             if( range::size( range) <= n)
-            {
                return for_each( std::forward< R>( range), functor);
-            }
             else
-            {
                return for_each( range::make( std::begin( range), n), functor);
-            }
          }
 
          //! applies `functor` on all occurencies, and call `interleave` between each
@@ -1033,9 +1040,22 @@ namespace casual
             {
                return difference( std::forward< R1>( source), std::forward< R2>( other), result, std::less<>{});
             }
+            
+            //! @returns a tuple with [first, lower_bound) and [lower_bound, last)
+            template< typename R, typename T>
+            auto lower_bound( R&& range, T&& value)
+            {
+               auto pivot = std::lower_bound( std::begin( range), std::end( range), value);
+               return std::make_tuple( range::make( std::begin( range), pivot), range::make( pivot, std::end( range)));
+            }
 
-
-
+            //! @returns a tuple with [first, upper_bound) and [upper_bound, last)
+            template< typename R, typename T>
+            auto upper_bound( R&& range, T&& value)
+            {
+               auto pivot = std::upper_bound( std::begin( range), std::end( range), value);
+               return std::make_tuple( range::make( std::begin( range), pivot), range::make( pivot, std::end( range)));
+            }            
 
             template< typename R, typename T, typename C>
             auto bound( R&& range, T&& value, C compare)
@@ -1045,7 +1065,6 @@ namespace casual
 
                return range::make( first, last);
             }
-
 
             template< typename R, typename T>
             auto bound( R&& range, T&& value)

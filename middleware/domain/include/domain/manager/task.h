@@ -168,7 +168,11 @@ namespace casual
 
                enum class Completion : short
                {
+                  //! has to run regardless
                   mandatory,
+                  //! non started can be removed
+                  removable, 
+                  //! can be removed and started will be aborted.
                   abortable
                };
                friend std::ostream& operator << ( std::ostream& out, Completion value);
@@ -250,6 +254,9 @@ namespace casual
 
                //! aborts all abortable tasks, regardless if they're running or not.
                void abort();
+
+               //! removes all abortable task
+               void remove();
 
                inline const auto& running() const { return m_running;}
                inline const auto& pending() const { return m_pending;}

@@ -141,13 +141,11 @@ namespace casual
 
                      struct Handle
                      {
-
                         static Handle& instance()
                         {
                            static Handle handle;
                            return handle;
                         }
-
 
                         void handle()
                         {
@@ -286,7 +284,6 @@ namespace casual
          {
             namespace
             {
-
                // We need to instantiate the handler globally to trigger signal-handler-registration
                handler::Handle& global_handler = handler::Handle::instance();
             } // <unnamed>
@@ -349,9 +346,7 @@ namespace casual
                      itimerval old;
 
                      if( ::setitimer( ITIMER_REAL, &value, &old) != 0)
-                     {
                         exception::system::throw_from_errno( "timer::set");
-                     }
 
                      log::line( verbose::log, "timer set: ",
                            value.it_value.tv_sec, ".", std::setw( 6), std::setfill( '0'), value.it_value.tv_usec, "s - was: ",
@@ -361,8 +356,6 @@ namespace casual
                   }
                } // <unnamed>
             } // local
-
-
 
             common::platform::time::unit set( common::platform::time::unit offset)
             {

@@ -96,11 +96,13 @@ namespace casual
                   if( ! group)
                      throw exception::no::Queue{ "failed to lookup queue: " + lookup.name()};
 
+                  const auto correlation = common::uuid::make();
 
                   auto forget_blocking = common::execute::scope( [&]()
                   {
                      common::message::queue::dequeue::forget::Request request;
                      request.process = common::process::handle();
+                     request.correlation = correlation;
 
                      request.queue = group.queue;
 
@@ -127,9 +129,10 @@ namespace casual
                      }
                   });
 
-                  auto send_request = [&]()
+                  // Send request
                   {
                      common::message::queue::dequeue::Request request;
+                     request.correlation = correlation;
                      request.trid = transaction.trid;
 
                      request.process = common::process::handle();
@@ -142,10 +145,8 @@ namespace casual
 
                      common::log::line( verbose::log, "request: ", request);
 
-                     return ipc.blocking_send( group.process.ipc, request);
+                     ipc.blocking_send( group.process.ipc, request);
                   };
-
-                  auto correlation = send_request();
 
                   std::vector< Message> result;
 
@@ -399,22 +400,37 @@ namespace casual
 
                auto reply = common::communication::ipc::call( queue.process.ipc, request);
 
-               common::algorithm::transform( reply.messages, result, []( common::message::queue::information::Message& m){
+               auto transform_message = []( auto& message)
+               {
+                  auto state = []( auto state)
+                  {
+                     using From = decltype( state);
+                     using To = message::Information::State;
+                     switch( state)
+                     {
+                        case From::enqueued : return To::enqueued;
+                        case From::committed : return To::committed;
+                        case From::dequeued : return To::dequeued;
+                     }
+                     // could never happend... g++ fix
+                     return To::dequeued;
+                  };
 
-                  message::Information message;
-                  message.id = m.id;
-                  message.trid = std::move( m.trid);
-                  message.state = m.state;
-                  message.attributes.available = m.available;
-                  message.attributes.reply = std::move( m.reply);
-                  message.attributes.properties = std::move( m.properties);
-                  message.payload.type = std::move( m.type);
-                  message.payload.size = m.size;
-                  message.redelivered = m.redelivered;
-                  message.timestamp = m.timestamp;
+                  message::Information result;
+                  result.id = message.id;
+                  result.trid = std::move( message.trid);
+                  result.state = state( message.state);
+                  result.attributes.available = message.available;
+                  result.attributes.reply = std::move( message.reply);
+                  result.attributes.properties = std::move( message.properties);
+                  result.payload.type = std::move( message.type);
+                  result.payload.size = message.size;
+                  result.redelivered = message.redelivered;
+                  result.timestamp = message.timestamp;
+                  return result;
+               };
 
-                  return message;
-               });
+               common::algorithm::transform( reply.messages, result, transform_message);
 
                return result;
             }

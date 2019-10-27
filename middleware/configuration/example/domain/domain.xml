@@ -250,7 +250,10 @@
  <queue>
   <default>
    <queue>
-    <retries>0</retries>
+    <retry>
+     <count>3</count>
+     <delay>20s</delay>
+    </retry>
    </queue>
    <directory>${CASUAL_DOMAIN_HOME}/queue/groups</directory>
   </default>
@@ -261,36 +264,36 @@
     <queues>
      <element>
       <name>q_A1</name>
-      <note></note>
      </element>
      <element>
       <name>q_A2</name>
-      <retries>10</retries>
+      <retry>
+       <count>10</count>
+       <delay>100ms</delay>
+      </retry>
       <note>after 10 rollbacked dequeues, message is moved to q_A2.error</note>
      </element>
      <element>
       <name>q_A3</name>
-      <note></note>
      </element>
      <element>
       <name>q_A4</name>
-      <note></note>
      </element>
     </queues>
    </element>
    <element>
     <name>groupB</name>
     <queuebase>/some/fast/disk/queue/groupB.qb</queuebase>
-    <note></note>
     <queues>
      <element>
       <name>q_B1</name>
-      <note></note>
      </element>
      <element>
       <name>q_B2</name>
-      <retries>10</retries>
-      <note>after 10 rollbacked dequeues, message is moved to q_B2.error</note>
+      <retry>
+       <count>20</count>
+      </retry>
+      <note>after 20 rollbacked dequeues, message is moved to q_B2.error. retry.delay is 'inherited' from default, if any</note>
      </element>
     </queues>
    </element>
@@ -301,14 +304,13 @@
     <queues>
      <element>
       <name>q_C1</name>
-      <note></note>
      </element>
      <element>
       <name>q_C2</name>
-      <note></note>
      </element>
     </queues>
    </element>
   </groups>
+  <note>retry.count - if number of rollbacks is greater, message is moved to error-queue : retry.delay - the amount of time before the message is available for consumption, after rollback</note>
  </queue>
 </domain>

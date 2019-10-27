@@ -79,22 +79,33 @@ namespace casual
             {
                enum class Type : int
                {
-                  group_error_queue = 1,
+                  queue = 1,
                   error_queue = 2,
-                  queue = 3,
                };
 
+               struct Retry 
+               {
+                  size_type count = 0;
+                  common::platform::time::unit delay{};
+
+                  CASUAL_CONST_CORRECT_SERIALIZE(
+                  {
+                     CASUAL_SERIALIZE( count);
+                     CASUAL_SERIALIZE( delay);
+                  })
+               };
+
+               inline Type type() const { return  error ? Type::queue : Type::error_queue;}
 
                common::strong::process::id group;
                common::strong::queue::id id;
                std::string name;
-               Type type;
-               size_type retries;
+               Retry retry;
                common::strong::queue::id error;
 
-               size_type count;
-               size_type size;
-               size_type uncommitted;
+               size_type count{};
+               size_type size{};
+               size_type uncommitted{};
                common::platform::time::point::type timestamp;
 
                CASUAL_CONST_CORRECT_SERIALIZE(
@@ -102,8 +113,7 @@ namespace casual
                   CASUAL_SERIALIZE( group);
                   CASUAL_SERIALIZE( id);
                   CASUAL_SERIALIZE( name);
-                  CASUAL_SERIALIZE( type);
-                  CASUAL_SERIALIZE( retries);
+                  CASUAL_SERIALIZE( retry);
                   CASUAL_SERIALIZE( error);
                   CASUAL_SERIALIZE( count);
                   CASUAL_SERIALIZE( size);
@@ -113,22 +123,27 @@ namespace casual
 
                inline friend bool operator < ( const Queue& lhs, const Queue& rhs)
                {
-                  auto type_order = []( auto& q){ return q.type == Type::group_error_queue ? 1 : 0;};
-
-                  if( type_order( lhs) == type_order( rhs))
-                     return lhs.name < rhs.name;
-
-                  return type_order( lhs) < type_order( rhs);
+                  if( lhs.type() != rhs.type())
+                     return lhs.type() < rhs.type();
+                  return lhs.name < rhs.name;
                }
+               inline friend bool operator == ( const Queue& lhs, const std::string name) { return lhs.name == name;}
             };
 
             struct Message
             {
+               enum class State : int
+               {
+                  enqueued = 1,
+                  committed = 2,
+                  dequeued = 3,
+               };
+
                common::Uuid id;
                common::strong::queue::id queue;
                common::strong::queue::id origin;
                common::platform::binary::type trid;
-               size_type state;
+               State state;
                std::string reply;
                size_type redelivered;
                std::string type;

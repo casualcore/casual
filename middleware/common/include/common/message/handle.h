@@ -22,18 +22,14 @@ namespace casual
          namespace handle
          {
             //! Handles and discard a given message type
-            template< typename M>
-            struct Discard
+            template< typename Message> 
+            auto discard()
             {
-               Discard() = default;
-
-               using message_type = M;
-
-               void operator () ( message_type& message)
+               return []( Message& message)
                {
-                  log::line( log::debug, "discard message: ", message.type());
-               }
-            };
+                  log::line( log::debug, "discard message: ", message);
+               };
+            }
 
             //! Replies to a ping message
             struct Ping

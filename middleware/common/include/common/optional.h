@@ -19,4 +19,10 @@ namespace casual
    } // common
 } // casual
 
+namespace std
+{
+   using experimental::optional;
+   using experimental::nullopt;
+}
+
 

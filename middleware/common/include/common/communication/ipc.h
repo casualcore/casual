@@ -481,19 +481,17 @@ namespace casual
                } // blocking
             } // non
 
-            template< typename D, typename M, typename Policy = policy::Blocking, typename Device = inbound::Device>
+            template< typename D, typename M, typename Device = inbound::Device>
             auto call(
                   D&& destination,
                   M&& message,
-                  Policy&& policy = policy::Blocking{},
                   const error::type& handler = nullptr,
                   Device& device = inbound::device())
             {
-               auto correlation = send( std::forward< D>( destination), message, policy, handler);
+               auto correlation = blocking::send( std::forward< D>( destination), message, handler);
 
                auto reply = common::message::reverse::type( std::forward< M>( message));
-               device.receive( reply, correlation, policy, handler);
-
+               blocking::receive( device, reply, correlation, handler);
                return reply;
             }
 
@@ -515,12 +513,12 @@ namespace casual
 
                inline Helper(std::function<void()> error_handler)
                      : m_error_handler{std::move(error_handler)} {};
-               inline Helper() : Helper(nullptr) {}
+               inline Helper() : Helper( nullptr) {}
 
                template< typename... Args>
-               static auto handler( Args&&... args) -> decltype( common::communication::ipc::inbound::device().handler())
+               static auto handler( Args&&... args)
                {
-                  return {std::forward<Args>(args)...};
+                  return common::communication::ipc::inbound::device().handler( std::forward<Args>(args)...);
                }
 
                template< typename D, typename M>
@@ -595,7 +593,6 @@ namespace casual
                   return ipc::call(
                      std::forward<D>(ipc),
                      std::forward<M>(message),
-                     common::communication::ipc::policy::Blocking{},
                      m_error_handler);
                }
 

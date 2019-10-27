@@ -18,38 +18,56 @@
 
 namespace casual
 {
-
    namespace configuration
    {
       namespace queue
       {
-         namespace queue
+         struct Queue
          {
-            struct Default
+            struct Retry 
             {
-               common::platform::size::type retries = 0;
+               common::optional< common::platform::size::type> count;
+               common::optional< std::string> delay;
 
                CASUAL_CONST_CORRECT_SERIALIZE
                (
+                  CASUAL_SERIALIZE( count);
+                  CASUAL_SERIALIZE( delay);
+               )
+            };
+
+            struct Default
+            {
+               common::optional< Retry> retry;
+            
+               //! @deprecated
+               common::optional< common::platform::size::type> retries;
+
+               CASUAL_CONST_CORRECT_SERIALIZE
+               (
+                  CASUAL_SERIALIZE( retry);
+
                   CASUAL_SERIALIZE( retries);
                )
             };
-         } // queue
 
-         struct Queue
-         {
             std::string name;
+            common::optional< Retry> retry;
+            common::optional< std::string> note;
+
+            //! @deprecated
             common::optional< common::platform::size::type> retries;
-            std::string note;
 
             CASUAL_CONST_CORRECT_SERIALIZE
             (
                CASUAL_SERIALIZE( name);
-               CASUAL_SERIALIZE( retries);
+               CASUAL_SERIALIZE( retry);
                CASUAL_SERIALIZE( note);
+
+               CASUAL_SERIALIZE( retries);
             )
 
-            Queue& operator += ( const queue::Default& value);
+            Queue& operator += ( const Default& value);
             friend bool operator < ( const Queue& lhs, const Queue& rhs);
             friend bool operator == ( const Queue& lhs, const Queue& rhs);
          };
@@ -58,7 +76,7 @@ namespace casual
          {
             std::string name;
             common::optional< std::string> queuebase;
-            std::string note;
+            common::optional< std::string> note;
             std::vector< Queue> queues;
 
             CASUAL_CONST_CORRECT_SERIALIZE
@@ -73,13 +91,14 @@ namespace casual
             friend bool operator == ( const Group& lhs, const Group& rhs);
 
          };
-         namespace manager
+
+         struct Manager
          {
             struct Default
             {
                Default();
 
-               queue::Default queue;
+               Queue::Default queue;
                std::string directory;
 
                CASUAL_CONST_CORRECT_SERIALIZE
@@ -88,17 +107,18 @@ namespace casual
                   CASUAL_SERIALIZE( directory);
                )
             };
-         } // manager
 
-         struct Manager
-         {
-            manager::Default manager_default;
+         
+            Default manager_default;
             std::vector< Group> groups;
+
+            common::optional< std::string> note;
 
             CASUAL_CONST_CORRECT_SERIALIZE
             (
                CASUAL_SERIALIZE_NAME( manager_default, "default");
                CASUAL_SERIALIZE( groups);
+               CASUAL_SERIALIZE( note);
             )
 
             //! Complement with defaults and validates

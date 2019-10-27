@@ -78,19 +78,14 @@ namespace casual
             };
          }
 
-
-         //!
          //! reverse the call order of left and right to a predicate
-         //!
          template< typename T>
          auto inverse( T&& functor)
          {
             return [functor]( auto&& l, auto&& r){ return functor( r, l);};
          }
 
-         //!
          //! negates a predicate
-         //!
          template< typename T>
          auto negate( T&& functor)
          {

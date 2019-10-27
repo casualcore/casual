@@ -81,15 +81,16 @@ namespace casual
          auto messages()
          {
             auto format_state = []( const manager::admin::Message& v)
+            {
+               using Enum = decltype( v.state);
+               switch( v.state)
                {
-                  switch( v.state)
-                  {
-                     case 1: return 'E';
-                     case 2: return 'C';
-                     case 3: return 'D';
-                     default: return '?';
-                  }
-               };
+                  case Enum::enqueued: return 'E';
+                  case Enum::committed: return 'C';
+                  case Enum::dequeued: return 'D';
+               }
+               return '?';
+            };
 
             auto format_trid = []( const manager::admin::Message& v) { return transcode::hex::encode( v.trid);};
             auto format_type = []( const manager::admin::Message& v) { return v.type;};
@@ -104,8 +105,8 @@ namespace casual
                terminal::format::column( "rd", std::mem_fn( &manager::admin::Message::redelivered), terminal::color::no_color, terminal::format::Align::right),
                terminal::format::column( "type", format_type, terminal::color::no_color),
                terminal::format::column( "reply", std::mem_fn( &manager::admin::Message::reply), terminal::color::no_color),
-               terminal::format::column( "timestamp", format_timestamp, terminal::color::blue, terminal::format::Align::right),
-               terminal::format::column( "available", format_available, terminal::color::blue, terminal::format::Align::right)
+               terminal::format::column( "available", format_available, terminal::color::blue, terminal::format::Align::right),
+               terminal::format::column( "timestamp", format_timestamp, terminal::color::blue, terminal::format::Align::right)
             );
          }
 
@@ -144,20 +145,15 @@ namespace casual
             };
             */
 
-            auto format_type = [&]( const q_type& q){
-               switch( q.type)
-               {
-                  case q_type::Type::group_error_queue: return 'g';
-                  case q_type::Type::error_queue: return 'e';
-                  case q_type::Type::queue: return 'q';
-               }
-               return '-';
+            auto format_retry_delay = []( const q_type& q)
+            {
+               using second_t = std::chrono::duration< double>;
+               return std::chrono::duration_cast< second_t>( q.retry.delay).count();
             };
-
+            
             auto format_group = [&]( const q_type& q){
                return algorithm::find_if( state.groups, [&]( const manager::admin::Group& g){ return q.group == g.process.pid;}).at( 0).name;
             };
-
 
             return terminal::format::formatter< manager::admin::Queue>::construct(
                terminal::format::column( "name", std::mem_fn( &q_type::name), terminal::color::yellow),
@@ -165,10 +161,10 @@ namespace casual
                terminal::format::column( "size", []( const auto& q){ return q.size;}, common::terminal::color::cyan, terminal::format::Align::right),
                terminal::format::column( "avg", []( const auto& q){ return q.count == 0 ? 0 : q.size / q.count;}, common::terminal::color::cyan, terminal::format::Align::right),
                terminal::format::column( "uc", []( const auto& q){ return q.uncommitted;}, common::terminal::color::grey, terminal::format::Align::right),
-               terminal::format::column( "updated", []( const q_type& q){ return normalize::timestamp( q.timestamp);}),
-               terminal::format::column( "r", []( const auto& q){ return q.retries;}, common::terminal::color::blue, terminal::format::Align::right),
-               terminal::format::column( "t", format_type, common::terminal::color::blue),
-               terminal::format::column( "group", format_group)
+               terminal::format::column( "rc", []( const auto& q){ return q.retry.count;}, common::terminal::color::blue, terminal::format::Align::right),
+               terminal::format::column( "rd", format_retry_delay, common::terminal::color::blue, terminal::format::Align::right),
+               terminal::format::column( "group", format_group),
+               terminal::format::column( "updated", []( const q_type& q){ return normalize::timestamp( q.timestamp);}, common::terminal::color::blue)
             );
          }
 
@@ -190,6 +186,63 @@ namespace casual
          } // remote
 
       } // format
+
+   namespace legend
+   {
+      void queues()
+      {
+         std::cout << R"(legend: list queues 
+   name:
+      name of the queue
+   count:
+      number of messages on the queue
+   size:
+      the current size of the queue, aggregated message sizies
+   avg:
+      avarage message size in the queue
+   uc:
+      number of uncommit messages
+   rc:
+      the retry count of the queue. (error queues has 0 as retry count, hence has to be consumed to be removed)
+   rd:
+      the retry delay of the queue, if rolled backed available will be `now + retry delay`.
+   group:
+      which group the queue is hosted on.
+   updated:
+      the last time the queue was updated
+)";
+      }
+
+      void messages()
+      {
+         std::cout << R"(
+   id:
+      the id of the message
+   S:
+      the state of the message
+         E: enqueued - not visable until commit
+         C: committed - visable
+         D: dequeued - not visable, removed on commit, back to state 'committed' if rolled back
+   size:
+      the size of the message
+   trid:
+      transaction trid
+   rd:
+      number of 'redeliver' (dequeues that has been rollbacked)
+   type:
+      type of the payload
+   reply:
+      the reply queue
+   available:
+      when the message is available for dequeue
+   timestamp:
+      when the message was enqueued
+      
+)";
+                        
+      }
+      
+   } // legend 
 
 
       void list_queues()
@@ -397,6 +450,8 @@ casual queue --restore <queue-name>)";
                      common::argument::Option( &local::enqueue::invoke, complete_queues, { "-e", "--enqueue"}, local::enqueue::description),
                      common::argument::Option( &local::dequeue::invoke, complete_queues, { "-d", "--dequeue"}, local::dequeue::description),
                      common::argument::Option( &local::consume::invoke, complete_queues, { "--consume"}, local::consume::description),
+                     common::argument::Option( &queue::legend::queues, {"--legend-list-queues"}, "legend for --list-queues output"),
+                     common::argument::Option( &queue::legend::messages, {"--legend-list-messages"}, "legend for --list-messages output"),
                      common::argument::Option( &queue::local::state, complete_state, {"--state"}, "queue state"),
                   };
                }

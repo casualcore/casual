@@ -100,7 +100,7 @@ namespace casual
                   common::message::domain::configuration::queue::Group result;
 
                   result.name = g.name;
-                  result.note = g.note;
+                  result.note = g.note.value_or("");
                   result.queuebase = g.queuebase.value_or( "");
 
                   common::algorithm::transform( g.queues, result.queues, []( const auto& q)
@@ -108,8 +108,17 @@ namespace casual
                      common::message::domain::configuration::queue::Queue result;
 
                      result.name = q.name;
-                     result.note = q.note;
-                     result.retries = q.retries.value_or( 0);
+                     result.note = q.note.value_or("");
+                     if( q.retry)
+                     {
+                        auto& retry = q.retry.value();
+                        if( retry.count)
+                           result.retry.count = retry.count.value();
+                        if( retry.delay)
+                           result.retry.delay = common::chronology::from::string( retry.delay.value());
+                     }
+                     else 
+                        result.retry.count = q.retries.value_or( 0);
 
                      return result;
                   });

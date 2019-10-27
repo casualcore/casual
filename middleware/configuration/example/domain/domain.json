@@ -250,7 +250,10 @@
         "queue": {
             "default": {
                 "queue": {
-                    "retries": 0
+                    "retry": {
+                        "count": 3,
+                        "delay": "20s"
+                    }
                 },
                 "directory": "${CASUAL_DOMAIN_HOME}/queue/groups"
             },
@@ -260,37 +263,37 @@
                     "note": "will get default queuebase: ${CASUAL_DOMAIN_HOME}/queue/groupA.gb",
                     "queues": [
                         {
-                            "name": "q_A1",
-                            "note": ""
+                            "name": "q_A1"
                         },
                         {
                             "name": "q_A2",
-                            "retries": 10,
+                            "retry": {
+                                "count": 10,
+                                "delay": "100ms"
+                            },
                             "note": "after 10 rollbacked dequeues, message is moved to q_A2.error"
                         },
                         {
-                            "name": "q_A3",
-                            "note": ""
+                            "name": "q_A3"
                         },
                         {
-                            "name": "q_A4",
-                            "note": ""
+                            "name": "q_A4"
                         }
                     ]
                 },
                 {
                     "name": "groupB",
                     "queuebase": "/some/fast/disk/queue/groupB.qb",
-                    "note": "",
                     "queues": [
                         {
-                            "name": "q_B1",
-                            "note": ""
+                            "name": "q_B1"
                         },
                         {
                             "name": "q_B2",
-                            "retries": 10,
-                            "note": "after 10 rollbacked dequeues, message is moved to q_B2.error"
+                            "retry": {
+                                "count": 20
+                            },
+                            "note": "after 20 rollbacked dequeues, message is moved to q_B2.error. retry.delay is 'inherited' from default, if any"
                         }
                     ]
                 },
@@ -300,16 +303,15 @@
                     "note": "group is an in-memory queue, hence no persistence",
                     "queues": [
                         {
-                            "name": "q_C1",
-                            "note": ""
+                            "name": "q_C1"
                         },
                         {
-                            "name": "q_C2",
-                            "note": ""
+                            "name": "q_C2"
                         }
                     ]
                 }
-            ]
+            ],
+            "note": "retry.count - if number of rollbacks is greater, message is moved to error-queue : retry.delay - the amount of time before the message is available for consumption, after rollback"
         }
     }
 }

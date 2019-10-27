@@ -12,118 +12,95 @@
 #include "common/message/dispatch.h"
 #include "common/message/handle.h"
 #include "common/exception/handle.h"
+#include "common/event/send.h"
 
 #include "common/communication/instance.h"
 
 namespace casual
 {
+   using namespace common;
    namespace queue
    {
-
       namespace group
       {
 
-         namespace message
+         Server::Server( Settings settings) 
+            : m_state( std::move( settings.queuebase), std::move( settings.name))
          {
-            void pump( group::State& state)
-            {
-               auto handler = group::handler( state);
+            Trace trace{ "queue::group::Server::Server"};
 
-               common::communication::ipc::Helper ipc;
-
-
-               // make sure we send persistent replies (if any) when inbound
-               // is empty, 
-               auto empty_inbound = [&state]( )
-               {
-                  handle::persistent::send( state);
-               };
-
-               common::message::dispatch::empty::pump( handler, ipc, empty_inbound);
-            }
-         } // message
-
-
-         Server::Server( Settings settings) : m_state( std::move( settings.queuebase), std::move( settings.name))
-         {
             // Talk to queue-manager to get configuration
+            auto reply = communication::ipc::call(  
+               common::communication::instance::outbound::queue::manager::device(),
+               []()
+               {
+                  common::message::queue::connect::Request request;
+                  request.process = process::handle();
+                  return request;
+               }());
 
+            auto existing = m_state.queuebase.queues();
+            log::line( verbose::log, "existing: ", existing);
+
+            auto correlate_id = [existing = std::move( existing)]( auto& queue)
             {
-               common::message::queue::connect::Request request;
-               request.process = common::process::handle();
+               auto found = algorithm::find( existing, queue.name);
 
-               common::communication::ipc::blocking::send( common::communication::instance::outbound::queue::manager::device(), request);
-            }
+               if( found)
+               {
+                  queue.id = found->id;
+                  queue.error = found->error;
+               }
+            };
 
+            algorithm::for_each( reply.queues, correlate_id);
+            log::line( verbose::log, "reply.queues: ", reply.queues);
+            
+            // if something goes wrong we send fatal event
+            event::guard::fatal( [&](){ m_state.queuebase.update( std::move( reply.queues), {});});
+
+
+            // TODO: What to do with existing queues that has messages?
+            //  - for now we just leave them as is
+
+            // Send all our queues to queue-manager
             {
-               std::vector< std::string> existing;
-               for( auto&& queue : m_state.queuebase.queues())
-               {
-                  existing.push_back( queue.name);
-               }
+               common::message::queue::Information information;
+               information.name = m_state.name();
+               information.process = process::handle();
+               information.queues = m_state.queuebase.queues();
 
-
-               common::message::queue::connect::Reply reply;
-               common::communication::ipc::blocking::receive( common::communication::ipc::inbound::device(), reply);
-
-               std::vector< std::string> added;
-
-               for( auto&& queue : reply.queues)
-               {
-                  auto exists = common::algorithm::find( existing, queue.name);
-
-                  if( ! exists)
-                  {
-                     m_state.queuebase.create( Queue{ queue.name, queue.retries});
-                     added.push_back( queue.name);
-                  }
-               }
-
-               // Try to remove queues
-               // TODO:
-               //auto removed = common::range::difference( existing, added);
-
-               // Send all our queues to queue-manager
-               {
-                  common::message::queue::Information information;
-                  information.name = m_state.name();
-                  information.process = common::process::handle();
-                  information.queues = m_state.queuebase.queues();
-
-                  common::communication::ipc::blocking::send( common::communication::instance::outbound::queue::manager::device(), information);
-               }
+               communication::ipc::blocking::send( communication::instance::outbound::queue::manager::device(), information);
             }
          }
 
          Server::~Server()
          {
-            Trace trace{ "queue::server::Server dtor"};
+            Trace trace{ "queue::group::Server~Server"};
 
-            try
-            {
-               handle::shutdown( m_state);
-            }
-            catch( ...)
-            {
-               common::exception::handle();
-            }
+            common::exception::guard( [&](){
+                handle::shutdown( m_state);
+            });
          }
 
 
-         int Server::start() noexcept
+         void Server::start()
          {
-            try
+            Trace trace{ "queue::group::Server::start"};
+
+            auto handler = group::handler( m_state);
+
+
+            // make sure we persist when inbound
+            // is empty, 
+            auto empty_inbound = [&]()
             {
-               message::pump( m_state);
-            }
-            catch( ...)
-            {
-               return common::exception::handle();
-            }
-            return 0;
+               handle::persist( m_state);
+            };
+
+            common::message::dispatch::empty::pump( handler, handle::ipc::device(), empty_inbound);
          }
-      } // server
 
+      } // group
    } // queue
-
 } // casual

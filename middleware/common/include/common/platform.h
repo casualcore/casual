@@ -127,9 +127,9 @@ namespace casual
 
             namespace queue
             {
-               //! Max number of pending updates before 
+               //! Max number of pending replies before 
                //! a persistent write
-               constexpr size::type persitent = 100;
+               constexpr size::type persistent = 100;
             } // queue
 
             namespace service

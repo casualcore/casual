@@ -105,7 +105,6 @@ namespace casual
 // This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //
 )";
-                        constexpr auto indentation = "   ";
                      } // name
 
                      void source( std::ostream& out, const model::Mapping& model, const std::string& indentation)

@@ -72,25 +72,26 @@ domain:
         memberships: [ forward]
 
    queue:
+      default:
+         queue: 
+            retry:
+               count: 3
+
       groups:
          - name: group_A
            queuebase: ":memory:"
            queues:
             - name: queueA1
-              retries: 3
             - name: queueA2
-              retries: 3
             - name: queueA3
-              retries: 3
+            - name: delayed_100ms
+              retry: { count: 10, delay: 100ms}
          - name: group_B
            queuebase: ":memory:"
            queues:
             - name: queueB1
-              retries: 3
             - name: queueB2
-              retries: 3
             - name: queueB3
-              retries: 3
 
 )";
             };
@@ -138,7 +139,45 @@ domain:
          auto state = local::call::state();
 
          EXPECT_TRUE( state.groups.size() == 2);
-         EXPECT_TRUE( state.queues.size() == 3 * 2 * 2 + 2);
+         EXPECT_TRUE( state.queues.size() == ( 3 + 4) * 2)  << "state.queues.size(): " << state.queues.size();
+      }
+
+
+      TEST( casual_queue, manager_correct_retry_state)
+      {
+         common::unittest::Trace trace;
+
+         local::Domain domain;
+
+         auto state = local::call::state();
+
+         auto find_and_compare_queue = [&state]( const std::string& name, auto&& predicate)
+         {
+            auto found = common::algorithm::find( state.queues, name);
+            if( ! found)
+               return false;
+
+            return predicate( *found);
+         };
+
+         auto retry_predicate = []( auto count, auto delay)
+         {
+            return [count, delay]( auto& queue)
+            {
+               return queue.retry.count == count && queue.retry.delay == delay;
+            };
+         };
+
+         auto default_retry = retry_predicate( 3, std::chrono::seconds{ 0});
+
+         EXPECT_TRUE( find_and_compare_queue( "queueA1", default_retry)) << CASUAL_NAMED_VALUE( state.queues);
+         EXPECT_TRUE( find_and_compare_queue( "queueA2", default_retry));
+         EXPECT_TRUE( find_and_compare_queue( "queueA3", default_retry));
+         EXPECT_TRUE( find_and_compare_queue( "delayed_100ms", retry_predicate( 10, std::chrono::milliseconds{ 100})));
+
+         EXPECT_TRUE( find_and_compare_queue( "queueB1", default_retry)) << CASUAL_NAMED_VALUE( state.queues);
+         EXPECT_TRUE( find_and_compare_queue( "queueB2", default_retry));
+         EXPECT_TRUE( find_and_compare_queue( "queueB3", default_retry));
       }
 
 
@@ -384,6 +423,77 @@ domain:
 
          ASSERT_TRUE( message.size() == 1);
          EXPECT_TRUE( common::algorithm::equal( message.at( 0).payload.data, payload));
+      }
+
+      TEST( casual_queue, enqueue_1_message_delay_100ms__blocking_dequeue__expect_1_message_after_100ms)
+      {
+         common::unittest::Trace trace;
+
+         local::Domain domain;
+
+         const std::string payload{ "some message"};
+
+         // message will be available at this absolute time
+         auto available = common::platform::time::clock::type::now() + std::chrono::milliseconds{ 100};
+
+         {
+            queue::Message message;
+            {
+               message.attributes.properties = "poop";
+               message.attributes.reply = "queueA2";
+               message.attributes.available = available;
+               message.payload.type = common::buffer::type::binary();
+               message.payload.data.assign( std::begin( payload), std::end( payload));
+            }
+
+            queue::enqueue( "queueA1", message);
+         }
+
+         auto message = queue::blocking::dequeue( "queueA1");
+         
+         // we expect that at least 100ms has passed
+         EXPECT_TRUE( common::platform::time::clock::type::now() > available);
+         EXPECT_TRUE( common::algorithm::equal( message.payload.data, payload));
+      }
+
+      TEST( casual_queue, enqueue_1_message___dequeue_rollback___expect_availiable_after_retry_delay_100ms)
+      {
+         common::unittest::Trace trace;
+
+         local::Domain domain;
+
+         const std::string payload{ "some message"};
+
+         constexpr auto name = "delayed_100ms";
+
+         // enqueue
+         {
+            queue::Message message;
+            {
+               message.attributes.properties = "poop";
+               message.payload.type = common::buffer::type::binary();
+               message.payload.data.assign( std::begin( payload), std::end( payload));
+            }
+            queue::enqueue( name, message);
+         }
+
+         auto start = common::platform::time::clock::type::now();
+
+         // dequeue, and rollback
+         {
+            common::transaction::context().begin();
+            ASSERT_TRUE( ! queue::dequeue( name).empty());
+            common::transaction::context().rollback();
+         }  
+
+         // not available yet
+         ASSERT_TRUE( queue::dequeue( name).empty());
+
+         auto message = queue::blocking::dequeue( name);
+
+         // we expect at least 100ms has passed, 
+         EXPECT_TRUE( common::platform::time::clock::type::now() - start > std::chrono::milliseconds{ 100});
+         EXPECT_TRUE( common::algorithm::equal( message.payload.data, payload));
       }
 
       namespace local

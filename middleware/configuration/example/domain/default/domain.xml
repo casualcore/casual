@@ -57,9 +57,7 @@
  </gateway>
  <queue>
   <default>
-   <queue>
-    <retries>0</retries>
-   </queue>
+   <queue />
    <directory>${CASUAL_DOMAIN_HOME}/queue/groups</directory>
   </default>
   <groups />

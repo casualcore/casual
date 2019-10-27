@@ -127,17 +127,25 @@ namespace casual
                {
                   struct Queue
                   {
-                     Queue() = default;
-                     inline Queue( std::function< void(Queue&)> foreign) { foreign( *this);}
+                     struct Retry 
+                     {
+                        platform::size::type count = 0;
+                        platform::time::unit delay{};
 
+                        CASUAL_CONST_CORRECT_SERIALIZE
+                        (
+                           CASUAL_SERIALIZE( count);
+                           CASUAL_SERIALIZE( delay);
+                        )
+                     };
                      std::string name;
-                     platform::size::type retries = 0;
+                     Retry retry;
                      std::string note;
 
                      CASUAL_CONST_CORRECT_SERIALIZE
                      (
                         CASUAL_SERIALIZE( name);
-                        CASUAL_SERIALIZE( retries);
+                        CASUAL_SERIALIZE( retry);
                         CASUAL_SERIALIZE( note);
                      )
                   };

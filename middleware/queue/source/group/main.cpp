@@ -14,38 +14,39 @@
 
 namespace casual
 {
+   namespace queue
+   {
+      namespace group
+      {
+         namespace local
+         {
+            namespace
+            {
+               void main( int argc, char **argv)
+               {
+                  Settings settings;
 
+                  using namespace common::argument;
+                  Parse{ "queue group server",
+                     Option( std::tie( settings.queuebase), { "-qb", "--queuebase"}, "path to this queue server persistent storage"),
+                     Option( std::tie( settings.name), { "-n", "--name"}, "group name")
+                  }( argc, argv);
 
+                  Server server( std::move( settings));
+                  server.start();
+               }
 
+            } // <unnamed>
+         } // local
 
+      } // group
+   } // queue
 } // casual
 
 int main( int argc, char **argv)
 {
-
-   try
+   return casual::common::exception::guard( [&]()
    {
-
-      casual::queue::group::Settings settings;
-
-      {
-         using namespace casual::common::argument;
-         Parse parse{ "queue group server",
-            Option( std::tie( settings.queuebase), { "-qb", "--queuebase"}, "path to this queue server persistent storage"),
-            Option( std::tie( settings.name), { "-n", "--name"}, "group name")
-         };
-         parse( argc, argv);
-      }
-
-      casual::queue::group::Server server( std::move( settings));
-      return server.start();
-
-   }
-   catch( ...)
-   {
-      return casual::common::exception::handle();
-   }
-
-
-   return 0;
+      casual::queue::group::local::main( argc, argv);
+   });
 }

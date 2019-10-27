@@ -6,6 +6,7 @@
 
 
 #include "queue/group/database.h"
+#include "queue/group/database/schema.h"
 #include "queue/common/log.h"
 
 #include "common/algorithm.h"
@@ -38,50 +39,55 @@ namespace casual
 
                   void row( sql::database::Row& row, common::message::queue::information::Message& message)
                   {
-                     row.get( 0, message.id.get());
-                     row.get( 1, message.queue.underlaying());
-                     row.get( 2, message.origin.underlaying());
-                     row.get( 3, message.trid);
-                     row.get( 4, message.properties);
-                     row.get( 5, message.state);
-                     row.get( 6, message.reply);
-                     row.get( 7, message.redelivered);
-                     row.get( 8, message.type);
-                     row.get( 9, message.available);
-                     row.get( 10, message.timestamp);
-                     row.get( 11, message.size);
+                     sql::database::row::get( row,
+                        message.id.get(),
+                        message.queue.underlaying(),
+                        message.origin.underlaying(),
+                        message.trid,
+                        message.properties,
+                        message.state,
+                        message.reply,
+                        message.redelivered,
+                        message.type,
+                        message.available,
+                        message.timestamp,
+                        message.size
+                     );  
                   }
 
-                  void row( sql::database::Row& row, common::message::queue::dequeue::Reply::Message& message, int offset = 0)
+                  namespace dequeue
                   {
-                     row.get( offset, message.id.get());
-                     row.get( offset + 1, message.properties);
-                     row.get( offset + 2, message.reply);
-                     row.get( offset + 3, message.redelivered);
-                     row.get( offset + 4, message.type);
-
-                     message.available = common::platform::time::point::type{ std::chrono::microseconds{ row.get< common::platform::time::point::type::rep>( offset + 5)}};
-                     message.timestamp = common::platform::time::point::type{ std::chrono::microseconds{ row.get< common::platform::time::point::type::rep>( offset + 6)}};
-                     row.get( offset + 7, message.payload);
-                  }
-
-
-                  struct Reply
-                  {
-
-                     std::tuple< std::int64_t, common::message::queue::dequeue::Reply::Message> operator () ( sql::database::Row& row) const
+                     struct Result 
                      {
+                        std::int64_t rowid{};
+                        common::message::queue::dequeue::Reply::Message message;
+                     };
 
-                        // SELECT ROWID, id, properties, reply, redelivered, type, avalible, timestamp, payload
-                        std::tuple< std::int64_t, common::message::queue::dequeue::Reply::Message> result;
-                        row.get( 0, std::get< 0>( result));
-
-                        transform::row( row, std::get< 1>( result), 1);
-
-                        return result;
+                     // SELECT ROWID, id, properties, reply, redelivered, type, available, timestamp, payload
+                     void result( sql::database::Row& row, Result& result)
+                     {
+                        sql::database::row::get( row,
+                           result.rowid,
+                           result.message.id.get(),
+                           result.message.properties,
+                           result.message.reply,
+                           result.message.redelivered,
+                           result.message.type,
+                           result.message.available,
+                           result.message.timestamp,
+                           result.message.payload
+                        );
                      }
 
-                  };
+                     auto result( sql::database::Row& row)
+                     {
+                        Result result;
+                        dequeue::result( row, result);
+                        return result;
+                     }
+                     
+                  } // dequeue
+
 
                   struct Queue
                   {
@@ -89,15 +95,16 @@ namespace casual
                      {
                         group::Queue result;
 
-                        row.get( 0, result.id.underlaying());
-                        row.get( 1, result.name);
-                        row.get( 2, result.retries);
-                        row.get( 3, result.error.underlaying());
-                        row.get( 4, result.type);
+                        sql::database::row::get( row, 
+                           result.id.underlaying(),
+                           result.name,
+                           result.retry.count,
+                           result.retry.delay,
+                           result.error.underlaying()
+                        );
 
                         return result;
                      }
-
                   };
 
                } // transform
@@ -108,18 +115,21 @@ namespace casual
                {
                   Trace trace{ "queue::group::database::local::check_version"};
 
+                  auto required = sql::database::Version{ 2, 0};
+
                   auto version = sql::database::version::get( connection);
 
                   common::log::line( log, "queue-base version: ", version);
 
-                  if( ! version && connection.table( "queue"))
+                  if( ( ! version && connection.table( "queue")) || ( version && version != required))
                   {
-                     const auto message = "please convert to a newer version of the queue-base - or remove the current";
-                     common::event::error::send( message, common::event::error::Severity::error);
+                     const auto message = string::compose( "please remove or convert '", connection.file(), "' using casual-queue-upgrade");
+                     common::log::line( common::log::category::error, message, " - version: ", version);
+                     common::event::error::send( message, common::event::error::Severity::fatal);
                      throw common::exception::casual::invalid::Version{ message};
                   }
 
-                  sql::database::version::set( connection, sql::database::Version{ 1, 0});
+                  sql::database::version::set( connection, required);
                }
             } // <unnamed>
          } // local
@@ -129,206 +139,81 @@ namespace casual
          Database::Database( const std::string& database, std::string groupname) 
             : m_connection( database), m_name( std::move( groupname))
          {
-
             Trace trace{ "queue::group::Database::Database"};
 
             local::check_version( m_connection);
 
-            auto update_name_mapping = common::execute::scope( [&](){
-               update_mapping();
-            });
-
-
-            //
             // Make sure we got FK
-            //
-            m_connection.execute( "PRAGMA foreign_keys = ON;");
+            m_connection.statement( "PRAGMA foreign_keys = ON;");
 
-            //
             // We can't set WAL mode, for some reason...
-            //
             //m_connection.execute( "PRAGMA journal_mode=WAL;");
 
             {
                Trace trace{ "queue::group::Database::Database create table queue"};
             
-               m_connection.execute(
-                  R"( CREATE TABLE IF NOT EXISTS queue 
-                  (
-                     id           INTEGER  PRIMARY KEY,
-                     name         TEXT     UNIQUE,
-                     retries      INTEGER  NOT NULL,
-                     error        INTEGER  NOT NULL,
-                     type         INTEGER  NOT NULL,
-                     count        INTEGER  NOT NULL, -- number of (committed) messages
-                     size         INTEGER  NOT NULL, -- total size of all (committed) messages
-                     uncommitted_count INTEGER  NOT NULL, -- uncommitted messages
-                     pending      INTEGER  NOT NULL, -- number of pending dequeues wating
-                     timestamp    INTEGER NOT NULL -- last update to the queue 
-                     ); )"
-               );
-
-               m_connection.execute(
-                     "CREATE INDEX IF NOT EXISTS i_id_queue ON queue ( id);" );
-               
-               // make sure pending is reset when we start
-               m_connection.execute( "UPDATE queue SET pending = 0;");
+               m_connection.statement( database::schema::table::queue);
+               m_connection.statement( database::schema::table::index::queue);
             }
 
             {
                Trace trace{ "queue::group::Database::Database create table message"};
 
-               m_connection.execute(
-                  R"( CREATE TABLE IF NOT EXISTS message 
-                  ( id            BLOB PRIMARY KEY,
-                     queue         INTEGER,
-                     origin        NUMBER, -- the first queue a message is enqueued to
-                     gtrid         BLOB,
-                     properties    TEXT,
-                     state         INTEGER, -- (1: enqueued, 2: committed, 3: dequeued)
-                     reply         TEXT,
-                     redelivered   INTEGER,
-                     type          TEXT,
-                     avalible      INTEGER,
-                     timestamp     INTEGER,
-                     payload       BLOB,
-                     FOREIGN KEY (queue) REFERENCES queue( id)); )");
-
-               m_connection.execute(
-                     "CREATE INDEX IF NOT EXISTS i_id_message  ON message ( id);" );
-
-               m_connection.execute(
-                  "CREATE INDEX IF NOT EXISTS i_queue_message  ON message ( queue);" );
-
-               m_connection.execute(
-               "CREATE INDEX IF NOT EXISTS i_dequeue_message  ON message ( queue, state, timestamp ASC);" );
-
-               m_connection.execute(
-               "CREATE INDEX IF NOT EXISTS i_dequeue_message_properties ON message ( queue, state, properties, timestamp ASC);" );
-
-               m_connection.execute(
-                  "CREATE INDEX IF NOT EXISTS i_timestamp_message  ON message ( timestamp ASC);" );
-
-               m_connection.execute(
-                  "CREATE INDEX IF NOT EXISTS i_gtrid_message  ON message ( gtrid);" );
+               m_connection.statement( database::schema::table::message);
+               m_connection.statement( database::schema::table::index::message);
             }
 
 
-            auto now = common::platform::time::clock::type::now();
-
-            {
-               Trace trace{ "queue::group::Database::Database create group error queue"};
-               //
-               // group error queue
-               //
-               if( m_name.empty())
-               {
-                  m_name = common::uuid::string( common::uuid::make());
-               }
-               m_connection.execute( "INSERT OR REPLACE INTO queue VALUES ( 1, ?, 0, 1, 1, 0, 0, 0, 0, ?); ", m_name + ".group.error", now);
-               m_error_queue = common::strong::queue::id{ 1};
-            }
+            //auto now = common::platform::time::clock::type::now();
 
 
-
-            //
             // Triggers
-            //
             {
                Trace trace{ "queue::group::Database::Database create triggers"};
            
-               m_connection.execute( R"(
-                  CREATE TRIGGER IF NOT EXISTS insert_message INSERT ON message 
-                  BEGIN
-                     UPDATE queue SET
-                        timestamp = new.timestamp,
-                        uncommitted_count = uncommitted_count + 1
-                     WHERE id = new.queue AND new.state = 1;
-
-                  UPDATE queue SET
-                        timestamp = new.timestamp,
-                        count = count + 1,
-                        size = size + length( new.payload)
-                     WHERE id = new.queue AND new.state = 2;
-
-                  END;
-
-                  )");
-
-               m_connection.execute( R"(
-                  CREATE TRIGGER IF NOT EXISTS update_message_state UPDATE OF state ON message 
-                  BEGIN
-                     UPDATE queue SET
-                        count = count + 1,
-                        size = size + length( new.payload),
-                        uncommitted_count = uncommitted_count - 1
-                     WHERE id = new.queue AND old.state = 1 AND new.state = 2;
-                  END;
-
-                  )");
-
-               m_connection.execute( R"(
-                  CREATE TRIGGER IF NOT EXISTS update_message_queue UPDATE OF queue ON message 
-                  BEGIN
-
-                     UPDATE queue SET  -- 'queue move' update the new queue
-                        count = count + 1,
-                        size = size + length( new.payload)
-                     WHERE id = new.queue AND new.queue != old.queue;
-
-                     UPDATE queue SET  -- 'queue move' update the old queue
-                        count = count - 1,
-                        size = size - length( old.payload)
-                     WHERE id = old.queue AND old.queue != new.queue;
-
-                  END;
-
-                  )");
-
-               m_connection.execute( R"(
-                  CREATE TRIGGER IF NOT EXISTS delete_message DELETE ON message 
-                  BEGIN
-                     UPDATE queue SET 
-                        count = count - 1,
-                        size = size - length( old.payload)
-                     WHERE id = old.queue AND old.state IN ( 2, 3);
-
-                     UPDATE queue SET 
-                        uncommitted_count = uncommitted_count - 1
-                     WHERE id = old.queue AND old.state = 1;
-                  END;
-
-                  )");
+               m_connection.statement( database::schema::triggers); 
             }
 
-            //
             // Precompile all other statements
-            //
             {
                Trace trace{ "queue::group::Database::Database precompile statements"};
 
+               /*
+                  id            BLOB PRIMARY KEY,
+                  queue         INTEGER,
+                  origin        NUMBER, -- the first queue a message is enqueued to
+                  gtrid         BLOB,
+                  properties    TEXT,
+                  state         INTEGER, -- (1: enqueued, 2: committed, 3: dequeued)
+                  reply         TEXT,
+                  redelivered   INTEGER,
+                  type          TEXT,
+                  available     INTEGER,
+                  timestamp     INTEGER,
+                  payload       BLOB,
+               */
                m_statement.enqueue = m_connection.precompile( "INSERT INTO message VALUES (?,?,?,?,?,?,?,?,?,?,?,?);");
 
                m_statement.dequeue.first = m_connection.precompile( R"( 
                      SELECT 
-                        ROWID, id, properties, reply, redelivered, type, avalible, timestamp, payload
+                        ROWID, id, properties, reply, redelivered, type, available, timestamp, payload
                      FROM 
                         message 
-                     WHERE queue = :queue AND state = 2 AND ( avalible is NULL OR avalible < :avalible) ORDER BY timestamp ASC LIMIT 1; )");
+                     WHERE queue = :queue AND state = 2 AND  available < :available ORDER BY timestamp ASC LIMIT 1; )");
 
                m_statement.dequeue.first_id = m_connection.precompile( R"( 
                      SELECT 
-                        ROWID, id, properties, reply, redelivered, type, avalible, timestamp, payload
+                        ROWID, id, properties, reply, redelivered, type, available, timestamp, payload
                      FROM 
                         message 
-                     WHERE id = :id AND queue = :queue AND state = 2 AND ( avalible is NULL OR avalible < :avalible); )");
+                     WHERE id = :id AND queue = :queue AND state = 2 AND available < :available; )");
 
                m_statement.dequeue.first_match = m_connection.precompile( R"( 
                      SELECT 
-                        ROWID, id, properties, reply, redelivered, type, avalible, timestamp, payload
+                        ROWID, id, properties, reply, redelivered, type, available, timestamp, payload
                      FROM 
                         message 
-                     WHERE queue = :queue AND state = 2 AND properties = :properties AND ( avalible is NULL OR avalible < :avalible) ORDER BY timestamp ASC LIMIT 1; )");
+                     WHERE queue = :queue AND state = 2 AND properties = :properties AND available < :available ORDER BY timestamp ASC LIMIT 1; )");
 
 
                m_statement.state.xid =  m_connection.precompile( "UPDATE message SET gtrid = :gtrid, state = 3 WHERE ROWID = :id");
@@ -354,28 +239,54 @@ namespace casual
                */
 
                m_statement.rollback1 = m_connection.precompile( "DELETE FROM message WHERE gtrid = :gtrid AND state = 1;");
-               m_statement.rollback2 = m_connection.precompile( "UPDATE message SET state = 2, redelivered = redelivered + 1  WHERE gtrid = :gtrid AND state = 3");
+
+               // this only mutates if availiable has passed, otherwise state would not be 'dequeued' (3)
+               m_statement.rollback2 = m_connection.precompile( 
+                  "UPDATE message SET state = 2, redelivered = redelivered + 1,"
+                  " available = ( SELECT CASE WHEN retry_delay = 0 THEN 0"  // no retry delay - we set 0
+                     // julianday('now') - 2440587.5) *86400.0 <- some magic that sqlite recommend for fraction of seconds
+                     // we multiply by 1'000'000 to get microseconds, and we add retry_delay which is in us already.
+                     " ELSE ( ( julianday('now') - 2440587.5) *86400.0 * 1000 * 1000) + retry_delay END" 
+                     " FROM queue WHERE id = message.queue)"
+                  " WHERE gtrid = :gtrid AND state = 3");
+
+               //! increment redelivered and "move" messages to error-queue iff we've passed retry_count and the queue has an error-queue.
+               //! error-queues themselfs does not have an error-queue, hence the message will stay in the error-queue until it's consumed.
                m_statement.rollback3 = m_connection.precompile(
-                     "UPDATE message SET redelivered = 0, queue = ( SELECT error FROM queue WHERE id = message.queue)"
-                     " WHERE message.redelivered > ( SELECT retries FROM queue WHERE id = message.queue);");
+                     "UPDATE message SET redelivered = 0, queue = ( SELECT q.error FROM queue q WHERE q.id = message.queue)"
+                     " WHERE message.redelivered > ( SELECT q.retry_count FROM queue q WHERE q.id = message.queue) "
+                     " AND ( SELECT q.error FROM queue q WHERE q.id = message.queue) != 0;"
+                  );
+
+
+               m_statement.available.queues = m_connection.precompile(
+                  "SELECT m.queue, q.count, MIN( m.available)"
+                  " FROM message m INNER JOIN queue q ON m.queue = q.id AND m.state = 2"
+                  " GROUP BY m.queue;"
+               );
+
+               m_statement.available.message = m_connection.precompile(
+                  "SELECT MIN( m.available)"
+                  " FROM message m WHERE m.queue = :queue AND m.state = 2;"
+               );
+
+               m_statement.id = m_connection.precompile( "SELECT id FROM queue where name = :name;");
 
 
                /*
                   id           INTEGER  PRIMARY KEY,
                   name         TEXT     UNIQUE,
-                  retries      INTEGER,
-                  error        INTEGER,
-                  type         INTEGER,
-                  count        INTEGER, -- number of (committed) messages
-                  size         INTEGER, -- total size of all (committed) messages
-                  uncommitted_count INTEGER, -- uncommitted messages
-                  pending  --
-                  timestamp    INTEGER, -- last update to the queue
-                */
-
+                  retry_count  INTEGER  NOT NULL,
+                  retry_delay  INTEGER  NOT NULL,
+                  error        INTEGER  NOT NULL,
+                  count        INTEGER  NOT NULL, -- number of (committed) messages
+                  size         INTEGER  NOT NULL, -- total size of all (committed) messages
+                  uncommitted_count INTEGER  NOT NULL, -- uncommitted messages
+                  timestamp    INTEGER NOT NULL -- last update to the queue 
+               */
                m_statement.information.queue = m_connection.precompile( R"(
                   SELECT
-                     q.id, q.name, q.retries, q.error, q.type, q.count, q.size, q.uncommitted_count, q.pending, q.timestamp
+                     q.id, q.name, q.retry_count, q.retry_delay, q.error, q.count, q.size, q.uncommitted_count, q.timestamp
                   FROM
                      queue q  
                       ;
@@ -391,13 +302,13 @@ namespace casual
                   reply         TEXT,
                   redelivered   INTEGER,
                   type          TEXT,
-                  avalible      INTEGER,
+                  available      INTEGER,
                   timestamp     INTEGER,
                   payload       BLOB,
                 */
                m_statement.information.message = m_connection.precompile( R"(
                   SELECT
-                     m.id, m.queue, m.origin, m.gtrid, m.properties, m.state, m.reply, m.redelivered, m.type, m.avalible, m.timestamp, length( m.payload)
+                     m.id, m.queue, m.origin, m.gtrid, m.properties, m.state, m.reply, m.redelivered, m.type, m.available, m.timestamp, length( m.payload)
                   FROM
                      message m
                   WHERE
@@ -407,7 +318,7 @@ namespace casual
 
                m_statement.peek.match = m_connection.precompile( R"( 
                   SELECT 
-                     m.id, m.queue, m.origin, m.gtrid, m.properties, m.state, m.reply, m.redelivered, m.type, m.avalible, m.timestamp, length( m.payload)
+                     m.id, m.queue, m.origin, m.gtrid, m.properties, m.state, m.reply, m.redelivered, m.type, m.available, m.timestamp, length( m.payload)
                   FROM 
                      message  m
                   WHERE m.queue = :queue AND m.properties = :properties;)");
@@ -415,7 +326,7 @@ namespace casual
 
                m_statement.peek.one_message = m_connection.precompile( R"( 
                   SELECT 
-                    id, properties, reply, redelivered, type, avalible, timestamp, payload
+                    ROWID, id, properties, reply, redelivered, type, available, timestamp, payload
                   FROM 
                      message 
                   WHERE id = :id; )");
@@ -425,25 +336,6 @@ namespace casual
                   SET queue = :queue 
                   WHERE state = 2 AND queue != origin AND origin = :queue; )");
 
-
-               m_statement.pending.add = m_connection.precompile( R"(
-                  UPDATE queue
-                  SET pending = pending + 1 
-                  WHERE id = :id; 
-                 )");
-
-               m_statement.pending.set = m_connection.precompile( R"(
-                  UPDATE queue
-                  SET pending = :pending
-                  WHERE id = :id; 
-                 )");
-               m_statement.pending.check = m_connection.precompile( R"( 
-                  SELECT 
-                    id, pending, count
-                  FROM 
-                     queue
-                  WHERE pending > 0 AND count > 0;
-                  )");
             }
          }
 
@@ -453,94 +345,74 @@ namespace casual
             return m_connection.file();
          }
 
+         common::optional< Queue> Database::queue( common::strong::queue::id id)
+         {
+            Trace trace{ "queue::Database::queue"};
+            log::line( verbose::log, "id: ", id);
+
+            auto query = m_connection.query(
+               "SELECT q.id, q.name, q.retry_count, q.retry_delay, q.error FROM queue q WHERE q.id = :id", 
+               id.underlaying());
+
+            return sql::database::query::first( std::move( query), local::transform::Queue{});
+         }
+
          Queue Database::create( Queue queue)
          {
-
             Trace trace{ "queue::Database::create"};
 
-
-
             /*
-                  id           INTEGER  PRIMARY KEY,
-                  name         TEXT     UNIQUE,
-                  retries      INTEGER  NOT NULL,
-                  error        INTEGER  NOT NULL,
-                  type         INTEGER  NOT NULL,
-                  count        INTEGER  NOT NULL, -- number of (committed) messages
-                  size         INTEGER  NOT NULL, -- total size of all (committed) messages
-                  uncommitted_count INTEGER  NOT NULL, -- uncommitted messages
-                  timestamp    INTEGER NOT NULL -- last update to the queue
+               id           INTEGER  PRIMARY KEY,
+               name         TEXT     UNIQUE,
+               retry_count  INTEGER  NOT NULL,
+               retry_delay  INTEGER  NOT NULL,
+               error        INTEGER  NOT NULL,
+               count        INTEGER  NOT NULL, -- number of (committed) messages
+               size         INTEGER  NOT NULL, -- total size of all (committed) messages
+               uncommitted_count INTEGER  NOT NULL, -- uncommitted messages
+               timestamp    INTEGER NOT NULL -- last update to the queue 
              */
 
             auto now = common::platform::time::clock::type::now();
 
-            //
+            constexpr auto statement = "INSERT INTO queue VALUES ( NULL,?,?,?,?, 0, 0, 0, ?);";
+
             // Create corresponding error queue
-            //
-            m_connection.execute( "INSERT INTO queue VALUES ( NULL,?,?,?,?, 0, 0, 0, 0, ?);", queue.name + ".error", queue.retries, m_error_queue.value(), Queue::Type::error_queue, now);
+            // Note that 'error-queues' has '0' as error, hence a rollbacked message will never be moved to another queue.
+            m_connection.execute( statement, queue.name + ".error", 0, 0, 0, now);
             queue.error = common::strong::queue::id{ m_connection.rowid()};
 
-            m_connection.execute( "INSERT INTO queue VALUES ( NULL,?,?,?,?, 0, 0, 0, 0, ?);", queue.name, queue.retries, queue.error.value(), Queue::Type::queue, now);
+            m_connection.execute( statement, queue.name, queue.retry.count, queue.retry.delay, queue.error.value(), now);
             queue.id = common::strong::queue::id{ m_connection.rowid()};
-            queue.type = Queue::Type::queue;
 
             common::log::line( log, "queue: ", queue);
-
-            update_mapping();
 
             return queue;
          }
 
-         void Database::update_queue( const Queue& queue)
+         void Database::update( const Queue& queue)
          {
             Trace trace{ "queue::Database::updateQueue"};
 
             auto existing = Database::queue( queue.id);
 
-            if( ! existing.empty())
+            if( existing)
             {
-               m_connection.execute( "UPDATE queue SET name = :name, retries = :retries WHERE id = :id;", queue.name, queue.retries, queue.id.value());
-               m_connection.execute( "UPDATE queue SET name = :name, retries = :retries WHERE id = :id;", queue.name + ".error", queue.retries, existing.front().error.value());
+               constexpr auto statement = "UPDATE queue SET name = :name, retry_count = :retry_count, retry_delay = :retry_delay WHERE id = :id;";
+               m_connection.execute( statement, queue.name, queue.retry.count, queue.retry.delay, queue.id.value());
+               m_connection.execute( statement, queue.name + ".error", 0, 0, existing.value().error.value());
             }
          }
-         void Database::remove_queue( common::strong::queue::id id)
+         void Database::remove( common::strong::queue::id id)
          {
             Trace trace{ "queue::Database::removeQueue"};
 
             auto existing = Database::queue( id);
 
-            if( ! existing.empty())
+            if( existing)
             {
-               m_connection.execute( "DELETE FROM queue WHERE id = :id;", existing.front().error.value());
-               m_connection.execute( "DELETE FROM queue WHERE id = :id;", existing.front().id.value());
-            }
-         }
-
-         std::vector< Queue> Database::queue( common::strong::queue::id id)
-         {
-            std::vector< Queue> result;
-
-            auto query = m_connection.query( "SELECT q.id, q.name, q.retries, q.error FROM queue q WHERE q.id = :id AND q.type = :type", id.value(), Queue::Type::queue);
-
-            auto row = query.fetch();
-
-            if( ! row.empty())
-            {
-               result.push_back( local::transform::Queue()( row.front()));
-            }
-
-            return result;
-         }
-
-         void Database::update_mapping()
-         {
-            Trace trace{ "queue::Database::update_mapping"};
-
-            m_name_mapping.clear();
-
-            for( auto&& queue : queues())
-            {
-               m_name_mapping[ queue.name] = queue.id;
+               m_connection.execute( "DELETE FROM queue WHERE id = :id;", existing.value().error.value());
+               m_connection.execute( "DELETE FROM queue WHERE id = :id;", existing.value().id.value());
             }
          }
 
@@ -551,22 +423,37 @@ namespace casual
 
             common::log::line( verbose::log, "update: ", update, " - remove: ", remove);
 
-            std::vector< Queue> result;
+            // remove
+            common::algorithm::for_each( remove, [&]( auto id){ this->remove( id);});
 
-            auto create = common::algorithm::partition( update, []( const Queue& q){ return q.id.empty();});
+            auto split = algorithm::partition( update, []( auto& queue){ return ! queue.id.empty();});
 
-            common::algorithm::transform( std::get< 0>( create), result, [&]( auto& q){ return this->create( q);});
-
-            common::algorithm::for_each( std::get< 1>( create), [&]( auto& q){ this->update_queue( q);});
-
-            common::algorithm::for_each( remove, [&]( auto id){ this->remove_queue( id);});
-
-
-            update_mapping();
+            // update 
+            common::algorithm::for_each( std::get< 0>( split), [&]( auto& queue){ this->update( queue);});
+         
+            // create
+            auto result = algorithm::transform( std::get< 1>( split), [&]( auto& queue){ return this->create( queue);});
 
             return result;
          }
 
+         common::strong::queue::id Database::id( const std::string& name) const
+         {
+            Trace trace{ "queue::Database::id"};
+
+            auto result = sql::database::query::first( m_statement.id.query( name), []( auto& row)
+            {
+               common::strong::queue::id id;
+               sql::database::row::get( row, id.underlaying());
+               return id;
+            });
+
+            if( ! result)
+               throw common::exception::system::invalid::Argument{ 
+                  common::string::compose( "requested queue is not hosted by this queue-group - name: ", name)};
+
+            return std::move( result.value());
+         }
 
          common::message::queue::enqueue::Reply Database::enqueue( const common::message::queue::enqueue::Request& message)
          {
@@ -576,16 +463,12 @@ namespace casual
 
             auto reply = common::message::reverse::type( message);
 
-
-            //
             // We create a unique id if none is provided.
-            //
             reply.id = message.message.id ? message.message.id : common::uuid::make();
 
             auto gtrid = common::transaction::id::range::global( message.trid);
 
             long state = message.trid ? message::State::added : message::State::enqueued;
-
 
             m_statement.enqueue.execute(
                   reply.id.get(),
@@ -600,16 +483,14 @@ namespace casual
                   message.message.available,
                   common::platform::time::clock::type::now(),
                   message.message.payload);
-            
-
-            
 
             common::log::line( verbose::log, "reply: ", reply);
             return reply;
          }
 
-
-         common::message::queue::dequeue::Reply Database::dequeue( const common::message::queue::dequeue::Request& message)
+         common::message::queue::dequeue::Reply Database::dequeue( 
+            const common::message::queue::dequeue::Request& message,
+            const common::platform::time::point::type& now)
          {
             Trace trace{ "queue::Database::dequeue"};
 
@@ -617,52 +498,35 @@ namespace casual
 
             common::message::queue::dequeue::Reply reply;
 
-            auto now = std::chrono::time_point_cast< std::chrono::microseconds>(
-                  common::platform::time::clock::type::now()).time_since_epoch().count();
-
-            auto query = [&](){
+            auto query = [&]()
+            {
                if( message.selector.id)
-               {
                   return m_statement.dequeue.first_id.query( message.selector.id.get(), message.queue.value(), now);
-               }
                if( ! message.selector.properties.empty())
-               {
                   return m_statement.dequeue.first_match.query( message.queue.value(), message.selector.properties, now);
-               }
                return m_statement.dequeue.first.query( message.queue.value(), now);
             };
 
-            auto resultset = query();
+            auto first = sql::database::query::first( query(), []( auto& row)
+            {
+               return local::transform::dequeue::result( row);
+            });
 
-            sql::database::Row row;
-
-            if( ! resultset.fetch( row))
+            if( ! first)
             {
                common::log::line( log, "dequeue - qid: ", message.queue, " - no message");
-
-               if( message.block)
-                  pending_add( message);
-
                return reply;
             }
 
-            auto result = local::transform::Reply{}( row);
+            auto& result = first.value();
 
-            //
             // Update state
-            //
             if( message.trid)
-            {
-               auto gtrid = common::transaction::id::range::global(  message.trid);
-
-               m_statement.state.xid.execute( gtrid, std::get< 0>( result));
-            }
+               m_statement.state.xid.execute( common::transaction::id::range::global( message.trid), result.rowid);
             else
-            {
-               m_statement.state.nullxid.execute( std::get< 0>( result));
-            }
+               m_statement.state.nullxid.execute( result.rowid);
 
-            reply.message.push_back( std::move( std::get< 1>( result)));
+            reply.message.push_back( std::move( result.message));
 
             common::log::line( verbose::log, "reply: ", reply);
 
@@ -677,7 +541,6 @@ namespace casual
 
             auto reply = common::message::reverse::type( request);
 
-
             auto get_query = [&](){
                if( ! request.selector.properties.empty())
                {
@@ -686,22 +549,12 @@ namespace casual
                return m_statement.information.message.query( request.queue.value());
             };
 
-            auto query = get_query();
-
-            sql::database::Row row;
-
-            while( query.fetch( row))
+            reply.messages = sql::database::query::fetch( get_query(), []( sql::database::Row& row)
             {
-               /*
-                m.id, m.queue, m.origin, m.gtrid, m.state, m.reply, m.redelivered, m.type, m.avalible, m.timestamp, length( m.payload)
-                */
-
                common::message::queue::information::Message message;
-
                local::transform::row(row, message);
-
-               reply.messages.push_back( std::move( message));
-            }
+               return message;
+            });
 
             return reply;
          }
@@ -722,19 +575,60 @@ namespace casual
 
                if( query.fetch( row))
                {
-                  common::message::queue::dequeue::Reply::Message message;
-
-                  local::transform::row(row, message);
-
-                  reply.messages.push_back( std::move( message));
+                  auto result = local::transform::dequeue::result( row);
+                  reply.messages.push_back( std::move( result.message));
                }
                else
-               {
                   log::line( log, "failed to find message with id: ", id);
-               }
             }
 
             return reply;
+         }
+
+         std::vector< message::Available> Database::available( std::vector< common::strong::queue::id> queues) const
+         {
+            Trace trace{ "queue::Database::available"};
+            log::line( verbose::log, "queues: ", queues);
+
+            // TODO performance: use `queues`-range in the select to minimize resultset - might be hard on sqlite
+
+            auto result = sql::database::query::fetch( m_statement.available.queues.query(), []( auto& row)
+            {
+               message::Available message;
+
+               // SELECT m.queue, q.count, MIN( m.available)
+               sql::database::row::get( row, 
+                  message.queue.underlaying(), 
+                  message.count,
+                  message.when
+               );
+
+               return message;
+            });
+
+            log::line( verbose::log, "result: ", result);
+
+            // keep only the intersection between result and wanted queues
+            algorithm::trim( result, std::get< 0>( algorithm::intersection( result, queues)));
+
+            return result;
+         }
+
+         common::optional< common::platform::time::point::type> Database::available( common::strong::queue::id queue) const
+         {
+            Trace trace{ "queue::Database::available earliest"};
+            log::line( verbose::log, "queue: ", queue);
+
+            return sql::database::query::first( m_statement.available.message.query( queue.underlaying()), []( auto& row)
+            {
+               common::platform::time::point::type available;
+
+               // SELECT m.queue, q.count, MIN( m.available)
+               sql::database::row::get( row, 
+                  available
+               );
+               return available;
+            });
          }
 
          size_type Database::restore( common::strong::queue::id queue)
@@ -760,7 +654,6 @@ namespace casual
             m_statement.commit2.execute( gtrid);
          }
 
-
          void Database::rollback( const common::transaction::ID& id)
          {
             Trace trace{ "queue::Database::rollback"};
@@ -774,237 +667,50 @@ namespace casual
             m_statement.rollback3.execute();
          }
 
-         std::vector< common::strong::queue::id> Database::committed( const common::transaction::ID& id)
-         {
-            std::vector< common::strong::queue::id> result;
-
-            auto gtrid = common::transaction::id::range::global( id);
-            auto resultset =  m_statement.commit3.query( gtrid);
-
-            sql::database::Row row;
-
-            while( resultset.fetch( row))
-            {
-               common::strong::queue::id::value_type queue;
-               row.get( 0, queue);
-               result.emplace_back( queue);
-            }
-
-            return result;
-         }
-
-         void Database::pending_add( const common::message::queue::dequeue::Request& request)
-         {
-            Trace trace{ "queue::Database::pending_add"};
-
-            common::log::line( log, "request: ", request);
-
-            m_requests.push_back( request);
-            pending_add( request.queue);
-         }
-
-         common::message::queue::dequeue::forget::Reply Database::pending_forget( const common::message::queue::dequeue::forget::Request& request)
-         {
-            Trace trace{ "queue::Database::pending_forget"};
-
-            common::message::queue::dequeue::forget::Reply reply;
-            reply.correlation = request.correlation;
-
-            auto found = common::algorithm::find_if( m_requests, [&]( const auto& r){
-               return r.queue == request.queue && r.process == request.process;
-            });
-
-            reply.found = static_cast< bool>( found);
-
-            if( found)
-            {
-               m_requests.erase( std::begin( found));
-            }
-
-            return reply;
-         }
-
-         std::vector< common::message::pending::Message> Database::pending_forget()
-         {
-            Trace trace{ "queue::Database::pending_forget all"};
-
-            return common::algorithm::transform( std::exchange( m_requests, {}), []( auto& pending){
-                  common::message::queue::dequeue::forget::Request forget;
-                  
-                  forget.process = common::process::handle();
-                  forget.queue = pending.queue;
-
-                  return common::message::pending::Message{ std::move( forget), pending.process};
-            });
-            
-         }
-
-         std::vector< common::message::queue::dequeue::Request> Database::pending()
-         {
-            Trace trace{ "queue::Database::pending"};
-
-            const auto queues = get_pending();
-
-            if( queues.empty())
-               return {};
-
-            std::vector< common::message::queue::dequeue::Request> result;
-
-            auto requests = common::range::make( m_requests);
-
-            for( auto& queue : queues)
-            {
-               auto splice = common::algorithm::stable_partition( requests, [&]( auto& r){ return r.queue != queue.id;});
-
-               auto prospects = std::get< 1>( splice);
-
-               common::log::line( verbose::log, "queue.count: ", queue.count, " - prospect.size: ", prospects.size());
-
-               if( prospects.size() <= queue.count)
-               {
-                  common::algorithm::move( prospects, result);
-                  requests = std::get< 0>( splice);
-                  pending_set( queue.id, 0);
-               }
-               else 
-               {
-                  // we have more pending than new messages, 
-
-                  auto replies = common::range::make( std::begin( prospects), std::begin( prospects) + queue.count);
-                  common::algorithm::move( replies, result);
-
-                  // clean up, and move the consumed to the back, for erasure.
-                  requests = common::range::make( 
-                     std::begin( requests),
-                     std::rotate( std::begin( replies), std::end( replies), std::end( prospects)));
-
-                  pending_set( queue.id, prospects.size() - replies.size());
-               }
-            }
-            m_requests.erase( std::end( requests), std::end( m_requests));
-
-
-            return result;
-         }
-
-         void Database::pending_erase( common::strong::process::id pid)
-         {
-            Trace trace{ "queue::Database::pending_erase"};
-
-            auto found = std::get< 1>( common::algorithm::stable_partition( m_requests, [=]( const auto& r){
-               return r.process.pid != pid;
-            }));
-
-            m_requests.erase( std::begin( found), std::end( found));
-         }
-
-
-         void Database::pending_add( common::strong::queue::id id)
-         {
-            Trace trace{ "queue::Database::pending_add"};
-
-            common::log::line( verbose::log, "id: ", id);
-
-            m_statement.pending.add.execute( id.value());
-         }
-
-         void Database::pending_set( common::strong::queue::id id, common::platform::size::type value)
-         {
-            Trace trace{ "queue::Database::pending_set"};
-
-            common::log::line( verbose::log, "id: ", id, " - value: ", value);
-
-            m_statement.pending.set.execute( value, id.value());
-         }
-
-            
-         std::vector< pending::Dequeue> Database::get_pending()
-         {
-            Trace trace{ "queue::Database::get_pending"};
-
-            auto query = m_statement.pending.check.query();
-
-            std::vector< pending::Dequeue> result;
-
-            sql::database::Row row;
-
-            while( query.fetch( row))
-            {
-               pending::Dequeue pending;
-
-               row.get( 0, pending.id.underlaying());
-               row.get( 1, pending.pending);
-               row.get( 2, pending.count);
-
-               result.push_back( pending);
-            }
-            return result;
-         }
-
          std::vector< common::message::queue::information::Queue> Database::queues()
          {
             Trace trace{ "queue::Database::queues"};
 
-            std::vector< common::message::queue::information::Queue> result;
-
-            auto query = m_statement.information.queue.query();
-
-            sql::database::Row row;
-
-            while( query.fetch( row))
+            return sql::database::query::fetch( m_statement.information.queue.query(), []( auto& row)
             {
+               common::message::queue::information::Queue queue;
 
                /*
                   id           INTEGER  PRIMARY KEY,
                   name         TEXT     UNIQUE,
-                  retries      INTEGER  NOT NULL,
+                  retry_count  INTEGER  NOT NULL,
+                  retry_delay  INTEGER  NOT NULL,
                   error        INTEGER  NOT NULL,
-                  type         INTEGER  NOT NULL,
                   count        INTEGER  NOT NULL, -- number of (committed) messages
                   size         INTEGER  NOT NULL, -- total size of all (committed) messages
                   uncommitted_count INTEGER  NOT NULL, -- uncommitted messages
-                  pending     ---
-                  timestamp    INTEGER NOT NULL, -- last update to the queue
+                  timestamp    INTEGER NOT NULL -- last update to the queue 
                 */
-               common::message::queue::information::Queue queue;
-
-               row.get( 0, queue.id.underlaying());
-               row.get( 1, queue.name);
-               row.get( 2, queue.retries);
-               row.get( 3, queue.error.underlaying());
-               row.get( 4, queue.type);
-               row.get( 5, queue.count);
-               row.get( 6, queue.size);
-               row.get( 7, queue.uncommitted);
-               row.get( 8, queue.pending);
-               row.get( 9, queue.timestamp);
-
-               result.push_back( std::move( queue));
-            }
-            return result;
+               sql::database::row::get( row, 
+                  queue.id.underlaying(),
+                  queue.name,
+                  queue.retry.count,
+                  queue.retry.delay,
+                  queue.error.underlaying(),
+                  queue.count,
+                  queue.size,
+                  queue.uncommitted,
+                  queue.timestamp 
+               );
+               return queue;
+            });
          }
 
          std::vector< common::message::queue::information::Message> Database::messages( common::strong::queue::id id)
          {
-            std::vector< common::message::queue::information::Message> result;
+            Trace trace{ "queue::Database::messages"};
 
-            auto query = m_statement.information.message.query( id.value());
-
-            sql::database::Row row;
-
-            while( query.fetch( row))
+            return sql::database::query::fetch( m_statement.information.message.query( id.value()), []( auto& row)
             {
-               /*
-                m.id, m.queue, m.origin, m.gtrid, m.state, m.reply, m.redelivered, m.type, m.avalible, m.timestamp, length( m.payload)
-                */
                common::message::queue::information::Message message;
-
                local::transform::row(row, message);
-
-               result.push_back( std::move( message));
-            }
-
-            return result;
+               return message;
+            });
          }
 
 

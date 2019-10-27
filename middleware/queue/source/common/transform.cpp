@@ -53,20 +53,10 @@ namespace casual
          {
             manager::admin::Queue result;
 
-            auto queue_type = []( common::message::queue::information::Queue::Type type )
-                  {
-                     switch( type)
-                     {
-                        case common::message::queue::information::Queue::Type::group_error_queue: return manager::admin::Queue::Type::group_error_queue;
-                        case common::message::queue::information::Queue::Type::error_queue: return manager::admin::Queue::Type::error_queue;
-                        default: return manager::admin::Queue::Type::queue;
-                     }
-                  };
-
             result.id = queue.id;
             result.name = queue.name;
-            result.retries = queue.retries;
-            result.type = queue_type( queue.type);
+            result.retry.count = queue.retry.count;
+            result.retry.delay = queue.retry.delay;
             result.error = queue.error;
 
             result.count = queue.count;
@@ -144,6 +134,19 @@ namespace casual
          {
             manager::admin::Message result;
 
+            auto transform_state = []( auto state)
+            {
+               using Enum = decltype( state);
+               switch( state)
+               {
+                  case Enum::enqueued: return manager::admin::Message::State::enqueued;
+                  case Enum::committed: return manager::admin::Message::State::committed;
+                  case Enum::dequeued: return manager::admin::Message::State::dequeued;
+               }
+               // will not happend - the compiler will give error if we not handle all enums...
+               return manager::admin::Message::State::dequeued;
+            };
+
             result.id = message.id;
             result.queue = message.queue;
             result.origin = message.origin;
@@ -151,7 +154,7 @@ namespace casual
             result.trid = message.trid;
             result.type = message.type;
 
-            result.state = message.state;
+            result.state = transform_state( message.state);
             result.redelivered = message.redelivered;
 
             result.available = message.available;
@@ -168,10 +171,6 @@ namespace casual
             return common::algorithm::transform( reply.messages, Message{});
          }
 
-
-
       } // transform
-   } // qeue
-
-
+   } // queue
 } // casual

@@ -55,13 +55,15 @@ namespace casual
          {
             auto& queue = group.queues.at( 0);
             EXPECT_TRUE( queue.name == "q_A1");
-            EXPECT_TRUE( queue.retries.value() == 0);
+            EXPECT_TRUE( queue.retry.value().count == 3L);
+            EXPECT_TRUE( queue.retry.value().delay == std::string{ "20s"});
          }
 
          {
             auto& queue = group.queues.at( 1);
             EXPECT_TRUE( queue.name == "q_A2");
-            EXPECT_TRUE( queue.retries.value() == 10);
+            EXPECT_TRUE( queue.retry.value().count == 10L);
+            EXPECT_TRUE( queue.retry.value().delay == std::string{ "100ms"});
          }
       }
 
