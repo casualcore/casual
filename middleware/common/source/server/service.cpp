@@ -63,14 +63,13 @@ namespace casual
             {
                namespace
                {
-
                   namespace transform
                   {
                      TPSVCINFO information( service::invoke::Parameter& argument)
                      {
                         Trace trace{ "server::xatmi::local::transform::information"};
 
-                        TPSVCINFO result;
+                        TPSVCINFO result{};
 
                         // Before we call the user function we have to add the buffer to the "buffer-pool"
                         algorithm::copy_max( argument.service.name, range::make( result.name));
@@ -88,9 +87,7 @@ namespace casual
                      buffer::Payload payload( const server::state::Jump& jump)
                      {
                         if( jump.buffer.data != nullptr)
-                        {
                            return buffer::pool::holder().release( jump.buffer.data, jump.buffer.size);
-                        }
 
                         return { nullptr};
                      }

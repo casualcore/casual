@@ -180,11 +180,11 @@ namespace casual
 
          //! fills the container with `value`
          //! @returns the range
-         template< typename R, typename F>
-         decltype( auto) fill( R&& range, F&& value)
+         template< typename R, typename V>
+         decltype( auto) fill( R&& range, V&& value)
          {
-            std::fill( std::begin( range), std::end( range), std::forward( value));
-            return range;
+            std::fill( std::begin( range), std::end( range), std::forward< V>( value));
+            return std::forward< R>( range);
          }
 
 
