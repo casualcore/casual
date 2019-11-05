@@ -29,6 +29,18 @@ namespace casual
                   result.server_default.service.transaction.emplace( "join");
                   result.server_default.service.category.emplace( "some.category");
 
+
+                  result.resources = {
+                     []()
+                     {
+                        configuration::build::Resource v;
+                        v.key = "rm-mockup";
+                        v.name = "resource-1";
+                        v.note = "the runtime configuration for this resource is correlated with the name 'resource-1' - no group is needed for resource configuration";
+                        return v;
+                     }()
+                  };
+
                   result.services = {
                         [](){
                            configuration::build::server::Service v;

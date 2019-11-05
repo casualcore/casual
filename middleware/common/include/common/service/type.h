@@ -48,12 +48,8 @@ namespace casual
             Type mode( std::uint16_t mode);
 
          } // transaction
-
       } // service
-
    } // common
-
-
 } // casual
 
 

@@ -28,6 +28,11 @@ ${CONFIGURATION_PATH}/bin/casual-configuration-example-maker --default-build-ser
 ${CONFIGURATION_PATH}/bin/casual-configuration-example-maker --default-build-server-file ${CONFIGURATION_PATH}/example/build/default/server.xml
 ${CONFIGURATION_PATH}/bin/casual-configuration-example-maker --default-build-server-file ${CONFIGURATION_PATH}/example/build/default/server.ini
 
+${CONFIGURATION_PATH}/bin/casual-configuration-example-maker --build-executable-file ${CONFIGURATION_PATH}/example/build/executable.yaml
+${CONFIGURATION_PATH}/bin/casual-configuration-example-maker --build-executable-file ${CONFIGURATION_PATH}/example/build/executable.json
+${CONFIGURATION_PATH}/bin/casual-configuration-example-maker --build-executable-file ${CONFIGURATION_PATH}/example/build/executable.xml
+${CONFIGURATION_PATH}/bin/casual-configuration-example-maker --build-executable-file ${CONFIGURATION_PATH}/example/build/executable.ini
+
 
 ${CONFIGURATION_PATH}/bin/casual-configuration-example-maker --resource-property-file ${CONFIGURATION_PATH}/example/resource/property.yaml
 ${CONFIGURATION_PATH}/bin/casual-configuration-example-maker --resource-property-file ${CONFIGURATION_PATH}/example/resource/property.json

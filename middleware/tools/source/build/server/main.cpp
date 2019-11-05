@@ -7,12 +7,13 @@
 #include "tools/common.h"
 #include "tools/build/task.h"
 #include "tools/build/generate.h"
+#include "tools/build/transform.h"
 
 #include "common/string.h"
 #include "common/process.h"
 #include "common/argument.h"
 #include "common/file.h"
-#include "common/uuid.h"
+#include "common/execute.h"
 #include "common/environment.h"
 #include "common/server/service.h"
 #include "common/exception/system.h"
@@ -32,6 +33,7 @@
 
 namespace casual
 {
+   using namespace common;
    namespace tools
    {
       namespace build
@@ -42,229 +44,112 @@ namespace casual
             {
                struct Settings
                {
-
-                  struct Service
-                  {
-
-                     Service( const std::string& name) : name( name), function( name) {}
-                     Service() = default;
-                     std::string name;
-                     std::string function;
-                     std::string category;
-                     common::service::transaction::Type transaction = common::service::transaction::Type::automatic;
-                  };
-
-                  Settings()
-                  {
-                     directive.directives = { "-O3"};
-                  }
-
                   build::Directive directive;
 
-                  std::vector< Service> services;
-
-                  void set_server_definition_path( const std::string& file)
+                  struct 
                   {
-                     const auto server = configuration::build::server::get( file);
+                      std::vector< std::string> names;
+                  } service;
 
-                     common::algorithm::append( server.resources, resources); 
-
-                     common::algorithm::transform( server.services, services, []( const auto& service)
-                     {
-                        Service result;
-                        result.function = service.function.value_or( service.name);
-                        result.name = service.name;
-
-                        if( service.category) { result.category = service.category.value();}
-
-                        result.transaction = common::service::transaction::mode( service.transaction.value_or( "auto"));
-
-                        return result;
-                     });
-
-                  }
-                  bool keep = false;
-
-
-                  std::string properties_file;
-                  std::vector< configuration::build::Resource> resources;
-
-
-                  void set_resources( const std::vector< std::string>& value)
+                  struct
                   {
-                     auto splitted = split( value);
+                     std::string definition;
+                  } server;
 
-                     for( auto& resource : splitted)
-                     {
-                        auto found = common::algorithm::find_if( resources, [&]( auto& value){ return value.key == resource;});
-
-                        if( ! found)
-                        {
-                           resources.push_back( { resource, ""});
-                        }
-                     }
-                  }
-
-
-                  void set_services( const std::vector< std::string>& value)
+                  struct 
                   {
-                     auto splittet = split( value, ',');
+                     std::string properties;
+                     std::vector< std::string> keys;
+                  } resource;
 
-                     common::algorithm::transform( splittet, services, []( const std::string& name)
-                     {
-                        return Service{ name};
-                     });
-                  }
-
-
-                  friend void validate( const Settings& settings)
+                  struct
                   {
-                     validate( settings.directive);
-                  }
-
-               private:
-
-                  std::vector< std::string> split( const std::vector< std::string>& source, typename std::string::value_type delimiter = ' ')
-                  {
-                     std::vector< std::string> result;
-
-                     for( auto& resource : source)
-                     {
-                        auto splitted = common::string::adjacent::split( resource, delimiter);
-                        common::algorithm::append( splitted, result);
-                     }
-                     return result;
-                  }
-                  
-
+                     std::string file;
+                     bool keep = false;
+                  } source;
                };
 
-
-               common::file::scoped::Path generate( 
-                  const Settings& settings, 
-                  const std::vector< build::generate::Content>& content)
+               struct State
                {
-                  common::file::scoped::Path path{ common::file::name::unique( "server_", ".cpp")};
+                  std::vector< model::Service> services;
+                  std::vector< model::Resource> resources;
+               };
 
-                  std::ofstream out{ path};
-
-                  out << license::c << R"(   
-#include <xatmi.h>
-#include <xatmi/server.h>
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-)";
-
-                  // declare services
-                  for( auto& service : settings.services)
+               namespace transform
+               {
+                  auto state( const Settings& settings)
                   {
-                     out << "extern void " << service.function << "( TPSVCINFO *context);" << '\n';
-                  }
+                     auto properties = settings.resource.properties.empty() ?
+                        configuration::resource::property::get() : configuration::resource::property::get( settings.resource.properties);
 
-                  out << "\n\n\n";
+                     auto definition = settings.server.definition.empty() ? 
+                        decltype( configuration::build::server::get( "")){} : configuration::build::server::get( settings.server.definition);
 
-                  // declarations resources
-                  for( auto& cont : content)
-                  {
-                     out << cont.before_main;
-                  }
+                     State result;
 
+                     result.resources = build::transform::resources( 
+                        definition.resources,
+                        settings.resource.keys,
+                        properties);
 
-                  out << R"(
-int main( int argc, char** argv)
-{
+                     result.services = build::transform::services(
+                        definition.services,
+                        settings.service.names);
 
-   struct casual_service_name_mapping service_mapping[] = {)";
-
-                  for( auto& service : settings.services)
-                  {
-                     out << R"(
-      {&)" << service.function << R"(, ")" << service.name << R"(", ")" << service.category << R"(", )" << common::cast::underlying( service.transaction) << "},";
-                  }
-
-                  out << R"(
-      { 0, 0, 0, 0} /* null ending */
-   };
-
-)";
-
-                  // declarations
-                  for( auto& cont : content)
-                  {
-                     out << cont.inside_main;
+                     return result;
                   };
 
-                  out << R"(
+               } // transform
 
-   struct casual_server_arguments arguments = {
-         service_mapping,
-         &tpsvrinit,
-         &tpsvrdone,
-         argc,
-         argv,
-         xa_mapping
-   };
+               namespace source
+               {
+                  common::file::scoped::Path file( const Settings& settings)
+                  {
+                     if( settings.source.file.empty())
+                        return { common::file::name::unique( "server_", ".cpp")};
+                     
+                     return { settings.source.file};
+                  }
+               } // source
 
-
-   /*
-   * Start the server
-   */
-   return casual_run_server( &arguments);
-
-}
-
-
-#ifdef __cplusplus
-}
-#endif
-
-)";
-
-                  // make sure we flush
-                  out << std::flush;
-
-                  return path;
+               void generate( const common::file::scoped::Path& path, const local::State& state)
+               {
+                  std::ofstream out{ path};
+                  generate::server( out, state.resources, state.services);
                }
 
-               void build( const std::string& c_file, Settings settings)
+               void build( const common::file::scoped::Path& path, Settings settings)
                {
                   trace::Exit exit( "build server", settings.directive.verbose);
 
-                  common::log::line( log, "c_file: ", c_file);
+                  common::log::line( log, "path: ", path);
+
+                  auto state = local::transform::state( settings);
+                  local::generate( path, state);
                   
-                  // add "known" dependencies
-
-                  common::algorithm::push_back_unique( "casual-xatmi", settings.directive.libraries);
-
-                  if( common::environment::variable::exists( "CASUAL_HOME"))
+                  if( settings.directive.use_defaults)
                   {
-                     auto casual_home = common::environment::variable::get( "CASUAL_HOME");
+                     // add "known" dependencies
+                     common::algorithm::push_back_unique( "casual-xatmi", settings.directive.libraries);
 
-                     if( common::directory::exists( casual_home + "/include"))
-                        common::algorithm::push_back_unique( casual_home + "/include", settings.directive.paths.include);
+                     if( common::environment::variable::exists( "CASUAL_HOME"))
+                     {
+                        auto casual_home = common::environment::variable::get( "CASUAL_HOME");
 
-                     if( common::directory::exists( casual_home + "/lib"))
-                        common::algorithm::push_back_unique( casual_home + "/lib", settings.directive.paths.library);
+                        if( common::directory::exists( casual_home + "/include"))
+                           common::algorithm::push_back_unique( casual_home + "/include", settings.directive.paths.include);
+
+                        if( common::directory::exists( casual_home + "/lib"))
+                           common::algorithm::push_back_unique( casual_home + "/lib", settings.directive.paths.library);
+                     }
+
+                     // add resource stuff
+                     algorithm::append_unique( build::transform::libraries( state.resources), settings.directive.libraries);
+                     algorithm::append_unique( build::transform::paths::include( state.resources), settings.directive.paths.include);
+                     algorithm::append_unique( build::transform::paths::library( state.resources), settings.directive.paths.library);
                   }
 
-
-                  build::task( c_file, settings.directive);
-               }
-
-               std::vector< Resource> get_resources( const Settings& settings)
-               {
-                  if( settings.resources.empty())
-                     return {};
-
-                  auto properties = settings.properties_file.empty() ?
-                     configuration::resource::property::get() : configuration::resource::property::get( settings.properties_file);
-
-                  return build::transform::resources( 
-                     std::move( settings.resources), 
-                     std::move( properties));
+                  build::task( path, settings.directive);
                }
 
                void main( int argc, char **argv)
@@ -278,33 +163,31 @@ int main( int argc, char** argv)
 
                      Parse{ "builds a casual xatmi server",
                         Option( std::tie( settings.directive.output), { "-o", "--output"}, "name of server to be built"),
-                        Option( [&]( const std::vector< std::string>& values){ settings.set_services( values);}, 
-                           {"-s", "--service"}, "service names")( cardinality::any{}),
-                        Option( [&]( const std::string& value){ settings.set_server_definition_path( value);}, { "-d", "--server-definition"}, "path to server definition file"),
-                        Option( [&]( const std::vector< std::string>& values){ settings.set_resources( values);}, 
-                           {"-r", "--resource-keys"}, "key of the resource")( cardinality::any{}),
+                        Option( option::one::many( settings.service.names), {"-s", "--service"}, "service names")( cardinality::any{}),
+                        Option( std::tie( settings.server.definition), { "-d", "--definition", "--server-definition"}, "path to server definition file\n\ndeprecated: --server-definition"),
+                        Option( option::one::many( settings.resource.keys), {"-r", "--resource-keys"}, "key of the resource")( cardinality::any{}),
                         Option( std::tie( settings.directive.compiler), {"-c", "--compiler"}, "compiler to use"),
-                        Option( settings.directive.cli_directives(), 
-                           {"-f", "--link-directives"}, "additional compile and link directives")( cardinality::any{}),
-                        Option( std::tie( settings.properties_file), {"-p", "--properties-file"}, "path to resource properties file"),
+                        Option( build::Directive::split( settings.directive.directives), {"-f", "--build-directives", "--link-directives"}, "additional compile and link directives\n\ndeprecated: --link-directives")( cardinality::any{}),
+                        Option( std::tie( settings.resource.properties), {"-p", "--properties-file"}, "path to resource properties file"),
+                        Option( option::toggle( settings.directive.use_defaults), { "--no-defaults"}, "do not add any default compiler/link directives\n\nuse --build-directives to add your own"),
+                        Option( std::tie( settings.source.file), { "--source-file"}, "name of the intermediate source file"),
+                        Option( option::toggle( settings.source.keep), {"-k", "--keep"}, "keep the intermediate source file"),
                         Option( option::toggle( settings.directive.verbose), {"-v", "--verbose"}, "verbose output"),
-                        Option( option::toggle( settings.keep), {"-k", "--keep"}, "keep the intermediate file")
                      }( argc, argv);
 
-                     validate( settings);
                   }
 
                   // Generate file
 
-                  auto resources = get_resources( settings);
+                  auto source = local::source::file( settings);
 
-                  settings.directive.add( resources);
+                  auto source_keep = common::execute::scope( [&]()
+                  { 
+                     if( settings.source.keep)
+                        source.release();
+                  });
 
-                  auto path = generate( settings, { build::generate::resources( resources)});
-
-                  auto name = settings.keep ? path.release() : path.path();
-
-                  build( name, settings);
+                  build( source, settings);
                }        
 
             } // <unnamed>
@@ -316,7 +199,7 @@ int main( int argc, char** argv)
 
 int main( int argc, char **argv)
 {
-   return casual::common::exception::guard( [=]()
+   return casual::common::exception::guard( std::cerr, [=]()
    {
       casual::tools::build::local::main( argc, argv);
    });

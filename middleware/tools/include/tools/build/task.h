@@ -6,10 +6,11 @@
 
 #pragma once
 
-#include "tools/build/resource.h"
+#include "tools/build/model.h"
 
 #include "common/algorithm.h"
 #include "common/string.h"
+#include "common/serialize/macro.h"
 
 #include <string>
 #include <vector>
@@ -38,31 +39,37 @@ namespace casual
             } paths;
 
             bool verbose = false;
+            bool use_defaults = true;
 
-
-            void add( const std::vector< Resource>& resources);
 
             friend void validate( const Directive& settings);
 
-            auto cli_directives()
+            CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
+               CASUAL_SERIALIZE( compiler);
+               CASUAL_SERIALIZE( output);
+               CASUAL_SERIALIZE( directives);
+               CASUAL_SERIALIZE( libraries);
+               CASUAL_SERIALIZE( paths.include);
+               CASUAL_SERIALIZE( paths.library);
+               CASUAL_SERIALIZE( verbose);
+               CASUAL_SERIALIZE( use_defaults);
+            )
+
+            static auto split( std::vector< std::string>& target)
             {
-               return [&]( const std::vector< std::string>& values)
+               return [&target]( const std::string& value, const std::vector< std::string>& values)
                {
-                  // TODO: v2.0 do not split strings - make it more explicit
-                  // and strict.
-                  for( auto value : values)
+                  auto split_append = [&target]( auto& value)
                   {
-                     auto splitted = common::string::adjacent::split( value, ' ');
-                     common::algorithm::append_unique( splitted, directives);
-                  } 
-                  
+                     common::algorithm::append( common::string::adjacent::split( value, ' '), target);
+                  };
+                  split_append( value);
+                  common::algorithm::for_each( values, split_append);
                };
             }
-
-            friend std::ostream& operator << ( std::ostream& out, const Directive& value);
          };
-         
 
+         
          void task( const std::string& input, const Directive& directive);
 
       } // build

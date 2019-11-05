@@ -52,12 +52,10 @@ example_archive = LinkArchive( 'bin/casual-configuration-example',
          Compile( 'source/example/domain.cpp'),
          Compile( 'source/example/resource/property.cpp'),
          Compile( 'source/example/build/server.cpp'),
+         Compile( 'source/example/build/executable.cpp'),
      ])
 
-#
 # Unittest
-#
-
 LinkUnittest( 'bin/test-casual-configuration',
    [
         Compile( 'unittest/source/test_domain.cpp'),
@@ -81,21 +79,14 @@ LinkUnittest( 'bin/test-casual-configuration',
        'casual-unittest',
    ])  
 
-
-#
 # Example maker
-#
 LinkExecutable( 'bin/casual-configuration-example-maker', 
     [ 
         Compile( 'source/example/main.cpp'),
    ],          
    [ example_archive, lib_configuration, 'casual-serviceframework', 'casual-common'])  
 
-
-   
-#
 # Install
-#
 Install( intall_libs, '$(CASUAL_HOME)/lib')
 Install( 'resources.yaml', '$(CASUAL_HOME)/configuration/example')
 

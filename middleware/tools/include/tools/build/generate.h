@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include "tools/build/resource.h"
+#include "tools/build/model.h"
 
 
 
@@ -21,15 +21,16 @@ namespace casual
       {
          namespace generate
          {
+            
+            //! generates the server main source file content
+            void server( std::ostream& out, 
+               const std::vector< model::Resource>& resources, 
+               const std::vector< model::Service>& services);
 
-            struct Content 
-            {
-               std::string before_main;
-               std::string inside_main;
-            };
 
-
-            Content resources( const std::vector< Resource>& resources);
+            void executable( std::ostream& out, 
+               const std::vector< model::Resource>& resources, 
+               const std::string& entrypoint);
 
          } // generate
       } // build

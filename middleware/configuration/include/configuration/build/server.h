@@ -36,6 +36,7 @@ namespace casual
                   //! - 'atomic' Always start a new transaction.
                   //! - 'branch' Branch current transaction, or start a new on if there is no current.
                   //! - 'none' Don't start or join any transaction
+                  //! - 'branch' Branch current transaction, or start a new one if there is no current.
                   //!
                   //! default is 'auto'
                   common::optional< std::string> transaction;

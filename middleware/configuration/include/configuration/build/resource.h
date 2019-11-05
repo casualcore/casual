@@ -24,10 +24,13 @@ namespace casual
             //! name to correlate configuration
             std::string name;
 
+            std::string note;
+
             CASUAL_CONST_CORRECT_SERIALIZE
             (
                CASUAL_SERIALIZE( key);
                CASUAL_SERIALIZE( name);
+               CASUAL_SERIALIZE( note);
             )
          };
       } // build

@@ -9,6 +9,7 @@
 #include "configuration/example/domain.h"
 
 #include "configuration/example/build/server.h"
+#include "configuration/example/build/executable.h"
 #include "configuration/example/resource/property.h"
 
 #include "common/serialize/macro.h"
@@ -42,6 +43,11 @@ namespace casual
                void server( const std::string& file)
                {
                   example::build::server::write( example::build::server::example(), file);
+               }
+
+               void executable( const std::string& file)
+               {
+                  example::build::executable::write( example::build::executable::example(), file);
                }
 
                void default_server( const std::string& file)
@@ -83,11 +89,12 @@ the output format will be deduced from file extension
                Option( &create::build::server, { "-b", "--build-server-file"}, "build server configuration example"),
                Option( &create::build::default_server, { "-db", "--default-build-server-file"}, "default build server configuration example"),
 
+               Option( &create::build::executable, { "-e", "--build-executable-file"}, "build executable configuration example"),
+
                Option( &create::resource::property, { "-r", "--resource-property-file"}, "resource property configuration example"),
                Option( &create::resource::default_server, { "-dr", "--default-resource-property-file"}, "default resource property configuration example")
 
             }( argc, argv);
-
          }
 
       } // example

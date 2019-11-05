@@ -32,18 +32,24 @@ build_task_a = LinkArchive( 'bin/casual-tools-build-task',
   [
     Compile( 'source/build/task.cpp'),
     Compile( 'source/build/generate.cpp'),
-    Compile( 'source/build/resource.cpp'),
+    Compile( 'source/build/transform.cpp'),
    ])
 
 target = LinkExecutable( 'bin/casual-build-server',
    [ Compile( 'source/build/server/main.cpp')],
-   [ common_a, build_task_a, 'casual-common', 'casual-serviceframework', 'casual-configuration'])
+   [ common_a, build_task_a, 'casual-common', 'casual-configuration'])
+
+install_bin.append( target)
+
+target = LinkExecutable( 'bin/casual-build-server-generate',
+   [ Compile( 'source/build/server/generate/main.cpp')],
+   [ common_a, build_task_a, 'casual-common', 'casual-configuration'])
 
 install_bin.append( target)
 
 target = LinkExecutable( 'bin/casual-build-executable',
    [ Compile( 'source/build/executable/main.cpp')],
-   [ common_a, build_task_a, 'casual-common', 'casual-serviceframework', 'casual-configuration'])
+   [ common_a, build_task_a, 'casual-common', 'casual-configuration'])
 
 install_bin.append( target)
 
@@ -69,9 +75,7 @@ target = LinkExecutable( 'file/header/bin/casual-source-code-header',
 install_bin.append( target)
 
 
-#
 # TODO: if we keep the python implementation we need to package python "correct"?
-#
 install_bin.append( 'log/casual-log')
 install_bin.append( 'log/casual-log-format')
 install_bin.append( 'log/color.py')
@@ -81,6 +85,14 @@ install_bin.append( 'log/color.py')
 #   [ 'casual-common'])
 #
 # install_bin.append( target)
+
+
+LinkUnittest( 'bin/test-casual-tools',
+	[   
+        Compile( 'unittest/source/build/test_server.cpp'),
+    ],
+	[  common_a, 'casual-common', 'casual-unittest'])
+
 
 
 Install( install_bin, '$(CASUAL_HOME)/bin')
