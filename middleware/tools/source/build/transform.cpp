@@ -61,29 +61,37 @@ namespace casual
             {
                Trace trace{ "tools::build::transform::resources"};
 
-               return common::algorithm::transform( resources, [&properties]( auto& resource)
+               auto transform_key = [&properties]( auto& key)
                {
-                  auto property = common::algorithm::find_if( properties, [&resource]( auto& property){ return property.key == resource.key;});
+                  auto property = common::algorithm::find_if( properties, [&key]( auto& property){ return property.key == key;});
 
                   if( ! property)
-                  {
                      throw common::exception::system::invalid::Argument{
-                        common::string::compose( "failed to find resource property for key: ", resource.key, 
-                        " - check resource configuration for casual")
-                     };
-                  }
-
+                        common::string::compose( "failed to find resource property for key: ", key, " - check resource configuration for casual")};
+                  
                   model::Resource result;
 
-                  result.key = resource.key;
-                  result.name = resource.name;
+                  result.key = key;
                   result.libraries = property->libraries;
                   result.xa_struct_name = property->xa_struct_name;
                   result.paths.include = property->paths.include;
                   result.paths.library = property->paths.library;
 
                   return result;
-               });
+               };
+
+               auto transform_resource = [&transform_key]( auto& resource)
+               {
+                  auto result = transform_key( resource.key);
+                  result.name = resource.name;
+                  return result;
+               };
+
+               auto result = common::algorithm::transform( resources, transform_resource);
+
+               common::algorithm::append( common::algorithm::transform( keys, transform_key), result);
+
+               return result;
             }
 
             std::vector< model::Service> services( 

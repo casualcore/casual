@@ -181,13 +181,13 @@ namespace casual
 
                   auto source = local::source::file( settings);
 
-                  auto source_keep = common::execute::scope( [&]()
+                  auto source_keep = common::execute::scope( [keep = settings.source.keep, &source]()
                   { 
-                     if( settings.source.keep)
+                     if( keep)
                         source.release();
                   });
 
-                  build( source, settings);
+                  build( source, std::move( settings));
                }        
 
             } // <unnamed>
