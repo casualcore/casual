@@ -41,9 +41,16 @@ namespace casual
                         });
                      }
 
-                     std::string names( const std::vector< file::scoped::Path>& files)
+                     auto arguments( const std::vector< file::scoped::Path>& files)
                      {
-                        return string::join( files, " ");
+                        std::vector< std::string> result{ 
+                           "--bare", "true",
+                           "--event-ipc", common::string::compose( common::communication::ipc::inbound::ipc()),
+                           "--configuration-files"
+                        };
+                        algorithm::append( files, result);
+
+                        return result;
                      }
 
                   } // configuration
@@ -60,11 +67,9 @@ namespace casual
                Implementation( const std::vector< std::string>& configuration, std::function< void( const std::string&)> callback = nullptr)
                   : environment( std::move( callback)),
                   files( local::configuration::files( configuration)),
-                  process{ common::environment::directory::casual() + "/bin/casual-domain-manager", {
-                     "--event-ipc", common::string::compose( common::communication::ipc::inbound::ipc()),
-                     "--configuration-files", local::configuration::names( files),
-                     "--bare", "true" }}
+                  process{ common::environment::directory::casual() + "/bin/casual-domain-manager", local::configuration::arguments( files)}
                {
+                  log::Trace trace{ "domain::manager::unittest::Process::Implementation", verbose::log};
 
                   // Make sure we unregister the event subscription
                   auto unsubscribe = common::execute::scope( [](){
@@ -143,6 +148,9 @@ domain:
             Process::Process() {}
 
             Process::~Process() = default;
+
+            Process::Process( Process&&) = default;
+            Process& Process::operator = ( Process&&) = default;
 
             const common::process::Handle& Process::handle() const noexcept
             {

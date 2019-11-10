@@ -120,7 +120,8 @@ namespace casual
                      };
                   }
 
-                  auto text( auto&& text)
+                  template< typename T>
+                  auto text( T&& text)
                   {
                      return [text = std::move( text)]( std::ostream& out)
                      {

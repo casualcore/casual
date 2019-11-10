@@ -6,7 +6,6 @@
 
 
 #include "common/transaction/context.h"
-#include "common/service/call/context.h"
 
 #include "common/communication/ipc.h"
 #include "common/communication/instance.h"
@@ -39,17 +38,19 @@ namespace casual
             Trace( T&& value) : common::log::Trace( std::forward< T>( value), log::category::transaction) {}
          };
 
-
          Context& Context::instance()
          {
             static Context singleton;
             return singleton;
          }
 
+         Context::Context() = default;
 
-         Context::Context()
-         = default;
-
+         Context& Context::clear()
+         {
+            instance() = Context{};
+            return instance();
+         }
 
          Transaction& Context::current()
          {
@@ -61,7 +62,6 @@ namespace casual
 
             return m_transactions.back();
          }
-
 
          bool Context::associated( const Uuid& correlation)
          {
@@ -81,7 +81,6 @@ namespace casual
             {
                namespace resource
                {
-
                   message::transaction::resource::lookup::Reply configuration( std::vector< std::string> names)
                   {
                      Trace trace{ "transaction::local::resource::configuration"};
@@ -102,14 +101,12 @@ namespace casual
                   }
 
                } // resource
-
             } // <unnamed>
          } // local
 
          void Context::configure( std::vector< resource::Link> resources, std::vector< std::string> names)
          {
             Trace trace{ "transaction::Context::configure"};
-
 
             if( ! resources.empty())
             {
@@ -184,7 +181,7 @@ namespace casual
             log::line( log::category::transaction, "dynamic resources: ", m_resources.dynamic);
 
             // Open the resources...
-            // TODO: Not sure if we can do this, or if users has to call tx_open by them self...
+            // TODO semantics: Not sure if we can do this, or if users has to call tx_open by them self...
             open();
 
          }
@@ -213,7 +210,6 @@ namespace casual
                      std::vector< Transaction>& m_transactions;
                   };
                } // pop
-
 
                namespace start
                {
@@ -256,15 +252,8 @@ namespace casual
 
          std::vector< strong::resource::id> Context::resources() const
          {
-            std::vector< strong::resource::id> result;
-
-            for( auto& resource : m_resources.fixed)
-            {
-               result.push_back( resource.id());
-            }
-            return result;
+            return algorithm::transform( m_resources.all, []( auto& resource){ return resource.id();});
          }
-
 
          void Context::join( const transaction::ID& trid)
          {
@@ -309,18 +298,14 @@ namespace casual
                auto found = algorithm::find( m_transactions, reply.transaction.trid);
 
                if( ! found)
-               {
                   throw exception::xatmi::System{ string::compose( "failed to find transaction: ", reply.transaction)};
-               }
 
                auto& transaction = *found;
 
                auto state = Transaction::State( reply.transaction.state);
 
                if( transaction.state < state)
-               {
                   transaction.state = state;
-               }
 
                // this descriptor is done, and we can remove the association to the transaction
                transaction.replied( reply.correlation);
@@ -335,9 +320,7 @@ namespace casual
                // transaction and discard the descriptor, just in case.
                // TODO: Look this over when we redesign 'call/transaction-context'
                for( auto& transaction : m_transactions)
-               {
                   transaction.replied( reply.correlation);
-               }
             }
          }
 
@@ -352,11 +335,9 @@ namespace casual
 
             const auto process = process::handle();
 
-
             message::service::Transaction result;
             result.trid = std::move( caller);
             result.state = message::service::Transaction::State::active;
-
 
             auto pending_check = [&]( Transaction& transaction)
             {
@@ -488,13 +469,11 @@ namespace casual
 
          code::ax Context::resource_registration( strong::resource::id rmid, XID* xid)
          {
-            Trace trace{ "transaction::Context::resourceRegistration"};
+            Trace trace{ "transaction::Context::resource_registration"};
 
             // Verify that rmid is known and is dynamic
             if( ! common::algorithm::find( m_resources.dynamic, rmid))
-            {
                throw exception::ax::exception{ code::ax::argument, string::compose( "resource id: ", rmid)};
-            }
             
             auto& transaction = current();
 
@@ -502,9 +481,7 @@ namespace casual
             // We'll interpret this as the transaction has been suspended, and
             // then resumed.
             if( ! transaction.associate_dynamic( rmid))
-            {
                throw exception::ax::exception{ code::ax::resume};
-            }
 
             // Let the resource know the xid (if any)
             *xid = transaction.trid.xid;
@@ -573,7 +550,6 @@ namespace casual
          void Context::open()
          {
             Trace trace{ "transaction::Context::open"};
-
 
             // XA spec: if one, or more of resources opens ok, then it's not an error...
             //   seams really strange not to notify user that some of the resources has
@@ -812,9 +788,8 @@ namespace casual
          void Context::set_transaction_timeout( TRANSACTION_TIMEOUT timeout)
          {
             if( timeout < 0)
-            {
                throw exception::tx::Argument{ "timeout value has to be 0 or greater"};
-            }
+
             m_timeout = timeout;
          }
 
@@ -838,16 +813,12 @@ namespace casual
             Trace trace{ "transaction::Context::suspend"};
 
             if( xid == nullptr)
-            {
                throw exception::tx::Argument{ "argument xid is null"};
-            }
 
             auto& ongoing = current();
 
             if( id::null( ongoing.trid))
-            {
                throw exception::tx::Protocol{ "attempt to suspend a null xid"};
-            }
 
             // We don't check if current transaction is aborted. This differs from Tuxedo's semantics
 
@@ -906,82 +877,85 @@ namespace casual
             if( ! transaction)
                return; // nothing to do
 
-
-            auto deduce_flag = []( auto id, auto flags, auto& involved)
-            {
-               if( ! flags.exist( flag::xa::Flag::resume))
-                  return algorithm::find( involved, id).empty() ? flags : flags | flag::xa::Flag::join;
-
-               return flags;
-            };
-
             auto transform_rmid = []( auto& resource){ return resource.id();};
+
+            auto start_functor = [&]( auto& involved)
+            {
+               return [&trid = transaction.trid, flags = flags, &involved]( auto& resource)
+               {
+                  auto deduce_flag = []( auto id, auto flags, auto& involved)
+                  {
+                     if( ! flags.exist( flag::xa::Flag::resume))
+                        return algorithm::find( involved, id).empty() ? flags : flags | flag::xa::Flag::join;
+
+                     return flags;
+                  };
+
+                  resource.start( trid, deduce_flag( resource.id(), flags, involved)); 
+               };
+            };
 
             if( transaction.local())
             {
                log::line( log::category::transaction, "local transaction: ", transaction, " - flags: ", flags);
                
                // local transaction, we don't need to coralate with TM
-               auto resource_start = [&]( auto& resource)
-               {
-                  auto result = resource.start( transaction.trid, deduce_flag( resource.id(), flags, transaction.involved())); 
-                  if( result != code::xa::ok)
-                     log::line( code::stream( result), "failed to start resource: ", resource, " - error: ", result);
-               };
-
-               algorithm::for_each( m_resources.fixed, resource_start);
+               algorithm::for_each( m_resources.fixed, start_functor( transaction.involved()));
             }
             else 
             {
                log::line( log::category::transaction, "distributed transaction: ", transaction, " - flags: ", flags);
 
-               // coordinate with TM
+               // coordinate with TM, so we know if we need to add `join` flag or not.
                auto involved = local::resource::involved( transaction.trid, 
                   algorithm::transform( m_resources.fixed, transform_rmid));
-               
-               auto resource_start = [&]( auto& resource)
-               {
-                  auto result = resource.start( transaction.trid, deduce_flag( resource.id(), flags, involved));
-                  if( result != code::xa::ok)  
-                     log::line( code::stream( result), "failed to start resource: ", resource, " - error: ", result);
-               };
 
-               algorithm::for_each( m_resources.fixed, resource_start);
+               algorithm::for_each( m_resources.fixed, start_functor( involved));
             }
 
             // involve all static resources
             transaction.involve( algorithm::transform( m_resources.fixed, transform_rmid));
 
-
-            // TODO: throw if some of the rm:s report an error?
-            
+            // TODO semantics: throw if some of the rm:s report an error?
+            //   don't think so. prepare, commit or rollback will take care of eventual errors.
          }
 
          void Context::resources_end( const Transaction& transaction, flag::xa::Flags flags)
          {
             Trace trace{ "transaction::Context::resources_end"};
 
-            if( transaction)
-            {
-               log::line( log::category::transaction, "transaction: ", transaction, " - flags: ", flags);
+            if( ! transaction)
+               return;
+            
+            log::line( log::category::transaction, "transaction: ", transaction, " - flags: ", flags);
 
-               // We call end on all resources
-               for( auto& r : m_resources.all)
-               {
-                  auto result = r.end( transaction.trid, flags);
-                  if( result != code::xa::ok)
-                  {
-                     log::line( code::stream( result), "failed to end resource: ", r, " - error: ", result);
-                  }
-               }
-               // TODO: throw if some of the rm:s report an error?
-            }
+            auto xa_end = [&transaction, flags]( auto& resource)
+            {
+               resource.end( transaction.trid, flags);
+            };
+
+            // We call end on all static resources
+            algorithm::for_each( m_resources.fixed, xa_end);
+
+            auto has_registred = [&]( auto& resource)
+            {
+               return ! algorithm::find( transaction.dynamic(), resource.id()).empty();
+            };
+
+            // We call end only on the dynamic resources that has registred them self 
+            // to the transaction
+            // note: we could partition dynamic first on `has_registred`, but if we can 
+            // keep the order of the resources it won't hurt (be as nice as possible to the resources).
+            algorithm::for_each_if( m_resources.dynamic, xa_end, has_registred);
+
+            // TODO semantics: throw if some of the rm:s report an error?
+            //   don't think so. prepare, commit or rollback will take care of eventual errors.
+            
          }
 
          void Context::resource_commit( strong::resource::id rm, const Transaction& transaction, flag::xa::Flags flags)
          {
             Trace trace{ "transaction::Context::resources_commit"};
-
             log::line( log::category::transaction, "transaction: ", transaction, " - rm: ", rm, " - flags: ", flags);
 
             auto found = algorithm::find( m_resources.all, rm);
@@ -998,7 +972,6 @@ namespace casual
          void Context::resource_rollback( strong::resource::id rm, const Transaction& transaction)
          {
             Trace trace{ "transaction::Context::resource_rollback"};
-            
             log::line( log::category::transaction, "transaction: ", transaction, " - rm: ", rm);
 
             auto found = algorithm::find( m_resources.all, rm);
