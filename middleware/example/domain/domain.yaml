@@ -60,11 +60,11 @@ domain:
     
     #
     # Here are the resources defined. This configuration is then used by servers that
-    # is built with one (or more) resources (keys) and eiter has a direct dependency in this
+    # is built with one (or more) resources (keys) and either has a direct dependency in this
     # configuration file to the resource name (customer-db for example) or indirect via
     # a group.
     # This configuration is also used by the transaction-manager to get the correct open-info
-    # and number of instances such for each resurce-proxy.
+    # and number of instances such for each resource-proxy.
     #
     resources:
       - instances: 5 # overrides from default

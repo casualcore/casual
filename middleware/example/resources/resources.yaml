@@ -20,7 +20,7 @@ resources:
       
    
   - key: rm-mockup   
-    server: rm-proxy-casual-mockup
+    server: ${CASUAL_HOME}/bin/rm-proxy-casual-mockup
     xa_struct_name: casual_mockup_xa_switch_static
     libraries:
       - casual-mockup-rm

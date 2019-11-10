@@ -4,17 +4,19 @@
 //! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
+#define CASUAL_NO_XATMI_UNDEFINE
 
 #include "common/unittest/rm.h"
 #include "common/unittest/log.h"
 #include "common/argument.h"
 
-#include "common/transaction/id.h"
+
 #include "common/transaction/transaction.h"
+#include "common/transaction/context.h"
 #include "common/flag.h"
 #include "common/exception/handle.h"
 
-#include "xa.h"
+
 
 namespace casual
 {
@@ -26,27 +28,6 @@ namespace casual
          {
             namespace
             {
-               struct State
-               {
-                  struct Transactions
-                  {
-                     transaction::ID current;
-                     std::vector< transaction::ID> all;
-
-                  } transactions;
-
-                  int xa_open_return = XA_OK;
-                  int xa_close_return = XA_OK;
-                  int xa_start_return = XA_OK;
-                  int xa_end_return = XA_OK;
-                  int xa_prepare_return = XA_OK;
-                  int xa_commit_return = XA_OK;
-                  int xa_rollback_return = XA_OK;
-
-               };
-
-               std::map< int, State> state;
-
 
                struct Active
                {
@@ -57,28 +38,104 @@ namespace casual
                   }
                };
 
+               struct State : rm::State 
+               {
+                  struct 
+                  {
+                     int xa_open = XA_OK;
+                     int xa_close = XA_OK;
+                     int xa_start = XA_OK;
+                     int xa_end = XA_OK;
+                     int xa_prepare = XA_OK;
+                     int xa_commit = XA_OK;
+                     int xa_rollback= XA_OK;
+
+                  } result;
+
+                  auto error( code::xa code)
+                  {
+                     errors.push_back( code);
+                     return cast::underlying( code);
+                  }
+               };
+
+               namespace global
+               {
+                  std::map< strong::resource::id, State> state;
+               } // global
+
+               auto& state( int id, rm::State::Invoke invoked)
+               {
+                  auto& state = global::state[ strong::resource::id{ id}];
+                  state.invocations.push_back( invoked);
+                  return state;
+               }
+
             } // <unnamed>
          } // local
 
+         namespace rm
+         {
+            std::ostream& operator << ( std::ostream& out, State::Invoke value)
+            {
+               using Enum = State::Invoke;
+               switch( value)
+               {
+                  case Enum::xa_close_entry: return out << "xa_close_entry";
+                  case Enum::xa_commit_entry: return out << "xa_commit_entry";
+                  case Enum::xa_complete_entry: return out << "xa_complete_entry";
+                  case Enum::xa_end_entry: return out << "xa_end_entry";
+                  case Enum::xa_forget_entry: return out << "xa_forget_entry";
+                  case Enum::xa_open_entry: return out << "xa_open_entry";
+                  case Enum::xa_prepare_entry: return out << "xa_prepare_entry";
+                  case Enum::xa_recover_entry: return out << "xa_recover_entry";
+                  case Enum::xa_rollback_entry: return out << "xa_rollback_entry";
+                  case Enum::xa_start_entry: return out << "xa_start_entry";
+               }
+               assert( ! "invalid State::Invoke");
+            }
+
+            void registration( strong::resource::id id)
+            {
+               auto& state = local::global::state.at( id);
+
+               transaction::context().resource_registration( id, &state.transactions.current.xid);
+
+            }
+
+            const State& state( strong::resource::id id)
+            {
+               return local::global::state.at( id);
+            }
+
+            void clear()
+            {
+               local::global::state.clear();
+            }
+            
+         } // rm
+
          int xa_open_entry( const char* c_openinfo, int rmid, long flags)
          {
-            auto& state = local::state[ rmid];
+            auto& state = local::state( rmid, rm::State::Invoke::xa_open_entry);
 
             // clear
             state = local::State{};
+            state.invocations.push_back( rm::State::Invoke::xa_open_entry);
+
 
             std::string openinfo( c_openinfo);
 
             try
             {
                argument::Parse parse{ "mockup rm",
-                  argument::Option( std::tie( state.xa_open_return), { "--open"}, ""),
-                  argument::Option( std::tie( state.xa_close_return), { "--close"}, ""),
-                  argument::Option( std::tie( state.xa_start_return), { "--start"}, ""),
-                  argument::Option( std::tie( state.xa_end_return), { "--end"}, ""),
-                  argument::Option( std::tie( state.xa_prepare_return), { "--prepare"}, ""),
-                  argument::Option( std::tie( state.xa_commit_return), { "--commit"}, ""),
-                  argument::Option( std::tie( state.xa_rollback_return), { "--rollback"}, "")
+                  argument::Option( std::tie( state.result.xa_open), { "--open"}, ""),
+                  argument::Option( std::tie( state.result.xa_close), { "--close"}, ""),
+                  argument::Option( std::tie( state.result.xa_start), { "--start"}, ""),
+                  argument::Option( std::tie( state.result.xa_end), { "--end"}, ""),
+                  argument::Option( std::tie( state.result.xa_prepare), { "--prepare"}, ""),
+                  argument::Option( std::tie( state.result.xa_commit), { "--commit"}, ""),
+                  argument::Option( std::tie( state.result.xa_rollback), { "--rollback"}, "")
                };
                
                parse( common::string::split( openinfo));
@@ -92,36 +149,36 @@ namespace casual
             if( ! state.transactions.all.empty())
             {
                log::line( log::category::error, "xa_open_entry - rmid: ", rmid, " has associated transactions ", state.transactions.all);
-               return XAER_PROTO;
+               return state.error( code::xa::protocol);
             }
 
             log::line( log, "xa_open_entry - openinfo: ", openinfo, " rmid: ", rmid, " flags: ", flags);
-            return state.xa_open_return;
+            return state.result.xa_open;
          }
          int xa_close_entry( const char* closeinfo, int rmid, long flags)
          {
-            auto& state = local::state[ rmid];
+            auto& state = local::state( rmid, rm::State::Invoke::xa_close_entry);
 
             if( ! state.transactions.all.empty())
             {
                log::line( log::category::error, "xa_close_entry - rmid: ", rmid, " has associated transactions ", state.transactions.all);
-               return XAER_PROTO;
+               return state.error( code::xa::protocol);
             }
             log::line( log, "xa_close_entry - closeinfo: ", closeinfo, " rmid: ", rmid, " flags: ", flags);
 
-            return state.xa_close_return;
+            return state.result.xa_close;
          }
          int xa_start_entry( XID* xid, int rmid, long flags)
          {
             transaction::ID trid{ *xid};
             log::line( log, "xa_start_entry - trid: ", trid, " rmid: ", rmid, " flags: ", flags);
 
-            auto& state = local::state[ rmid];
+            auto& state = local::state( rmid, rm::State::Invoke::xa_start_entry);
 
             if( state.transactions.current)
             {
                log::line( log::category::error, "XAER_PROTO: xa_start_entry - a transaction is active - ", state.transactions.current);
-               return XAER_PROTO;
+               return state.error( code::xa::protocol);
             }
 
             auto found = algorithm::find( state.transactions.all, trid);
@@ -135,13 +192,13 @@ namespace casual
                if( ! common::has::flag< TMRESUME>( flags))
                {
                   log::line( log::category::error, "XAER_PROTO: xa_start_entry - the transaction is suspended, but no TMRESUME in flags - ", state.transactions.current);
-                  return XAER_PROTO;
+                  return state.error( code::xa::protocol);
                }
             }
 
             state.transactions.current = trid;
 
-            return state.xa_start_return;
+            return state.result.xa_start;
          }
 
          int xa_end_entry( XID* xid, int rmid, long flags)
@@ -149,26 +206,22 @@ namespace casual
             transaction::ID trid{ *xid};
             log::line( log, "xa_end_entry - xid: ", trid, " rmid: ", rmid, " flags: ", flags);
 
-            auto& state = local::state[ rmid];
+            auto& state = local::state( rmid, rm::State::Invoke::xa_end_entry);
 
             if( state.transactions.current != trid)
             {
-               log::line( log::category::error, "XAER_INVAL: xa_end_entry - transaction not current with RM");
-               return XAER_INVAL;
+               log::line( log::category::error, "XAER_NOTA: xa_end_entry - transaction not associated with RM");
+               return state.error( code::xa::invalid_xid);
             }
 
             state.transactions.current = transaction::ID{};
 
             if( ! common::has::flag< TMSUSPEND>( flags))
             {
-               auto found = algorithm::find( state.transactions.all, trid);
-
-               if( found)
-               {
+               if( auto found = algorithm::find( state.transactions.all, trid))
                   state.transactions.all.erase( std::begin( found));
-               }
             }
-            return state.xa_end_return;
+            return state.result.xa_end;
          }
 
          int xa_rollback_entry( XID* xid, int rmid, long flags)
@@ -176,9 +229,9 @@ namespace casual
             transaction::ID transaction{ *xid};
             log::line( log, "xa_rollback_entry - xid: ", transaction, " rmid: ", rmid, " flags: ", flags);
 
-            auto& state = local::state[ rmid];
+            auto& state = local::state( rmid, rm::State::Invoke::xa_rollback_entry);
 
-            return state.xa_rollback_return;
+            return state.result.xa_rollback;
          }
 
          int xa_prepare_entry( XID* xid, int rmid, long flags)
@@ -186,9 +239,9 @@ namespace casual
             transaction::ID transaction{ *xid};
             log::line( log, "xa_prepare_entry - xid: ", transaction, " rmid: ", rmid, " flags: ", flags);
 
-            auto& state = local::state[ rmid];
+            auto& state = local::state( rmid, rm::State::Invoke::xa_prepare_entry);
 
-            return state.xa_prepare_return;
+            return state.result.xa_prepare;
          }
 
          int xa_commit_entry( XID* xid, int rmid, long flags)
@@ -196,9 +249,9 @@ namespace casual
             transaction::ID transaction{ *xid};
             log::line( log, "xa_commit_entry - xid: ", transaction, " rmid: ", rmid, " flags: ", flags);
 
-            auto& state = local::state[ rmid];
+            auto& state = local::state( rmid, rm::State::Invoke::xa_commit_entry);
 
-            if( state.xa_commit_return == XA_OK)
+            if( state.result.xa_commit == XA_OK)
             {
                if( state.transactions.current == transaction)
                   state.transactions.current = transaction::ID{};
@@ -211,7 +264,7 @@ namespace casual
                }
             }
 
-            return state.xa_commit_return;
+            return state.result.xa_commit;
          }
 
          int xa_recover_entry( XID* xid, long count, int rmid, long flags)
@@ -237,6 +290,8 @@ namespace casual
 
             return XA_OK;
          }
+
+
       } // unittest
    } // common
 } // casual
@@ -245,7 +300,7 @@ namespace casual
 extern "C"
 {
    struct xa_switch_t casual_mockup_xa_switch_static{
-      "Casual Mockup XA",
+      "casual mockup static XA",
       TMNOMIGRATE,
       0,
       &casual::common::unittest::xa_open_entry,
@@ -260,7 +315,22 @@ extern "C"
       &casual::common::unittest::xa_complete_entry
    };
 
-}
+   struct xa_switch_t casual_mockup_xa_switch_dynamic{
+      "casual mockup dynamic XA",
+      TMNOMIGRATE | TMREGISTER,
+      0,
+      &casual::common::unittest::xa_open_entry,
+      &casual::common::unittest::xa_close_entry,
+      &casual::common::unittest::xa_start_entry,
+      &casual::common::unittest::xa_end_entry,
+      &casual::common::unittest::xa_rollback_entry,
+      &casual::common::unittest::xa_prepare_entry,
+      &casual::common::unittest::xa_commit_entry,
+      &casual::common::unittest::xa_recover_entry,
+      &casual::common::unittest::xa_forget_entry,
+      &casual::common::unittest::xa_complete_entry
+   };
+} // extern "C"
 
 
 

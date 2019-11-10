@@ -49,6 +49,7 @@ unittest_object = [
     Compile( 'unittest/source/domain/test_basic.cpp'),
     Compile( 'unittest/source/domain/xatmi/test_call.cpp'),
     Compile( 'unittest/source/domain/xatmi/test_conversation.cpp'),
+    Compile( 'unittest/source/domain/test_transaction.cpp'),
 ]
 
 # only build http test cases if the enviornment is set up
@@ -64,6 +65,7 @@ LinkUnittest( 'unittest/bin/test-casual-basic',
 		'casual-xatmi', 
 		'yaml-cpp', 
 		'casual-unittest',
+        'casual-mockup-rm',
         'casual-domain-unittest'
 	])
 	

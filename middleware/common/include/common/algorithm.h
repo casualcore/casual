@@ -577,11 +577,23 @@ namespace casual
             return std::none_of( std::begin( range), std::end( range), predicate);
          }
 
-
+         //! applies `functor` to all elements
          template< typename R, typename F>
-         decltype( auto) for_each( R&& range, F functor)
+         decltype( auto) for_each( R&& range, F&& functor)
          {
-            std::for_each( std::begin( range), std::end( range), functor);
+            std::for_each( std::begin( range), std::end( range), std::forward< F>( functor));
+            return std::forward< R>( range);
+         }
+
+         //! applies `functor` to all elements that `predicate` is true.
+         template< typename R, typename F, typename P>
+         decltype( auto) for_each_if( R&& range, F&& functor, P&& predicate)
+         {
+            for( auto& value : range)
+            {
+               if( predicate( value))
+                  functor( value);
+            }
             return std::forward< R>( range);
          }
 

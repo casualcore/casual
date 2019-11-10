@@ -105,6 +105,12 @@ namespace casual
             //! process
             bool pending() const;
 
+            std::vector< strong::resource::id> resources() const;
+
+            //! @attention only for unittest... temporary until we fix the "context-fiasco".
+            static Context& clear();
+            
+
          private:
 
             using control_type = TRANSACTION_CONTROL;
@@ -139,7 +145,7 @@ namespace casual
 
             } m_resources;
 
-            std::vector< strong::resource::id> resources() const;
+            
 
 
             std::vector< Transaction> m_transactions;

@@ -31,6 +31,9 @@ namespace casual
                Process( const std::vector< std::string>& configuration, std::function< void( const std::string&)> callback);
                ~Process();
 
+               Process( Process&&);
+               Process& operator = ( Process&&);
+
                const common::process::Handle& handle() const noexcept;
                
                //! tries to "activate" the domain, i.e. resets environment variables and such
