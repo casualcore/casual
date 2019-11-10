@@ -11,7 +11,6 @@
 #include "service/manager/admin/server.h"
 
 
-
 #include <random>
 
 namespace casual
@@ -20,31 +19,34 @@ namespace casual
    {
       namespace manager
       {
+         namespace local
+         {
+            namespace
+            {
+               auto state()
+               {
+                  return manager::State{ common::message::domain::configuration::service::Manager{}};
+               }
+               
+            } // <unnamed>
+         } // local
          TEST( service_manager_state, admin_services)
          {
             common::unittest::Trace trace;
 
-            manager::State state;
+            auto state = local::state();
 
             auto arguments = manager::admin::services( state);
 
             EXPECT_TRUE( arguments.services.at( 0).name == admin::service::name::state());
          }
 
-         TEST( service_manager_state, default_ctor_state_Service)
-         {
-            common::unittest::Trace trace;
-
-            manager::state::Service service;
-
-            EXPECT_TRUE( service.last() == common::platform::time::point::limit::zero()) << CASUAL_NAMED_VALUE( service);
-         }
 
          TEST( service_manager_state, advertise_empty_invalid_local__expect_no_op)
          {
             common::unittest::Trace trace;
 
-            manager::State state;
+            auto state = local::state();
 
             {
                common::message::service::Advertise message;
@@ -59,7 +61,7 @@ namespace casual
          {
             common::unittest::Trace trace;
 
-            manager::State state;
+            auto state = local::state();
 
             {
                common::message::service::concurrent::Advertise message;
@@ -74,7 +76,7 @@ namespace casual
          {
             common::unittest::Trace trace;
 
-            manager::State state;
+            auto state = local::state();
 
             {
                common::message::service::Advertise message;
@@ -102,7 +104,7 @@ namespace casual
          {
             common::unittest::Trace trace;
 
-            manager::State state;
+            auto state = local::state();
 
             // advertise
             {
@@ -130,7 +132,7 @@ namespace casual
 
             {
 
-               auto& instance = state.local( common::process::id());
+               auto& instance = state.sequential( common::process::id());
 
                EXPECT_TRUE( instance.process == common::process::handle());
                EXPECT_TRUE( instance.idle());
@@ -142,7 +144,7 @@ namespace casual
          {
             common::unittest::Trace trace;
 
-            manager::State state;
+            auto state = local::state();
 
             common::message::service::Advertise message;
 
@@ -160,7 +162,7 @@ namespace casual
             }
 
             {
-               auto& instance = state.local( common::process::id());
+               auto& instance = state.sequential( common::process::id());
 
                for( auto& s : message.services)
                {
@@ -175,7 +177,7 @@ namespace casual
          {
             common::unittest::Trace trace;
 
-            manager::State state;
+            auto state = local::state();
 
 
             {
@@ -210,7 +212,7 @@ namespace casual
             }
 
             {
-               auto& instance = state.local( common::process::id());
+               auto& instance = state.sequential( common::process::id());
                EXPECT_FALSE( instance.service( "s4"));
                EXPECT_FALSE( instance.service( "s7"));
 
