@@ -209,6 +209,8 @@ namespace casual
             unittest_message,
          };
 
+         inline std::ostream& operator << ( std::ostream& out, Type value) { return out << cast::underlying( value);}
+
          //! Deduce witch type of message it is.
          //! @{
          template< typename M>
@@ -441,10 +443,10 @@ namespace casual
                };
             } // detail
 
-            template< typename T>
-            auto type( T&& message) -> typename type_traits< typename std::decay<T>::type>::reverse_type
+            template< typename T, typename... Ts>
+            auto type( T&& message, Ts&&... ts)
             {
-               typename type_traits< typename std::decay<T>::type>::reverse_type result;
+               typename type_traits< typename std::decay<T>::type>::reverse_type result{ std::forward< Ts>( ts)...};
 
                result.correlation = message.correlation;
                result.execution = message.execution;

@@ -100,7 +100,7 @@ namespace casual
             if( prospect.name.size() >= XATMI_SERVICE_NAME_LENGTH)
             {
                prospect.name.resize( XATMI_SERVICE_NAME_LENGTH - 1);
-               log::line( log::category::warning, "service name '", service, "' truncated to '", prospect.name, "'");
+               log::line( log::category::error, "service name '", service, "' truncated to '", prospect.name, "'");
             }
 
             auto found = algorithm::find( m_state.services, prospect.name);
@@ -110,9 +110,7 @@ namespace casual
                // service name is already advertised
                // No error if it's the same function
                if( found->second != prospect)
-               {
                   throw common::exception::xatmi::service::Advertised( "service name: " + prospect.name);
-               }
             }
             else
             {

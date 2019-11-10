@@ -795,7 +795,6 @@ namespace casual
                void Server::operator () ( const common::message::domain::configuration::server::Request& message)
                {
                   Trace trace{ "domain::manager::handle::configuration::Server"};
-
                   common::log::line( verbose::log, "message: ", message);
 
                   auto reply = common::message::reverse::type( message);
@@ -805,27 +804,9 @@ namespace casual
                   auto server = state().server( message.process.pid);
 
                   if( server)
-                     reply.service.restrictions = server->restrictions;
-
-                  auto transform_route = []( const auto& service)
-                  {
-                     message::domain::configuration::server::Reply::Service::Route result;
-                     result.name = service.name;
-                     result.routes = service.routes;
-                     return result;
-                  };
-                  
-                  algorithm::transform_if(
-                     state().configuration.service.services,
-                     reply.service.routes,
-                     transform_route,
-                     []( const auto& s) // predicate
-                     { 
-                        return ! s.routes.empty();
-                     });
+                     reply.restrictions = server->restrictions;
 
                   manager::ipc::send( state(), message.process, reply);
-
                }
             } // configuration
 

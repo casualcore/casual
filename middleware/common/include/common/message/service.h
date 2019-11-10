@@ -83,8 +83,6 @@ namespace casual
                CASUAL_SERIALIZE( timeout);
             })
          };
-         static_assert( traits::is_movable< Service>::value, "not movable");
-
 
          namespace service
          {
@@ -100,7 +98,6 @@ namespace casual
                      message::Service::serialize( archive);
                   })
                };
-               static_assert( traits::is_movable< Service>::value, "not movable");
             } // call
 
             struct Transaction
@@ -153,8 +150,7 @@ namespace casual
                enum class Directive : short
                {
                   add,
-                  remove,
-                  replace
+                  remove
                };
 
                inline friend std::ostream& operator << ( std::ostream& out, Advertise::Directive value)
@@ -163,7 +159,6 @@ namespace casual
                   {
                      case Advertise::Directive::add: return out << "add";
                      case Advertise::Directive::remove: return out << "remove";
-                     case Advertise::Directive::replace: return out << "replace";
                   }
                   return out << "unknown";
                }

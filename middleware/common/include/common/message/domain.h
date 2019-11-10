@@ -60,8 +60,6 @@ namespace casual
 
                } // transaction
 
-
-
                namespace gateway
                {
                   struct Listener
@@ -120,8 +118,6 @@ namespace casual
                   };
 
                } // gateway
-
-
 
                namespace queue
                {
@@ -212,7 +208,6 @@ namespace casual
                      )
                   };
 
-
                } // service
 
                struct Domain
@@ -224,7 +219,6 @@ namespace casual
                   queue::Manager queue;
                   service::Manager service;
 
-
                   CASUAL_CONST_CORRECT_SERIALIZE
                   (
                      CASUAL_SERIALIZE( name);
@@ -234,15 +228,12 @@ namespace casual
                      CASUAL_SERIALIZE( service);
                   )
                };
-               static_assert( traits::is_movable< Domain>::value, "not movable");
 
-
-               struct Request : common::message::basic_request< common::message::Type::domain_configuration_request>
+               using base_request = common::message::basic_request< common::message::Type::domain_configuration_request>;
+               struct Request : base_request
                {
-
+                  using base_request::base_request;
                };
-
-               static_assert( traits::is_movable< Request>::value, "not movable");
 
                using base_reply = common::message::basic_reply< common::message::Type::domain_configuration_reply>;
                struct Reply : base_reply
@@ -256,58 +247,29 @@ namespace casual
 
                };
 
-               static_assert( traits::is_movable< Reply>::value, "not movable");
-
-
                namespace server
                {
-
                   using base_request = message::basic_request< message::Type::domain_server_configuration_request>;
                   struct Request : base_request
                   {
-
+                     using base_request::base_request;
                   };
 
                   using base_reply = message::basic_request< message::Type::domain_server_configuration_reply>;
                   struct Reply : base_reply
                   {
-                     struct Service
-                     {
-                        struct Route
-                        {
-                           std::string name;
-                           std::vector< std::string> routes;
-
-                           CASUAL_CONST_CORRECT_SERIALIZE(
-                           {
-                              CASUAL_SERIALIZE( name);
-                              CASUAL_SERIALIZE( routes);
-                           })
-                        };
-
-                        std::vector< std::string> restrictions;
-                        std::vector< Route> routes;
-
-                        CASUAL_CONST_CORRECT_SERIALIZE(
-                        {
-                           CASUAL_SERIALIZE( restrictions);
-                           CASUAL_SERIALIZE( routes);
-                        })
-                     };
-
                      std::vector< std::string> resources;
-                     Service service;
+                     std::vector< std::string> restrictions;
 
                      CASUAL_CONST_CORRECT_SERIALIZE(
                      {
                         base_reply::serialize( archive);
                         CASUAL_SERIALIZE( resources);
-                        CASUAL_SERIALIZE( service);
+                        CASUAL_SERIALIZE( restrictions);
                      })
                   };
 
                } // server
-
             } // configuration
 
             namespace process
@@ -326,7 +288,6 @@ namespace casual
                         CASUAL_SERIALIZE( identification);
                      })
                   };
-                  static_assert( traits::is_movable< Request>::value, "not movable");
 
                   struct Reply : basic_message< Type::domain_process_connect_reply>
                   {
@@ -356,12 +317,8 @@ namespace casual
                         CASUAL_SERIALIZE( directive);
                      })
                   };
-                  static_assert( traits::is_movable< Reply>::value, "not movable");
 
                } // connect
-
-
-
 
                namespace lookup
                {
@@ -380,8 +337,8 @@ namespace casual
                         {
                            case Directive::wait: return out << "wait";
                            case Directive::direct: return out << "direct";
-                           default: return out << "unknown";
                         }
+                        return out << "unknown";
                      }
 
                      Uuid identification;
@@ -395,9 +352,7 @@ namespace casual
                         CASUAL_SERIALIZE( pid);
                         CASUAL_SERIALIZE( directive);
                      })
-
                   };
-                  static_assert( traits::is_movable< Request>::value, "not movable");
 
                   using base_reply = basic_reply< Type::domain_process_lookup_reply>;
 
@@ -411,7 +366,6 @@ namespace casual
                         CASUAL_SERIALIZE( identification);
                      })
                   };
-                  static_assert( traits::is_movable< Reply>::value, "not movable");
 
                } // lookup
 

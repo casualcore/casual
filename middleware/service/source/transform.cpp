@@ -20,23 +20,6 @@ namespace casual
       namespace transform
       {
 
-
-         manager::state::Service Service::operator () ( const common::message::Service& value) const
-         {
-            manager::state::Service result;
-
-            result.information.name = value.name;
-            //result.information.timeout = value.timeout;
-            result.information.transaction = value.transaction;
-            result.information.category = value.category;
-
-            // TODD: set against configuration
-
-
-            return result;
-         }
-
-
          common::process::Handle Instance::operator () ( const manager::state::instance::Sequential& value) const
          {
             return value.process;
@@ -48,19 +31,31 @@ namespace casual
             {
                struct Instance
                {
-                  manager::admin::instance::SequentialVO operator() ( const manager::state::instance::Sequential& instance) const
+                  auto operator() ( const manager::state::instance::Sequential& instance) const
                   {
-                     manager::admin::instance::SequentialVO result;
+                     manager::admin::model::instance::Sequential result;
 
                      result.process = instance.process;
-                     result.state = static_cast< manager::admin::instance::SequentialVO::State>( instance.state());
+
+                     auto transform_state = []( auto state)
+                     {
+                        using Enum = manager::state::instance::Sequential::State;
+                        switch( state)
+                        {
+                           case Enum::idle: return manager::admin::model::instance::Sequential::State::idle;
+                           case Enum::busy: return manager::admin::model::instance::Sequential::State::busy;
+                        }
+                        assert( ! "missmatch in enum transformation");
+                     };
+
+                     result.state = transform_state( instance.state());
 
                      return result;
                   }
 
-                  manager::admin::instance::ConcurrentVO operator() ( const manager::state::instance::Concurrent& instance) const
+                  auto operator() ( const manager::state::instance::Concurrent& instance) const
                   {
-                     manager::admin::instance::ConcurrentVO result;
+                     manager::admin::model::instance::Concurrent result;
 
                      result.process = instance.process;
 
@@ -68,26 +63,27 @@ namespace casual
                   }
                };
 
-               struct Pending
+               auto pending()
                {
-                  manager::admin::PendingVO operator() ( const manager::state::service::Pending& value) const
+                  return []( auto& value)
                   {
-                     manager::admin::PendingVO result;
-
+                     manager::admin::model::Pending result;
                      result.process = value.request.process;
                      result.requested = value.request.requested;
-
                      return result;
-                  }
+                  };
                };
 
-               struct Service
+               auto service()
                {
-                  manager::admin::ServiceVO operator() ( const manager::state::Service& value) const
+                  return []( auto& pair)
                   {
+                     auto& name = std::get< 0>( pair);
+                     auto& value = std::get< 1>( pair);
+
                      auto transform_metric = []( const auto& value)
                      {
-                        manager::admin::service::Metric result;
+                        manager::admin::model::Metric result;
                         result.count = value.count;
                         result.total = value.total;
                         result.limit.min = value.limit.min;
@@ -95,46 +91,62 @@ namespace casual
                         return result;
                      };
 
-                     manager::admin::ServiceVO result;
+                     auto transform_mode = []( auto mode)
+                     {
+                        using Enum = decltype( mode);
+                        switch( mode)
+                        {
+                           case Enum::automatic: return manager::admin::model::Service::Transaction::automatic;
+                           case Enum::join: return manager::admin::model::Service::Transaction::join;
+                           case Enum::atomic: return manager::admin::model::Service::Transaction::atomic;
+                           case Enum::none: return manager::admin::model::Service::Transaction::none;
+                           case Enum::branch: return manager::admin::model::Service::Transaction::branch;
+                        }
+                        assert( ! "unknown transaction mode");
+                     }; 
 
-                     result.name = value.information.name;
+                     manager::admin::model::Service result;
+
+                     result.name = name;
                      result.timeout = value.information.timeout;
-                     result.metrics = transform_metric( value.metric);
-                     result.pending = transform_metric( value.pending);
-                     result.remote_invocations = value.remote_invocations();
+                     result.metric.invoked = transform_metric( value.metric.invoked);
+                     result.metric.pending = transform_metric( value.metric.pending);
+                     result.metric.remote = value.metric.remote;
                      result.category = value.information.category;
-                     result.transaction = common::cast::underlying( value.information.transaction);
-                     result.last = value.last();
+                     result.transaction = transform_mode( value.information.transaction);
+                     result.metric.last = value.metric.last;
 
-                     auto transform_remote = []( const auto& value)
-                           {
-                              return manager::admin::service::instance::Remote{
-                                 value.process().pid,
-                                 value.hops(),
-                              };
-                           };
+                     auto transform_concurrent = []( const auto& value)
+                     {
+                        return manager::admin::model::service::instance::Concurrent{
+                           value.process().pid,
+                           value.hops(),
+                        };
+                     };
 
 
-                     auto transform_local = [&]( const auto& value)
-                           {
-                              return manager::admin::service::instance::Local{
-                                 value.process().pid,
-                              };
-                           };
+                     auto transform_sequential = [&]( const auto& value)
+                     {
+                        return manager::admin::model::service::instance::Sequential{
+                           value.process().pid,
+                        };
+                     };
 
-                     common::algorithm::transform( value.instances.sequential, result.instances.sequential, transform_local);
-                     common::algorithm::transform( value.instances.concurrent, result.instances.concurrent, transform_remote);
+                     common::algorithm::transform( value.instances.sequential, result.instances.sequential, transform_sequential);
+                     common::algorithm::transform( value.instances.concurrent, result.instances.concurrent, transform_concurrent);
 
                      return result;
-                  }
-               };
+                  };
+               }
+
+
             } // <unnamed>
          } // local
 
 
-         manager::admin::StateVO state( const manager::State& state)
+         manager::admin::model::State state( const manager::State& state)
          {
-            manager::admin::StateVO result;
+            manager::admin::model::State result;
 
             common::algorithm::transform( state.instances.sequential, result.instances.sequential,
                   common::predicate::make_nested( local::Instance{}, common::extract::Second{}));
@@ -142,10 +154,21 @@ namespace casual
             common::algorithm::transform( state.instances.concurrent, result.instances.concurrent,
                   common::predicate::make_nested( local::Instance{}, common::extract::Second{}));
 
-            common::algorithm::transform( state.pending.requests, result.pending, local::Pending{});
+            common::algorithm::transform( state.pending.requests, result.pending, local::pending());
 
-            common::algorithm::transform( state.services, result.services,
-                  common::predicate::make_nested( local::Service{}, common::extract::Second{}));
+            common::algorithm::transform( state.services, result.services, local::service());
+
+            common::algorithm::for_each( state.routes, [&result]( auto& pair)
+            {
+               manager::admin::model::Route route;
+               route.target = pair.first;
+
+               common::algorithm::transform( pair.second, result.routes, [&route]( auto& service)
+               {
+                  route.service = service;
+                  return route;
+               });
+            });
 
             return result;
          }

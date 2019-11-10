@@ -7,7 +7,7 @@
 #pragma once
 
 
-#include "service/manager/admin/managervo.h"
+#include "service/manager/admin/model.h"
 
 namespace casual
 {
@@ -21,7 +21,7 @@ namespace casual
             {
                inline namespace v1
                {
-                  StateVO state();
+                  model::State state();
                   
                } // v1
 

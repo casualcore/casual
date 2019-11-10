@@ -11,7 +11,7 @@
 #include "common/serialize/create.h"
 #include "serviceframework/service/protocol/call.h"
 
-#include "service/manager/admin/managervo.h"
+#include "service/manager/admin/model.h"
 #include "service/manager/admin/server.h"
 #include "service/manager/admin/api.h"
 
@@ -68,7 +68,7 @@ namespace casual
 
             struct State
             {
-               admin::StateVO service;
+               admin::model::State service;
                casual::domain::manager::admin::vo::State domain;
             };
 
@@ -90,7 +90,7 @@ namespace casual
 
          namespace normalized
          {
-            struct Instance : admin::instance::Base
+            struct Instance :  admin::model::instance::Base
             {
                enum class State : char
                {
@@ -99,13 +99,13 @@ namespace casual
                   remote,
                };
 
-               Instance( const admin::instance::SequentialVO& sequential) : admin::instance::Base{ sequential}, state{ static_cast< State>( sequential.state)} {}
-               Instance( const admin::instance::ConcurrentVO& concurrent) : admin::instance::Base{ concurrent}, state{ State::remote} {}
+               Instance( const admin::model::instance::Sequential& sequential) : admin::model::instance::Base{ sequential}, state{ static_cast< State>( sequential.state)} {}
+               Instance( const admin::model::instance::Concurrent& concurrent) : admin::model::instance::Base{ concurrent}, state{ State::remote} {}
 
                State state;
             };
 
-            std::vector< Instance> instances( const admin::StateVO& state)
+            std::vector< Instance> instances( const admin::model::State& state)
             {
                std::vector< Instance> result;
 
@@ -128,14 +128,14 @@ namespace casual
                      exiting,
                   };
 
-                  Instance( const admin::ServiceVO& service) : service{ service} {}
+                  Instance( const admin::model::Service& service) : service{ service} {}
 
                   common::process::Handle process;
 
                   std::size_t hops = 0;
 
 
-                  std::reference_wrapper< const admin::ServiceVO> service;
+                  std::reference_wrapper< const admin::model::Service> service;
 
                   const casual::domain::manager::admin::vo::Executable* executable = nullptr;
 
@@ -175,7 +175,7 @@ namespace casual
                      {
                         auto local = algorithm::find( state.service.instances.sequential, i.pid);
                         Instance instance{ service};
-                        instance.state = local->state == admin::instance::SequentialVO::State::idle ? Instance::State::idle : Instance::State::busy;
+                        instance.state = local->state == admin::model::instance::Sequential::State::idle ? Instance::State::idle : Instance::State::busy;
                         instance.process.pid = i.pid;
                         instance.executable = local::lookup::executable( state, i.pid);
                         result.push_back( std::move( instance));
@@ -201,9 +201,9 @@ namespace casual
 
          namespace format
          {
-            struct state_base : std::reference_wrapper< const admin::StateVO>
+            struct state_base : std::reference_wrapper< const admin::model::State>
             {
-               using std::reference_wrapper< const admin::StateVO>::reference_wrapper;
+               using std::reference_wrapper< const admin::model::State>::reference_wrapper;
             };
 
 
@@ -235,7 +235,7 @@ namespace casual
                {
                   struct total
                   {
-                     std::size_t operator () ( const admin::ServiceVO& value) const
+                     std::size_t operator () ( const admin::model::Service& value) const
                      {
                         return value.instances.sequential.size();
                      }
@@ -246,7 +246,7 @@ namespace casual
                   {
                      using base_instances::base_instances;
 
-                     std::size_t operator () ( const admin::ServiceVO& value) const
+                     std::size_t operator () ( const admin::model::Service& value) const
                      {
                         auto instances = base_instances::instances( value.instances.sequential);
 
@@ -262,7 +262,7 @@ namespace casual
 
                      std::size_t pending( const std::string& service) const
                      {
-                        return algorithm::count_if( get().pending, [&]( const admin::PendingVO& p){
+                        return algorithm::count_if( get().pending, [&]( const admin::model::Pending& p){
                            return p.requested == service;
                         });
                      }
@@ -272,7 +272,7 @@ namespace casual
                   {
                      using pending_base::pending_base;
 
-                     std::size_t operator () ( const admin::ServiceVO& value) const
+                     std::size_t operator () ( const admin::model::Service& value) const
                      {
                         return pending_base::pending( value.name);
                      }
@@ -284,7 +284,7 @@ namespace casual
                {
                   struct total
                   {
-                     std::size_t operator () ( const admin::ServiceVO& value) const
+                     std::size_t operator () ( const admin::model::Service& value) const
                      {
                         return value.instances.concurrent.size();
                      }
@@ -299,14 +299,14 @@ namespace casual
                std::size_t operator () ( const T& value) const { return value.instances.size();}
             };
 
-            auto services( const admin::StateVO& state)
+            auto services( const admin::model::State& state)
             {
 
                static auto instances = normalized::instances( state);
 
                struct format_timeout
                {
-                  double operator () ( const admin::ServiceVO& value) const
+                  double operator () ( const admin::model::Service& value) const
                   {
                      using second_t = std::chrono::duration< double>;
                      return std::chrono::duration_cast< second_t>( value.timeout).count();
@@ -315,71 +315,74 @@ namespace casual
 
                auto format_mode = []( auto& service)
                {
-                  using Type = common::service::transaction::Type;
-                  switch( common::service::transaction::mode( service.transaction))
+                  using Enum = admin::model::Service::Transaction;
+                  switch( service.transaction)
                   {
-                     case Type::automatic: return "auto";
-                     case Type::atomic: return "atomic";
-                     case Type::join: return "join";
-                     case Type::none: return "none";
-                     case Type::branch: return "branch";
+                     case Enum::automatic: return "auto";
+                     case Enum::atomic: return "atomic";
+                     case Enum::join: return "join";
+                     case Enum::none: return "none";
+                     case Enum::branch: return "branch";
                   };
-                  return "unknown";
+                  assert( ! "unknown transaction mode");
                };
 
                // we need to set something when category is empty to help
                // enable possible use of sort, cut, awk and such
-               auto format_category = []( const admin::ServiceVO& value){
+               auto format_category = []( const admin::model::Service& value){
                   if( value.category.empty())
                      return "-";
                   return value.category.c_str();
                };
 
 
-               auto format_invoked = []( const admin::ServiceVO& value){
-                  return value.metrics.count;
+               auto format_invoked = []( const admin::model::Service& value){
+                  return value.metric.invoked.count;
                };
 
                using time_type = std::chrono::duration< double>;
 
-               auto format_avg_time = []( const admin::ServiceVO& value){
-                  if( value.metrics.count == 0)
+               auto format_avg_time = []( const admin::model::Service& value){
+                  if( value.metric.invoked.count == 0)
                      return 0.0;
 
-                  return std::chrono::duration_cast< time_type>( value.metrics.total / value.metrics.count).count();
+                  return std::chrono::duration_cast< time_type>( value.metric.invoked.total / value.metric.invoked.count).count();
                };
 
-               auto format_min_time = []( const admin::ServiceVO& value)
+               auto format_min_time = []( const admin::model::Service& value)
                {
-                  return std::chrono::duration_cast< time_type>( value.metrics.limit.min).count();
+                  return std::chrono::duration_cast< time_type>( value.metric.invoked.limit.min).count();
                };
 
-               auto format_max_time = []( const admin::ServiceVO& value)
+               auto format_max_time = []( const admin::model::Service& value)
                {
-                  return std::chrono::duration_cast< time_type>( value.metrics.limit.max).count();
+                  return std::chrono::duration_cast< time_type>( value.metric.invoked.limit.max).count();
                };
 
-               auto format_pending_count = []( const admin::ServiceVO& value){
-                  return value.pending.count;
+               auto format_pending_count = []( const admin::model::Service& value)
+               {
+                  return value.metric.pending.count;
                };
 
-               auto format_avg_pending_time = []( const admin::ServiceVO& value){
-                  if( value.metrics.count == 0)
+               auto format_avg_pending_time = []( const admin::model::Service& value){
+                  if( value.metric.pending.count == 0)
                      return 0.0;
 
-                  return std::chrono::duration_cast< time_type>( value.pending.total / value.metrics.count).count();
+                  return std::chrono::duration_cast< time_type>( value.metric.pending.total / value.metric.pending.count).count();
                };
 
-               auto format_last = []( const admin::ServiceVO& value) -> std::string
+               auto format_last = []( const admin::model::Service& value) -> std::string
                {
-                  if( value.last == common::platform::time::point::limit::zero())
+                  if( value.metric.last == common::platform::time::point::limit::zero())
                      return "-";
 
-                  return common::chronology::local( value.last);
+                  return common::chronology::local( value.metric.last);
                };
 
-               return terminal::format::formatter< admin::ServiceVO>::construct( 
-                  terminal::format::column( "name", std::mem_fn( &admin::ServiceVO::name), terminal::color::yellow, terminal::format::Align::left),
+               auto remote_invocations = []( auto& value){ return value.metric.remote;};
+
+               return terminal::format::formatter< admin::model::Service>::construct( 
+                  terminal::format::column( "name", std::mem_fn( &admin::model::Service::name), terminal::color::yellow, terminal::format::Align::left),
                   terminal::format::column( "category", format_category, terminal::color::no_color, terminal::format::Align::left),
                   terminal::format::column( "mode", format_mode, terminal::color::no_color, terminal::format::Align::right),
                   terminal::format::column( "timeout", format_timeout{}, terminal::color::blue, terminal::format::Align::right),
@@ -391,8 +394,16 @@ namespace casual
                   terminal::format::column( "P", format_pending_count, terminal::color::magenta, terminal::format::Align::right),
                   terminal::format::column( "PAT", format_avg_pending_time, terminal::color::magenta, terminal::format::Align::right),
                   terminal::format::column( "RI", format::instance::remote::total{}, terminal::color::cyan, terminal::format::Align::right),
-                  terminal::format::column( "RC", std::mem_fn( &admin::ServiceVO::remote_invocations), terminal::color::cyan, terminal::format::Align::right),
+                  terminal::format::column( "RC", remote_invocations, terminal::color::cyan, terminal::format::Align::right),
                   terminal::format::column( "last", format_last, terminal::color::blue, terminal::format::Align::left)
+               );
+            }
+
+            auto routes( const admin::model::State& state)
+            {
+               return terminal::format::formatter< admin::model::Route>::construct( 
+                  terminal::format::column( "name", std::mem_fn( &admin::model::Route::service), terminal::color::yellow, terminal::format::Align::left),
+                  terminal::format::column( "target", std::mem_fn( &admin::model::Route::target), terminal::color::no_color, terminal::format::Align::left)
                );
             }
 
@@ -401,27 +412,17 @@ namespace casual
             {
                using value_type = normalized::service::Instance;
 
-
                auto format_pid = []( auto& v){ return v.process.pid;};
 
                auto format_service_name = []( const value_type& v){
                   return v.service.get().name;
                };
 
-
-               /*
-               struct format_queue
-               {
-                  strong::ipc::id::type operator () ( const value_type& v) const { return v.process.ipc;}
-               };
-               */
-
                auto format_process_alias = []( const value_type& v) -> const std::string& {
                   if( v.executable) { return v.executable->alias;}
                   static std::string empty;
                   return empty;
                };
-
 
                struct format_state
                {
@@ -488,9 +489,9 @@ namespace casual
                admin
             };
 
-            void services( std::ostream& out, admin::StateVO& state, Service type)
+            void services( std::ostream& out, admin::model::State& state, Service type)
             {
-               auto split = algorithm::partition( state.services, []( const admin::ServiceVO& s){
+               auto split = algorithm::partition( state.services, []( const admin::model::Service& s){
                      return s.category != common::service::category::admin();});
 
                auto services = type == Service::user ? std::get< 0>( split) : std::get< 1>( split);
@@ -616,6 +617,18 @@ namespace casual
 
             } // metric
 
+            namespace routes
+            {
+               void list() 
+               {
+                  auto state = admin::api::state();
+
+                  auto formatter = format::routes( state);
+                  formatter.print( std::cout, state.routes);
+               }
+               constexpr auto description = "list service routes";
+            } // routes
+
          } // action
 
          namespace admin 
@@ -630,6 +643,7 @@ namespace casual
                   return common::argument::Group{ [](){}, { "service"}, "service related administration",
                      common::argument::Option{ &action::list_services, { "-ls", "--list-services"}, "list services"},
                      common::argument::Option{ &action::list_instances,  { "-li", "--list-instances"}, "list instances"},
+                     common::argument::Option{ &action::routes::list, { "--list-routes"}, action::routes::description},
                      common::argument::Option{ &action::metric::reset, action::services_completer,  { "-mr", "--metric-reset"}, "reset metrics for provided services, if no services provided, all metrics will be reset"},
                      common::argument::Option{ &action::list_admin_services,  { "--list-admin-services"}, "list casual administration services"},
                      common::argument::Option{ &action::list_service_legend, { "--legend-list-services"}, "legend for --list-services output"},

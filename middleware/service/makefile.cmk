@@ -112,7 +112,7 @@ LinkUnittest( 'unittest/bin/test-casual-service',
     [
       Compile( 'unittest/source/forward/test_cache.cpp'),
       Compile( 'unittest/source/manager/test_manager.cpp'),
-      Compile( 'unittest/source/manager/test_state.cpp'),
+      #Compile( 'unittest/source/manager/test_state.cpp'),
     ] + forward_objs,
     [
      logic_archive,

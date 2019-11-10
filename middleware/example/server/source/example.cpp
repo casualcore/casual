@@ -74,6 +74,7 @@ namespace casual
             {
                std::terminate();
             }
+
          }
       } // server
    } // example

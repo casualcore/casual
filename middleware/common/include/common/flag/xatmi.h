@@ -50,6 +50,15 @@ namespace casual
                fail = TPFAIL,
                success = TPSUCCESS,
             };
+            inline std::ostream& operator << ( std::ostream& out, Return value)
+            {
+               switch( value)
+               {
+                  case Return::fail: return out << "fail";
+                  case Return::success: return out << "success";
+               }
+               return out << "<unknown>";
+            }
          } // xatmi 
       } // flag
    } // common 

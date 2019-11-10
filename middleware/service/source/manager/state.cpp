@@ -56,6 +56,18 @@ namespace casual
                   throw state::exception::Missing{ common::string::compose( "missing id: ", id)};
                }
 
+               namespace equal
+               {
+                  auto service( const std::string& name)
+                  {
+                     return [&name]( auto service)
+                     {
+                        return service->information.name == name;
+                     };
+                  }
+                  
+               } // equal
+
             } // <unnamed>
          } // local
 
@@ -81,9 +93,9 @@ namespace casual
 
                state::Service* Sequential::unreserve( const common::platform::time::point::type& now)
                {
-                  assert( m_service != nullptr);
+                  assert( state() == State::busy);
 
-                  m_service->unreserve( now, m_last);
+                  m_service->metric.update( now, m_last);
 
                   return std::exchange( m_service, nullptr);
                }
@@ -95,59 +107,35 @@ namespace casual
                   m_caller = {};
                }
 
-               namespace local
-               {
-                  namespace
-                  {
-
-                     Service global;
-
-                     Service* exiting_address()
-                     {
-                        return &global;
-                     }
-
-                     namespace view
-                     {
-                        auto compare = []( const std::string& lhs, const std::string& rhs){ return lhs < rhs;};
-                     } // view
-                  } // <unnamed>
-               } // local
-
                Sequential::State Sequential::state() const
                {
-                  if( m_service == nullptr)
-                     return State::idle;
-
-                  return m_service == local::exiting_address() ? State::exiting : State::busy;
+                  return m_service == nullptr ? State::idle : State::busy;
                }
-
-               void Sequential::exiting()
-               {
-                  m_service = local::exiting_address();
-               }
-
 
                bool Sequential::service( const std::string& name) const
                {
-                  return algorithm::sorted::search( m_services, name, local::view::compare);
+                  return ! algorithm::find_if( m_services, local::equal::service( name)).empty();
                }
 
-
-               void Sequential::add( const state::Service& service)
+               void Sequential::deactivate()
                {
-                  m_services.emplace_back( service.information.name);
-                  algorithm::sort( m_services, local::view::compare);
+                  algorithm::for_each( m_services, [&]( auto service)
+                  {
+                     service->remove( process.pid);
+                  });
+                  m_services.clear();
                }
 
-               void Sequential::remove( const std::string& service)
+               void Sequential::add( state::Service& service)
                {
-                  auto found = algorithm::find_if( m_services, [&service]( auto& s){ return s.get() == service;});
+                  m_services.push_back( &service);
+               }
 
-                  if( found)
+               void Sequential::remove( const std::string& name)
+               {
+                  if( auto found = algorithm::find_if( m_services, local::equal::service( name)))
                      m_services.erase( std::begin( found));
                }
-
 
                bool operator < ( const Concurrent& lhs, const Concurrent& rhs)
                {
@@ -160,9 +148,8 @@ namespace casual
                   {
                      case Sequential::State::busy: return out << "busy";
                      case Sequential::State::idle: return out << "idle";
-                     case Sequential::State::exiting: return out << "exiting";
                   }
-                  return out << "unknown";
+                  return out << "<unknown>";
                }
 
             } // instance
@@ -178,37 +165,41 @@ namespace casual
 
                } // instance
 
-            } // service
 
-            void Service::remove( common::strong::process::id instance)
-            {
+               void Advertised::remove( common::strong::process::id instance)
                {
-                  auto found = algorithm::find( instances.sequential, instance);
-
-                  if( found)
+                  if( auto found = algorithm::find( instances.sequential, instance))
                   {
                      found->get().remove( information.name);
                      instances.sequential.erase( std::begin( found));
                   }
-               }
 
-               {
-                  auto found = algorithm::find( instances.concurrent, instance);
-
-                  if( found)
+                  if( auto found = algorithm::find( instances.concurrent, instance))
                   {
                      instances.concurrent.erase( std::begin( found));
-                     partition_remote_instances();
+                     instances.partition();
                   }
                }
-            }
 
-            state::instance::Sequential& Service::local( common::strong::process::id instance)
+               state::instance::Sequential& Advertised::sequential( common::strong::process::id instance)
+               {
+                  return local::get( instances.sequential, instance);
+               }
+
+            } // service
+
+
+            void Service::Metric::update( const common::message::event::service::Metric& metric)
             {
-               return local::get( instances.sequential, instance);
+               invoked += metric.duration();
+               last = metric.end;
             }
-
-
+            
+            void Service::Metric::update( const common::platform::time::point::type& now, const common::platform::time::point::type& then)
+            {
+               last = now;
+               invoked += now - then;
+            }
 
             void Service::add( state::instance::Sequential& instance)
             {
@@ -219,35 +210,7 @@ namespace casual
             void Service::add( state::instance::Concurrent& instance, size_type hops)
             {
                instances.concurrent.emplace_back( instance, hops);
-               partition_remote_instances();
-            }
-
-
-            void Service::unreserve( const common::platform::time::point::type& now, const common::platform::time::point::type& then)
-            {
-               m_last = now;
-               metric += now - then;
-            }
-
-            void Service::partition_remote_instances()
-            {
-               algorithm::stable_sort( instances.concurrent);
-            }
-
-
-            bool Service::Instances::active() const
-            {
-               return ! concurrent.empty() || algorithm::any_of( sequential, []( const auto& i){
-                  return i.state() != instance::Sequential::State::exiting;
-               });
-            }
-
-            void Service::metric_reset()
-            {
-               metric = {};
-               pending = {};
-               m_remote_invocations = 0;
-               m_last = common::platform::time::point::limit::zero();
+               instances.partition();
             }
 
             common::process::Handle Service::reserve( 
@@ -255,9 +218,7 @@ namespace casual
                const common::process::Handle& caller, 
                const common::Uuid& correlation)
             {
-               auto found = algorithm::find_if( instances.sequential, std::mem_fn( &service::instance::Sequential::idle));
-
-               if( found)
+               if( auto found = algorithm::find_if( instances.sequential, []( auto& i){ return i.idle();}))
                {
                   found->reserve( now, this, caller, correlation);
                   return found->process();
@@ -265,13 +226,38 @@ namespace casual
 
                if( instances.sequential.empty() && ! instances.concurrent.empty())
                {
-                  ++m_remote_invocations;
+                  ++metric.remote;
                   return instances.concurrent.front().process();
                }
                return {};
             }
-
          } // state
+
+         State::State( common::message::domain::configuration::service::Manager configuration)
+            : default_timeout{ configuration.default_timeout}
+         {
+            Trace trace{ "service::manager::State::State"};
+
+            auto add_service = [&]( auto& service)
+            {
+               common::message::service::call::Service message;
+               message.timeout = service.timeout;
+               message.name = service.name;
+
+               if( service.routes.empty())
+                  services.emplace( service.name, std::move( message));
+               else 
+               {
+                  for( auto& route : service.routes)
+                     services.emplace( route, message);
+
+                  routes.emplace( service.name, std::move( service.routes));
+               }
+            };
+
+            algorithm::for_each( configuration.services, add_service);
+
+         }
 
          state::Service& State::service( const std::string& name)
          {
@@ -287,12 +273,10 @@ namespace casual
                {
                   Trace trace{ "service::manager::local::remove_process"};
 
-                  auto found = common::algorithm::find( instances, pid);
+                  log::line( verbose::log, "pid: ", pid);
 
-                  if( found)
+                  if( auto found = common::algorithm::find( instances, pid))
                   {
-                     log::line( log, "remove process pid: ", pid);
-
                      for( auto& s : services)
                      {
                         s.second.remove( pid);
@@ -319,31 +303,50 @@ namespace casual
                   return instances.emplace( process.pid, process).first->second;
                }
 
-               template< typename Services, typename Service>
-               auto& find_or_add_service( Services& services, Service&& service)
+               template< typename A>
+               void find_or_add_service( State& state, const common::message::service::call::Service& service, A&& add_instance)
                {
                   Trace trace{ "service::manager::local::find_or_add service"};
 
                   log::line( log, "service: ", service);
 
-                  auto found = algorithm::find( services, service.name);
-
-                  if( found)
+                  auto add_service = [&]( auto& name)
                   {
-                     if( found->second.information.category != service.category)
-                        found->second.information.category = service.category;
+                     // is the service advertised before?
+                     if( auto found = algorithm::find( state.services, name))
+                     {
+                        // update properties.
+                        // TODO: semantics - should we do this? We might degrade the properties
 
-                     if( found->second.information.transaction != service.transaction)
-                        found->second.information.transaction = service.transaction;
+                        auto asssign_if_not_equal = []( auto& target, auto&& source)
+                        {
+                           if( target != source) target = source;
+                        };
 
-                     log::line( log, "found: ", *found);
+                        asssign_if_not_equal( found->second.information.category, service.category);
+                        asssign_if_not_equal( found->second.information.transaction, service.transaction);
 
-                     return found->second;
+                        add_instance( found->second);
+                        log::line( verbose::log, "existing service: ", found->second);
+                     }
+                     else 
+                     {
+                        // a new service (to us), add to advertised AND services
+                        auto& advertised = state.services.emplace( name, service).first->second;
+                        add_instance( advertised);
+                        log::line( verbose::log, "new service: ", advertised);
+                     }
+                  };
+
+                  if( auto found = algorithm::find( state.routes, service.name))
+                  {
+                     // service has routes, use them instead
+                     algorithm::for_each( found->second, add_service);
                   }
-
-                  return services.emplace( service.name, service).first->second;
+                  else
+                     add_service( service.name);
+                     
                }
-
 
 
                template< typename Service>
@@ -394,14 +397,13 @@ namespace casual
             } // <unnamed>
          } // local
 
-         void State::remove_process( common::strong::process::id pid)
+         void State::remove( common::strong::process::id pid)
          {
-            Trace trace{ "service::manager::State::remove_process"};
+            Trace trace{ "service::manager::State::remove"};
+            log::line( verbose::log, "pid: ", pid);
 
             if( forward.pid == pid)
-            {
                forward = common::process::Handle{};
-            }
 
             events.remove( pid);
 
@@ -409,16 +411,13 @@ namespace casual
             local::remove_process( instances.concurrent, services, pid);
          }
 
-         void State::prepare_shutdown( common::strong::process::id pid)
+         void State::deactivate( common::strong::process::id pid)
          {
-            Trace trace{ "service::manager::State::prepare_shutdown"};
+            Trace trace{ "service::manager::State::deactivate"};
+            log::line( verbose::log, "pid: ", pid);
 
-            auto found = common::algorithm::find( instances.sequential, pid);
-
-            if( found)
-            {
-               found->second.exiting();
-            }
+            if( auto found = common::algorithm::find( instances.sequential, pid))
+               found->second.deactivate();
             else
             {
                // Assume that it's a remote instances
@@ -443,22 +442,22 @@ namespace casual
                {
                   auto& instance = local::find_or_add( instances.sequential, message.process);
 
-                  for( auto& s : message.services)
+                  auto add_service = [&]( auto& service)
                   {
-                     auto& service = local::find_or_add_service( services, local::transform( s, default_timeout));
-                     service.add( instance);
-                  }
+                     auto add_instance = [&instance]( auto& service)
+                     {
+                        service.add( instance);
+                     };
+                     local::find_or_add_service( *this, local::transform( service, default_timeout), add_instance);
+                  };
+
+                  algorithm::for_each( message.services, add_service);
 
                   break;
                }
                case common::message::service::Advertise::Directive::remove:
                {
                   local::remove_services( *this, instances.sequential, message.services, message.process);
-                  break;
-               }
-               case common::message::service::Advertise::Directive::replace:
-               {
-
                   break;
                }
                default:
@@ -488,16 +487,19 @@ namespace casual
             {
                case Directive::add:
                {
-
                   auto& instance = local::find_or_add( instances.concurrent, message.process);
                   instance.order = message.order;
 
-                  for( auto& s : message.services)
+                  auto add_service = [&]( auto& service)
                   {
-                     auto hops = s.hops;
-                     auto& service = local::find_or_add_service( services, local::transform( s));
-                     service.add( instance, hops);
-                  }
+                     auto add_instance = [&instance, hops = service.hops]( auto& service)
+                     {
+                        service.add( instance, hops);
+                     };
+                     local::find_or_add_service( *this, local::transform( service), add_instance);
+                  };
+
+                  algorithm::for_each( message.services, add_service);
 
                   break;
                }
@@ -524,7 +526,7 @@ namespace casual
             {
                for( auto& service : services)
                {
-                  service.second.metric_reset();
+                  service.second.metric.reset();
                   result.push_back( service.first);
                }
             }
@@ -535,7 +537,7 @@ namespace casual
                   auto service = find_service( name);
                   if( service)
                   {
-                     service->metric_reset();
+                     service->metric.reset();
                      result.push_back( std::move( name));
                   }
                }
@@ -544,7 +546,7 @@ namespace casual
             return result;
          }
 
-         state::instance::Sequential& State::local( common::strong::process::id pid)
+         state::instance::Sequential& State::sequential( common::strong::process::id pid)
          {
             return local::get( instances.sequential, pid);
          }

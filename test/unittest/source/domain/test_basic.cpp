@@ -56,6 +56,7 @@ domain:
             EXPECT_TRUE( communication::instance::ping( b.handle().ipc) == b.handle());
          }
 
+
       } // domain
 
    } // test

@@ -69,9 +69,7 @@ namespace casual
                struct Exit : Base
                {
                   using Base::Base;
-                  using message_type = common::message::event::process::Exit;
-
-                  void operator () ( message_type& message);
+                  void operator () ( common::message::event::process::Exit& message);
                };
 
                namespace prepare
@@ -93,17 +91,13 @@ namespace casual
                   struct Begin: public Base
                   {
                      using Base::Base;
-
                      void operator () ( common::message::event::subscription::Begin& message);
                   };
 
                   struct End: public Base
                   {
-                     using message_type = common::message::event::subscription::End;
-
                      using Base::Base;
-
-                     void operator () ( message_type& message);
+                     void operator () ( common::message::event::subscription::End& message);
                   };
 
                } // subscription
@@ -117,11 +111,8 @@ namespace casual
                //!  - replace == remove all services for instance and then add 0..* services
                struct Advertise : Base
                {
-                  using message_type = common::message::service::Advertise;
-
                   using Base::Base;
-
-                  void operator () ( message_type& message);
+                  void operator () ( common::message::service::Advertise& message);
                };
 
                //! services (instances rather) that are concurrent, hence does not block
@@ -130,14 +121,11 @@ namespace casual
                {
                   struct Advertise : Base
                   {
-                     using message_type = common::message::service::concurrent::Advertise;
-
                      using Base::Base;
-
-                     void operator () ( message_type& message);
+                     void operator () ( common::message::service::concurrent::Advertise& message);
                   };
 
-                  //! handles metric and "acks" from cuncurrent servers.
+                  //! handles metric and "acks" from concurrent servers.
                   struct Metric : Base
                   {
                      using Base::Base;
@@ -148,11 +136,13 @@ namespace casual
                //! Looks up a service-name
                struct Lookup : Base
                {
-                  using message_type = common::message::service::lookup::Request;
-
                   using Base::Base;
-
-                  void operator () ( message_type& message);
+                  void operator () ( common::message::service::lookup::Request& message);
+               private:
+                  void discover( 
+                     common::message::service::lookup::Request&& message, 
+                     const std::string& name, 
+                     common::platform::time::point::type now);
                };
 
                namespace discard
@@ -160,11 +150,8 @@ namespace casual
                   //! discards a previously pending lookup
                   struct Lookup : Base
                   {
-                     using message_type = common::message::service::lookup::discard::Request;
-
                      using Base::Base;
-
-                     void operator () ( message_type& message);
+                     void operator () ( common::message::service::lookup::discard::Request& message);
                   };
 
                } // discard
@@ -177,19 +164,14 @@ namespace casual
                {
                   struct Request : Base
                   {
-                     using message_type = common::message::gateway::domain::discover::Request;
                      using Base::Base;
-
-                     void operator () ( message_type& message);
+                     void operator () ( common::message::gateway::domain::discover::Request& message);
                   };
 
                   struct Reply : Base
                   {
-                     using message_type = common::message::gateway::domain::discover::accumulated::Reply;
-
                      using Base::Base;
-
-                     void operator () ( message_type& message);
+                     void operator () ( common::message::gateway::domain::discover::accumulated::Reply& message);
                   };
 
                } // discover
@@ -202,7 +184,6 @@ namespace casual
             struct ACK : public Base
             {
                using Base::Base;
-
                void operator () ( const common::message::service::call::ACK& message);
             };
 

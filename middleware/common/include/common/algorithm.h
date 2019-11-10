@@ -322,6 +322,16 @@ namespace casual
                return range::make( std::end( container) - range::size( range), std::end( container));
             }
 
+            template< typename R, typename C, typename T>
+            auto transform( R&& range, C&& container, T transform, range::category::associative)
+            {
+               container.reserve( range::size( range) + container.size());
+               for( auto& value: range)
+                  container.emplace( transform( value));
+
+               return std::forward< C>( container);
+            }
+
             template< typename R, typename O, typename T>
             decltype( auto) transform( R&& range, O&& output, T transform, range::category::fixed)
             {
@@ -336,7 +346,7 @@ namespace casual
                std::transform( std::begin( range), std::end( range), output, transform);
                return std::forward< O>( output);
             }
-         }
+         } // detail
 
          //! Transform @p range to @p container, using @p transform
          //!

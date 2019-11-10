@@ -34,15 +34,14 @@ namespace casual
                timeout = TX_TIMEOUT_ROLLBACK_ONLY,
                rollback = TX_ROLLBACK_ONLY,
             };
+            friend std::ostream& operator << ( std::ostream& out, State value);
+
 
             Transaction();
             explicit Transaction( ID trid);
 
             ID trid;
-
             Timeout timout;
-
-            
             State state = State::active;
 
             //! @return true if `trid` is _active_ 

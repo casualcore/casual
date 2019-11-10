@@ -51,7 +51,7 @@ namespace casual
                }
             };
          };
-
+/*
          //! Specialization for enum
          template< typename C> 
          struct has_formatter< C, std::enable_if_t< 
@@ -66,6 +66,7 @@ namespace casual
                }
             };
          };
+         */
 
          //! Specialization for error code
          template< typename C> 

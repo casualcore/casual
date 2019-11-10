@@ -10,12 +10,10 @@
 
 #include "configuration/domain.h"
 #include "service/manager/state.h"
-#include "service/manager/admin/managervo.h"
+#include "service/manager/admin/model.h"
 
 #include "common/message/server.h"
 #include "common/message/transaction.h"
-
-
 
 
 namespace casual
@@ -24,25 +22,19 @@ namespace casual
    {
       namespace transform
       {
-
-
+         /*
          struct Service
          {
             manager::state::Service operator () ( const common::message::Service& value) const;
          };
+         */
 
          struct Instance
          {
-            //state::Instance operator () ( const common::message::server::connect::Request& message) const;
-
             common::process::Handle operator () ( const manager::state::instance::Sequential& value) const;
-
-
          };
 
-
-         manager::admin::StateVO state( const manager::State& state);
-
+         manager::admin::model::State state( const manager::State& state);
 
       } // transform
    } // service

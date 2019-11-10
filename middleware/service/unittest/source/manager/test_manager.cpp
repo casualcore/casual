@@ -10,7 +10,7 @@
 #include "common/unittest.h"
 
 #include "service/manager/admin/server.h"
-#include "service/manager/admin/managervo.h"
+#include "service/manager/admin/model.h"
 #include "service/unittest/advertise.h"
 
 #include "common/message/domain.h"
@@ -47,6 +47,10 @@ domain:
 
             struct Domain
             {
+               Domain() = default;
+               Domain( const char* configuration) 
+                  : domain{ { configuration}} {}
+
                domain::manager::unittest::Process domain{ { local::configuration}};
 
                auto forward() const
@@ -57,13 +61,13 @@ domain:
 
             namespace call
             {
-               manager::admin::StateVO state()
+               auto state()
                {
                   serviceframework::service::protocol::binary::Call call;
 
                   auto reply = call( manager::admin::service::name::state());
 
-                  manager::admin::StateVO serviceReply;
+                  manager::admin::model::State serviceReply;
 
                   reply >> CASUAL_NAMED_VALUE( serviceReply);
 
@@ -74,13 +78,14 @@ domain:
 
             namespace service
             {
-               const manager::admin::ServiceVO* find( const manager::admin::StateVO& state, const std::string& name)
+               const manager::admin::model::Service* find( const manager::admin::model::State& state, const std::string& name)
                {
                   auto found = common::algorithm::find_if( state.services, [&name]( auto& s){
                      return s.name == name;
                   });
 
-                  if( found) { return &( *found);}
+                  if( found) 
+                     return &( *found);
 
                   return nullptr;
                }
@@ -88,7 +93,7 @@ domain:
 
             namespace instance
             {
-               const manager::admin::instance::SequentialVO* find( const manager::admin::StateVO& state, common::strong::process::id pid)
+               const manager::admin::model::instance::Sequential* find( const manager::admin::model::State& state, common::strong::process::id pid)
                {
                   auto found = common::algorithm::find_if( state.instances.sequential, [pid]( auto& i){
                      return i.process.pid == pid;
@@ -118,7 +123,7 @@ domain:
       {
          namespace
          {
-            bool has_services( const std::vector< manager::admin::ServiceVO>& services, std::initializer_list< const char*> wanted)
+            bool has_services( const std::vector< manager::admin::model::Service>& services, std::initializer_list< const char*> wanted)
             {
                return common::algorithm::all_of( wanted, [&services]( auto& s){
                   return common::algorithm::find_if( services, [&s]( auto& service){
@@ -169,6 +174,35 @@ domain:
          }
       }
 
+      TEST( service_manager, advertise_A__route_B_A__expect_lookup_for_B)
+      {
+         common::unittest::Trace trace;
+
+         constexpr auto configuration = R"(
+domain:
+   name: route-domain
+   servers:
+      - path: "./bin/casual-service-manager"
+        arguments: [ "--forward", "./bin/casual-service-forward"]
+
+   services:
+      - name: A
+        routes: [ B]
+
+)";
+
+         local::Domain domain{ configuration};
+
+         service::unittest::advertise( { "A"});
+
+         auto state = local::call::state();
+
+         EXPECT_TRUE( local::has_services( state.services, { "B"})) << "state.services: " << state.services;
+         EXPECT_TRUE( ! local::has_services( state.services, { "A"})) << "state.services: " << state.services;
+         
+      }
+
+
       TEST( service_manager, advertise_2_services_for_1_server)
       {
          common::unittest::Trace trace;
@@ -178,16 +212,17 @@ domain:
          service::unittest::advertise( { "service1", "service2"});
 
          auto state = local::call::state();
+         EXPECT_TRUE( local::has_services( state.services, { "service1", "service2"})) << "state.services: " << state.services;
 
          {
             auto instance = local::instance::find( state, common::process::id());
             ASSERT_TRUE( instance);
-            EXPECT_TRUE( instance->state == manager::admin::instance::SequentialVO::State::idle);
+            EXPECT_TRUE( instance->state == decltype( instance->state)::idle);
          }
       }
 
 
-      TEST( service_manager, advertise_2_services_for_1_server__prepare_shutdown___expect_instance_exiting)
+      TEST( service_manager, advertise_2_services_for_1_server__prepare_shutdown___expect_instance_removed_from_advertised_services)
       {
          common::unittest::Trace trace;
 
@@ -197,6 +232,13 @@ domain:
 
 
          {
+            auto state = local::call::state();
+            auto service = local::service::find( state, "service1");
+            ASSERT_TRUE( service);
+            EXPECT_TRUE( service->instances.sequential.at( 0).pid == common::process::id());
+         }
+
+         {
             common::message::domain::process::prepare::shutdown::Request request;
             request.process = common::process::handle();
             request.processes.push_back( common::process::handle());
@@ -204,15 +246,13 @@ domain:
             auto reply = common::communication::ipc::call( common::communication::instance::outbound::service::manager::device(), request);
 
             EXPECT_TRUE( request.processes == reply.processes);
-
          }
 
-         auto state = local::call::state();
-
          {
-            auto instance = local::instance::find( state, common::process::id());
-            ASSERT_TRUE( instance);
-            EXPECT_TRUE( instance->state == manager::admin::instance::SequentialVO::State::exiting);
+            auto state = local::call::state();
+            auto service = local::service::find( state, "service1");
+            ASSERT_TRUE( service);
+            EXPECT_TRUE( service->instances.sequential.empty());
          }
       }
 
@@ -233,7 +273,6 @@ domain:
             auto reply = common::communication::ipc::call( common::communication::instance::outbound::service::manager::device(), request);
 
             EXPECT_TRUE( request.processes == reply.processes);
-
          }
 
          EXPECT_THROW({

@@ -27,7 +27,7 @@ namespace casual
 
             namespace type
             {
-               enum class Category
+               enum class Category : int
                {
                   unknown = 0,
                   container,
@@ -42,6 +42,23 @@ namespace casual
                   binary,
                   fixed_binary,
                };
+               inline std::ostream& operator << ( std::ostream& out, Category value)
+               {
+                  switch( value)
+                  {
+                     case Category::unknown: return out << "unknown";
+                     case Category::container: return out << "container";
+                     case Category::composite: return out << "composite";
+                     case Category::integer: return out << "integer";
+                     case Category::floatingpoint: return out << "floatingpoint";
+                     case Category::character: return out << "character";
+                     case Category::boolean: return out << "boolean";
+                     case Category::string: return out << "string";
+                     case Category::binary: return out << "binary";
+                     case Category::fixed_binary: return out << "fixed_binary";
+                  }
+                  return out << "<unknown>";
+               }
 
 
                namespace details

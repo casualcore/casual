@@ -435,37 +435,6 @@ domain:
             }
          }
 
-         TEST( casual_domain_manager, configuration_service_routes)
-         {
-            common::unittest::Trace trace;
-
-            const std::string configuration{ R"(
-domain:
-  name: routes
-  services:
-    - timeout: 2h
-      name: service1
-      routes:
-        - service2
-        - service3
-
-)"};
-            unittest::Process manager{ { configuration}};
-
-            // We need to register this process to the manager
-            communication::instance::connect( process::handle());
-
-            message::domain::configuration::server::Request request;
-            request.process = process::handle();
-            auto reply = communication::ipc::call( communication::instance::outbound::domain::manager::device(), request);
-
-
-            ASSERT_TRUE( reply.service.routes.size() == 1);
-            EXPECT_TRUE( reply.service.routes.at( 0).name == "service1");
-            EXPECT_TRUE( reply.service.routes.at( 0).routes.at( 0) == "service2");
-            EXPECT_TRUE( reply.service.routes.at( 0).routes.at( 1) == "service3");
-
-         }
 
          TEST( casual_domain_manager, groups_4__with_5_executables___start_with_instances_1__scale_to_10)
          {

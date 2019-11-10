@@ -56,11 +56,13 @@ namespace casual
                      {
                         try
                         {
+                           log::line( verbose::log, "send message: ", message);
                            ipc::device().blocking_send( device, message);
                            return true;
                         }
                         catch( const common::exception::system::communication::Unavailable&)
                         {
+                           log::line( log, "ipc unavailable: ", device);
                            return false;
                         }
                      }
@@ -101,7 +103,7 @@ namespace casual
                         try
                         {
                            if( ! communication::ipc::non::blocking::send( detail::get::device( device), message, ipc::device().error_handler()))
-                              casual::domain::pending::message::send( detail::get::process( device), std::forward< M>( message));
+                              casual::domain::pending::message::send( detail::get::process( device), std::forward< M>( message), ipc::device().error_handler());
                         }
                         catch( const common::exception::system::communication::Unavailable&)
                         {
@@ -130,9 +132,7 @@ namespace casual
                void send( State& state)
                {
                   if( state.metric)
-                  {
                      local::metric::send( state);
-                  }
                }
 
                namespace batch
@@ -140,9 +140,7 @@ namespace casual
                   void send( State& state)
                   {
                      if( state.metric.size() >= platform::batch::service::metrics)
-                     {
                         local::metric::send( state);
-                     }
                   }
                } // batch
             } // metric
@@ -184,7 +182,7 @@ namespace casual
                   } // <unnamed>
                } // local
 
-               void Exit::operator () ( message_type& message)
+               void Exit::operator () ( common::message::event::process::Exit& message)
                {
                   Trace trace{ "service::manager::handle::process::Exit"};
 
@@ -192,12 +190,10 @@ namespace casual
 
                   // we need to check if the dead process has anyone wating for a reply
                   if( auto found = common::algorithm::find( m_state.instances.sequential, message.state.pid))
-                  {
                      if( found->second.state() == state::instance::Sequential::State::busy)
                         local::service_call_error_reply( m_state, found->second);
-                  }
 
-                  m_state.remove_process( message.state.pid);
+                  m_state.remove( message.state.pid);
                }
 
                namespace prepare
@@ -208,16 +204,21 @@ namespace casual
 
                      log::line( verbose::log, "message: ", message);
 
-                     auto reply = common::message::reverse::type( message);
-                     reply.process = common::process::handle();
+                     auto reply = common::message::reverse::type( message, common::process::handle());
                      reply.processes = std::move( message.processes);
 
-                     algorithm::for_each( reply.processes, [&]( const auto& p){
-                        m_state.prepare_shutdown( p.pid);
-                     });
+                     auto deactivate_process = [&]( auto& process)
+                     {
+                        m_state.deactivate( process.pid);
+                     };
 
+                     // all we need to do is to deactivate all servers (remove all 
+                     // associated services). domain-manager will then send shutdown to
+                     // the servers, and we'll receive a process::Exit when the server 
+                     // has exit, and we'll clean up the rest.
+                     algorithm::for_each( reply.processes, deactivate_process);
 
-                     ipc::device().blocking_send( message.process.ipc, reply);
+                     handle::local::eventually::send( message.process, reply);
                   }
 
                } // prepare
@@ -230,16 +231,14 @@ namespace casual
                   void Begin::operator () ( common::message::event::subscription::Begin& message)
                   {
                      Trace trace{ "service::manager::handle::event::subscription::Begin"};
-
                      log::line( verbose::log, "message: ", message);
 
                      m_state.events.subscription( message);
                   }
 
-                  void End::operator () ( message_type& message)
+                  void End::operator () ( common::message::event::subscription::End& message)
                   {
                      Trace trace{ "service::manager::handle::event::subscription::End"};
-
                      log::line( verbose::log, "message: ", message);
 
                      m_state.events.subscription( message);
@@ -249,10 +248,9 @@ namespace casual
 
             namespace service
             {
-               void Advertise::operator () ( message_type& message)
+               void Advertise::operator () ( common::message::service::Advertise& message)
                {
                   Trace trace{ "service::manager::handle::service::Advertise"};
-
                   log::line( verbose::log, "message: ", message);
 
                   m_state.update( message);
@@ -260,10 +258,9 @@ namespace casual
 
                namespace concurrent
                {
-                  void Advertise::operator () ( message_type& message)
+                  void Advertise::operator () ( common::message::service::concurrent::Advertise& message)
                   {
                      Trace trace{ "service::manager::handle::service::concurrent::Advertise"};
-
                      common::log::line( verbose::log, "message: ", message);
 
                      m_state.update( message);
@@ -272,18 +269,15 @@ namespace casual
                   void Metric::operator () ( common::message::event::service::Calls& message)
                   {
                      Trace trace{ "service::manager::handle::service::concurrent::Metric"};
-
                      log::line( verbose::log, "message: ", message);
 
-                     for( auto& metric : message.metrics)
+                     auto update_metric = [&]( auto& metric)
                      {
-                        auto service = m_state.find_service( metric.service);
-                        if( service)
-                        {
-                           service->metric += metric.duration();
-                           service->last( metric.end);
-                        }
-                     }
+                        if( auto service = m_state.find_service( metric.service))
+                           service->metric.update( metric);
+                     };
+
+                     algorithm::for_each( message.metrics, update_metric);
 
                      if( m_state.events)
                      {
@@ -294,23 +288,22 @@ namespace casual
                } // concurrent
 
 
-               void Lookup::operator () ( message_type& message)
+               void Lookup::operator () ( common::message::service::lookup::Request& message)
                {
                   Trace trace{ "service::manager::handle::service::Lookup"};
+                  log::line( verbose::log, "message: ", message);
 
                   auto now = platform::time::clock::type::now();
 
-                  log::line( verbose::log, "message: ", message);
-
                   try
                   {
+                     // will throw 'Missing' if not found, and a discover will take place
                      auto& service = m_state.service( message.requested);
 
                      auto handle = service.reserve( now, message.process, message.correlation);
 
                      if( handle)
                      {
-
                         auto reply = common::message::reverse::type( message);
                         reply.service = service.information;
                         reply.state = decltype( reply.state)::idle;
@@ -318,9 +311,10 @@ namespace casual
 
                         local::optional::send( message.process.ipc, reply);
                      }
-                     else if( ! service.instances.active())
+                     else if( service.instances.empty())
                      {
-                        throw state::exception::Missing{ "no instances"};
+                        // note: vi discover on the "real service name", in case it's a route
+                        discover( std::move( message), service.information.name, now);
                      }
                      else
                      {
@@ -349,7 +343,8 @@ namespace casual
                               // the service is idle. That is, we don't need to send timeout and
                               // stuff to the gateway, since the other domain has provided this to
                               // the caller (which of course can differ from our timeouts, if operation
-                              // has change the timeout, TODO: something we need to address? probably not,
+                              // has change the timeout) 
+                              // TODO semantics: something we need to address? probably not,
                               // since we can't make it 100% any way...)
                               m_state.pending.requests.emplace_back( std::move( message), now);
 
@@ -373,67 +368,74 @@ namespace casual
                   }
                   catch( const state::exception::Missing&)
                   {
+                     auto name = message.requested;
+                     discover( std::move( message), name, now);
+                  }
+               }
 
-                     auto send_reply = execute::scope( [&](){
+               void Lookup::discover( 
+                  common::message::service::lookup::Request&& message, 
+                  const std::string& name, 
+                  common::platform::time::point::type now)
+               {
+                  Trace trace{ "service::manager::handle::service::Lookup::discover"};
 
-                        log::line( log, "no instances found for service: ", message.requested);
+                  auto send_reply = execute::scope( [&]()
+                  {
+                     log::line( log, "no instances found for service: ", name);
 
-                        // Server (queue) that hosts the requested service is not found.
-                        // We propagate this by having absent state
-                        auto reply = common::message::reverse::type( message);
-                        reply.service.name = message.requested;
-                        reply.state = decltype( reply.state)::absent;
+                     // Server that hosts the requested service is not found.
+                     // We propagate this by having absent state
+                     auto reply = common::message::reverse::type( message);
+                     reply.service.name = message.requested;
+                     reply.state = decltype( reply.state)::absent;
 
-                        local::optional::send( message.process.ipc, reply);
-                     });
+                     local::optional::send( message.process.ipc, reply);
+                  });
 
-                     try
-                     {
+                  try
+                  {
+                     log::line( log, "no instances found for service: ", name, " - action: ask neighbor domains");
 
-                        common::message::gateway::domain::discover::Request request;
-                        request.correlation = message.correlation;
-                        request.domain = common::domain::identity();
-                        request.process = common::process::handle();
-                        request.services.push_back( message.requested);
+                     common::message::gateway::domain::discover::Request request;
+                     request.correlation = message.correlation;
+                     request.domain = common::domain::identity();
+                     request.process = common::process::handle();
+                     request.services.push_back( name);
 
-                        // If there is no gateway, this will throw
-                        ipc::device().blocking_send( communication::instance::outbound::gateway::manager::optional::device(), request);
+                     // If there is no gateway, this will throw
+                     ipc::device().blocking_send( communication::instance::outbound::gateway::manager::optional::device(), request);
 
-                        log::line( log, "no instances found for service: ", message.requested, " - action: ask neighbor domains");
+                     m_state.pending.requests.emplace_back( std::move( message), now);
 
-                        m_state.pending.requests.emplace_back( std::move( message), now);
-
-                        send_reply.release();
-                     }
-                     catch( ...)
-                     {
-                        common::exception::handle();
-                     }
+                     send_reply.release();
+                  }
+                  catch( ...)
+                  {
+                     common::exception::handle();
                   }
                }
 
                namespace discard
                {
-                  void Lookup::operator () ( message_type& message)
+                  void Lookup::operator () ( common::message::service::lookup::discard::Request& message)
                   {
                      Trace trace{ "service::manager::handle::service::discard::Lookup"};
-
                      log::line( verbose::log, "message: ", message);
 
-                     auto found = algorithm::find_if( m_state.pending.requests, [&message]( auto& pending)
+                     auto equal_correlation = [&message]( auto& pending)
                      {
                         return message.correlation == pending.request.correlation;
-                     });
+                     };
 
                      auto reply = message::reverse::type( message);
 
-                     if( found)
+                     if( auto found = algorithm::find_if( m_state.pending.requests, equal_correlation))
                      {
                         log::line( log, "found pending to discard");
                         log::line( verbose::log, "pending: ", *found);
 
                         m_state.pending.requests.erase( std::begin( found));
-
                         reply.state = decltype( reply.state)::discarded;
                      }
                      else 
@@ -442,13 +444,13 @@ namespace casual
 
                         // we need to go through all instances.
 
-                        auto found = algorithm::find_if( m_state.instances.sequential, [&message]( auto& tuple)
+                        auto reserved_service = [&message]( auto& tuple)
                         {
                            auto& instance = tuple.second;
                            return ! instance.idle() && instance.correlation() == message.correlation;
-                        });
+                        };
 
-                        if( found)
+                        if( auto found = algorithm::find_if( m_state.instances.sequential, reserved_service))
                         {
                            auto& instance = found->second;
                            log::line( log, "found reserved instance");
@@ -470,10 +472,9 @@ namespace casual
             {
                namespace discover
                {
-                  void Request::operator () ( message_type& message)
+                  void Request::operator () ( common::message::gateway::domain::discover::Request& message)
                   {
                      Trace trace{ "service::manager::handle::domain::discover::Request"};
-
                      common::log::line( verbose::log, "message: ", message);
 
                      auto reply = common::message::reverse::type( message);
@@ -481,9 +482,9 @@ namespace casual
                      reply.process = common::process::handle();
                      reply.domain = common::domain::identity();
 
-                     for( const auto& s : message.services)
+                     auto known_services = [&]( auto& name)
                      {
-                        auto&& service = m_state.find_service( s);
+                        auto service = m_state.find_service( name);
 
                         // We don't allow other domains to access or know about our
                         // admin services.
@@ -491,7 +492,6 @@ namespace casual
                         {
                            if( ! service->instances.sequential.empty())
                            {
-                              // Service is local
                               reply.services.emplace_back(
                                     service->information.name,
                                     service->information.category,
@@ -506,22 +506,24 @@ namespace casual
                                     service->instances.concurrent.front().hops());
                            }
                         }
-                     }
+                     };
+
+                     algorithm::for_each( message.services, known_services);
 
                      ipc::device().blocking_send( message.process.ipc, reply);
                   }
 
-                  void Reply::operator () ( message_type& message)
+                  void Reply::operator () ( common::message::gateway::domain::discover::accumulated::Reply& message)
                   {
                      Trace trace{ "service::manager::handle::gateway::discover::Reply"};
-
                      common::log::line( verbose::log, "message: ", message);
 
-                     auto found = algorithm::find_if( m_state.pending.requests, [&]( const state::service::Pending& p){
-                        return p.request.correlation == message.correlation;
-                     });
+                     auto has_correlation = [&message]( auto& pending)
+                     {
+                        return pending.request.correlation == message.correlation;
+                     };
 
-                     if( found)
+                     if( auto found = algorithm::find_if( m_state.pending.requests, has_correlation))
                      {
                         auto pending = std::move( *found);
                         m_state.pending.requests.erase( std::begin( found));
@@ -542,12 +544,9 @@ namespace casual
 
                            ipc::device().blocking_send( pending.request.process.ipc, reply);
                         }
-
                      }
                      else
-                     {
                         log::line( log, "failed to correlate pending request - assume it has been consumed by a recent started local server");
-                     }
                   }
 
                } // discover
@@ -556,7 +555,6 @@ namespace casual
             void ACK::operator () ( const common::message::service::call::ACK& message)
             {
                Trace trace{ "service::manager::handle::ACK"};
-
                log::line( verbose::log, "message: ", message);
 
                try
@@ -564,7 +562,7 @@ namespace casual
                   auto now = platform::time::clock::type::now();
 
                   // This message can only come from a local instance
-                  auto& instance = m_state.local( message.metric.process.pid);
+                  auto& instance = m_state.sequential( message.metric.process.pid);
                   auto service = instance.unreserve( now);
 
                   // add metric
@@ -574,15 +572,17 @@ namespace casual
                      handle::metric::batch::send( m_state);
                   }
 
+
                   // Check if there are pending request for services that this
                   // instance has.
 
                   {
-                     auto pending = common::algorithm::find_if( m_state.pending.requests, [&]( const auto& p){
-                        return instance.service( p.request.requested);
-                     });
+                     auto has_pending = [&instance]( const auto& pending)
+                     {
+                        return instance.service( pending.request.requested);
+                     };
 
-                     if( pending)
+                     if( auto pending = common::algorithm::find_if( m_state.pending.requests, has_pending))
                      {
                         log::line( verbose::log, "found pendig: ", *pending);
 
@@ -593,7 +593,7 @@ namespace casual
                         lookup( pending->request);
 
                         // add pending metrics
-                        service->pending += now - pending->when;
+                        service->metric.pending += now - pending->when;
 
                         // Remove pending
                         m_state.pending.requests.erase( std::begin( pending));
@@ -606,12 +606,10 @@ namespace casual
                }
             }
 
-
             void Policy::configure( common::server::Arguments& arguments)
             {
                m_state.connect_manager( arguments.services);
             }
-
 
             void Policy::reply( common::strong::ipc::id id, common::message::service::call::Reply& message)
             {

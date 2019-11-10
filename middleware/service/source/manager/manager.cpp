@@ -45,71 +45,50 @@ namespace casual
          {
             namespace configure
             {
-               std::string forward( const manager::Settings& settings)
+               namespace forward
                {
-                  if( settings.forward.empty())
+                  std::string path( const manager::Settings& settings)
                   {
-                     return environment::directory::casual() + "/bin/casual-service-forward";
+                     if( settings.forward.empty())
+                        return environment::directory::casual() + "/bin/casual-service-forward";
+
+                     return settings.forward;
                   }
-                  return settings.forward;
-               }
+               } // forward
 
                common::message::domain::configuration::service::Manager domain()
                {
-                  common::message::domain::configuration::Request request;
-                  request.process = process::handle();
+                  Trace trace{ "service::local::configure::domain"};
 
-                  return communication::ipc::call( communication::instance::outbound::domain::manager::device(), request).domain.service;
+                  return communication::ipc::call( 
+                     communication::instance::outbound::domain::manager::device(), 
+                     common::message::domain::configuration::Request{ process::handle()}).domain.service;
                }
 
-               void services( manager::State& state, const common::message::domain::configuration::service::Manager& configuration)
+               manager::State state( manager::Settings settings)
                {
-                  Trace trace{ "service::local::configure::services"};
+                  Trace trace{ "service::local::configure::state"};
 
-                  state.default_timeout = configuration.default_timeout;
-
-                  for( auto& config : configuration.services)
-                  {
-                     common::message::service::call::Service service;
-
-                     service.timeout = config.timeout;
-                     service.name = config.name;
-
-                     state.services.emplace( std::make_pair( config.name, std::move( service)));
-
-                  }
-
-               }
-
-               manager::State state( const manager::Settings& settings)
-               {
-                  manager::State state;
-
-                  // Set the process variables so children can communicate with us.
+                  // Set the process variables so children can find us easier.
                   common::environment::variable::process::set(
-                        common::environment::variable::name::ipc::service::manager(),
-                        common::process::handle());
-
+                     common::environment::variable::name::ipc::service::manager(),
+                     common::process::handle());
 
                   // Get configuration from domain-manager
-                  auto configuration = domain();
-
-
-                  configure::services( state, configuration);
-
+                  manager::State state{ domain()};
 
                   // Start forward
                   {
                      Trace trace{ "service::configure spawn forward"};
 
-                     state.forward.pid = common::process::spawn( forward( settings), {});
-
+                     state.forward.pid = common::process::spawn( forward::path( settings), {});
                      state.forward = common::communication::instance::fetch::handle(
                            common::communication::instance::identity::forward::cache);
 
                      log::line( log, "forward: ", state.forward);
-
                   }
+
+                  log::line( verbose::log, "state: ", state);
 
                   return state;
                }
@@ -117,66 +96,45 @@ namespace casual
          } // <unnamed>
       } // local
 
-      Manager::Manager( manager::Settings&& settings) : m_state{ local::configure::state( std::move( settings))}
+      Manager::Manager( manager::Settings&& settings) 
+         : m_state{ local::configure::state( std::move( settings))}
       {
          Trace trace{ "service::Manager::Manager ctor"};
       }
 
       Manager::~Manager()
       {
-         try
+         exception::guard( [&]()
          {
             Trace trace{ "service::Manager::Manager dtor"};
-
             // Terminate
             process::terminate( m_state.forward);
-         }
-         catch( ...)
-         {
-            common::exception::handle();
-         }
+         });
       }
-
-      namespace local
-      {
-         namespace
-         {
-            namespace message
-            {
-               void pump( manager::State& state)
-               {
-                  // Prepare message-pump handlers
-
-                  log::line( log, "prepare message-pump handlers");
-
-                  auto handler = manager::handler( state);
-
-                  // Connect to domain
-                  communication::instance::connect( communication::instance::identity::service::manager);
-
-                  log::line( log, "start message pump");
-
-                  auto empty_callback = [&]()
-                  {
-                     // the input socket is empty, we can't know if there ever gonna be any more 
-                     // messages to read, we need to send metric, if any...
-                     if( state.metric && state.events.active< common::message::event::service::Calls>())
-                        manager::handle::metric::send( state);
-                  };
-
-                  common::message::dispatch::empty::pump( 
-                     handler, 
-                     manager::ipc::device(), 
-                     empty_callback);
-               }
-
-            } // message
-         } // <unnamed>
-      } // local
 
       void Manager::start()
       {
-         local::message::pump( m_state);
+         Trace trace{ "service::Manager::start"};
+
+         auto handler = manager::handler( m_state);
+
+         // Connect to domain
+         communication::instance::connect( communication::instance::identity::service::manager);
+
+         log::line( log, "start message pump");
+
+         auto empty_callback = [&]()
+         {
+            // the input socket is empty, we can't know if there ever gonna be any more 
+            // messages to read, we need to send metric, if any...
+            if( m_state.metric && m_state.events.active< common::message::event::service::Calls>())
+               manager::handle::metric::send( m_state);
+         };
+
+         common::message::dispatch::empty::pump( 
+            handler, 
+            manager::ipc::device(), 
+            empty_callback);
       }
 
    } // service

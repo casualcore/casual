@@ -23,7 +23,7 @@ namespace casual
             {
                inline namespace v1
                {
-                  StateVO state()
+                  model::State state()
                   {
                      Trace trace{ "service::manager::admin::api::state"};
 
@@ -31,7 +31,7 @@ namespace casual
 
                      auto reply = call( service::name::state());
 
-                     StateVO result;
+                     model::State result;
                      reply >> CASUAL_NAMED_VALUE( result);
 
                      return result;

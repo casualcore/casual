@@ -38,6 +38,8 @@ namespace casual
 
          extern "C"
          {
+            void casual_example_echo( TPSVCINFO* info);
+            
             int tpsvrinit( int argc, char* argv[])
             {
                return common::exception::guard( [&]()
@@ -53,6 +55,10 @@ namespace casual
                         local::global.work = common::chronology::from::string( value);
                      }, {"--work"}, "work time ")
                   }( argc, argv);
+
+                  
+                  tpadvertise( "casual/example/advertised/echo", &casual_example_echo);
+
 
 
                   common::log::line( common::log::category::information, "sleep: ", local::global.sleep);

@@ -8,8 +8,6 @@
 #pragma once
 
 
-
-
 #include "common/message/domain.h"
 #include "common/message/server.h"
 #include "common/message/gateway.h"
@@ -17,17 +15,10 @@
 #include "common/message/pending.h"
 
 #include "common/metric.h"
-
 #include "common/server/service.h"
-
-
 #include "common/communication/ipc.h"
-
 #include "common/event/dispatch.h"
-
 #include "common/exception/system.h"
-
-#include "serviceframework/log.h"
 
 #include <vector>
 #include <string>
@@ -78,7 +69,6 @@ namespace casual
 
             struct Service;
 
-
             namespace instance
             {
                struct base_instance
@@ -98,14 +88,12 @@ namespace casual
                };
 
 
-
                struct Sequential : base_instance
                {
                   enum class State : short
                   {
                      idle,
                      busy,
-                     exiting,
                   };
 
                   using base_instance::base_instance;
@@ -121,10 +109,7 @@ namespace casual
                   //! discards the reservation
                   void discard();
 
-
                   inline const common::platform::time::point::type& last() const { return m_last;}
-
-                  void exiting();
 
                   State state() const;
                   inline bool idle() const { return m_service == nullptr;}
@@ -132,8 +117,10 @@ namespace casual
                   //! Return true if this instance exposes the service
                   bool service( const std::string& name) const;
 
+                  //! removes this instance from all services
+                  void deactivate();
 
-                  void add( const state::Service& service);
+                  void add( state::Service& service);
                   void remove( const std::string& service);
 
                   //! caller and correlation of last reserve
@@ -160,8 +147,8 @@ namespace casual
                   common::process::Handle m_caller;
                   common::Uuid m_correlation;
 
-                  using service_view = std::reference_wrapper< const std::string>;
-                  std::vector< service_view> m_services;
+                  // all associated services
+                  std::vector< state::Service*> m_services;
                };
 
                struct Concurrent : base_instance
@@ -188,7 +175,7 @@ namespace casual
 
                struct Pending
                {
-                  Pending( common::message::service::lookup::Request&& request, const common::platform::time::point::type& when)
+                  Pending( common::message::service::lookup::Request request, common::platform::time::point::type when)
                    : request{ std::move( request)}, when{ when} {}
 
                   common::message::service::lookup::Request request;
@@ -254,45 +241,81 @@ namespace casual
                      size_type m_hops = 0;
                   };
                } // instance
-            } // service
 
-            struct Service
-            {
-               Service( common::message::service::call::Service information)
-                  : information( std::move( information)) {}
 
-               Service() = default;
-
-               template< typename T>
-               using instances_type = std::vector< T>;
-
-               struct Instances
+               struct Advertised
                {
-                  instances_type< state::service::instance::Sequential> sequential;
-                  instances_type< state::service::instance::Concurrent> concurrent;
+                  inline Advertised( common::message::service::call::Service information)
+                     : information( std::move( information)) {}
 
-                  inline bool empty() const { return sequential.empty() && concurrent.empty();}
+                  struct Instances
+                  {
+                     template< typename T>
+                     using instances_type = std::vector< T>;
 
-                  //! @return true if any of the instances is active (not exiting).
-                  bool active() const;
+                     instances_type< state::service::instance::Sequential> sequential;
+                     instances_type< state::service::instance::Concurrent> concurrent;
+
+                     inline bool empty() const { return sequential.empty() && concurrent.empty();}
+
+                     inline void partition() { common::algorithm::stable_sort( concurrent);}
+
+                     CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
+                     { 
+                        CASUAL_SERIALIZE( sequential);
+                        CASUAL_SERIALIZE( concurrent);
+                     })
+                  };
+
+                  // state
+                  Instances instances;
+                  common::message::service::call::Service information;
+
+                  void remove( common::strong::process::id instance);
+                  state::instance::Sequential& sequential( common::strong::process::id instance);
 
                   CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
                   { 
-                     CASUAL_SERIALIZE( sequential);
-                     CASUAL_SERIALIZE( concurrent);
+                     CASUAL_SERIALIZE( instances);
+                     CASUAL_SERIALIZE( information);
                   })
+               };
 
+            } // service
 
-               } instances;
+            struct Service : service::Advertised
+            {
+               using service::Advertised::Advertised;
 
-               common::message::service::call::Service information;
-               service::Metric metric;
+               struct Metric
+               {
+                  service::Metric invoked;
 
-               //! Keeps track of the pending metrics for this service
-               service::Metric pending;
+                  //! Keeps track of the pending metrics for this service
+                  service::Metric pending;
 
-               //! Resets the metrics
-               void metric_reset();
+                  common::platform::time::point::type last = common::platform::time::point::limit::zero();
+
+                  // remote invocations
+                  size_type remote = 0;
+
+                  inline void reset() { *this = Metric{};}
+                  void update( const common::message::event::service::Metric& metric);
+                  void update( const common::platform::time::point::type& now, const common::platform::time::point::type& then);
+
+                  CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
+                  { 
+                     CASUAL_SERIALIZE( invoked);
+                     CASUAL_SERIALIZE( pending);
+                     CASUAL_SERIALIZE( last);
+                     CASUAL_SERIALIZE( remote);
+                  })                  
+               };
+
+               void add( state::instance::Sequential& instance);
+               void add( state::instance::Concurrent& instance, size_type hops);
+
+               Metric metric;
 
                //! @return a reserved instance or 'null-handle' if no one is found.
                common::process::Handle reserve( 
@@ -300,45 +323,12 @@ namespace casual
                   const common::process::Handle& caller, 
                   const common::Uuid& correlation);
 
-
-               void add( state::instance::Sequential& instance);
-               void add( state::instance::Concurrent& instance, size_type hops);
-
-               void remove( common::strong::process::id instance);
-
-               state::instance::Sequential& local( common::strong::process::id instance);
-
-
-               friend bool operator == ( const Service& lhs, const Service& rhs) { return lhs.information.name == rhs.information.name;}
-               friend bool operator < ( const Service& lhs, const Service& rhs) { return lhs.information.name < rhs.information.name;}
-
-
-               inline size_type remote_invocations() const { return m_remote_invocations;}
-
-               inline const common::platform::time::point::type& last() const { return m_last;}
-               inline void last( common::platform::time::point::type now) { m_last = now;}
-
-
                CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
                { 
-                  CASUAL_SERIALIZE( instances);
-                  CASUAL_SERIALIZE( information);
-                  CASUAL_SERIALIZE( pending);
-                  CASUAL_SERIALIZE_NAME( m_last, "last");
-                  CASUAL_SERIALIZE_NAME( m_remote_invocations, "remote_invocations");
-               })
+                  service::Advertised::serialize( archive);
+                  CASUAL_SERIALIZE( metric);
+               })               
 
-            private:
-
-               friend struct state::instance::Sequential;
-               void unreserve( const common::platform::time::point::type& now, const common::platform::time::point::type& then);
-
-
-
-               void partition_remote_instances();
-
-               common::platform::time::point::type m_last = common::platform::time::point::limit::zero();
-               size_type m_remote_invocations = 0;
             };
          } // state
 
@@ -347,22 +337,21 @@ namespace casual
          struct State
          {
 
-            State() = default;
+            State( common::message::domain::configuration::service::Manager configuration);
 
             State( State&&) = default;
             State& operator = (State&&) = default;
 
             State( const State&) = delete;
 
-
-            template< typename T>
-            using instance_mapping_type = std::unordered_map< common::strong::process::id, T>;
-            using service_mapping_type = std::unordered_map< std::string, state::Service>;
-
-            service_mapping_type services;
+            //! holds the total known services, including routes
+            std::unordered_map< std::string, state::Service> services;
 
             struct
             {
+               template< typename T>
+               using instance_mapping_type = std::unordered_map< common::strong::process::id, T>;
+
                instance_mapping_type< state::instance::Sequential> sequential;
                instance_mapping_type< state::instance::Concurrent> concurrent;
 
@@ -393,22 +382,26 @@ namespace casual
                common::message::event::service::Calls m_message;
             } metric;        
 
-            
-
-
             common::process::Handle forward;
 
             common::platform::time::unit default_timeout = common::platform::time::unit::zero();
 
+            //! holds all the routes, for services that has routes
+            std::map< std::string, std::vector< std::string>> routes;
 
             state::Service& service( const std::string& name);
+            
+            //! removes the instance (deduced from `pid`) and remove the instance from all services 
+            void remove( common::strong::process::id pid);
 
-            void remove_process( common::strong::process::id pid);
-            void prepare_shutdown( common::strong::process::id pid);
+            //! removes the instance (deduced from `pid`) from all services, (keeps the instance though)
+            void deactivate( common::strong::process::id pid);
 
-
+            //! adds or "updates" service
+            //! @{ 
             void update( common::message::service::Advertise& message);
             void update( common::message::service::concurrent::Advertise& message);
+            //! @}
 
             //! Resets metrics for the provided services, if empty all metrics are reseted.
             //! @param services
@@ -422,16 +415,22 @@ namespace casual
             //! @return pointer to service, nullptr if not found
             state::Service* find_service( const std::string& name);
 
-            state::instance::Sequential& local( common::strong::process::id pid);
+            //! @returns a sequential (local) instances that has the `pid`, or nullptr if absent.
+            state::instance::Sequential& sequential( common::strong::process::id pid);
 
             void connect_manager( std::vector< common::server::Service> services);
+
+            
+            CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
+            {
+               CASUAL_SERIALIZE( routes);
+               CASUAL_SERIALIZE( services);
+            }) 
+
          };
 
       } // manager
-
    } // service
-
-
 } // casual
 
 

@@ -145,6 +145,7 @@ namespace casual
          {
             struct fixed {};
             struct output_iterator {};
+            struct associative {};
             struct container {};
 
             template< typename T, class Enable = void>
@@ -154,6 +155,12 @@ namespace casual
             struct tag< T, std::enable_if_t< traits::is::container::sequence::like< T>::value>>
             {
                using type = category::container;
+            };
+
+            template< typename T>
+            struct tag< T, std::enable_if_t< traits::is::container::associative::like< T>::value>>
+            {
+               using type = category::associative;
             };
 
             template< typename T>

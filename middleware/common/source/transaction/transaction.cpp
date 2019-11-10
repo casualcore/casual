@@ -18,12 +18,9 @@ namespace casual
       {
 
          Transaction::Transaction() = default;
-
          Transaction::Transaction( ID trid) : trid( std::move( trid)) {}
 
-
          Transaction::operator bool() const { return static_cast< bool>( trid);}
-
 
          void Transaction::associate( const Uuid& correlation)
          {
@@ -86,6 +83,19 @@ namespace casual
          bool operator == ( const Transaction& lhs, const ID& rhs) { return lhs.trid == rhs;}
 
          bool operator == ( const Transaction& lhs, const XID& rhs) { return lhs.trid.xid == rhs;}
+
+
+         std::ostream& operator << ( std::ostream& out, Transaction::State value)
+         {
+            using Enum = Transaction::State;
+            switch( value)
+            {
+               case Enum::active: return out << "active";
+               case Enum::rollback: return out << "rollback";
+               case Enum::timeout: return out << "timeout";
+            }
+            return out << "<unknown>";
+         }
 
          std::ostream& operator << ( std::ostream& out, const Transaction& rhs)
          {
