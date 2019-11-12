@@ -56,8 +56,6 @@ extern "C" void TPACALL(struct TPSVCDEF_REC_s *TPSVCDEF_REC,
    flags = 0;
    if (TPSVCDEF_REC->TPTRAN_FLAG)
       flags = flags | TPNOTRAN;
-   else
-      flags = flags | TPTRAN;
    if (TPSVCDEF_REC->TPREPLY_FLAG)
       flags = flags | TPNOREPLY;
    if (TPSVCDEF_REC->TPBLOCK_FLAG)
@@ -154,8 +152,6 @@ extern "C" void TPCALL(struct TPSVCDEF_REC_s *TPSVCDEF_REC,
    flags = 0;
    if (TPSVCDEF_REC->TPTRAN_FLAG)
       flags = flags | TPNOTRAN;
-   else
-      flags = flags | TPTRAN;
    if (TPSVCDEF_REC->TPNOCHANGE_FLAG)
       flags = flags | TPNOCHANGE;
    if (TPSVCDEF_REC->TPBLOCK_FLAG)
