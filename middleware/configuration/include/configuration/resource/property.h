@@ -10,7 +10,7 @@
 
 
 #include "common/serialize/macro.h"
-#include "common/platform.h"
+#include "casual/platform.h"
 #include "common/optional.h"
 
 #include <vector>

@@ -148,7 +148,7 @@ namespace casual
                   void send( State& state)
                   {  
                      // check if we've reach our "batch-limit", if so, persit and send replies
-                     if( state.persistent.replies.size() >= common::platform::batch::transaction::persistence)
+                     if( state.persistent.replies.size() >= platform::batch::transaction::persistence)
                         local::send( state);  
                   }
                   
@@ -326,7 +326,7 @@ namespace casual
                      }
 
                      template< typename M>
-                     void metric( state::resource::Proxy::Instance& instance, M&& message, const common::platform::time::point::type& now)
+                     void metric( state::resource::Proxy::Instance& instance, M&& message, const platform::time::point::type& now)
                      {
                         instance.metrics.resource += message.statistics.end - message.statistics.start;
                         instance.metrics.roundtrip += now - instance.metrics.requested;
@@ -970,7 +970,7 @@ namespace casual
 
                         {
                            local::instance::done( this->m_state, instance);
-                           local::instance::metric( instance, message, common::platform::time::clock::type::now());
+                           local::instance::metric( instance, message, platform::time::clock::type::now());
                         }
                      }
 

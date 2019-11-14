@@ -8,7 +8,7 @@
 
 #include <gtest/gtest.h>
 
-#include "buffer/octet.h"
+#include "casual/buffer/octet.h"
 #include "xatmi.h"
 
 

@@ -131,7 +131,7 @@ namespace casual
                      {
                         state.pending.reply( std::forward< M>( message), destination);
 
-                        if( state.pending.replies.size() >= common::platform::batch::queue::persistent)
+                        if( state.pending.replies.size() >= platform::batch::queue::persistent)
                            handle::persist( state);
                      }
 
@@ -387,7 +387,7 @@ namespace casual
                         auto wanted = available.value() - now;
                         auto current = common::signal::timer::get();
                         log::line( verbose::log, "wanted: ", wanted, ", current: ", current);
-                        if( current == common::platform::time::unit::min() || wanted < current)
+                        if( current == platform::time::unit::min() || wanted < current)
                            common::signal::timer::set( wanted);
                      }
 

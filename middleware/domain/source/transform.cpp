@@ -188,14 +188,13 @@ namespace casual
                } // transform
 
 
-               namespace vo
+               namespace model
                {
-
                   struct Group
                   {
-                     manager::admin::vo::Group operator () ( const manager::state::Group& value)
+                     manager::admin::model::Group operator () ( const manager::state::Group& value)
                      {
-                        manager::admin::vo::Group result;
+                        manager::admin::model::Group result;
 
                         result.id = value.id.value();
                         result.name = value.name;
@@ -213,14 +212,14 @@ namespace casual
 
                   struct Executable
                   {
-                     manager::admin::vo::Executable operator () ( const manager::state::Executable& value)
+                     manager::admin::model::Executable operator () ( const manager::state::Executable& value)
                      {
-                        return transform< manager::admin::vo::Executable>( value);
+                        return transform< manager::admin::model::Executable>( value);
                      }
 
-                     manager::admin::vo::Server operator () ( const manager::state::Server& value)
+                     manager::admin::model::Server operator () ( const manager::state::Server& value)
                      {
-                        auto result = transform< manager::admin::vo::Server>( value);
+                        auto result = transform< manager::admin::model::Server>( value);
 
                         result.resources = value.resources;
                         result.restriction = value.restrictions;
@@ -232,14 +231,14 @@ namespace casual
 
                      struct Instance
                      {
-                        manager::admin::vo::Executable::instance_type operator () ( const manager::state::Executable::instance_type& value)
+                        manager::admin::model::Executable::instance_type operator () ( const manager::state::Executable::instance_type& value)
                         {
-                           return transform< manager::admin::vo::Executable::instance_type>( value);
+                           return transform< manager::admin::model::Executable::instance_type>( value);
                         }
 
-                        manager::admin::vo::Server::instance_type operator () ( const manager::state::Server::instance_type& value)
+                        manager::admin::model::Server::instance_type operator () ( const manager::state::Server::instance_type& value)
                         {
-                           return transform< manager::admin::vo::Server::instance_type>( value);
+                           return transform< manager::admin::model::Server::instance_type>( value);
                         }
                      private:
                         template< typename R, typename T> 
@@ -253,17 +252,17 @@ namespace casual
                         }
 
                         template< typename S>
-                        manager::admin::vo::instance::State state( S state)
+                        manager::admin::model::instance::State state( S state)
                         {
                            switch( state)
                            {
-                              case S::running: return manager::admin::vo::instance::State::running;
-                              case S::scale_out: return manager::admin::vo::instance::State::scale_out;
-                              case S::scale_in: return manager::admin::vo::instance::State::scale_in;
-                              case S::exit: return manager::admin::vo::instance::State::exit;
-                              case S::spawn_error: return manager::admin::vo::instance::State::spawn_error;
+                              case S::running: return manager::admin::model::instance::State::running;
+                              case S::scale_out: return manager::admin::model::instance::State::scale_out;
+                              case S::scale_in: return manager::admin::model::instance::State::scale_in;
+                              case S::exit: return manager::admin::model::instance::State::exit;
+                              case S::spawn_error: return manager::admin::model::instance::State::spawn_error;
                            }
-                           return manager::admin::vo::instance::State::spawn_error;
+                           return manager::admin::model::instance::State::spawn_error;
                         }
                      };
 
@@ -297,11 +296,11 @@ namespace casual
 
                   auto tasks( const manager::task::Queue& tasks)
                   {
-                     manager::admin::vo::State::Tasks result;
+                     manager::admin::model::State::Tasks result;
 
                      auto transform_task = []( auto& task)
                      {
-                        manager::admin::vo::Task result;
+                        manager::admin::model::Task result;
                         result.id = task.id();
                         result.description = task.description();
                         return result;
@@ -313,7 +312,7 @@ namespace casual
                      return result;
                   }
 
-               } // vo
+               } // model
 
             } // <unnamed>
          } // local
@@ -329,15 +328,15 @@ namespace casual
          }
 
 
-         manager::admin::vo::State state( const manager::State& state)
+         manager::admin::model::State state( const manager::State& state)
          {
-            manager::admin::vo::State result;
+            manager::admin::model::State result;
 
-            result.groups = algorithm::transform( state.groups, local::vo::Group{});
-            result.servers = algorithm::transform( state.servers, local::vo::Executable{});
-            result.executables = algorithm::transform( state.executables, local::vo::Executable{});
-            //result.event = local::vo::event( state.event);
-            result.tasks = local::vo::tasks( state.tasks);
+            result.groups = algorithm::transform( state.groups, local::model::Group{});
+            result.servers = algorithm::transform( state.servers, local::model::Executable{});
+            result.executables = algorithm::transform( state.executables, local::model::Executable{});
+            //result.event = local::model::event( state.event);
+            result.tasks = local::model::tasks( state.tasks);
 
             return result;
          }

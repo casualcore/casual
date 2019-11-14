@@ -4,8 +4,8 @@
 //! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-#include "buffer/internal/field/string.h"
-#include "buffer/internal/common.h"
+#include "casual/buffer/internal/field/string.h"
+#include "casual/buffer/internal/common.h"
 
 #include "common/log/category.h"
 #include "common/exception/xatmi.h"

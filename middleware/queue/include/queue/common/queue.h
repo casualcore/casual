@@ -22,7 +22,7 @@ namespace casual
       {
          struct type{};
       } // tag
-      using id = common::value::Optional< common::platform::size::type, 0, tag::type>;
+      using id = common::value::Optional< platform::size::type, 0, tag::type>;
 
       struct Lookup
       {

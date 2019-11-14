@@ -22,7 +22,7 @@ namespace casual
       namespace group
       {
          using Queue = common::message::queue::Queue;
-         using size_type = common::platform::size::type;
+         using size_type = platform::size::type;
 
          namespace message
          {
@@ -40,8 +40,8 @@ namespace casual
             struct Available
             {
                common::strong::queue::id queue;
-               common::platform::size::type count;
-               common::platform::time::point::type when;
+               platform::size::type count;
+               platform::time::point::type when;
 
                CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
                   CASUAL_SERIALIZE( queue);
@@ -81,7 +81,7 @@ namespace casual
             
             common::message::queue::dequeue::Reply dequeue( 
                const common::message::queue::dequeue::Request& message, 
-               const common::platform::time::point::type& now);
+               const platform::time::point::type& now);
 
             common::message::queue::peek::information::Reply peek( const common::message::queue::peek::information::Request& request);
             common::message::queue::peek::messages::Reply peek( const common::message::queue::peek::messages::Request& request);
@@ -90,7 +90,7 @@ namespace casual
             std::vector< message::Available> available( std::vector< common::strong::queue::id> queues) const;
 
             //! @returns the earliest available message in the queue, if any.
-            common::optional< common::platform::time::point::type> available( common::strong::queue::id queue) const;
+            common::optional< platform::time::point::type> available( common::strong::queue::id queue) const;
 
 
             size_type restore( common::strong::queue::id id);

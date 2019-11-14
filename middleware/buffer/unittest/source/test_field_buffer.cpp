@@ -7,8 +7,8 @@
 
 #include "common/unittest.h"
 
-#include "buffer/field.h"
-#include "buffer/internal/field.h"
+#include "casual/buffer/field.h"
+#include "casual/buffer/internal/field.h"
 #include "common/environment.h"
 #include "common/buffer/type.h"
 #include "common/buffer/pool.h"

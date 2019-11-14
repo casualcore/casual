@@ -17,7 +17,7 @@
 
 #include "common/transaction/id.h"
 
-#include "common/platform.h"
+#include "casual/platform.h"
 
 namespace casual
 {

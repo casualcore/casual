@@ -5,8 +5,8 @@
 //!
 
 
-#include "buffer/internal/field.h"
-#include "buffer/internal/common.h"
+#include "casual/buffer/internal/field.h"
+#include "casual/buffer/internal/common.h"
 #include "common/exception/handle.h"
 
 #include "common/argument.h"

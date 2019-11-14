@@ -55,7 +55,7 @@ namespace casual
             m_messages.push_back( std::move( delay));
          }
 
-         std::vector< State::Message> State::passed( common::platform::time::point::type time)
+         std::vector< State::Message> State::passed( platform::time::point::type time)
          {
             Trace trace{ "domain::delay::State::passed"};
 
@@ -71,7 +71,7 @@ namespace casual
             return result;
          }
 
-         common::platform::time::unit State::timeout() const
+         platform::time::unit State::timeout() const
          {
             Trace trace{ "domain::delay::State::timeout"};
 
@@ -79,11 +79,11 @@ namespace casual
 
             if( min)
             {
-               return std::chrono::duration_cast< common::platform::time::unit>(
+               return std::chrono::duration_cast< platform::time::unit>(
                      min->deadline - platform::time::clock::type::now()
                );
             }
-            return common::platform::time::unit::min();
+            return platform::time::unit::min();
          }
 
          namespace handle

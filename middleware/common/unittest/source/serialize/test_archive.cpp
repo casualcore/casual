@@ -30,7 +30,7 @@ namespace casual
 
    TEST( serialize_binary_writer, archive_type)
    {
-      common::platform::binary::type buffer;
+      platform::binary::type buffer;
       auto writer = common::serialize::binary::writer( buffer);
 
       EXPECT_TRUE( writer.archive_type() == common::serialize::archive::Type::dynamic_type) << "writer.archive_type: " << writer.archive_type();
@@ -41,7 +41,7 @@ namespace casual
    TEST( serialize_binary_writer, serialize_pod)
    {
 
-      common::platform::binary::type buffer;
+      platform::binary::type buffer;
       auto writer = common::serialize::native::binary::writer( buffer);
 
       writer << CASUAL_NAMED_VALUE( 10);
@@ -50,7 +50,7 @@ namespace casual
    TEST( serialize_binary_writer, serialize_string)
    {
 
-      common::platform::binary::type buffer;
+      platform::binary::type buffer;
       auto writer = common::serialize::native::binary::writer( buffer);
 
       writer << CASUAL_NAMED_VALUE( std::string{ "test"});
@@ -71,7 +71,7 @@ namespace casual
    TEST( serialize_binary_reader_writer, serialize_pod)
    {
 
-      common::platform::binary::type buffer;
+      platform::binary::type buffer;
       auto writer = common::serialize::native::binary::writer( buffer);
 
       writer << CASUAL_NAMED_VALUE( 34L);
@@ -91,7 +91,7 @@ namespace casual
    TEST( serialize_binary_reader_writer, serialize_vector_long)
    {
 
-      common::platform::binary::type buffer;
+      platform::binary::type buffer;
       auto writer = common::serialize::native::binary::writer( buffer);
 
 
@@ -117,7 +117,7 @@ namespace casual
    TEST( serialize_binary_reader_writer, map_long_string)
    {
 
-      common::platform::binary::type buffer;
+      platform::binary::type buffer;
       auto writer = common::serialize::native::binary::writer( buffer);
 
       std::map< long, std::string> value = { { 1, "test 1"}, { 2, "test 2"}, { 3, "test 3"}, { 4, "test 4"} };
@@ -157,7 +157,7 @@ namespace casual
    TEST( serialize_binary_reader_writer, serializable)
    {
 
-      common::platform::binary::type buffer;
+      platform::binary::type buffer;
 
       {
          auto writer = common::serialize::native::binary::writer( buffer);
@@ -184,7 +184,7 @@ namespace casual
    TEST( serialize_binary_reader_writer, complex_serializable)
    {
 
-      common::platform::binary::type buffer;
+      platform::binary::type buffer;
 
       {
          test::Composite value;

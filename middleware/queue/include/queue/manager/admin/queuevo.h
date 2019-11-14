@@ -9,7 +9,7 @@
 
 
 #include "common/serialize/macro.h"
-#include "common/platform.h"
+#include "casual/platform.h"
 #include "common/domain.h"
 
 
@@ -21,7 +21,7 @@ namespace casual
       {
          namespace admin
          {
-            using size_type = common::platform::size::type;
+            using size_type = platform::size::type;
 
 
             struct Group
@@ -86,7 +86,7 @@ namespace casual
                struct Retry 
                {
                   size_type count = 0;
-                  common::platform::time::unit delay{};
+                  platform::time::unit delay{};
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
                   {
@@ -106,7 +106,7 @@ namespace casual
                size_type count{};
                size_type size{};
                size_type uncommitted{};
-               common::platform::time::point::type timestamp;
+               platform::time::point::type timestamp;
 
                CASUAL_CONST_CORRECT_SERIALIZE(
                {
@@ -142,14 +142,14 @@ namespace casual
                common::Uuid id;
                common::strong::queue::id queue;
                common::strong::queue::id origin;
-               common::platform::binary::type trid;
+               platform::binary::type trid;
                State state;
                std::string reply;
                size_type redelivered;
                std::string type;
 
-               common::platform::time::point::type available;
-               common::platform::time::point::type timestamp;
+               platform::time::point::type available;
+               platform::time::point::type timestamp;
 
                size_type size;
 

@@ -7,7 +7,7 @@
 
 #include "serviceframework/service/protocol/describe.h"
 
-#include "common/platform.h"
+#include "casual/platform.h"
 
 namespace casual
 {
@@ -34,7 +34,7 @@ namespace casual
 
                            Writer( types_t& types) : m_stack{ &types} {}
 
-                           common::platform::size::type container_start( common::platform::size::type size, const char* name)
+                           platform::size::type container_start( platform::size::type size, const char* name)
                            {
                               auto& current = *m_stack.back();
 
@@ -82,7 +82,7 @@ namespace casual
                            inline constexpr static auto archive_type() { return common::serialize::archive::Type::static_order_type;}
                            bool composite_start( const char*) { return true;}
 
-                           std::tuple< common::platform::size::type, bool> container_start( common::platform::size::type size, const char*)
+                           std::tuple< platform::size::type, bool> container_start( platform::size::type size, const char*)
                            {
                               if( size == 0)
                               {

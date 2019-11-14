@@ -11,12 +11,12 @@
  * Disclaimer: A lot of error handling is missing
  */
 
+#include "xatmi.h"
+#include "casual/buffer/field.h"
 
 #include <cstddef>
 #include <cstdio>
 
-#include <xatmi.h>
-#include <buffer/field.h>
 
 /*
  * Just for this sample (see casual_field_make_header)

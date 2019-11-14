@@ -4,7 +4,7 @@
 //! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-#include "xatmi/internal/log.h"
+#include "casual/xatmi/internal/log.h"
 
 namespace casual
 {

@@ -7,7 +7,7 @@
 
 #include "common/serialize/line.h"
 
-#include "common/platform.h"
+#include "casual/platform.h"
 #include "common/transcode.h"
 #include "common/log.h"
 

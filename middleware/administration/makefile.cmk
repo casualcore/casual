@@ -2,49 +2,59 @@ from casual.middleware.make.dsl import *
 
 
 IncludePaths( [
-       '../common/include',
-       '../domain/include',
-       '../service/include',
-       '../queue/include',
-       '../transaction/include',
-       '../gateway/include',
-       '../tools/include',
-       '$(CASUAL_OPTIONAL_INCLUDE_PATHS)',
-    ])
+    'include',
+    '../configuration/include',
+    '../xatmi/include',
+    '../serviceframework/include',
+    '../common/include',
+    '../domain/include',
+    '../service/include',
+    '../queue/include',
+    '../transaction/include',
+    '../gateway/include',
+    '../tools/include',
+    '$(CASUAL_OPTIONAL_INCLUDE_PATHS)',
+])
 
-LibraryPaths( 
-    [
-        '../common/bin',
-        '../configuration/bin',
-        '../domain/bin',
-        '../service/bin',
-        '../queue/bin',
-        '../transaction/bin',
-        '../gateway/bin',
-        '../tools/bin',
-        '../serviceframework/bin',
-        '../xatmi/bin',
-        '$(CASUAL_OPTIONAL_LIBRARY_PATHS)',
-    ])
+LibraryPaths( [
+    'bin',
+    '../common/bin',
+    '../configuration/bin',
+    '../domain/bin',
+    '../buffer/bin',
+    '../service/bin',
+    '../queue/bin',
+    '../transaction/bin',
+    '../gateway/bin',
+    '../tools/bin',
+    '../serviceframework/bin',
+    '../xatmi/bin',
+    '$(CASUAL_OPTIONAL_LIBRARY_PATHS)',
+])
 
+install_libs = []
+install_exe = []
 
-casual = LinkExecutable( 'bin/casual', 
+target = LinkExecutable( 'bin/casual', 
     [ 
         Compile( 'source/main.cpp'),
     ], 
     [ 
-       'casual-common',
-       'casual-domain-admin-cli',
-       'casual-service-admin-cli',
-       'casual-queue-admin-cli',
-       'casual-transaction-admin-cli',
-       'casual-gateway-admin-cli',
-       'casual-tools-service-cli',
+        'casual-common',
+        'casual-domain-admin-cli',
+        'casual-service-admin-cli',
+        'casual-queue-admin-cli',
+        'casual-transaction-admin-cli',
+        'casual-gateway-admin-cli',
+        'casual-tools-service-cli',
 
     ])
 
+install_exe.append( target)
 
-Install( casual, '$(CASUAL_HOME)/bin')
+
+Install( install_exe, '$(CASUAL_HOME)/bin')
+Install( install_libs, '$(CASUAL_HOME)/lib')
 
 Install( 'etc/bash_completion.d/casual', '$(CASUAL_HOME)/etc/bash_completion.d')
 Install( 'etc/bash_completion.d/casual-log', '$(CASUAL_HOME)/etc/bash_completion.d')

@@ -10,7 +10,7 @@
 
 
 #include "common/serialize/archive.h"
-#include "common/platform.h"
+#include "casual/platform.h"
 
 #include <iosfwd>
 #include <string>
@@ -27,26 +27,26 @@ namespace casual
             {
                serialize::Reader reader( const std::string& destination);
                serialize::Reader reader( std::istream& destination);
-               serialize::Reader reader( const common::platform::binary::type& destination);
+               serialize::Reader reader( const platform::binary::type& destination);
             } // strict 
 
             namespace relaxed
             {    
                serialize::Reader reader( const std::string& destination);
                serialize::Reader reader( std::istream& destination);
-               serialize::Reader reader( const common::platform::binary::type& destination);
+               serialize::Reader reader( const platform::binary::type& destination);
             } // relaxed
 
             namespace consumed
             {    
                serialize::Reader reader( const std::string& source);
                serialize::Reader reader( std::istream& source);
-               serialize::Reader reader( const common::platform::binary::type& source);
+               serialize::Reader reader( const platform::binary::type& source);
             } // consumed
 
             serialize::Writer writer( std::string& destination);
             serialize::Writer writer( std::ostream& destination);
-            serialize::Writer writer( common::platform::binary::type& destination);
+            serialize::Writer writer( platform::binary::type& destination);
 
          } // json
       } // serialize

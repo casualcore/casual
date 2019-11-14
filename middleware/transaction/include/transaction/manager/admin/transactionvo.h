@@ -11,7 +11,7 @@
 
 
 #include "common/serialize/macro.h"
-#include "common/platform.h"
+#include "casual/platform.h"
 #include "common/metric.h"
 #include "common/process.h"
 
@@ -27,8 +27,8 @@ namespace casual
             {
             struct Metric
             {
-               using time_unit = common::platform::time::unit;
-               common::platform::size::type count = 0;
+               using time_unit = platform::time::unit;
+               platform::size::type count = 0;
                time_unit total{};
 
                struct Limit 
@@ -111,7 +111,7 @@ namespace casual
                   std::string key;
                   std::string openinfo;
                   std::string closeinfo;
-                  common::platform::size::type concurency = 0;
+                  platform::size::type concurency = 0;
                   Metrics metrics;
 
                   std::vector< Instance> instances;
@@ -225,8 +225,8 @@ namespace casual
             {
                struct update_t
                {
-                  common::platform::size::type prepare = 0;
-                  common::platform::size::type remove = 0;
+                  platform::size::type prepare = 0;
+                  platform::size::type remove = 0;
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
                   {
@@ -236,7 +236,7 @@ namespace casual
 
                } update;
 
-               common::platform::size::type writes = 0;
+               platform::size::type writes = 0;
 
                CASUAL_CONST_CORRECT_SERIALIZE(
                {
@@ -280,7 +280,7 @@ namespace casual
                struct Instances
                {
                   std::string name;
-                  common::platform::size::type instances;
+                  platform::size::type instances;
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
                   {

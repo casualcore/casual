@@ -223,7 +223,7 @@ namespace casual
                            if( ipc::device().non_blocking_push( instance.process.ipc, message))
                            {
                               instance.state( state::resource::Proxy::Instance::State::busy);
-                              instance.metrics.requested = common::platform::time::clock::type::now();
+                              instance.metrics.requested = platform::time::clock::type::now();
                               return true;
                            }
                            return false;

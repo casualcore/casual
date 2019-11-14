@@ -203,7 +203,7 @@ namespace casual
 
                         auto result = algorithm::transform( tasks, []( auto& task)
                         {
-                           admin::vo::Task result;
+                           admin::model::Task result;
                            result.id = task.id();
                            result.description = task.description();
                            return result;
@@ -234,7 +234,7 @@ namespace casual
             }
 
 
-            std::vector< admin::vo::Task> put( State& state, casual::configuration::domain::Manager configuration)
+            std::vector< admin::model::Task> put( State& state, casual::configuration::domain::Manager configuration)
             {
                Trace trace{ "domain::manager::configuration::put"};
                log::line( verbose::log, "configuration: ", configuration);

@@ -9,7 +9,7 @@
 
 
 #include "common/buffer/type.h"
-#include "common/platform.h"
+#include "casual/platform.h"
 #include "common/algorithm.h"
 #include "common/exception/system.h"
 #include "common/exception/xatmi.h"

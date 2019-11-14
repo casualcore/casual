@@ -16,7 +16,7 @@
 #include "common/algorithm.h"
 
 #include "common/serialize/create.h"
-#include "common/platform.h"
+#include "casual/platform.h"
 #include "common/file.h"
 
 namespace casual

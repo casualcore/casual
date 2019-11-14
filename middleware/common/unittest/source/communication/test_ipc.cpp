@@ -28,10 +28,10 @@ namespace casual
             {
                namespace payload
                {
-                  const common::platform::binary::type& get()
+                  const platform::binary::type& get()
                   {
                      auto create = [](){
-                        common::platform::binary::type result( 1000);
+                        platform::binary::type result( 1000);
                         algorithm::numeric::iota( result, 0);
                         std::random_device rd;
                         std::shuffle( std::begin( result), std::end( result), std::mt19937{ rd()});
@@ -42,9 +42,9 @@ namespace casual
                      return result;
                   }
 
-                  using range_type = range::type_t< common::platform::binary::type>;
+                  using range_type = range::type_t< platform::binary::type>;
 
-                  std::vector< ipc::message::Transport> parts( std::size_t size, common::message::Type type, const common::platform::binary::type& payload = get())
+                  std::vector< ipc::message::Transport> parts( std::size_t size, common::message::Type type, const platform::binary::type& payload = get())
                   {
                      std::vector< ipc::message::Transport> result;
 

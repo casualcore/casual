@@ -28,7 +28,7 @@ namespace casual
       {
          namespace state
          {
-            using size_type = common::platform::size::type;
+            using size_type = platform::size::type;
             
             struct base_connection
             {

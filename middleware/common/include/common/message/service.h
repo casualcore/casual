@@ -75,7 +75,7 @@ namespace casual
          {
             using service::Base::Base;
 
-            common::platform::time::unit timeout = common::platform::time::unit::zero();
+            platform::time::unit timeout = platform::time::unit::zero();
 
             CASUAL_CONST_CORRECT_SERIALIZE(
             {

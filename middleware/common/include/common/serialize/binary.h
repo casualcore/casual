@@ -9,7 +9,7 @@
 
 
 #include "common/serialize/archive.h"
-#include "common/platform.h"
+#include "casual/platform.h"
 
 namespace casual
 {

@@ -22,7 +22,7 @@ namespace casual
       namespace service
       {
          using payload_type = common::buffer::Payload;
-         using descriptor_type = common::platform::descriptor::type;
+         using descriptor_type = platform::descriptor::type;
 
 
          namespace call

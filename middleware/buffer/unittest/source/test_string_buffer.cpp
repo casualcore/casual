@@ -7,7 +7,7 @@
 
 #include <gtest/gtest.h>
 
-#include "buffer/string.h"
+#include "casual/buffer/string.h"
 #include "xatmi.h"
 
 #include <cstring>

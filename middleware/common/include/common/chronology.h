@@ -8,7 +8,7 @@
 #pragma once
 
 
-#include "common/platform.h"
+#include "casual/platform.h"
 #include "common/stream.h"
 
 #include <string>
@@ -54,7 +54,7 @@ namespace casual
 
          namespace from
          {
-            common::platform::time::unit string( const std::string& value);
+            platform::time::unit string( const std::string& value);
          } // from
 
 

@@ -24,5 +24,16 @@
 #define TPEEVENT 22
 #define TPEMATCH 23
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
+/*  
+exposed for users to be able to set explict tperrno
+could be usefull for 'integrations' with other xatmi-implementations
+*/
+extern void casual_set_tperrno( int code);
 
+#ifdef __cplusplus
+}
+#endif

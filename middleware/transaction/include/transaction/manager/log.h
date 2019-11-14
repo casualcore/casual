@@ -10,7 +10,7 @@
 
 #include "sql/database.h"
 
-#include "common/platform.h"
+#include "casual/platform.h"
 
 #include "common/message/transaction.h"
 
@@ -50,11 +50,11 @@ namespace casual
             {
                struct
                {
-                  common::platform::size::type prepare = 0;
-                  common::platform::size::type remove = 0;
+                  platform::size::type prepare = 0;
+                  platform::size::type remove = 0;
                } update;
 
-               common::platform::size::type writes = 0;
+               platform::size::type writes = 0;
             };
 
             const Stats& stats() const;
@@ -66,8 +66,8 @@ namespace casual
             {
                common::transaction::ID trid;
                common::strong::process::id pid;
-               common::platform::time::point::type started;
-               common::platform::time::point::type updated;
+               platform::time::point::type started;
+               platform::time::point::type updated;
                State state = State::prepared;
             };
 

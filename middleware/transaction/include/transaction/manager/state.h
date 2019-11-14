@@ -11,7 +11,7 @@
 #include "transaction/global.h"
 #include "transaction/manager/log.h"
 
-#include "common/platform.h"
+#include "casual/platform.h"
 #include "common/message/transaction.h"
 #include "common/message/domain.h"
 #include "common/message/pending.h"
@@ -37,7 +37,7 @@ namespace casual
    {
       namespace manager
       {
-         using size_type = common::platform::size::type;
+         using size_type = platform::size::type;
 
          struct State;
 
@@ -56,7 +56,7 @@ namespace casual
                common::Metric resource;
                common::Metric roundtrip;
 
-               common::platform::time::point::type requested{};
+               platform::time::point::type requested{};
 
                Metrics& operator += ( const Metrics& rhs);
             };
@@ -365,7 +365,7 @@ namespace casual
 
             inline const common::process::Handle& owner() const { return global.trid.owner();}
 
-            common::platform::size::type resource_count() const noexcept;
+            platform::size::type resource_count() const noexcept;
 
             //! the global part of the distributed transaction id
             global::ID global;
@@ -377,8 +377,8 @@ namespace casual
             //! handle-implementations.
             Dispatch implementation;
 
-            common::platform::time::point::type started;
-            common::platform::time::point::type deadline;
+            platform::time::point::type started;
+            platform::time::point::type deadline;
 
             //! Used to keep track of the origin for commit request.
             common::Uuid correlation;

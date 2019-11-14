@@ -19,12 +19,9 @@ namespace casual
          {
             namespace api
             {
-               inline namespace v1
-               {
-                  model::State state();
+               //! internal casual api 
+               model::State state();
                   
-               } // v1
-
             } // api
          } // admin
       } // manager  

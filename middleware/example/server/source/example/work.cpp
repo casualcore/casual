@@ -30,8 +30,8 @@ namespace casual
             {
                struct
                {
-                  casual::common::platform::time::unit sleep;
-                  casual::common::platform::time::unit work;
+                  casual::platform::time::unit sleep;
+                  casual::platform::time::unit work;
                } global;
             } // <unnamed>
          } // local
@@ -74,9 +74,9 @@ namespace casual
 
             void casual_example_work( TPSVCINFO* info)
             {
-               auto deadline = common::platform::time::clock::type::now() + local::global.work;
+               auto deadline = platform::time::clock::type::now() + local::global.work;
 
-               while( deadline < common::platform::time::clock::type::now())
+               while( deadline < platform::time::clock::type::now())
                {
                   ; // no-op
                }

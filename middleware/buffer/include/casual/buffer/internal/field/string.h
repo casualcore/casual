@@ -4,8 +4,8 @@
 //! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-#include "buffer/field.h"
-#include "common/platform.h"
+#include "casual/buffer/field.h"
+#include "casual/platform.h"
 
 #include <functional>
 #include <stdexcept>

@@ -169,7 +169,7 @@ namespace casual
                            Option{ std::tie( settings.directive.output), { "-o", "--output"}, "name of executable to be built"},
                            Option{ std::tie( settings.executable.definition), { "-d", "--definition"}, "path of the definition file"},
                            Option( std::tie( settings.directive.compiler), { "-c", "--compiler"}, "compiler to use"),
-                           Option( build::Directive::split( settings.directive.directives), { "-b", "--build-directives"}, "additional compile and link directives")( argument::cardinality::any{}),
+                           Option( build::Directive::split( settings.directive.directives), { "-b", "--build-directives", "-cl"}, "additional compile and link directives\n\ndeprecated: -cl")( argument::cardinality::any{}),
                            Option{ option::toggle( settings.source.keep), { "-k", "--keep"}, "keep the intermediate file"},
                            Option( option::toggle( settings.directive.use_defaults), { "--no-defaults"}, "do not add any default compiler/link directives\n\nuse --build-directives to add your own"),
                            Option{ std::tie( settings.source.file), { "--source"}, "explicit name of the intermediate file"},

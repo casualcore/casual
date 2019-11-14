@@ -5,10 +5,10 @@
 //!
 
 
-#include "buffer/field.h"
+#include "casual/buffer/field.h"
 
 
-#include "common/platform.h"
+#include "casual/platform.h"
 #include "common/algorithm.h"
 #include "common/file.h"
 #include "common/network/byteorder.h"
@@ -36,7 +36,7 @@ namespace casual
             float v_float = 1 / float( 42);
             double v_double = 1 / double( 42);
             std::string v_string = "casual";
-            common::platform::binary::type v_binary = { '1', '2', '3', '1', '2', '3', '1', '2', '3', '1', '2', '3'};
+            platform::binary::type v_binary = { '1', '2', '3', '1', '2', '3', '1', '2', '3', '1', '2', '3'};
 
             auto net_char() const { return common::network::byteorder::encode( v_char);}
             auto net_short() const { return common::network::byteorder::encode( v_short);}

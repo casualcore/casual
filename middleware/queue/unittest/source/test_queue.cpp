@@ -278,7 +278,7 @@ domain:
       {
          namespace
          {
-            bool compare( const common::platform::time::point::type& lhs, const common::platform::time::point::type& rhs)
+            bool compare( const platform::time::point::type& lhs, const platform::time::point::type& rhs)
             {
                return std::chrono::time_point_cast< std::chrono::microseconds>( lhs)
                      == std::chrono::time_point_cast< std::chrono::microseconds>( rhs);
@@ -292,7 +292,7 @@ domain:
 
          local::Domain domain;
 
-         auto now = common::platform::time::clock::type::now();
+         auto now = platform::time::clock::type::now();
 
          const std::string payload{ "some message"};
          queue::Message message;
@@ -333,7 +333,7 @@ domain:
 
          local::Domain domain;
 
-         auto now = common::platform::time::clock::type::now();
+         auto now = platform::time::clock::type::now();
 
          const std::string payload{ "some message"};
 
@@ -434,7 +434,7 @@ domain:
          const std::string payload{ "some message"};
 
          // message will be available at this absolute time
-         auto available = common::platform::time::clock::type::now() + std::chrono::milliseconds{ 100};
+         auto available = platform::time::clock::type::now() + std::chrono::milliseconds{ 100};
 
          {
             queue::Message message;
@@ -452,7 +452,7 @@ domain:
          auto message = queue::blocking::dequeue( "queueA1");
          
          // we expect that at least 100ms has passed
-         EXPECT_TRUE( common::platform::time::clock::type::now() > available);
+         EXPECT_TRUE( platform::time::clock::type::now() > available);
          EXPECT_TRUE( common::algorithm::equal( message.payload.data, payload));
       }
 
@@ -477,7 +477,7 @@ domain:
             queue::enqueue( name, message);
          }
 
-         auto start = common::platform::time::clock::type::now();
+         auto start = platform::time::clock::type::now();
 
          // dequeue, and rollback
          {
@@ -492,7 +492,7 @@ domain:
          auto message = queue::blocking::dequeue( name);
 
          // we expect at least 100ms has passed, 
-         EXPECT_TRUE( common::platform::time::clock::type::now() - start > std::chrono::milliseconds{ 100});
+         EXPECT_TRUE( platform::time::clock::type::now() - start > std::chrono::milliseconds{ 100});
          EXPECT_TRUE( common::algorithm::equal( message.payload.data, payload));
       }
 

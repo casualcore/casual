@@ -16,7 +16,6 @@ LibraryPaths([
 
 
 install_lib = []
-install_headers = []
 
 lib_serviceframework = LinkLibrary( 'bin/casual-serviceframework',
     [
@@ -31,14 +30,8 @@ lib_serviceframework = LinkLibrary( 'bin/casual-serviceframework',
 
 install_lib.append( lib_serviceframework)
 
-install_headers += [ 
-      ( 'include/serviceframework/service/protocol/call.h', 'serviceframework/service/protocol')
-]
 
-#
 # unittest
-#
-
 LinkUnittest( 'bin/test-casual-serviceframework',
 	[   
         Compile( 'unittest/source/service/test_protocol.cpp'),
@@ -46,10 +39,6 @@ LinkUnittest( 'bin/test-casual-serviceframework',
     ],
 	[ lib_serviceframework, 'casual-common', 'casual-unittest'])
 
-#
-# Install
-#
-Install( install_lib, '$(CASUAL_HOME)/lib')
-Install( install_headers, '$(CASUAL_HOME)/include')
 
+Install( install_lib, '$(CASUAL_HOME)/lib')
 

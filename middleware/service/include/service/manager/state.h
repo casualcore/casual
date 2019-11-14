@@ -33,7 +33,7 @@ namespace casual
    {
       namespace manager
       {
-         using size_type = common::platform::size::type;
+         using size_type = platform::size::type;
 
          namespace internal
          {
@@ -99,17 +99,17 @@ namespace casual
                   using base_instance::base_instance;
 
                   void reserve( 
-                     const common::platform::time::point::type& when, 
+                     const platform::time::point::type& when, 
                      state::Service* service,
                      const common::process::Handle& caller,
                      const common::Uuid& correlation);
 
-                  state::Service* unreserve( const common::platform::time::point::type& now);
+                  state::Service* unreserve( const platform::time::point::type& now);
 
                   //! discards the reservation
                   void discard();
 
-                  inline const common::platform::time::point::type& last() const { return m_last;}
+                  inline const platform::time::point::type& last() const { return m_last;}
 
                   State state() const;
                   inline bool idle() const { return m_service == nullptr;}
@@ -142,7 +142,7 @@ namespace casual
                   })
 
                private:
-                  common::platform::time::point::type m_last = common::platform::time::point::limit::zero();
+                  platform::time::point::type m_last = platform::time::point::limit::zero();
                   state::Service* m_service = nullptr;
                   common::process::Handle m_caller;
                   common::Uuid m_correlation;
@@ -175,11 +175,11 @@ namespace casual
 
                struct Pending
                {
-                  Pending( common::message::service::lookup::Request request, common::platform::time::point::type when)
+                  Pending( common::message::service::lookup::Request request, platform::time::point::type when)
                    : request{ std::move( request)}, when{ when} {}
 
                   common::message::service::lookup::Request request;
-                  common::platform::time::point::type when;
+                  platform::time::point::type when;
 
 
                   CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
@@ -203,7 +203,7 @@ namespace casual
                      inline bool idle() const { return get().idle();}
 
                      inline void reserve(                      
-                        const common::platform::time::point::type& when, 
+                        const platform::time::point::type& when, 
                         state::Service* service,
                         const common::process::Handle& caller,
                         const common::Uuid& correlation)
@@ -294,14 +294,14 @@ namespace casual
                   //! Keeps track of the pending metrics for this service
                   service::Metric pending;
 
-                  common::platform::time::point::type last = common::platform::time::point::limit::zero();
+                  platform::time::point::type last = platform::time::point::limit::zero();
 
                   // remote invocations
                   size_type remote = 0;
 
                   inline void reset() { *this = Metric{};}
                   void update( const common::message::event::service::Metric& metric);
-                  void update( const common::platform::time::point::type& now, const common::platform::time::point::type& then);
+                  void update( const platform::time::point::type& now, const platform::time::point::type& then);
 
                   CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
                   { 
@@ -319,7 +319,7 @@ namespace casual
 
                //! @return a reserved instance or 'null-handle' if no one is found.
                common::process::Handle reserve( 
-                  const common::platform::time::point::type& now, 
+                  const platform::time::point::type& now, 
                   const common::process::Handle& caller, 
                   const common::Uuid& correlation);
 
@@ -384,7 +384,7 @@ namespace casual
 
             common::process::Handle forward;
 
-            common::platform::time::unit default_timeout = common::platform::time::unit::zero();
+            platform::time::unit default_timeout = platform::time::unit::zero();
 
             //! holds all the routes, for services that has routes
             std::map< std::string, std::vector< std::string>> routes;

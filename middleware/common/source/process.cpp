@@ -157,7 +157,7 @@ namespace casual
             return singleton;
          }
 
-         void sleep( common::platform::time::unit time)
+         void sleep( platform::time::unit time)
          {
             log::line( verbose::log, "process::sleep time: ", time);
 
@@ -200,11 +200,11 @@ namespace casual
             } // local
 
 
-            Sleep::Pattern::Pattern( common::platform::time::unit time, platform::size::type quantity)
+            Sleep::Pattern::Pattern( platform::time::unit time, platform::size::type quantity)
                : m_time{ time}, m_quantity{ local::check_infinity( quantity)}
             {}
 
-            Sleep::Pattern::Pattern( common::platform::time::unit time, infinite_quantity)
+            Sleep::Pattern::Pattern( platform::time::unit time, infinite_quantity)
                : m_time{ time}, m_quantity{ std::numeric_limits< platform::size::type>::max()}
             {}
 
@@ -676,7 +676,7 @@ namespace casual
                return result;
             }
 
-            std::vector< Exit> wait( const std::vector< strong::process::id>& pids, common::platform::time::unit timeout)
+            std::vector< Exit> wait( const std::vector< strong::process::id>& pids, platform::time::unit timeout)
             {
                Trace trace{ "common::process::lifetime::wait"};
 
@@ -706,7 +706,7 @@ namespace casual
                return wait( process::terminate( pids));
             }
 
-            std::vector< Exit> terminate( const std::vector< strong::process::id>& pids, common::platform::time::unit timeout)
+            std::vector< Exit> terminate( const std::vector< strong::process::id>& pids, platform::time::unit timeout)
             {
                return wait( process::terminate( pids), timeout);
             }

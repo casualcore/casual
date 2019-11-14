@@ -11,7 +11,7 @@
 
 #include "queue/api/message.h"
 
-#include "common/platform.h"
+#include "casual/platform.h"
 #include "common/uuid.h"
 
 
@@ -66,7 +66,7 @@ namespace casual
          struct Affected
          {
             std::string queue;
-            common::platform::size::type restored = 0;
+            platform::size::type restored = 0;
          };
 
          std::vector< Affected> queue( const std::vector< std::string>& queues);

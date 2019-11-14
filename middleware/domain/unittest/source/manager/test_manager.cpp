@@ -11,18 +11,18 @@
 #include "domain/manager/state.h"
 #include "domain/manager/configuration.h"
 #include "domain/manager/manager.h"
-#include "domain/manager/admin/vo.h"
+#include "domain/manager/admin/model.h"
 #include "domain/manager/admin/server.h"
 #include "domain/manager/unittest/process.h"
+
+#include "../../include/unittest/call.h"
 
 #include "common/string.h"
 #include "common/environment.h"
 #include "common/service/lookup.h"
 #include "common/event/listen.h"
 #include "common/execute.h"
-#include "common/serialize/binary.h"
 
-#include "common/communication/instance.h"
 
 #include <fstream>
 
@@ -199,77 +199,31 @@ domain:
             {
                namespace call
                {
-
-                  // we don't have access to service-manager (or other managers)
-                  // when we build domain-manager.
-                  // To be able to get state and such from domain-manager we call
-                  // natively and do our serialization "by hand".
-                  // 
-                  // not that much code, hence I think it's worth it to be able to 
-                  // test stuff locally within domain-manager.
-
-                  template< typename A>
-                  void serialize( A& archive) {}
-
-                  template< typename A, typename T, typename... Ts>
-                  void serialize( A& archive, T&& value, Ts&&... ts)
+                  admin::model::State state()
                   {
-                     archive << CASUAL_NAMED_VALUE( std::forward< T>( value));
-                     serialize( archive, std::forward< Ts>( ts)...);
-                  }
-                  template< typename R, typename... Ts> 
-                  R call( std::string service, Ts&&... arguments)
-                  {
-                     auto correlation = [&]()
-                     {
-                        common::message::service::call::callee::Request request;
-                        request.process = process::handle();
-                        request.service.name = std::move( service);
-                        request.buffer.type = common::buffer::type::binary();
-
-                        auto archive = common::serialize::binary::writer( request.buffer.memory);
-                        serialize( archive, std::forward< Ts>( arguments)...);
-
-                        return communication::ipc::blocking::send( communication::instance::outbound::domain::manager::device(), request);
-                     }();
-
-
-                     common::message::service::call::Reply reply;
-                     communication::ipc::blocking::receive( communication::ipc::inbound::device(), reply, correlation);
-                     auto archive = common::serialize::binary::reader( reply.buffer.memory);
-
-                     R result;
-                     archive >> CASUAL_NAMED_VALUE( result);
-
-                     return result;
+                     return unittest::call< admin::model::State>( admin::service::name::state);
                   }
 
-                  admin::vo::State state()
+                  std::vector< admin::model::scale::Instances> scale( const std::vector< admin::model::scale::Instances>& instances)
                   {
-                     return call< admin::vo::State>( admin::service::name::state);
+                     return unittest::call< std::vector< admin::model::scale::Instances>>( admin::service::name::scale::instances, instances);
                   }
 
-
-                  std::vector< admin::vo::scale::Instances> scale( const std::vector< admin::vo::scale::Instances>& instances)
-                  {
-                     return call< std::vector< admin::vo::scale::Instances>>( admin::service::name::scale::instances, instances);
-                  }
-
-                  std::vector< admin::vo::scale::Instances> scale( const std::string& alias, common::platform::size::type instances)
+                  std::vector< admin::model::scale::Instances> scale( const std::string& alias, platform::size::type instances)
                   {
                      return scale( { { alias, instances}});
                   }
 
-                  std::vector< admin::vo::restart::Result> restart( const std::vector< admin::vo::restart::Instances>& instances)
+                  std::vector< admin::model::restart::Result> restart( const std::vector< admin::model::restart::Instances>& instances)
                   {
-                     return call< std::vector< admin::vo::restart::Result>>( admin::service::name::restart::instances, instances);
+                     return unittest::call< std::vector< admin::model::restart::Result>>( admin::service::name::restart::instances, instances);
                   }
 
-                  std::vector< admin::vo::restart::Result> restart( std::vector< std::string> aliases)
+                  std::vector< admin::model::restart::Result> restart( std::vector< std::string> aliases)
                   {
                      auto transform = []( auto& a) 
                      {
-                        admin::vo::restart::Instances result;
+                        admin::model::restart::Instances result;
                         result.alias = std::move( a);
                         return result;
                      };
@@ -302,14 +256,13 @@ domain:
                {
                   struct Manager
                   {
-                     bool operator () ( const admin::vo::Executable& value) const
+                     bool operator () ( const admin::model::Executable& value) const
                      {
                         return value.alias == "casual-domain-manager";
                      }
                   };
 
                } // predicate
-
 
             } // <unnamed>
          } // local
@@ -370,14 +323,14 @@ domain:
          {
             common::unittest::Trace trace;
 
-            const std::string configuration{ R"(
+            constexpr auto configuration = R"(
 domain:
   name: simple-server
   servers:
     - path: ./bin/test-simple-server
       instances: 1
 
-)"};
+)";
 
             unittest::Process manager{ { configuration}};
 

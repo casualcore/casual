@@ -4,7 +4,7 @@
 //! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-#include "xatmi/internal/code.h"
+#include "casual/xatmi/internal/code.h"
 
 #include "common/service/call/context.h"
 
@@ -74,3 +74,12 @@ namespace casual
       } // internal
    } // xatmi
 } // casual
+
+extern "C" 
+{
+   void casual_set_tperrno( int code)
+   {
+      casual::xatmi::internal::error::set( casual::common::code::xatmi( code));
+   }
+}
+

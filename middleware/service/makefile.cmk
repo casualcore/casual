@@ -21,15 +21,9 @@ LibraryPaths( [
 	'$(CASUAL_OPTIONAL_LIBRARY_PATHS)'])
 
 
-#
-# VO
-#
-
-
 install_bins = []
 install_libs = []
-
-
+install_headers = []
 
 logic_archive = LinkArchive( 'bin/casual-service-logic',
    [
@@ -42,7 +36,6 @@ logic_archive = LinkArchive( 'bin/casual-service-logic',
    ])
 
 
-
 target = LinkExecutable( 'bin/casual-service-manager',
 	[ Compile( 'source/manager/main.cpp')],
 	[
@@ -52,7 +45,6 @@ target = LinkExecutable( 'bin/casual-service-manager',
      'casual-serviceframework',
      'casual-configuration']
    )
-
 
 install_bins.append( target)
 
@@ -76,15 +68,10 @@ install_bins.append( target)
 	
 # admin-terminal
 
-admin_api_archive = LinkLibrary( 'bin/casual-service-admin-api',
-   [ Compile( 'source/manager/admin/api.cpp'),],
+admin_api_archive = LinkArchive( 'bin/casual-service-admin-api',
    [ 
-       logic_archive, 
-       'casual-common',
-       'casual-serviceframework', 
-    ])
-
-install_libs.append( admin_api_archive)
+      Compile( 'source/manager/admin/api.cpp')
+   ])
 
 target = LinkLibrary( 'bin/casual-service-admin-cli',
     [ Compile( 'source/manager/admin/cli.cpp')],
@@ -95,8 +82,28 @@ target = LinkLibrary( 'bin/casual-service-admin-cli',
         'casual-serviceframework', 
     ])
  	
- 
 install_libs.append( target)
+
+# public api
+api_lib = LinkLibrary( 'bin/casual-service-api',
+   [ 
+      Compile( 'source/manager/api/state.cpp'),
+      Compile( 'source/manager/api/model.cpp')
+   ],
+   [ 
+      admin_api_archive,
+      logic_archive,
+      'casual-common',
+      'casual-serviceframework', 
+   ])
+
+install_libs.append( api_lib)
+
+install_headers += [ 
+   ( 'include/casual/service/manager/api/model.h', 'casual/service/manager/api'),
+   ( 'include/casual/service/manager/api/state.h', 'casual/service/manager/api'),
+]
+
 
 
 service_unittest = LinkLibrary( 'bin/casual-service-unittest',
@@ -113,9 +120,11 @@ LinkUnittest( 'unittest/bin/test-casual-service',
       Compile( 'unittest/source/forward/test_cache.cpp'),
       Compile( 'unittest/source/manager/test_manager.cpp'),
       Compile( 'unittest/source/manager/test_state.cpp'),
+      Compile( 'unittest/source/manager/test_api.cpp'),
     ] + forward_objs,
     [
      logic_archive,
+     api_lib,
      service_unittest,
      'casual-domain-pending-message',
      'casual-common', 
@@ -128,4 +137,5 @@ LinkUnittest( 'unittest/bin/test-casual-service',
 # Install
 Install( install_bins,'$(CASUAL_HOME)/bin')
 Install( install_libs,'$(CASUAL_HOME)/lib')
+Install( install_headers,'$(CASUAL_HOME)/include')
 

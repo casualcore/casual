@@ -8,7 +8,7 @@
 #pragma once
 
 
-#include "common/platform.h"
+#include "casual/platform.h"
 #include "common/buffer/type.h"
 
 #include <unordered_map>
@@ -56,7 +56,7 @@ namespace casual
             //!
             //! @returns the handle to the added buffer
             //!
-            char* add( common::platform::binary::type buffer);
+            char* add( platform::binary::type buffer);
 
          } // internal
 

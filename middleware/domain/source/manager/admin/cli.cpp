@@ -5,7 +5,7 @@
 //!
 #include "domain/manager/admin/cli.h"
 
-#include "domain/manager/admin/vo.h"
+#include "domain/manager/admin/model.h"
 #include "domain/manager/admin/server.h"
 #include "domain/common.h"
 
@@ -222,12 +222,12 @@ namespace casual
                namespace call
                {
 
-                  admin::vo::State state()
+                  admin::model::State state()
                   {
                      serviceframework::service::protocol::binary::Call call;
                      auto reply = call( admin::service::name::state);
 
-                     admin::vo::State serviceReply;
+                     admin::model::State serviceReply;
 
                      reply >> CASUAL_NAMED_VALUE( serviceReply);
 
@@ -236,14 +236,14 @@ namespace casual
 
             
 
-                  auto scale_instances( const std::vector< admin::vo::scale::Instances>& instances)
+                  auto scale_instances( const std::vector< admin::model::scale::Instances>& instances)
                   {
                      serviceframework::service::protocol::binary::Call call;
                      call << CASUAL_NAMED_VALUE( instances);
 
                      auto reply = call( admin::service::name::scale::instances);
 
-                     std::vector< admin::vo::scale::Instances> serviceReply;
+                     std::vector< admin::model::scale::Instances> serviceReply;
 
                      reply >> CASUAL_NAMED_VALUE( serviceReply);
 
@@ -252,14 +252,14 @@ namespace casual
 
                   namespace restart
                   {
-                     auto instances( const std::vector< admin::vo::restart::Instances>& instances)
+                     auto instances( const std::vector< admin::model::restart::Instances>& instances)
                      {
                         serviceframework::service::protocol::binary::Call call;
                         call << CASUAL_NAMED_VALUE( instances);
 
                         auto reply = call( admin::service::name::restart::instances);
 
-                        std::vector< admin::vo::restart::Result> serviceReply;
+                        std::vector< admin::model::restart::Result> serviceReply;
                         reply >> CASUAL_NAMED_VALUE( serviceReply);
 
                         return serviceReply;
@@ -345,7 +345,7 @@ namespace casual
 
                   namespace environment
                   {
-                     auto set( const admin::vo::set::Environment& environment)
+                     auto set( const admin::model::set::Environment& environment)
                      {
                         serviceframework::service::protocol::binary::Call call;
                         call << CASUAL_NAMED_VALUE( environment);
@@ -389,7 +389,7 @@ namespace casual
                            return call( admin::service::name::configuration::put);
                         }();
                         
-                        std::vector< manager::admin::vo::Task> casual_service_reply;
+                        std::vector< manager::admin::model::Task> casual_service_reply;
                         reply >> CASUAL_NAMED_VALUE( casual_service_reply);
                         common::log::line( casual::domain::log, "casual_service_reply: ", casual_service_reply);
                         return casual_service_reply;
@@ -410,7 +410,7 @@ namespace casual
 
                      auto format_running_instances = []( const P& e){
                         return common::algorithm::count_if( e.instances, []( auto& i){
-                              return i.state == admin::vo::instance::State::running;
+                              return i.state == admin::model::instance::State::running;
                         });
                      };
 
@@ -514,7 +514,7 @@ namespace casual
                         void call( const std::vector< std::tuple< std::string, int>>& values)
                         {   
                            auto transform = []( auto& value){
-                              admin::vo::scale::Instances result;
+                              admin::model::scale::Instances result;
                               result.alias = std::get< 0>( value);
                               result.instances = std::get< 1>( value);
                               return result;
@@ -544,7 +544,7 @@ namespace casual
                      void instances( std::vector< std::string> values)
                      {
                         auto transform = []( auto& value){
-                           admin::vo::restart::Instances result;
+                           admin::model::restart::Instances result;
                            result.alias = std::move( value);
                            return result;
                         };
@@ -605,7 +605,7 @@ namespace casual
                      {
                         void call( const std::string& name, const std::string& value, std::vector< std::string> aliases)
                         {
-                           admin::vo::set::Environment environment;
+                           admin::model::set::Environment environment;
                            environment.variables.variables.push_back( configuration::environment::Variable{ name, value});
                            environment.aliases = std::move( aliases);
 

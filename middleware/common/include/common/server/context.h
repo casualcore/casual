@@ -13,9 +13,9 @@
 #include "common/server/service.h"
 
 
-#include "common/platform.h"
+#include "casual/platform.h"
 
-#include "xatmi/defines.h"
+#include "casual/xatmi/defines.h"
 
 
 #include <unordered_map>

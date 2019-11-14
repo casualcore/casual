@@ -8,7 +8,7 @@
 
 
 #include "common/serialize/macro.h"
-#include "common/platform.h"
+#include "casual/platform.h"
 
 #include "configuration/environment.h"
 
@@ -22,12 +22,12 @@ namespace casual
       {
          namespace admin
          {
-            namespace vo
+            namespace model
             {
                inline namespace v1
                {
-                  using id_type = common::platform::size::type;
-                  using size_type = common::platform::size::type;
+                  using id_type = platform::size::type;
+                  using size_type = platform::size::type;
 
                   struct Group
                   {
@@ -104,7 +104,7 @@ namespace casual
                   {
                      H handle;
                      instance::State state = instance::State::scale_out;
-                     common::platform::time::point::type spawnpoint;
+                     platform::time::point::type spawnpoint;
 
                      friend bool operator == ( const Instance& lhs, const H& rhs) { return common::process::id( lhs.handle) == common::process::id( rhs);}
 
@@ -157,14 +157,14 @@ namespace casual
 
                   struct State
                   {
-                     std::vector< vo::Group> groups;
-                     std::vector< vo::Executable> executables;
-                     std::vector< vo::Server> servers;
+                     std::vector< model::Group> groups;
+                     std::vector< model::Executable> executables;
+                     std::vector< model::Server> servers;
 
                      struct Tasks
                      {
-                        std::vector< vo::Task> running;
-                        std::vector< vo::Task> pending;
+                        std::vector< model::Task> running;
+                        std::vector< model::Task> pending;
 
                         CASUAL_CONST_CORRECT_SERIALIZE(
                         {
@@ -254,7 +254,7 @@ namespace casual
                   } // set
                   
                } // v1
-            } // vo
+            } // model
          } // admin
       } // manager
    } // domain

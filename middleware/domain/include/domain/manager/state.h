@@ -13,7 +13,7 @@
 #include "common/message/domain.h"
 #include "common/message/pending.h"
 #include "common/uuid.h"
-#include "common/platform.h"
+#include "casual/platform.h"
 #include "common/process.h"
 #include "common/value/id.h"
 
@@ -38,7 +38,7 @@ namespace casual
 
          namespace state
          {
-            using size_type = common::platform::size::type;
+            using size_type = platform::size::type;
 
 
             namespace id
@@ -157,12 +157,12 @@ namespace casual
 
                handle_type handle;
                state_type state = state_type::scale_out;
-               common::platform::time::point::type spawnpoint = common::platform::time::point::limit::zero();
+               platform::time::point::type spawnpoint = platform::time::point::limit::zero();
 
                void spawned( common::strong::process::id pid)
                {
                   policy_type::spawned( pid, *this);
-                  spawnpoint = common::platform::time::clock::type::now();
+                  spawnpoint = platform::time::clock::type::now();
                }
 
                friend bool operator == ( const Instance& lhs, common::strong::process::id pid) { return lhs.handle == pid;}

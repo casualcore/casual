@@ -8,7 +8,7 @@
 
 #include <gtest/gtest.h>
 
-#include "buffer/order.h"
+#include "casual/buffer/order.h"
 #include "xatmi.h"
 
 

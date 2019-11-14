@@ -21,23 +21,19 @@ namespace casual
          {
             namespace api
             {
-               inline namespace v1
+               model::State state()
                {
-                  model::State state()
-                  {
-                     Trace trace{ "service::manager::admin::api::state"};
+                  Trace trace{ "service::manager::admin::api::state"};
 
-                     serviceframework::service::protocol::binary::Call call;
+                  serviceframework::service::protocol::binary::Call call;
 
-                     auto reply = call( service::name::state());
+                  auto reply = call( service::name::state());
 
-                     model::State result;
-                     reply >> CASUAL_NAMED_VALUE( result);
+                  model::State result;
+                  reply >> CASUAL_NAMED_VALUE( result);
 
-                     return result;
-                  }
-                  
-               } // v1
+                  return result;
+               }
 
             } // api
          } // admin

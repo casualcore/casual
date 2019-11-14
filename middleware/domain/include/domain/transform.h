@@ -8,7 +8,7 @@
 #pragma once
 
 
-#include "domain/manager/admin/vo.h"
+#include "domain/manager/admin/model.h"
 #include "domain/manager/state.h"
 
 #include "configuration/domain.h"
@@ -19,7 +19,7 @@ namespace casual
    {
       namespace transform
       {
-         manager::admin::vo::State state( const manager::State& state);
+         manager::admin::model::State state( const manager::State& state);
          manager::State state( casual::configuration::domain::Manager domain);
 
          namespace environment

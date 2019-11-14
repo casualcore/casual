@@ -31,7 +31,7 @@ namespace casual
             namespace id
             {
                struct tag{};
-               using native = common::platform::size::type;
+               using native = platform::size::type;
                using type = common::strong::task::id;
             } // id
 

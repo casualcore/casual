@@ -142,7 +142,7 @@ namespace casual
                   void discover( 
                      common::message::service::lookup::Request&& message, 
                      const std::string& name, 
-                     common::platform::time::point::type now);
+                     platform::time::point::type now);
                };
 
                namespace discard
@@ -209,8 +209,8 @@ namespace casual
                void transaction(
                      const common::transaction::ID& trid,
                      const common::server::Service& service,
-                     const common::platform::time::unit& timeout,
-                     const common::platform::time::point::type& now);
+                     const platform::time::unit& timeout,
+                     const platform::time::point::type& now);
 
                common::message::service::Transaction transaction( bool commit);
                void forward( common::service::invoke::Forward&& forward, const common::message::service::call::callee::Request& message);

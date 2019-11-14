@@ -58,12 +58,12 @@ namespace casual
 
                         namespace binary
                         {
-                           auto value( common::platform::size::type size)
+                           auto value( platform::size::type size)
                            {
-                              constexpr auto min = std::numeric_limits< common::platform::binary::value::type>::min();
-                              constexpr auto max = std::numeric_limits< common::platform::binary::value::type>::max();
+                              constexpr auto min = std::numeric_limits< platform::binary::value::type>::min();
+                              constexpr auto max = std::numeric_limits< platform::binary::value::type>::max();
 
-                              common::platform::binary::type result;
+                              platform::binary::type result;
                               result.resize( size);
 
                               auto current = min;
@@ -84,7 +84,7 @@ namespace casual
                         {
                            constexpr auto point()
                            {
-                              return common::platform::time::point::type{ std::chrono::microseconds{ 1559762216552100}};
+                              return platform::time::point::type{ std::chrono::microseconds{ 1559762216552100}};
                            }
                         } // time
 

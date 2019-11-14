@@ -10,8 +10,8 @@
 #include "common/serialize/native/network.h"
 #include "common/log.h"
 
-#include "xatmi/extended.h"
-#include "xatmi/defines.h"
+#include "casual/xatmi/extended.h"
+#include "casual/xatmi/defines.h"
 
 namespace casual
 {

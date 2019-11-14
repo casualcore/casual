@@ -58,11 +58,11 @@ namespace casual
                   struct State
                   {
                      common::buffer::Payload payload;
-                     common::platform::size::type offset = 0;
+                     platform::size::type offset = 0;
                      common::process::Handle destination;
                      common::Uuid correlation;
                      common::Uuid execution;
-                     common::platform::time::point::type start = common::platform::time::point::limit::zero();
+                     platform::time::point::type start = platform::time::point::limit::zero();
                      std::string service;
                      std::string parent;
 
@@ -152,7 +152,7 @@ namespace casual
                inline auto end() const { return std::end( m_pending);}
                inline auto empty() const { return m_pending.empty();}
                explicit operator bool () const { return ! empty();}
-               inline common::platform::size::type size() const { return m_pending.size();}
+               inline platform::size::type size() const { return m_pending.size();}
                inline auto capacity() const { return m_pending.capacity();}
 
             private:

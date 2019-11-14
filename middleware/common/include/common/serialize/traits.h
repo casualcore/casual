@@ -12,7 +12,7 @@
 #include "common/serialize/archive/type.h"
 
 #include "common/traits.h"
-#include "common/platform.h"
+#include "casual/platform.h"
 
 #include <string>
 

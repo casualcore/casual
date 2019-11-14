@@ -6,7 +6,8 @@
 
 
 
-#include "transaction/resource/proxy/server.h"
+#include "casual/transaction/resource/proxy/server.h"
+
 #include "transaction/resource/proxy.h"
 #include "transaction/common.h"
 

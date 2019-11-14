@@ -164,7 +164,7 @@ namespace casual
             }
 
 
-            //auto now = common::platform::time::clock::type::now();
+            //auto now = platform::time::clock::type::now();
 
 
             // Triggers
@@ -373,7 +373,7 @@ namespace casual
                timestamp    INTEGER NOT NULL -- last update to the queue 
              */
 
-            auto now = common::platform::time::clock::type::now();
+            auto now = platform::time::clock::type::now();
 
             constexpr auto statement = "INSERT INTO queue VALUES ( NULL,?,?,?,?, 0, 0, 0, ?);";
 
@@ -481,7 +481,7 @@ namespace casual
                   0,
                   message.message.type,
                   message.message.available,
-                  common::platform::time::clock::type::now(),
+                  platform::time::clock::type::now(),
                   message.message.payload);
 
             common::log::line( verbose::log, "reply: ", reply);
@@ -490,7 +490,7 @@ namespace casual
 
          common::message::queue::dequeue::Reply Database::dequeue( 
             const common::message::queue::dequeue::Request& message,
-            const common::platform::time::point::type& now)
+            const platform::time::point::type& now)
          {
             Trace trace{ "queue::Database::dequeue"};
 
@@ -614,14 +614,14 @@ namespace casual
             return result;
          }
 
-         common::optional< common::platform::time::point::type> Database::available( common::strong::queue::id queue) const
+         common::optional< platform::time::point::type> Database::available( common::strong::queue::id queue) const
          {
             Trace trace{ "queue::Database::available earliest"};
             log::line( verbose::log, "queue: ", queue);
 
             return sql::database::query::first( m_statement.available.message.query( queue.underlaying()), []( auto& row)
             {
-               common::platform::time::point::type available;
+               platform::time::point::type available;
 
                // SELECT m.queue, q.count, MIN( m.available)
                sql::database::row::get( row, 

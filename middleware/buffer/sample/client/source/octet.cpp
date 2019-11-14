@@ -13,14 +13,12 @@
  * Disclaimer: A lot of error handling is missing
  */
 
+#include "xatmi.h"
+#include "casual/buffer/octet.h"
 
 #include <cstddef>
 #include <cstdio>
 #include <cstring>
-
-#include <xatmi.h>
-#include <buffer/octet.h>
-
 
 int call_with_octet()
 {

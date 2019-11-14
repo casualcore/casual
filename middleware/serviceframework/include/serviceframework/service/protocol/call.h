@@ -87,7 +87,7 @@ namespace casual
                   template< typename R>
                   struct basic_receive
                   {
-                     using descriptor_type = common::platform::descriptor::type;
+                     using descriptor_type = platform::descriptor::type;
                      using result_policy = R;
                      using result_type = basic_result< service::receive::Result, result_policy>;
                      using Flag = service::receive::Flag;
@@ -107,7 +107,7 @@ namespace casual
 
 
                   private:
-                     common::platform::descriptor::type m_descriptor;
+                     platform::descriptor::type m_descriptor;
                   };
 
                   template< typename I, typename R>

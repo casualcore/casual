@@ -14,7 +14,7 @@
 #include "common/buffer/type.h"
 #include "common/exception/xatmi.h"
 
-#include "xatmi/defines.h"
+#include "casual/xatmi/defines.h"
 
 namespace casual
 {

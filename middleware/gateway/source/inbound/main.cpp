@@ -36,7 +36,7 @@ namespace casual
          {
             namespace
             {
-               using size_type = common::platform::size::type;
+               using size_type = platform::size::type;
 
                namespace blocking
                {

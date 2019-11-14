@@ -11,7 +11,7 @@
 
 #include "common/buffer/type.h"
 
-#include "common/platform.h"
+#include "casual/platform.h"
 
 
 //

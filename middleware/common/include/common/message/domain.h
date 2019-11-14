@@ -183,7 +183,7 @@ namespace casual
                      Service( std::function< void(Service&)> foreign) { foreign( *this);}
 
                      std::string name;
-                     common::platform::time::unit timeout = common::platform::time::unit::zero();
+                     platform::time::unit timeout = platform::time::unit::zero();
                      std::vector< std::string> routes;
 
                      CASUAL_CONST_CORRECT_SERIALIZE
@@ -197,7 +197,7 @@ namespace casual
 
                   struct Manager
                   {
-                     common::platform::time::unit default_timeout = common::platform::time::unit::zero();
+                     platform::time::unit default_timeout = platform::time::unit::zero();
 
                      std::vector< Service> services;
 

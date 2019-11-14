@@ -69,6 +69,26 @@ namespace casual
                   } source;
                };
 
+               namespace service
+               {
+                  auto argument( std::vector< std::string>& names)
+                  {
+                     return [&names]( const std::string& value, const std::vector< std::string>& values)
+                     {
+                        auto normalize_names = [&names]( auto& value)
+                        {
+                           auto splittet = string::split( value, ',');
+                           
+                           algorithm::append( 
+                              algorithm::transform( splittet, []( auto& value){ return string::trim( std::move( value));}),
+                              names);
+                        };
+                        normalize_names( value);
+                        algorithm::for_each( values, normalize_names);
+                     };
+                  }
+               } // service
+
                struct State
                {
                   std::vector< model::Service> services;
@@ -163,7 +183,7 @@ namespace casual
 
                      Parse{ "builds a casual xatmi server",
                         Option( std::tie( settings.directive.output), { "-o", "--output"}, "name of server to be built"),
-                        Option( option::one::many( settings.service.names), {"-s", "--service"}, "service names")( cardinality::any{}),
+                        Option( service::argument( settings.service.names), {"-s", "--service"}, "service names")( cardinality::any{}),
                         Option( std::tie( settings.server.definition), { "-d", "--definition", "--server-definition"}, "path to server definition file\n\ndeprecated: --server-definition"),
                         Option( option::one::many( settings.resource.keys), {"-r", "--resource-keys"}, "key of the resource")( cardinality::any{}),
                         Option( std::tie( settings.directive.compiler), {"-c", "--compiler"}, "compiler to use"),

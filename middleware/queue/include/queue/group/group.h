@@ -9,7 +9,7 @@
 
 #include "queue/group/state.h"
 
-#include "common/platform.h"
+#include "casual/platform.h"
 #include "common/message/pending.h"
 
 #include <string>

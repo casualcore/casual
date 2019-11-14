@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include "common/platform.h"
+#include "casual/platform.h"
 #include "common/communication/message.h"
 
 #include <vector>
@@ -19,7 +19,7 @@ namespace casual
       {
          namespace buffer 
          {
-            using size_type = common::platform::size::type;
+            using size_type = platform::size::type;
             struct Limit
             {
                Limit() = default;

@@ -10,7 +10,7 @@
 #include "common/algorithm.h"
 #include "common/buffer/type.h"
 
-#include "buffer/field.h"
+#include "casual/buffer/field.h"
 
 namespace casual
 {

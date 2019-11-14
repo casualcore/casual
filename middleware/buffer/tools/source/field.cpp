@@ -6,8 +6,8 @@
 
 
 #include "common/environment.h"
-#include "buffer/field.h"
-#include "buffer/internal/field.h"
+#include "casual/buffer/field.h"
+#include "casual/buffer/internal/field.h"
 
 #include <stdexcept>
 #include <iostream>

@@ -9,7 +9,7 @@
 
 
 #include "common/serialize/macro.h"
-#include "common/platform.h"
+#include "casual/platform.h"
 #include "common/compare.h"
 #include "common/traits.h"
 

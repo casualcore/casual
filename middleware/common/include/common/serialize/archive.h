@@ -11,7 +11,7 @@
 #include "common/serialize/named/value.h"
 #include "common/serialize/traits.h"
 #include "common/serialize/value.h"
-#include "common/platform.h"
+#include "casual/platform.h"
 #include "common/view/binary.h"
 
 #include <utility>

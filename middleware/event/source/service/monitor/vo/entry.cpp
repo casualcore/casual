@@ -56,8 +56,8 @@ namespace casual
                   std::string parentService;
                   std::string service;
                   common::Uuid callId;
-                  common::platform::time::point::type start;
-                  common::platform::time::point::type end;
+                  platform::time::point::type start;
+                  platform::time::point::type end;
                   //## additional attributes protected section begin [200.impl.attr.20]
                   //## additional attributes protected section end   [200.impl.attr.20]
 
@@ -90,11 +90,11 @@ namespace casual
                {
                   return pimpl->callId;
                }
-               common::platform::time::point::type Entry::getStart() const
+               platform::time::point::type Entry::getStart() const
                {
                   return pimpl->start;
                }
-               common::platform::time::point::type Entry::getEnd() const
+               platform::time::point::type Entry::getEnd() const
                {
                   return pimpl->end;
                }
@@ -112,11 +112,11 @@ namespace casual
                {
                   pimpl->callId = value;
                }
-               void Entry::setStart( common::platform::time::point::type value)
+               void Entry::setStart( platform::time::point::type value)
                {
                   pimpl->start = value;
                }
-               void Entry::setEnd( common::platform::time::point::type value)
+               void Entry::setEnd( platform::time::point::type value)
                {
                   pimpl->end = value;
                }

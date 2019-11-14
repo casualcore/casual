@@ -13,8 +13,8 @@
 #include "common/service/invoke.h"
 #include "common/executable/start.h"
 
-#include "xa.h"
-#include "xatmi/defines.h"
+#include "casual/xa.h"
+#include "casual/xatmi/defines.h"
 
 #include <functional>
 #include <vector>

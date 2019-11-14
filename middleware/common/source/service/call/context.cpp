@@ -147,7 +147,7 @@ namespace casual
                               // We use the transaction deadline if it's earlier
                               if( transaction.timout.deadline() < descriptor.timeout.deadline())
                               {
-                                 descriptor.timeout.set( start, std::chrono::duration_cast< common::platform::time::unit>( transaction.timout.deadline() - start));
+                                 descriptor.timeout.set( start, std::chrono::duration_cast< platform::time::unit>( transaction.timout.deadline() - start));
                               }
                            }
 

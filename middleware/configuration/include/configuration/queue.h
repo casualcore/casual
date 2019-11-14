@@ -10,7 +10,7 @@
 
 
 #include "common/serialize/macro.h"
-#include "common/platform.h"
+#include "casual/platform.h"
 #include "common/optional.h"
 
 #include <string>
@@ -26,7 +26,7 @@ namespace casual
          {
             struct Retry 
             {
-               common::optional< common::platform::size::type> count;
+               common::optional< platform::size::type> count;
                common::optional< std::string> delay;
 
                CASUAL_CONST_CORRECT_SERIALIZE
@@ -41,7 +41,7 @@ namespace casual
                common::optional< Retry> retry;
             
                //! @deprecated
-               common::optional< common::platform::size::type> retries;
+               common::optional< platform::size::type> retries;
 
                CASUAL_CONST_CORRECT_SERIALIZE
                (
@@ -56,7 +56,7 @@ namespace casual
             common::optional< std::string> note;
 
             //! @deprecated
-            common::optional< common::platform::size::type> retries;
+            common::optional< platform::size::type> retries;
 
             CASUAL_CONST_CORRECT_SERIALIZE
             (

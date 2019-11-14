@@ -32,9 +32,9 @@ namespace casual
                      auto timeout() const 
                      {
                         if( messages.empty())
-                           return common::platform::time::unit::min();
+                           return platform::time::unit::min();
 
-                        return std::chrono::duration_cast< common::platform::time::unit>( std::chrono::milliseconds{ 500});
+                        return std::chrono::duration_cast< platform::time::unit>( std::chrono::milliseconds{ 500});
                      }
 
                      std::vector< message::Request> messages;

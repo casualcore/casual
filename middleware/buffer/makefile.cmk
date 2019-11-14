@@ -19,8 +19,8 @@ LibraryPaths([
 
 
 install_lib = []
-install_include = []
-
+install_bin = []
+install_headers = []
 
 lib_buffer = LinkLibrary( 'bin/casual-buffer',
     [
@@ -37,13 +37,14 @@ lib_buffer = LinkLibrary( 'bin/casual-buffer',
     ])
 
 install_lib.append( lib_buffer)
-install_include.append( 'include/buffer/field.h')
-install_include.append( 'include/buffer/octet.h')
-install_include.append( 'include/buffer/order.h')
-install_include.append( 'include/buffer/string.h')
-Install( [ 'include/buffer/internal/field/string.h'], '$(CASUAL_HOME)/include/casual/buffer/internal/field')
 
-install_bin = []
+install_headers += [ 
+   ( 'include/casual/buffer/field.h', 'casual/buffer'),
+   ( 'include/casual/buffer/octet.h', 'casual/buffer'),
+   ( 'include/casual/buffer/order.h', 'casual/buffer'),
+   ( 'include/casual/buffer/string.h', 'casual/buffer'),
+   ( 'include/casual/buffer/internal/field/string.h', 'casual/buffer/internal/field'),
+]
 
 casual_field_make_header = LinkExecutable( 'bin/casual_field_make_header', 
     [
@@ -164,7 +165,7 @@ install_bin.append( binary)
 # Install
 Install( install_lib, '$(CASUAL_HOME)/lib')
 Install( install_bin, '$(CASUAL_HOME)/bin')
-Install( install_include, '$(CASUAL_HOME)/include/buffer')
+Install( install_headers, '$(CASUAL_HOME)/include')
 
 
 

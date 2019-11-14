@@ -9,7 +9,7 @@
 
 
 #include "common/serialize/macro.h"
-#include "common/platform.h"
+#include "casual/platform.h"
 #include "common/uuid.h"
 
 #include <string>
@@ -20,7 +20,7 @@ namespace casual
    {
       inline namespace v1  {
 
-      using size_type = common::platform::size::type;
+      using size_type = platform::size::type;
 
       namespace message
       {
@@ -41,7 +41,7 @@ namespace casual
          std::string reply;
 
          //! When the message is available, in absolute time.
-         common::platform::time::point::type available = common::platform::time::point::limit::zero();
+         platform::time::point::type available = platform::time::point::limit::zero();
 
          CASUAL_CONST_CORRECT_SERIALIZE(
          {
@@ -71,7 +71,7 @@ namespace casual
       struct Payload
       {
          std::string type;
-         common::platform::binary::type data;
+         platform::binary::type data;
 
          CASUAL_CONST_CORRECT_SERIALIZE(
          {
@@ -119,7 +119,7 @@ namespace casual
             {
                using State = queue::message::State;
                common::Uuid id;
-               common::platform::binary::type trid;
+               platform::binary::type trid;
                State state;
 
                Attributes attributes;
@@ -139,7 +139,7 @@ namespace casual
 
 
                size_type redelivered;
-               common::platform::time::point::type timestamp;
+               platform::time::point::type timestamp;
 
 
                CASUAL_CONST_CORRECT_SERIALIZE(
@@ -166,14 +166,14 @@ namespace casual
          struct Payload
          {
             Payload() = default;
-            Payload( common::platform::buffer::raw::type buffer, common::platform::buffer::raw::size::type size)
+            Payload( platform::buffer::raw::type buffer, platform::buffer::raw::size::type size)
               : buffer( buffer), size( size) {}
 
-            Payload( common::platform::buffer::raw::type buffer)
+            Payload( platform::buffer::raw::type buffer)
               : buffer( buffer), size( 0) {}
 
-            common::platform::buffer::raw::type buffer = nullptr;
-            common::platform::buffer::raw::size::type size = 0;
+            platform::buffer::raw::type buffer = nullptr;
+            platform::buffer::raw::size::type size = 0;
          };
 
          using Message = basic_message< Payload>;

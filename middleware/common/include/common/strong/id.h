@@ -9,7 +9,7 @@
 
 
 #include "common/value/optional.h"
-#include "common/platform.h"
+#include "casual/platform.h"
 #include "common/uuid.h"
 
 namespace casual

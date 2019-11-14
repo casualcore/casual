@@ -49,7 +49,7 @@ namespace casual
          };
       }
 
-      Metric& Metric::operator += ( common::platform::time::unit duration)
+      Metric& Metric::operator += ( platform::time::unit duration)
       {
          ++count;
          total += duration;

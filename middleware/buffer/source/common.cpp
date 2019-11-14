@@ -5,7 +5,7 @@
 //!
 
 
-#include "buffer/internal/common.h"
+#include "casual/buffer/internal/common.h"
 
 namespace casual
 {

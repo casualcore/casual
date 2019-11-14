@@ -9,7 +9,7 @@
 
 
 #include "common/message/type.h"
-#include "common/platform.h"
+#include "casual/platform.h"
 #include "common/uuid.h"
 #include "common/serialize/macro.h"
 #include "common/buffer/type.h"
@@ -42,7 +42,7 @@ namespace casual
                std::string properties;
                std::string reply;
 
-               common::platform::time::point::type available;
+               platform::time::point::type available;
                std::string type;
 
                CASUAL_CONST_CORRECT_SERIALIZE(
@@ -58,7 +58,7 @@ namespace casual
 
             struct base_message : base_message_information
             {
-               common::platform::binary::type payload;
+               platform::binary::type payload;
 
                CASUAL_CONST_CORRECT_SERIALIZE(
                {
@@ -189,7 +189,7 @@ namespace casual
                      Message() = default;
 
                      size_type redelivered = 0;
-                     common::platform::time::point::type timestamp;
+                     platform::time::point::type timestamp;
 
                      CASUAL_CONST_CORRECT_SERIALIZE(
                      {

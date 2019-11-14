@@ -8,7 +8,7 @@
 #pragma once
 
 
-#include <xatmi/server.h>
+#include <casual/xatmi/server.h>
 
 #ifdef __cplusplus
 extern "C" {

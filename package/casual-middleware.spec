@@ -25,6 +25,7 @@ find $RPM_BUILD_ROOT/opt/casual | xargs chmod 0755
 install -m 0755 -d $RPM_BUILD_ROOT/etc/bash_completion.d/
 ln -sf /opt/casual/etc/bash_completion.d/casual $RPM_BUILD_ROOT/etc/bash_completion.d/casual
 ln -sf /opt/casual/etc/bash_completion.d/casual-log $RPM_BUILD_ROOT/etc/bash_completion.d/casual-log
+ln -sf /opt/casual/include/casual/buffer $RPM_BUILD_ROOT/opt/casual/include/buffer
 
 %files
 /opt/casual

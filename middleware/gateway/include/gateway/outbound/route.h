@@ -103,7 +103,7 @@ namespace casual
                         common::process::Handle destination,
                         std::string service,
                         std::string parent,
-                        common::platform::time::point::type start)
+                        platform::time::point::type start)
                      : correlation( correlation), destination( destination), 
                         service( std::move( service)), parent( std::move( parent)), start( start) {}
 
@@ -111,7 +111,7 @@ namespace casual
                   common::process::Handle destination;
                   std::string service;
                   std::string parent;
-                  common::platform::time::point::type start;
+                  platform::time::point::type start;
 
                   CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
                   { 

@@ -58,9 +58,9 @@ namespace casual
                         //vo.setTransactionId( local::getValue( *row, "transactionid"));
 
                         std::chrono::microseconds start{ row.get< long long>( 4)};
-                        vo.setStart( common::platform::time::point::type{ start});
+                        vo.setStart( platform::time::point::type{ start});
                         std::chrono::microseconds end{ row.get< long long>( 5)};
-                        vo.setEnd( common::platform::time::point::type{ end});
+                        vo.setEnd( platform::time::point::type{ end});
                         result.push_back( vo);
                      }
 

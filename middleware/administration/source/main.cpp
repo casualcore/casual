@@ -32,7 +32,6 @@ namespace casual
 {
    namespace admin
    {
-
       void main( int argc, char **argv)
       {
             

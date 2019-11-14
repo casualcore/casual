@@ -31,7 +31,7 @@ namespace casual
 
          auto buffer = []()
          {
-            common::platform::binary::type buffer;
+            platform::binary::type buffer;
             auto archive = common::serialize::native::binary::writer( buffer);
             domain::Manager domain;
             archive << CASUAL_NAMED_VALUE( domain);

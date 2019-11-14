@@ -5,7 +5,7 @@
 //!
 
 
-#include "transaction/resource/proxy/server.h"
+#include "casual/transaction/resource/proxy/server.h"
 #include <xa.h>
 
 #ifdef __cplusplus

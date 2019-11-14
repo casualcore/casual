@@ -5,7 +5,7 @@
 //!
 
 
-#include "buffer/string.h"
+#include "casual/buffer/string.h"
 
 #include "common/buffer/pool.h"
 #include "common/buffer/type.h"
@@ -36,8 +36,8 @@ namespace casual
             };
 */
 
-            using size_type = common::platform::size::type;
-            using data_type = common::platform::buffer::raw::type;
+            using size_type = platform::size::type;
+            using data_type = platform::buffer::raw::type;
 
 
             namespace local
@@ -71,7 +71,7 @@ namespace casual
                //!
                //! Implement Buffer::transport
                //!
-               common::platform::binary::size::type transport( const common::platform::binary::size::type user_size) const
+               platform::binary::size::type transport( const platform::binary::size::type user_size) const
                {
                   //
                   // Just ignore user-size all together
@@ -98,7 +98,7 @@ namespace casual
                   return result;
                }
 
-               common::platform::buffer::raw::type allocate( const std::string& type, const common::platform::binary::size::type size)
+               platform::buffer::raw::type allocate( const std::string& type, const platform::binary::size::type size)
                {
                   m_pool.emplace_back( type, size ? size : 1);
 
@@ -107,7 +107,7 @@ namespace casual
                   return m_pool.back().payload.memory.data();
                }
 
-               common::platform::buffer::raw::type reallocate( const common::platform::buffer::raw::immutable::type handle, const common::platform::binary::size::type size)
+               platform::buffer::raw::type reallocate( const platform::buffer::raw::immutable::type handle, const platform::binary::size::type size)
                {
                   const auto result = find( handle);
 
@@ -121,7 +121,7 @@ namespace casual
                   return result->payload.memory.data();
                }
 
-               common::platform::buffer::raw::type insert( common::buffer::Payload payload)
+               platform::buffer::raw::type insert( common::buffer::Payload payload)
                {
                   //
                   // Validate it before we move it

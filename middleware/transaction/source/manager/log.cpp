@@ -125,7 +125,7 @@ namespace casual
                      common::transaction::ID result;
 
                      {
-                        auto gtrid = row.get< common::platform::binary::type>( index);
+                        auto gtrid = row.get< platform::binary::type>( index);
 
                         common::algorithm::copy( common::range::make( gtrid), std::begin( result.xid.data));
 
@@ -133,7 +133,7 @@ namespace casual
                      }
 
                      {
-                        auto bqual = row.get< common::platform::binary::type>( index + 1);
+                        auto bqual = row.get< platform::binary::type>( index + 1);
 
                         common::algorithm::copy(
                               common::range::make( bqual),
@@ -153,11 +153,11 @@ namespace casual
 
                      result.trid = transform::trid( row);
 
-                     result.pid = common::strong::process::id{ row.get< common::platform::process::native::type>( 3)};
+                     result.pid = common::strong::process::id{ row.get< platform::process::native::type>( 3)};
                      result.state = static_cast< Log::State>( row.get< long>( 4));
 
-                     result.started = common::platform::time::point::type{ std::chrono::microseconds{ row.get< common::platform::time::point::type::rep>( 5)}};
-                     result.updated = common::platform::time::point::type{ std::chrono::microseconds{ row.get< common::platform::time::point::type::rep>( 6)}};
+                     result.started = platform::time::point::type{ std::chrono::microseconds{ row.get< platform::time::point::type::rep>( 5)}};
+                     result.updated = platform::time::point::type{ std::chrono::microseconds{ row.get< platform::time::point::type::rep>( 6)}};
 
                      return result;
                   }

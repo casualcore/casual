@@ -10,7 +10,7 @@
 
 
 #include "common/uuid.h"
-#include "common/platform.h"
+#include "casual/platform.h"
 #include "common/communication/ipc.h"
 
 namespace casual

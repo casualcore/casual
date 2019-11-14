@@ -159,8 +159,8 @@ namespace casual
 
                 local::callbacks callback;
                 callback.top.emplace_back( local::text( R"(   
-#include <xatmi.h>
-#include <xatmi/server.h>
+#include <casual/xatmi.h>
+#include <casual/xatmi/server.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -197,7 +197,7 @@ extern "C" {
 
                 local::callbacks callback;
                 callback.top.emplace_back( local::text( R"(   
-#include <xatmi/executable.h>
+#include <casual/xatmi/executable.h>
 
 #ifdef __cplusplus
 extern "C" {

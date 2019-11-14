@@ -9,7 +9,7 @@
 
 #include "http/outbound/state.h"
 
-#include "common/platform.h"
+#include "casual/platform.h"
 #include "common/buffer/type.h"
 #include "common/service/header.h"
 #include "common/pimpl.h"

@@ -81,12 +81,12 @@ namespace casual
                   void setCallId( common::Uuid value);
 
 
-                  common::platform::time::point::type getStart() const;
-                  void setStart( common::platform::time::point::type value);
+                  platform::time::point::type getStart() const;
+                  void setStart( platform::time::point::type value);
 
 
-                  common::platform::time::point::type getEnd() const;
-                  void setEnd( common::platform::time::point::type value);
+                  platform::time::point::type getEnd() const;
+                  void setEnd( platform::time::point::type value);
 
                   void serialize( casual::common::serialize::Reader& archive);
                   void serialize( casual::common::serialize::Writer& archive) const;

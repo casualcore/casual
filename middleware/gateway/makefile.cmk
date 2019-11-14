@@ -30,8 +30,6 @@ LibraryPaths([
 install_lib = []
 install_bin = []
 install_example_bin = []
-install_headers = []
-
 
 common_archive = LinkArchive( 'bin/casual-gateway-common',
     [
@@ -149,8 +147,5 @@ install_example_bin.append( target)
 Install( install_example_bin,'$(CASUAL_HOME)/example/bin')
 Install( install_bin,'$(CASUAL_HOME)/bin')
 Install( install_lib,'$(CASUAL_HOME)/lib')
-Install( install_headers,'$(CASUAL_HOME)/include')
-
-
 
 

@@ -8,7 +8,7 @@
 #include "common/log/stream.h"
 
 #include "common/environment.h"
-#include "common/platform.h"
+#include "casual/platform.h"
 #include "common/process.h"
 #include "common/exception/system.h"
 #include "common/chronology.h"

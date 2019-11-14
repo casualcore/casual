@@ -78,7 +78,7 @@ namespace casual
             namespace instance
             {
                void Sequential::reserve(
-                  const common::platform::time::point::type& when, 
+                  const platform::time::point::type& when, 
                   state::Service* service,
                   const common::process::Handle& caller,
                   const common::Uuid& correlation)
@@ -91,7 +91,7 @@ namespace casual
                   m_correlation = correlation;
                }
 
-               state::Service* Sequential::unreserve( const common::platform::time::point::type& now)
+               state::Service* Sequential::unreserve( const platform::time::point::type& now)
                {
                   assert( state() == State::busy);
 
@@ -195,7 +195,7 @@ namespace casual
                last = metric.end;
             }
             
-            void Service::Metric::update( const common::platform::time::point::type& now, const common::platform::time::point::type& then)
+            void Service::Metric::update( const platform::time::point::type& now, const platform::time::point::type& then)
             {
                last = now;
                invoked += now - then;
@@ -214,7 +214,7 @@ namespace casual
             }
 
             common::process::Handle Service::reserve( 
-               const common::platform::time::point::type& now, 
+               const platform::time::point::type& now, 
                const common::process::Handle& caller, 
                const common::Uuid& correlation)
             {
@@ -350,7 +350,7 @@ namespace casual
 
 
                template< typename Service>
-               common::message::service::call::Service transform( const Service& service, common::platform::time::unit timeout)
+               common::message::service::call::Service transform( const Service& service, platform::time::unit timeout)
                {
                   common::message::service::call::Service result;
 

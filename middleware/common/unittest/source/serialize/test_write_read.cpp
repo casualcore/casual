@@ -149,22 +149,22 @@ namespace casual
 
       using archive_types = ::testing::Types<
             holder::basic< holder::policy::json< std::string>>,
-            holder::basic< holder::policy::json< common::platform::binary::type>>,
+            holder::basic< holder::policy::json< platform::binary::type>>,
             holder::basic< holder::policy::json< std::stringstream>>,
             holder::basic< holder::policy::relaxed::json< std::string>>,
-            holder::basic< holder::policy::relaxed::json< common::platform::binary::type>>,
+            holder::basic< holder::policy::relaxed::json< platform::binary::type>>,
             holder::basic< holder::policy::relaxed::json< std::stringstream>>,
             holder::basic< holder::policy::yaml< std::string>>,
-            holder::basic< holder::policy::yaml< common::platform::binary::type>>,
+            holder::basic< holder::policy::yaml< platform::binary::type>>,
             holder::basic< holder::policy::yaml< std::stringstream>>,
             holder::basic< holder::policy::relaxed::yaml< std::string>>,
-            holder::basic< holder::policy::relaxed::yaml< common::platform::binary::type>>,
+            holder::basic< holder::policy::relaxed::yaml< platform::binary::type>>,
             holder::basic< holder::policy::relaxed::yaml< std::stringstream>>,
             holder::basic< holder::policy::xml< std::string>>,
-            holder::basic< holder::policy::xml< common::platform::binary::type>>,
+            holder::basic< holder::policy::xml< platform::binary::type>>,
             holder::basic< holder::policy::xml< std::stringstream>>,
             holder::basic< holder::policy::relaxed::xml< std::string>>,
-            holder::basic< holder::policy::relaxed::xml< common::platform::binary::type>>,
+            holder::basic< holder::policy::relaxed::xml< platform::binary::type>>,
             holder::basic< holder::policy::relaxed::xml< std::stringstream>>,
             //holder::ini< archive::policy::Strict>,  // cannot handle nested containers yet
             //holder::ini< archive::policy::Relaxed>, // cannot handle nested containers yet
@@ -252,7 +252,7 @@ namespace casual
 
       TYPED_TEST( common_serialize_write_read, type_binary)
       {
-         common::platform::binary::type value{ 0, 42, -123, 23, 43, 11, 124};
+         platform::binary::type value{ 0, 42, -123, 23, 43, 11, 124};
          EXPECT_TRUE( TestFixture::write_read( value) == value);
       }
 

@@ -5,8 +5,8 @@
 //!
 
 
-#include "xatmi.h"
-#include "xatmi/internal/code.h"
+#include "casual/xatmi.h"
+#include "casual/xatmi/internal/code.h"
 
 #include "common/buffer/pool.h"
 #include "common/service/call/context.h"

@@ -445,21 +445,21 @@ namespace casual
             {
                serialize::Reader reader( const std::string& source) { return create::reader::strict::create< local::reader::Implementation>( source);}
                serialize::Reader reader( std::istream& source) { return create::reader::strict::create< local::reader::Implementation>( source);}
-               serialize::Reader reader( const common::platform::binary::type& source) { return create::reader::strict::create< local::reader::Implementation>( source);}
+               serialize::Reader reader( const platform::binary::type& source) { return create::reader::strict::create< local::reader::Implementation>( source);}
             } // strict
 
             namespace relaxed
             {    
                serialize::Reader reader( const std::string& source) { return create::reader::relaxed::create< local::reader::Implementation>( source);}
                serialize::Reader reader( std::istream& source) { return create::reader::relaxed::create< local::reader::Implementation>( source);}
-               serialize::Reader reader( const common::platform::binary::type& source) { return create::reader::relaxed::create< local::reader::Implementation>( source);}
+               serialize::Reader reader( const platform::binary::type& source) { return create::reader::relaxed::create< local::reader::Implementation>( source);}
             } // relaxed
 
             namespace consumed
             {    
                serialize::Reader reader( const std::string& source) { return create::reader::consumed::create< local::reader::Implementation>( source);}
                serialize::Reader reader( std::istream& source) { return create::reader::consumed::create< local::reader::Implementation>( source);}
-               serialize::Reader reader( const common::platform::binary::type& source) { return create::reader::consumed::create< local::reader::Implementation>( source);}
+               serialize::Reader reader( const platform::binary::type& source) { return create::reader::consumed::create< local::reader::Implementation>( source);}
             } // consumed
 
             serialize::Writer writer( std::string& destination)
@@ -472,7 +472,7 @@ namespace casual
                return serialize::create::writer::holder< local::writer::Implementation>( destination);
             }
 
-            serialize::Writer writer( common::platform::binary::type& destination)
+            serialize::Writer writer( platform::binary::type& destination)
             {
                return serialize::create::writer::holder< local::writer::Implementation>( destination);
             }

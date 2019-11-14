@@ -8,8 +8,8 @@
 
 
 
-#include <xatmi.h>
-#include <xatmi/xa.h>
+#include <casual/xatmi.h>
+#include <casual/xatmi/xa.h>
 
 #include <stddef.h>
 #include <stdint.h>

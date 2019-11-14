@@ -21,7 +21,7 @@ namespace casual
       {
          struct Default
          {
-            common::platform::size::type instances = 1;
+            platform::size::type instances = 1;
             std::vector< std::string> memberships;
             Environment environment;
             bool restart = false;
@@ -45,7 +45,7 @@ namespace casual
 
          common::optional< std::vector< std::string>> arguments;
 
-         common::optional< common::platform::size::type> instances;
+         common::optional< platform::size::type> instances;
          common::optional< std::vector< std::string>> memberships;
          common::optional< Environment> environment;
          common::optional< bool> restart;

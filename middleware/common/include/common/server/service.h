@@ -11,7 +11,7 @@
 #include "common/service/type.h"
 #include "common/service/invoke.h"
 
-#include <xatmi/defines.h>
+#include "casual/xatmi/defines.h"
 
 #include <functional>
 #include <string>

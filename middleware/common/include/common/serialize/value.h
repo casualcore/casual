@@ -612,7 +612,7 @@ namespace casual
          };
 
          template< typename A>
-         struct Value< common::platform::time::point::type, A>
+         struct Value< platform::time::point::type, A>
          {
             static void write( A& archive, platform::time::point::type value, const char* name)
             {

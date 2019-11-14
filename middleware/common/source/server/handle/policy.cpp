@@ -149,7 +149,7 @@ namespace casual
                   void Default::transaction(
                         const common::transaction::ID& trid,
                         const server::Service& service,
-                        const common::platform::time::unit& timeout,
+                        const platform::time::unit& timeout,
                         const platform::time::point::type& now)
                   {
                      Trace trace{ "server::handle::policy::Default::transaction"};
@@ -303,7 +303,7 @@ namespace casual
                   void Admin::transaction(
                         const common::transaction::ID& trid,
                         const server::Service& service,
-                        const common::platform::time::unit& timeout,
+                        const platform::time::unit& timeout,
                         const platform::time::point::type& now)
                   {
                      // no-op

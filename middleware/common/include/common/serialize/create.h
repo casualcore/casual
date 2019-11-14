@@ -10,7 +10,7 @@
 #include "common/serialize/policy.h"
 #include "common/exception/system.h"
 
-#include "common/platform.h"
+#include "casual/platform.h"
 
 #include <string>
 #include <iosfwd>

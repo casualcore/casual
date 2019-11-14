@@ -9,7 +9,7 @@
 
 
 #include "common/serialize/macro.h"
-#include "common/platform.h"
+#include "casual/platform.h"
 #include "common/process.h"
 
 
@@ -67,7 +67,7 @@ namespace casual
 
                struct Metric
                {
-                  common::platform::size::type count = 0;
+                  platform::size::type count = 0;
                   std::chrono::nanoseconds total = std::chrono::nanoseconds::zero();
 
                   struct Limit 
@@ -97,8 +97,8 @@ namespace casual
                      model::Metric invoked;
                      model::Metric pending;
 
-                     common::platform::time::point::type last = common::platform::time::point::limit::zero();
-                     common::platform::size::type remote = 0;
+                     platform::time::point::type last = platform::time::point::limit::zero();
+                     platform::size::type remote = 0;
 
                      CASUAL_CONST_CORRECT_SERIALIZE(
                      {
@@ -124,7 +124,7 @@ namespace casual
                      struct Concurrent
                      {
                         common::strong::process::id pid;
-                        common::platform::size::type hops;
+                        platform::size::type hops;
 
                         CASUAL_CONST_CORRECT_SERIALIZE(
                         {
@@ -139,7 +139,7 @@ namespace casual
 
                struct Service
                {
-                  enum class Transaction : common::platform::size::type
+                  enum class Transaction : platform::size::type
                   {
                      automatic = 0,
                      join = 1,

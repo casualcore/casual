@@ -14,7 +14,7 @@
 #include "common/communication/device.h"
 #include "common/serialize/native/network.h"
 
-#include "common/platform.h"
+#include "casual/platform.h"
 #include "common/flag.h"
 #include "common/strong/id.h"
 

@@ -29,7 +29,7 @@ namespace casual
    {
       namespace message
       {
-         using size_type = common::platform::size::type;
+         using size_type = platform::size::type;
 
          struct Address
          {

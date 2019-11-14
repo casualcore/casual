@@ -11,7 +11,7 @@
 #include "queue/exception.h"
 
 
-#include "common/platform.h"
+#include "casual/platform.h"
 #include "common/exception/handle.h"
 #include "common/exception/system.h"
 #include "common/value/optional.h"
@@ -164,7 +164,7 @@ namespace casual
                   {
                      auto set( descriptor::id descriptor, std::chrono::milliseconds time)
                      {
-                        global::cache.get( descriptor).value.attributes.available = common::platform::time::point::type{ time};
+                        global::cache.get( descriptor).value.attributes.available = platform::time::point::type{ time};
                         return 0;
                      }
                   } // available

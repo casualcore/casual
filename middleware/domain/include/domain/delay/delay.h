@@ -11,7 +11,7 @@
 
 #include "domain/delay/message.h"
 
-#include "common/platform.h"
+#include "casual/platform.h"
 #include "common/communication/message.h"
 
 namespace casual
@@ -35,16 +35,16 @@ namespace casual
             {
                common::strong::ipc::id destination;
                common::communication::message::Complete message;
-               common::platform::time::point::type deadline;
+               platform::time::point::type deadline;
 
                friend bool operator < ( const Message& lhs, const Message& rhs);
             };
 
             void add( message::Request&& message);
-            std::vector< Message> passed( common::platform::time::point::type time);
-            std::vector< Message> passed() { return passed( common::platform::time::clock::type::now());}
+            std::vector< Message> passed( platform::time::point::type time);
+            std::vector< Message> passed() { return passed( platform::time::clock::type::now());}
 
-            common::platform::time::unit timeout() const;
+            platform::time::unit timeout() const;
 
 
          private:

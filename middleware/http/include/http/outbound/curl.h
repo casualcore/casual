@@ -25,7 +25,7 @@ namespace casual
       {
          namespace curl
          {
-            constexpr common::platform::size::type timeout = 1000 * 60 * 5;
+            constexpr platform::size::type timeout = 1000 * 60 * 5;
 
             namespace type
             {
@@ -107,7 +107,7 @@ namespace casual
                void add( const type::multi& multi, const type::easy& easy);
                void remove( const type::multi& multi, const type::easy& easy);
 
-               common::platform::size::type perform( const type::multi& multi);
+               platform::size::type perform( const type::multi& multi);
 
                type::multi create();
             } // multi

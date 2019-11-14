@@ -10,7 +10,7 @@
 
 #include "http/common.h"
 #include "http/inbound/caller.h"
-#include "buffer/field.h"
+#include "casual/buffer/field.h"
 #include "common/service/call/context.h"
 #include "common/transcode.h"
 #include "common/exception/system.h"
@@ -155,9 +155,9 @@ namespace casual
                      return result;
                   }
 
-                  common::platform::binary::type make_json( const parameter::container& parameters)
+                  platform::binary::type make_json( const parameter::container& parameters)
                   {
-                     common::platform::binary::type buffer;
+                     platform::binary::type buffer;
                      buffer.push_back('{');
                      for ( const auto& parameter : parameters)
                      {
@@ -177,9 +177,9 @@ namespace casual
                      return buffer;
                   }
 
-                  common::platform::binary::type make_xml( const parameter::container& parameters)
+                  platform::binary::type make_xml( const parameter::container& parameters)
                   {
-                     common::platform::binary::type buffer;
+                     platform::binary::type buffer;
                      static const std::string root("root");
 
                      buffer.push_back('<');
@@ -263,7 +263,7 @@ namespace casual
                            common::buffer::Payload result;
                            result.type = std::move( buffer.type);
                            auto encoded = common::transcode::base64::encode( buffer.memory);
-                           result.memory = common::platform::binary::type( encoded.begin(), encoded.end());
+                           result.memory = platform::binary::type( encoded.begin(), encoded.end());
 
                            return result;
                         };
@@ -309,9 +309,9 @@ namespace casual
                      return output;
                   }
 
-                  common::platform::binary::type assemble( casual_buffer_type* transport, const parameter::container& parameters, const std::string& protocol)
+                  platform::binary::type assemble( casual_buffer_type* transport, const parameter::container& parameters, const std::string& protocol)
                   {
-                     common::platform::binary::type buffer;
+                     platform::binary::type buffer;
                      if ( protocol == http::protocol::json() && transport->payload.size < 1)
                      {
                         buffer = parameter::make_json( parameters);
@@ -322,7 +322,7 @@ namespace casual
                      }
                      else
                      {
-                        buffer = common::platform::binary::type( transport->payload.data, transport->payload.data + transport->payload.size);
+                        buffer = platform::binary::type( transport->payload.data, transport->payload.data + transport->payload.size);
                      }
                      return buffer;
                   }

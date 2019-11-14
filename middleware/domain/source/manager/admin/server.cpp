@@ -5,7 +5,7 @@
 //!
 
 #include "domain/manager/admin/server.h"
-#include "domain/manager/admin/vo.h"
+#include "domain/manager/admin/model.h"
 #include "domain/manager/handle.h"
 #include "domain/manager/persistent.h"
 #include "domain/manager/configuration.h"
@@ -32,9 +32,9 @@ namespace casual
                {
                   namespace scale
                   {
-                     std::vector< vo::scale::Instances> instances( manager::State& state, std::vector< vo::scale::Instances> instances)
+                     std::vector< model::scale::Instances> instances( manager::State& state, std::vector< model::scale::Instances> instances)
                      {
-                        std::vector< vo::scale::Instances> result;
+                        std::vector< model::scale::Instances> result;
 
                         auto scale_entities = [&]( auto& instance, auto& entities)
                         {
@@ -68,7 +68,7 @@ namespace casual
 
                   namespace restart
                   {
-                     std::vector< vo::restart::Result> instances( manager::State& state, std::vector< vo::restart::Instances> instances)
+                     std::vector< model::restart::Result> instances( manager::State& state, std::vector< model::restart::Instances> instances)
                      {
                         Trace trace{ "domain::manager::admin::local::restart::instances"};
 
@@ -76,7 +76,7 @@ namespace casual
 
                         auto transform = []( auto& v)
                         {
-                           vo::restart::Result result;
+                           model::restart::Result result;
                            result.alias = std::move( v.alias);
                            result.pids = std::move( v.pids);
                            result.task = v.task;
@@ -89,7 +89,7 @@ namespace casual
 
                   namespace set
                   {
-                     auto environment( manager::State& state, const vo::set::Environment& environment)
+                     auto environment( manager::State& state, const model::set::Environment& environment)
                      {
 
                         // collect all relevant processes
@@ -179,7 +179,7 @@ namespace casual
                         {
                            auto protocol = serviceframework::service::protocol::deduce( std::move( parameter));
 
-                           std::vector< vo::scale::Instances> instances;
+                           std::vector< model::scale::Instances> instances;
                            protocol >> CASUAL_NAMED_VALUE( instances);
 
                            return serviceframework::service::user( std::move( protocol), &scale::instances, state, std::move( instances));
@@ -192,7 +192,7 @@ namespace casual
                         {
                            auto protocol = serviceframework::service::protocol::deduce( std::move( parameter));
                            
-                           std::vector< vo::restart::Instances> instances;
+                           std::vector< model::restart::Instances> instances;
                            protocol >> CASUAL_NAMED_VALUE( instances);
 
                            return serviceframework::service::user( std::move( protocol), &restart::instances, state, std::move( instances));
@@ -217,7 +217,7 @@ namespace casual
                            {
                               auto protocol = serviceframework::service::protocol::deduce( std::move( parameter));
 
-                              vo::set::Environment environment;
+                              model::set::Environment environment;
                               protocol >> CASUAL_NAMED_VALUE( environment);
 
                               return serviceframework::service::user(

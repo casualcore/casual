@@ -4,8 +4,8 @@
 //! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-#include "buffer/field.h"
-#include "buffer/internal/field/string.h"
+#include "casual/buffer/field.h"
+#include "casual/buffer/internal/field/string.h"
 
 #include "common/exception/handle.h"
 #include "common/serialize/macro.h"

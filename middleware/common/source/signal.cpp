@@ -6,7 +6,7 @@
 
 
 #include "common/signal.h"
-#include "common/platform.h"
+#include "casual/platform.h"
 #include "common/exception/signal.h"
 #include "common/log.h"
 #include "common/flag.h"
@@ -320,17 +320,17 @@ namespace casual
                namespace
                {
 
-                  common::platform::time::unit convert( const itimerval& value)
+                  platform::time::unit convert( const itimerval& value)
                   {
                      if( value.it_value.tv_sec == 0 && value.it_value.tv_usec == 0)
                      {
-                        return common::platform::time::unit::min();
+                        return platform::time::unit::min();
                      }
 
                      return std::chrono::seconds( value.it_value.tv_sec) + std::chrono::microseconds( value.it_value.tv_usec);
                   }
 
-                  common::platform::time::unit get()
+                  platform::time::unit get()
                   {
                      itimerval old;
 
@@ -341,7 +341,7 @@ namespace casual
                      return convert( old);
                   }
 
-                  common::platform::time::unit set( itimerval& value)
+                  platform::time::unit set( itimerval& value)
                   {
                      itimerval old;
 
@@ -357,11 +357,11 @@ namespace casual
                } // <unnamed>
             } // local
 
-            common::platform::time::unit set( common::platform::time::unit offset)
+            platform::time::unit set( platform::time::unit offset)
             {
-               if( offset <= common::platform::time::unit::zero())
+               if( offset <= platform::time::unit::zero())
                {
-                  if( offset == common::platform::time::unit::min())
+                  if( offset == platform::time::unit::min())
                   {
                      // Special case == 'unset'
                      return unset();
@@ -385,12 +385,12 @@ namespace casual
                }
             }
 
-            common::platform::time::unit get()
+            platform::time::unit get()
             {
                return local::get();
             }
 
-            common::platform::time::unit unset()
+            platform::time::unit unset()
             {
                itimerval value = {};
 
@@ -399,18 +399,18 @@ namespace casual
 
 
 
-            Scoped::Scoped( common::platform::time::unit timeout, const platform::time::point::type& now)
+            Scoped::Scoped( platform::time::unit timeout, const platform::time::point::type& now)
             {
                auto old = timer::set( timeout);
 
-               if( old != common::platform::time::unit::min())
+               if( old != platform::time::unit::min())
                {
                   m_old = now + old;
                   log::line( verbose::log, "old timepoint: ", m_old.time_since_epoch());
                }
             }
 
-            Scoped::Scoped( common::platform::time::unit timeout)
+            Scoped::Scoped( platform::time::unit timeout)
                : Scoped( timeout, platform::time::clock::type::now())
             {
             }
@@ -447,10 +447,10 @@ namespace casual
              : Deadline( deadline, platform::time::clock::type::now()) {}
 
 
-            Deadline::Deadline( common::platform::time::unit timeout, const platform::time::point::type& now)
+            Deadline::Deadline( platform::time::unit timeout, const platform::time::point::type& now)
              : Deadline( now + timeout, now) {}
 
-            Deadline::Deadline( common::platform::time::unit timeout)
+            Deadline::Deadline( platform::time::unit timeout)
              : Deadline( timeout, platform::time::clock::type::now()) {}
 
 

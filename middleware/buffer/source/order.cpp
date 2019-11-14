@@ -5,14 +5,14 @@
 //!
 
 
-#include "buffer/order.h"
+#include "casual/buffer/order.h"
 
 #include "common/buffer/pool.h"
 #include "common/buffer/type.h"
 #include "common/exception/xatmi.h"
 #include "common/exception/handle.h"
 #include "common/network/byteorder.h"
-#include "common/platform.h"
+#include "casual/platform.h"
 #include "common/log.h"
 #include "common/algorithm.h"
 #include "common/execute.h"
@@ -27,9 +27,9 @@ namespace casual
       namespace order
       {
 
-         using size_type = common::platform::size::type;
-         using const_data_type = common::platform::binary::type::const_pointer;
-         using data_type = common::platform::binary::type::pointer;
+         using size_type = platform::size::type;
+         using const_data_type = platform::binary::type::const_pointer;
+         using data_type = platform::binary::type::pointer;
 
          namespace local
          {
@@ -47,7 +47,7 @@ namespace casual
 
 
                   using common::buffer::Buffer::Buffer;
-                  using size_type = common::platform::binary::size::type;
+                  using size_type = platform::binary::size::type;
 
                   void shrink()
                   {
@@ -98,7 +98,7 @@ namespace casual
                   //!
                   //! Implement Buffer::transport
                   //!
-                  size_type transport( const common::platform::binary::size::type user_size) const
+                  size_type transport( const platform::binary::size::type user_size) const
                   {
                      //
                      // Just ignore user-size all together
@@ -131,7 +131,7 @@ namespace casual
                      return result;
                   }
 
-                  common::platform::buffer::raw::type allocate( const std::string& type, const common::platform::binary::size::type size)
+                  platform::buffer::raw::type allocate( const std::string& type, const platform::binary::size::type size)
                   {
                      m_pool.emplace_back( type, 0);
 
@@ -142,7 +142,7 @@ namespace casual
                   }
 
 
-                  common::platform::buffer::raw::type reallocate( const common::platform::buffer::raw::immutable::type handle, const common::platform::binary::size::type size)
+                  platform::buffer::raw::type reallocate( const platform::buffer::raw::immutable::type handle, const platform::binary::size::type size)
                   {
                      const auto result = find( handle);
 

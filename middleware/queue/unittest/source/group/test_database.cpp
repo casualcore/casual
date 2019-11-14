@@ -51,8 +51,8 @@ namespace casual
                common::algorithm::copy( common::uuid::string( common::uuid::make()), result.message.payload);
 
 
-               result.message.available = std::chrono::time_point_cast< std::chrono::microseconds>( common::platform::time::clock::type::now());
-               //result.message.timestamp = common::platform::time::clock::type::now();
+               result.message.available = std::chrono::time_point_cast< std::chrono::microseconds>( platform::time::clock::type::now());
+               //result.message.timestamp = platform::time::clock::type::now();
 
                return result;
             }
@@ -285,7 +285,7 @@ namespace casual
 
          EXPECT_TRUE( info.name == "unittest_queue");
          EXPECT_TRUE( info.count == 1) << "info.count: " << info.count;
-         EXPECT_TRUE( info.size == static_cast< common::platform::size::type>( message.message.payload.size()));
+         EXPECT_TRUE( info.size == static_cast< platform::size::type>( message.message.payload.size()));
       }
 
 
@@ -322,7 +322,7 @@ namespace casual
          auto origin = local::message( queue);
          database.enqueue( origin);
 
-         auto fetched = database.dequeue( local::request( queue), common::platform::time::clock::type::now());
+         auto fetched = database.dequeue( local::request( queue), platform::time::clock::type::now());
 
 
          ASSERT_TRUE( fetched.message.size() == 1);
@@ -344,7 +344,7 @@ namespace casual
          auto origin = local::message( queue);
          database.enqueue( origin);
 
-         auto fetched = database.dequeue( local::request( queue), common::platform::time::clock::type::now());
+         auto fetched = database.dequeue( local::request( queue), platform::time::clock::type::now());
          EXPECT_TRUE( fetched.message.size() == 1);
 
          auto info = local::get_queue( database, queue.id).value();
@@ -368,7 +368,7 @@ namespace casual
 
          auto reqest = local::request( queue);
          reqest.selector.id = origin.message.id;
-         auto fetched = database.dequeue( reqest, common::platform::time::clock::type::now());
+         auto fetched = database.dequeue( reqest, platform::time::clock::type::now());
 
 
          ASSERT_TRUE( fetched.message.size() == 1);
@@ -392,7 +392,7 @@ namespace casual
 
          auto reqest = local::request( queue);
          reqest.selector.properties = origin.message.properties;
-         auto fetched = database.dequeue( reqest, common::platform::time::clock::type::now());
+         auto fetched = database.dequeue( reqest, platform::time::clock::type::now());
 
 
          ASSERT_TRUE( fetched.message.size() == 1);
@@ -418,7 +418,7 @@ namespace casual
 
          auto reqest = local::request( queue);
          reqest.selector.properties = "some other properties";
-         auto fetched = database.dequeue( reqest, common::platform::time::clock::type::now());
+         auto fetched = database.dequeue( reqest, platform::time::clock::type::now());
 
          EXPECT_TRUE( fetched.message.size() == 0);
       }
@@ -456,7 +456,7 @@ namespace casual
 
          common::algorithm::for_each( messages,[&]( const message_type& origin){
 
-            auto fetched = database.dequeue( local::request( queue), common::platform::time::clock::type::now());
+            auto fetched = database.dequeue( local::request( queue), platform::time::clock::type::now());
 
             ASSERT_TRUE( fetched.message.size() == 1);
             EXPECT_TRUE( origin.message.id == fetched.message.at( 0).id);
@@ -485,9 +485,9 @@ namespace casual
             database.enqueue( origin);
 
             // Message should not be available.
-            EXPECT_TRUE( database.dequeue( local::request( queue), common::platform::time::clock::type::now()).message.empty());
+            EXPECT_TRUE( database.dequeue( local::request( queue), platform::time::clock::type::now()).message.empty());
             // Not even within the same transaction
-            EXPECT_TRUE( database.dequeue( local::request( queue, xid), common::platform::time::clock::type::now()).message.empty());
+            EXPECT_TRUE( database.dequeue( local::request( queue, xid), platform::time::clock::type::now()).message.empty());
 
             database.commit( xid);
          }
@@ -495,7 +495,7 @@ namespace casual
          {
             common::transaction::ID xid = common::transaction::id::create();
 
-            auto fetched = database.dequeue( local::request( queue, xid), common::platform::time::clock::type::now());
+            auto fetched = database.dequeue( local::request( queue, xid), platform::time::clock::type::now());
 
             ASSERT_TRUE( fetched.message.size() == 1) << CASUAL_NAMED_VALUE( fetched) << "\n" << CASUAL_NAMED_VALUE( database.queues());
             EXPECT_TRUE( origin.message.id == fetched.message.at( 0).id);
@@ -522,7 +522,7 @@ namespace casual
          {
             common::transaction::ID xid = common::transaction::id::create();
 
-            auto fetched = database.dequeue( local::request( queue, xid), common::platform::time::clock::type::now());
+            auto fetched = database.dequeue( local::request( queue, xid), platform::time::clock::type::now());
 
             ASSERT_TRUE( fetched.message.size() == 1);
             EXPECT_TRUE( origin.message.id == fetched.message.at( 0).id);
@@ -531,7 +531,7 @@ namespace casual
          }
 
          // Should be empty
-         EXPECT_TRUE( database.dequeue( local::request( queue), common::platform::time::clock::type::now()).message.empty());
+         EXPECT_TRUE( database.dequeue( local::request( queue), platform::time::clock::type::now()).message.empty());
       }
 
 
@@ -550,7 +550,7 @@ namespace casual
          {
             common::transaction::ID xid = common::transaction::id::create();
 
-            auto fetched = database.dequeue( local::request( queue, xid), common::platform::time::clock::type::now());
+            auto fetched = database.dequeue( local::request( queue, xid), platform::time::clock::type::now());
 
             ASSERT_TRUE( fetched.message.size() == 1);
             EXPECT_TRUE( origin.message.id == fetched.message.at( 0).id);
@@ -581,7 +581,7 @@ namespace casual
 
          // Should be empty
          //local::print( database.queues());
-         EXPECT_TRUE( database.dequeue( local::request( queue), common::platform::time::clock::type::now()).message.empty());
+         EXPECT_TRUE( database.dequeue( local::request( queue), platform::time::clock::type::now()).message.empty());
       }
 
       TEST( casual_queue_group_database, enqueue_one_message_in_transaction_rollback__info__expect__count_0__size_0)
@@ -627,13 +627,13 @@ namespace casual
             auto info = local::get_queue( database, queue.id).value();
 
             EXPECT_TRUE( info.count == 1) << CASUAL_NAMED_VALUE( info);
-            EXPECT_TRUE( info.size ==  static_cast< common::platform::size::type>( origin.message.payload.size()));
+            EXPECT_TRUE( info.size ==  static_cast< platform::size::type>( origin.message.payload.size()));
          }
 
          {
             common::transaction::ID xid = common::transaction::id::create();
 
-            auto fetched = database.dequeue( local::request( queue, xid), common::platform::time::clock::type::now());
+            auto fetched = database.dequeue( local::request( queue, xid), platform::time::clock::type::now());
 
             ASSERT_TRUE( fetched.message.size() == 1);
             EXPECT_TRUE( origin.message.id == fetched.message.at( 0).id);
@@ -642,7 +642,7 @@ namespace casual
 
             auto affected = database.affected();
             EXPECT_TRUE( affected == 1) << "affected: " << affected;
-            EXPECT_TRUE( database.dequeue( local::request( queue, xid), common::platform::time::clock::type::now()).message.empty());
+            EXPECT_TRUE( database.dequeue( local::request( queue, xid), platform::time::clock::type::now()).message.empty());
          }
 
          // Should be in error queue
@@ -650,11 +650,11 @@ namespace casual
             auto error = local::get_queue( database, queue.error).value();
          
             EXPECT_TRUE( error.count == 1) << " queues.at( 1).count: " <<  error.count;
-            EXPECT_TRUE( error.size ==  static_cast< common::platform::size::type>( origin.message.payload.size()));
+            EXPECT_TRUE( error.size ==  static_cast< platform::size::type>( origin.message.payload.size()));
 
             common::transaction::ID xid = common::transaction::id::create();
          
-            auto fetched = database.dequeue( local::request( error, xid), common::platform::time::clock::type::now());
+            auto fetched = database.dequeue( local::request( error, xid), platform::time::clock::type::now());
 
             ASSERT_TRUE( fetched.message.size() == 1) << CASUAL_NAMED_VALUE( error);
             EXPECT_TRUE( origin.message.id == fetched.message.at( 0).id);
@@ -667,11 +667,11 @@ namespace casual
             auto error = local::get_queue( database, queue.error).value();
          
             EXPECT_TRUE( error.count == 1) << " queues.at( 1).count: " <<  error.count;
-            EXPECT_TRUE( error.size ==  static_cast< common::platform::size::type>( origin.message.payload.size()));
+            EXPECT_TRUE( error.size ==  static_cast< platform::size::type>( origin.message.payload.size()));
 
             common::transaction::ID xid = common::transaction::id::create();
 
-            auto fetched = database.dequeue( local::request( error, xid), common::platform::time::clock::type::now());
+            auto fetched = database.dequeue( local::request( error, xid), platform::time::clock::type::now());
             database.commit( xid);
 
             ASSERT_TRUE( fetched.message.size() == 1);
@@ -717,7 +717,7 @@ namespace casual
 
          common::algorithm::for_each( messages,[&]( const message_type& origin){
 
-            auto fetched = database.dequeue( local::request( queue, xid), common::platform::time::clock::type::now());
+            auto fetched = database.dequeue( local::request( queue, xid), platform::time::clock::type::now());
 
             ASSERT_TRUE( fetched.message.size() == 1);
             EXPECT_TRUE( origin.message.id == fetched.message.at( 0).id);
@@ -729,7 +729,7 @@ namespace casual
 
          database.commit( xid);
 
-         EXPECT_TRUE( database.dequeue( local::request( queue), common::platform::time::clock::type::now()).message.empty());
+         EXPECT_TRUE( database.dequeue( local::request( queue), platform::time::clock::type::now()).message.empty());
       }
 
 
@@ -758,7 +758,7 @@ namespace casual
             database.enqueue( message);
 
             auto trid = common::transaction::id::create();
-            database.dequeue( local::request( queue, trid), common::platform::time::clock::type::now());
+            database.dequeue( local::request( queue, trid), platform::time::clock::type::now());
             database.rollback( trid);
 
             auto info = database.peek( local::peek::information( queue.error));
@@ -772,7 +772,7 @@ namespace casual
 
          EXPECT_TRUE( restored == 1) << CASUAL_NAMED_VALUE( restored);
          {
-            auto reply = database.dequeue( local::request(queue), common::platform::time::clock::type::now());
+            auto reply = database.dequeue( local::request(queue), platform::time::clock::type::now());
             ASSERT_TRUE( reply.message.size() == 1) << CASUAL_NAMED_VALUE( reply);
             EXPECT_TRUE( reply.message.at( 0).payload == message.message.payload);
          }
@@ -783,7 +783,7 @@ namespace casual
          common::unittest::Trace trace;
 
          // start time so we can make sure that available will be later thant this + 1h
-         auto now = common::platform::time::clock::type::now();
+         auto now = platform::time::clock::type::now();
 
          auto path = local::file();
          group::Database database( path, "test_group");
@@ -794,7 +794,7 @@ namespace casual
             database.enqueue( message);
 
             auto trid = common::transaction::id::create();
-            database.dequeue( local::request( queue, trid), common::platform::time::clock::type::now());
+            database.dequeue( local::request( queue, trid), platform::time::clock::type::now());
             database.rollback( trid);
 
             auto info = database.peek( local::peek::information( queue.id));
@@ -810,7 +810,7 @@ namespace casual
          }
 
          // message is not availiable until next hour
-         EXPECT_TRUE( database.dequeue( local::request( queue), common::platform::time::clock::type::now()).message.empty());
+         EXPECT_TRUE( database.dequeue( local::request( queue), platform::time::clock::type::now()).message.empty());
       }
       
 

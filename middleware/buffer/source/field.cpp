@@ -5,10 +5,10 @@
 //!
 
 
-#include "buffer/field.h"
-#include "buffer/internal/field.h"
-#include "buffer/internal/common.h"
-#include "buffer/internal/field/string.h"
+#include "casual/buffer/field.h"
+#include "casual/buffer/internal/field.h"
+#include "casual/buffer/internal/common.h"
+#include "casual/buffer/internal/field/string.h"
 
 #include "common/environment.h"
 #include "common/exception/xatmi.h"
@@ -17,7 +17,7 @@
 #include "common/buffer/pool.h"
 #include "common/buffer/type.h"
 #include "common/log.h"
-#include "common/platform.h"
+#include "casual/platform.h"
 #include "common/algorithm.h"
 #include "common/transcode.h"
 #include "common/execute.h"
@@ -53,9 +53,9 @@ namespace casual
          namespace
          {
             using item_type = long;
-            using size_type = common::platform::binary::size::type;
-            using const_data_type = common::platform::binary::type::const_pointer;
-            using data_type = common::platform::binary::type::pointer;
+            using size_type = platform::binary::size::type;
+            using const_data_type = platform::binary::type::const_pointer;
+            using data_type = platform::binary::type::pointer;
 
 
             template<typename T>
@@ -138,7 +138,7 @@ namespace casual
                }
 
                //! Implement Buffer::transport
-               size_type transport( const common::platform::binary::size::type user_size) const
+               size_type transport( const platform::binary::size::type user_size) const
                {
                   // Just ignore user-size all together
 
@@ -167,7 +167,7 @@ namespace casual
                   return result;
                }
 
-               common::platform::buffer::raw::type allocate( const std::string& type, const common::platform::binary::size::type size)
+               platform::buffer::raw::type allocate( const std::string& type, const platform::binary::size::type size)
                {
                   m_pool.emplace_back( type, 0);
 
@@ -179,7 +179,7 @@ namespace casual
                   return m_pool.back().handle();
                }
 
-               common::platform::buffer::raw::type reallocate( const common::platform::buffer::raw::immutable::type handle, const common::platform::binary::size::type size)
+               platform::buffer::raw::type reallocate( const platform::buffer::raw::immutable::type handle, const platform::binary::size::type size)
                {
                   const auto result = find( handle);
 
@@ -811,7 +811,7 @@ namespace casual
                   return CASUAL_FIELD_SUCCESS;
                }
 
-               int memory( char** const handle, const void* const source, const common::platform::binary::size::type count)
+               int memory( char** const handle, const void* const source, const platform::binary::size::type count)
                {
                   //const trace trace( "field::copy::data");
 
@@ -1667,7 +1667,7 @@ namespace casual
             }
 
 
-            char* add( common::platform::binary::type buffer)
+            char* add( platform::binary::type buffer)
             {
                const Trace trace{ "field::internal::add"};
 

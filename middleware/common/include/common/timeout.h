@@ -9,7 +9,7 @@
 
 
 
-#include "common/platform.h"
+#include "casual/platform.h"
 
 #include <iosfwd>
 #include <chrono>
@@ -24,14 +24,14 @@ namespace casual
       {
 
          Timeout();
-         Timeout( platform::time::point::type start, common::platform::time::unit timeout);
+         Timeout( platform::time::point::type start, platform::time::unit timeout);
 
-         void set( platform::time::point::type start, common::platform::time::unit timeout);
+         void set( platform::time::point::type start, platform::time::unit timeout);
 
          platform::time::point::type deadline() const;
 
          platform::time::point::type start;
-         common::platform::time::unit timeout;
+         platform::time::unit timeout;
 
          friend std::ostream& operator << ( std::ostream& out, const Timeout& rhs);
       };

@@ -27,7 +27,7 @@ namespace casual
                {
                   namespace implementation
                   {
-                     using size_type = common::platform::size::type;
+                     using size_type = platform::size::type;
 
                      using writer_base = native::binary::Writer;
                      struct Writer : writer_base
@@ -66,12 +66,12 @@ namespace casual
             } // local
             */
 
-            serialize::Reader reader( const common::platform::binary::type& source)
+            serialize::Reader reader( const platform::binary::type& source)
             {
                return serialize::Reader::emplace< native::binary::Reader>( source);
             }
 
-            serialize::Writer writer( common::platform::binary::type& destination)
+            serialize::Writer writer( platform::binary::type& destination)
             {
                return serialize::Writer::emplace< native::binary::Writer>( destination);
             }

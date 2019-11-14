@@ -54,7 +54,7 @@ namespace casual
                if( found)
                {
                   found->active = true;
-                  found->timeout.timeout = common::platform::time::unit{ 0};
+                  found->timeout.timeout = platform::time::unit{ 0};
                   return *found;
                }
                else

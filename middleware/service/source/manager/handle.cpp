@@ -376,7 +376,7 @@ namespace casual
                void Lookup::discover( 
                   common::message::service::lookup::Request&& message, 
                   const std::string& name, 
-                  common::platform::time::point::type now)
+                  platform::time::point::type now)
                {
                   Trace trace{ "service::manager::handle::service::Lookup::discover"};
 
@@ -625,8 +625,8 @@ namespace casual
             void Policy::transaction(
                   const common::transaction::ID& trid,
                   const common::server::Service& service,
-                  const common::platform::time::unit& timeout,
-                  const common::platform::time::point::type& now)
+                  const platform::time::unit& timeout,
+                  const platform::time::point::type& now)
             {
                // service-manager doesn't bother with transactions...
             }

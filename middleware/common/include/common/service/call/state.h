@@ -12,7 +12,7 @@
 
 #include "common/signal.h"
 #include "common/timeout.h"
-#include "common/platform.h"
+#include "casual/platform.h"
 #include "common/uuid.h"
 
 namespace casual

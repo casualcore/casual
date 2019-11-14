@@ -9,7 +9,7 @@
 
 
 #include "common/serialize/macro.h"
-#include "common/platform.h"
+#include "casual/platform.h"
 #include "common/optional.h"
 
 #include <string>
@@ -25,8 +25,8 @@ namespace casual
          {
             struct Limit
             {
-               common::optional< common::platform::size::type> size;
-               common::optional< common::platform::size::type> messages;
+               common::optional< platform::size::type> size;
+               common::optional< platform::size::type> messages;
 
                CASUAL_CONST_CORRECT_SERIALIZE
                (

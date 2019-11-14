@@ -151,18 +151,11 @@ install_libs.append( common)
 
 
 install_headers += [ 
-      ( 'include/common/log.h', 'common'),
-      ( 'include/common/platform.h', 'common'),
-      ( 'include/common/traits.h', 'common'),
-      ( 'include/common/log/stream.h', 'common/log'),
-      ( 'include/common/log/trace.h', 'common/log'),
-      ( 'include/common/log/category.h', 'common/log')
+      ( 'include/casual/platform.h', 'casual'),
 ]
 
 
-#
 # Some help for unittest tracing
-#
 target_unittest = LinkLibrary( 'bin/casual-unittest', 
      [
        Compile( 'source/unittest.cpp'),
@@ -173,9 +166,7 @@ target_unittest = LinkLibrary( 'bin/casual-unittest',
      ],
      [ common, "gtest"])
 
-#
 # The mockup-rm, only for testing.
-#
 lib_mockup_rm = LinkLibrary( 'bin/casual-mockup-rm', 
      [
        Compile( 'source/unittest/rm.cpp')
@@ -279,9 +270,6 @@ unittest_objectfiles = [
 ]
 
 
-
-
-
 target_test_common = LinkUnittest( 'bin/test-casual-common-isolated', 
 	unittest_objectfiles,
 	[
@@ -290,15 +278,11 @@ target_test_common = LinkUnittest( 'bin/test-casual-common-isolated',
       lib_mockup_rm,
     ])		
 
-#
 # We execute 'simple_process' from test-casual-common-isolated, so
 # we need to make sure simple_process is built before
-#
 Dependencies( target_test_common, [ target_simple_process ])
 
-#
 # Install 
-#
 Install( install_libs, '$(CASUAL_HOME)/lib')
 Install( install_headers, '$(CASUAL_HOME)/include')
 

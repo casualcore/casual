@@ -90,7 +90,7 @@ namespace casual
          //! @throws exception::signal::* when a signal is received
          //!
          //! @param time numbers of microseconds to sleep
-         void sleep( common::platform::time::unit time);
+         void sleep( platform::time::unit time);
 
          //! Sleep for an arbitrary duration
          //!
@@ -107,7 +107,7 @@ namespace casual
          template< typename R, typename P>
          void sleep( std::chrono::duration< R, P> time)
          {
-            sleep( std::chrono::duration_cast< common::platform::time::unit>( time));
+            sleep( std::chrono::duration_cast< platform::time::unit>( time));
          }
 
          namespace pattern
@@ -118,17 +118,17 @@ namespace casual
                {
                   struct infinite_quantity {}; 
 
-                  Pattern( common::platform::time::unit time, platform::size::type quantity);
-                  Pattern( common::platform::time::unit time, infinite_quantity);
+                  Pattern( platform::time::unit time, platform::size::type quantity);
+                  Pattern( platform::time::unit time, infinite_quantity);
 
                   template< typename R, typename P>
                   Pattern( std::chrono::duration< R, P> time, platform::size::type quantity)
-                   : Pattern{ std::chrono::duration_cast< common::platform::time::unit>( time), quantity}
+                   : Pattern{ std::chrono::duration_cast< platform::time::unit>( time), quantity}
                   {}
 
                   template< typename R, typename P>
                   Pattern( std::chrono::duration< R, P> time, infinite_quantity)
-                   : Pattern{ std::chrono::duration_cast< common::platform::time::unit>( time), infinite_quantity{}}
+                   : Pattern{ std::chrono::duration_cast< platform::time::unit>( time), infinite_quantity{}}
                   {}
 
 
@@ -142,7 +142,7 @@ namespace casual
                   })
 
                private:
-                  common::platform::time::unit m_time;
+                  platform::time::unit m_time;
                   platform::size::type m_quantity = 0;
                };
                
@@ -243,13 +243,13 @@ namespace casual
             std::vector< Exit> ended();
 
             std::vector< Exit> wait( const std::vector< strong::process::id>& pids);
-            std::vector< Exit> wait( const std::vector< strong::process::id>& pids, common::platform::time::unit timeout);
+            std::vector< Exit> wait( const std::vector< strong::process::id>& pids, platform::time::unit timeout);
 
             //! Terminates and waits for the termination.
             //!
             //! @return the terminated l
             std::vector< Exit> terminate( const std::vector< strong::process::id>& pids);
-            std::vector< Exit> terminate( const std::vector< strong::process::id>& pids, common::platform::time::unit timeout);
+            std::vector< Exit> terminate( const std::vector< strong::process::id>& pids, platform::time::unit timeout);
 
          } // lifetime
 

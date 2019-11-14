@@ -192,7 +192,7 @@ namespace casual
                   curl::log( curl_multi_remove_handle( multi.get(), easy.get()));
                }
 
-               common::platform::size::type perform( const type::multi& multi)
+               platform::size::type perform( const type::multi& multi)
                {
                   int count = 0;
                   curl::check( curl_multi_perform( multi.get(), &count));

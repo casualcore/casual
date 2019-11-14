@@ -83,7 +83,7 @@ namespace casual
       TEST( common_serialize_json, array)
       {
          common::unittest::Trace trace;
-         common::platform::binary::type json;
+         platform::binary::type json;
 
          const std::array< char, 4> origin{ '1', '2', '3', '4' };
 

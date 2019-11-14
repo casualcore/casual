@@ -73,7 +73,7 @@ namespace casual
                      struct Type
                      {
                         std::string type;
-                        common::platform::size::type size;
+                        platform::size::type size;
                      };
 
                      struct Info
@@ -111,7 +111,7 @@ namespace casual
                      template< typename T>
                      auto network( T&& value) -> std::enable_if_t< common::serialize::native::binary::network::detail::is_network_array< T>::value, Type>
                      {
-                        return Type{ "fixed array", static_cast< common::platform::size::type>( common::memory::size( value))};
+                        return Type{ "fixed array", static_cast< platform::size::type>( common::memory::size( value))};
                      }
 
 
@@ -173,7 +173,7 @@ namespace casual
                         return *this;
                      }
 
-                     inline void container_start( common::platform::size::type size, const char* name) 
+                     inline void container_start( platform::size::type size, const char* name) 
                      { 
                         canonical.push( name);
                         write_size( size);
@@ -211,14 +211,14 @@ namespace casual
                         m_types.push_back( type::info( std::forward< T>( value), get_name( canonical.name())));
                      }
 
-                     void write_size( common::platform::size::type value)
+                     void write_size( platform::size::type value)
                      {
                         canonical.push( "size");
                         type( value);
                         canonical.pop();
                      }
 
-                     void dynamic( common::platform::size::type size, const char* type)
+                     void dynamic( platform::size::type size, const char* type)
                      {
                         type::Info info;
                         info.name = get_name( canonical.name());
@@ -240,7 +240,7 @@ namespace casual
                         canonical.pop();
                      }
 
-                     void write( const common::platform::binary::type& value)
+                     void write( const platform::binary::type& value)
                      {
                         write_size( value.size());
                         canonical.push( "data");
@@ -375,12 +375,12 @@ namespace casual
 
                   namespace binary
                   {
-                     auto value( common::platform::size::type size)
+                     auto value( platform::size::type size)
                      {
-                        constexpr auto min = std::numeric_limits< common::platform::binary::value::type>::min();
-                        constexpr auto max = std::numeric_limits< common::platform::binary::value::type>::max();
+                        constexpr auto min = std::numeric_limits< platform::binary::value::type>::min();
+                        constexpr auto max = std::numeric_limits< platform::binary::value::type>::max();
 
-                        common::platform::binary::type result;
+                        platform::binary::type result;
                         result.resize( size);
 
                         auto current = min;
@@ -399,9 +399,9 @@ namespace casual
 
                   namespace string
                   {
-                     auto value( common::platform::size::type size)
+                     auto value( platform::size::type size)
                      {
-                        constexpr common::platform::binary::value::type letters[] = { 'a', 'b', 'c', 'd', 'e', 'f', 'a', 'b', 'c', 'd', 'e', 'f'};
+                        constexpr platform::binary::value::type letters[] = { 'a', 'b', 'c', 'd', 'e', 'f', 'a', 'b', 'c', 'd', 'e', 'f'};
 
                         std::string result;
                         result.resize( size);

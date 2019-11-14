@@ -281,7 +281,7 @@ namespace casual
          }
 
 
-         common::platform::size::type Transaction::resource_count() const noexcept
+         platform::size::type Transaction::resource_count() const noexcept
          {
             auto count_resources = []( auto size, auto& branch){ return size + branch.resources.size();};
 

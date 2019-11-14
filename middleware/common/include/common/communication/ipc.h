@@ -9,7 +9,7 @@
 #include "common/communication/device.h"
 #include "common/communication/socket.h"
 
-#include "common/platform.h"
+#include "casual/platform.h"
 #include "common/strong/id.h"
 #include "common/uuid.h"
 #include "common/algorithm.h"

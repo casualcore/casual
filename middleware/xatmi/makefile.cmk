@@ -33,28 +33,25 @@ lib_xatmi = LinkLibrary( 'bin/casual-xatmi',
 	['casual-common'])
 
 install_lib.append( lib_xatmi)
-install_include.append( ( 'include/xatmi/server.h', 'xatmi'))
-install_include.append( ( 'include/xatmi/executable.h', 'xatmi'))
-install_include.append( ( 'include/xatmi/defines.h', 'xatmi'))
-install_include.append( ( 'include/xatmi/extended.h', 'xatmi'))
-install_include.append( ( 'include/xatmi/flag.h', 'xatmi'))
-install_include.append( ( 'include/xatmi/code.h', 'xatmi'))
-install_include.append( ( 'include/xatmi/xa.h', 'xatmi'))
-install_include.append( 'include/xatmi.h')
 
-install_include.append( ( 'include/tx/code.h', 'tx'))
-install_include.append( 'include/tx.h')
-
-install_include.append( ( 'include/xa/code.h', 'xa'))
-install_include.append( ( 'include/xa/flag.h', 'xa'))
-install_include.append( 'include/xa.h')
-
-
-
-
-#
-# unittest
-#
+install_include += [ 
+   ( 'include/casual/xatmi/server.h', 'casual/xatmi'),
+   ( 'include/casual/xatmi/executable.h', 'casual/xatmi'),
+   ( 'include/casual/xatmi/extended.h', 'casual/xatmi'),
+   ( 'include/casual/xatmi/defines.h', 'casual/xatmi'),
+   ( 'include/casual/xatmi/flag.h', 'casual/xatmi'),
+   ( 'include/casual/xatmi/code.h', 'casual/xatmi'),
+   ( 'include/casual/xatmi/xa.h', 'casual/xatmi'),
+   ( 'include/casual/xatmi.h', 'casual'),
+   'include/xatmi.h',
+   ( 'include/casual/tx/code.h', 'casual/tx'),
+   ( 'include/casual/tx.h', 'casual'),
+    'include/tx.h',
+   ( 'include/casual/xa/code.h', 'casual/xa'),
+   ( 'include/casual/xa/flag.h', 'casual/xa'),
+   ( 'include/casual/xa.h', 'casual'),
+    'include/xa.h',
+]
 
 LinkUnittest( 'bin/test-casual-xatmi',
     [
@@ -64,9 +61,7 @@ LinkUnittest( 'bin/test-casual-xatmi',
     ],
     [ lib_xatmi, 'casual-common', 'casual-unittest'])
 
-#
 # Install
-#    
 Install( install_lib, '$(CASUAL_HOME)/lib')
 Install( install_include, '$(CASUAL_HOME)/include')
 

@@ -5,11 +5,11 @@
 //!
 
 
-#include "buffer/octet.h"
+#include "casual/buffer/octet.h"
 
 #include "common/buffer/pool.h"
 #include "common/memory.h"
-#include "common/platform.h"
+#include "casual/platform.h"
 #include "common/exception/handle.h"
 
 namespace casual
@@ -21,9 +21,9 @@ namespace casual
          namespace
          {
 
-            using size_type = common::platform::size::type;
-            using const_data_type = common::platform::binary::type::const_pointer;
-            using data_type = common::platform::binary::type::pointer;
+            using size_type = platform::size::type;
+            using const_data_type = platform::binary::type::const_pointer;
+            using data_type = platform::binary::type::pointer;
 
 
             struct Buffer : common::buffer::Buffer
@@ -64,7 +64,7 @@ namespace casual
                   return result;
                }
 
-               common::platform::buffer::raw::type allocate( const std::string& type, const common::platform::binary::size::type size)
+               platform::buffer::raw::type allocate( const std::string& type, const platform::binary::size::type size)
                {
                   m_pool.emplace_back( type, size);
 
@@ -75,7 +75,7 @@ namespace casual
                }
 
 
-               common::platform::buffer::raw::type reallocate( const common::platform::buffer::raw::immutable::type handle, const common::platform::binary::size::type size)
+               platform::buffer::raw::type reallocate( const platform::buffer::raw::immutable::type handle, const platform::binary::size::type size)
                {
                   const auto result = find( handle);
 

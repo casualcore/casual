@@ -15,7 +15,7 @@
 #include "service/manager/admin/server.h"
 #include "service/manager/admin/api.h"
 
-#include "domain/manager/admin/vo.h"
+#include "domain/manager/admin/model.h"
 #include "domain/manager/admin/server.h"
 
 
@@ -69,7 +69,7 @@ namespace casual
             struct State
             {
                admin::model::State service;
-               casual::domain::manager::admin::vo::State domain;
+               casual::domain::manager::admin::model::State domain;
             };
 
             State instances()
@@ -137,7 +137,7 @@ namespace casual
 
                   std::reference_wrapper< const admin::model::Service> service;
 
-                  const casual::domain::manager::admin::vo::Executable* executable = nullptr;
+                  const casual::domain::manager::admin::model::Executable* executable = nullptr;
 
                   State state = State::remote;
                };
@@ -148,9 +148,9 @@ namespace casual
                   {
                      namespace lookup
                      {
-                        const casual::domain::manager::admin::vo::Executable* executable( const call::State& state, strong::process::id pid)
+                        const casual::domain::manager::admin::model::Executable* executable( const call::State& state, strong::process::id pid)
                         {
-                           auto found = algorithm::find_if( state.domain.executables, [=]( const casual::domain::manager::admin::vo::Executable& e){
+                           auto found = algorithm::find_if( state.domain.executables, [=]( const casual::domain::manager::admin::model::Executable& e){
                               return algorithm::find( e.instances, pid);
                            });
 
@@ -373,7 +373,7 @@ namespace casual
 
                auto format_last = []( const admin::model::Service& value) -> std::string
                {
-                  if( value.metric.last == common::platform::time::point::limit::zero())
+                  if( value.metric.last == platform::time::point::limit::zero())
                      return "-";
 
                   return common::chronology::local( value.metric.last);

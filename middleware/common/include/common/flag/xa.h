@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include "xa/flag.h"
+#include "casual/xa/flag.h"
 
 #include "common/flag.h"
 

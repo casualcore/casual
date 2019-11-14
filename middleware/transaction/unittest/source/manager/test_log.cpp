@@ -27,7 +27,7 @@ namespace casual
             {
                manager::Transaction result{ common::transaction::id::create( common::process::handle())};
 
-               result.started = common::platform::time::clock::type::now();
+               result.started = platform::time::clock::type::now();
                result.deadline = result.started + std::chrono::seconds{ 10};
 
                return result;

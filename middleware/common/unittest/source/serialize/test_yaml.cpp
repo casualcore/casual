@@ -118,7 +118,7 @@ value:
       TEST( common_serialize_yaml, array)
       {
          common::unittest::Trace trace;
-         common::platform::binary::type yaml;
+         platform::binary::type yaml;
 
          const std::array< char, 4> origin{ '1', '2', '3', '4' };
 

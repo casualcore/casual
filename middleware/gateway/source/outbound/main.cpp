@@ -92,7 +92,7 @@ namespace casual
                   State( communication::tcp::inbound::Device&& inbound, size_type order)
                      : external{ std::move( inbound)}, order( order)
                   {
-                     metric.metrics.reserve( common::platform::batch::gateway::metrics);
+                     metric.metrics.reserve( platform::batch::gateway::metrics);
                   }
 
                   ~State()
@@ -437,7 +437,7 @@ namespace casual
                                     // get the original "un-branched" trid
                                     external::origin::transaction( state, message);
 
-                                    auto now = common::platform::time::clock::type::now();
+                                    auto now = platform::time::clock::type::now();
 
                                     state.metric.metrics.push_back( [&]()
                                     {
@@ -466,7 +466,7 @@ namespace casual
 
                                  // send service metrics if we don't have any more in-flight call request (this one
                                  // was the last, or only) OR we've accumulated enough metrics for a batch update
-                                 if( state.service.route.empty() || state.metric.metrics.size() >= common::platform::batch::gateway::metrics)
+                                 if( state.service.route.empty() || state.metric.metrics.size() >= platform::batch::gateway::metrics)
                                  {
                                     blocking::send( common::communication::instance::outbound::service::manager::device(), state.metric);
                                     state.metric.metrics.clear();
@@ -668,7 +668,7 @@ namespace casual
                                  log::line( verbose::log, "message: ", message);
 
 
-                                 auto now = common::platform::time::clock::type::now();
+                                 auto now = platform::time::clock::type::now();
 
                                  if( ! message.flags.exist( common::message::service::call::request::Flag::no_reply))
                                  {

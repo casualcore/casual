@@ -5,9 +5,9 @@
 //!
 
 
-#include "xatmi/server.h"
-#include "xatmi/internal/log.h"
-#include "xatmi/internal/transform.h"
+#include "casual/xatmi/server.h"
+#include "casual/xatmi/internal/log.h"
+#include "casual/xatmi/internal/transform.h"
 
 
 #include "common/server/start.h"

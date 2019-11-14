@@ -36,7 +36,7 @@ namespace casual
          std::string m_string = "foo";
          short m_short = 256;
          long long m_longlong = std::numeric_limits< long long>::max();
-         common::platform::time::point::type m_time = common::platform::time::point::type::max();
+         platform::time::point::type m_time = platform::time::point::type::max();
 
          common::optional< long> m_optional = 42;
 
@@ -116,7 +116,7 @@ value:
 
       struct Binary : public SimpleVO
       {
-         common::platform::binary::type m_binary;
+         platform::binary::type m_binary;
 
          CASUAL_CONST_CORRECT_SERIALIZE
          (

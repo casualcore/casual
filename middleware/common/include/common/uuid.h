@@ -10,7 +10,7 @@
 
 #include <uuid/uuid.h>
 
-#include "common/platform.h"
+#include "casual/platform.h"
 #include "common/view/string.h"
 #include "common/view/binary.h"
 #include "common/range.h"

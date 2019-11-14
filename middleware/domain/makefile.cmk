@@ -26,6 +26,7 @@ LibraryPaths([
 
 install_bins = []
 install_libs = []
+install_headers = []
 
 common_archive = LinkArchive( 'bin/casual-domain-common', 
  [
@@ -79,23 +80,39 @@ install_bins.append( target_domain_manager)
 
 
 target = LinkLibrary( 'bin/casual-domain-admin-cli',
-    [
-     Compile( 'source/manager/admin/cli.cpp'),
-     ],
-    [
-     manager_archive,
-     common_archive,
-     'casual-common',
-     'casual-configuration',
-     'casual-serviceframework'
-     ]
+   [
+      Compile( 'source/manager/admin/cli.cpp'),
+   ],
+   [
+      manager_archive,
+      common_archive,
+      'casual-common',
+      'casual-configuration',
+      'casual-serviceframework'
+   ]
 )
-
 install_libs.append( target)
 
+# public api
+domain_api = LinkLibrary( 'bin/casual-domain-api',
+   [
+      Compile( 'source/manager/api/state.cpp'),
+      Compile( 'source/manager/api/internal/transform.cpp'),
+   ],
+   [
+      common_archive,
+      'casual-common',
+      'casual-serviceframework'
+   ]
+)
+install_libs.append( domain_api)
+
+install_headers += [ 
+   ( 'include/casual/domain/manager/api/model.h', 'casual/domain/manager/api'),
+   ( 'include/casual/domain/manager/api/state.h', 'casual/domain/manager/api'),
+]
+
 # pending send
-
-
 pending_executable = LinkExecutable( 'bin/casual-domain-pending-message',
     [
       Compile( 'source/pending/message/main.cpp'),
@@ -138,12 +155,14 @@ target_test_domain = LinkUnittest( 'bin/test-casual-domain',
     [ 
         Compile( 'unittest/source/manager/test_state.cpp'),
         Compile( 'unittest/source/manager/test_manager.cpp'),
+        Compile( 'unittest/source/manager/test_api.cpp'),
         Compile( 'unittest/source/pending/test_message.cpp'),
     ],
     [
         manager_archive,
         domain_unittest_library,
         pending_library,
+        domain_api,
         'casual-common',
         'casual-configuration',
         'casual-serviceframework',
@@ -204,6 +223,7 @@ Dependencies( target_test_delay, [ target_delay_message ])
 
 Install( install_bins,'$(CASUAL_HOME)/bin')
 Install( install_libs,'$(CASUAL_HOME)/lib')
+Install( install_headers,'$(CASUAL_HOME)/include')
 
 
 

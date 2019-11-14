@@ -4,14 +4,11 @@
 //! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-
-
+#include "xatmi.h"
+#include "casual/buffer/string.h"
 
 #include <cstddef>
 #include <cstdio>
-
-#include <xatmi.h>
-#include <buffer/string.h>
 
 
 int call_with_string()

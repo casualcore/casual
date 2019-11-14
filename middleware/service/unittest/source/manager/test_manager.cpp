@@ -464,7 +464,7 @@ domain:
 
          service::unittest::advertise( { "service1", "service2"});
 
-         auto start = common::platform::time::clock::type::now();
+         auto start = platform::time::clock::type::now();
          auto end = start + std::chrono::milliseconds{ 2};
 
          {

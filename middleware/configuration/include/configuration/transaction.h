@@ -9,7 +9,7 @@
 
 
 #include "common/serialize/macro.h"
-#include "common/platform.h"
+#include "casual/platform.h"
 #include "common/optional.h"
 
 #include <string>
@@ -26,7 +26,7 @@ namespace casual
             struct Default
             {
                std::string key;
-               common::platform::size::type instances = 1;
+               platform::size::type instances = 1;
 
                CASUAL_CONST_CORRECT_SERIALIZE
                (
@@ -40,7 +40,7 @@ namespace casual
          {
             std::string name;
             common::optional< std::string> key;
-            common::optional< common::platform::size::type> instances;
+            common::optional< platform::size::type> instances;
             
             std::string note;
 

@@ -32,7 +32,7 @@ namespace casual
             struct Request : common::message::basic_message< common::message::Type::delay_message>
             {
                common::strong::ipc::id destination;
-               common::platform::time::unit delay;
+               platform::time::unit delay;
                common::communication::message::Complete message;
 
                CASUAL_CONST_CORRECT_SERIALIZE(
@@ -52,7 +52,7 @@ namespace casual
             {
                Request request;
                request.destination = destination;
-               request.delay = std::chrono::duration_cast< common::platform::time::unit>( delay);
+               request.delay = std::chrono::duration_cast< platform::time::unit>( delay);
                request.message = common::serialize::native::complete( std::move( message));
 
                send( request);

@@ -8,7 +8,7 @@
 
 
 #include "common/serialize/macro.h"
-#include "common/platform.h"
+#include "casual/platform.h"
 
 #include "common/domain.h"
 
@@ -86,8 +86,8 @@ namespace casual
                   {
                      struct Limit 
                      {
-                        common::platform::binary::size::type size = 0;
-                        common::platform::binary::size::type messages = 0;
+                        platform::binary::size::type size = 0;
+                        platform::binary::size::type messages = 0;
                         
                         CASUAL_CONST_CORRECT_SERIALIZE(
                         {

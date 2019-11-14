@@ -11,13 +11,11 @@
  * Disclaimer: A lot of error handling is missing
  */
 
+#include "xatmi.h"
+#include "casual/buffer/order.h"
 
 #include <cstddef>
 #include <cstdio>
-
-#include <xatmi.h>
-#include <buffer/order.h>
-
 
 int call_with_order()
 {

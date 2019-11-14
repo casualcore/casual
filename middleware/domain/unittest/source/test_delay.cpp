@@ -63,7 +63,7 @@ domain:
 
             auto id = common::uuid::make();
 
-            auto start = common::platform::time::clock::type::now();
+            auto start = platform::time::clock::type::now();
 
             {
                common::message::domain::process::lookup::Request message;
@@ -76,7 +76,7 @@ domain:
                ipc.blocking_receive( message);
 
                EXPECT_TRUE( message.identification == id);
-               EXPECT_TRUE( common::platform::time::clock::type::now() - start > std::chrono::milliseconds{ 10});
+               EXPECT_TRUE( platform::time::clock::type::now() - start > std::chrono::milliseconds{ 10});
 
             }
 
@@ -99,14 +99,14 @@ domain:
                message::send( message, ipc.ipc(), std::chrono::milliseconds{ 0});
             }
 
-            auto start = common::platform::time::clock::type::now();
+            auto start = platform::time::clock::type::now();
 
             {
                common::message::domain::process::lookup::Request message;
                ipc.blocking_receive( message);
 
                EXPECT_TRUE( message.identification == id);
-               EXPECT_TRUE( common::platform::time::clock::type::now() - start < std::chrono::milliseconds{ 100});
+               EXPECT_TRUE( platform::time::clock::type::now() - start < std::chrono::milliseconds{ 100});
 
             }
 

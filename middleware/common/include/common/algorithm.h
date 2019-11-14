@@ -11,7 +11,7 @@
 
 #include "common/range.h"
 #include "common/traits.h"
-#include "common/platform.h"
+#include "casual/platform.h"
 #include "common/cast.h"
 #include "common/optional.h"
 #include "common/predicate.h"

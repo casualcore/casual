@@ -97,9 +97,9 @@ namespace chronology
 
    namespace from
    {
-      common::platform::time::unit string( const std::string& value)
+      platform::time::unit string( const std::string& value)
       {
-         using time_unit = common::platform::time::unit;
+         using time_unit = platform::time::unit;
 
          auto last = std::find_if_not( std::begin( value), std::end( value), []( std::string::value_type value)
                {

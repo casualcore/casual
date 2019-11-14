@@ -9,7 +9,7 @@
 
 #include "queue/group/database.h"
 
-#include "common/platform.h"
+#include "casual/platform.h"
 
 #include <string>
 
@@ -19,8 +19,8 @@ namespace casual
    {
       namespace group
       {
-         using queue_id_type = common::platform::size::type;
-         using size_type = common::platform::size::type;
+         using queue_id_type = platform::size::type;
+         using size_type = platform::size::type;
 
          struct State
          {
