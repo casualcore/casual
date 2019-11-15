@@ -96,7 +96,8 @@ namespace casual
 
             std::vector< model::Service> services( 
                const std::vector< configuration::build::server::Service>& services, 
-               const std::vector< std::string>& names)
+               const std::vector< std::string>& names,
+               const std::string& transaction_mode)
             {
                Trace trace{ "tools::build::transform::services"};
 
@@ -111,7 +112,14 @@ namespace casual
                   return result;
                });
 
-               common::algorithm::append( names, result);
+               auto mode = transaction_mode.empty() ? common::service::transaction::Type::automatic : common::service::transaction::mode( transaction_mode);
+
+               common::algorithm::transform( names, result, [mode]( auto& name)
+               {
+                  model::Service result{ name};
+                  result.transaction = mode;
+                  return result;
+               });
 
                return result;
             }

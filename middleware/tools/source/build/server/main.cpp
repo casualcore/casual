@@ -49,6 +49,10 @@ namespace casual
                   struct 
                   {
                       std::vector< std::string> names;
+                     struct 
+                     {
+                        std::string mode;
+                     } transaction;
                   } service;
 
                   struct
@@ -61,6 +65,8 @@ namespace casual
                      std::string properties;
                      std::vector< std::string> keys;
                   } resource;
+
+
 
                   struct
                   {
@@ -88,6 +94,20 @@ namespace casual
                      };
                   }
                } // service
+               
+               namespace complete
+               {
+                  namespace transaction
+                  {
+                     auto mode()
+                     {
+                        return []( auto&, bool) -> std::vector< std::string>
+                        {
+                           return { "automatic", "join", "none", "atomic"};
+                        };
+                     }
+                  } // transaction
+               } // complete
 
                struct State
                {
@@ -114,7 +134,8 @@ namespace casual
 
                      result.services = build::transform::services(
                         definition.services,
-                        settings.service.names);
+                        settings.service.names,
+                        settings.service.transaction.mode);
 
                      return result;
                   };
@@ -189,6 +210,7 @@ namespace casual
                         Option( std::tie( settings.directive.compiler), {"-c", "--compiler"}, "compiler to use"),
                         Option( build::Directive::split( settings.directive.directives), {"-f", "--build-directives", "--link-directives"}, "additional compile and link directives\n\ndeprecated: --link-directives")( cardinality::any{}),
                         Option( std::tie( settings.resource.properties), {"-p", "--properties-file"}, "path to resource properties file"),
+                        Option( std::tie( settings.service.transaction.mode), complete::transaction::mode(), {  "--default-transaction-mode"}, "the transaction mode for services specified with --service|-s"),
                         Option( option::toggle( settings.directive.use_defaults), { "--no-defaults"}, "do not add any default compiler/link directives\n\nuse --build-directives to add your own"),
                         Option( std::tie( settings.source.file), { "--source-file"}, "name of the intermediate source file"),
                         Option( option::toggle( settings.source.keep), {"-k", "--keep"}, "keep the intermediate source file"),
