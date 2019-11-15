@@ -36,7 +36,8 @@ namespace casual
 
             std::vector< model::Service> services( 
                const std::vector< configuration::build::server::Service>& services, 
-               const std::vector< std::string>& names);
+               const std::vector< std::string>& names,
+               const std::string& transaction_mode);
          } // transform
       } // build
    } // tools
