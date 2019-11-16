@@ -68,15 +68,21 @@ install_bins.append( target)
 	
 # admin-terminal
 
-admin_api_archive = LinkArchive( 'bin/casual-service-admin-api',
+admin_api_lib = LinkLibrary( 'bin/casual-service-admin-api',
    [ 
       Compile( 'source/manager/admin/api.cpp')
+   ],
+   [
+       logic_archive,
+       'casual-common',
+       'casual-serviceframework'
    ])
+install_libs.append( admin_api_lib)
 
 target = LinkLibrary( 'bin/casual-service-admin-cli',
     [ Compile( 'source/manager/admin/cli.cpp')],
     [ 
-        admin_api_archive,
+        admin_api_lib,
         logic_archive, 
         'casual-common', 
         'casual-serviceframework', 
@@ -91,7 +97,7 @@ api_lib = LinkLibrary( 'bin/casual-service-api',
       Compile( 'source/manager/api/model.cpp')
    ],
    [ 
-      admin_api_archive,
+      admin_api_lib,
       logic_archive,
       'casual-common',
       'casual-serviceframework', 
