@@ -51,22 +51,7 @@ namespace casual
                }
             };
          };
-/*
-         //! Specialization for enum
-         template< typename C> 
-         struct has_formatter< C, std::enable_if_t< 
-            std::is_enum< C>::value && ! std::is_error_code_enum< C>::value && ! std::is_error_condition_enum< C>::value>>
-            : std::true_type
-         {
-            struct formatter
-            {
-               void operator () ( std::ostream& out, C value) const
-               {
-                  out << cast::underlying( value);
-               }
-            };
-         };
-         */
+
 
          //! Specialization for error code
          template< typename C> 

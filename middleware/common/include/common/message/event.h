@@ -130,6 +130,17 @@ namespace casual
                      shutdown_start,
                      shutdown_end,
                   };
+                  inline friend std::ostream& operator << ( std::ostream& out, Context value)
+                  {
+                     switch( value)
+                     {
+                        case Context::boot_start: return out << "boot.start";
+                        case Context::boot_end: return out << "boot.end";
+                        case Context::shutdown_start: return out << "shutdown.start";
+                        case Context::shutdown_end: return out << "shutdown.end";
+                     }
+                     assert( ! "not valid context");
+                  }
 
                   platform::size::type id = 0;
                   std::string name;

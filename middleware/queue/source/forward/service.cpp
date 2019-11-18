@@ -36,7 +36,8 @@ namespace casual
 
          struct Caller
          {
-            Caller( std::string service, common::optional< std::string> reply) : m_service( std::move( service)), m_reply( std::move( reply)) {}
+            Caller( std::string service, common::optional< std::string> reply) 
+               : m_service( std::move( service)), m_reply( std::move( reply)) {}
 
             void operator () ( queue::Message&& message)
             {
@@ -54,8 +55,8 @@ namespace casual
                try
                {
                   auto result = common::service::call::Context::instance().sync( m_service,
-                        payload,
-                        common::service::call::sync::Flag::no_time);
+                     payload,
+                     common::service::call::sync::Flag::no_time);
 
                   const auto& replyqueue = m_reply.value_or( message.attributes.reply);
 
@@ -69,7 +70,11 @@ namespace casual
                }
                catch( const common::service::call::Fail& exception)
                {
-                  common::log::line( queue::log, "service call failed - rollback - ", exception);
+                  log::line( queue::log, "service call failed - rollback - ", exception);
+               }
+               catch( const common::exception::xatmi::exception& exception)
+               {
+                  log::line( log::category::error, exception);
                }
             }
 
@@ -88,11 +93,8 @@ namespace casual
 
          void start( Settings settings)
          {
-
             Dispatch dispatch( tasks( std::move( settings)));
-
             dispatch.execute();
-
          }
 
          void main( int argc, char **argv)

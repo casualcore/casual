@@ -8,6 +8,7 @@
 
 #include "common/serialize/value.h"
 #include "common/serialize/archive/type.h"
+#include "common/cast.h"
 
 #include <ostream>
 
@@ -65,6 +66,7 @@ namespace casual
                   return *this << std::forward< T>( value);
                }
 
+
             private:
 
                static std::ostream& maybe_name( std::ostream& stream, const char* name);
@@ -77,6 +79,44 @@ namespace casual
             };
 
          } // line
+
+         //! Specialization for enum
+         template< typename T>
+         struct Value< T, line::Writer, std::enable_if_t< std::is_enum< T>::value>>
+         {
+
+            template< typename V> 
+            static void write( line::Writer& archive, V value, const char* name)
+            {
+               // dispatch to prioritized defined stream operator, and fallback
+               // to cast to underlying
+               priority_write( archive, value, name, traits::priority::tag< 2>{});
+            }
+
+         private:
+            template< typename V> 
+            static auto priority_write( 
+               line::Writer& archive, 
+               V value, 
+               const char* name, 
+               traits::priority::tag< 0>)
+            {
+               archive.write( cast::underlying( value), name);
+            }
+
+            template< typename V> 
+            static auto priority_write( 
+               line::Writer& archive, 
+               V value, 
+               const char* name, 
+               traits::priority::tag< 1>) -> decltype( std::declval< std::ostream&>() << value, void())
+            {
+               archive.write( value, name);
+            }
+
+            // TODO feature: we may need to dispatch on error_code also
+         };
+
       } // serialize
    } // common
 } // casual
