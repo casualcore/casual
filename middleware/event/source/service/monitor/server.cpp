@@ -5,7 +5,7 @@
 //!
 
 
-#include "event/service/monitor/vo/entry.h"
+
 
 #include "common/service/invoke.h"
 #include "common/service/type.h"
@@ -36,35 +36,55 @@ namespace casual
                      std::string name = "monitor.db";
                   } // database
 
+                  namespace model
+                  {
+                     struct Entry
+                     {
+                        struct 
+                        {
+                           std::string name;
+                           std::string parent;
 
+                           CASUAL_CONST_CORRECT_SERIALIZE(
+                              CASUAL_SERIALIZE( name);
+                              CASUAL_SERIALIZE( parent);
+                           )
+                        } service;
 
-                  std::vector< vo::Entry> select()
+                        common::Uuid execution;
+                        platform::time::point::type start;
+                        platform::time::point::type end;
+
+                        CASUAL_CONST_CORRECT_SERIALIZE(
+                           CASUAL_SERIALIZE( service);
+                           CASUAL_SERIALIZE( execution);
+                           CASUAL_SERIALIZE( start);
+                           CASUAL_SERIALIZE( end);
+                        )
+
+                     };
+                  } // model
+
+                  auto select()
                   {
                      const common::Trace trace( "Database::select");
 
                      auto connection = sql::database::Connection( common::environment::directory::domain() + "/monitor.db");
-                     auto query = connection.query( "SELECT service, parentservice, callid, transactionid, start, end FROM calls;");
+                     //auto query = connection.query( "SELECT service, parentservice, callid, transactionid, start, end FROM calls;");
+                     auto query = connection.query( "SELECT service, parentservice, callid, start, end FROM calls;");
 
-                     sql::database::Row row;
-                     std::vector< vo::Entry> result;
-
-                     while( query.fetch( row))
+                     return sql::database::query::fetch( std::move( query), []( sql::database::Row& row)
                      {
-                        vo::Entry vo;
-                        vo.setService( row.get< std::string>(0));
-                        vo.setParentService( row.get< std::string>( 1));
-                        common::Uuid callId( row.get< std::string>( 2));
-                        vo.setCallId( callId);
-                        //vo.setTransactionId( local::getValue( *row, "transactionid"));
+                        model::Entry entry;
+                        sql::database::row::get( row, 
+                           entry.service.name,
+                           entry.service.parent,
+                           entry.execution.get(),
+                           entry.start,
+                           entry.end);
 
-                        std::chrono::microseconds start{ row.get< long long>( 4)};
-                        vo.setStart( platform::time::point::type{ start});
-                        std::chrono::microseconds end{ row.get< long long>( 5)};
-                        vo.setEnd( platform::time::point::type{ end});
-                        result.push_back( vo);
-                     }
-
-                     return result;
+                        return entry;
+                     });
                   }
 
                   namespace service

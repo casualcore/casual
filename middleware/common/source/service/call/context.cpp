@@ -196,6 +196,7 @@ namespace casual
                // Call the service
                {
                   prepared.message.service = target.service;
+                  prepared.message.pending = target.pending;
 
                   log::line( log::debug, "async - message: ", prepared.message);
 

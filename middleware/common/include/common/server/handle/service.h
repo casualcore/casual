@@ -81,6 +81,9 @@ namespace casual
                      ack.metric.start = start;
                      ack.metric.end = platform::time::clock::type::now();
 
+                     // make sure service-manager "gets back" the pending metric
+                     ack.metric.pending = message.pending;
+                     
                      ack.metric.code = reply.code.result;
 
                      policy.ack( ack);

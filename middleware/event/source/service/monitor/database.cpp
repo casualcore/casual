@@ -13,6 +13,7 @@
 #include "common/event/listen.h"
 #include "common/exception/handle.h"
 #include "common/communication/instance.h"
+#include "common/uuid.h"
 
 #include "sql/database.h"
 
@@ -115,7 +116,7 @@ namespace casual
                }
 
                // connect to domain
-               common::communication::instance::connect( common::Uuid{ "8130b1cd7e8842a49e3da91f8913aff7"});
+               common::communication::instance::connect( 0x8130b1cd7e8842a49e3da91f8913aff7_uuid);
 
                {
                   Handler handler{ database};

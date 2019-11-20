@@ -290,10 +290,13 @@ namespace casual
 
                void Lookup::operator () ( common::message::service::lookup::Request& message)
                {
-                  Trace trace{ "service::manager::handle::service::Lookup"};
-                  log::line( verbose::log, "message: ", message);
+                  lookup( message, platform::time::clock::type::now(), {});
+               }
 
-                  auto now = platform::time::clock::type::now();
+               void Lookup::lookup( common::message::service::lookup::Request& message, platform::time::point::type now, platform::time::unit pending)
+               {
+                  Trace trace{ "service::manager::handle::service::Lookup::lookup"};
+                  log::line( verbose::log, "message: ", message);
 
                   try
                   {
@@ -308,6 +311,7 @@ namespace casual
                         reply.service = service.information;
                         reply.state = decltype( reply.state)::idle;
                         reply.process = handle;
+                        reply.pending = pending;
 
                         local::optional::send( message.process.ipc, reply);
                      }
@@ -590,7 +594,7 @@ namespace casual
                         // requested service (we've just marked it as idle...).
                         // We can use the normal request to get the response
                         service::Lookup lookup( m_state);
-                        lookup( pending->request);
+                        lookup.lookup( pending->request, now, now - pending->when);
 
                         // add pending metrics
                         service->metric.pending += now - pending->when;

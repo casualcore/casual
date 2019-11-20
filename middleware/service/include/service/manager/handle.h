@@ -138,6 +138,10 @@ namespace casual
                {
                   using Base::Base;
                   void operator () ( common::message::service::lookup::Request& message);
+                  void lookup( common::message::service::lookup::Request& message, 
+                     platform::time::point::type now,
+                     platform::time::unit pending);
+
                private:
                   void discover( 
                      common::message::service::lookup::Request&& message, 
