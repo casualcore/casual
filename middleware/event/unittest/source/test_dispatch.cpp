@@ -73,26 +73,21 @@ domain:
 
          local::Domain domain;
 
-         EXPECT_THROW(
+         event::dispatch( 
+         []()
          {
-            event::dispatch( 
-            []()
-            {
-               // we call domain manager, that will trigger a call-event
-               auto state = casual::domain::manager::api::state();
-               EXPECT_TRUE( ! state.servers.empty());
-               
-            },
-            []( model::service::Call&& call)
-            {
-               ASSERT_TRUE( call.metrics.size() == 1);
-               EXPECT_TRUE( call.metrics.at( 0).service.name == ".casual/domain/state");
-               // we send shotdown to our self, to trigger "end"
-               local::send::shutdown();
-            }
-            );
-
-         },common::exception::casual::Shutdown);
+            // we call domain manager, that will trigger a call-event
+            auto state = casual::domain::manager::api::state();
+            EXPECT_TRUE( ! state.servers.empty());
+            
+         },
+         []( model::service::Call&& call)
+         {
+            ASSERT_TRUE( call.metrics.size() == 1);
+            EXPECT_TRUE( call.metrics.at( 0).service.name == ".casual/domain/state");
+            // we send shotdown to our self, to trigger "end"
+            local::send::shutdown();
+         });
       }
 
       TEST( event_dispatch, 5_service_call)
@@ -102,28 +97,26 @@ domain:
          local::Domain domain;
 
          auto count = 0;
-         EXPECT_THROW(
-         {
-            event::dispatch( 
-            []()
-            {
-               // we call domain manager, that will trigger 5 call-events
-               for( auto index = 0; index < 5; ++index)
-               {
-                  auto state = casual::domain::manager::api::state();
-                  EXPECT_TRUE( ! state.servers.empty());
-               }
-            },
-            [&count]( model::service::Call&& call)
-            {
-               count += call.metrics.size();
-               EXPECT_TRUE( call.metrics.at( 0).service.name == ".casual/domain/state");
-               // we send shotdown to our self, to trigger "end"
-               if( count == 5)
-                  local::send::shutdown();
-            });
 
-         },common::exception::casual::Shutdown);
+         event::dispatch( 
+         []()
+         {
+            // we call domain manager, that will trigger 5 call-events
+            for( auto index = 0; index < 5; ++index)
+            {
+               auto state = casual::domain::manager::api::state();
+               EXPECT_TRUE( ! state.servers.empty());
+            }
+         },
+         [&count]( model::service::Call&& call)
+         {
+            count += call.metrics.size();
+            EXPECT_TRUE( call.metrics.at( 0).service.name == ".casual/domain/state");
+            // we send shotdown to our self, to trigger "end"
+            if( count == 5)
+               local::send::shutdown();
+         });
+
 
          EXPECT_TRUE( count == 5);
       }
