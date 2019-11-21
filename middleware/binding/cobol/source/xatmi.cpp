@@ -174,8 +174,7 @@ extern "C" void TPCALL(struct TPSVCDEF_REC_s *TPSVCDEF_REC,
       return;
    } else {
       TPSTATUS_REC->TP_STATUS = (int32_t)TPOK;
-      if (tperrno == TPESVCFAIL)
-         TPSTATUS_REC->APPL_RETURN_CODE = (int32_t)tpurcode;
+      TPSTATUS_REC->APPL_RETURN_CODE = (int32_t)tpurcode;
    }
 
    /* Copy data from buffer allocated with tpalloc to COBOL record */
@@ -343,8 +342,7 @@ extern "C" void TPGETRPLY(struct TPSVCDEF_REC_s *TPSVCDEF_REC,
       /* printf("error TPGETRPLY --> tpgetrply: %d\n", tperrno); */
    } else {
       TPSTATUS_REC->TP_STATUS = (int32_t)TPOK;
-      if (tperrno == TPESVCFAIL)
-         TPSTATUS_REC->APPL_RETURN_CODE = (int32_t)tpurcode;
+      TPSTATUS_REC->APPL_RETURN_CODE = (int32_t)tpurcode;
    }
 
    /* Copy data from buffer allocated with tpalloc to COBOL record */
