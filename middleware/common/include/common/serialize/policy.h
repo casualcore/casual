@@ -33,9 +33,8 @@ namespace casual
                inline static bool apply( bool exist, const char* role)
                {
                   if( ! exist)
-                  {
                      throw exception::casual::invalid::Node{ string::compose( "failed to find role in document - role: ", role)};
-                  }
+
                   return exist;
                }
 
@@ -79,13 +78,9 @@ namespace casual
                      auto path = get_path();
    
                      if( ! path.empty())
-                     {
                         m_canonical.push_back( std::move( path) + '.' + get_name( name));
-                     }
                      else 
-                     {
                         m_canonical.emplace_back( get_name( name));
-                     }
                   }
 
 
