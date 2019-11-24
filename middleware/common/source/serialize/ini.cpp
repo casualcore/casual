@@ -247,8 +247,7 @@ namespace casual
                      {
                         inline constexpr static auto archive_type() { return archive::Type::static_need_named;}
 
-                        static auto keys() { return local::keys();}
-
+                        static decltype( auto) keys() { return local::keys();}
 
                         Implementation( tree&& document) : m_document( std::move( document)), m_node_stack{ &m_document} {}
 
@@ -281,9 +280,7 @@ namespace casual
                               {
                                  // Transform backwards
                                  for( auto iterator = data.second; iterator != data.first; --iterator)
-                                 {
                                     m_data_stack.push_back( &std::prev( iterator)->second);
-                                 }
 
                                  return std::make_tuple( std::distance( data.first, data.second), true);
                               }
@@ -312,13 +309,9 @@ namespace casual
                               const auto node = m_node_stack.back()->children.find( name);
 
                               if( node != m_node_stack.back()->children.end())
-                              {
                                  m_node_stack.push_back( &node->second);
-                              }
                               else
-                              {
                                  return false;
-                              }
                            }
 
                            // Either we found the node or we assume it's an 'unnamed' container
@@ -340,13 +333,9 @@ namespace casual
                               const auto data = m_node_stack.back()->values.find( name);
 
                               if( data != m_node_stack.back()->values.end())
-                              {
                                  m_data_stack.push_back( &data->second);
-                              }
                               else
-                              {
                                  return false;
-                              }
                            }
 
                            // Either we found the node or we assume it's an 'unnamed' container
@@ -485,7 +474,7 @@ namespace casual
 
                         inline constexpr static auto archive_type() { return archive::Type::static_need_named;}
 
-                        static auto keys() { return local::keys();}
+                        static decltype( auto) keys() { return local::keys();}
 
                         Implementation() : m_node_stack{ &m_document } {}
 
@@ -494,13 +483,9 @@ namespace casual
                            // We do not know where it's node or data
 
                            if( name)
-                           {
                               m_name_stack.push_back( name);
-                           }
                            else
-                           {
                               throw exception::casual::invalid::Node{ "Nested containers not supported (yet)"};
-                           }
 
                            return size;
                         }
@@ -606,17 +591,17 @@ namespace casual
 
             serialize::Writer writer( std::string& destination)
             {
-               return serialize::create::writer::holder< local::writer::Implementation>( destination);
+               return serialize::create::writer::create< local::writer::Implementation>( destination);
             }
 
             serialize::Writer writer( std::ostream& destination)
             {
-               return serialize::create::writer::holder< local::writer::Implementation>( destination);
+               return serialize::create::writer::create< local::writer::Implementation>( destination);
             }
 
             serialize::Writer writer( platform::binary::type& destination)
             {
-               return serialize::create::writer::holder< local::writer::Implementation>( destination);
+               return serialize::create::writer::create< local::writer::Implementation>( destination);
             }
 
          } // ini

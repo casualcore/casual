@@ -198,7 +198,7 @@ namespace casual
 
                         inline constexpr static auto archive_type() { return archive::Type::static_need_named;}
 
-                        static auto keys() { return local::keys();}
+                        static decltype( auto) keys() { return local::keys();}
 
                         template< typename... Ts>
                         explicit Implementation( Ts&&... ts) : m_stack{ & reader::parse( m_document, std::forward< Ts>( ts)...)} 
@@ -364,7 +364,7 @@ namespace casual
 
                         inline constexpr static auto archive_type() { return archive::Type::static_need_named;}
 
-                        static auto keys() { return local::keys();}
+                        static decltype( auto) keys() { return local::keys();}
                         
                         explicit Implementation()
                            : m_allocator( m_document.GetAllocator()), m_stack{ &m_document}
@@ -513,21 +513,21 @@ namespace casual
 
             serialize::Writer writer( std::string& destination)
             {
-               return serialize::create::writer::holder< local::writer::Implementation>( destination);
+               return serialize::create::writer::create< local::writer::Implementation>( destination);
             }
 
             serialize::Writer writer( std::ostream& destination)
             {
-               return serialize::create::writer::holder< local::writer::Implementation>( destination);
+               return serialize::create::writer::create< local::writer::Implementation>( destination);
             }
 
             serialize::Writer writer( platform::binary::type& destination)
             {
-               return serialize::create::writer::holder< local::writer::Implementation>( destination);
+               return serialize::create::writer::create< local::writer::Implementation>( destination);
             }
 
          } // json
-
+         
          namespace create
          {
             namespace reader

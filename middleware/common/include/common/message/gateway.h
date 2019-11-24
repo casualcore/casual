@@ -77,7 +77,7 @@ namespace casual
                   //! this domain.
                   //!
                   //! other domain -> inbound-connection -> gateway ---> casual-broker
-                  //!                                               [ \-> casual-gueue ]
+                  //!                                               [ \-> casual-queue ]
                   struct Request : basic_message< Type::gateway_domain_discover_request>
                   {
                      common::process::Handle process;

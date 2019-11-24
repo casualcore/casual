@@ -187,7 +187,7 @@ namespace casual
 
                         inline constexpr static auto archive_type() { return archive::Type::static_need_named;}
 
-                        static auto keys() { return local::keys();}
+                        static decltype( auto) keys() { return local::keys();}
 
                         template< typename... Ts>
                         Implementation( Ts&&... ts) : m_stack{ &Load{}( m_document, std::forward< Ts>( ts)...)} {}
@@ -195,9 +195,7 @@ namespace casual
                         std::tuple< platform::size::type, bool> container_start( platform::size::type size, const char* const name)
                         {
                            if( ! start( name))
-                           {
                               return std::make_tuple( 0, false);
-                           }
 
                            const auto& node = *m_stack.back();
 
@@ -333,6 +331,7 @@ namespace casual
                         std::vector< const YAML::Node*> m_stack;
 
                      };
+
                   } // reader
 
                   namespace writer
@@ -346,7 +345,7 @@ namespace casual
 
                         using buffer_type = YAML::Emitter;
 
-                        static auto keys() { return local::keys();}
+                        static decltype( auto) keys() { return local::keys();}
 
                         Implementation()
                         {
@@ -477,20 +476,21 @@ namespace casual
 
             serialize::Writer writer( std::string& destination)
             {
-               return serialize::create::writer::holder< local::writer::Implementation>( destination);
+               return serialize::create::writer::create< local::writer::Implementation>( destination);
             }
 
             serialize::Writer writer( std::ostream& destination)
             {
-               return serialize::create::writer::holder< local::writer::Implementation>( destination);
+               return serialize::create::writer::create< local::writer::Implementation>( destination);
             }
 
             serialize::Writer writer( platform::binary::type& destination)
             {
-               return serialize::create::writer::holder< local::writer::Implementation>( destination);
+               return serialize::create::writer::create< local::writer::Implementation>( destination);
             }
 
          } // yaml
+
          namespace create
          {
             namespace reader
@@ -502,6 +502,7 @@ namespace casual
                template struct Registration< yaml::local::writer::Implementation>;
             } // writer
          } // create
+         
       } // serialize
    } // common
 } // casual

@@ -27,14 +27,18 @@ namespace casual
             namespace local
             {
                namespace
-               {            
+               {         
+                  
                   class Implementation
                   {
                   public:
 
                      inline constexpr static auto archive_type() { return archive::Type::static_need_named;}
 
-                     static std::vector< std::string> keys() { return { "", "log"};}
+                     static std::vector< std::string> keys() 
+                     { 
+                        return { "", "log"};
+                     }
 
                      Implementation();
                      Implementation( std::ostream& out) : m_output( out) {}
@@ -136,10 +140,7 @@ namespace casual
 
                      void flush()
                      {
-                        //
                         // Find the longest name
-                        //
-
                         auto size = common::algorithm::accumulate( m_buffer, 0L, []( auto size, const auto& value){
                            return common::value::max( size, value.name.size());
                         });

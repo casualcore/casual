@@ -175,7 +175,7 @@ namespace casual
 
                         inline constexpr static auto archive_type() { return archive::Type::static_need_named;}
 
-                        static auto keys() { return local::keys();}
+                        static decltype( auto) keys() { return local::keys();}
 
                         //! @param node Normally a pugi::xml_document
                         //!
@@ -330,7 +330,8 @@ namespace casual
 
                         inline constexpr static auto archive_type() { return archive::Type::static_need_named;}
 
-                        static auto keys() { return local::keys();}
+                        static decltype( auto) keys() { return local::keys();}
+
 
                         //! @param node Normally a pugi::xml_document
                         //!
@@ -464,19 +465,18 @@ namespace casual
 
             serialize::Writer writer( std::string& destination)
             {
-               return serialize::create::writer::holder< local::writer::Implementation>( destination);
+               return serialize::create::writer::create< local::writer::Implementation>( destination);
             }
 
             serialize::Writer writer( std::ostream& destination)
             {
-               return serialize::create::writer::holder< local::writer::Implementation>( destination);
+               return serialize::create::writer::create< local::writer::Implementation>( destination);
             }
 
             serialize::Writer writer( platform::binary::type& destination)
             {
-               return serialize::create::writer::holder< local::writer::Implementation>( destination);
+               return serialize::create::writer::create< local::writer::Implementation>( destination);
             }
-
 
          } // xml
 
@@ -491,6 +491,7 @@ namespace casual
                template struct Registration< xml::local::writer::Implementation>;
             } // writer
          } // create
+
       } // serialize
    } // common
 
