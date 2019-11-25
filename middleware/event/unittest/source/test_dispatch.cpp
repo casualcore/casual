@@ -99,10 +99,12 @@ domain:
          auto count = 0;
 
          event::dispatch( 
-         []()
+         [calls = 5]() mutable
          {
             // we call domain manager, that will trigger 5 call-events
-            for( auto index = 0; index < 5; ++index)
+            // we need to make sure we only call exactly 5 times, since
+            // we could get another invocation to 'idle'
+            while( calls-- > 0)
             {
                auto state = casual::domain::manager::api::state();
                EXPECT_TRUE( ! state.servers.empty());
@@ -117,8 +119,7 @@ domain:
                local::send::shutdown();
          });
 
-
-         EXPECT_TRUE( count == 5);
+         EXPECT_TRUE( count == 5) << "count: " << count;
       }
 
    } // event

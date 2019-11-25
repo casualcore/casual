@@ -40,6 +40,9 @@ namespace casual
             {
                auto handle = [ callback = std::forward< T>( callback)]( common::message::event::service::Calls& message)
                {
+                  Trace trace{ "event::detail::Implementation::handle message::event::service::Calls"};
+                  log::line( verbose::log, "message: ", message);
+                  
                   auto transform_metric = []( common::message::event::service::Metric& metric)
                   {
                      model::service::Call::Metric result;
