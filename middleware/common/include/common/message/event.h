@@ -228,6 +228,8 @@ namespace casual
                   platform::time::point::type start;
                   platform::time::point::type end;
 
+                  platform::time::unit pending;
+
                   code::xatmi code;
 
                   auto duration() const noexcept { return end - start;}
@@ -241,6 +243,7 @@ namespace casual
                      CASUAL_SERIALIZE( trid);
                      CASUAL_SERIALIZE( start);
                      CASUAL_SERIALIZE( end);
+                     CASUAL_SERIALIZE( pending);
                      CASUAL_SERIALIZE( code);
                   )
                };

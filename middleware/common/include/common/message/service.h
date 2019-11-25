@@ -291,12 +291,16 @@ namespace casual
                   call::Service service;
                   common::process::Handle process;
 
+                  //! represent how long this request was pending (busy);
+                  platform::time::unit pending{};
+
                   enum class State : short
                   {
                      absent,
                      busy,
                      idle
                   };
+
                   inline friend std::ostream& operator << ( std::ostream& out, State value)
                   {
                      switch( value)
@@ -308,9 +312,8 @@ namespace casual
                      return out << "unknown";
                   }
 
-
                   State state = State::idle;
-
+                 
                   inline bool busy() const { return state == State::busy;}
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
@@ -318,10 +321,10 @@ namespace casual
                      base_type::serialize( archive);
                      CASUAL_SERIALIZE( service);
                      CASUAL_SERIALIZE( process);
+                     CASUAL_SERIALIZE( pending);
                      CASUAL_SERIALIZE( state);
                   })
                };
-               static_assert( traits::is_movable< Reply>::value, "not movable");
 
                namespace discard
                {
@@ -394,6 +397,10 @@ namespace casual
 
                   common::service::header::Fields header;
 
+                  //! pending time, only to be return in the "ACK", to collect
+                  //! metrics
+                  platform::time::unit pending{};
+
                   CASUAL_CONST_CORRECT_SERIALIZE(
                   {
                      CASUAL_SERIALIZE( process);
@@ -402,6 +409,7 @@ namespace casual
                      CASUAL_SERIALIZE( trid);
                      CASUAL_SERIALIZE( flags);
                      CASUAL_SERIALIZE( header);
+                     CASUAL_SERIALIZE( pending);
                   })
                };
 
@@ -421,17 +429,12 @@ namespace casual
                {
                   //! Represents a service call. via tp(a)call, from the callers perspective
                   using Request = message::buffer::caller::basic_request< call::basic_request>;
-
-                  static_assert( traits::is_movable< Request>::value, "not movable");
                } // caller
 
                namespace callee
                {
                   //! Represents a service call. via tp(a)call, from the callee's perspective
                   using Request = message::buffer::callee::basic_request< call::basic_request>;
-
-                  static_assert( traits::is_movable< Request>::value, "not movable");
-
                } // callee
 
 

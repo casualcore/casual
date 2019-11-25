@@ -76,7 +76,8 @@ namespace casual
 
                   local::subscribe( process, types);
 
-                  return execute::scope( [&](){
+                  return execute::scope( [process = std::move( process), types = std::move( types)]()
+                  {
                      event::unsubscribe( process, types);
                   });
                }
