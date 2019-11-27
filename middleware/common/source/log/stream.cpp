@@ -88,11 +88,9 @@ namespace casual
                         // we try to create the directory
                         auto base = directory::name::base( file);
                         if( ! directory::exists( base) && directory::create( base) && open_file( m_output, file))
-                        {
                            return true;
-                        }
 
-                        // We don't want to throw... Or do we?
+                        // TODO semantics: We don't want to throw... Or do we?
                         std::cerr << process::path() << " - could not open log-file: " << file << '\n';
                         return false;
                      }
@@ -147,14 +145,9 @@ namespace casual
                         if( value != base_type::traits_type::eof())
                         {
                            if( value == '\n')
-                           {
                               log();
-                           }
                            else
-                           {
                               m_buffer.push_back( base_type::traits_type::to_char_type( value));
-                           }
-
                         }
                         return value;
                      }
@@ -171,8 +164,6 @@ namespace casual
                      buffer_type m_buffer;
 
                      const std::string m_category;
-
-
                   };
 
 
@@ -202,39 +193,35 @@ namespace casual
                   stream::buffer* activate( holder& holder, const std::regex& filter)
                   {
                      if( std::regex_match( holder.category, error::filter()) || std::regex_match( holder.category, filter))
-                     {
                         return activate( holder);
-                     }
                      else
-                     {
                         holder.buffer.reset( nullptr);
-                     }
 
                      return holder.buffer.get();
                   }
 
                   namespace find
                   {
-                     holder* holder( const std::string& category)
+                     stream::holder* holder( const std::string& category)
                      {
-                        auto found = algorithm::find_if( stream::streams(), [&]( const stream::holder& h){ return h.category == category;});
+                        auto is_category = [&]( auto& holder)
+                        { 
+                           return holder.category == category;
+                        };
 
-                        if( found)
-                        {
+                        if( auto found = algorithm::find_if( stream::streams(), is_category))
                            return &( *found);
-                        }
+
                         return nullptr;
                      }
 
                   } // find
-
                } // stream
 
 
 
                namespace registration
                {
-
                   stream::buffer* stream( log::Stream& stream, std::string category)
                   {
                      if( ! stream::find::holder( category))
@@ -246,11 +233,8 @@ namespace casual
                      return nullptr;
                   }
 
-
                } // registration
-
             } // unnamed
-
          } // local
 
          namespace stream
@@ -268,9 +252,7 @@ namespace casual
                auto holder = local::stream::find::holder( category);
 
                if( holder)
-               {
                   return holder->stream;
-               }
 
                throw exception::system::invalid::Argument{ "invalid log category: " + category};
             }
@@ -287,9 +269,7 @@ namespace casual
                auto holder = local::stream::find::holder( category);
 
                if( holder && ! holder->stream.get())
-               {
                   holder->stream.get().rdbuf( local::stream::activate( *holder));
-               }
             }
 
             void deactivate( const std::string& category)

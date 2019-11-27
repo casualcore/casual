@@ -23,7 +23,8 @@ namespace casual
                   template< typename Map, typename Out>
                   auto create( Map& map, const std::string& key, Out& out)
                   {
-                     Trace trace{ "serialize::create::::local::create"};
+                     // we can't use global stream objects, since they may not be initialized yet
+                     common::log::stream::write( "casual.common",  common::string::compose( "serialize::create::local::create key: ", key));
 
                      if( auto found = common::algorithm::find( map, key))
                         return found->second.create( out);
@@ -34,8 +35,8 @@ namespace casual
                   template< typename Map, typename Creator>
                   void registration( Map& map, Creator&& creator, const std::vector< std::string>& keys)
                   {
-                     Trace trace{ "serialize::create::writer::detail::registration"};
-                     common::log::line( common::log::debug, "keys: ", keys);
+                     // we can't use global stream objects, since they may not be initialized yet
+                     common::log::stream::write( "casual.common",  common::string::compose( "serialize::create::local::registration keys ", keys));
 
                      for( auto& key : keys)
                         map.emplace( key, creator);
