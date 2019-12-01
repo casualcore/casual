@@ -6,7 +6,7 @@
 
 #include "queue/manager/admin/cli.h"
 
-#include "queue/manager/admin/queuevo.h"
+#include "queue/manager/admin/model.h"
 #include "queue/manager/admin/services.h"
 
 #include "queue/api/queue.h"
@@ -34,7 +34,6 @@ namespace casual
    {
       namespace normalize
       {
-
          std::string timestamp( const platform::time::point::type& time)
          {
             if( time != platform::time::point::limit::zero())
@@ -44,30 +43,28 @@ namespace casual
             return "-";;
          }
 
-
       } // normalize
 
       namespace call
       {
-
-         manager::admin::State state()
+         manager::admin::model::State state()
          {
             serviceframework::service::protocol::binary::Call call;
-            auto reply = call( manager::admin::service::name::state());
+            auto reply = call( manager::admin::service::name::state);
 
-            manager::admin::State result;
+            manager::admin::model::State result;
             reply >> CASUAL_NAMED_VALUE( result);
 
             return result;
          }
 
-         std::vector< manager::admin::Message> messages( const std::string& queue)
+         std::vector< manager::admin::model::Message> messages( const std::string& queue)
          {
             serviceframework::service::protocol::binary::Call call;
             call << CASUAL_NAMED_VALUE( queue);
-            auto reply = call( manager::admin::service::name::list_messages());
+            auto reply = call( manager::admin::service::name::messages::list);
 
-            std::vector< manager::admin::Message> result;
+            std::vector< manager::admin::model::Message> result;
             reply >> CASUAL_NAMED_VALUE( result);
 
             return result;
@@ -80,7 +77,7 @@ namespace casual
       {
          auto messages()
          {
-            auto format_state = []( const manager::admin::Message& v)
+            auto format_state = []( const manager::admin::model::Message& v)
             {
                using Enum = decltype( v.state);
                switch( v.state)
@@ -92,19 +89,19 @@ namespace casual
                return '?';
             };
 
-            auto format_trid = []( const manager::admin::Message& v) { return transcode::hex::encode( v.trid);};
-            auto format_type = []( const manager::admin::Message& v) { return v.type;};
-            auto format_timestamp = []( const manager::admin::Message& v) { return normalize::timestamp( v.timestamp);};
-            auto format_available = []( const manager::admin::Message& v) { return normalize::timestamp( v.available);};
+            auto format_trid = []( const manager::admin::model::Message& v) { return transcode::hex::encode( v.trid);};
+            auto format_type = []( const manager::admin::model::Message& v) { return v.type;};
+            auto format_timestamp = []( const manager::admin::model::Message& v) { return normalize::timestamp( v.timestamp);};
+            auto format_available = []( const manager::admin::model::Message& v) { return normalize::timestamp( v.available);};
 
-            return terminal::format::formatter< manager::admin::Message>::construct(
-               terminal::format::column( "id", std::mem_fn( &manager::admin::Message::id), terminal::color::yellow),
+            return terminal::format::formatter< manager::admin::model::Message>::construct(
+               terminal::format::column( "id", std::mem_fn( &manager::admin::model::Message::id), terminal::color::yellow),
                terminal::format::column( "S", format_state, terminal::color::no_color),
-               terminal::format::column( "size", std::mem_fn( &manager::admin::Message::size), terminal::color::cyan, terminal::format::Align::right),
+               terminal::format::column( "size", std::mem_fn( &manager::admin::model::Message::size), terminal::color::cyan, terminal::format::Align::right),
                terminal::format::column( "trid", format_trid, terminal::color::blue, terminal::format::Align::right),
-               terminal::format::column( "rd", std::mem_fn( &manager::admin::Message::redelivered), terminal::color::no_color, terminal::format::Align::right),
+               terminal::format::column( "rd", std::mem_fn( &manager::admin::model::Message::redelivered), terminal::color::no_color, terminal::format::Align::right),
                terminal::format::column( "type", format_type, terminal::color::no_color),
-               terminal::format::column( "reply", std::mem_fn( &manager::admin::Message::reply), terminal::color::no_color),
+               terminal::format::column( "reply", std::mem_fn( &manager::admin::model::Message::reply), terminal::color::no_color),
                terminal::format::column( "available", format_available, terminal::color::blue, terminal::format::Align::right),
                terminal::format::column( "timestamp", format_timestamp, terminal::color::blue, terminal::format::Align::right)
             );
@@ -112,31 +109,31 @@ namespace casual
 
          auto groups()
          {
-            auto format_pid = []( const manager::admin::Group& g) { return g.process.pid;};
-            auto format_ipc = []( const manager::admin::Group& g) { return g.process.ipc;};
+            auto format_pid = []( const manager::admin::model::Group& g) { return g.process.pid;};
+            auto format_ipc = []( const manager::admin::model::Group& g) { return g.process.ipc;};
 
-            return terminal::format::formatter< manager::admin::Group>::construct(
-               terminal::format::column( "name", std::mem_fn( &manager::admin::Group::name), terminal::color::yellow),
+            return terminal::format::formatter< manager::admin::model::Group>::construct(
+               terminal::format::column( "name", std::mem_fn( &manager::admin::model::Group::name), terminal::color::yellow),
                terminal::format::column( "pid", format_pid, terminal::color::grey, terminal::format::Align::right),
                terminal::format::column( "ipc", format_ipc, terminal::color::grey, terminal::format::Align::right),
-               terminal::format::column( "queuebase", std::mem_fn( &manager::admin::Group::queuebase))
+               terminal::format::column( "queuebase", std::mem_fn( &manager::admin::model::Group::queuebase))
             );
          }
 
-         auto restored()
+         auto affected()
          {
             auto format_name = []( const queue::restore::Affected& a) { return a.queue;};
 
             return terminal::format::formatter< queue::restore::Affected>::construct(
                terminal::format::column( "name", format_name, terminal::color::yellow, terminal::format::Align::right),
-               terminal::format::column( "restored", std::mem_fn( &queue::restore::Affected::restored), terminal::color::green)
+               terminal::format::column( "count", std::mem_fn( &queue::restore::Affected::count), terminal::color::green)
             );
          }
 
 
-         auto queues( const manager::admin::State& state)
+         auto queues( const manager::admin::model::State& state)
          {
-            using q_type = manager::admin::Queue;
+            using q_type = manager::admin::model::Queue;
 
 
             /*
@@ -152,10 +149,10 @@ namespace casual
             };
             
             auto format_group = [&]( const q_type& q){
-               return algorithm::find_if( state.groups, [&]( const manager::admin::Group& g){ return q.group == g.process.pid;}).at( 0).name;
+               return algorithm::find_if( state.groups, [&]( const manager::admin::model::Group& g){ return q.group == g.process.pid;}).at( 0).name;
             };
 
-            return terminal::format::formatter< manager::admin::Queue>::construct(
+            return terminal::format::formatter< manager::admin::model::Queue>::construct(
                terminal::format::column( "name", std::mem_fn( &q_type::name), terminal::color::yellow),
                terminal::format::column( "count", []( const auto& q){ return q.count;}, terminal::color::green, terminal::format::Align::right),
                terminal::format::column( "size", []( const auto& q){ return q.size;}, common::terminal::color::cyan, terminal::format::Align::right),
@@ -170,15 +167,15 @@ namespace casual
 
          namespace remote
          {
-            auto queues( const manager::admin::State& state)
+            auto queues( const manager::admin::model::State& state)
             {
                auto format_pid = [&]( const auto& q){
                   return q.pid;
                };
    
    
-               return terminal::format::formatter< manager::admin::remote::Queue>::construct(
-                  terminal::format::column( "name", std::mem_fn( &manager::admin::remote::Queue::name), terminal::color::yellow),
+               return terminal::format::formatter< manager::admin::model::remote::Queue>::construct(
+                  terminal::format::column( "name", std::mem_fn( &manager::admin::model::remote::Queue::name), terminal::color::yellow),
                   terminal::format::column( "pid", format_pid, common::terminal::color::blue)
                );
             }
@@ -394,10 +391,7 @@ note: operation is atomic)";
             {
                void invoke( const std::vector< std::string>& queues)
                {
-                  auto affected = queue::restore::queue( queues);
-
-                  auto formatter = format::restored();
-                  formatter.print( std::cout, affected);
+                  format::affected().print( std::cout, queue::restore::queue( queues));
                }
 
                constexpr auto description = R"("restores messages to queue
@@ -407,7 +401,62 @@ Messages will be restored to the queue they first was enqueued to (within the sa
 Example:
 casual queue --restore <queue-name>)";
                
-            } // restore  
+            } // restore
+
+            namespace messages
+            {
+               namespace remove
+               {
+                  void invoke( const std::string& queue, Uuid id, std::vector< Uuid> ids)
+                  {
+                     ids.insert( std::begin( ids), std::move( id));
+
+                     auto removed = queue::messages::remove( queue, ids);
+
+                     algorithm::for_each( removed, []( auto& id)
+                     {
+                        std::cout << id << '\n';
+                     });
+                  }
+
+                  auto complete = []( auto& values, bool help) -> std::vector< std::string>
+                  { 
+                     if( help) 
+                        return { "<queue-name> <message-id>[1..*]"};
+                     
+                     if( values.empty())
+                        return local::queues();
+                     
+                     return { "<value>"};
+                  };
+
+                  constexpr auto description = R"("removes specific messages from a given queue)";
+               } // remove
+
+            } // messages
+
+            namespace clear
+            {
+               void invoke( std::string queue, std::vector< std::string> queues)
+               {
+                  queues.insert( std::begin( queues), std::move( queue));
+                  format::affected().print( std::cout, queue::clear::queue( queues));
+               }
+
+               constexpr auto description = R"("clears all messages from provided queues
+
+Example:
+casual queue --clear queue-a queue-b)";
+
+               auto complete = []( auto& values, bool help) -> std::vector< std::string>
+               { 
+                  if( help) 
+                     return { "<queue-name>"};
+                     
+                  return local::queues();
+               };
+
+            } // clear
             
 
 
@@ -450,6 +499,8 @@ casual queue --restore <queue-name>)";
                      common::argument::Option( &local::enqueue::invoke, complete_queues, { "-e", "--enqueue"}, local::enqueue::description),
                      common::argument::Option( &local::dequeue::invoke, complete_queues, { "-d", "--dequeue"}, local::dequeue::description),
                      common::argument::Option( &local::consume::invoke, complete_queues, { "--consume"}, local::consume::description),
+                     common::argument::Option( &local::clear::invoke, local::clear::complete, { "--clear"}, local::clear::description),
+                     common::argument::Option( &local::messages::remove::invoke, local::messages::remove::complete, { "--remove-messages"}, local::messages::remove::description),
                      common::argument::Option( &queue::legend::queues, {"--legend-list-queues"}, "legend for --list-queues output"),
                      common::argument::Option( &queue::legend::messages, {"--legend-list-messages"}, "legend for --list-messages output"),
                      common::argument::Option( &queue::local::state, complete_state, {"--state"}, "queue state"),

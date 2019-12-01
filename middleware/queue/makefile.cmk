@@ -55,7 +55,8 @@ group_archive = LinkArchive( 'bin/casual-queue-group-archive',
         Compile( 'source/group/group.cpp'),
         Compile( 'source/group/state.cpp'),
         Compile( 'source/group/database.cpp'),
-        Compile( 'source/group/handle.cpp')
+        Compile( 'source/group/database/statement.cpp'),
+        Compile( 'source/group/handle.cpp'),
     ])
 
 

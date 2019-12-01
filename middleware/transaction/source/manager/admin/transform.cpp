@@ -49,13 +49,12 @@ namespace casual
                   } // <unnamed>
                } // local
 
-
-               admin::Metrics metrics( const state::Metrics& value)
+               admin::model::Metrics metrics( const state::Metrics& value)
                {
-                  return local::metrics< admin::Metrics>( value);
+                  return local::metrics< admin::model::Metrics>( value);
                }
 
-               state::Metrics metrics( const admin::Metrics& value)
+               state::Metrics metrics( const admin::model::Metrics& value)
                {
                   return local::metrics< state::Metrics>( value);
                }
@@ -64,9 +63,9 @@ namespace casual
                {
                   struct ID
                   {
-                     admin::Branch::ID operator () ( const common::transaction::ID& id) const
+                     admin::model::Branch::ID operator () ( const common::transaction::ID& id) const
                      {
-                        admin::Branch::ID result;
+                        admin::model::Branch::ID result;
 
                         result.owner = id.owner();
                         result.type = id.xid.formatID;
@@ -77,9 +76,9 @@ namespace casual
                      }
                   };
 
-                  admin::Branch operator () ( const manager::Transaction::Branch& branch) const
+                  admin::model::Branch operator () ( const manager::Transaction::Branch& branch) const
                   {
-                     admin::Branch result;
+                     admin::model::Branch result;
 
                      common::algorithm::transform( branch.resources, result.resources, []( auto& r)
                      {
@@ -95,9 +94,9 @@ namespace casual
 
                struct Transaction 
                {
-                  admin::Transaction operator () ( const manager::Transaction& transaction) const
+                  admin::model::Transaction operator () ( const manager::Transaction& transaction) const
                   {
-                     admin::Transaction result;
+                     admin::model::Transaction result;
                      result.global.id = common::transcode::hex::encode( transaction.global.global());
                      result.global.owner = transaction.owner();
                      result.state = static_cast< long>( transaction.results());
@@ -112,21 +111,21 @@ namespace casual
                namespace resource
                {
 
-                  admin::resource::Instance Instance::operator () ( const state::resource::Proxy::Instance& value) const
+                  admin::model::resource::Instance Instance::operator () ( const state::resource::Proxy::Instance& value) const
                   {
-                     admin::resource::Instance result;
+                     admin::model::resource::Instance result;
 
                      result.id = value.id;
                      result.process = value.process;
-                     result.state = static_cast< admin::resource::Instance::State>( value.state());
+                     result.state = static_cast< admin::model::resource::Instance::State>( value.state());
                      result.metrics = transform::metrics( value.metrics);
 
                      return result;
                   }
 
-                  admin::resource::Proxy Proxy::operator () ( const state::resource::Proxy& value) const
+                  admin::model::resource::Proxy Proxy::operator () ( const state::resource::Proxy& value) const
                   {
-                     admin::resource::Proxy result;
+                     admin::model::resource::Proxy result;
 
                      result.id = value.id;
                      result.name = value.name;
@@ -147,9 +146,9 @@ namespace casual
                {
                   struct Request
                   {
-                     admin::pending::Request operator () ( const state::pending::Request& value) const
+                     admin::model::pending::Request operator () ( const state::pending::Request& value) const
                      {
-                        admin::pending::Request result;
+                        admin::model::pending::Request result;
 
                         result.resource = value.resource;
                         result.correlation = value.message.correlation;
@@ -161,9 +160,9 @@ namespace casual
 
                   struct Reply
                   {
-                     admin::pending::Reply operator () ( const common::message::pending::Message& value) const
+                     admin::model::pending::Reply operator () ( const common::message::pending::Message& value) const
                      {
-                        admin::pending::Reply result;
+                        admin::model::pending::Reply result;
 
                         result.destinations = value.destinations;
                         result.type = common::message::convert::type( value.complete.type);
@@ -175,9 +174,9 @@ namespace casual
                } // pending
 
 
-               admin::Log log( const manager::Log::Stats& log)
+               admin::model::Log log( const manager::Log::Stats& log)
                {
-                  admin::Log result;
+                  admin::model::Log result;
 
                   result.update.prepare = log.update.prepare;
                   result.update.remove = log.update.remove;
@@ -186,9 +185,9 @@ namespace casual
                   return result;
                }
 
-               admin::State state( const manager::State& state)
+               admin::model::State state( const manager::State& state)
                {
-                  admin::State result;
+                  admin::model::State result;
 
                   common::algorithm::transform( state.resources, result.resources, transform::resource::Proxy{});
                   common::algorithm::transform( state.transactions, result.transactions, transform::Transaction{});

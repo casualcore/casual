@@ -10,6 +10,8 @@
 
 #include "sql/database.h"
 
+#include "queue/group/database/statement.h"
+
 #include "common/exception/system.h"
 #include "common/string.h"
 #include "common/message/queue.h"
@@ -26,7 +28,7 @@ namespace casual
 
          namespace message
          {
-            enum State
+            enum class State
             {
                added = 1,
                enqueued = 2,
@@ -56,9 +58,7 @@ namespace casual
          {
          public:
 
-
             Database( const std::string& database, std::string groupname);
-
 
             std::string file() const;
 
@@ -92,8 +92,15 @@ namespace casual
             //! @returns the earliest available message in the queue, if any.
             common::optional< platform::time::point::type> available( common::strong::queue::id queue) const;
 
-
+            //! @return number of restored messages for the queue
             size_type restore( common::strong::queue::id id);
+
+            //! @returns number of 'deleted' messages for the queue
+            //! @note: only `enqueued` messages are deleted (no pending for commmit)
+            size_type clear( common::strong::queue::id queue);
+
+            //! @returns id:s of the messages that was removed
+            std::vector< common::Uuid> remove( common::strong::queue::id queue, std::vector< common::Uuid> messages);
 
             void commit( const common::transaction::ID& id);
             void rollback( const common::transaction::ID& id);
@@ -137,70 +144,12 @@ namespace casual
          private:         
 
             sql::database::Connection m_connection;
-
-            struct Statement
-            {
-               sql::database::Statement enqueue;
-
-               struct
-               {
-                  sql::database::Statement first;
-                  sql::database::Statement first_id;
-                  sql::database::Statement first_match;
-
-               } dequeue;
-
-               struct
-               {
-                  sql::database::Statement xid;
-                  sql::database::Statement nullxid;
-
-               } state;
-
-               sql::database::Statement commit1;
-               sql::database::Statement commit2;
-               sql::database::Statement commit3;
-
-               sql::database::Statement rollback1;
-               sql::database::Statement rollback2;
-               sql::database::Statement rollback3;
-
-               struct 
-               {
-                  sql::database::Statement queues;
-                  sql::database::Statement message;
-               } available;
-
-               
-
-               sql::database::Statement id;
-
-               struct
-               {
-                  sql::database::Statement queue;
-                  sql::database::Statement message;
-
-               } information;
-
-               struct
-               {
-                  sql::database::Statement match;
-                  sql::database::Statement first;
-                  sql::database::Statement one_message;
-               } peek;
-
-               sql::database::Statement restore;
-
-            } m_statement;
-
+            database::Statement m_statement;
             std::string m_name;
-
          };
 
-      } // server
+      } // group
    } // queue
-
-
 } // casual
 
 

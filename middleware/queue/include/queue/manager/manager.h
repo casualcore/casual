@@ -27,11 +27,12 @@ namespace casual
       {
          struct Settings
          {
-            std::string group_executable;
+            struct
+            {
+               std::string executable;
+            } group;
          };
 
-         std::vector< common::message::queue::information::queues::Reply> queues( State& state);
-         common::message::queue::information::messages::Reply messages( State& state, const std::string& queue);
       } // manager
 
       struct Manager

@@ -62,6 +62,7 @@ namespace casual
          friend bool operator == ( const Uuid::uuid_type& rhs, const Uuid& lhs);
 
          friend std::ostream& operator << ( std::ostream& out, const Uuid& uuid);
+         friend std::istream& operator >> ( std::istream& in, Uuid& uuid);
 
       private:
          uuid_type m_uuid = {};

@@ -23,9 +23,9 @@ namespace casual
             {
                struct Group
                {
-                  manager::admin::Group operator () ( const manager::State::Group& group) const
+                  manager::admin::model::Group operator () ( const manager::State::Group& group) const
                   {
-                     manager::admin::Group result;
+                     manager::admin::model::Group result;
 
                      result.process = group.process;
 
@@ -40,18 +40,18 @@ namespace casual
          } // local
 
 
-         std::vector< manager::admin::Group> groups( const manager::State& state)
+         std::vector< manager::admin::model::Group> groups( const manager::State& state)
          {
-            std::vector< manager::admin::Group> result;
+            std::vector< manager::admin::model::Group> result;
 
             common::algorithm::transform( state.groups, result, local::Group{});
 
             return result;
          }
 
-         manager::admin::Queue Queue::operator () ( const common::message::queue::information::Queue& queue) const
+         manager::admin::model::Queue Queue::operator () ( const common::message::queue::information::Queue& queue) const
          {
-            manager::admin::Queue result;
+            manager::admin::model::Queue result;
 
             result.id = queue.id;
             result.name = queue.name;
@@ -67,15 +67,15 @@ namespace casual
             return result;
          }
 
-         std::vector< manager::admin::Queue> queues( const std::vector< common::message::queue::information::queues::Reply>& values)
+         std::vector< manager::admin::model::Queue> queues( const std::vector< common::message::queue::information::queues::Reply>& values)
          {
-            std::vector< manager::admin::Queue> result;
+            std::vector< manager::admin::model::Queue> result;
 
             for( auto& value : values)
             {
                auto range = common::algorithm::transform( value.queues, result, transform::Queue{});
 
-               common::algorithm::for_each( range, [&]( manager::admin::Queue& q){
+               common::algorithm::for_each( range, [&]( manager::admin::model::Queue& q){
                   q.group = value.process.pid;
                });
             }
@@ -83,12 +83,12 @@ namespace casual
             return result;
          }
 
-         manager::admin::State::Remote remote( const manager::State& state)
+         manager::admin::model::State::Remote remote( const manager::State& state)
          {
-            manager::admin::State::Remote result;
+            manager::admin::model::State::Remote result;
 
             common::algorithm::transform( state.remotes, result.domains, []( auto& r){
-               manager::admin::remote::Domain domain;
+               manager::admin::model::remote::Domain domain;
                
                domain.process = r.process;
                domain.order = r.order;
@@ -103,7 +103,7 @@ namespace casual
                });
 
                common::algorithm::transform( found, result.queues, [&queue]( auto& i){
-                  manager::admin::remote::Queue result;
+                  manager::admin::model::remote::Queue result;
                   result.name = queue.first;
                   result.pid = i.process.pid;
 
@@ -130,21 +130,21 @@ namespace casual
             return result;
          }
 
-         manager::admin::Message Message::operator () ( const common::message::queue::information::Message& message) const
+         manager::admin::model::Message Message::operator () ( const common::message::queue::information::Message& message) const
          {
-            manager::admin::Message result;
+            manager::admin::model::Message result;
 
             auto transform_state = []( auto state)
             {
                using Enum = decltype( state);
                switch( state)
                {
-                  case Enum::enqueued: return manager::admin::Message::State::enqueued;
-                  case Enum::committed: return manager::admin::Message::State::committed;
-                  case Enum::dequeued: return manager::admin::Message::State::dequeued;
+                  case Enum::enqueued: return manager::admin::model::Message::State::enqueued;
+                  case Enum::committed: return manager::admin::model::Message::State::committed;
+                  case Enum::dequeued: return manager::admin::model::Message::State::dequeued;
                }
                // will not happend - the compiler will give error if we not handle all enums...
-               return manager::admin::Message::State::dequeued;
+               return manager::admin::model::Message::State::dequeued;
             };
 
             result.id = message.id;
@@ -166,10 +166,11 @@ namespace casual
             return result;
          }
 
-         std::vector< manager::admin::Message> messages( const common::message::queue::information::messages::Reply& reply)
+         std::vector< manager::admin::model::Message> messages( const common::message::queue::information::messages::Reply& reply)
          {
             return common::algorithm::transform( reply.messages, Message{});
          }
+
 
       } // transform
    } // queue

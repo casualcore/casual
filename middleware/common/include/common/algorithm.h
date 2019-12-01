@@ -597,6 +597,18 @@ namespace casual
             return std::forward< R>( range);
          }
 
+         //! applies `functor` to all elements that `element` is true.
+         template< typename R, typename F>
+         decltype( auto) for_each_if( R&& range, F&& functor)
+         {
+            for( auto& value : range)
+            {
+               if( value)
+                  functor( value);
+            }
+            return std::forward< R>( range);
+         }
+
          //! applies `functor` for all elements in `range` while `functor` returns true.
          //! Hence, if `functor` returns false the invocation stops
          template< typename R, typename F>
@@ -646,6 +658,14 @@ namespace casual
             }
 
             return std::forward< R>( range);
+         }
+         
+         //! applies `functor` `N` times
+         template< platform::size::type N, typename F>
+         void for_n( F functor)
+         {
+            for( platform::size::type count = 0; count < N; ++count)
+               functor();
          }
 
 

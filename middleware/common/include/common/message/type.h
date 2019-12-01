@@ -183,6 +183,10 @@ namespace casual
 
             queue_restore_request = QUEUE_BASE + 600,
             queue_restore_reply,
+            queue_clear_request,
+            queue_clear_reply,
+            queue_messages_remove_request,
+            queue_messages_remove_reply,
             
             // gateway
             GATEWAY_BASE = 7000,

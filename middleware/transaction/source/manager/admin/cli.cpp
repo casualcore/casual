@@ -5,7 +5,7 @@
 //!
 
 #include "transaction/manager/admin/cli.h"
-#include "transaction/manager/admin/transactionvo.h"
+#include "transaction/manager/admin/model.h"
 #include "transaction/manager/admin/server.h"
 
 
@@ -36,12 +36,12 @@ namespace casual
                   namespace call
                   {
 
-                     admin::State state()
+                     admin::model::State state()
                      {
                         serviceframework::service::protocol::binary::Call call;
                         auto reply = call( service::name::state());
 
-                        admin::State result;
+                        admin::model::State result;
 
                         reply >> CASUAL_NAMED_VALUE( result);
 
@@ -51,14 +51,14 @@ namespace casual
 
                      namespace scale
                      {
-                        std::vector< admin::resource::Proxy> instances( const std::vector< admin::scale::Instances>& instances)
+                        std::vector< admin::model::resource::Proxy> instances( const std::vector< admin::model::scale::Instances>& instances)
                         {
                            serviceframework::service::protocol::binary::Call call;
 
                            call << CASUAL_NAMED_VALUE( instances);
                            auto reply = call( service::name::scale::instances());
 
-                           std::vector< admin::resource::Proxy> result;
+                           std::vector< admin::model::resource::Proxy> result;
 
                            reply >> CASUAL_NAMED_VALUE( result);
 
@@ -69,12 +69,11 @@ namespace casual
                   } // call
 
 
-
                   namespace format
                   {  
                      using time_type = std::chrono::duration< double>;
                      
-                     auto accumulate_statistics( const admin::resource::Proxy& value)
+                     auto accumulate_statistics( const admin::model::resource::Proxy& value)
                      {
                         struct Metrics
                         {
@@ -118,7 +117,7 @@ namespace casual
 
                         auto format_resources = []( auto& value)
                         {
-                           std::vector< resource::id_type> resources;
+                           std::vector< model::resource::id_type> resources;
                            
                            for( auto& branch : value.branches)
                            {
@@ -127,7 +126,7 @@ namespace casual
                            return common::string::compose( algorithm::unique( algorithm::sort( resources)));
                         };
 
-                        return common::terminal::format::formatter< admin::Transaction>::construct(
+                        return common::terminal::format::formatter< admin::model::Transaction>::construct(
                            common::terminal::format::column( "global", format_global, common::terminal::color::yellow),
                            common::terminal::format::column( "branch", format_branch, common::terminal::color::grey),
                            common::terminal::format::column( "owner", format_owner, common::terminal::color::white, common::terminal::format::Align::right),
@@ -141,31 +140,31 @@ namespace casual
 
                         struct format_number_of_instances
                         {
-                           std::size_t operator() ( const admin::resource::Proxy& value) const
+                           std::size_t operator() ( const admin::model::resource::Proxy& value) const
                            {
                               return value.instances.size();
                            }
                         };
 
-                        auto format_invoked = []( const admin::resource::Proxy& value)
+                        auto format_invoked = []( const admin::model::resource::Proxy& value)
                         {
                            auto result = accumulate_statistics( value);
                            return result.roundtrip.count;
                         };
 
-                        auto format_min = []( const admin::resource::Proxy& value)
+                        auto format_min = []( const admin::model::resource::Proxy& value)
                         {
                            auto result = accumulate_statistics( value);
                            return std::chrono::duration_cast< time_type>( result.roundtrip.limit.min).count();
                         };
 
-                        auto format_max = []( const admin::resource::Proxy& value)
+                        auto format_max = []( const admin::model::resource::Proxy& value)
                         {
                            auto result = accumulate_statistics( value);
                            return std::chrono::duration_cast< time_type>( result.roundtrip.limit.max).count(); 
                         };
 
-                        auto format_avg = []( const admin::resource::Proxy& value)
+                        auto format_avg = []( const admin::model::resource::Proxy& value)
                         {
                            auto result = accumulate_statistics( value);
                            if( result.roundtrip.count == 0) return 0.0;
@@ -173,12 +172,12 @@ namespace casual
                         };
 
 
-                        return common::terminal::format::formatter< admin::resource::Proxy>::construct(
-                           common::terminal::format::column( "name", std::mem_fn( &admin::resource::Proxy::name), common::terminal::color::yellow),
-                           common::terminal::format::column( "id", std::mem_fn( &admin::resource::Proxy::id), common::terminal::color::yellow, terminal::format::Align::right),
-                           common::terminal::format::column( "key", std::mem_fn( &admin::resource::Proxy::key), common::terminal::color::yellow),
-                           common::terminal::format::column( "openinfo", std::mem_fn( &admin::resource::Proxy::openinfo), common::terminal::color::no_color),
-                           common::terminal::format::column( "closeinfo", std::mem_fn( &admin::resource::Proxy::closeinfo), common::terminal::color::no_color),
+                        return common::terminal::format::formatter< admin::model::resource::Proxy>::construct(
+                           common::terminal::format::column( "name", std::mem_fn( &admin::model::resource::Proxy::name), common::terminal::color::yellow),
+                           common::terminal::format::column( "id", std::mem_fn( &admin::model::resource::Proxy::id), common::terminal::color::yellow, terminal::format::Align::right),
+                           common::terminal::format::column( "key", std::mem_fn( &admin::model::resource::Proxy::key), common::terminal::color::yellow),
+                           common::terminal::format::column( "openinfo", std::mem_fn( &admin::model::resource::Proxy::openinfo), common::terminal::color::no_color),
+                           common::terminal::format::column( "closeinfo", std::mem_fn( &admin::model::resource::Proxy::closeinfo), common::terminal::color::no_color),
                            terminal::format::column( "invoked", format_invoked, terminal::color::blue, terminal::format::Align::right),
                            terminal::format::column( "min (s)", format_min, terminal::color::blue, terminal::format::Align::right),
                            terminal::format::column( "max (s)", format_max, terminal::color::blue, terminal::format::Align::right),
@@ -190,61 +189,61 @@ namespace casual
 
                      auto resource_instance()
                      {
-                        auto format_pid = []( const admin::resource::Instance& value) 
+                        auto format_pid = []( const admin::model::resource::Instance& value) 
                         {
                            return value.process.pid;
                         };
 
-                        auto format_queue = []( const admin::resource::Instance& value) 
+                        auto format_queue = []( const admin::model::resource::Instance& value) 
                         {
                            return value.process.ipc;
                         };
 
-                        auto format_invoked = []( const admin::resource::Instance& value) 
+                        auto format_invoked = []( const admin::model::resource::Instance& value) 
                         {
                            return value.metrics.roundtrip.count;
                         };
 
-                        auto format_min = []( const admin::resource::Instance& value)
+                        auto format_min = []( const admin::model::resource::Instance& value)
                         {
                            return std::chrono::duration_cast< time_type>( value.metrics.roundtrip.limit.min).count();
                         };
 
-                        auto format_max = []( const admin::resource::Instance& value)
+                        auto format_max = []( const admin::model::resource::Instance& value)
                         {
                            return std::chrono::duration_cast< time_type>( value.metrics.roundtrip.limit.max).count();
                         };
 
-                        auto format_avg = []( const admin::resource::Instance& value)
+                        auto format_avg = []( const admin::model::resource::Instance& value)
                         {
                            if( value.metrics.roundtrip.count == 0) return 0.0;
                            return std::chrono::duration_cast< time_type>( value.metrics.roundtrip.total / value.metrics.roundtrip.count).count();
                         };
 
-                        auto format_rm_invoked = []( const admin::resource::Instance& value)
+                        auto format_rm_invoked = []( const admin::model::resource::Instance& value)
                         {
                            return value.metrics.resource.count;
                         };
 
-                        auto format_rm_min = []( const admin::resource::Instance& value)
+                        auto format_rm_min = []( const admin::model::resource::Instance& value)
                         {
                            return std::chrono::duration_cast< time_type>( value.metrics.resource.limit.min).count();
                         };
 
-                        auto format_rm_max= []( const admin::resource::Instance& value)
+                        auto format_rm_max= []( const admin::model::resource::Instance& value)
                         {
                            return std::chrono::duration_cast< time_type>( value.metrics.resource.limit.max).count();
                         };
 
-                        auto format_rm_avg = []( const admin::resource::Instance& value)
+                        auto format_rm_avg = []( const admin::model::resource::Instance& value)
                         {
                            if( value.metrics.resource.count == 0) return 0.0;
                            return std::chrono::duration_cast< time_type>( value.metrics.resource.total / value.metrics.resource.count).count();
                         };
 
 
-                        return common::terminal::format::formatter< admin::resource::Instance>::construct(
-                           terminal::format::column( "id", std::mem_fn( &admin::resource::Instance::id), common::terminal::color::yellow, terminal::format::Align::right),
+                        return common::terminal::format::formatter< admin::model::resource::Instance>::construct(
+                           terminal::format::column( "id", std::mem_fn( &admin::model::resource::Instance::id), common::terminal::color::yellow, terminal::format::Align::right),
                            terminal::format::column( "pid", format_pid, common::terminal::color::white, terminal::format::Align::right),
                            terminal::format::column( "queue", format_queue, common::terminal::color::no_color, terminal::format::Align::right),
                            terminal::format::column( "invoked", format_invoked, common::terminal::color::blue, terminal::format::Align::right),
@@ -295,9 +294,9 @@ namespace casual
 
                      namespace transform
                      {
-                        std::vector< admin::resource::Instance> instances( std::vector< admin::resource::Proxy> resources)
+                        std::vector< admin::model::resource::Instance> instances( std::vector< admin::model::resource::Proxy> resources)
                         {
-                           std::vector< admin::resource::Instance> result;
+                           std::vector< admin::model::resource::Instance> result;
 
                            for( auto& resource : resources)
                            {
@@ -323,7 +322,7 @@ namespace casual
                         values.insert( std::begin( values), std::move( value));
 
                         auto resources = call::scale::instances( common::algorithm::transform( values, []( auto& value){
-                           admin::scale::Instances instance;
+                           admin::model::scale::Instances instance;
                            instance.name = std::get< 0>( value);
                            instance.instances = std::get< 1>( value);
                            return instance;

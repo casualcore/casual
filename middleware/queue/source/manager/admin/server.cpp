@@ -12,134 +12,288 @@
 #include "queue/manager/handle.h"
 #include "queue/common/transform.h"
 
+#include "queue/common/log.h"
 
 #include "serviceframework/service/protocol.h"
 
 
 namespace casual
 {
+   using namespace common;
    namespace queue
    {
       namespace manager
       {
          namespace admin
          {
-
             namespace local
             {
                namespace
                {
-                  common::service::invoke::Result state( common::service::invoke::Parameter&& parameter, manager::State& state)
+                  admin::model::State state( manager::State& state)
                   {
-                     auto protocol = serviceframework::service::protocol::deduce( std::move( parameter));
+                     admin::model::State result;
 
-                     auto result = serviceframework::service::user( protocol, &admin::state, state);
+                     auto get_queues = [](auto& state)
+                     {
+                        auto send = [&]( const manager::State::Group& group)
+                        {
+                           common::message::queue::information::queues::Request request;
+                           request.process = common::process::handle();
+                           return ipc::device().blocking_send( group.process.ipc, request);
+                        };
 
-                     protocol << CASUAL_NAMED_VALUE( result);
-                     return protocol.finalize();
+                        std::vector< common::Uuid> correlations;
+
+                        common::algorithm::transform( state.groups, correlations, send);
+
+
+                        auto receive = [&]( const common::Uuid& correlation)
+                           {
+                              common::message::queue::information::queues::Reply reply;
+                              ipc::device().blocking_receive( reply, correlation);
+                              return reply;
+                           };
+
+                        std::vector< common::message::queue::information::queues::Reply> replies;
+
+                        common::algorithm::transform( correlations, replies, receive);
+
+                        return replies;
+                     };
+
+                     result.queues = transform::queues( get_queues( state));
+                     result.groups = transform::groups( state);
+                     result.remote = transform::remote( state);
+
+                     return result;
                   }
 
-                  namespace list
+                  namespace messages
                   {
-                     common::service::invoke::Result messages( common::service::invoke::Parameter&& parameter, manager::State& state)
+                     std::vector< model::Message> list( manager::State& state, const std::string& queue)
                      {
-                        auto protocol = serviceframework::service::protocol::deduce( std::move( parameter));
+                        auto found = common::algorithm::find( state.queues, queue);
 
-                        std::string queue;
-                        protocol >> CASUAL_NAMED_VALUE( queue);
+                        if( found && ! found->second.empty())
+                        {
+                           common::message::queue::information::messages::Request request;
+                           request.process = common::process::handle();
+                           request.qid = found->second.front().queue;
 
-                        auto result = serviceframework::service::user( protocol, &admin::list_messages, state, queue);
+                           return transform::messages( ipc::device().call( found->second.front().process.ipc, request));
+                        }
 
-                        protocol << CASUAL_NAMED_VALUE( result);
-                        return protocol.finalize();
+                        return {};
+                     }  
+
+                     std::vector< common::Uuid> remove( manager::State& state, const std::string& queue, std::vector< common::Uuid> ids)
+                     {
+                        auto found = common::algorithm::find( state.queues, queue);
+
+                        if( found && ! found->second.empty())
+                        {
+                           common::message::queue::messages::remove::Request request{ common::process::handle()};
+                           request.queue = found->second.front().queue;
+                           request.ids = std::move( ids);
+
+                           return ipc::device().call( found->second.front().process.ipc, request).ids;
+                        }
+
+                        return {};
+                     }
+                  } // messages
+
+                  namespace detail
+                  {
+                     namespace local
+                     {
+                        const manager::State::Queue* queue( manager::State& state, const std::string& name)
+                        {
+                           auto found = common::algorithm::find( state.queues, name);
+
+                           if( found && ! found->second.empty() && found->second.front().order == 0)
+                              return &found->second.front();
+
+                           return nullptr;
+                        }
+                     } // local
+                  } // detail
+
+
+                  std::vector< model::Affected> restore( manager::State& state, const std::string& name)
+                  {
+                     Trace trace{ "queue::manager::admin::local::restore"};
+                     
+                     std::vector< model::Affected> result;
+
+                     if( auto queue = detail::local::queue( state, name))
+                     {
+                        common::message::queue::restore::Request request;
+                        request.process = common::process::handle();
+                        request.queues.push_back( queue->queue);
+
+                        auto reply = manager::ipc::device().call( queue->process.ipc, request);
+
+                        if( ! reply.affected.empty())
+                        {
+                           auto& restored = reply.affected.front();
+                           model::Affected affected;
+                           affected.queue.name = name;
+                           affected.queue.id = restored.queue;
+                           affected.count = restored.count;
+
+                           result.push_back( std::move( affected));
+                        }
+                     }
+                     return result;
+                  }
+
+                  std::vector< model::Affected> clear( manager::State& state, std::vector< std::string> queues)
+                  {
+                     Trace trace{ "queue::manager::admin::local::clear"};
+
+                     struct Queue 
+                     {
+                        std::string name;
+                        const manager::State::Queue* pointer;
+                     };
+
+                     auto real_queues = algorithm::transform_if( queues, [&state]( auto& name)
+                     {
+                        auto queue = detail::local::queue( state, name); 
+                        return Queue{ name, queue};
+                     },
+                     [&state]( auto& name){ return detail::local::queue( state, name) != nullptr;});
+
+                     auto clear_queue = []( auto& queue)
+                     {
+                        common::message::queue::clear::Request request{ common::process::handle()};
+                        request.queues.push_back( queue.pointer->queue);
+                        
+                        auto reply = manager::ipc::device().call( queue.pointer->process.ipc, request);
+
+                        model::Affected result;
+                        result.queue.name = std::move( queue.name);
+                        result.queue.id = queue.pointer->queue;
+                        if( ! reply.affected.empty())
+                           result.count = reply.affected.front().count;
+
+                        return result;
+
+                     };
+
+                     return algorithm::transform( real_queues, clear_queue);
+                  }
+
+
+                  namespace service
+                  {
+                     auto state( manager::State& state)
+                     {
+                        return [&state]( common::service::invoke::Parameter&& parameter)
+                        {
+                           return serviceframework::service::user( 
+                              serviceframework::service::protocol::deduce( std::move( parameter)), 
+                              &local::state, state);
+                        };
+                     };
+
+
+                     namespace messages
+                     {
+                        auto list( manager::State& state)
+                        {
+                           return [&state]( common::service::invoke::Parameter&& parameter)
+                           {
+                              auto protocol = serviceframework::service::protocol::deduce( std::move( parameter));
+
+                              auto queue = protocol.extract< std::string>( "queue");
+
+                              return serviceframework::service::user( 
+                                 std::move( protocol), 
+                                 &local::messages::list, 
+                                 state, 
+                                 std::move( queue));
+                           };
+                        }
+
+                        auto remove( manager::State& state)
+                        {
+                           return [&state]( common::service::invoke::Parameter&& parameter)
+                           {
+                              auto protocol = serviceframework::service::protocol::deduce( std::move( parameter));
+
+                              auto queue = protocol.extract< std::string>( "queue");
+                              auto ids = protocol.extract< std::vector< common::Uuid>>( "ids");
+
+                              return serviceframework::service::user( 
+                                 std::move( protocol), 
+                                 &local::messages::remove, 
+                                 state, 
+                                 std::move( queue),
+                                 std::move( ids));
+                           };
+                        }
+                     } // messages
+
+                     auto restore( manager::State& state)
+                     {
+                        return [&state]( common::service::invoke::Parameter&& parameter)
+                        {
+                           auto protocol = serviceframework::service::protocol::deduce( std::move( parameter));
+
+                           auto queue = protocol.extract< std::string>( "queue");
+
+                           return serviceframework::service::user( std::move( protocol), &local::restore, state, queue);
+                        };
                      }
 
-                  } // list
+                     auto clear( manager::State& state)
+                     {
+                        return [&state]( common::service::invoke::Parameter&& parameter)
+                        {
+                           auto protocol = serviceframework::service::protocol::deduce( std::move( parameter));
 
-                  common::service::invoke::Result restore( common::service::invoke::Parameter&& parameter, manager::State& state)
-                  {
-                     auto protocol = serviceframework::service::protocol::deduce( std::move( parameter));
+                           auto queues = protocol.extract< std::vector< std::string>>( "queues");
 
-                     std::string queue;
-                     protocol >> CASUAL_NAMED_VALUE( queue);
+                           return serviceframework::service::user( std::move( protocol), &local::clear, state, std::move( queues));
+                        };
+                     }
 
-                     auto result = serviceframework::service::user( protocol, &admin::restore, state, queue);
-
-                     protocol << CASUAL_NAMED_VALUE( result);
-                     return protocol.finalize();
-                  }
-
+                  } // service
                } // <unnamed>
             } // local
-
-
-            admin::State state( manager::State& state)
-            {
-               admin::State result;
-
-               result.queues = transform::queues( manager::queues( state));
-               result.groups = transform::groups( state);
-               result.remote = transform::remote( state);
-
-               return result;
-            }
-
-            std::vector< Message> list_messages( manager::State& state, const std::string& queue)
-            {
-               return transform::messages( manager::messages( state, queue));
-            }
-
-
-
-            std::vector< Affected> restore( manager::State& state, const std::string& queuename)
-            {
-               std::vector< Affected> result;
-
-               auto found = common::algorithm::find( state.queues, queuename);
-
-               if( found && ! found->second.empty() && found->second.front().order == 0)
-               {
-                  auto&& queue = found->second.front();
-
-                  common::message::queue::restore::Request request;
-                  request.process = common::process::handle();
-                  request.queues.push_back( queue.queue);
-
-                  auto reply = manager::ipc::device().call( queue.process.ipc, request);
-
-                  if( ! reply.affected.empty())
-                  {
-                     auto& restored = reply.affected.front();
-                     Affected affected;
-                     affected.queue.name = queuename;
-                     affected.queue.id = restored.queue;
-                     affected.restored = restored.restored;
-
-                     result.push_back( std::move( affected));
-                  }
-               }
-               return result;
-            }
-
 
             common::server::Arguments services( manager::State& state)
             {
                return { {
-                     { service::name::state(),
-                        std::bind( &local::state, std::placeholders::_1, std::ref( state)),
+                     { service::name::state,
+                        local::service::state( state),
                         common::service::transaction::Type::none,
                         common::service::category::admin()
                      },
-                     { service::name::list_messages(),
-                        std::bind( &local::list::messages, std::placeholders::_1, std::ref( state)),
+                     { service::name::messages::list,
+                        local::service::messages::list( state),
                         common::service::transaction::Type::none,
                         common::service::category::admin()
                      },
-                     { service::name::restore(),
-                        std::bind( &local::restore, std::placeholders::_1, std::ref( state)),
+                     { service::name::messages::remove,
+                        local::service::messages::remove( state),
                         common::service::transaction::Type::none,
                         common::service::category::admin()
-                     }
+                     },
+                     { service::name::restore,
+                        local::service::restore( state),
+                        common::service::transaction::Type::none,
+                        common::service::category::admin()
+                     },
+                     { service::name::clear,
+                        local::service::clear( state),
+                        common::service::transaction::Type::none,
+                        common::service::category::admin()
+                     },
+
                }};
             }
          } // admin

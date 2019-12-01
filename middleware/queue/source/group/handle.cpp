@@ -448,6 +448,7 @@ namespace casual
                   void Request::operator () ( common::message::transaction::resource::commit::Request& message)
                   {
                      Trace trace{ "queue::handle::transaction::commit::Request"};
+                     log::line( verbose::log, "message: ", message);
 
                      local::transaction::done( m_state, message);
 
@@ -480,6 +481,7 @@ namespace casual
                   void Request::operator () ( common::message::transaction::resource::prepare::Request& message)
                   {
                      Trace trace{ "queue::handle::transaction::prepare::Request"};
+                     log::line( verbose::log, "message: ", message);
 
                      auto reply = common::message::reverse::type( message);
                      reply.process = common::process::handle();
@@ -496,6 +498,7 @@ namespace casual
                   void Request::operator () ( common::message::transaction::resource::rollback::Request& message)
                   {
                      Trace trace{ "queue::handle::transaction::rollback::Request"};
+                     log::line( verbose::log, "message: ", message);
 
                      local::transaction::done( m_state, message);
 
@@ -530,6 +533,7 @@ namespace casual
                void Request::operator () ( common::message::queue::restore::Request& message)
                {
                   Trace trace{ "queue::handle::restore::Request"};
+                  log::line( verbose::log, "message: ", message);
 
                   auto reply = common::message::reverse::type( message);
 
@@ -538,10 +542,9 @@ namespace casual
                   });
 
                   reply.affected = common::algorithm::transform( message.queues, [&]( auto queue){
-                     common::message::queue::restore::Reply::Affected result;
-
+                     std::decay_t< decltype( reply.affected.front())> result;
                      result.queue = queue;
-                     result.restored = m_state.queuebase.restore( queue);
+                     result.count = m_state.queuebase.restore( queue);
                      return result;
                   });
 
@@ -568,6 +571,64 @@ namespace casual
              
             } // signal
 
+            namespace local
+            {
+               namespace
+               {
+                  // evaluating if this "pattern" is better/easier than
+                  // _regular functors_
+
+
+                  namespace clear
+                  {
+                     auto request( State& state)
+                     {
+                        return [&state]( const common::message::queue::clear::Request& message)
+                        {
+                           Trace trace{ "queue::handle::local::clear::request"};
+                           log::line( verbose::log, "message: ", message);
+
+                           auto clear_queue = [&state]( auto id)
+                           {
+                              common::message::queue::Affected result;
+                              result.queue = id;
+                              result.count = state.queuebase.clear( id);
+                              return result;
+                           };
+
+                           auto reply = common::message::reverse::type( message);
+
+                           reply.affected = algorithm::transform( message.queues, clear_queue);
+
+                           local::ipc::eventually::send( message.process, reply);
+                        };
+                     }
+                  } // clear
+
+                  namespace messages
+                  {
+                     namespace remove
+                     {
+                        auto request( State& state)
+                        {
+                           return [&state]( const common::message::queue::messages::remove::Request& message)
+                           {
+                              Trace trace{ "queue::handle::local::messages::remove::request"};
+                              log::line( verbose::log, "message: ", message);
+
+                              auto reply = common::message::reverse::type( message);
+
+                              reply.ids = state.queuebase.remove( message.queue, std::move( message.ids));
+
+                              local::ipc::eventually::send( message.process, reply);
+                           }; 
+                        }
+                        
+                     } // remove
+                  } // messages
+               } // <unnamed>
+            } // local
+
          } // handle
 
          handle::dispatch_type handler( State& state)
@@ -586,6 +647,8 @@ namespace casual
                handle::peek::information::Request{ state},
                handle::peek::messages::Request{ state},
                handle::restore::Request{ state},
+               handle::local::clear::request( state),
+               handle::local::messages::remove::request( state),
                common::message::handle::Shutdown{},
             };
          }

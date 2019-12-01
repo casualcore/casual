@@ -52,7 +52,7 @@ namespace casual
                      State result;
 
                      result.group_executable = common::coalesce(
-                        std::move( settings.group_executable),
+                        std::move( settings.group.executable),
                         casual::common::environment::directory::casual() + "/bin/casual-queue-group"
                      );
 
@@ -132,58 +132,6 @@ namespace casual
 
             } // <unnamed>
          } // local
-
-
-         std::vector< common::message::queue::information::queues::Reply> queues( State& state)
-         {
-            Trace trace( "manager::queues");
-
-            auto send = [&]( const manager::State::Group& group)
-               {
-                  common::message::queue::information::queues::Request request;
-                  request.process = common::process::handle();
-                  return ipc::device().blocking_send( group.process.ipc, request);
-               };
-
-            std::vector< common::Uuid> correlations;
-
-            common::algorithm::transform( state.groups, correlations, send);
-
-
-            auto receive = [&]( const common::Uuid& correlation)
-               {
-                  common::message::queue::information::queues::Reply reply;
-                  ipc::device().blocking_receive( reply, correlation);
-                  return reply;
-               };
-
-            std::vector< common::message::queue::information::queues::Reply> replies;
-
-            common::algorithm::transform( correlations, replies, receive);
-
-            return replies;
-         }
-
-         common::message::queue::information::messages::Reply messages( State& state, const std::string& queue)
-         {
-            common::message::queue::information::messages::Reply result;
-
-            auto found = common::algorithm::find( state.queues, queue);
-
-            if( found && ! found->second.empty())
-            {
-               common::message::queue::information::messages::Request request;
-               request.process = common::process::handle();
-               request.qid = found->second.front().queue;
-
-               ipc::device().blocking_receive(
-                     result,
-                     ipc::device().blocking_send( found->second.front().process.ipc, request));
-            }
-
-            return result;
-         }
-
       } // manager
 
 

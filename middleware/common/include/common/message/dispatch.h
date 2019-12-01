@@ -118,21 +118,17 @@ namespace casual
                   return false;
                }
 
-               class concept
+               struct concept
                {
-               public:
                   virtual ~concept() = default;
                   virtual void dispatch( communication::message::Complete& complete) = 0;
                };
 
 
                template< typename H>
-               class model : public concept
+               struct model final : public concept
                {
-               public:
-
                   using handler_type = H;
-
                   using traits_type = traits::function< H>;
 
                   static_assert( traits_type::arguments() == 1, "handlers has to have this signature: void( <some message>), can be declared const");
@@ -146,9 +142,7 @@ namespace casual
                   model( model&&) = default;
                   model& operator = ( model&&) = default;
 
-
                   model( handler_type&& handler) : m_handler( std::move( handler)) {}
-
 
                   void dispatch( communication::message::Complete& complete) override
                   {
@@ -161,7 +155,6 @@ namespace casual
                   }
 
                private:
-
                   handler_type m_handler;
                };
 

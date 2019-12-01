@@ -4,21 +4,14 @@
 //! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-
-
 #include "transaction/manager/admin/server.h"
 #include "transaction/manager/admin/transform.h"
 #include "transaction/manager/state.h"
 #include "transaction/manager/manager.h"
 #include "transaction/manager/action.h"
 
-//
-// sf
-//
-
 #include "serviceframework/service/protocol/call.h"
 #include "serviceframework/service/protocol.h"
-
 
 namespace casual
 {
@@ -49,7 +42,7 @@ namespace casual
                      {
                         auto protocol = serviceframework::service::protocol::deduce( std::move( parameter));
 
-                        std::vector< admin::scale::Instances> instances;
+                        std::vector< admin::model::scale::Instances> instances;
                         protocol >> CASUAL_NAMED_VALUE( instances);
 
                         auto result = serviceframework::service::user( protocol, &action::resource::instances, state, std::move( instances));

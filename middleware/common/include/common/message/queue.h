@@ -477,8 +477,6 @@ namespace casual
             } // peek
 
 
-
-
             namespace connect
             {
                struct Request : basic_message< Type::queue_connect_request>
@@ -570,50 +568,119 @@ namespace casual
                static_assert( traits::is_movable< Advertise>::value, "not movable");
             } // concurrent
 
+            struct Affected
+            {
+               strong::queue::id queue;
+               size_type count = 0;
+
+               CASUAL_CONST_CORRECT_SERIALIZE(
+               {
+                  CASUAL_SERIALIZE( queue);
+                  CASUAL_SERIALIZE( count);
+               })
+            };
 
             namespace restore
             {
-
-               struct Request : basic_message< Type::queue_restore_request>
+               using base_request = basic_request< Type::queue_restore_request>;
+               struct Request : base_request
                {
-                  common::process::Handle process;
+                  using base_request::base_request;
+
                   std::vector< strong::queue::id> queues;
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
                   {
-                     base_type::serialize( archive);
-                     CASUAL_SERIALIZE( process);
+                     base_request::serialize( archive);
                      CASUAL_SERIALIZE( queues);
                   })
                };
-               static_assert( traits::is_movable< Request>::value, "not movable");
 
-               struct Reply : basic_message< Type::queue_restore_request>
+               using base_reply = basic_message< Type::queue_restore_request>;
+               struct Reply : base_reply
                {
-                  struct Affected
-                  {
-                     strong::queue::id queue;
-                     size_type restored = 0;
+                  std::vector< Affected> affected;
 
-                     CASUAL_CONST_CORRECT_SERIALIZE(
-                     {
-                        CASUAL_SERIALIZE( queue);
-                        CASUAL_SERIALIZE( restored);
-                     })
-                  };
+                  CASUAL_CONST_CORRECT_SERIALIZE(
+                  {
+                     base_reply::serialize( archive);
+                     CASUAL_SERIALIZE( affected);
+                  })
+               };
+               
+            } // restore
+
+            namespace clear
+            {
+
+               using base_request = basic_request< Type::queue_clear_request>;
+               struct Request : base_request
+               {
+                  using base_request::base_request;
+
+                  std::vector< strong::queue::id> queues;
+
+                  CASUAL_CONST_CORRECT_SERIALIZE(
+                  {
+                     base_request::serialize( archive);
+                     CASUAL_SERIALIZE( queues);
+                  })
+               };
+
+
+               using base_reply = basic_message< Type::queue_restore_request>;
+               struct Reply : base_reply
+               {
+                  using base_reply::base_reply;
 
                   std::vector< Affected> affected;
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
                   {
-                     base_type::serialize( archive);
+                     base_reply::serialize( archive);
                      CASUAL_SERIALIZE( affected);
                   })
+
                };
-            } // restore
+            } // clear
 
+            namespace messages
+            {
+               namespace remove
+               {
+                  using base_request = basic_request< Type::queue_messages_remove_request>;
+                  struct Request : base_request
+                  {
+                     using base_request::base_request;
 
+                     strong::queue::id queue;
+                     //! messages to remove
+                     std::vector< Uuid> ids;
 
+                     CASUAL_CONST_CORRECT_SERIALIZE(
+                     {
+                        base_request::serialize( archive);
+                        CASUAL_SERIALIZE( queue);
+                        CASUAL_SERIALIZE( ids);
+                     })
+                  };
+
+                  using base_reply = basic_message< Type::queue_messages_remove_reply>;
+                  struct Reply : base_reply
+                  {
+                     using base_reply::base_reply;
+                     //! messages that got removed
+                     std::vector< Uuid> ids;
+
+                     CASUAL_CONST_CORRECT_SERIALIZE(
+                     {
+                        base_reply::serialize( archive);
+                        CASUAL_SERIALIZE( ids);
+                     })
+                  };
+                  
+               } // remove
+            } // messages
          } // queue
 
          namespace reverse
@@ -642,9 +709,20 @@ namespace casual
             template<>
             struct type_traits< queue::restore::Request> : detail::type< queue::restore::Reply> {};
 
+            template<>
+            struct type_traits< queue::clear::Request> : detail::type< queue::clear::Reply> {};
+
+            template<>
+            struct type_traits< queue::messages::remove::Request> : detail::type< queue::messages::remove::Reply> {};
+
+            template<>
+            struct type_traits< queue::information::messages::Request> : detail::type< queue::information::messages::Reply> {};
+
+
 
             template<>
             struct type_traits< queue::connect::Request> : detail::type< queue::connect::Reply> {};
+            
 
          } // reverse
 

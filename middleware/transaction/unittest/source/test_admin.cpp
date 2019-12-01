@@ -9,7 +9,7 @@
 #include "common/unittest.h"
 
 
-#include "transaction/manager/admin/transactionvo.h"
+#include "transaction/manager/admin/model.h"
 #include "transaction/manager/admin/transform.h"
 
 #include "transaction/manager/state.h"

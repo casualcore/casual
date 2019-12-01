@@ -61,18 +61,30 @@ namespace casual
 
       } // xatmi
 
+      struct Affected
+      {
+         std::string queue;
+         platform::size::type count = 0;
+      };
+
       namespace restore
       {
-         struct Affected
-         {
-            std::string queue;
-            platform::size::type restored = 0;
-         };
-
+         using Affected = queue::Affected;
          std::vector< Affected> queue( const std::vector< std::string>& queues);
 
-
       } // restore
+
+      namespace clear
+      {
+         using Affected = queue::Affected;
+         std::vector< Affected> queue( const std::vector< std::string>& queues);
+      } // clear
+
+      namespace messages
+      {
+         std::vector< common::Uuid> remove( const std::string& queue, const std::vector< common::Uuid>& messages);
+         
+      } // messages
 
       } // v1
    } // queue

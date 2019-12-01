@@ -7,6 +7,7 @@
 
 #include "queue/group/database.h"
 #include "queue/group/database/schema.h"
+#include "queue/group/database/statement.h"
 #include "queue/common/log.h"
 
 #include "common/algorithm.h"
@@ -163,10 +164,6 @@ namespace casual
                m_connection.statement( database::schema::table::index::message);
             }
 
-
-            //auto now = platform::time::clock::type::now();
-
-
             // Triggers
             {
                Trace trace{ "queue::group::Database::Database create triggers"};
@@ -175,168 +172,7 @@ namespace casual
             }
 
             // Precompile all other statements
-            {
-               Trace trace{ "queue::group::Database::Database precompile statements"};
-
-               /*
-                  id            BLOB PRIMARY KEY,
-                  queue         INTEGER,
-                  origin        NUMBER, -- the first queue a message is enqueued to
-                  gtrid         BLOB,
-                  properties    TEXT,
-                  state         INTEGER, -- (1: enqueued, 2: committed, 3: dequeued)
-                  reply         TEXT,
-                  redelivered   INTEGER,
-                  type          TEXT,
-                  available     INTEGER,
-                  timestamp     INTEGER,
-                  payload       BLOB,
-               */
-               m_statement.enqueue = m_connection.precompile( "INSERT INTO message VALUES (?,?,?,?,?,?,?,?,?,?,?,?);");
-
-               m_statement.dequeue.first = m_connection.precompile( R"( 
-                     SELECT 
-                        ROWID, id, properties, reply, redelivered, type, available, timestamp, payload
-                     FROM 
-                        message 
-                     WHERE queue = :queue AND state = 2 AND  available < :available ORDER BY timestamp ASC LIMIT 1; )");
-
-               m_statement.dequeue.first_id = m_connection.precompile( R"( 
-                     SELECT 
-                        ROWID, id, properties, reply, redelivered, type, available, timestamp, payload
-                     FROM 
-                        message 
-                     WHERE id = :id AND queue = :queue AND state = 2 AND available < :available; )");
-
-               m_statement.dequeue.first_match = m_connection.precompile( R"( 
-                     SELECT 
-                        ROWID, id, properties, reply, redelivered, type, available, timestamp, payload
-                     FROM 
-                        message 
-                     WHERE queue = :queue AND state = 2 AND properties = :properties AND available < :available ORDER BY timestamp ASC LIMIT 1; )");
-
-
-               m_statement.state.xid =  m_connection.precompile( "UPDATE message SET gtrid = :gtrid, state = 3 WHERE ROWID = :id");
-               m_statement.state.nullxid = m_connection.precompile( "DELETE FROM message WHERE ROWID = :id");
-
-
-               m_statement.commit1 = m_connection.precompile( "UPDATE message SET state = 2 WHERE gtrid = :gtrid AND state = 1;");
-               m_statement.commit2 = m_connection.precompile( "DELETE FROM message WHERE gtrid = :gtrid AND state = 3;");
-               m_statement.commit3 = m_connection.precompile( "SELECT DISTINCT( queue) FROM message WHERE gtrid = :gtrid AND state = 2;");
-
-
-               /*
-               m_statement.rollback = m_connection.precompile( R"(
-                 -- delete all enqueued  
-                 DELETE FROM message WHERE gtrid = :gtrid AND state = 1;
-                 -- update all dequeued back to enqueued
-                 UPDATE message SET state = 2, redelivered = redelivered + 1  WHERE gtrid = :gtrid AND state = 3;
-                 -- move to error queue
-                 UPDATE message SET redelivered = 0, queue = ( SELECT error FROM queue WHERE rowid = message.queue)
-                     WHERE message.redelivered > ( SELECT retries FROM queue WHERE rowid = message.queue);
-                     )");
-
-               */
-
-               m_statement.rollback1 = m_connection.precompile( "DELETE FROM message WHERE gtrid = :gtrid AND state = 1;");
-
-               // this only mutates if availiable has passed, otherwise state would not be 'dequeued' (3)
-               m_statement.rollback2 = m_connection.precompile( 
-                  "UPDATE message SET state = 2, redelivered = redelivered + 1,"
-                  " available = ( SELECT CASE WHEN retry_delay = 0 THEN 0"  // no retry delay - we set 0
-                     // julianday('now') - 2440587.5) *86400.0 <- some magic that sqlite recommend for fraction of seconds
-                     // we multiply by 1'000'000 to get microseconds, and we add retry_delay which is in us already.
-                     " ELSE ( ( julianday('now') - 2440587.5) *86400.0 * 1000 * 1000) + retry_delay END" 
-                     " FROM queue WHERE id = message.queue)"
-                  " WHERE gtrid = :gtrid AND state = 3");
-
-               //! increment redelivered and "move" messages to error-queue iff we've passed retry_count and the queue has an error-queue.
-               //! error-queues themselfs does not have an error-queue, hence the message will stay in the error-queue until it's consumed.
-               m_statement.rollback3 = m_connection.precompile(
-                     "UPDATE message SET redelivered = 0, queue = ( SELECT q.error FROM queue q WHERE q.id = message.queue)"
-                     " WHERE message.redelivered > ( SELECT q.retry_count FROM queue q WHERE q.id = message.queue) "
-                     " AND ( SELECT q.error FROM queue q WHERE q.id = message.queue) != 0;"
-                  );
-
-
-               m_statement.available.queues = m_connection.precompile(
-                  "SELECT m.queue, q.count, MIN( m.available)"
-                  " FROM message m INNER JOIN queue q ON m.queue = q.id AND m.state = 2"
-                  " GROUP BY m.queue;"
-               );
-
-               m_statement.available.message = m_connection.precompile(
-                  "SELECT MIN( m.available)"
-                  " FROM message m WHERE m.queue = :queue AND m.state = 2;"
-               );
-
-               m_statement.id = m_connection.precompile( "SELECT id FROM queue where name = :name;");
-
-
-               /*
-                  id           INTEGER  PRIMARY KEY,
-                  name         TEXT     UNIQUE,
-                  retry_count  INTEGER  NOT NULL,
-                  retry_delay  INTEGER  NOT NULL,
-                  error        INTEGER  NOT NULL,
-                  count        INTEGER  NOT NULL, -- number of (committed) messages
-                  size         INTEGER  NOT NULL, -- total size of all (committed) messages
-                  uncommitted_count INTEGER  NOT NULL, -- uncommitted messages
-                  timestamp    INTEGER NOT NULL -- last update to the queue 
-               */
-               m_statement.information.queue = m_connection.precompile( R"(
-                  SELECT
-                     q.id, q.name, q.retry_count, q.retry_delay, q.error, q.count, q.size, q.uncommitted_count, q.timestamp
-                  FROM
-                     queue q  
-                      ;
-                  )");
-
-               /*
-                  id            BLOB PRIMARY KEY,
-                  queue         INTEGER,
-                  origin        NUMBER, -- the first queue a message is enqueued to
-                  gtrid         BLOB,
-                  properties    TEXT,
-                  state         INTEGER,
-                  reply         TEXT,
-                  redelivered   INTEGER,
-                  type          TEXT,
-                  available      INTEGER,
-                  timestamp     INTEGER,
-                  payload       BLOB,
-                */
-               m_statement.information.message = m_connection.precompile( R"(
-                  SELECT
-                     m.id, m.queue, m.origin, m.gtrid, m.properties, m.state, m.reply, m.redelivered, m.type, m.available, m.timestamp, length( m.payload)
-                  FROM
-                     message m
-                  WHERE
-                     m.queue = ?
-                )");
-
-
-               m_statement.peek.match = m_connection.precompile( R"( 
-                  SELECT 
-                     m.id, m.queue, m.origin, m.gtrid, m.properties, m.state, m.reply, m.redelivered, m.type, m.available, m.timestamp, length( m.payload)
-                  FROM 
-                     message  m
-                  WHERE m.queue = :queue AND m.properties = :properties;)");
-
-
-               m_statement.peek.one_message = m_connection.precompile( R"( 
-                  SELECT 
-                    ROWID, id, properties, reply, redelivered, type, available, timestamp, payload
-                  FROM 
-                     message 
-                  WHERE id = :id; )");
-
-               m_statement.restore = m_connection.precompile(R"( 
-                  UPDATE message 
-                  SET queue = :queue 
-                  WHERE state = 2 AND queue != origin AND origin = :queue; )");
-
-            }
+            m_statement = database::statement( m_connection);
          }
 
 
@@ -468,7 +304,7 @@ namespace casual
 
             auto gtrid = common::transaction::id::range::global( message.trid);
 
-            long state = message.trid ? message::State::added : message::State::enqueued;
+            auto state = message.trid ? message::State::added : message::State::enqueued;
 
             m_statement.enqueue.execute(
                   reply.id.get(),
@@ -634,11 +470,31 @@ namespace casual
          size_type Database::restore( common::strong::queue::id queue)
          {
             Trace trace{ "queue::Database::restore"};
-
-            log::line( log, "queue: ", queue);
+            log::line( verbose::log, "queue: ", queue);
 
             m_statement.restore.execute( queue.value());
             return m_connection.affected();
+         }
+
+         size_type Database::clear( common::strong::queue::id queue)
+         {
+            Trace trace{ "queue::Database::clear"};
+            log::line( verbose::log, "queue: ", queue);
+
+            m_statement.clear.execute( queue.value());
+            return m_connection.affected();
+         }
+
+         std::vector< common::Uuid> Database::remove( common::strong::queue::id queue, std::vector< common::Uuid> messages)
+         {
+            auto missing_message = [&]( auto& id)
+            {
+               m_statement.message.remove.execute( queue.value(), id.get());
+               return m_connection.affected() == 0;
+            };
+
+            algorithm::trim( messages, algorithm::remove_if( messages, missing_message));
+            return messages;
          }
 
 

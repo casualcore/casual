@@ -124,44 +124,73 @@ namespace casual
             return function( std::begin( value), &end, base...);
          };
 
+
+         namespace from
+         {
+            //! last resort, use stream operator
+            template< typename R>
+            auto string( view::String value, R& result, traits::priority::tag< 0>) 
+               -> decltype( std::declval< std::istream&>() >> result, void())
+            { 
+               std::istringstream in{ value.value()};
+               in >> result;
+            }
+
+            template< typename R>
+            auto string( view::String value, R& result, traits::priority::tag< 1>) 
+               -> std::enable_if_t< std::is_integral< R>::value &&  std::is_signed< R>::value>
+            { 
+               result = c_wrapper( value, &::strtol, 10);
+            }
+
+            template< typename R>
+            auto string( view::String value, R& result, traits::priority::tag< 1>) 
+               -> std::enable_if_t< std::is_integral< R>::value &&  ! std::is_signed< R>::value>
+            { 
+               result = c_wrapper( value, &::strtoul, 10);
+            }
+
+            template< typename R>
+            auto string( view::String value, R& result, traits::priority::tag< 1>) -> std::enable_if_t< std::is_floating_point< R>::value>
+            { 
+               result = c_wrapper( value, &::strtod);
+            }
+
+            template< typename R>
+            auto string( view::String value, R& result, traits::priority::tag< 2>) 
+               -> std::enable_if_t< std::is_same< R, bool>::value>
+            { 
+               if( value == "true") result = true; 
+               else if( value == "false") result = false; 
+               else result = ! ( value == "0");
+            }
+
+         } // from
+
+
          template< typename R, typename Enable = void>
          struct from_string;
 
          template< typename T >
-         struct from_string< T, std::enable_if_t< std::is_integral< T>::value &&  std::is_signed< T>::value>>
+         struct from_string< T, void>
          { 
-            static T get( view::String value) { return c_wrapper( value, &::strtol, 10);} 
-         };
-
-         template< typename T >
-         struct from_string< T, std::enable_if_t< std::is_integral< T>::value &&  ! std::is_signed< T>::value>>
-         { 
-            static T get( view::String value) { return c_wrapper( value, &::strtoul, 10);} 
-         };
-
-         template< typename T >
-         struct from_string< T, std::enable_if_t< std::is_floating_point< T>::value>>
-         { 
-            static T get( view::String value) { return c_wrapper( value, &::strtod);} 
-         };
-
-         template<>
-         struct from_string< bool, void>
-         { 
-            static bool get( view::String value) 
+            static T get( view::String value) 
             {
-               if( value == "true") return true; 
-               if( value == "false") return false; 
-               return ! ( value == "0");
+               T result;
+               from::string( value, result, traits::priority::tag< 2>{});
+               return result;
             } 
          };
 
+         //! strings just go through
          template<>
          struct from_string< std::string, void> 
          { 
             static const std::string& get( const std::string& value) { return value;} 
             static std::string get( view::String value) { return { std::begin( value), std::end( value)};} 
          };
+
+
 
 
 

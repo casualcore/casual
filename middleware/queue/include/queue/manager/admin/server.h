@@ -9,7 +9,7 @@
 
 
 
-#include "queue/manager/admin/queuevo.h"
+#include "queue/manager/admin/model.h"
 
 #include "common/server/argument.h"
 
@@ -23,12 +23,6 @@ namespace casual
 
          namespace admin
          {
-            admin::State state( manager::State& state);
-
-            std::vector< Message> list_messages( manager::State& state, const std::string& queue);
-
-            std::vector< Affected> restore( manager::State& state, const std::string& queue);
-
             common::server::Arguments services( manager::State& state);
 
          } // manager

@@ -123,6 +123,14 @@ namespace casual
          return transcode::hex::encode( out, uuid.m_uuid);
       }
 
+      std::istream& operator >> ( std::istream& in, Uuid& value)
+      {
+         std::string string;
+         in >> string;
+         transcode::hex::decode( string, value.m_uuid);
+         return in;
+      }
+
    } // common
 
    common::Uuid operator"" _uuid ( const char* data)

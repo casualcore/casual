@@ -4,15 +4,12 @@
 //! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-
 #include "queue/manager/manager.h"
 #include "common/argument.h"
 #include "common/exception/handle.h"
 
-
 namespace casual
 {
-
    namespace queue
    {
       namespace manager
@@ -25,7 +22,7 @@ namespace casual
                Parse{ R"(
 Manages casual queue, the provided queue functionality.
 )",
-                  Option( std::tie( settings.group_executable), {"-g", "--group-executable"}, "path to casual-queue-group only (?) for unittest")
+                  Option( std::tie( settings.group.executable), {"-g", "--group-executable"}, "path to casual-queue-group only (?) for unittest")
                }( argc, argv);
             }
 
@@ -39,15 +36,10 @@ Manages casual queue, the provided queue functionality.
 
 int main( int argc, char **argv)
 {
-   try
+   return casual::common::exception::guard( [=]()
    {
       casual::queue::manager::main( argc, argv);
-      return 0;
-   }
-   catch( ...)
-   {
-      return casual::common::exception::handle();
-   }
+   });
 }
 
 

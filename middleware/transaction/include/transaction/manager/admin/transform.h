@@ -8,7 +8,7 @@
 #pragma once
 
 
-#include "transaction/manager/admin/transactionvo.h"
+#include "transaction/manager/admin/model.h"
 #include "transaction/manager/state.h"
 
 namespace casual
@@ -21,24 +21,24 @@ namespace casual
          {    
             namespace transform
             {
-               admin::Metrics metrics( const state::Metrics& value);
-               state::Metrics metrics( const admin::Metrics& value);
+               model::Metrics metrics( const state::Metrics& value);
+               state::Metrics metrics( const model::Metrics& value);
 
                namespace resource
                {
                   struct Instance
                   {
-                     admin::resource::Instance operator () ( const state::resource::Proxy::Instance& value) const;
+                     model::resource::Instance operator () ( const state::resource::Proxy::Instance& value) const;
                   };
 
                   struct Proxy
                   {
-                     admin::resource::Proxy operator () ( const state::resource::Proxy& value) const;
+                     model::resource::Proxy operator () ( const state::resource::Proxy& value) const;
                   };
 
                } // resource
 
-               admin::State state( const manager::State& state);
+               model::State state( const manager::State& state);
 
             } // transform
          } // admin

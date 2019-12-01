@@ -184,9 +184,9 @@ namespace casual
                   }
                }
 
-               std::vector< admin::resource::Proxy> instances( State& state, std::vector< admin::scale::Instances> instances)
+               std::vector< admin::model::resource::Proxy> instances( State& state, std::vector< admin::model::scale::Instances> instances)
                {
-                  std::vector< admin::resource::Proxy> result;
+                  std::vector< admin::model::resource::Proxy> result;
 
                   // Make sure we only update a specific RM one time
                   for( auto& directive : algorithm::unique( algorithm::sort( instances)))

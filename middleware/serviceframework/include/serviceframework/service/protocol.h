@@ -80,6 +80,14 @@ namespace casual
                return *this;
             }
 
+            template< typename R, typename N> 
+            auto extract( N&& name)
+            {
+               R result;
+               *this >> CASUAL_NAMED_VALUE_NAME( result, name);
+               return result;
+            }
+
             template< typename T>
             Protocol& operator << ( T&& value)
             {

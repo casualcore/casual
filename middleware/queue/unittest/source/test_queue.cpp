@@ -11,7 +11,7 @@
 #include "queue/common/queue.h"
 #include "queue/common/transform.h"
 #include "queue/api/queue.h"
-#include "queue/manager/admin/queuevo.h"
+#include "queue/manager/admin/model.h"
 #include "queue/manager/admin/services.h"
 #include "queue/exception.h"
 
@@ -98,24 +98,24 @@ domain:
 
             namespace call
             {
-               manager::admin::State state()
+               manager::admin::model::State state()
                {
                   serviceframework::service::protocol::binary::Call call;
-                  auto reply = call( manager::admin::service::name::state());
+                  auto reply = call( manager::admin::service::name::state);
 
-                  manager::admin::State result;
+                  manager::admin::model::State result;
                   reply >> CASUAL_NAMED_VALUE( result);
 
                   return result;
                }
 
-               std::vector< manager::admin::Message> messages( const std::string& queue)
+               std::vector< manager::admin::model::Message> messages( const std::string& queue)
                {
                   serviceframework::service::protocol::binary::Call call;
                   call << CASUAL_NAMED_VALUE( queue);
-                  auto reply = call( manager::admin::service::name::list_messages());
+                  auto reply = call( manager::admin::service::name::messages::list);
 
-                  std::vector< manager::admin::Message> result;
+                  std::vector< manager::admin::model::Message> result;
                   reply >> CASUAL_NAMED_VALUE( result);
 
                   return result;
@@ -609,6 +609,56 @@ domain:
          EXPECT_TRUE( common::algorithm::equal( message.payload.data, payload));
       }
 
+
+      TEST( casual_queue, enqueue_1___remove_message____expect_0_message_in_queue)
+      {
+         common::unittest::Trace trace;
+
+         local::Domain domain;
+
+         const std::string payload{ "some message"};
+         queue::Message message;
+         message.payload.type = common::buffer::type::binary();
+         message.payload.data.assign( std::begin( payload), std::end( payload));
+
+         queue::enqueue( "queueA1", message);
+         auto messages = local::call::messages( "queueA1");
+
+         ASSERT_TRUE( messages.size() == 1);
+         auto removed = queue::messages::remove( "queueA1", { messages.front().id});
+         EXPECT_TRUE( messages.front().id == removed.at( 0));
+
+         EXPECT_TRUE( local::call::messages( "queueA1").empty());
+      }
+
+      TEST( casual_queue, enqueue_5___clear_queue___expect_0_message_in_queue)
+      {
+         common::unittest::Trace trace;
+
+         local::Domain domain;
+
+         const std::string payload{ "some message"};
+         {
+            queue::Message message;
+            message.payload.type = common::buffer::type::binary();
+            message.payload.data.assign( std::begin( payload), std::end( payload));
+
+            common::algorithm::for_n< 5>( [&]()
+            {
+               queue::enqueue( "queueA1", message);
+            });
+         }
+
+         auto messages = local::call::messages( "queueA1");
+         EXPECT_TRUE( messages.size() == 5);
+
+         auto cleared = queue::clear::queue( { "queueA1"});
+         ASSERT_TRUE( cleared.size() == 1);
+         EXPECT_TRUE( cleared.at( 0).queue == "queueA1");
+         EXPECT_TRUE( cleared.at( 0).count == 5);
+
+         EXPECT_TRUE( local::call::messages( "queueA1").empty());
+      }
 
 /*
       TEST( casual_queue, queue_forward_dequeue_not_available_queue__expect_gracefull_shutdown)

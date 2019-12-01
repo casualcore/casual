@@ -478,6 +478,7 @@ namespace casual
             std::vector< Affected> queue( const std::vector< std::string>& queues)
             {
                Trace trace{ "casual::queue::restore::queue"};
+               common::log::line( verbose::log, "queues: ", queues);
 
                std::vector< Affected> affected;
 
@@ -486,15 +487,16 @@ namespace casual
                   serviceframework::service::protocol::binary::Call call;
                   call << CASUAL_NAMED_VALUE( queue);
 
-                  auto reply = call( manager::admin::service::name::restore());
+                  auto reply = call( manager::admin::service::name::restore);
 
-                  std::vector< manager::admin::Affected> result;
+                  std::vector< manager::admin::model::Affected> result;
                   reply >> CASUAL_NAMED_VALUE( result);
 
-                  common::algorithm::transform( result, affected, []( const manager::admin::Affected& a){
+                  common::algorithm::transform( result, affected, []( auto& a)
+                  {
                      Affected result;
-                     result.queue = a.queue.name;
-                     result.restored = a.restored;
+                     result.queue = std::move( a.queue.name);
+                     result.count = a.count;
                      return result;
                   });
                }
@@ -502,6 +504,50 @@ namespace casual
                return affected;
             }
          } // restore
+         namespace clear
+         {
+            std::vector< Affected> queue( const std::vector< std::string>& queues)
+            {
+               Trace trace{ "casual::queue::clear::queue"};
+               common::log::line( verbose::log, "queues: ", queues);
+
+               serviceframework::service::protocol::binary::Call call;
+               call << CASUAL_NAMED_VALUE( queues);
+
+               auto reply = call( manager::admin::service::name::clear);
+
+               std::vector< manager::admin::model::Affected> result;
+               reply >> CASUAL_NAMED_VALUE( result);
+
+               return common::algorithm::transform( result, []( auto& a)
+               {
+                  Affected result;
+                  result.queue = std::move( a.queue.name);
+                  result.count = a.count;
+                  return result;
+               });
+            }
+         } // clear
+
+         namespace messages
+         {
+            std::vector< common::Uuid> remove( const std::string& queue, const std::vector< common::Uuid>& messages)
+            {
+               Trace trace{ "casual::queue::messages::remove"};
+               common::log::line( verbose::log, "queue: ", queue, ", messages: ", messages);
+
+               serviceframework::service::protocol::binary::Call call;
+               call << CASUAL_NAMED_VALUE( queue);
+               call << CASUAL_NAMED_VALUE( messages);
+
+               auto reply = call( manager::admin::service::name::messages::remove);
+
+               std::vector< common::Uuid> result;
+               reply >> CASUAL_NAMED_VALUE( result);
+               return result;
+            }
+            
+         } // messages
       }
 
    } // queue

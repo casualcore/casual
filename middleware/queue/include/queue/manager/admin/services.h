@@ -21,9 +21,17 @@ namespace casual
             {
                namespace name
                {
-                  constexpr auto state() { return ".casual/queue/state";}
-                  constexpr auto restore() { return ".casual/queue/restore";}
-                  constexpr auto list_messages() { return ".casual/queue/list/messages";}
+                  constexpr auto state = ".casual/queue/state";
+                  constexpr auto restore = ".casual/queue/restore";
+                  constexpr auto clear = ".casual/queue/clear";
+
+                  namespace messages
+                  {
+                     constexpr auto list = ".casual/queue/messages/list";
+                     constexpr auto remove = ".casual/queue/messages/remove";
+                     
+                  } // messages
+                  
                } // name
 
             } // service

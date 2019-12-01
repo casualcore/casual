@@ -127,12 +127,12 @@ resources:
             {
                namespace call
                {
-                  manager::admin::State state()
+                  manager::admin::model::State state()
                   {
                      serviceframework::service::protocol::binary::Call call;
                      auto reply = call( manager::admin::service::name::state());
 
-                     manager::admin::State result;
+                     manager::admin::model::State result;
                      reply >> CASUAL_NAMED_VALUE( result);
 
                      return result;
@@ -162,7 +162,7 @@ resources:
                }
             } // send
 
-            std::vector< manager::admin::resource::Proxy> accumulate_metrics( const manager::admin::State& state)
+            std::vector< manager::admin::model::resource::Proxy> accumulate_metrics( const manager::admin::model::State& state)
             {
                auto result = state.resources;
 
