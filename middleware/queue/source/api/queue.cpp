@@ -22,6 +22,7 @@
 #include "common/transaction/context.h"
 #include "common/communication/ipc.h"
 #include "common/execute.h"
+#include "common/array.h"
 
 #include "serviceframework/service/protocol/call.h"
 #include "serviceframework/log.h"
@@ -181,12 +182,22 @@ namespace casual
                         // it is telling us...)
                         forget_blocking.release();
                      },
-                     common::message::handle::Shutdown{},
-                     common::message::handle::ping()
+                     // TODO semantics - should we re-"push" the shutdown message to our 
+                     // inbound queue so the _callers server_ (if any) will get the shutdown
+                     // later?
+                     common::message::handle::Shutdown{}
                   );
 
-                  while( ! handler( ipc.blocking_next()))
-                     ; // if we don't have hander, we just continue
+                  // to make sure we don't consume any messages we aren't looking for
+                  // this has to be exact the same messages types as the handlers
+                  // above.
+                  constexpr auto types = common::array::make( 
+                     common::message::queue::dequeue::Reply::type(),
+                     common::message::queue::dequeue::forget::Request::type(),
+                     common::message::handle::Shutdown::message_type::type());
+
+                  // wait for the reply
+                  handler( ipc.blocking_next( types));
 
                   // We don't need to send forget, since it went as it should.
                   forget_blocking.release();

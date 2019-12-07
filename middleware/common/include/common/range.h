@@ -15,6 +15,7 @@
 #include <functional>
 #include <vector>
 #include <sstream>
+#include <array>
 
 #include <cassert>
 
@@ -369,7 +370,7 @@ namespace casual
 
             return range;
          }
-      } // range
 
+      } // range
    } // common 
 } // casual 

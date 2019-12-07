@@ -159,11 +159,14 @@ namespace casual
                }
 
                //! Tries to find the first logic complete message with any of the types in @p types
+               //! `types` has to be an _iterateable_ (container) that holds message::Type's
                //!
                //! @return a logical complete message if there is one,
                //!         otherwise the message has absent_message as type
-               template< typename P>
-               complete_type next( const std::vector< message_type>& types, P&& policy, const error_type& handler = nullptr)
+               template< typename R, typename P>
+               auto next( R&& types, P&& policy, const error_type& handler = nullptr) 
+                  // `types` is a temple to enable other forms of containers than std::vector
+                  -> std::enable_if_t< traits::concrete::is_same< decltype( *std::begin( types)), message_type>::value, complete_type>
                {
                   return select(
                         std::forward< P>( policy),

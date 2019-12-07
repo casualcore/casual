@@ -43,7 +43,6 @@ namespace casual
                template< typename... Args>
                basic_handler( Args&& ...handlers) : m_handlers( assign( std::forward< Args>( handlers)...))
                {
-
                }
 
                //! Dispatch a message.

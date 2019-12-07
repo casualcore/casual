@@ -246,29 +246,32 @@ namespace casual
          //! Arbitrary number of types to compare if same
          //! @{
          template< typename T1, typename T2, typename... Args>
-         struct is_same : bool_constant< is_same< T1, T2>::value && is_same< T2, Args...>::value>
-         {
-
-         };
+         struct is_same : bool_constant< is_same< T1, T2>::value && is_same< T2, Args...>::value> {};
 
          template< typename T1, typename T2>
-         struct is_same< T1, T2> : std::is_same< T1, T2>
-         {
-         };
+         struct is_same< T1, T2> : std::is_same< T1, T2> {};
          //! @}
+
+         namespace concrete
+         {
+            //! Arbitrary number of types to compare if the `concrete` type is the same
+            //! @{
+            template< typename T1, typename T2, typename... Args>
+            struct is_same : bool_constant< is_same< T1, T2>::value && is_same< T2, Args...>::value> {};
+
+            template< typename T1, typename T2>
+            struct is_same< T1, T2> : std::is_same< remove_cvref_t< T1>, remove_cvref_t< T2>> {};
+         //! @}
+            
+         } // concrete
 
          //! Answer the question if T is the same type as any of the options
          //! @{
          template< typename T, typename Option, typename... Options>
-         struct is_any : bool_constant< is_same< T, Option>::value || is_any< T, Options...>::value>
-         {
-
-         };
+         struct is_any : bool_constant< is_same< T, Option>::value || is_any< T, Options...>::value> {};
 
          template< typename T, typename Option>
-         struct is_any< T, Option> : std::is_same< T, Option>
-         {
-         };
+         struct is_any< T, Option> : std::is_same< T, Option> {};
          //! @}
 
          /* not needed right now, but could be... 
@@ -291,14 +294,10 @@ namespace casual
          */
 
          template< template< typename> class Predicate, typename T, typename... Ts>
-         struct any_of : bool_constant< Predicate< T>::value || any_of< Predicate, Ts...>::value>
-         {
-         };
+         struct any_of : bool_constant< Predicate< T>::value || any_of< Predicate, Ts...>::value> {};
 
          template< template< typename> class Predicate, typename T>
-         struct any_of< Predicate, T> : bool_constant< Predicate< T>::value>
-         {
-         };
+         struct any_of< Predicate, T> : bool_constant< Predicate< T>::value> {};
 
          struct unmovable
          {
