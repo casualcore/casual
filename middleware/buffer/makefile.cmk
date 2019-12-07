@@ -69,6 +69,7 @@ LinkUnittest( 'bin/test-buffer',
     Compile( 'unittest/source/test_string_buffer.cpp'),
     Compile( 'unittest/source/test_field_stream.cpp'),
     Compile( 'unittest/source/internal/field/test_string.cpp'),
+    Compile( 'unittest/source/internal/field/test_table.cpp'),
    ],
    [ 
     lib_buffer, 'casual-common', 'casual-xatmi', 'casual-unittest'

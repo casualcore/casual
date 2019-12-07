@@ -28,7 +28,7 @@ namespace casual
             {
                common::file::scoped::Path name( const std::string& extension)
                {
-                  return { common::file::name::unique( common::directory::temporary() + "/mockup-", extension)};
+                  return { common::file::name::unique( common::directory::temporary() + "/unittest-", extension)};
                }
 
                common::file::scoped::Path content( const std::string& extension, const std::string& content)
@@ -62,7 +62,7 @@ namespace casual
                   } // <unnamed>
                } // local
                Scoped::Scoped()
-                  : m_path{ common::file::name::unique( common::directory::temporary() + "/mockup-") }
+                  : m_path{ common::file::name::unique( common::directory::temporary() + "/unittest-") }
                {
                   common::directory::create( m_path);
                }
