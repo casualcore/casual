@@ -2,8 +2,22 @@
 
 ## environment
 
-If the application is using a casual-field-repository, the environment-variable CASUAL\_FIELD\_TABLE needs to be present and its value should be the repository-file e.g.
+If the application is using a casual-field-repository, the environment-variable `CASUAL_FIELD_TABLE` needs to be present and its value should reference `1..*` _repository-files_, separated by the delimiter `|`
 
-`$ export CASUAL_FIELD_TABLE=$HOME/casual-field-repositories/field.json`
+### example
 
-The repository-file could be either [JSON](./../sample/field.json), [XML](./../sample/field.xml), [INI](./../sample/field.ini) or [YAML](./../sample/field.yaml)
+```shell
+host# export CASUAL_FIELD_TABLE=path/to/repository/file.yaml`
+```
+
+```shell
+host# export CASUAL_FIELD_TABLE=path/to/file1.yaml|path/to/file2.json`
+```
+
+
+## samples 
+
+* [JSON](./../sample/field.json)
+* [XML](./../sample/field.xml)
+* [INI](./../sample/field.ini)
+* [YAML](./../sample/field.yaml)

@@ -1264,147 +1264,176 @@ namespace casual
 
             namespace detail
             {
-
                namespace
                {
-
-                  struct field
+                  namespace model
                   {
-                     item_type id; // relative id
-                     std::string name;
-                     std::string type;
-                     
-                     CASUAL_CONST_CORRECT_SERIALIZE(
+                     struct field
                      {
-                        CASUAL_SERIALIZE( id);
-                        CASUAL_SERIALIZE( name);
-                        CASUAL_SERIALIZE( type);
-                     })
-                  };
-
-                  struct group
-                  {
-                     item_type base = 0;
-                     std::vector< field> fields;
-
-                     CASUAL_CONST_CORRECT_SERIALIZE(
-                     {
-                        CASUAL_SERIALIZE( base);
-                        CASUAL_SERIALIZE( fields);
-                     })
-                  };
-
-
-                  struct mapping
-                  {
-                     item_type id;
-                     std::string name;
-                  };
-
-                  std::vector<group> fetch_groups()
-                  {
-                     decltype(fetch_groups()) groups;
-
-                     common::file::Input file{ common::environment::variable::get( "CASUAL_FIELD_TABLE")};
-                     auto archive = common::serialize::create::reader::relaxed::from( file.extension(), file);
-                     
-                     archive >> CASUAL_NAMED_VALUE( groups);
-
-                     return groups;
-                  }
-
-                  std::vector<field> fetch_fields()
-                  {
-                     const auto groups = fetch_groups();
-
-                     decltype(fetch_fields()) fields;
-
-                     for( const auto& group : groups)
-                     {
-                        for( const auto& field : group.fields)
+                        item_type id; // relative id
+                        std::string name;
+                        std::string type;
+                        
+                        CASUAL_CONST_CORRECT_SERIALIZE(
                         {
-                           try
-                           {
-                              const auto id = name_to_type().at( field.type) * CASUAL_FIELD_TYPE_BASE + group.base + field.id;
+                           CASUAL_SERIALIZE( id);
+                           CASUAL_SERIALIZE( name);
+                           CASUAL_SERIALIZE( type);
+                        })
+                     };
 
-                              if( id > CASUAL_FIELD_NO_ID)
+                     struct group
+                     {
+                        item_type base = 0;
+                        std::vector< field> fields;
+
+                        CASUAL_CONST_CORRECT_SERIALIZE(
+                        {
+                           CASUAL_SERIALIZE( base);
+                           CASUAL_SERIALIZE( fields);
+                        })
+                     };
+
+                     struct mapping
+                     {
+                        item_type id;
+                        std::string name;
+                     };
+
+                  } // model
+
+                  namespace fetch
+                  {   
+                     auto groups( std::vector< std::string> files)
+                     {
+                        log::line( verbose::log, "files: ", files);
+
+                        std::vector< model::group> result;
+
+                        auto append_groups = [&result]( auto& name)
+                        {
+                           auto archive = common::serialize::create::reader::relaxed::from( common::file::Input{ std::move( name)});
+
+                           std::vector< model::group> groups;
+                           archive >> CASUAL_NAMED_VALUE( groups);
+
+                           algorithm::move( groups, result);
+                        };
+
+                        algorithm::for_each( files, append_groups);
+
+                        return result;
+                     }
+
+                     auto fields( std::vector< std::string> files)
+                     {
+                        const auto groups = fetch::groups( std::move( files));
+
+                        std::vector< model::field> fields;
+
+                        for( const auto& group : groups)
+                        {
+                           for( const auto& field : group.fields)
+                           {
+                              try
                               {
-                                 fields.push_back( field);
-                                 fields.back().id = id;
+                                 const auto id = name_to_type().at( field.type) * CASUAL_FIELD_TYPE_BASE + group.base + field.id;
+
+                                 if( id > CASUAL_FIELD_NO_ID)
+                                 {
+                                    fields.push_back( field);
+                                    fields.back().id = id;
+                                 }
+                                 else
+                                 {
+                                    // TODO: Much better
+                                    log::line( log::category::warning, "id for ", field.name, " is invalid");
+                                 }
                               }
-                              else
+                              catch( const std::out_of_range&)
                               {
                                  // TODO: Much better
-                                 log::line( log::category::warning, "id for ", field.name, " is invalid");
+                                 log::line( log::category::warning, "type for ", field.name, " is invalid");
                               }
                            }
-                           catch( const std::out_of_range&)
-                           {
-                              // TODO: Much better
-                              log::line( log::category::warning, "type for ", field.name, " is invalid");
-                           }
                         }
+
+                        return fields;
                      }
 
-                     return fields;
-
-                  }
-
-                  std::unordered_map<std::string,item_type> name_to_id()
-                  {
-                     decltype( name_to_id()) result;
-
-                     try
+                     auto files()
                      {
-                        const auto fields = fetch_fields();
-
-                        for( const auto& field : fields)
-                        {
-                           if( ! result.emplace( field.name, field.id).second)
-                           {
-                              // TODO: Much better
-                              log::line( log::category::warning, "name for ", field.name, " is not unique");
-                           }
-                        }
-                     }
-                     catch( ...)
-                     {
-                        // TODO: Handle this in an other way ?
-                        common::exception::handle();
+                        return common::string::split( common::environment::variable::get( "CASUAL_FIELD_TABLE"), '|');
                      }
 
-                     return result;
-                  }
-
-                  std::unordered_map<item_type,std::string> id_to_name()
-                  {
-                     decltype( id_to_name()) result;
-
-                     try
-                     {
-                        const auto fields = fetch_fields();
-
-                        for( const auto& field : fields)
-                        {
-                           if( ! result.emplace( field.id, field.name).second)
-                           {
-                              // TODO: Much better
-                              log::line( log::category::warning, "id for ", field.name, " is not unique");
-                           }
-                        }
-                     }
-                     catch( ...)
-                     {
-                        // TODO: Handle this in an other way ?
-                        common::exception::handle();
-                     }
-
-                     return result;
-                  }
+                  } // fetch
 
                } // <unnamed>
 
+               std::unordered_map< std::string, long> name_to_id( std::vector< std::string> files)
+               {
+                  std::unordered_map< std::string, long> result;
+
+                  try
+                  {
+                     const auto fields = fetch::fields( std::move( files));
+
+                     for( const auto& field : fields)
+                     {
+                        if( ! result.emplace( field.name, field.id).second)
+                        {
+                           // TODO: Much better
+                           log::line( log::category::warning, "name for ", field.name, " is not unique");
+                        }
+                     }
+                  }
+                  catch( ...)
+                  {
+                     // TODO: Handle this in an other way ?
+                     common::exception::handle();
+                  }
+
+                  return result;
+               }
+
+               std::unordered_map< long, std::string> id_to_name( std::vector< std::string> files)
+               {
+                  std::unordered_map< long, std::string> result;
+
+                  try
+                  {
+                     const auto fields = fetch::fields( std::move( files));
+
+                     for( const auto& field : fields)
+                     {
+                        if( ! result.emplace( field.id, field.name).second)
+                        {
+                           // TODO: Much better
+                           log::line( log::category::warning, "id for ", field.name, " is not unique");
+                        }
+                     }
+                  }
+                  catch( ...)
+                  {
+                     // TODO: Handle this in an other way ?
+                     common::exception::handle();
+                  }
+
+                  return result;
+               }
+
+               std::unordered_map< std::string, long> name_to_id()
+               {
+                  return detail::name_to_id( detail::fetch::files());
+               }
+
+               std::unordered_map< long, std::string> id_to_name()
+               {
+                  return detail::id_to_name( detail::fetch::files());
+               }
+
             } // detail
+
 
             const std::unordered_map<std::string,item_type>& name_to_id()
             {

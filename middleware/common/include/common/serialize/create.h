@@ -69,6 +69,12 @@ namespace casual
 
                   serialize::Reader from( const std::string& key, std::istream& stream);
                   serialize::Reader from( const std::string& key, platform::binary::type& data);
+
+                  template< typename F>
+                  inline auto from( F&& file) -> decltype( from( file.extension(), file))
+                  { 
+                     return from( file.extension(), file);
+                  }
                }
 
                //! @returns all registred reader keys
