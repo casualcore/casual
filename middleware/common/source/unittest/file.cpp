@@ -7,8 +7,14 @@
 
 #include "common/unittest/file.h"
 
+#include "common/log/category.h"
+#include "common/code/system.h"
+#include "common/exception/handle.h"
 
 #include <fstream>
+
+#include <ftw.h>
+
 
 namespace casual
 {
@@ -39,6 +45,22 @@ namespace casual
          {
             namespace temporary
             {
+               namespace local
+               {
+                  namespace
+                  {
+                     int unlink( const char* path, const struct stat *sb, int type, struct FTW* buffer)
+                     {
+                        return ::remove( path);
+                     }
+
+                     void clear( const std::string& path)
+                     {
+                        if( ::nftw( path.c_str(), &local::unlink, 64, FTW_DEPTH | FTW_PHYS))
+                           log::line( log::category::error, "failed to remove path - ", common::code::last::system::error());
+                     }
+                  } // <unnamed>
+               } // local
                Scoped::Scoped()
                   : m_path{ common::file::name::unique( common::directory::temporary() + "/mockup-") }
                {
@@ -47,7 +69,12 @@ namespace casual
                Scoped::~Scoped()
                {
                   if( ! m_path.empty())
-                     common::directory::remove( m_path);
+                  {
+                     common::exception::guard( [&path = m_path]()
+                     {
+                        local::clear( path);
+                     });
+                  }  
                }
 
                Scoped::Scoped( Scoped&& rhs) noexcept
