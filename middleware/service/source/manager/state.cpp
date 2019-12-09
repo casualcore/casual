@@ -78,7 +78,6 @@ namespace casual
             namespace instance
             {
                void Sequential::reserve(
-                  const platform::time::point::type& when, 
                   state::Service* service,
                   const common::process::Handle& caller,
                   const common::Uuid& correlation)
@@ -86,16 +85,15 @@ namespace casual
                   assert( m_service == nullptr);
 
                   m_service = service;
-                  m_last = when;
                   m_caller = caller;
                   m_correlation = correlation;
                }
 
-               state::Service* Sequential::unreserve( const platform::time::point::type& now)
+               state::Service* Sequential::unreserve( const common::message::event::service::Metric& metric)
                {
                   assert( state() == State::busy);
 
-                  m_service->metric.update( now, m_last);
+                  m_service->metric.update( metric);
 
                   return std::exchange( m_service, nullptr);
                }
@@ -194,12 +192,13 @@ namespace casual
                invoked += metric.duration();
                last = metric.end;
             }
-            
+            /*
             void Service::Metric::update( const platform::time::point::type& now, const platform::time::point::type& then)
             {
                last = now;
                invoked += now - then;
             }
+            */
 
             void Service::add( state::instance::Sequential& instance)
             {
@@ -214,13 +213,12 @@ namespace casual
             }
 
             common::process::Handle Service::reserve( 
-               const platform::time::point::type& now, 
                const common::process::Handle& caller, 
                const common::Uuid& correlation)
             {
                if( auto found = algorithm::find_if( instances.sequential, []( auto& i){ return i.idle();}))
                {
-                  found->reserve( now, this, caller, correlation);
+                  found->reserve( this, caller, correlation);
                   return found->process();
                }
 

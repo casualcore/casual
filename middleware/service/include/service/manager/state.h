@@ -99,17 +99,14 @@ namespace casual
                   using base_instance::base_instance;
 
                   void reserve( 
-                     const platform::time::point::type& when, 
                      state::Service* service,
                      const common::process::Handle& caller,
                      const common::Uuid& correlation);
 
-                  state::Service* unreserve( const platform::time::point::type& now);
+                  state::Service* unreserve( const common::message::event::service::Metric& metric);
 
                   //! discards the reservation
                   void discard();
-
-                  inline const platform::time::point::type& last() const { return m_last;}
 
                   State state() const;
                   inline bool idle() const { return m_service == nullptr;}
@@ -134,7 +131,6 @@ namespace casual
                   CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
                   {
                      base_instance::serialize( archive);   
-                     CASUAL_SERIALIZE_NAME( m_last, "last");
                      CASUAL_SERIALIZE_NAME( m_service, "service");
                      CASUAL_SERIALIZE_NAME( m_caller, "caller");
                      CASUAL_SERIALIZE_NAME( m_correlation, "correlation");
@@ -142,7 +138,6 @@ namespace casual
                   })
 
                private:
-                  platform::time::point::type m_last = platform::time::point::limit::zero();
                   state::Service* m_service = nullptr;
                   common::process::Handle m_caller;
                   common::Uuid m_correlation;
@@ -181,7 +176,6 @@ namespace casual
                   common::message::service::lookup::Request request;
                   platform::time::point::type when;
 
-
                   CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
                   { 
                      CASUAL_SERIALIZE( request);
@@ -203,12 +197,11 @@ namespace casual
                      inline bool idle() const { return get().idle();}
 
                      inline void reserve(                      
-                        const platform::time::point::type& when, 
                         state::Service* service,
                         const common::process::Handle& caller,
                         const common::Uuid& correlation)
                      {
-                        get().reserve( when, service, caller, correlation);
+                        get().reserve( service, caller, correlation);
                      }
 
                      inline const common::process::Handle& process() const { return get().process;}
@@ -301,7 +294,6 @@ namespace casual
 
                   inline void reset() { *this = Metric{};}
                   void update( const common::message::event::service::Metric& metric);
-                  void update( const platform::time::point::type& now, const platform::time::point::type& then);
 
                   CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
                   { 
@@ -319,7 +311,6 @@ namespace casual
 
                //! @return a reserved instance or 'null-handle' if no one is found.
                common::process::Handle reserve( 
-                  const platform::time::point::type& now, 
                   const common::process::Handle& caller, 
                   const common::Uuid& correlation);
 

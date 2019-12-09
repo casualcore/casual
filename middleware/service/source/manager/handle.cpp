@@ -290,20 +290,20 @@ namespace casual
 
                void Lookup::operator () ( common::message::service::lookup::Request& message)
                {
-                  lookup( message, platform::time::clock::type::now(), {});
+                  lookup( message, platform::time::unit{});
                }
 
-               void Lookup::lookup( common::message::service::lookup::Request& message, platform::time::point::type now, platform::time::unit pending)
+               void Lookup::lookup( common::message::service::lookup::Request& message, platform::time::unit pending)
                {
                   Trace trace{ "service::manager::handle::service::Lookup::lookup"};
-                  log::line( verbose::log, "message: ", message);
+                  log::line( verbose::log, "message: ", message, ", pending: ", pending);
 
                   try
                   {
                      // will throw 'Missing' if not found, and a discover will take place
                      auto& service = m_state.service( message.requested);
 
-                     auto handle = service.reserve( now, message.process, message.correlation);
+                     auto handle = service.reserve( message.process, message.correlation);
 
                      if( handle)
                      {
@@ -318,7 +318,7 @@ namespace casual
                      else if( service.instances.empty())
                      {
                         // note: vi discover on the "real service name", in case it's a route
-                        discover( std::move( message), service.information.name, now);
+                        discover( std::move( message), service.information.name);
                      }
                      else
                      {
@@ -350,7 +350,7 @@ namespace casual
                               // has change the timeout) 
                               // TODO semantics: something we need to address? probably not,
                               // since we can't make it 100% any way...)
-                              m_state.pending.requests.emplace_back( std::move( message), now);
+                              m_state.pending.requests.emplace_back( std::move( message), platform::time::clock::type::now());
 
                               break;
                            }
@@ -362,7 +362,7 @@ namespace casual
                               if( local::optional::send( message.process.ipc, reply))
                               {
                                  // All instances are busy, we stack the request
-                                 m_state.pending.requests.emplace_back( std::move( message), now);
+                                 m_state.pending.requests.emplace_back( std::move( message), platform::time::clock::type::now());
                               }
 
                               break;
@@ -373,14 +373,11 @@ namespace casual
                   catch( const state::exception::Missing&)
                   {
                      auto name = message.requested;
-                     discover( std::move( message), name, now);
+                     discover( std::move( message), name);
                   }
                }
 
-               void Lookup::discover( 
-                  common::message::service::lookup::Request&& message, 
-                  const std::string& name, 
-                  platform::time::point::type now)
+               void Lookup::discover( common::message::service::lookup::Request&& message, const std::string& name)
                {
                   Trace trace{ "service::manager::handle::service::Lookup::discover"};
 
@@ -410,7 +407,7 @@ namespace casual
                      // If there is no gateway, this will throw
                      ipc::device().blocking_send( communication::instance::outbound::gateway::manager::optional::device(), request);
 
-                     m_state.pending.requests.emplace_back( std::move( message), now);
+                     m_state.pending.requests.emplace_back( std::move( message), platform::time::clock::type::now());
 
                      send_reply.release();
                   }
@@ -563,11 +560,11 @@ namespace casual
 
                try
                {
-                  auto now = platform::time::clock::type::now();
+                  //auto now = platform::time::clock::type::now();
 
                   // This message can only come from a local instance
                   auto& instance = m_state.sequential( message.metric.process.pid);
-                  auto service = instance.unreserve( now);
+                  auto service = instance.unreserve( message.metric);
 
                   // add metric
                   if( m_state.events.active< common::message::event::service::Calls>())
@@ -575,7 +572,6 @@ namespace casual
                      m_state.metric.add( std::move( message.metric));
                      handle::metric::batch::send( m_state);
                   }
-
 
                   // Check if there are pending request for services that this
                   // instance has.
@@ -590,14 +586,17 @@ namespace casual
                      {
                         log::line( verbose::log, "found pendig: ", *pending);
 
+                        const auto waited = platform::time::clock::type::now() - pending->when;
+
                         // We now know that there are one idle server that has advertised the
                         // requested service (we've just marked it as idle...).
                         // We can use the normal request to get the response
                         service::Lookup lookup( m_state);
-                        lookup.lookup( pending->request, now, now - pending->when);
+                        
+                        lookup.lookup( pending->request, waited);
 
                         // add pending metrics
-                        service->metric.pending += now - pending->when;
+                        service->metric.pending += waited;
 
                         // Remove pending
                         m_state.pending.requests.erase( std::begin( pending));

@@ -138,15 +138,10 @@ namespace casual
                {
                   using Base::Base;
                   void operator () ( common::message::service::lookup::Request& message);
-                  void lookup( common::message::service::lookup::Request& message, 
-                     platform::time::point::type now,
-                     platform::time::unit pending);
+                  void lookup( common::message::service::lookup::Request& message, platform::time::unit pending);
 
                private:
-                  void discover( 
-                     common::message::service::lookup::Request&& message, 
-                     const std::string& name, 
-                     platform::time::point::type now);
+                  void discover( common::message::service::lookup::Request&& message, const std::string& name);
                };
 
                namespace discard

@@ -13,6 +13,8 @@
 #include "casual/domain/manager/api/state.h"
 
 #include "common/exception/casual.h"
+#include "common/message/event.h"
+#include "common/communication/instance.h"
 
 namespace casual
 {
@@ -120,6 +122,49 @@ domain:
          });
 
          EXPECT_TRUE( count == 5) << "count: " << count;
+      }
+
+
+      TEST( event_dispatch, faked_concurrent_metric)
+      {
+         common::unittest::Trace trace;
+
+         local::Domain domain;
+
+         event::dispatch( 
+         []()
+         {
+            // we fake a concurent metric message to service-manager
+            // this only works since service-manager is (right now) very
+            // laid back regarding if the services actually exist or not, 
+            // if not, it just sends the metric event regardless... Might
+            // change in the future.
+            common::message::event::service::Calls message;
+            message.metrics = {
+               [](){ 
+                  common::message::event::service::Metric metric;
+                  metric.process = common::process::handle();
+                  metric.end = platform::time::clock::type::now();
+                  metric.start = metric.end - std::chrono::milliseconds{ 2};
+                  metric.service = "foo";
+
+                  // no pending is set, we rely on initialization of event::service::Metric
+
+                  return metric;
+               }()
+            };
+            common::communication::ipc::blocking::send( 
+               common::communication::instance::outbound::service::manager::device(), message);            
+         },
+         []( model::service::Call&& call)
+         {
+            ASSERT_TRUE( call.metrics.size() == 1);
+            EXPECT_TRUE( call.metrics.at( 0).process.pid == common::process::id().value());
+            EXPECT_TRUE( call.metrics.at( 0).pending == platform::time::unit::zero());
+            EXPECT_TRUE( call.metrics.at( 0).service.name == "foo");
+            // we send shotdown to our self, to trigger "end"
+            local::send::shutdown();
+         });
       }
 
    } // event
