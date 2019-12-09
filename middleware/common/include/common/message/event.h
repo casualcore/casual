@@ -225,12 +225,12 @@ namespace casual
                   Uuid execution;
                   common::transaction::ID trid;
 
-                  platform::time::point::type start;
-                  platform::time::point::type end;
+                  platform::time::point::type start{};
+                  platform::time::point::type end{};
 
-                  platform::time::unit pending;
+                  platform::time::unit pending{};
 
-                  code::xatmi code;
+                  code::xatmi code = code::xatmi::ok;
 
                   auto duration() const noexcept { return end - start;}
 

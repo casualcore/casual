@@ -121,7 +121,7 @@ namespace casual
                metric.process = common::process::handle();
                metric.code = code.result;
                
-               // not transactions over http...
+               // no transactions over http...
                // metric.trid
 
                metric.start = request.state().start;

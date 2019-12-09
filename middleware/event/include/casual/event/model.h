@@ -62,10 +62,10 @@ namespace casual
                      transaction::ID id;
                   } transaction;
                   
-                  platform::time::point::type start;
-                  platform::time::point::type end;
+                  platform::time::point::type start{};
+                  platform::time::point::type end{};
 
-                  platform::time::unit pending;
+                  platform::time::unit pending{};
 
                   // outcome of the service call
                   int code{};
