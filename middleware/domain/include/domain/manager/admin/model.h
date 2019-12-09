@@ -157,6 +157,7 @@ namespace casual
 
                   struct State
                   {
+                     common::domain::Identity identity;
                      std::vector< model::Group> groups;
                      std::vector< model::Executable> executables;
                      std::vector< model::Server> servers;
@@ -186,6 +187,7 @@ namespace casual
 
                      CASUAL_CONST_CORRECT_SERIALIZE(
                      {
+                        CASUAL_SERIALIZE( identity);
                         CASUAL_SERIALIZE( groups);
                         CASUAL_SERIALIZE( executables);
                         CASUAL_SERIALIZE( servers);

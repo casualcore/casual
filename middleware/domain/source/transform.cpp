@@ -332,6 +332,8 @@ namespace casual
          {
             manager::admin::model::State result;
 
+            result.identity = common::domain::identity();
+
             result.groups = algorithm::transform( state.groups, local::model::Group{});
             result.servers = algorithm::transform( state.servers, local::model::Executable{});
             result.executables = algorithm::transform( state.executables, local::model::Executable{});

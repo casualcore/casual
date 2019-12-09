@@ -266,7 +266,18 @@ domain:
 
             } // <unnamed>
          } // local
+         
+         TEST( casual_domain_manager, state_contains_domain_identity)
+         {
+            common::unittest::Trace trace;
 
+            unittest::Process manager{ { local::configuration::sleep()}};
+
+            auto state = local::call::state();
+
+            EXPECT_TRUE( ! state.identity.name.empty());
+            EXPECT_TRUE( state.identity.id);
+         }
 
          TEST( casual_domain_manager, state_long_running_processes_5__expect_5)
          {
