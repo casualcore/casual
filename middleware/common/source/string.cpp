@@ -7,6 +7,7 @@
 
 #include "common/string.h"
 #include "common/algorithm.h"
+#include "common/range/adapter.h"
 
 #include <memory>
 #include <numeric>
@@ -39,24 +40,12 @@ namespace casual
 
          std::vector< std::string> split( const std::string& line, typename std::string::value_type delimiter)
          {
-            std::vector< std::string> result;
+            auto next_range = [delimiter]( auto range){ return algorithm::split( range, delimiter);};
+            auto transform_string = []( auto range){ return std::string{ std::begin( range), std::end( range)};};
 
-            auto current = std::begin( line);
-
-            while( current != std::end( line))
-            {
-               auto found = std::find( current, std::end( line), delimiter);
-
-               result.emplace_back( current, found);
-
-               current = found;
-
-               if( current != std::end( line))
-               {
-                  ++current;
-               }
-            }
-            return result;
+            return algorithm::transform( 
+               range::adapter::make( next_range, range::make( line)),
+               transform_string); 
          }
 
          namespace adjacent
@@ -64,22 +53,17 @@ namespace casual
 
             std::vector< std::string> split( const std::string& line, typename std::string::value_type delimiter)
             {
-               std::vector< std::string> result;
+               auto next_range = [delimiter]( auto range)
+               { 
+                  // discard possible initial delimiters.
+                  range = algorithm::find_if( range, [delimiter]( auto c){ return c != delimiter;});
+                  return algorithm::split( range, delimiter);
+               };
+               auto transform_string = []( auto range){ return std::string{ std::begin( range), std::end( range)};};
 
-               auto current = std::begin( line);
-
-               while( current != std::end( line))
-               {
-                  auto found = std::find( current, std::end( line), delimiter);
-
-                  if( current != found)
-                  {
-                     result.emplace_back( current, found);
-                  }
-
-                  current = std::find_if( found, std::end( line), [=]( auto value) { return value != delimiter;});
-               }
-               return result;
+               return algorithm::transform( 
+                  range::adapter::make( next_range, range::make( line)),
+                  transform_string); 
             }
 
          } // adjacent
@@ -93,13 +77,9 @@ namespace casual
          std::string join( const std::vector< std::string>& strings, const std::string& delimiter)
          {
             if( strings.empty())
-            {
                return std::string();
-            }
 
-            //
             // This will give a delimiter between empty strings (as well)
-            //
             auto range = range::make( strings);
 
             return algorithm::accumulate( ++range, strings.front(), 
