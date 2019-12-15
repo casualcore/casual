@@ -120,7 +120,7 @@ namespace casual
 
                struct Instance
                {
-                  enum class State : char
+                  enum class State : short
                   {
                      idle,
                      busy,
@@ -131,13 +131,10 @@ namespace casual
                   Instance( const admin::model::Service& service) : service{ service} {}
 
                   common::process::Handle process;
-
                   std::size_t hops = 0;
 
-
                   std::reference_wrapper< const admin::model::Service> service;
-
-                  const casual::domain::manager::admin::model::Executable* executable = nullptr;
+                  const casual::domain::manager::admin::model::Server* server = nullptr;
 
                   State state = State::remote;
                };
@@ -148,16 +145,15 @@ namespace casual
                   {
                      namespace lookup
                      {
-                        const casual::domain::manager::admin::model::Executable* executable( const call::State& state, strong::process::id pid)
+                        const casual::domain::manager::admin::model::Server* server( const call::State& state, strong::process::id pid)
                         {
-                           auto found = algorithm::find_if( state.domain.executables, [=]( const casual::domain::manager::admin::model::Executable& e){
+                           auto found = algorithm::find_if( state.domain.servers, [pid]( auto& e){
                               return algorithm::find( e.instances, pid);
                            });
 
                            if( found)
-                           {
                               return &(*found);
-                           }
+
                            return nullptr;
                         }
 
@@ -177,7 +173,7 @@ namespace casual
                         Instance instance{ service};
                         instance.state = local->state == admin::model::instance::Sequential::State::idle ? Instance::State::idle : Instance::State::busy;
                         instance.process.pid = i.pid;
-                        instance.executable = local::lookup::executable( state, i.pid);
+                        instance.server = local::lookup::server( state, i.pid);
                         result.push_back( std::move( instance));
                      }
 
@@ -186,7 +182,7 @@ namespace casual
                         Instance instance{ service};
                         instance.process.pid = i.pid;
                         instance.hops = i.hops;
-                        instance.executable = local::lookup::executable( state, i.pid);
+                        instance.server = local::lookup::server( state, i.pid);
                         result.push_back( std::move( instance));
                      }
                   }
@@ -418,8 +414,11 @@ namespace casual
                   return v.service.get().name;
                };
 
-               auto format_process_alias = []( const value_type& v) -> const std::string& {
-                  if( v.executable) { return v.executable->alias;}
+               auto format_process_alias = []( const value_type& v) -> const std::string&
+               {
+                  if( v.server) 
+                     return v.server->alias;
+
                   static std::string empty;
                   return empty;
                };
@@ -428,34 +427,28 @@ namespace casual
                {
                   std::size_t width( const value_type& value, const std::ostream&) const
                   {
-                     return 7;
+                     using Enum = value_type::State;
+                     switch( value.state)
+                     {
+                        case Enum::idle: return 4;
+                        case Enum::busy: return 4;
+                        case Enum::remote: return 6;
+                        case Enum::exiting: return 7;
+                     }
+                     return 0;
                   }
 
-                  void print( std::ostream& out, const value_type& value, std::size_t width, bool color) const
+                  void print( std::ostream& out, const value_type& value, std::size_t width) const
                   {
                      out << std::setfill( ' ');
 
-                     if( color)
+                     using Enum = value_type::State;
+                     switch( value.state)
                      {
-                        switch( value.state)
-                        {
-                           case value_type::State::idle: out << std::left << std::setw( width) << terminal::color::green << "idle"; break;
-                           case value_type::State::busy: out << std::left << std::setw( width) << terminal::color::yellow << "busy"; break;
-                           case value_type::State::remote: out << std::left << std::setw( width) << terminal::color::cyan << "remote"; break;
-                           case value_type::State::exiting: out << std::left << std::setw( width) << terminal::color::magenta << "exiting"; break;
-                           default: out << "unknown"; break;
-                        }
-                     }
-                     else
-                     {
-                        switch( value.state)
-                        {
-                           case value_type::State::idle: out << std::left << std::setw( width) << "idle"; break;
-                           case value_type::State::busy: out << std::left << std::setw( width) << "busy"; break;
-                           case value_type::State::remote: out << std::left << std::setw( width) << "remote"; break;
-                           case value_type::State::exiting: out << std::left << std::setw( width) << "exiting"; break;
-                           default: out << "unknown"; break;
-                        }
+                        case Enum::idle: out << std::left << std::setw( width) << terminal::color::green << "idle"; break;
+                        case Enum::busy: out << std::left << std::setw( width) << terminal::color::yellow << "busy"; break;
+                        case Enum::remote: out << std::left << std::setw( width) << terminal::color::cyan << "remote"; break;
+                        case Enum::exiting: out << std::left << std::setw( width) << terminal::color::magenta << "exiting"; break;
                      }
                   }
                };
@@ -464,16 +457,11 @@ namespace casual
                   return value.hops;
                };
 
-
                return terminal::format::formatter< normalized::service::Instance>::construct(
                   terminal::format::column( "service", format_service_name, terminal::color::yellow),
                   terminal::format::column( "pid", format_pid, terminal::color::white, terminal::format::Align::right),
-                  //terminal::format::column( "queue", format_queue{}, terminal::color::no_color, terminal::format::Align::right),
-                  terminal::format::custom_column( "state", format_state{}),
+                  terminal::format::custom::column( "state", format_state{}),
                   terminal::format::column( "hops", format_hops, terminal::color::no_color, terminal::format::Align::right),
-
-                  //terminal::format::column( "last", format_last{}, terminal::color::blue, terminal::format::Align::right),
-
                   terminal::format::column( "alias", format_process_alias, terminal::color::blue, terminal::format::Align::left)
                );
             }
@@ -506,7 +494,6 @@ namespace casual
             template< typename IR>
             void instances( std::ostream& out, IR instances)
             {
-
                auto formatter = format::instances();
 
                formatter.print( out, instances);
@@ -515,6 +502,16 @@ namespace casual
             void instances( std::ostream& out, call::State& state)
             {
                auto instances = normalized::service::instances( state);
+
+               auto sort_predicate = []( auto& l, auto& r)
+               {
+                  auto tie = []( auto& value){ return std::tie( value.service.get().name, value.server);};
+
+                  return tie( l) < tie( r);
+               };
+
+               algorithm::stable_sort( instances, sort_predicate);
+
                print::instances( out, instances);
             }
 
@@ -539,41 +536,20 @@ namespace casual
                }
             };
 
-            void list_services()
+            namespace list
             {
-               auto state = admin::api::state();
+               namespace services
+               {
+                  auto invoke()
+                  {
+                     auto state = admin::api::state();
 
-               print::services( std::cout, state, print::Service::user);
-            }
+                     print::services( std::cout, state, print::Service::user);
+                  }
 
-            void list_admin_services()
-            {
-               auto state = admin::api::state();
+                  constexpr auto description = R"()";
 
-               print::services( std::cout, state, print::Service::admin);
-            }
-
-            void list_instances()
-            {
-               auto state = call::instances();
-
-               print::instances( std::cout, state);
-            }
-
-
-            void output_state( const common::optional< std::string>& format)
-            {
-               auto state = admin::api::state();
-
-               auto archive = common::serialize::create::writer::from( format.value_or( ""), std::cout);
-               archive << CASUAL_NAMED_VALUE( state);
-            }
-
-
-            void list_service_legend()
-            {
-               std::cout << R"(legend for --list-services output: 
-                         
+                  constexpr auto legend = R"(
     name:
        the name of the service
     category:
@@ -602,9 +578,33 @@ namespace casual
        Remote-Calls - number of calls to remote instances (a subset of C)
     last:
        the last time the service was requested    
-
 )";
 
+               } // service
+            } // list
+
+
+            void list_admin_services()
+            {
+               auto state = admin::api::state();
+
+               print::services( std::cout, state, print::Service::admin);
+            }
+
+            void list_instances()
+            {
+               auto state = call::instances();
+
+               print::instances( std::cout, state);
+            }
+
+
+            void output_state( const common::optional< std::string>& format)
+            {
+               auto state = admin::api::state();
+
+               auto archive = common::serialize::create::writer::from( format.value_or( ""), std::cout);
+               archive << CASUAL_NAMED_VALUE( state);
             }
 
             namespace metric
@@ -629,6 +629,39 @@ namespace casual
                constexpr auto description = "list service routes";
             } // routes
 
+            namespace legend
+            {
+               const std::map< std::string, const char*> legends{
+                  { "list-service", action::list::services::legend},
+                  { "list-admin-services", action::list::services::legend},
+               };
+         
+               void invoke( const std::string& option)
+               {
+                  auto found = algorithm::find( legend::legends, option);
+
+                  if( found)
+                     std::cout << found->second;
+               }
+
+               auto complete() 
+               {
+                  return []( auto values, auto help)
+                  {
+                     return algorithm::transform( legends, []( auto& pair){ return pair.first;});
+                  };
+               }
+
+
+               constexpr auto description = R"(the legend for the supplied option
+
+Documentation and description for abbreviations and acronyms used as columns in output
+
+note: not all options has legend, use 'auto complete' to find out which legends are supported.
+)";
+
+            } // legend
+
          } // action
 
          namespace admin 
@@ -641,12 +674,12 @@ namespace casual
                      return std::vector< std::string>{ "json", "yaml", "xml", "ini"};
                   };
                   return common::argument::Group{ [](){}, { "service"}, "service related administration",
-                     common::argument::Option{ &action::list_services, { "-ls", "--list-services"}, "list services"},
+                     common::argument::Option{ &action::list::services::invoke , { "-ls", "--list-services"}, action::list::services::description},
                      common::argument::Option{ &action::list_instances,  { "-li", "--list-instances"}, "list instances"},
                      common::argument::Option{ &action::routes::list, { "--list-routes"}, action::routes::description},
                      common::argument::Option{ &action::metric::reset, action::services_completer,  { "-mr", "--metric-reset"}, "reset metrics for provided services, if no services provided, all metrics will be reset"},
                      common::argument::Option{ &action::list_admin_services,  { "--list-admin-services"}, "list casual administration services"},
-                     common::argument::Option{ &action::list_service_legend, { "--legend-list-services"}, "legend for --list-services output"},
+                     common::argument::Option{ &action::legend::invoke, action::legend::complete(), { "--legend"}, action::legend::description},
                      common::argument::Option{ &action::output_state, complete_state, { "--state"}, "service state"},
                   };
                }

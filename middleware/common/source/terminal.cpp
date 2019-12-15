@@ -9,6 +9,7 @@
 
 #include "common/environment.h"
 #include "common/exception/handle.h"
+#include "common/execute.h"
 
 
 #include <iomanip>
@@ -38,8 +39,26 @@ namespace casual
                      }
                      return value;
                   }
+
+                  namespace global
+                  {
+                     Directive& directive = Directive::instance();
+                  } // global
                } // <unnamed>
             } // local
+
+
+            Directive::options_type Directive::options() &
+            {
+               auto bool_completer = []( auto, bool ){
+                  return std::vector< std::string>{ "true", "false"};
+               };
+
+               return argument::Option( std::tie( m_color), bool_completer, { "--color"}, "set/unset color")
+                  + argument::Option( std::tie( m_header), bool_completer, { "--header"}, "set/unset header")
+                  + argument::Option( std::tie( m_precision), { "--precision"}, "set number of decimal points used for output")
+                  + argument::Option( std::tie( m_porcelain), bool_completer, { "--porcelain"}, "easy to parse output format");
+            }
 
 
             Directive& Directive::instance()
@@ -49,87 +68,71 @@ namespace casual
             }
 
             Directive::Directive()
+               : m_color{ local::get( environment::variable::name::terminal::color(), true)},
+                  m_porcelain{ local::get( environment::variable::name::terminal::porcelain(), false)},
+                  m_header{ local::get( environment::variable::name::terminal::header(), true)},
+                  m_precision{ local::get( environment::variable::name::terminal::precision(), 3)}
             {
-               porcelain = local::get( environment::variable::name::terminal::porcelain(), false);
-               color = local::get( environment::variable::name::terminal::color(), true);
-               precision = local::get( environment::variable::name::terminal::precision(), 3);
-               header = local::get( environment::variable::name::terminal::header(), true);
+
             }
 
-            Directive& directive() { return Directive::instance();}
+            void Directive::plain()
+            {
+               m_color = false;
+               m_header = false;
+               m_precision = 3;
+            }
+
+            Directive& directive() 
+            { 
+               return local::global::directive;
+            }
 
 
          } // output
 
+         Color::Proxy::Proxy( std::ostream& out) : m_active( &out) {}
+         Color::Proxy::Proxy() = default;
 
-         color_t::color_t( std::string color) : m_color( std::move( color))
+         Color::Proxy::~Proxy()
          {
-         }
-
-         color_t::proxy_t::proxy_t( std::ostream& out) : m_active( &out) {}
-
-         color_t::proxy_t::~proxy_t()
-         {
-            if( m_active)
+            if( m_active && output::directive().color())
             {
-               // auto flags = m_out->flags();
-               //auto width = m_out->width( 0);
                *m_active.value << "\033[0m";
-               // m_out->setf( flags);
-               // m_out->width( width);
             }
          }
 
-         color_t::proxy_t::proxy_t( proxy_t&&) = default;
-         color_t::proxy_t& color_t::proxy_t::operator = ( proxy_t&&) = default;
+         Color::Proxy::Proxy( Proxy&&) = default;
+         Color::Proxy& Color::Proxy::operator = ( Proxy&&) = default;
 
-
-         const std::string& color_t::escape() const
+         Color::Proxy operator << ( std::ostream& out, const Color& color)
          {
-            return m_color;
+            if( output::directive().color())
+            {
+               auto flags = out.flags();
+               auto width = out.width();
+               out.width( 0);
+               
+               out << color.m_color;
+               
+               out << std::setw( width);
+               out.setf( flags);
+            }
+
+            return Color::Proxy{ out};
          }
-
-         std::string color_t::reset() const
-         {
-            return "\033[0m";
-         }
-
-         const std::string& color_t::start() const
-         {
-            return m_color;
-         }
-
-         const std::string& color_t::end() const
-         {
-            static const std::string reset = "\033[0m";
-
-            return reset;
-         }
-
-         color_t::proxy_t operator << ( std::ostream& out, const color_t& color)
-         {
-            auto flags = out.flags();
-            auto width = out.width();
-            out.width( 0);
-            out << color.m_color;
-            out << std::setw( width);
-            out.setf( flags);
-
-            return color_t::proxy_t{ out};
-         }
-
 
          namespace color
          {
-            color_t no_color{ "\033[0m"};
-            color_t grey{ "\033[0;30m"};
-            color_t red{ "\033[0;31m"};
-            color_t green{ "\033[0;32m"};
-            color_t yellow{ "\033[0;33m"};
-            color_t blue{ "\033[0;34m"};
-            color_t magenta{ "\033[0;35m"};
-            color_t cyan{ "\033[0;36m"};
-            color_t white{ "\033[0;37m"};
+            Color no_color{ "\033[0m"};
+            Color grey{ "\033[0;30m"};
+            Color red{ "\033[0;31m"};
+            Color green{ "\033[0;32m"};
+            Color yellow{ "\033[0;33m"};
+            Color blue{ "\033[0;34m"};
+            Color magenta{ "\033[0;35m"};
+            Color cyan{ "\033[0;36m"};
+            Color white{ "\033[0;37m"};
          } // color
 
 
@@ -153,7 +156,7 @@ namespace casual
                Stream::Stream( std::ostream& stream)
                   : m_stream( &stream),
                      m_flags( stream.flags( local::flags())),
-                     m_precision( stream.precision( output::directive().precision))
+                     m_precision( stream.precision( output::directive().precision()))
                {
 
                }

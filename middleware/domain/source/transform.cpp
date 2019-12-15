@@ -423,6 +423,7 @@ namespace casual
 
                   manager::state::Server::instance_type instance{ common::process::handle()};
                   instance.state = manager::state::Server::state_type::running;
+                  instance.spawnpoint = platform::time::clock::type::now();
                   manager.instances.push_back( std::move( instance));
 
                   result.servers.push_back( std::move( manager));

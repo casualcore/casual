@@ -57,7 +57,7 @@ namespace casual
                platform::size::type size() const { return m_handlers.size();}
 
                //! @return all message-types that this instance handles
-               std::vector< message_type> types() const
+               auto types() const
                {
                   std::vector< message_type> result;
 
@@ -276,10 +276,23 @@ namespace casual
                   using device_type = std::decay_t< decltype( device)>;
 
                   while( true)
-                  {
                      handler( device.next( typename device_type::blocking_policy{}));
-                  }
                }
+
+               namespace restriced
+               {
+                  // only consume messages that handler can handle
+                  template< typename Unmarshal, typename D>
+                  void pump( basic_handler< Unmarshal>& handler, D& device)
+                  {
+                     using device_type = std::decay_t< decltype( device)>;
+
+                     const auto types = handler.types();
+
+                     while( true)
+                        handler( device.next( types, typename device_type::blocking_policy{}));
+                  }
+               } // restriced
             } // blocking
 
          } // dispatch

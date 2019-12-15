@@ -30,23 +30,24 @@ namespace casual
             {
                static Directive& instance();
 
-               bool porcelain;
-               bool color;
-               bool header;
-               std::streamsize precision;
+               inline auto color() const { return m_color && ! m_porcelain;}
+               inline auto porcelain() const { return m_porcelain;}
+               inline auto header() const { return m_header;}
+               inline auto precision() const { return m_precision;}
 
-               inline auto options()
-               {
-                  auto bool_completer = []( auto, bool ){
-                     return std::vector< std::string>{ "true", "false"};
-                  };
-                  return argument::Option( std::tie( color), bool_completer, { "--color"}, "set/unset color")
-                     + argument::Option( std::tie( header), bool_completer, { "--header"}, "set/unset header")
-                     + argument::Option( std::tie( precision), { "--precision"}, "set number of decimal points used for output")
-                     + argument::Option( std::tie( porcelain), bool_completer, { "--porcelain"}, "easy to parse output format");
-               }
+               //! sets no color 
+               void plain();
+
+               using options_type = decltype( std::declval< argument::Option>() + std::declval< argument::Option>());
+
+               options_type options() &;
 
             private:
+               bool m_color;
+               bool m_porcelain;
+               bool m_header;
+               std::streamsize m_precision;
+
                Directive();
             };
 
@@ -55,18 +56,19 @@ namespace casual
 
          } // output
 
-         struct color_t
+         struct Color
          {
-            color_t( std::string color);
+            template<decltype(sizeof("")) size>
+            explicit Color( const char (&color)[size]) : m_color{ color} {}
 
-            struct proxy_t
+            struct Proxy
             {
-               proxy_t( std::ostream& out);
-               ~proxy_t();
+               explicit Proxy( std::ostream& out);
+               Proxy();
 
-               proxy_t( proxy_t&&);
-               proxy_t& operator = ( proxy_t&&);
-
+               ~Proxy();
+               Proxy( Proxy&&);
+               Proxy& operator = ( Proxy&&);
 
                template< typename T>
                std::ostream& operator << ( T&& value)
@@ -75,41 +77,33 @@ namespace casual
                }
 
             private:
-               
                using Active = move::basic_active< std::ostream*>;
                Active m_active;
             };
 
-
-            const std::string& start() const;
-            const std::string& end() const;
-
-            const std::string& escape() const;
-            std::string reset() const;
-
-            friend proxy_t operator << ( std::ostream& out, const color_t& color);
+            friend Proxy operator << ( std::ostream& out, const Color& color);
 
          private:
-            std::string m_color;
+            const char* m_color;
 
          };
 
          namespace color
          {
-            extern color_t no_color;
-            extern color_t red;
-            extern color_t grey;
-            extern color_t red;
-            extern color_t green;
-            extern color_t yellow;
-            extern color_t blue;
-            extern color_t magenta;
-            extern color_t cyan;
-            extern color_t white;
+            extern Color no_color;
+            extern Color red;
+            extern Color grey;
+            extern Color red;
+            extern Color green;
+            extern Color yellow;
+            extern Color blue;
+            extern Color magenta;
+            extern Color cyan;
+            extern Color white;
 
             struct Solid
             {
-               Solid( color_t& color) : m_color( color) {}
+               Solid( Color& color) : m_color( color) {}
 
                template< typename T>
                void operator () ( std::ostream& out, T&& value)
@@ -117,7 +111,7 @@ namespace casual
                   out << m_color << value;
                }
             private:
-               color_t& m_color;
+               Color& m_color;
             };
 
          } // color
@@ -175,7 +169,7 @@ namespace casual
 
                void print_headers( std::ostream& out)
                {
-                  if( output::directive().header)
+                  if( output::directive().header())
                   {
                      auto print_delimiter = [&](){
                         out << m_delimiter;
@@ -206,7 +200,7 @@ namespace casual
                template< typename R>
                std::ostream& print_rows( std::ostream& out, R&& rows)
                {
-                  if( output::directive().porcelain)
+                  if( output::directive().porcelain())
                   {
                      for( auto& row : rows)
                      {
@@ -215,7 +209,7 @@ namespace casual
                         };
 
                         auto print_column = [&out,&row]( const column_holder& c){
-                           c.print( out, row, false, false);
+                           c.print( out, row, false);
                         };
 
                         algorithm::for_each_interleave( m_columns, print_column, print_delimiter);
@@ -231,7 +225,7 @@ namespace casual
                         };
 
                         auto print_column = [&out,&row]( const column_holder& c){
-                           c.print( out, row, output::directive().color);
+                           c.print( out, row);
                         };
 
                         algorithm::for_each_interleave( m_columns, print_column, print_delimiter);
@@ -247,7 +241,7 @@ namespace casual
                {
                   customize::Stream stream( out);
 
-                  if( ! output::directive().porcelain)
+                  if( ! output::directive().porcelain())
                   {
                      calculate_width( range, out);
                      print_headers( out);
@@ -265,18 +259,18 @@ namespace casual
                }
 
 
-               struct base_column
+               struct concept
                {
-                  virtual ~base_column() = default;
+                  virtual ~concept() = default;
                   virtual std::string name() const = 0;
                   virtual std::size_t width( const value_type& value, const std::ostream& out) const = 0;
-                  virtual void print( std::ostream& out, const value_type& value, std::size_t size, bool color) const = 0;
+                  virtual void print( std::ostream& out, const value_type& value, std::size_t size) const = 0;
                };
 
 
                struct column_holder
                {
-                  column_holder( std::unique_ptr< base_column> column)
+                  column_holder( std::unique_ptr< concept> column)
                      : m_column( std::move( column)), m_width( m_column->name().size()) {}
 
                   template< typename Range>
@@ -293,9 +287,9 @@ namespace casual
                      return m_column->name();
                   }
 
-                  void print( std::ostream& out, const value_type& value, bool color, bool width = true) const
+                  void print( std::ostream& out, const value_type& value, bool width = true) const
                   {
-                     m_column->print( out, value, width ? m_width : 0, color);
+                     m_column->print( out, value, width ? m_width : 0);
                   }
 
 
@@ -304,43 +298,39 @@ namespace casual
                      return m_width;
                   }
 
-                  std::unique_ptr< base_column> m_column;
+                  std::unique_ptr< concept> m_column;
                   std::size_t m_width;
                };
 
 
                template< typename I>
-               struct basic_column : base_column
+               struct basic_column : concept
                {
                   using implementation_type = I;
                   basic_column( implementation_type implementation) : m_implementation( std::move( implementation)) {}
 
                   std::string name() const override { return m_implementation.name();}
-                  void print( std::ostream& out, const value_type& value, std::size_t width, bool color) const override
+                  void print( std::ostream& out, const value_type& value, std::size_t width) const override
                   {
-                     m_implementation.print( out, value, width, color);
+                     m_implementation.print( out, value, width);
                   }
-
 
                   std::size_t width( const value_type& value, const std::ostream& out) const override { return m_implementation.width( value, out);}
 
                   I m_implementation;
                };
 
-
-
                using columns_type = std::vector< column_holder>;
-
 
                static columns_type initialize()
                {
                   return {};
                }
 
-               template< typename C, typename... Columns>
-               static columns_type initialize( C&& column, Columns&&... columns)
+               template< typename C, typename... Cs>
+               static columns_type initialize( C&& column, Cs&&... columns)
                {
-                  auto result = initialize( std::forward< Columns>( columns)...);
+                  auto result = initialize( std::forward< Cs>( columns)...);
 
                   auto basic = std::make_unique< basic_column< typename std::decay< C>::type>>( std::forward< C>( column));
 
@@ -380,7 +370,7 @@ namespace casual
 
                default_column( binder_type binder,
                      Align align = Align::left,
-                     common::terminal::color_t color = common::terminal::color::red)
+                     common::terminal::Color color = common::terminal::color::red)
                : m_color( std::move( color)),
                  m_align( align == Align::left ? std::left : std::right),
                  binder( std::move( binder)) {}
@@ -393,11 +383,11 @@ namespace casual
                   repsentation.flags( out.flags());
                   repsentation.precision( out.precision());
                   repsentation << binder( value);
-                  return repsentation.str().size();
+                  return std::move( repsentation.str()).size();
                }
 
                template< typename VT>
-               void print( std::ostream& out, VT&& value, std::size_t width, bool color) const
+               void print( std::ostream& out, VT&& value, std::size_t width) const
                {
                   std::ostringstream string_value;
                   string_value.precision( out.precision());
@@ -406,34 +396,25 @@ namespace casual
 
                   out << std::setfill( ' ');
 
-                  if( color)
-                  {
-                     out << m_color.start() << std::setw( width) << m_align << string_value.str() << m_color.end();
-                  }
-                  else
-                  {
-                     out << std::setw( width) << m_align << string_value.str();
-                  }
+                  out << m_color << std::setw( width) << m_align << string_value.str();
                }
 
-               common::terminal::color_t m_color;
+               common::terminal::Color m_color;
                decltype( &std::left) m_align;
 
-               //
                // gcc 4.8.2 does not overload const function operator...
-               //
                mutable binder_type binder;
             };
 
 
             template< typename B>
-            auto column( std::string name, B binder, common::terminal::color_t color, Align align)
+            auto column( std::string name, B binder, common::terminal::Color color, Align align)
             {
                return name_column< default_column<B>>{ std::move( name), std::move( binder), align, std::move( color)};
             }
 
             template< typename B>
-            auto column( std::string name, B binder, common::terminal::color_t color)
+            auto column( std::string name, B binder, common::terminal::Color color)
             {
                return column( std::move( name), std::move( binder), std::move( color), Align::left);
             }
@@ -449,18 +430,17 @@ namespace casual
             {
                return column( std::move( name), std::move( binder), common::terminal::color::no_color, Align::left);
             }
-
-            template< typename C>
-            auto custom_column( std::string name, C&& column)
+            
+            namespace custom
             {
-               return name_column< C>( std::move( name), std::move( column));
-            }
+               template< typename C>
+               auto column( std::string name, C&& column)
+               {
+                  return name_column< C>( std::move( name), std::move( column));
+               }
+            } // custom
+
          } // format
-
-
       } // terminal
-
    } // common
 } // casual
-
-

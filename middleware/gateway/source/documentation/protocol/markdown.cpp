@@ -1139,7 +1139,7 @@ Sent to abruptly disconnect the conversation
                {
                   //static_assert( common::marshal::is_network_normalizing< local::Printer>::value, "not network...");
 
-                  common::terminal::output::directive().color = false;
+                  common::terminal::output::directive().plain();
                   
                   message_header( std::cout);
                   domain_connect( std::cout);

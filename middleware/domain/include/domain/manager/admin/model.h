@@ -97,6 +97,19 @@ namespace casual
                         exit,
                         spawn_error,
                      };
+
+                     inline std::ostream& operator << ( std::ostream& out, State state)
+                     {
+                        switch( state)
+                        {
+                           case State::running: return out << "running";
+                           case State::scale_out: return out << "scale-out";
+                           case State::scale_in: return out << "scale-in";
+                           case State::exit: return out << "exit";
+                           case State::spawn_error: return out << "spawn-error";
+                        }
+                        assert( ! "invalid state");
+                     }
                   } // instance
 
                   template< typename H>
@@ -106,7 +119,11 @@ namespace casual
                      instance::State state = instance::State::scale_out;
                      platform::time::point::type spawnpoint;
 
-                     friend bool operator == ( const Instance& lhs, const H& rhs) { return common::process::id( lhs.handle) == common::process::id( rhs);}
+                     template< typename T>
+                     friend bool operator == ( const Instance& lhs, T&& rhs) 
+                     { 
+                        return common::process::id( lhs.handle) == common::process::id( rhs);
+                     }
 
                      CASUAL_CONST_CORRECT_SERIALIZE({
                         CASUAL_SERIALIZE( handle);

@@ -3,6 +3,7 @@
 //!
 //! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
+
 #include "domain/manager/admin/cli.h"
 
 #include "domain/manager/admin/model.h"
@@ -21,6 +22,7 @@
 #include "common/communication/ipc.h"
 #include "common/communication/instance.h"
 #include "common/serialize/create.h"
+#include "common/chronology.h"
 
 #include "serviceframework/service/protocol/call.h"
 #include "serviceframework/log.h"
@@ -178,7 +180,9 @@ namespace casual
 
                         try
                         {
-                           common::message::dispatch::blocking::pump( event_handler, common::communication::ipc::inbound::device());
+                           common::message::dispatch::blocking::restriced::pump( 
+                              event_handler, 
+                              common::communication::ipc::inbound::device());
                         }
                         catch( const event::Done&)
                         {
@@ -227,11 +231,11 @@ namespace casual
                      serviceframework::service::protocol::binary::Call call;
                      auto reply = call( admin::service::name::state);
 
-                     admin::model::State serviceReply;
+                     admin::model::State result;
 
-                     reply >> CASUAL_NAMED_VALUE( serviceReply);
+                     reply >> CASUAL_NAMED_VALUE( result);
 
-                     return serviceReply;
+                     return result;
                   }
 
             
@@ -307,20 +311,13 @@ namespace casual
                      std::map< strong::process::id, std::string> mapping;
 
                      for( auto& s : state.servers)
-                     {
                         for( auto& i : s.instances)
-                        {
                            mapping[ i.handle.pid] = s.alias;
-                        }
-                     }
 
                      for( auto& e : state.executables)
-                     {
                         for( auto& i : e.instances)
-                        {
                            mapping[ i.handle] = e.alias;
-                        }
-                     }
+
                      return mapping;
                   }
 
@@ -397,13 +394,26 @@ namespace casual
                   } // configuration
                } // call
 
+               namespace instance
+               {
+                  template< typename E> 
+                  struct basic_instance
+                  {
+                     const typename E::instance_type* instance = nullptr;
+                     const E* executable = nullptr;
+                  };
+
+                  using Server = basic_instance< admin::model::Server>;
+                  using Executable = basic_instance< admin::model::Executable>;
+
+
+               } // instance
+
                namespace format
                {
-
                   template< typename P>
                   auto process()
                   {
-
                      auto format_configured_instances = []( const P& e){
                         return e.instances.size();
                      };
@@ -415,7 +425,8 @@ namespace casual
                      };
 
                      auto format_restart = []( const P& e){
-                        if( e.restart) { return "true";}
+                        if( e.restart) 
+                           return "true";
                         return "false";
                      };
 
@@ -433,6 +444,8 @@ namespace casual
                         terminal::format::column( "path", std::mem_fn( &P::path), terminal::color::blue, terminal::format::Align::left)
                      );
                   }
+
+  
                } // format
 
                namespace print
@@ -475,37 +488,175 @@ namespace casual
                      return aliases;
                   };
 
-                  
-
-                  void list_instances()
+                  namespace list
                   {
-                     auto state = call::state();
+                     namespace process
+                     {
+                        constexpr auto legend = R"(
+   alias:
+      the configured alias, or the binary name (potentially with postfix to make it unique)
+   CI:
+      configured number of instances
+   I:
+      running instances
+   restart;
+      if instances should be restarted if exited
+   #r:
+      number of times instances has been restarted
+   path:
+      the path to the binary
 
-                     //print::executables( std::cout, state);
-                  }
+)";
+                     } // process
+                     namespace servers
+                     {
+                        void invoke()
+                        {
+                           auto state = call::state();
 
-                  void list_executable()
-                  {
-                     auto state = call::state();
+                           print::processes( std::cout, algorithm::sort( state.servers, predicate::less::alias));
+                        }
 
-                     print::processes( std::cout, algorithm::sort( state.executables, predicate::less::alias));
-                  }
+                        constexpr auto description = R"(list all servers)";
 
-                  void list_servers()
-                  {
-                     auto state = call::state();
+                        constexpr auto legend = process::legend;
 
-                     print::processes( std::cout, algorithm::sort( state.servers, predicate::less::alias));
-                  }
+                     } // servers
 
-                  /*
-                  void list_processes()
-                  {
-                     auto state = call::state();
+                     namespace executables
+                     {
+                        void invoke()
+                        {
+                           auto state = call::state();
 
-                     print::processes( std::cout, state.servers);
-                  }
-                  */
+                           print::processes( std::cout, algorithm::sort( state.executables, predicate::less::alias));
+                        }
+
+                        constexpr auto description = R"(list all executables)";
+
+                        constexpr auto legend = process::legend;
+                     } // executables
+
+                     namespace instances 
+                     {
+                        namespace server
+                        {
+                           struct Type
+                           {
+                              const typename admin::model::Server::instance_type* instance = nullptr;
+                              const admin::model::Server* server = nullptr;
+
+                              friend bool operator < ( const Type& lhs, const Type& rhs)
+                              {
+                                 auto tie = []( const Type& value)
+                                 {
+                                    return std::tie( value.server->alias, value.instance->spawnpoint);
+                                 };
+                                 return tie( lhs) < tie( rhs);
+                              }
+                           };
+
+                           void invoke()
+                           {
+                              const auto state = call::state();
+
+                              std::vector< Type> instances;
+
+                              algorithm::for_each( state.servers, [&instances]( auto& server)
+                              {
+                                 Type result;
+                                 result.server = &server;
+                                 algorithm::transform( server.instances, instances, [&result]( auto& instance)
+                                 {
+                                    result.instance = &instance;
+                                    return result;
+                                 });
+                              });
+
+                              algorithm::sort( instances);
+
+                              auto create_formatter = []()
+                              {
+                                 auto format_pid = []( auto& i) { return i.instance->handle.pid;};
+                                 auto format_ipc = []( auto& i) { return i.instance->handle.ipc;};
+                                 auto format_state = []( auto& i) { return i.instance->state;};
+                                 auto format_alias = []( auto& i) { return i.server->alias;};
+                                 auto format_spawnpoint = []( auto& i) { return chronology::local( i.instance->spawnpoint);};
+
+                                 return terminal::format::formatter< Type>::construct(
+                                    terminal::format::column( "pid", format_pid, terminal::color::white, terminal::format::Align::right),
+                                    terminal::format::column( "ipc", format_ipc, terminal::color::no_color, terminal::format::Align::right),
+                                    terminal::format::column( "state", format_state, terminal::color::yellow, terminal::format::Align::left),
+                                    terminal::format::column( "alias", format_alias, terminal::color::cyan, terminal::format::Align::left),
+                                    terminal::format::column( "spawnpoint", format_spawnpoint, terminal::color::blue, terminal::format::Align::left)
+                                 );
+                              };
+
+                              create_formatter().print( std::cout, instances);
+                           }
+
+                           constexpr auto description = R"(list all running server instances)";
+                        } // server
+
+                        namespace executable
+                        {
+                           struct Type
+                           {
+                              const typename admin::model::Executable::instance_type* instance = nullptr;
+                              const admin::model::Executable* executable = nullptr;
+
+                              friend bool operator < ( const Type& lhs, const Type& rhs)
+                              {
+                                 auto tie = []( const Type& value)
+                                 {
+                                    return std::tie( value.executable->alias, value.instance->spawnpoint);
+                                 };
+                                 return tie( lhs) < tie( rhs);
+                              }
+                           };
+
+                           void invoke()
+                           {
+                              const auto state = call::state();
+
+                              std::vector< Type> instances;
+
+                              algorithm::for_each( state.executables, [&instances]( auto& executable)
+                              {
+                                 Type result;
+                                 result.executable = &executable;
+                                 algorithm::transform( executable.instances, instances, [&result]( auto& instance)
+                                 {
+                                    result.instance = &instance;
+                                    return result;
+                                 });
+                              });
+
+                              algorithm::sort( instances);
+
+                              auto create_formatter = []()
+                              {
+                                 auto format_pid = []( auto& i) { return i.instance->handle;};
+                                 auto format_state = []( auto& i) { return i.instance->state;};
+                                 auto format_alias = []( auto& i) { return i.executable->alias;};
+                                 auto format_spawnpoint = []( auto& i) { return chronology::local( i.instance->spawnpoint);};
+
+                                 return terminal::format::formatter< Type>::construct(
+                                    terminal::format::column( "pid", format_pid, terminal::color::white, terminal::format::Align::right),
+                                    terminal::format::column( "state", format_state, terminal::color::yellow, terminal::format::Align::left),
+                                    terminal::format::column( "alias", format_alias, terminal::color::cyan, terminal::format::Align::left),
+                                    terminal::format::column( "spawnpoint", format_spawnpoint, terminal::color::blue, terminal::format::Align::left)
+                                 );
+                              };
+
+                              create_formatter().print( std::cout, instances);
+                           }
+
+                           constexpr auto description = R"(list all running executable instances)";
+                        } // executable
+                     } // instances
+                  } // list
+
 
                   namespace scale
                   {
@@ -585,8 +736,6 @@ namespace casual
                               });
                            }
                         );
-
-                        
                      };
 
                      auto completion = []( auto values, bool help) -> std::vector< std::string>
@@ -702,6 +851,98 @@ The semantics are similar to http PUT:
 
                      archive << CASUAL_NAMED_VALUE( state);
                   }
+
+                  namespace ping
+                  {
+                     void invoke( std::string alias, std::vector< std::string> aliases)
+                     {
+                        // make sure we set precision and such for cout.
+                        terminal::format::customize::Stream scope{ std::cout};
+
+                        auto state = local::call::state();
+
+                        aliases.insert( std::begin( aliases), std::move( alias));
+
+                        auto servers = std::get< 0>( algorithm::intersection( state.servers, aliases, []( auto& l, auto& r){ return l.alias == r;}));
+                        
+                        auto ping_server = []( auto& server)
+                        {
+                           auto ping_instance = [&server]( auto& instance)
+                           {
+                              std::cout << terminal::color::yellow << server.alias;
+                              std::cout << " " << instance.handle.ipc  << " ";
+
+                              auto start = platform::time::clock::type::now();
+                              auto pid = communication::instance::ping( instance.handle.ipc).pid;
+                              auto end = platform::time::clock::type::now();
+
+                              using second = std::chrono::duration< double>;
+                              std::cout << terminal::color::yellow << pid << " ";
+                              std::cout << terminal::color::blue << std::chrono::duration_cast< second>( end - start).count() << '\n';
+                           };
+
+                           algorithm::for_each( server.instances, ping_instance);
+                        };
+                        algorithm::for_each( servers, ping_server);
+                     }
+
+                     auto complete() 
+                     {
+                        return []( auto values, auto help) -> std::vector< std::string>
+                        {
+                           if( help)
+                              return { "<alias>"};
+
+                           auto state = local::call::state();
+
+                           return algorithm::transform( 
+                              algorithm::filter( state.servers, []( auto& server){ return ! server.instances.empty();}), 
+                              []( auto& server){ return server.alias;});
+                        };
+                     }
+
+                     constexpr auto description = R"(ping all instances of the provided server alias
+)";
+
+                     constexpr auto legend = R"(
+<alias> <ipc> <pid> <time>
+)"; 
+                  } // ping
+
+                  namespace legend
+                  {
+                     const std::map< std::string, const char*> legends{
+                        { "list-servers", action::list::servers::legend},
+                        { "list-executables", action::list::executables::legend},
+                        { "ping", action::ping::legend},
+                     };
+                     
+                     
+                     void invoke( const std::string& option)
+                     {
+                        auto found = algorithm::find( legend::legends, option);
+
+                        if( found)
+                           std::cout << found->second;
+                     }
+
+                     auto complete() 
+                     {
+                        return []( auto values, auto help)
+                        {
+                           return algorithm::transform( legends, []( auto& pair){ return pair.first;});
+                        };
+                     }
+
+                     constexpr auto description = R"(the legend for the supplied option
+
+Documentation and description for abbreviations and acronyms used as columns in output
+
+note: not all options has legend, use 'auto complete' to find out which legends are supported.
+)";
+                  } // legend
+
+
                } // action
 
             } // <unnamed>
@@ -717,17 +958,20 @@ The semantics are similar to http PUT:
                   auto configuration_format = serialize::create::reader::complete::format();
 
                   return argument::Group{ [](){}, { "domain"}, "local casual domain related administration",
-                     argument::Option( &local::action::list_servers, { "-ls", "--list-servers"}, "list all servers"),
-                     argument::Option( &local::action::list_executable, { "-le", "--list-executables"}, "list all executables"),
-                     argument::Option( &local::action::list_instances, { "-li", "--list-instances"}, "list all instances"),
+                     argument::Option( &local::action::list::servers::invoke, { "-ls", "--list-servers"}, local::action::list::servers::description),
+                     argument::Option( &local::action::list::executables::invoke, { "-le", "--list-executables"}, local::action::list::executables::description),
                      argument::Option( argument::option::one::many( &local::action::scale::instances::call), local::action::scale::instances::completion, { "-si", "--scale-instances"}, "<alias> <#> scale executable instances"),
                      argument::Option( argument::option::one::many( &local::action::restart::instances), local::action::restart::completion, { "-ri", "--restart-instances"}, "<alias> restart instances for the given aliases"),
+                     argument::Option( &local::action::list::instances::server::invoke, { "-lis", "--list-instances-server"}, local::action::list::instances::server::description),
+                     argument::Option( &local::action::list::instances::executable::invoke, { "-lie", "--list-instances-executable"}, local::action::list::instances::executable::description),
                      argument::Option( &local::action::shutdown, { "-s", "--shutdown"}, "shutdown the domain"),
                      argument::Option( &local::action::boot, { "-b", "--boot"}, "boot domain -"),
                      argument::Option( &local::action::environment::set::call, local::action::environment::set::complete, { "--set-environment"}, local::action::environment::set::description)( argument::cardinality::any{}),
                      argument::Option( &local::action::configuration::persist, { "-p", "--persist-state"}, "persist current state"),
                      argument::Option( &local::action::configuration::get, configuration_format, { "--configuration-get"}, "get configuration (as provided format)"),
                      argument::Option( &local::action::configuration::put::call, configuration_format, { "--configuration-put"}, local::action::configuration::put::description),
+                     argument::Option( &local::action::ping::invoke, local::action::ping::complete(), { "--ping"}, local::action::ping::description),
+                     argument::Option( &local::action::legend::invoke, local::action::legend::complete(), { "--legend"}, local::action::legend::description),
                      argument::Option( &local::action::state, state_format, { "--state"}, "domain state (as provided format)")
                   };
                }
