@@ -724,8 +724,6 @@ namespace casual
                            [ &result]( const message::event::domain::task::End& task)
                            {
                               auto split = algorithm::partition( result, [id = task.id]( auto& r) { return id != r.task;});
-                              // remove correlated task
-                              algorithm::trim( result, std::get< 0>( split));
 
                               // print the removed
                               algorithm::for_each( std::get< 1>( split), [&task]( auto& done)
@@ -734,6 +732,9 @@ namespace casual
                                     << terminal::color::green << "done "
                                     << terminal::color::yellow << done.alias << '\n';
                               });
+
+                              // remove correlated task
+                              algorithm::trim( result, std::get< 0>( split));
                            }
                         );
                      };
