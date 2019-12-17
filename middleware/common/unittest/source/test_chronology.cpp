@@ -61,6 +61,7 @@ namespace casual
          TEST( common_chronology, from_string__h_min_s)
          {
             EXPECT_TRUE( from::string( "1h+2min+12s") == std::chrono::seconds( 3600 + 120 + 12));
+            EXPECT_TRUE( from::string( "1h + 2min + 12s") == std::chrono::seconds( 3600 + 120 + 12));
          }
 
 

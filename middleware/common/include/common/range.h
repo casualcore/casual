@@ -32,7 +32,7 @@ namespace casual
          using pointer = typename std::iterator_traits< iterator>::pointer;
          using reference = typename std::iterator_traits< iterator>::reference;
          using difference_type = typename std::iterator_traits< iterator>::difference_type;
-         using reverse_iterator = std::reverse_iterator< iterator>;
+         using reverse_iterator = decltype( std::make_reverse_iterator( iterator{}));
 
          constexpr Range() = default;
 
@@ -48,6 +48,16 @@ namespace casual
          //! conversion from Range with convertable iterators
          template< typename convertible_iterator, std::enable_if_t< std::is_convertible< convertible_iterator, iterator>::value>* dummy = nullptr>
          constexpr Range( Range< convertible_iterator> range) :  m_first( std::begin( range)), m_last( std::end( range)) {}
+         
+         //! conversion from a range with reverse-iterator
+         template< typename ReverseIter>
+         constexpr auto operator = ( Range< ReverseIter> range) 
+            -> std::enable_if_t< std::is_same< ReverseIter, reverse_iterator>::value, Range&>
+         {
+            m_first = range.end().base();
+            m_last = range.begin().base();
+            return *this;
+         }
 
 
          constexpr platform::size::type size() const { return std::distance( m_first, m_last);}
@@ -74,8 +84,6 @@ namespace casual
 
          constexpr iterator begin() const noexcept { return m_first;}
          constexpr iterator end() const noexcept { return m_last;}
-         constexpr reverse_iterator rbegin() const noexcept { return reverse_iterator( end());}
-         constexpr reverse_iterator rend() const noexcept { return reverse_iterator( begin());}
 
 
          constexpr Range& advance( difference_type value) { std::advance( m_first, value); return *this;}
@@ -201,16 +209,33 @@ namespace casual
             return make( std::begin( container), std::end( container));
          }
 
-         template< typename C, std::enable_if_t< std::is_lvalue_reference< C>::value && common::traits::is::reverse::iterable< C>::value, int> = 0>
-         auto make_reverse( C&& container)
-         {
-            return make( container.rbegin(), container.rend());
-         }
 
          template< typename Iter>
          constexpr Range< Iter> make( Range< Iter> range)
          {
             return range;
+         }
+
+         namespace detail
+         {
+            // make sure we go back to base, if the iterator is reverse_iterator already.
+            template< typename T>
+            auto make_reverse_iterator( std::reverse_iterator< T> iterator) { return iterator.base();}
+
+            template< typename Iter>
+            auto make_reverse_iterator( Iter iterator) { return std::make_reverse_iterator( iterator);}
+            
+         } // detail
+
+         template< typename R>
+         constexpr auto reverse( R&& range)
+         {
+            // R can't be an owning r-value container.
+            static_assert( ! traits::is::container::like< R>::value || std::is_lvalue_reference< R>::value, "");
+
+            return make( 
+               detail::make_reverse_iterator( std::end( range)),
+               detail::make_reverse_iterator( std::begin( range)));
          }
 
          template< typename C>

@@ -215,7 +215,7 @@ namespace casual
          auto us = local::unsorted();
          auto s = local::sorted();
 
-         auto sorted = algorithm::sort( range::make_reverse( us));
+         auto sorted = algorithm::sort( range::reverse( us));
 
          //EXPECT_TRUE( sorted);
          EXPECT_TRUE( ! sorted.empty());
@@ -230,7 +230,7 @@ namespace casual
          auto us = local::unsorted();
          auto s = local::sorted();
 
-         auto sorted = algorithm::sort( range::make_reverse( us), std::less<>());
+         auto sorted = algorithm::sort( range::reverse( us), std::less<>());
 
          //EXPECT_TRUE( sorted);
          EXPECT_TRUE( ! sorted.empty());
@@ -257,7 +257,7 @@ namespace casual
 
          auto us = local::unsorted();
 
-         auto part = algorithm::partition( range::make_reverse( us), []( int value) { return value == 3;});
+         auto part = algorithm::partition( range::reverse( us), []( int value) { return value == 3;});
 
          ASSERT_TRUE( std::get< 0>( part).size() == 2);
          EXPECT_TRUE( *std::get< 0>( part) == 3);
@@ -294,7 +294,7 @@ namespace casual
 
          auto us = local::unsorted();
 
-         auto found =  algorithm::find( range::make_reverse( us), 3);
+         auto found =  algorithm::find( range::reverse( us), 3);
 
          ASSERT_TRUE( ! found.empty());
          EXPECT_TRUE( *found == 3);

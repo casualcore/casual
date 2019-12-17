@@ -361,15 +361,20 @@ namespace casual
 
                   auto range = range::make( value);
                   
-                  // replace all '}' with '\0' to be c-compatible 
+                  // replace all '}' with '\0' to be c-compatible
+                  // we'll use the view::String later to find the actual
+                  // environment variable via c-api (with const char*), hence
+                  // it need to be null terminated.
                   algorithm::replace( range, '}', '\0');
                   
-                  // split the range to _the end of variable_ (if any)
+                  // split the range to _the end of variable_ (if any) (which is now '\0')
                   auto next_range = []( auto range){ return algorithm::split( range, '\0');};
                   auto handle_part = [&out, &get_variable]( auto range)
                   {
-                     // find _the end of variable_ (if any).
+                     // find _the beginning of variable_ (if any).
                      auto split = algorithm::divide_first( range, "${");
+
+                     // might be the whole value/string
                      out << view::String{ std::get< 0>( split)};
 
                      auto variable = view::String{ std::get< 1>( split)};
@@ -377,11 +382,12 @@ namespace casual
                      if( ! variable)
                         return;
 
-                     // get rid of "${"
+                     // get rid of the found "${"
                      variable.advance( 2);
 
                      // let the functor take care of extracting the variable
                      // it might be from a "local repository"
+                     // `variable` is now a view::String with null termination.
                      get_variable( out, variable);
                   };
 

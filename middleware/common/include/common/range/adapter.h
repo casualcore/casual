@@ -64,8 +64,8 @@ namespace casual
             //!
             //! @param next `functor` that takes a `range` and "split" it. has to return a tuple [next, rest]
             //!              
-            //! @param range 
-            //! @return a range ada
+            //! @param range the range to "split"
+            //! @return the _range adapter_
             //!
             template< typename F, typename R> 
             auto make( F&& next, R&& range) 

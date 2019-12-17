@@ -55,5 +55,23 @@ namespace casual
          EXPECT_TRUE( range::size( owner) == size);
          EXPECT_TRUE( range::size( range::make( owner)) == size);
       }
+
+      TEST( casual_common_range, reverse)
+      {
+         common::unittest::Trace trace;
+
+         const std::vector< int> owner{ 1, 2, 3, 4, 5, 6};
+
+         auto forward = range::make( owner);
+         auto reverse = range::reverse( forward);
+
+         EXPECT_TRUE(( reverse == std::vector< int>{ 6, 5, 4, 3, 2, 1}));
+
+         EXPECT_TRUE( range::reverse( forward) == reverse);
+         EXPECT_TRUE( range::reverse( reverse) == forward);
+         EXPECT_TRUE( range::reverse( range::reverse( forward)) == forward);
+
+         static_assert( std::is_same< decltype( forward), decltype( range::reverse( range::reverse( forward)))>::value, ""); 
+      }
    } // common
 } // casual

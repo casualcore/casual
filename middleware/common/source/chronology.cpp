@@ -103,6 +103,11 @@ namespace casual
                   template< typename R>
                   platform::time::unit string( R&& value)
                   {
+                     auto is_ws = []( auto c){ return c != ' ';};
+
+                     // trim ws.
+                     value = algorithm::find_if( range::reverse( algorithm::find_if( value, is_ws)), is_ws);
+
                      using time_unit = platform::time::unit;
 
                      auto split = algorithm::divide_if( value, []( auto c)
@@ -142,7 +147,11 @@ namespace casual
                using time_unit = platform::time::unit;
 
                // we split on '+', and provide _next range_ for the range-adapter 
-               auto next_range = []( auto range){ return algorithm::split( range, '+');};
+               auto next_range = []( auto range)
+               { 
+                  range = algorithm::find_if( range, []( auto c){ return c != ' ';});
+                  return algorithm::split( range, '+');
+               };
                
                auto accumulate_time = []( time_unit current, auto range)
                {

@@ -124,7 +124,7 @@ namespace casual
                ASSERT_TRUE( tx_begin() == TX_OK);
             }
 
-            for( auto& xid : common::range::make_reverse( xids))
+            for( auto& xid : common::range::reverse( xids))
             {
                EXPECT_TRUE( tx_commit() == TX_OK);
                EXPECT_TRUE( tx_info( nullptr) == 0);

@@ -109,7 +109,7 @@ namespace casual
                         signal::thread::scope::Mask mask{ signal::set::filled( signal::Type::child)};
 
 
-                        auto pids = algorithm::transform( range::make_reverse( shutdownable), []( const auto& i){
+                        auto pids = algorithm::transform( range::reverse( shutdownable), []( const auto& i){
                            return i.handle;
                         });
 
@@ -125,7 +125,7 @@ namespace casual
                         if( ! shutdownable)
                            return;
 
-                        handle::scale::shutdown( state, algorithm::transform( range::make_reverse( shutdownable), []( const auto& i){
+                        handle::scale::shutdown( state, algorithm::transform( range::reverse( shutdownable), []( const auto& i){
                            return i.handle;
                         }));
                      }
