@@ -705,6 +705,14 @@ namespace casual
          }
 
 
+         template< typename R, typename V>
+         auto replace( R&& range, V&& old_value, V&& new_value)
+         {
+            std::replace( std::begin( range), std::end( range), old_value, new_value);
+            return std::forward< R>( range);
+         }
+
+
          //! appends `range` to `output`.
          //! @return output
          //! @{

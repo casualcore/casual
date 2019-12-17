@@ -48,10 +48,12 @@ namespace casual
             namespace detail
             {
                inline const char* get_name( const char* name) { return name;}
+               inline view::String get_name( view::String name) { return name;}
                inline const char* get_name( const std::string& name) { return name.c_str();}
 
 
                std::string get( const char* name);
+               std::string get( view::String name);
                std::string get( const char* name, std::string alternative);
 
                void set( const char* name, const std::string& value);
@@ -232,8 +234,10 @@ namespace casual
          //!
          //! @return possible altered string with regards to environment variables
          //! @{
-         std::string string( const std::string& value);
-         std::string string( std::string&& value);
+         std::string string( std::string value);
+         //! uses `local` repository first to extract environment values, if not found, the real enviornment is used.
+         std::string string( std::string value, const std::vector< environment::Variable>& local);
+         
          //! @}
 
          //! resets "all" paths to directories and files, based on what 

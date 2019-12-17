@@ -354,6 +354,36 @@ domain:
 
          }
 
+         TEST( casual_domain_manager, simple_server__non_existent_environment__expect_boot)
+         {
+            common::unittest::Trace trace;
+
+            constexpr auto configuration = R"(
+domain:
+  name: simple-server
+  servers:
+    - path: ./bin/test-simple-server
+      instances: 1
+      environment:
+        variables: 
+         - key: PARENT
+           value: foo
+         - key: CHILD
+           value: "${PARENT}/bar"
+
+)";
+
+            unittest::Process manager{ { configuration}};
+
+            auto state = local::call::state();
+
+            ASSERT_TRUE( state.servers.size() == 2) << CASUAL_NAMED_VALUE( state);
+            EXPECT_TRUE( state.servers.at( 0).instances.size() == 1) << CASUAL_NAMED_VALUE( state);
+            EXPECT_TRUE( state.servers.at( 1).instances.size() == 1) << CASUAL_NAMED_VALUE( state);
+            EXPECT_TRUE( state.servers.at( 1).alias == "test-simple-server");
+
+         }
+
          TEST( casual_domain_manager, scale_in___expect__prepare_shutdown_to_service_manager)
          {
             common::unittest::Trace trace;

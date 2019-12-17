@@ -8,6 +8,7 @@
 
 
 #include "common/view/string.h"
+#include "common/traits.h"
 
 #include <string>
 #include <algorithm>
@@ -45,6 +46,8 @@ namespace casual
 
             platform::size::type m_pivot{};
          };
+
+         static_assert( traits::is::string::like< Variable>::value, "environment::Variable should be string-like");
 
       } // environment
    } // common

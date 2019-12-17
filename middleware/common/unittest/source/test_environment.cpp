@@ -92,6 +92,43 @@ namespace casual
 
          EXPECT_TRUE( result == "-Itest/include") << "result: " << result;
       }
+
+      TEST( casual_common_environment, local_repository)
+      {
+         common::unittest::Trace trace;
+
+         std::vector< environment::Variable> local{ { "FOO=foo"}, {"BAR=bar"}};
+
+         auto result = environment::string( "${FOO}${BAR}", local);
+
+         EXPECT_TRUE( result == "foobar") << "result: " << result;
+      }
+
+      TEST( casual_common_environment, local_repository_complex)
+      {
+         common::unittest::Trace trace;
+
+         std::vector< environment::Variable> local{ { "FOO=foo"}, {"BAR=bar"}};
+
+         auto result = environment::string( "a${FOO}b${BAR}c", local);
+
+         EXPECT_TRUE( result == "afoobbarc") << "result: " << result;
+      }
+
+      TEST( casual_common_environment, local_repository__fallback_environment)
+      {
+         common::unittest::Trace trace;
+
+         environment::variable::set( "POOP", "poop");
+
+         std::vector< environment::Variable> local{ { "FOO=foo"}, {"BAR=bar"}};
+
+      
+         auto result = environment::string( "${FOO}${POOP}${BAR}", local);
+
+         EXPECT_TRUE( result == "foopoopbar") << "result: " << result;
+      }      
+
    } // common
 } // casual
 

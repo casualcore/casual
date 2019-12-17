@@ -349,6 +349,7 @@ namespace casual
                template< typename T> 
                using container = traits::bool_constant< 
                   common::traits::is::container::like< traits::remove_cvref_t< T>>::value
+                  && ! common::traits::is::string::like< traits::remove_cvref_t< T>>::value
                   && ! serialize::traits::is::pod< traits::remove_cvref_t< T>>::value
                >; 
             } // is

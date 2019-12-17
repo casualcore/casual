@@ -354,13 +354,13 @@ namespace casual
 
             // We need to expand environment and arguments
             {
-               auto expand_variable = []( auto& variable)
+               auto expand_variable = [&environment]( auto& variable)
                {
-                  variable = environment::string( std::move( variable));
+                  variable = environment::string( variable, environment);
                };
                
-               algorithm::for_each( arguments, expand_variable);
                algorithm::for_each( environment, expand_variable);
+               algorithm::for_each( arguments, expand_variable);
             }
 
             log::line( log::debug, "process::spawn ", path, ' ', arguments);

@@ -108,6 +108,11 @@ namespace casual
                struct
                {
                   std::vector< common::environment::Variable> variables;
+                  
+                  CASUAL_CONST_CORRECT_SERIALIZE
+                  (
+                     CASUAL_SERIALIZE( variables);
+                  )
                } environment;
 
                bool restart = false;
@@ -127,7 +132,7 @@ namespace casual
                   CASUAL_SERIALIZE( note);
 
                   CASUAL_SERIALIZE( memberships);
-                  CASUAL_SERIALIZE_NAME( environment.variables, "environment_variables");
+                  CASUAL_SERIALIZE( environment);
                   CASUAL_SERIALIZE( restart);
                   CASUAL_SERIALIZE( restarts);
                )

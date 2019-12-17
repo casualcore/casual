@@ -9,6 +9,7 @@
 #include "common/exception/system.h"
 #include "common/file.h"
 #include "common/algorithm.h"
+#include "common/range/adapter.h"
 #include "common/log.h"
 #include "common/string.h"
 #include "common/view/string.h"
@@ -123,20 +124,25 @@ namespace casual
                std::string get( const char* name)
                {
                   if( ! exists( name))
-                  {
                      throw exception::system::invalid::Argument( string::compose( "failed to get variable: ",name));
-                  }
+
                   return local::native::Variable::instance().get( name);
                }
-
 
                std::string get( const char* name, std::string alternative)
                {
                   if( exists( name))
-                  {
                      return get( name);
-                  }
+
                   return alternative;
+               }
+
+               std::string get( view::String name)
+               {
+                  // make sure we got null terminator
+                  assert( *std::end( name) == '\0');
+
+                  return get( name.data());
                }
 
                void set( const char* name, const std::string& value)
@@ -348,100 +354,67 @@ namespace casual
          {
             namespace
             {
-               enum class Type
+               template< typename F>
+               std::string string( std::string value, F&& get_variable)
                {
-                  text, token
-               };
+                  std::ostringstream out;
 
-               template< typename T>
-               struct Token
-               {
-
-                  Token( T value, Type type) :
-                     value(std::move(value)), type(type)
+                  auto range = range::make( value);
+                  
+                  // replace all '}' with '\0' to be c-compatible 
+                  algorithm::replace( range, '}', '\0');
+                  
+                  // split the range to _the end of variable_ (if any)
+                  auto next_range = []( auto range){ return algorithm::split( range, '\0');};
+                  auto handle_part = [&out, &get_variable]( auto range)
                   {
-                  }
+                     // find _the end of variable_ (if any).
+                     auto split = algorithm::divide_first( range, "${");
+                     out << view::String{ std::get< 0>( split)};
 
-                  T value;
-                  Type type = Type::text;
-               };
+                     auto variable = view::String{ std::get< 1>( split)};
+                     
+                     if( ! variable)
+                        return;
 
-               template< typename R, typename F, typename L>
-               auto split( R&& range, F&& first, L&& last) -> std::vector< Token< view::String>>
-               {
-                  using token_type = Token< view::String>;
-                  std::vector< token_type> result;
+                     // get rid of "${"
+                     variable.advance( 2);
 
-                  auto splitted = algorithm::divide_first( range, first);
+                     // let the functor take care of extracting the variable
+                     // it might be from a "local repository"
+                     get_variable( out, variable);
+                  };
 
-                  if( std::get< 0>( splitted))
-                  {
-                     result.emplace_back( std::get< 0>( splitted), Type::text);
-                  }
+                  algorithm::for_each( 
+                     range::adapter::make( next_range, range),
+                     handle_part); 
 
-                  auto token = std::get< 1>( splitted);
+                  return std::move( out).str();
 
-                  if( token)
-                  {
-
-                     // We got a split. Make sure we consume 'first-token'
-                     token.advance( view::String( first).size());
-
-                     splitted = algorithm::divide_first( token, last);
-
-                     if( ! std::get< 1>( splitted))
-                     {
-                        // We did not find the 'last-delimiter'
-                        throw exception::system::invalid::Argument{ 
-                           string::compose( "syntax error, such as unbalanced parentheses: ", std::string{ std::begin(range), std::end(range)})};
-                     }
-
-                     result.emplace_back( std::get< 0>( splitted), Type::token);
-
-                     auto next = std::get< 1>( splitted);
-                     next.advance( view::String( last).size());
-
-                     for( auto& value : split( next, first, last))
-                     {
-                        result.push_back( std::move( value));
-                     }
-                  }
-
-                  return result;
                }
 
             } // <unnamed>
          } // local
-
-         std::string string( const std::string& value)
-         {
-            std::string result;
-            result.reserve( value.size());
-
-            for( auto& token : local::split( value, "${", "}"))
-            {
-               switch( token.type)
-               {
-               case local::Type::text:
-               {
-                  result.append( std::begin( token.value), std::end( token.value));
-                  break;
-               }
-               case local::Type::token:
-               {
-                  result += variable::get( std::string{ std::begin( token.value), std::end( token.value)});
-                  break;
-               }
-               }
-            }
-
-            return result;
-         }
          
-         std::string string( std::string&& value)
+         std::string string( std::string value)
          {
-            // TODO: optimize?
-            return string( value);
+            return local::string( std::move( value), []( auto& out, auto variable)
+            {
+               out << variable::get( variable);
+            });
+         }
+
+         std::string string( std::string value, const std::vector< environment::Variable>& local)
+         {
+            return local::string( std::move( value), [&local]( auto& out, auto variable)
+            {
+               auto find_local = [variable]( auto& v){ return v.name() == variable;};
+               // try to find it in local repository first
+               if( auto found = algorithm::find_if( local, find_local))
+                  out << found->value();
+               else
+                  out << variable::get( variable);
+            });
          }
 
          void reset()
