@@ -48,7 +48,6 @@ namespace casual
             domain_process_connect_request,
             domain_process_connect_reply,
 
-
             domain_process_lookup_request,
             domain_process_lookup_reply,
 
@@ -63,6 +62,8 @@ namespace casual
             domain_pending_send_connect = DOMAIN_BASE + 300,
             domain_pending_send_request,
 
+            domain_instance_global_state_request = DOMAIN_BASE + 400,
+            domain_instance_global_state_reply,
 
 
             // Server

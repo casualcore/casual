@@ -42,6 +42,15 @@ namespace casual
             {
                namespace
                {
+                  template< typename E, typename V> 
+                  auto spawn( const E& executable, platform::size::type index, V variables) // note: copy of variables
+                  {
+                     // add casual information for the process.
+                     variables.emplace_back( string::compose( environment::variable::name::instance::index, '=', index));
+
+                     return common::process::spawn( executable.path, executable.arguments, std::move( variables));
+                  }
+
                   namespace scale
                   {
                      template< typename E>
@@ -56,11 +65,23 @@ namespace casual
 
                         try
                         {
-                           common::algorithm::for_each( spawnable, [&]( auto& i){
-                              i.spawned( common::process::spawn(
-                                    executable.path, executable.arguments, state.variables( executable)));
-                           });
+                           auto variables = state.variables( executable);
+                           variables.emplace_back( string::compose( environment::variable::name::instance::alias, '=', executable.alias));
 
+                           auto calculate_instance_index = [&executable]( auto& range)
+                           {
+                              return std::distance( std::begin( executable.instances), std::begin( range));
+                           };
+
+                           // temporary to enable increment
+                           auto range = spawnable;
+
+                           while( range)
+                           {
+                              range->spawned( local::spawn( executable, calculate_instance_index( range), variables));
+                              ++range;
+                           }
+                           
                            log::line( verbose::log, "spawnable: ", spawnable);
 
                            manager::task::event::dispatch( state, [&]()

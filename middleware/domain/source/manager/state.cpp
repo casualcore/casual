@@ -79,7 +79,7 @@ namespace casual
                         using state_type = typename I::value_type::state_type;
 
                         return algorithm::sorted::subrange( instances, []( auto& i){
-                           return i.state ==  state_type::scale_out && ! common::process::id( i.handle);
+                           return i.state == state_type::scale_out && ! common::process::id( i.handle);
                         });
                      }
 

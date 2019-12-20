@@ -23,28 +23,27 @@ namespace casual
          {
             Variable() = default;
             inline Variable( std::string variable) 
-               : std::string( std::move( variable)), m_pivot{ variable_pivot( *this)}
+               : std::string( std::move( variable))
             {}
 
-            inline view::String name() const { return { data(), m_pivot};}
+
+
+            inline view::String name() const { return { data(), data() + find_pivot( *this)};}
             inline view::String value() const 
             {  
-               if( m_pivot == range::size( *this)) 
+               auto pivot = find_pivot( *this);
+
+               if( pivot == size()) 
                   return {};
 
-               auto first = data() + m_pivot + 1;
-               auto last = data() + size();
-               return { first, last};
+               return { data() + pivot + 1,  data() + size()};
             }
 
          private:
-            static platform::size::type variable_pivot( const std::string& value)
+            static std::size_t find_pivot( const std::string& value)
             {
-               auto found = std::find( std::begin( value), std::end( value), '=');
-               return std::distance( std::begin( value), found);
+               return std::distance( std::begin( value), std::find( std::begin( value), std::end( value), '='));
             }
-
-            platform::size::type m_pivot{};
          };
 
          static_assert( traits::is::string::like< Variable>::value, "environment::Variable should be string-like");

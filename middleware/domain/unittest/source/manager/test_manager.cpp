@@ -354,7 +354,97 @@ domain:
 
          }
 
-         TEST( casual_domain_manager, simple_server__non_existent_environment__expect_boot)
+         namespace local
+         {
+            namespace
+            {
+               auto get_variable_checker = []( auto& process)
+               {
+                  common::message::domain::instance::global::state::Request message;
+                  message.process = common::process::handle();
+                  auto reply = common::communication::ipc::call( process.ipc, message);
+
+                  
+                  return [reply = std::move( reply)]( std::string key, std::string value)
+                  {
+                     auto found = common::algorithm::find_if( reply.environment.variables, [&key]( auto& v){ return v.name() == key;});
+
+                     EXPECT_TRUE( found) << "key: " << key << ", value: " << value << ", " << CASUAL_NAMED_VALUE( reply.environment.variables);
+                     
+                     if( found)
+                     {
+                        if( found->value() == value)
+                           return true;
+                        else
+                           ADD_FAILURE() << "found: " << *found;
+                     }
+                     
+                     return false;
+                  };
+
+               };
+            } // <unnamed>
+         } // local
+
+         TEST( casual_domain_manager, simple_server__1_instance__CASUAL_INSTANCE_ALIAS__CASUAL_INSTANCE_NUMBER)
+         {
+            common::unittest::Trace trace;
+
+            constexpr auto configuration = R"(
+domain:
+  name: simple-server
+  servers:
+    - path: ./bin/test-simple-server
+      alias: foo
+      instances: 1
+)";
+
+            unittest::Process manager{ { configuration}};
+
+            auto state = local::call::state();
+
+            // get environment variables
+            auto checker = local::get_variable_checker( state.servers.at( 1).instances.at( 0).handle);
+            EXPECT_TRUE( checker( environment::variable::name::instance::alias, "foo"));
+            EXPECT_TRUE( checker( environment::variable::name::instance::index, "0"));
+
+         }
+
+         TEST( casual_domain_manager, simple_server__10_instance__CASUAL_INSTANCE_ALIAS__CASUAL_INSTANCE_NUMBER)
+         {
+            common::unittest::Trace trace;
+
+            constexpr auto configuration = R"(
+domain:
+  name: simple-server
+  servers:
+    - path: ./bin/test-simple-server
+      alias: foo
+      instances: 10
+)";
+
+            unittest::Process manager{ { configuration}};
+
+            auto state = local::call::state();
+
+            EXPECT_TRUE( state.servers.at( 1).instances.size() == 10);
+
+            auto number = 0;
+
+            auto order_spawnpoint = []( auto& l, auto& r){ return l.spawnpoint < r.spawnpoint;};
+
+            for( auto& instance : algorithm::sort( state.servers.at( 1).instances, order_spawnpoint))
+            {
+               // get environment variables for the instance
+               auto checker = local::get_variable_checker( instance.handle);
+               EXPECT_TRUE( checker( environment::variable::name::instance::alias, "foo"));
+               EXPECT_TRUE( checker( environment::variable::name::instance::index, std::to_string( number))) << CASUAL_NAMED_VALUE( instance);
+
+               ++number;
+            }
+         }         
+
+         TEST( casual_domain_manager, simple_server__nested_environment_variables__expect_boot)
          {
             common::unittest::Trace trace;
 
@@ -381,6 +471,15 @@ domain:
             EXPECT_TRUE( state.servers.at( 0).instances.size() == 1) << CASUAL_NAMED_VALUE( state);
             EXPECT_TRUE( state.servers.at( 1).instances.size() == 1) << CASUAL_NAMED_VALUE( state);
             EXPECT_TRUE( state.servers.at( 1).alias == "test-simple-server");
+
+            auto& simple = state.servers.at( 1);
+            ASSERT_TRUE( simple.alias == "test-simple-server");
+            EXPECT_TRUE( simple.instances.size() == 1) << CASUAL_NAMED_VALUE( simple);
+
+            // get environment variables
+            auto checker = local::get_variable_checker( simple.instances.at( 0).handle);
+            EXPECT_TRUE( checker( "PARENT", "foo"));
+            EXPECT_TRUE( checker( "CHILD", "foo/bar"));
 
          }
 

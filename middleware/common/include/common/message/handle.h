@@ -10,6 +10,7 @@
 
 
 #include "common/message/server.h"
+#include "common/message/domain.h"
 #include "common/process.h"
 #include "common/log.h"
 
@@ -51,6 +52,14 @@ namespace casual
                void operator () ( message_type& message);
             };
 
+            namespace global
+            {
+               struct State 
+               {
+                  void operator () ( const message::domain::instance::global::state::Request& message);
+               };
+            } // global
+
             //! Dispatch and assigns a given message
             template< typename M>
             struct Assign
@@ -72,6 +81,7 @@ namespace casual
             {
                return Assign< M>{ message};
             }
+
 
 
          } // handle

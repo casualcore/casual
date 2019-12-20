@@ -193,6 +193,12 @@ namespace casual
                   constexpr auto porcelain() { return "CASUAL_TERMINAL_PORCELAIN";}
                } // log
 
+               namespace instance
+               {
+                  constexpr auto alias = "CASUAL_INSTANCE_ALIAS";
+                  constexpr auto index = "CASUAL_INSTANCE_INDEX";
+               } // instance
+
 
             } // name
          } // variable

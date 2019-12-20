@@ -22,7 +22,8 @@ namespace casual
 
             auto handler = common::communication::ipc::inbound::device().handler(
                   common::message::handle::Ping{},
-                  common::message::handle::Shutdown{}
+                  common::message::handle::Shutdown{},
+                  common::message::handle::global::State{}
             );
 
             common::message::dispatch::blocking::pump( handler, common::communication::ipc::inbound::device());

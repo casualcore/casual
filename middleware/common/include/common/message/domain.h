@@ -387,7 +387,7 @@ namespace casual
                         })
                      };
 
-                     using base_reply = basic_request< Type::domain_process_prepare_shutdown_reply>;
+                     using base_reply = basic_reply< Type::domain_process_prepare_shutdown_reply>;
                      struct Reply : base_reply
                      {
                         using base_reply::base_reply;
@@ -405,6 +405,41 @@ namespace casual
                   } // shutdown
                } // prepare
             } // process
+
+            namespace instance
+            {
+               namespace global
+               {
+                  namespace state
+                  {
+                     using Request = basic_request< Type::domain_instance_global_state_request>;
+                     
+                     using base_reply = basic_reply< Type::domain_instance_global_state_reply>;
+                     struct Reply : base_reply
+                     {
+                        using base_reply::base_reply;
+
+                        struct 
+                        {
+                           std::vector< environment::Variable> variables;
+                           
+                           CASUAL_CONST_CORRECT_SERIALIZE(
+                           {
+                              CASUAL_SERIALIZE( variables);
+                           })
+                           
+                        } environment;
+
+                        CASUAL_CONST_CORRECT_SERIALIZE(
+                        {
+                           base_reply::serialize( archive);
+                           CASUAL_SERIALIZE( environment);
+                        })
+                     };
+                     
+                  } // state
+               } // global
+            } // instance
          } // domain
 
          namespace reverse
@@ -425,6 +460,8 @@ namespace casual
             template<>
             struct type_traits< domain::process::prepare::shutdown::Request> : detail::type< domain::process::prepare::shutdown::Reply> {};
 
+            template<>
+            struct type_traits< domain::instance::global::state::Request> : detail::type< domain::instance::global::state::Reply> {};
 
          } // reverse
 

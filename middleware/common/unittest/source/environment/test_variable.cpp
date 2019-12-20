@@ -34,6 +34,16 @@ namespace casual
             EXPECT_TRUE( variable.value() == "VALUE");
          }
 
+         TEST( common_environment_variable, string_name_value)
+         {
+            common::unittest::Trace trace;
+
+            Variable variable{ "NAME=value"};
+            EXPECT_TRUE( ! variable.empty());
+            EXPECT_TRUE( variable.name() == std::string{ "NAME"});
+            EXPECT_TRUE( variable.value() == std::string{ "value"});
+         }
+
 
          TEST( common_environment_variable, name_empty_value)
          {

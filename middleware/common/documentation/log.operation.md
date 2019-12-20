@@ -56,7 +56,7 @@ domain name    | name of the domain that wrote the line
 execution id   | uuid that correlates an execution path
 process id     | pid of the process that wrote the line
 thread id      | id of the thread that wrote the line
-process name   | _basename_ of the executable that wrote the line
+process name   | configured alias of server/executable or _basename_ of the executable that wrote the line
 trid           | id of the transaction that was active when the line was logged
 parent service | the service that is the caller to the current service
 service        | name of the current invoked service
