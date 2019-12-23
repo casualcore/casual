@@ -9,7 +9,7 @@
 #include "gateway/common.h"
 
 #include "common/algorithm.h"
-#include "common/environment.h"
+#include "common/environment/normalize.h"
 
 namespace casual
 {
@@ -31,10 +31,12 @@ namespace casual
                   {
                      manager::state::outbound::Connection result;
 
-                     result.address.peer = common::environment::string( connection.address);
+                     result.address.peer = connection.address;
                      result.restart = connection.restart;
                      result.services = std::move( connection.services);
                      result.queues = std::move( connection.queues);
+
+                     environment::normalize( result);
 
                      return result;
                   }

@@ -15,6 +15,7 @@
 #include "common/signal.h"
 #include "common/string.h"
 #include "common/environment.h"
+#include "common/environment/normalize.h"
 #include "common/uuid.h"
 
 #include "common/message/domain.h"
@@ -344,7 +345,11 @@ namespace casual
          {
             Trace trace{ "process::spawn"};
 
-            path = environment::string( std::move( path));
+            // We need to expand environment and arguments
+            environment::normalize( environment, environment);
+            environment::normalize( path, environment);
+            environment::normalize( arguments, environment);
+            
 
             // check if path exist and process has permission to execute it.
             // could still go wrong, since we don't know if the path will actually execute,
@@ -352,16 +357,6 @@ namespace casual
             if( ! file::permission::execution( path))
                throw exception::system::invalid::Argument( string::compose( "spawn failed - path: ", path));
 
-            // We need to expand environment and arguments
-            {
-               auto expand_variable = [&environment]( auto& variable)
-               {
-                  variable = environment::string( variable, environment);
-               };
-               
-               algorithm::for_each( environment, expand_variable);
-               algorithm::for_each( arguments, expand_variable);
-            }
 
             log::line( log::debug, "process::spawn ", path, ' ', arguments);
             log::line( verbose::log, "environment: ", environment);

@@ -235,16 +235,6 @@ namespace casual
             } // singleton
          } // domain
 
-         //! Parses value for environment variables with format @p ${<variable>}
-         //! and tries to find and replace the variable from environment.
-         //!
-         //! @return possible altered string with regards to environment variables
-         //! @{
-         std::string string( std::string value);
-         //! uses `local` repository first to extract environment values, if not found, the real enviornment is used.
-         std::string string( std::string value, const std::vector< environment::Variable>& local);
-         
-         //! @}
 
          //! resets "all" paths to directories and files, based on what 
          //! environment variables are present.

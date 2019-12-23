@@ -46,12 +46,17 @@ namespace casual
 
             struct Domain 
             {
+               Domain( std::string configuration) 
+                  : domain{ { std::move( configuration)}} {}
 
-               domain::manager::unittest::Process domain{ { Domain::configuration}};
+               Domain() : Domain{ Domain::configuration} {}
+
+               domain::manager::unittest::Process domain;
 
                static constexpr auto configuration = R"(
 domain: 
    name: queue-domain
+
 
    groups: 
       - name: base
@@ -658,6 +663,73 @@ domain:
          EXPECT_TRUE( cleared.at( 0).count == 5);
 
          EXPECT_TRUE( local::call::messages( "queueA1").empty());
+      }
+
+      TEST( casual_queue, configure_with_enviornment_variables)
+      {
+         common::unittest::Trace trace;
+
+         constexpr auto configuration = R"(
+domain: 
+   name: queue-domain
+
+   default:
+      environment:
+         variables:
+            - key: Q_GROUP_PREFIX
+              value: "group."
+            - key: Q_BASE
+              value: ":memory:"
+            - key: Q_PREFIX
+              value: "casual."
+            - key: Q_POSTFIX
+              value: ".queue"
+
+   groups: 
+      - name: base
+      - name: queue
+        dependencies: [ base]
+   
+   servers:
+      - path: "${CASUAL_HOME}/bin/casual-service-manager"
+        memberships: [ base]
+      - path: "${CASUAL_HOME}/bin/casual-transaction-manager"
+        memberships: [ base]
+      - path: "./bin/casual-queue-manager"
+        memberships: [ queue]
+
+   queue:
+      groups:
+         - name: "${Q_GROUP_PREFIX}A"
+           queuebase: "${Q_BASE}"
+           queues:
+            - name: ${Q_PREFIX}a1${Q_POSTFIX}
+            - name: ${Q_PREFIX}a2${Q_POSTFIX}
+            - name: ${Q_PREFIX}a3${Q_POSTFIX}
+
+)";
+
+
+         local::Domain domain{ configuration};
+
+         auto state = local::call::state();
+
+         ASSERT_TRUE( state.groups.size() == 1) << CASUAL_NAMED_VALUE( state);
+         auto& group = state.groups.at( 0);
+         EXPECT_TRUE( group.name == "group.A");
+         EXPECT_TRUE( group.queuebase == ":memory:");
+         
+         auto order_queue = []( auto& l, auto& r){ return l.name < r.name;};
+         common::algorithm::sort( state.queues, order_queue);
+         ASSERT_TRUE( state.queues.size() == 6) << CASUAL_NAMED_VALUE( state.queues);
+
+         EXPECT_TRUE( state.queues.at( 0).name == "casual.a1.queue");
+         EXPECT_TRUE( state.queues.at( 1).name == "casual.a1.queue.error");
+         EXPECT_TRUE( state.queues.at( 2).name == "casual.a2.queue");
+         EXPECT_TRUE( state.queues.at( 3).name == "casual.a2.queue.error");
+         EXPECT_TRUE( state.queues.at( 4).name == "casual.a3.queue");
+         EXPECT_TRUE( state.queues.at( 5).name == "casual.a3.queue.error");
+
       }
 
 /*

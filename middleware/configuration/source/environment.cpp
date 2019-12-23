@@ -6,9 +6,10 @@
 
 
 #include "configuration/environment.h"
+
+#include "common/environment/string.h"
 #include "common/environment.h"
 #include "common/algorithm.h"
-
 #include "common/serialize/create.h"
 
 namespace casual

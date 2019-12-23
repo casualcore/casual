@@ -202,6 +202,40 @@ domain:
          
       }
 
+      TEST( service_manager, env_variables__advertise_A__route_B_A__expect_lookup_for_B)
+      {
+         common::unittest::Trace trace;
+
+         constexpr auto configuration = R"(
+domain:
+   name: route-domain
+   default:
+      environment:
+         variables:
+            - key: SA
+              value: A
+            - key: SB
+              value: B
+   servers:
+      - path: "./bin/casual-service-manager"
+        arguments: [ "--forward", "./bin/casual-service-forward"]
+
+   services:
+      - name: ${SA}
+        routes: [ "${SB}"]
+
+)";
+
+         local::Domain domain{ configuration};
+
+         service::unittest::advertise( { "A"});
+
+         auto state = local::call::state();
+
+         EXPECT_TRUE( local::has_services( state.services, { "B"})) << "state.services: " << state.services;
+         EXPECT_TRUE( ! local::has_services( state.services, { "A"})) << "state.services: " << state.services;
+         
+      }
 
       TEST( service_manager, advertise_2_services_for_1_server)
       {

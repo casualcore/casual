@@ -17,6 +17,7 @@
 #include "common/algorithm.h"
 #include "common/process.h"
 #include "common/environment.h"
+#include "common/environment/normalize.h"
 #include "common/exception/signal.h"
 #include "common/exception/handle.h"
 #include "common/event/send.h"
@@ -57,13 +58,11 @@ namespace casual
                      );
 
                      // We ask the domain manager for configuration
-                     {
-                        common::message::domain::configuration::Request request;
-                        request.process = common::process::handle();
+                     result.configuration = common::communication::ipc::call(
+                        common::communication::instance::outbound::domain::manager::device(), 
+                        common::message::domain::configuration::Request{ common::process::handle()}).domain.queue;
 
-                        result.configuration = common::communication::ipc::call(
-                           common::communication::instance::outbound::domain::manager::device(), request).domain.queue;
-                     }
+                     common::environment::normalize( result.configuration);
 
                      return result;
                   }
@@ -135,7 +134,8 @@ namespace casual
       } // manager
 
 
-      Manager::Manager( manager::Settings settings) : m_state{ manager::local::transform::state( settings)}
+      Manager::Manager( manager::Settings settings) 
+         : m_state{ manager::local::transform::state( settings)}
       {
          Trace trace( "queue::Manager::Manager");
 

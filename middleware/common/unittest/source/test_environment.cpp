@@ -9,6 +9,7 @@
 #include "common/unittest.h"
 
 #include "common/environment.h"
+#include "common/environment/string.h"
 #include "common/exception/system.h"
 
 

@@ -108,8 +108,10 @@ casual_common_objectfiles = [
     Compile( 'source/exception/tx.cpp'),
     Compile( 'source/exception/xatmi.cpp'),
 
-    Compile( 'source/uuid.cpp'),
     Compile( 'source/environment.cpp'),
+    Compile( 'source/environment/string.cpp'),
+
+    Compile( 'source/uuid.cpp'),
     Compile( 'source/file.cpp'),
     Compile( 'source/string.cpp'),
     Compile( 'source/signal.cpp'),

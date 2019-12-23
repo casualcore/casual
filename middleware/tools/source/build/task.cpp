@@ -8,7 +8,9 @@
 #include "tools/common.h"
 
 #include "common/algorithm.h"
-#include "common/environment.h"
+#include "common/environment/string.h"
+#include "common/process.h"
+#include "common/exception/system.h"
 
 #include <iostream>
 

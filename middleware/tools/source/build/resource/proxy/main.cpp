@@ -8,6 +8,7 @@
 
 #include "common/argument.h"
 #include "common/environment.h"
+#include "common/environment/string.h"
 #include "common/file.h"
 #include "common/uuid.h"
 #include "common/string.h"

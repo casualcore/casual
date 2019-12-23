@@ -56,7 +56,7 @@ namespace casual
                   }
                } // forward
 
-               common::message::domain::configuration::service::Manager domain()
+               auto domain()
                {
                   Trace trace{ "service::local::configure::domain"};
 
@@ -65,7 +65,7 @@ namespace casual
                      common::message::domain::configuration::Request{ process::handle()}).domain.service;
                }
 
-               manager::State state( manager::Settings settings)
+               auto state( manager::Settings settings)
                {
                   Trace trace{ "service::local::configure::state"};
 

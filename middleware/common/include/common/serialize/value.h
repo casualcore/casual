@@ -381,7 +381,7 @@ namespace casual
                auto read( A& archive, C& container, const char* name) ->
                   std::enable_if_t< common::traits::is::container::associative::like< traits::remove_cvref_t< C>>::value, bool>
                {
-                  auto properties = archive.container_start( 0, name);
+                  auto properties = archive.container_start( container.size(), name);
 
                   if( std::get< 1>( properties))
                   {
@@ -406,7 +406,7 @@ namespace casual
                auto read( A& archive, C& container, const char* name) ->
                   std::enable_if_t< common::traits::is::container::sequence::like< traits::remove_cvref_t< C>>::value, bool>
                {
-                  auto properties = archive.container_start( 0, name);
+                  auto properties = archive.container_start( container.size(), name);
 
                   if( std::get< 1>( properties))
                   {

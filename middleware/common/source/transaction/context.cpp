@@ -10,6 +10,7 @@
 #include "common/communication/ipc.h"
 #include "common/communication/instance.h"
 #include "common/environment.h"
+#include "common/environment/normalize.h"
 #include "common/process.h"
 #include "common/log.h"
 #include "common/algorithm.h"
@@ -85,17 +86,13 @@ namespace casual
                   {
                      Trace trace{ "transaction::local::resource::configuration"};
 
-
                      message::transaction::resource::lookup::Request request;
                      request.process = process::handle();
                      request.resources = std::move( names);
 
                      auto reply = communication::ipc::call( communication::instance::outbound::transaction::manager::device(), request);
 
-                     common::algorithm::for_each( reply.resources, []( auto& r){
-                        r.openinfo = common::environment::string( r.openinfo);
-                        r.closeinfo = common::environment::string( r.closeinfo);
-                     });
+                     common::environment::normalize( reply);
 
                      return reply;
                   }

@@ -9,7 +9,7 @@
 
 #include "common/transaction/resource.h"
 #include "common/transaction/id.h"
-#include "common/environment.h"
+#include "common/environment/string.h"
 
 #include "common/log/category.h"
 #include "common/flag.h"

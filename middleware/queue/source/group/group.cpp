@@ -44,9 +44,7 @@ namespace casual
 
             auto correlate_id = [existing = std::move( existing)]( auto& queue)
             {
-               auto found = algorithm::find( existing, queue.name);
-
-               if( found)
+               if( auto found = algorithm::find( existing, queue.name))
                {
                   queue.id = found->id;
                   queue.error = found->error;
@@ -57,7 +55,10 @@ namespace casual
             log::line( verbose::log, "reply.queues: ", reply.queues);
             
             // if something goes wrong we send fatal event
-            event::guard::fatal( [&](){ m_state.queuebase.update( std::move( reply.queues), {});});
+            event::guard::fatal( [&]()
+            { 
+               m_state.queuebase.update( std::move( reply.queues), {});
+            });
 
 
             // TODO: What to do with existing queues that has messages?

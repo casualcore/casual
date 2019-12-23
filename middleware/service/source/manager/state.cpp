@@ -12,6 +12,7 @@
 #include "common/server/service.h"
 #include "common/server/lifetime.h"
 #include "common/algorithm.h"
+#include "common/environment/normalize.h"
 
 #include "common/process.h"
 
@@ -236,6 +237,8 @@ namespace casual
          {
             Trace trace{ "service::manager::State::State"};
 
+            common::environment::normalize( configuration);
+
             auto add_service = [&]( auto& service)
             {
                common::message::service::call::Service message;
@@ -243,18 +246,17 @@ namespace casual
                message.name = service.name;
 
                if( service.routes.empty())
-                  services.emplace( service.name, std::move( message));
+                  services.emplace( std::move( service.name), std::move( message));
                else 
                {
                   for( auto& route : service.routes)
                      services.emplace( route, message);
 
-                  routes.emplace( service.name, std::move( service.routes));
+                  routes.emplace( message.name, std::move( service.routes));
                }
             };
 
             algorithm::for_each( configuration.services, add_service);
-
          }
 
          state::Service& State::service( const std::string& name)

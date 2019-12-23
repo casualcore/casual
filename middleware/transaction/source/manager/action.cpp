@@ -12,6 +12,7 @@
 
 #include "common/process.h"
 #include "common/environment.h"
+#include "common/environment/normalize.h"
 #include "common/server/handle/call.h"
 #include "common/event/send.h"
 #include "common/communication/instance.h"
@@ -40,12 +41,10 @@ namespace casual
                State state{ common::environment::string( std::move( settings.log))};
 
                // fetch configuration from domain-manager
-               auto configuration = []()
-               {
-                  common::message::domain::configuration::Request request;
-                  request.process = process::handle();
-                  return communication::ipc::call( communication::instance::outbound::domain::manager::device(), request);
-               }();
+               auto configuration = environment::normalize( communication::ipc::call( 
+                  communication::instance::outbound::domain::manager::device(),
+                  common::message::domain::configuration::Request{ process::handle()}));
+                  
 
                {
                   Trace trace{ "transaction manager xa-switch configuration"};
