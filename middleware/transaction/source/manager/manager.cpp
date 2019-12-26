@@ -51,10 +51,7 @@ namespace casual
                manager::action::resource::Instances( m_state));
 
             // Make sure we wait for the resources to get ready
-            auto handler = manager::ipc::device().handler(
-               common::message::handle::Shutdown{},
-               manager::handle::process::Exit{ m_state},
-               manager::handle::resource::reply::Connect{ m_state});
+            auto handler = manager::handle::startup::handlers( m_state);
 
             while( ! m_state.booted())
                handler( manager::ipc::device().blocking_next( handler.types()));

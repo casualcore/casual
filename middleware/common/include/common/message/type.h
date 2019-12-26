@@ -23,8 +23,12 @@ namespace casual
    {
       namespace message
       {
+
          enum class Type : platform::ipc::message::type
          {
+            // names that has a explicit assigned value is _pinned_ 
+            // and if changed we break interdomain protocol. 
+
             // message type can't be 0!
             // We use 0 to indicate absent message
             absent_message = 0,
@@ -37,7 +41,7 @@ namespace casual
             delay_message,
             inbound_ipc_connect,
 
-            process_spawn_request = 600,
+            process_spawn_request = 600, // not pinned 
             process_lookup_request,
             process_lookup_reply,
 
@@ -81,16 +85,16 @@ namespace casual
             service_name_lookup_reply,
             service_name_lookup_discard_request,
             service_name_lookup_discard_reply,
-            service_call = SERVICE_BASE + 100,
-            service_reply,
+            service_call   = 3100,
+            service_reply  = 3101,
             service_acknowledge,
 
             service_concurrent_advertise,
 
-            service_conversation_connect_request = SERVICE_BASE + 200,
-            service_conversation_connect_reply,
-            service_conversation_send,
-            service_conversation_disconnect,
+            service_conversation_connect_request = 3200,
+            service_conversation_connect_reply   = 3201,
+            service_conversation_send            = 3202,
+            service_conversation_disconnect      = 3203,
 
 
             // event messages
@@ -130,6 +134,11 @@ namespace casual
             transaction_manager_connect_reply,
             transaction_manager_configuration,
             transaction_manager_ready,
+
+            transaction_resource_proxy_configuration_request = TRANSACTION_BASE + 20,
+            transaction_resource_proxy_configuration_reply,
+            transaction_resource_proxy_ready,
+
             transaction_begin_request = TRANSACTION_BASE + 100,
             transaction_begin_reply,
             transaction_commit_request,
@@ -138,13 +147,13 @@ namespace casual
             transaction_rollback_reply,
             transaction_generic_reply,
 
-            transaction_resource_connect_reply = TRANSACTION_BASE + 200,
-            transaction_resource_prepare_request,
-            transaction_resource_prepare_reply,
-            transaction_resource_commit_request,
-            transaction_resource_commit_reply,
-            transaction_resource_rollback_request,
-            transaction_resource_rollback_reply,
+            // pinned message types,
+            transaction_resource_prepare_request  = 5201,
+            transaction_resource_prepare_reply    = 5202,
+            transaction_resource_commit_request   = 5203,
+            transaction_resource_commit_reply     = 5204,
+            transaction_resource_rollback_request = 5205,   
+            transaction_resource_rollback_reply   = 5206,
 
             transaction_resource_lookup_request = TRANSACTION_BASE + 300,
             transaction_resource_lookup_reply,
@@ -161,10 +170,10 @@ namespace casual
             queue_connect_request,
             queue_connect_reply,
             queue_advertise,
-            queue_enqueue_request = QUEUE_BASE + 100,
-            queue_enqueue_reply,
-            queue_dequeue_request = QUEUE_BASE + 200,
-            queue_dequeue_reply,
+            queue_enqueue_request  = 6100,
+            queue_enqueue_reply    = 6101,
+            queue_dequeue_request  = 6200,
+            queue_dequeue_reply    = 6201,
             queue_dequeue_forget_request,
             queue_dequeue_forget_reply,
 
@@ -191,17 +200,17 @@ namespace casual
             
             // gateway
             GATEWAY_BASE = 7000,
-            gateway_outbound_configuration_request,
-            gateway_outbound_configuration_reply,
-            gateway_outbound_connect,
-            gateway_inbound_connect,
+            gateway_outbound_configuration_request = GATEWAY_BASE,
+            gateway_outbound_configuration_reply, 
+            gateway_outbound_connect, 
+            gateway_inbound_connect, 
 
             gateway_outbound_connect_done,
 
-            gateway_domain_connect_request = GATEWAY_BASE + 200,
-            gateway_domain_connect_reply,
-            gateway_domain_discover_request = GATEWAY_BASE + 300,
-            gateway_domain_discover_reply,
+            gateway_domain_connect_request  = 7200,
+            gateway_domain_connect_reply    = 7201,
+            gateway_domain_discover_request = 7300,
+            gateway_domain_discover_reply   = 7301,
             gateway_domain_discover_accumulated_reply,
             gateway_domain_advertise,
             gateway_domain_id,

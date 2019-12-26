@@ -67,7 +67,7 @@ namespace casual
                   {
                      state::resource::Proxy proxy{ state::resource::Proxy::generate_id{}};
 
-                     proxy.name = common::coalesce( r.name, ".rm-" + std::to_string( proxy.id.value()));
+                     proxy.name = common::coalesce( r.name, common::string::compose( ".rm.", r.key, '.', proxy.id.value()));
                      proxy.concurency = r.instances;
                      proxy.key = r.key;
                      proxy.openinfo = r.openinfo;
@@ -112,6 +112,8 @@ namespace casual
 
                   if( count > 0)
                   {
+                     // let the _instance name_ be the proxy name. It might help reading the log
+                     environment::Variable variable{ string::compose( environment::variable::name::instance::alias, '=', proxy.name)};
                      while( count-- > 0)
                      {
                         auto& info = m_state.resource_properties.at( proxy.key);
@@ -122,14 +124,12 @@ namespace casual
                         try
                         {
                            instance.process.pid = process::spawn(
-                                 info.server,
-                                 {
-                                       "--rm-key", info.key,
-                                       "--rm-openinfo", proxy.openinfo,
-                                       "--rm-closeinfo", proxy.closeinfo,
-                                       "--rm-id", std::to_string( proxy.id.value()),
-                                 }
-                              );
+                              info.server,
+                              {
+                                 "--id", std::to_string( proxy.id.value()),
+                              },
+                              { variable}
+                           );
 
                            instance.state( state::resource::Proxy::Instance::State::started);
 

@@ -29,15 +29,10 @@ namespace casual
             struct Settings
             {
                common::strong::resource::id::value_type id;
-               std::string key;
-               std::string openinfo;
-               std::string closeinfo;
             };
 
             struct State
             {
-               State( Settings&& settings, casual_xa_switch_mapping* switches);
-
                common::transaction::Resource resource;
             };
          } // proxy 
@@ -47,7 +42,7 @@ namespace casual
          {
          public:
 
-            Proxy( proxy::Settings&& settings, casual_xa_switch_mapping* switches);
+            Proxy( proxy::Settings settings, casual_xa_switch_mapping* switches);
             ~Proxy();
 
             void start();
@@ -58,12 +53,7 @@ namespace casual
             proxy::State m_state;
          };
 
-
-
       } // resource
-
    } // transaction
-
 } // casual
-
 

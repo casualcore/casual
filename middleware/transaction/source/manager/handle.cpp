@@ -79,6 +79,7 @@ namespace casual
                      try
                      {
                         ipc::device().blocking_send( device, message);
+                        common::log::line( verbose::log, "sent message: ", message);
                      }
                      catch( const common::exception::system::communication::Unavailable&)
                      {
@@ -1021,55 +1022,6 @@ namespace casual
                      }
                   }
 
-                  void Connect::operator () ( message_type& message)
-                  {
-                     Trace trace{ "transaction::handle::resource::connect reply"};
-
-                     common::log::line( verbose::log, "message: ", message);
-
-                     try
-                     {
-                        auto& instance = m_state.get_instance( message.resource, message.process.pid);
-                        instance.process = message.process;
-
-                        if( message.state == common::code::xa::ok)
-                        {
-                           local::instance::done( m_state, instance);
-                        }
-                        else
-                        {
-                           common::log::line( common::log::category::error, "resource proxy: ", message.process, " startup error ", message.state);
-                           common::log::line( common::log::category::verbose::error, "message: ", message);
-
-                           instance.state( state::resource::Proxy::Instance::State::error);
-                           //throw common::exception::signal::Terminate{};
-                           // TODO: what to do?
-                        }
-                     }
-                     catch( common::exception::system::invalid::Argument&)
-                     {
-                        common::log::line( common::log::category::error, "unexpected resource connecting: ", message.process, " - action: discard");
-                        common::log::line( common::log::category::verbose::error, "message: ", message);
-                        common::log::line( common::log::category::verbose::error, "resources: ", m_state.resources);
-                     }
-
-
-                     if( ! m_connected && common::algorithm::all_of( m_state.resources, state::filter::Running{}))
-                     {
-                        // We now have enough resource proxies up and running to guarantee consistency
-                        // notify broker
-                        /*
-
-                        log << "enough resources are connected - send connect to broker\n";
-
-                        common::message::transaction::manager::Ready running;
-                        running.process = common::process::handle();
-                        ipc::device().blocking_send( common::communication::ipc::broker::device(), running);
-                        */
-
-                        m_connected = true;
-                     }
-                  }
 
                   bool basic_prepare::operator () ( message_type& message, Transaction& transaction)
                   {
@@ -1081,7 +1033,6 @@ namespace casual
 
                      return transaction.implementation.prepare( m_state, message, transaction);
                   }
-
 
 
                   bool basic_commit::operator () ( message_type& message, Transaction& transaction)
@@ -1654,6 +1605,72 @@ namespace casual
                } // reply
             }
 
+            namespace local
+            {
+               // this is a better _idiom_ to create handlers. Less boilerplate
+               // and local scope.
+               // TODO: maintainence - convert all the above to this _idiom_,
+               namespace
+               {
+                  namespace resource
+                  {
+                     namespace configuration
+                     {
+                        auto request( State& state)
+                        {
+                           return [&state]( const common::message::transaction::resource::configuration::Request& message)
+                           {
+                              Trace trace{ "transaction::handle::local::resource::configuration::request"};
+                              common::log::line( log, "message: ", message);
+
+                              auto reply = common::message::reverse::type( message);
+
+                              {
+                                 auto& resource = state.get_resource( message.id);
+                                 reply.resource.id = message.id;
+                                 reply.resource.key = resource.key;
+                                 reply.resource.openinfo = resource.openinfo;
+                                 reply.resource.closeinfo = resource.closeinfo;
+                              }
+
+                              ipc::optional::send( message.process.ipc, reply);
+                           };
+
+                        }
+                     } // configuration
+
+                     auto ready( State& state)
+                     {
+                        return [&state]( const common::message::transaction::resource::Ready& message)
+                        {
+                           Trace trace{ "transaction::handle::local::resource::ready"};
+                           common::log::line( log, "message: ", message);
+
+                           auto& instance = state.get_instance( message.id, message.process.pid);
+                           instance.process = message.process;
+                           local::instance::done( state, instance);
+                        };
+                     }
+
+                  } // resource
+               } // <unnamed>
+            } // local
+
+            namespace startup
+            {
+               dispatch_type handlers( State& state)
+               {
+                   return ipc::device().handler(
+                     common::message::handle::ping(),
+                     common::message::handle::Shutdown{},
+                     manager::handle::process::Exit{ state},
+                     local::resource::configuration::request( state),
+                     local::resource::ready( state)
+                   );
+               }
+
+            } // startup
+
             dispatch_type handlers( State& state)
             {
                return ipc::device().handler(
@@ -1663,7 +1680,8 @@ namespace casual
                   handle::Rollback{ state},
                   handle::resource::Involved{ state},
                   handle::resource::Lookup{ state},
-                  handle::resource::reply::Connect{ state},
+                  local::resource::configuration::request( state),
+                  local::resource::ready( state),
                   handle::resource::reply::Prepare{ state},
                   handle::resource::reply::Commit{ state},
                   handle::resource::reply::Rollback{ state},

@@ -169,9 +169,6 @@ namespace casual
 
                struct Resource
                {
-                  Resource() = default;
-                  Resource( std::function< void(Resource&)> foreign) { foreign( *this);}
-
                   id::type id;
                   std::string name;
                   std::string key;
@@ -278,48 +275,70 @@ namespace casual
                   })
                };
 
-               namespace connect
+               namespace configuration
                {
-                  //! Used to notify the TM that a resource proxy is up and running, or not...
-                  struct Reply : basic_message< Type::transaction_resource_connect_reply>
+                  using base_request = message::basic_request< Type::transaction_resource_proxy_configuration_request>;
+                  struct Request : base_request
                   {
-                     common::process::Handle process;
-                     id::type resource;
-                     code::xa state = code::xa::ok;
+                     using base_request::base_request;
+
+                     id::type id;
 
                      CASUAL_CONST_CORRECT_SERIALIZE(
                      {
-                        base_type::serialize( archive);
-                        CASUAL_SERIALIZE( process);
-                        CASUAL_SERIALIZE( resource);
-                        CASUAL_SERIALIZE( state);
+                        base_request::serialize( archive);
+                        CASUAL_SERIALIZE( id);
                      })
                   };
-                  static_assert( traits::is_movable< Reply>::value, "not movable");
-               } // connect
+
+                  using base_reply = message::basic_reply< Type::transaction_resource_proxy_configuration_reply>;
+                  struct Reply : base_reply
+                  {
+                     using base_reply::base_reply;
+
+                     resource::Resource resource;
+
+                     CASUAL_CONST_CORRECT_SERIALIZE(
+                     {
+                        base_reply::serialize( archive);
+                        CASUAL_SERIALIZE( resource);
+                     })
+                  };
+               } // configuration
+
+
+               using base_ready = message::basic_request< Type::transaction_resource_proxy_ready>;
+
+               // sent from resource proxy when it is ready to do work
+               struct Ready : base_ready
+               {
+                  using base_ready::base_ready;
+
+                  id::type id;
+
+                  CASUAL_CONST_CORRECT_SERIALIZE(
+                  {
+                     base_ready::serialize( archive);
+                     CASUAL_SERIALIZE( id);
+                  })
+               };
 
                namespace prepare
                {
                   using Request = basic_request< Type::transaction_resource_prepare_request>;
                   using Reply = basic_reply< Type::transaction_resource_prepare_reply>;
-
-                  static_assert( traits::is_movable< Request>::value, "not movable");
-                  static_assert( traits::is_movable< Reply>::value, "not movable");
-
                } // prepare
 
                namespace commit
                {
                   using Request = basic_request< Type::transaction_resource_commit_request>;
                   using Reply = basic_reply< Type::transaction_resource_commit_reply>;
-
                } // commit
 
                namespace rollback
                {
                   using Request = basic_request< Type::transaction_resource_rollback_request>;
                   using Reply = basic_reply< Type::transaction_resource_rollback_reply>;
-
                } // rollback
 
                //! These request and replies are used between TM and resources when
@@ -379,6 +398,8 @@ namespace casual
             template<>
             struct type_traits< transaction::resource::rollback::Request> : detail::type< transaction::resource::rollback::Reply> {};
 
+            template<>
+            struct type_traits< transaction::resource::configuration::Request> : detail::type< transaction::resource::configuration::Reply> {};
 
          } // reverse
       } // message

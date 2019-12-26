@@ -36,8 +36,7 @@ namespace casual
             using Flags = flag::xa::Flags;
 
             Resource( resource::Link link, strong::resource::id id, std::string openinfo, std::string closeinfo);
-
-
+            
             code start( const transaction::ID& transaction, Flags flags);
             code end( const transaction::ID& transaction, Flags flags);
 

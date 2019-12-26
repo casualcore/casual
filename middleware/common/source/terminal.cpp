@@ -79,7 +79,7 @@ namespace casual
             void Directive::plain()
             {
                m_color = false;
-               m_header = false;
+               m_header = true;
                m_precision = 3;
             }
 

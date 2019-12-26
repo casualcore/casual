@@ -31,18 +31,14 @@ int casual_start_resource_proxy( struct casual_resource_proxy_service_argument* 
 
       casual::transaction::resource::proxy::Settings settings;
 
-      {
-         using namespace casual::common::argument;
-         Parse{ "resource proxy server",
-            Option( std::tie( settings.key), {"-k", "--rm-key"}, "resource key"),
-            Option( std::tie( settings.openinfo), {"-o", "--rm-openinfo"}, "open info"),
-            Option( std::tie( settings.closeinfo), {"-c", "--rm-closeinfo"}, "close info"),
-            Option( std::tie( settings.id), {"-i", "--rm-id"}, "resource id")
-         }( serverArguments->argc, serverArguments->argv);
-      }
+      using namespace casual::common::argument;
+      
+      Parse{ "resource proxy server",
+         Option{ std::tie( settings.id), { "--id"}, "resource id "}( cardinality::one{})
+      }( serverArguments->argc, serverArguments->argv);
 
-      casual::transaction::resource::Proxy proxy( std::move( settings), serverArguments->xaSwitches);
-      proxy.start();
+
+      casual::transaction::resource::Proxy{ std::move( settings), serverArguments->xaSwitches}.start();
    });
 
 }

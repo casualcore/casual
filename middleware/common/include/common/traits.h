@@ -118,6 +118,9 @@ namespace casual
                {
                   using type = std::tuple_element_t< index, std::tuple< Args...>>;
                };
+
+               template< platform::size::type index>
+               using argument_t = typename argument< index>::type;
             };
          }
 

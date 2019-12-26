@@ -99,19 +99,6 @@ namespace casual
                      H m_handler;
                   };
 
-                  struct Connect : public state::Base
-                  {
-                     using message_type = common::message::transaction::resource::connect::Reply;
-
-                     using state::Base::Base;
-
-                     void operator () ( message_type& message);
-
-                  private:
-                     bool m_connected = false;
-
-                  };
-
 
                   struct basic_prepare : public state::Base
                   {
@@ -267,7 +254,14 @@ namespace casual
 
             } // domain
 
+            namespace startup
+            {
+               //! return the handlers used during startup
+               dispatch_type handlers( State& state);
+            } // startup
+
             dispatch_type handlers( State& state);
+            
 
          } // handle
       } // manager

@@ -73,7 +73,12 @@ namespace casual
                      struct Type
                      {
                         std::string type;
-                        platform::size::type size;
+
+                        struct
+                        {
+                           platform::size::type min{};
+                           platform::size::type max{};
+                        } size;
                      };
 
                      struct Info
@@ -105,13 +110,15 @@ namespace casual
                      auto network( T&& value) -> std::enable_if_t< ! common::serialize::native::binary::network::detail::is_network_array< T>::value, Type>
                      {
                         auto network = common::network::byteorder::encode( common::serialize::native::binary::network::detail::cast( value));
-                        return Type{ name( network), common::memory::size( network)};
+                        const auto size = common::memory::size( network);
+                        return Type{ name( network), { size, size}};
                      }
 
                      template< typename T>
                      auto network( T&& value) -> std::enable_if_t< common::serialize::native::binary::network::detail::is_network_array< T>::value, Type>
                      {
-                        return Type{ "fixed array", static_cast< platform::size::type>( common::memory::size( value))};
+                        const auto size = common::memory::size( value);
+                        return Type{ "fixed array", { size, size}};
                      }
 
 
@@ -218,11 +225,12 @@ namespace casual
                         canonical.pop();
                      }
 
-                     void dynamic( platform::size::type size, const char* type)
+                     void dynamic( platform::size::type min, platform::size::type max, const char* type)
                      {
                         type::Info info;
                         info.name = get_name( canonical.name());
-                        info.network.size = size;
+                        info.network.size.min = min;
+                        info.network.size.max = max;
                         info.network.type = type;
                         m_types.push_back( std::move( info));               
                      }
@@ -232,26 +240,31 @@ namespace casual
                         type( value);
                      }
 
+                     template< typename T> 
+                     constexpr auto absolute_max() { return static_cast< T>( std::numeric_limits< platform::size::type>::max());}
+
                      void write( const std::string& value)
                      {
+                        auto max = absolute_max< decltype( value.max_size())>();
                         write_size( value.size());
                         canonical.push( "data");
-                        dynamic( value.size(), "dynamic string");
+                        dynamic( 0, std::min( max, value.max_size()), "dynamic string");
                         canonical.pop();
                      }
 
                      void write( const platform::binary::type& value)
                      {
+                        decltype( value.size()) max = std::numeric_limits< platform::size::type>::max();
                         write_size( value.size());
                         canonical.push( "data");
-                        dynamic( value.size(), "dynamic binary");
+                        dynamic( 0, std::min( max, value.max_size()), "dynamic binary");
                         canonical.pop();
                      }
 
                      void write( common::view::immutable::Binary value)
                      {
                         //write_size( value.size());
-                        dynamic( value.size(), "(fixed) binary");
+                        dynamic( value.size(), value.size(), "(fixed) binary");
                      }
 
                      struct 
@@ -347,11 +360,17 @@ namespace casual
 
                      auto type_info()
                      {
+                        auto format_size = []( const type::Info& info)
+                        {
+                           if( info.network.size.min == info.network.size.max)
+                              return std::to_string( info.network.size.min);
+                           return common::string::compose( '[', info.network.size.min, "..", info.network.size.max, ']');
+                        };
                         return common::terminal::format::formatter< type::Info>::construct( 
                            std::string{ " | "},
                            common::terminal::format::column( "role name", []( const type::Info& i) { return i.name.role;}, common::terminal::color::no_color),
                            common::terminal::format::column( "network type", []( const type::Info& i) { return i.network.type;}, common::terminal::color::no_color),
-                           common::terminal::format::column( "network size", []( const type::Info& i) { return i.network.size;}, common::terminal::color::no_color, common::terminal::format::Align::right),
+                           common::terminal::format::column( "network size", format_size, common::terminal::color::no_color, common::terminal::format::Align::right),
                            common::terminal::format::column( "description", []( const type::Info& i) { return i.name.description;}, common::terminal::color::no_color)
                         );
                      }
@@ -428,9 +447,9 @@ namespace casual
                void header( std::ostream& out)
                {
                   out << R"(
-   | role name     | network type | network size  | comments
-   |---------------|--------------|---------------|---------
-   )";
+| role name     | network type | network size  | comments
+|---------------|--------------|---------------|---------
+)";
                }
 
                void message_header( std::ostream& out)
@@ -438,35 +457,45 @@ namespace casual
                   common::communication::message::complete::network::Header header;
 
                   out << R"(
-   # casual domain protocol _version 1000_
+# casual domain protocol _version 1000_
 
-   Attention, this documentation refers to **version 1000** (aka, version 1)
-
-
+Attention, this documentation refers to **version 1000** (aka, version 1)
 
 
-   Defines what messages is sent between domains and exactly what they contain. 
+Defines what messages is sent between domains and exactly what they contain. 
 
-   Some definitions:
+## definitions:
 
-   * `fixed array`: an array of fixed size where every element is an 8 bit byte.
-   * `dynamic array`: an array with dynamic size, where every element is an 8 bit byte.
+* `fixed array`: an array of fixed size where every element is an 8 bit byte.
+* `dynamic array`: an array with dynamic size, where every element is an 8 bit byte.
 
-   If an attribute name has `element` in it, for example: `services.element.timeout`, the
-   data is part of an element in a container. You should read it as `container.element.attribute`
+If an attribute name has `element` in it, for example: `services.element.timeout`, the
+data is part of an element in a container. You should read it as `container.element.attribute`
+
+## sizes 
+
+`casual` it self does not impose any size restriction on anything. Whatever the platform support
+`casual` is fine with.
+There are however restrictions from the `xatmi` specifcation, regarding service names and such.
+
+`casual` will not apply restriction on sizes unless some specification dictates it, or we got some
+sort of proof that a size limitation is needed.
+
+Hence, the maximum sizes below are huge, and it is unlikely that maximum sizes will 
+actually work on systems known to `casual` today. But it might in the future... 
 
 
-   ## common::communication::message::complete::network::Header 
+## common::communication::message::complete::network::Header 
 
-   This header will be the first part of every message below, hence it's name, _Header_
+This header will be the first part of every message below, hence it's name, _Header_
 
-   message.type is used to dispatch to handler for that particular message, and knows how to (un)marshal and act on the message.
+message.type is used to dispatch to handler for that particular message, and knows how to (un)marshal and act on the message.
 
-   It's probably a good idea (probably the only way) to read the header only, to see how much more one has to read to get
-   the rest of the message.
+It's probably a good idea (probably the only way) to read the header only, to see how much more one has to read to get
+the rest of the message.
 
 
-   )";
+)";
 
                   local::format::type( out, CASUAL_NAMED_VALUE( header), {
                      { "header.type", "type of the message that the payload contains"},

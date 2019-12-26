@@ -26,158 +26,157 @@
 
 namespace casual
 {
+   using namespace common;
+
    namespace transaction
    {
       namespace resource
       {
          namespace proxy
          {
-            namespace handle
+            namespace local
             {
-               struct Base
+               namespace
                {
-                  Base( State& state ) : m_state( state) {}
-               protected:
-                  State& m_state;
-               };
-
-
-               struct basic_open : public Base
-               {
-                  using reply_type = common::message::transaction::resource::connect::Reply;
-
-                  using Base::Base;
-
-                  void operator() ()
+                  namespace handle
                   {
-                     Trace trace{ "open resource"};
-
-                     reply_type reply;
-
-                     reply.process = common::process::handle();
-                     reply.resource = m_state.resource.id();
-
-                     reply.state = m_state.resource.open();
-
+                     struct Base
                      {
-                        common::log::trace::Outcome log_connect{ "resource connect to transaction monitor", log};
+                        Base( State& state ) : state( state) {}
+                     protected:
+                        State& state;
+                     };
 
-                        common::communication::ipc::blocking::send(
-                              common::communication::instance::outbound::transaction::manager::device(), reply);
+
+                     void open( State& state)
+                     {
+                        Trace trace{ "open resource"};
+
+                        auto result = state.resource.open();
+
+                        if( result != code::xa::ok)
+                        {
+                           auto message = string::compose( result, " failed to open xa resource ", state.resource.id());
+                           event::error::send( message);
+
+                           throw exception::xa::exception{ result, message};
+                        }
+
+                        message::transaction::resource::Ready ready{ common::process::handle()};
+                        ready.id = state.resource.id();
+
+                        communication::ipc::blocking::send(
+                           communication::instance::outbound::transaction::manager::device(), ready);
                      }
 
-                     if( reply.state != common::code::xa::ok)
+
+                     template< typename P>
+                     struct basic_handler : public Base
                      {
-                        auto message = common::string::compose( reply.state, " failed to open xa resource ", m_state.resource.id());
+                        using policy_type = P;
+                        //! deduce second argument as message type.
+                        using message_type = common::traits::remove_cvref_t< typename common::traits::function< policy_type>::template argument_t< 1>>; 
 
-                        common::event::error::send( message);
+                        using Base::Base;
 
-                        throw common::exception::xa::exception{ reply.state, message};
-                     }
-                  }
-               };
+                        void operator () ( message_type& message)
+                        {
+                           auto reply = common::message::reverse::type( message);
 
-               template< typename M, typename R, typename P>
-               struct basic_handler : public Base
-               {
-                  using message_type = M;
-                  using reply_type = R;
-                  using policy_type = P;
+                           reply.statistics.start = platform::time::clock::type::now();
 
-                  using Base::Base;
+                           reply.process = common::process::handle();
+                           reply.resource = state.resource.id();
 
-                  void operator () ( message_type& message)
-                  {
-                     reply_type reply;
+                           reply.state = policy_type()( state, message);
+                           reply.trid = std::move( message.trid);
 
-                     reply.statistics.start = platform::time::clock::type::now();
+                           reply.statistics.end = platform::time::clock::type::now();
 
+                           communication::ipc::blocking::send(
+                              communication::instance::outbound::transaction::manager::device(), reply);
 
-                     reply.process = common::process::handle();
-                     reply.resource = m_state.resource.id();
-
-                     reply.state = policy_type()( m_state, message);
-                     reply.trid = std::move( message.trid);
-
-                     reply.statistics.end = platform::time::clock::type::now();
-
-                     common::communication::ipc::blocking::send(
-                           common::communication::instance::outbound::transaction::manager::device(), reply);
-
-                  }
-               };
+                        }
+                     };
 
 
-               namespace policy
-               {
-                  struct Prepare
-                  {
-                     template< typename M>
-                     common::code::xa operator() ( State& state, M& message) const
+                     namespace policy
                      {
-                        return state.resource.prepare( message.trid, message.flags);
-                     }
-                  };
+                        struct Prepare
+                        {
+                           auto operator() ( State& state, common::message::transaction::resource::prepare::Request& message) const
+                           {
+                              return state.resource.prepare( message.trid, message.flags);
+                           }
+                        };
 
-                  struct Commit
+                        struct Commit
+                        {
+                           auto operator() ( State& state, common::message::transaction::resource::commit::Request& message) const
+                           {
+                              return state.resource.commit( message.trid, message.flags);
+                           }
+                        };
+
+                        struct Rollback
+                        {
+                           auto operator() ( State& state, common::message::transaction::resource::rollback::Request& message) const
+                           {
+                              return state.resource.rollback( message.trid, message.flags);
+                           }
+                        };
+
+                     } // policy
+
+                     using Prepare = basic_handler< policy::Prepare>;
+                     using Commit = basic_handler< policy::Commit>;
+                     using Rollback = basic_handler< policy::Rollback>;
+
+                  } // handle
+
+                  namespace initialize
                   {
-                     template< typename M>
-                     common::code::xa operator() ( State& state, M& message) const
+                     template< typename... Ts>
+                     void validate( bool ok, Ts&&... ts)
                      {
-                        return state.resource.commit( message.trid, message.flags);
-                     }
-                  };
+                        if( ! ok)
+                           throw exception::system::invalid::Argument{ common::string::compose( std::forward< Ts>( ts)...)};
+                     };
 
-                  struct Rollback
-                  {
-                     template< typename M>
-                     common::code::xa operator() ( State& state, M& message) const
+                     State state( proxy::Settings settings, casual_xa_switch_mapping* switches)
                      {
-                        return state.resource.rollback( message.trid, message.flags);
+                        validate( switches->key && switches->xa_switch, "invalid xa-switch mapping ");
+
+                        auto request = []( auto& settings)
+                        {
+                           message::transaction::resource::configuration::Request result{ process::handle()};
+                           result.id = strong::resource::id{ settings.id};
+                           return result;
+                        };
+
+                        auto configuration = communication::ipc::call( 
+                           communication::instance::outbound::transaction::manager::device(), request( settings));
+
+                        validate( configuration.resource.key == switches->key, "mismatch between expected resource key and configured resource key - resource: ", configuration.resource, ", key: ", switches->key);
+
+
+                        return { { 
+                           common::transaction::resource::Link{ switches->key, switches->xa_switch},
+                           configuration.resource.id,
+                           configuration.resource.openinfo,
+                           configuration.resource.closeinfo}};
                      }
-                  };
+                  } // initialize
 
-               } // policy
+               } // <unnamed>
+            } // local
 
-               using Open = basic_open;
-
-               using Prepare = basic_handler<
-                     common::message::transaction::resource::prepare::Request,
-                     common::message::transaction::resource::prepare::Reply,
-                     policy::Prepare>;
-
-
-               using Commit = basic_handler<
-                     common::message::transaction::resource::commit::Request,
-                     common::message::transaction::resource::commit::Reply,
-                     policy::Commit>;
-
-               using Rollback = basic_handler<
-                     common::message::transaction::resource::rollback::Request,
-                     common::message::transaction::resource::rollback::Reply,
-                     policy::Rollback>;
-
-
-            } // handle
-
-            State::State( Settings&& settings, casual_xa_switch_mapping* switches)
-               : resource{
-                  common::transaction::resource::Link{ std::move( settings.key), switches->xa_switch},
-                  common::strong::resource::id{ settings.id}, 
-                  std::move( settings.openinfo), 
-                  std::move( settings.closeinfo)}
-            {
-               if( resource.key() != switches->key)
-               {
-                  throw common::exception::system::invalid::Argument( "mismatch between expected resource key and configured resource key");
-               }
-            }
 
          } // proxy
 
 
-        Proxy::Proxy( proxy::Settings&& settings, casual_xa_switch_mapping* switches)
-           : m_state( std::move(settings), switches)
+        Proxy::Proxy( proxy::Settings settings, casual_xa_switch_mapping* switches)
+           : m_state{ proxy::local::initialize::state( std::move( settings), switches)}
         {
         }
 
@@ -188,19 +187,15 @@ namespace casual
 
          void Proxy::start()
          {
-
-            common::log::line( log, "open resource");
-            proxy::handle::Open{ m_state}();
-
-            // prepare message dispatch handlers...
-            common::log::line( log, "prepare message dispatch handlers");
-
             auto handler = common::communication::ipc::inbound::device().handler(
                common::message::handle::Shutdown{},
-               proxy::handle::Prepare{ m_state},
-               proxy::handle::Commit{ m_state},
-               proxy::handle::Rollback{ m_state}
+               proxy::local::handle::Prepare{ m_state},
+               proxy::local::handle::Commit{ m_state},
+               proxy::local::handle::Rollback{ m_state}
             );
+
+            proxy::local::handle::open( m_state);
+
 
             common::log::line( log, "start message pump");
 
