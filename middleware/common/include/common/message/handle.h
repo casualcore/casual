@@ -8,10 +8,9 @@
 #pragma once
 
 
-
 #include "common/message/server.h"
 #include "common/message/domain.h"
-#include "common/process.h"
+#include "common/message/dispatch.h"
 #include "common/log.h"
 
 namespace casual
@@ -22,6 +21,40 @@ namespace casual
       {
          namespace handle
          {
+
+            //! Replies to a ping message
+            struct Ping
+            {
+               void operator () ( const server::ping::Request& message);
+            };
+
+            //! @throws exception::casual::Shutdown if message::shutdown::Request is dispatched
+            struct Shutdown
+            {
+               void operator () ( const message::shutdown::Request& message);
+            };
+
+            namespace global
+            {
+               //! gather _global state_ from the process and reply the information to caller
+               struct State 
+               {
+                  void operator () ( const message::domain::instance::global::state::Request& message);
+               };
+            } // global
+            
+
+            template< typename Device> 
+            auto defaults( Device&& device)
+            {
+               return device.handler( 
+                  handle::Ping{},
+                  handle::Shutdown{},
+                  handle::global::State{});
+            }
+            
+            
+
             //! Handles and discard a given message type
             template< typename Message> 
             auto discard()
@@ -32,63 +65,17 @@ namespace casual
                };
             }
 
-            //! Replies to a ping message
-            struct Ping
-            {
-               void operator () ( server::ping::Request& message);
-            };
-
-
-            inline auto ping()
-            {
-               return Ping{};
-            }
-
-            //! @throws exception::casual::Shutdown if message::shutdown::Request is dispatched
-            struct Shutdown
-            {
-               using message_type = message::shutdown::Request;
-
-               void operator () ( message_type& message);
-            };
-
-            namespace global
-            {
-               struct State 
-               {
-                  void operator () ( const message::domain::instance::global::state::Request& message);
-               };
-            } // global
-
             //! Dispatch and assigns a given message
             template< typename M>
-            struct Assign
+            auto assign( M& target)
             {
-               using message_type = M;
-
-               Assign( message_type& message) : m_message( message) {}
-
-               void operator () ( message_type& message)
+               return [&target]( M& message)
                {
-                  m_message = message;
-               }
-            private:
-               message_type& m_message;
-            };
-
-            template< typename M>
-            Assign< M> assign( M& message)
-            {
-               return Assign< M>{ message};
+                  target = message;
+               };
             }
-
-
 
          } // handle
       } // message
    } // common
-
-
 } // casual
-
-

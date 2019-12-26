@@ -40,14 +40,14 @@ namespace casual
                } // <unnamed>
             } // local
 
-            void Shutdown::operator () ( message_type& message)
+            void Shutdown::operator () ( const message::shutdown::Request& message)
             {
                log::line( log::debug, "shutdown received from: ", message.process);
 
                throw exception::casual::Shutdown{};
             }
 
-            void Ping::operator () ( server::ping::Request& message)
+            void Ping::operator () ( const server::ping::Request& message)
             {
                log::line( log::debug, "pinged by process: ", message.process);
 

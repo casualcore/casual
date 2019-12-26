@@ -373,6 +373,7 @@ namespace casual
          handle::dispatch_type handlers( State& state)
          {
             return {
+               common::message::handle::defaults( ipc::device()),
                common::event::listener( manager::handle::process::Exit{ state}),
                manager::handle::connect::Information{ state},
                manager::handle::connect::Request{ state},
@@ -386,7 +387,6 @@ namespace casual
                common::server::handle::admin::Call{
                   manager::admin::services( state),
                   ipc::device().error_handler()},
-               common::message::handle::ping(),
             };
          }
 

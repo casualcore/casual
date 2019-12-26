@@ -621,13 +621,10 @@ namespace casual
                               void operator() ( message_type& message)
                               {
                                  Trace trace{ "gateway::inbound::handle::internal::domain::discover::Reply"};
+                                 common::log::line( verbose::log, "message: ", message);
 
-                                 common::log::line( log, "message: ", message);
-
-                                 //
                                  // Might send the accumulated message if all requested has replied.
                                  // (via the Policy)
-                                 //
                                  m_state.coordinate.accumulate( message);
                               }
                            };
@@ -657,10 +654,10 @@ namespace casual
 
                      auto handler( State& state)
                      {
-                        return common::communication::ipc::inbound::device().handler(
+                        auto& device = common::communication::ipc::inbound::device();
+                        return device.handler(
    
-                           common::message::handle::Shutdown{},
-                           common::message::handle::ping(),
+                           common::message::handle::defaults( device),
 
                            // service call
                            call::lookup::Reply{ state},
@@ -765,10 +762,9 @@ namespace casual
                   {
                      Trace trace{ "gateway::inbound::local::connect connect gateway"};
 
-                     message::inbound::Connect connect;
+                     message::inbound::Connect connect{ common::process::handle()};
 
                      connect.domain = request.domain;
-                     connect.process = common::process::handle();
                      connect.version = reply.version;
                      const auto& socket = state.external.inbound.connector().socket();
                      connect.address.local = communication::tcp::socket::address::host( socket);

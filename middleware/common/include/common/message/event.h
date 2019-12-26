@@ -32,6 +32,8 @@ namespace casual
                using base_begin = basic_event< Type::event_subscription_begin>;
                struct Begin : base_begin
                {
+                  using base_begin::base_begin;
+
                   std::vector< Type> types;
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
@@ -43,6 +45,7 @@ namespace casual
                using base_end = basic_event< Type::event_subscription_end>;
                struct End : base_end
                {
+                  using base_end::base_end;
                };
                
 

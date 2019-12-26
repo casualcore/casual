@@ -71,21 +71,19 @@ namespace casual
             void start( std::vector< argument::Service> services, std::vector< argument::transaction::Resource> resources);
             void start( std::vector< argument::Service> services);
 
-            //!
-            //! Start an XATMI server. Will call the callback @p connected when connection has established
-            //! with casual, if provided.
+
+            //! Start an XATMI server. Will call the callback @p initialize before "ready" is sent
+            //! to casual, if provided.
             //!
             //! @param services
             //! @param resources
             //! @param connected
             void start(
-                  std::vector< argument::xatmi::Service> services,
-                  std::vector< argument::transaction::Resource> resources,
-                  std::function<void()> connected);
-
+               std::vector< argument::xatmi::Service> services,
+               std::vector< argument::transaction::Resource> resources,
+               std::function<void()> initialize);
 
          } // v1
-
       } // server
    } // common
 } // casual

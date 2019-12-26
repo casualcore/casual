@@ -52,19 +52,15 @@ namespace casual
                      void operator () ()
                      {
                         // Make sure we unsubscribe for events
-                        auto unsubscribe = execute::scope( [](){
-                           message::event::subscription::End message;
-                           message.process = process::handle();
-
+                        auto unsubscribe = execute::scope( []()
+                        {
                            communication::ipc::non::blocking::send(
-                                 communication::instance::outbound::domain::manager::optional::device(),
-                                 message);
+                              communication::instance::outbound::domain::manager::optional::device(),
+                              message::event::subscription::End{ process::handle()});
                         });
 
                         common::communication::ipc::inbound::Device::handler_type event_handler
                         {
-                           common::message::handle::discard< message::event::domain::task::Begin>(),
-                           common::message::handle::discard< message::event::domain::task::End>(),
                            [&]( message::event::process::Spawn& m)
                            {
                               group( std::cout) << "spawned: " << terminal::color::yellow << m.alias << " "
@@ -93,12 +89,9 @@ namespace casual
                            },
                            [&]( message::event::domain::server::Connect& m)
                            {
-
                               group( std::cout) << terminal::color::green << "connected: "
                                     <<  terminal::color::white << m.process.pid
                                     << " " << terminal::color::yellow << m_alias_mapping[ m.process.pid] << '\n';
-
-
                            },
                            []( message::event::domain::boot::Begin& m)
                            {
@@ -195,14 +188,11 @@ namespace casual
 
                            // Check if we got some error events
                            common::message::dispatch::pump(
-                                 event_handler,
-                                 common::communication::ipc::inbound::device(),
-                                 common::communication::ipc::inbound::Device::non_blocking_policy{});
+                              event_handler,
+                              common::communication::ipc::inbound::device(),
+                              common::communication::ipc::inbound::Device::non_blocking_policy{});
 
-                        }
-                        catch( ...)
-                        {
-                           exception::handle();
+                           throw;
                         }
                      }
 
@@ -211,9 +201,8 @@ namespace casual
                      std::ostream& group( std::ostream& out)
                      {
                         if( ! m_group.empty())
-                        {
                            out << terminal::color::blue << m_group << " ";
-                        }
+
                         return out;
                      }
 
@@ -273,10 +262,10 @@ namespace casual
 
                   void boot( const std::vector< std::string>& files)
                   {
-
                      event::Handler events;
 
-                     auto get_arguments = []( auto& value){
+                     auto get_arguments = []( auto& value)
+                     {
                         std::vector< std::string> arguments;
 
                         auto files = common::range::make( value);
@@ -284,9 +273,8 @@ namespace casual
                         if( ! files.empty())
                         {
                            if( ! algorithm::all_of( files, &common::file::exists))
-                           {
                               throw exception::system::invalid::File{ string::compose( "at least one file does not exist - files: ", files)};
-                           }
+                           
                            arguments.emplace_back( "--configuration-files");
                            algorithm::append( files, arguments);
                         }
@@ -298,8 +286,8 @@ namespace casual
                      };
 
                      common::process::spawn(
-                           common::environment::directory::casual() + "/bin/casual-domain-manager",
-                           get_arguments( files));
+                        common::environment::directory::casual() + "/bin/casual-domain-manager",
+                        get_arguments( files));
 
                      events();
                   }
@@ -324,14 +312,9 @@ namespace casual
                   void shutdown()
                   {
                      // subscribe for events
-                     {
-                        message::event::subscription::Begin message;
-                        message.process = process::handle();
-
-                        communication::ipc::non::blocking::send(
-                              communication::instance::outbound::domain::manager::optional::device(),
-                              message);
-                     }
+                     communication::ipc::non::blocking::send(
+                        communication::instance::outbound::domain::manager::optional::device(),
+                        message::event::subscription::Begin{ process::handle()});
 
                      event::Handler events{ get_alias_mapping()};
 

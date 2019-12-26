@@ -154,9 +154,7 @@ namespace casual
                   }
                   catch( const exception::signal::Timeout&)
                   {
-                     //
                      // Timeout has occurred, lets try to send the delayed messages
-                     //
                      timeout( m_state);
                   }
                }
@@ -177,18 +175,14 @@ namespace casual
 
                communication::ipc::Helper ipc{ handle::Timeout{ state}};
 
-
                auto handler = ipc.handler(
-                  common::message::handle::ping(),
-                  common::message::handle::Shutdown{},
+                  common::message::handle::defaults( ipc),
                   handle::Request{ state}
                );
 
                while( true)
                {
-                  //
                   // Set timeout, if any
-                  //
                   signal::timer::set( state.timeout());
 
                   handler( ipc.blocking_next());

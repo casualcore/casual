@@ -45,16 +45,17 @@ namespace casual
 
 
          template< common::message::Type type>
-         struct basic_connect : common::message::basic_message< type>
+         struct basic_connect : common::message::basic_request< type>
          {
-            common::process::Handle process;
+            using base_type = common::message::basic_request< type>;
+            using base_type::base_type;
+
             common::domain::Identity domain;
             common::message::gateway::domain::protocol::Version version;
             Address address;
 
             CASUAL_CONST_CORRECT_SERIALIZE({
-               common::message::basic_message< type>::serialize( archive);
-               CASUAL_SERIALIZE( process);
+               base_type::serialize( archive);
                CASUAL_SERIALIZE( domain);
                CASUAL_SERIALIZE( version);
                CASUAL_SERIALIZE( address);
@@ -65,10 +66,7 @@ namespace casual
          {
             namespace configuration
             {
-
-               struct Request : common::message::server::basic_id< common::message::Type::gateway_outbound_configuration_request>
-               {};
-
+               using Request = common::message::server::basic_id< common::message::Type::gateway_outbound_configuration_request>;
 
                using base_reply = common::message::server::basic_id< common::message::Type::gateway_outbound_configuration_reply>;
                struct Reply : base_reply
@@ -85,9 +83,7 @@ namespace casual
 
             } // configuration
 
-            struct Connect : basic_connect< common::message::Type::gateway_outbound_connect>
-            {
-            };
+            using Connect  = basic_connect< common::message::Type::gateway_outbound_connect>;
 
             namespace connect
             {
@@ -117,10 +113,8 @@ namespace casual
                )
             };
 
-            using base_connect =  basic_connect< common::message::Type::gateway_inbound_connect>;
-            struct Connect : base_connect
-            {
-            };
+            using Connect = basic_connect< common::message::Type::gateway_inbound_connect>;
+            
          } // inbound
 
       } // message

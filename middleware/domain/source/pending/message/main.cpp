@@ -129,8 +129,7 @@ namespace casual
 
 
                      auto handler = ipc.handler(
-                        common::message::handle::ping(),
-                        common::message::handle::Shutdown{},
+                        common::message::handle::defaults( ipc),
                         handle::Request{ state}
                      );
 

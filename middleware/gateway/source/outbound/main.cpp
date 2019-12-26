@@ -811,10 +811,10 @@ namespace casual
 
                      auto handler( State& state)
                      {
-                        return communication::ipc::inbound::device().handler(
+                        auto& device = communication::ipc::inbound::device();
+                        return device.handler(
                            
-                           common::message::handle::Shutdown{},
-                           common::message::handle::ping(),
+                           common::message::handle::defaults( device),
 
                            // service
                            service::call::Request{ state},

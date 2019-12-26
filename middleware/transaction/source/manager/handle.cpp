@@ -1660,9 +1660,8 @@ namespace casual
             {
                dispatch_type handlers( State& state)
                {
-                   return ipc::device().handler(
-                     common::message::handle::ping(),
-                     common::message::handle::Shutdown{},
+                  return ipc::device().handler(
+                     common::message::handle::defaults( ipc::device()),
                      manager::handle::process::Exit{ state},
                      local::resource::configuration::request( state),
                      local::resource::ready( state)
@@ -1674,8 +1673,8 @@ namespace casual
             dispatch_type handlers( State& state)
             {
                return ipc::device().handler(
+                  common::message::handle::defaults( ipc::device()),
                   common::event::listener( handle::process::Exit{ state}),
-                  common::message::handle::Shutdown{},
                   handle::Commit{ state},
                   handle::Rollback{ state},
                   handle::resource::Involved{ state},
@@ -1691,8 +1690,7 @@ namespace casual
                   handle::domain::Rollback{ state},
                   common::server::handle::admin::Call{
                      manager::admin::services( state),
-                     ipc::device().error_handler()},
-                  common::message::handle::ping()
+                     ipc::device().error_handler()}
                );
             }
          } // handle

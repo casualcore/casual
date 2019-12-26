@@ -178,16 +178,15 @@ namespace casual
                            }
                         }
                      };
-
                   } // handle
 
                   namespace inbound
                   {
                      auto handlers( State& state)
                      {
-                        return communication::ipc::inbound::device().handler(
-                           message::handle::Shutdown{},
-                           message::handle::ping(),
+                        auto& device = communication::ipc::inbound::device();
+                        return device.handler(
+                           message::handle::defaults( device),
                            handle::service::call::Request{ state});
                      }
                   } // inbound

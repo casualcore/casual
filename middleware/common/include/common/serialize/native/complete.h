@@ -23,9 +23,7 @@ namespace casual
             communication::message::Complete complete( M&& message, C creator = binary::create::Writer{})
             {
                if( ! message.execution)
-               {
                   message.execution = execution::id();
-               }
 
                using casual::common::message::type;
                communication::message::Complete complete( type( message), message.correlation ? message.correlation : uuid::make());

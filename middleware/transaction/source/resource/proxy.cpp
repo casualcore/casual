@@ -187,15 +187,16 @@ namespace casual
 
          void Proxy::start()
          {
-            auto handler = common::communication::ipc::inbound::device().handler(
-               common::message::handle::Shutdown{},
+            auto& device = common::communication::ipc::inbound::device();
+            
+            auto handler = device.handler(
+               common::message::handle::defaults( device),
                proxy::local::handle::Prepare{ m_state},
                proxy::local::handle::Commit{ m_state},
                proxy::local::handle::Rollback{ m_state}
             );
 
             proxy::local::handle::open( m_state);
-
 
             common::log::line( log, "start message pump");
 

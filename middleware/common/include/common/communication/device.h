@@ -31,8 +31,6 @@ namespace casual
          namespace error
          {
 
-
-
             using type = std::function<void()>;
 
             namespace handler

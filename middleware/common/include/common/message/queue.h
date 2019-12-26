@@ -320,17 +320,17 @@ namespace casual
                };
 
                template< common::message::Type type>
-               struct basic_information : basic_message< type>
+               struct basic_information : basic_request< type>
                {
+                  using basic_request< type>::basic_request;
+                  
                   std::string name;
-                  common::process::Handle process;
                   std::vector< Queue> queues;
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
                   {
-                     basic_message< type>::serialize( archive);
+                     basic_request< type>::serialize( archive);
                      CASUAL_SERIALIZE( name);
-                     CASUAL_SERIALIZE( process);
                      CASUAL_SERIALIZE( queues);
                   })
 
@@ -479,17 +479,7 @@ namespace casual
 
             namespace connect
             {
-               struct Request : basic_message< Type::queue_connect_request>
-               {
-                  common::process::Handle process;
-
-                  CASUAL_CONST_CORRECT_SERIALIZE(
-                  {
-                     base_type::serialize( archive);
-                     CASUAL_SERIALIZE( process);
-                  })
-               };
-               static_assert( traits::is_movable< Request>::value, "not movable");
+               using Request = basic_request< Type::queue_connect_request>;
 
                struct Reply : basic_message< Type::queue_connect_reply>
                {
@@ -503,7 +493,6 @@ namespace casual
                      CASUAL_SERIALIZE( queues);
                   })
                };
-               static_assert( traits::is_movable< Reply>::value, "not movable");
             } // connect
 
             namespace concurrent

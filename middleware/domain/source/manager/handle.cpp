@@ -884,7 +884,7 @@ namespace casual
             Trace trace{ "domain::manager::handler"};
 
             return {
-               common::message::handle::ping(),
+               common::message::handle::defaults( ipc::device()),
                manager::handle::Shutdown{ state},
                manager::handle::scale::prepare::Shutdown{ state},
                manager::handle::event::process::Exit{ state},

@@ -138,28 +138,20 @@ namespace casual
 
                   handle::service::advertise();
 
-                  auto& ipc = communication::ipc::inbound::device();
+                  auto& device = communication::ipc::inbound::device();
 
-                  auto handler = ipc.handler( 
+                  auto handler = device.handler(
+                     message::handle::defaults( device),
                      handle::service::Call{},
                      handle::service::Conversation{},
-                     message::handle::Shutdown{},
-                     message::handle::ping());
+                     message::handle::Shutdown{});
 
-                  message::dispatch::blocking::pump( handler, ipc);
+                  message::dispatch::blocking::pump( handler, device);
                }
 
-               int main( int argc, char** argv)
+               void main( int argc, char** argv)
                {
-                  try
-                  {
-                     start();
-                     return 0;
-                  }
-                  catch( ...)
-                  {
-                     return exception::handle();
-                  }
+                  start();
                }
                
             } // error
@@ -170,5 +162,8 @@ namespace casual
 
 int main( int argc, char** argv)
 {
-   return casual::example::local::error::main( argc, argv);
+   return casual::exception::guard( [=]()
+   {
+      casual::example::local::error::main( argc, argv);
+   });
 } // main

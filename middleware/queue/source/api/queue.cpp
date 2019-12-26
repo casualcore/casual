@@ -112,14 +112,8 @@ namespace casual
                         ipc.blocking_send( group.process.ipc, request);
 
                         auto handler = ipc.handler(
-                           []( common::message::queue::dequeue::forget::Request& request)
-                           {
-                              // no-op
-                           },
-                           []( common::message::queue::dequeue::forget::Reply& request)
-                           {
-                              // no-op
-                           }
+                           []( common::message::queue::dequeue::forget::Request& request) {}, // no-op
+                           []( common::message::queue::dequeue::forget::Reply& request) {} // no-op
                         );
 
                         handler( ipc.blocking_next( handler.types()));
@@ -194,7 +188,7 @@ namespace casual
                   constexpr auto types = common::array::make( 
                      common::message::queue::dequeue::Reply::type(),
                      common::message::queue::dequeue::forget::Request::type(),
-                     common::message::handle::Shutdown::message_type::type());
+                     common::message::shutdown::Request::type());
 
                   // wait for the reply
                   handler( ipc.blocking_next( types));

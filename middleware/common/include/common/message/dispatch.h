@@ -100,20 +100,16 @@ namespace casual
 
                bool dispatch( communication::message::Complete& complete) const
                {
-                  if( complete)
-                  {
-                     auto findIter = m_handlers.find( complete.type);
+                  if( ! complete)
+                     return false;
 
-                     if( findIter != std::end( m_handlers))
-                     {
-                        findIter->second->dispatch( complete);
-                        return true;
-                     }
-                     else
-                     {
-                        log::line( log::category::error, "message_type: ", complete.type, " not recognized - action: discard");
-                     }
+                  if( auto found = algorithm::find( m_handlers, complete.type))
+                  {
+                     found->second->dispatch( complete);
+                     return true;
                   }
+
+                  log::line( log::category::error, "message_type: ", complete.type, " not recognized - action: discard");
                   return false;
                }
 
@@ -133,7 +129,8 @@ namespace casual
                   static_assert( traits_type::arguments() == 1, "handlers has to have this signature: void( <some message>), can be declared const");
                   static_assert(
                         std::is_same< typename traits_type::result_type, void>::value
-                        || std::is_same< typename traits_type::result_type, bool>::value , "handlers has to have this signature: void|bool( <some message>), can be declared const");
+                        || std::is_same< typename traits_type::result_type, bool>::value, 
+                        "handlers has to have this signature: void|bool( <some message>), can be declared const");
 
                   using message_type = std::decay_t< typename traits_type::template argument< 0>::type>;
 
@@ -215,33 +212,6 @@ namespace casual
             
             namespace empty
             {
-               //! 
-               template< typename Unmarshal, typename D, typename BP, typename EC, typename NBL = int>
-               void pump( 
-                  basic_handler< Unmarshal>& handler, 
-                  D& device, 
-                  BP&& blocking_predicate, 
-                  EC&& empty_callback,
-                  NBL non_blocking_limit = std::numeric_limits< NBL>::max())
-               {
-                  using device_type = std::decay_t< decltype( device)>;
-
-                  while( true)
-                  {
-                     if( blocking_predicate())
-                     {
-                        handler( device.next( typename device_type::blocking_policy{}));
-                     }
-                     else
-                     {
-                        while( handler( device.next( typename device_type::non_blocking_policy{})) && non_blocking_limit-- > 0)
-                           ; /* no op */
-
-                        if( non_blocking_limit > 0)
-                           empty_callback();
-                     }
-                  }   
-               }
 
                template< typename Unmarshal, typename D, typename EC>
                void pump( 

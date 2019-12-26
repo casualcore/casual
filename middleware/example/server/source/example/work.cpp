@@ -12,6 +12,7 @@
 #include "common/log/category.h"
 #include "common/exception/handle.h"
 #include "common/argument.h"
+#include "common/environment/string.h"
 #include "common/chronology.h"
 
 
@@ -30,8 +31,9 @@ namespace casual
             {
                struct
                {
-                  casual::platform::time::unit sleep;
-                  casual::platform::time::unit work;
+                  casual::platform::time::unit startup{};
+                  casual::platform::time::unit sleep{};
+                  casual::platform::time::unit work{};
                } global;
             } // <unnamed>
          } // local
@@ -47,19 +49,24 @@ namespace casual
                   auto arguments = common::range::make( argv + 1, argc - 1);
                   common::log::line( common::log::category::information, "example server started with arguments: ", arguments);
 
+                  auto time_value = []( auto& time)
+                  {
+                     return [&time]( std::string value)
+                     {
+                        time = common::chronology::from::string( common::environment::string( value));
+                     };
+                  };
+
                   common::argument::Parse{ "Shows a few ways services can be develop",
-                     common::argument::Option( []( const std::string& value){
-                        local::global.sleep = common::chronology::from::string( value);
-                     }, {"--sleep"}, "sleep time"),
-                     common::argument::Option( []( const std::string& value){
-                        local::global.work = common::chronology::from::string( value);
-                     }, {"--work"}, "work time ")
+                     common::argument::Option{ time_value( local::global.startup), {"--startup"}, "startup time"},
+                     common::argument::Option{ time_value( local::global.sleep), {"--sleep"}, "sleep time"},
+                     common::argument::Option{ time_value( local::global.work), {"--work"}, "work time"},
                   }( argc, argv);
 
-                  
+                  if( local::global.startup != platform::time::unit::zero())
+                     common::process::sleep( local::global.startup);
+
                   tpadvertise( "casual/example/advertised/echo", &casual_example_echo);
-
-
 
                   common::log::line( common::log::category::information, "sleep: ", local::global.sleep);
                   common::log::line( common::log::category::information, "work: ", local::global.work);

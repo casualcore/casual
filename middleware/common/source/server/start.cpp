@@ -63,28 +63,29 @@ namespace casual
                   } // transform
 
                   template< typename S>
-                  void start( S&& services, std::vector< argument::transaction::Resource> resources, std::function<void()> connected)
+                  void start( S&& services, std::vector< argument::transaction::Resource> resources, std::function<void()> initialize)
                   {
                      Trace trace{ "common::server::start"};
 
-                     auto handler = common::communication::ipc::inbound::device().handler(
+                     auto& inbound = common::communication::ipc::inbound::device();
+
+                     auto handler = inbound.handler(
+                        common::message::handle::defaults( inbound),
                         // will configure and advertise services
                         common::server::handle::Call( local::transform::arguments( std::move( services), std::move( resources))),
-                        common::server::handle::Conversation{},
-                        common::message::handle::Shutdown{},
-                        common::message::handle::ping());
+                        common::server::handle::Conversation{});
 
-                     // Connect to domain
+                     if( initialize)
+                        initialize();
+
+                     // Connect to domain - send "ready"...
                      common::communication::instance::connect();
-
-                     if( connected)
-                        connected();
 
                      // Start the message-pump
                      common::message::dispatch::pump(
-                           handler,
-                           common::communication::ipc::inbound::device(),
-                           common::communication::ipc::policy::Blocking{});
+                        handler,
+                        common::communication::ipc::inbound::device(),
+                        common::communication::ipc::policy::Blocking{});
 
                   }
 
@@ -104,9 +105,9 @@ namespace casual
             void start(
                   std::vector< argument::xatmi::Service> services,
                   std::vector< argument::transaction::Resource> resources,
-                  std::function<void()> connected)
+                  std::function<void()> initialize)
             {
-               local::start( std::move( services), std::move( resources), std::move( connected));
+               local::start( std::move( services), std::move( resources), std::move( initialize));
             }
 
          } // v1
