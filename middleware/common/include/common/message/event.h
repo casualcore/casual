@@ -102,8 +102,8 @@ namespace casual
                         case Severity::fatal: return out << "fatal";
                         case Severity::error: return out << "error";
                         case Severity::warning: return out << "warning";
-                        default: return out << "unknown";
                      }
+                     return out << "unknown";
                   }
 
                   std::string message;

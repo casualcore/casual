@@ -43,7 +43,7 @@ namespace casual
 
                            log::line( log::debug, "advertise: ", advertise);
 
-                           signal::thread::scope::Mask block{ signal::set::filled( signal::Type::terminate, signal::Type::interrupt)};
+                           signal::thread::scope::Mask block{ signal::set::filled( code::signal::terminate, code::signal::interrupt)};
 
                            communication::ipc::blocking::send( communication::instance::outbound::service::manager::device(), advertise);
                         }

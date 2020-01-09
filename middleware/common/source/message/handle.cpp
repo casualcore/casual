@@ -28,7 +28,7 @@ namespace casual
                      try
                      {
                         // We ignore signals
-                        signal::thread::scope::Mask mask{ signal::set::filled( signal::Type::terminate, signal::Type::interrupt)};
+                        signal::thread::scope::Mask mask{ signal::set::filled( code::signal::terminate, code::signal::interrupt)};
 
                         communication::ipc::blocking::send( destination.ipc, message);
                      }

@@ -30,7 +30,7 @@ namespace casual
 
                if( m_thread.joinable())
                {
-                  signal::thread::send( m_thread, signal::Type::user);
+                  signal::thread::send( m_thread, code::signal::user);
                   m_thread.join();
                }
             }

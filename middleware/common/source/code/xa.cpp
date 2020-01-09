@@ -40,8 +40,8 @@ namespace casual
                            case ax::error: return "TMER_TMERR";
                            case ax::argument: return "TMER_INVAL";
                            case ax::protocol: return "TMER_PROTO";
-                           default: return "unknown: " + std::to_string( code);
                         }
+                        return "unknown: " + std::to_string( code);
                      }
                   };
 
@@ -89,9 +89,8 @@ namespace casual
                            case xa::resource_error: return "XAER_RMERR";
                            case xa::duplicate_xid: return "XAER_DUPID";
                            case xa::outside: return "XAER_OUTSIDE";
-
-                           default: return "unknown: " + std::to_string( code);
                         }
+                        return "unknown: " + std::to_string( code);
                      }
                   };
 

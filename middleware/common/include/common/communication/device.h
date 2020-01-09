@@ -14,6 +14,7 @@
 #include "common/message/dispatch.h"
 #include "common/serialize/native/binary.h"
 #include "common/serialize/native/complete.h"
+#include "common/signal.h"
 #include "common/exception/signal.h"
 #include "common/exception/system.h"
 #include "common/predicate.h"
@@ -344,7 +345,6 @@ namespace casual
                template< typename Policy, typename Predicate>
                cache_range_type find( Policy&& policy, const error_type& handler, Predicate&& predicate)
                {
-
                   while( true)
                   {
                      try
@@ -355,9 +355,7 @@ namespace casual
                         {
                            // Check if we should discard the message
                            if( discard( *found))
-                           {
                               m_cache.erase( std::begin( found));
-                           }
 
                            // Try to find a massage that matches the predicate
                            found = algorithm::find_if( m_cache, predicate);
@@ -368,9 +366,8 @@ namespace casual
                      {
                         // Delegate the errors to the handler, if provided
                         if( ! handler)
-                        {
                            throw;
-                        }
+
                         handler();
                      }
                   }

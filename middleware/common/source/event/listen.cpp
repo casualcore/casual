@@ -30,7 +30,7 @@ namespace casual
                   template< typename M>
                   void domain( const M& request, const std::vector< message_type>& types)
                   {
-                     signal::thread::scope::Mask block{ signal::set::filled( signal::Type::terminate, signal::Type::interrupt)};
+                     signal::thread::scope::Mask block{ signal::set::filled( code::signal::terminate, code::signal::interrupt)};
 
                      if( algorithm::find_if( types, []( message_type type){
                         return type >= message_type::EVENT_DOMAIN_BASE && type < message_type::EVENT_DOMAIN_BASE_END;}))
@@ -44,7 +44,7 @@ namespace casual
                   template< typename M>
                   void service( const M& request, const std::vector< message_type>& types)
                   {
-                     signal::thread::scope::Mask block{ signal::set::filled( signal::Type::terminate, signal::Type::interrupt)};
+                     signal::thread::scope::Mask block{ signal::set::filled( code::signal::terminate, code::signal::interrupt)};
 
                      if( algorithm::find_if( types, []( message_type type){
                         return type >= message_type::EVENT_SERVICE_BASE && type < message_type::EVENT_SERVICE_BASE_END;}))
@@ -125,7 +125,7 @@ namespace casual
 
             }
 
-            void listen( device_type& device, std::function< void()> empty, handler_type&& h)
+            void listen( device_type& device, std::function< void()> empty, handler_type&& h, const error_type& error)
             {
                Trace trace{ "common::event::detail::listen"};
 
@@ -135,15 +135,13 @@ namespace casual
 
                while( true)
                {
-                  while( handler( device.next( typename device_type::non_blocking_policy{})))
-                  {
-                     ;
-                  }
+                  while( handler( device.next( typename device_type::non_blocking_policy{}, error)))
+                     ; // no-op
 
-                  // queue is empty, notify user
+                  // queue is empty, notify caller
                   empty();
 
-                  handler( device.next( typename device_type::blocking_policy{}));
+                  handler( device.next( typename device_type::blocking_policy{}, error));
                }
 
             }

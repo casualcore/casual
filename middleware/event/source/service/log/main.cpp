@@ -12,6 +12,8 @@
 #include "common/uuid.h"
 #include "common/event/listen.h"
 #include "common/exception/handle.h"
+#include "common/exception/system.h"
+#include "common/exception/signal.h"
 #include "common/communication/instance.h"
 #include "common/algorithm.h"
 
@@ -33,16 +35,21 @@ namespace casual
                {
                   struct Settings
                   {
-                     std::string file = "statistics.log";
                      std::string delimiter = "|";
+                     std::string file = "statistics.log";
+
+                     CASUAL_CONST_CORRECT_SERIALIZE_WRITE({
+                        CASUAL_NAMED_VALUE( file);
+                        CASUAL_NAMED_VALUE( delimiter);
+                     })
                   };
 
                   struct Handler
                   {
                      Handler( Settings settings) 
-                        : m_logfile{ settings.file, std::ios::app}, m_delimiter{ std::move( settings.delimiter)}
+                        : m_logfile{ Handler::open( settings.file)}, m_settings{ std::move( settings)}
                      {
-                        common::log::line( event::log, "file: ", settings.file, ", delimiter: ", m_delimiter);
+                        common::log::line( event::log, "settings: ", m_settings);
                      }
 
                      void log( const common::message::event::service::Metric& metric)
@@ -50,14 +57,14 @@ namespace casual
                         common::log::line( event::verbose::log, "metric: ", metric);
 
                         m_logfile << metric.service
-                           << m_delimiter << metric.parent
-                           << m_delimiter << metric.process.pid
-                           << m_delimiter << metric.execution
-                           << m_delimiter << metric.trid
-                           << m_delimiter << std::chrono::duration_cast< std::chrono::microseconds>( metric.start.time_since_epoch()).count()
-                           << m_delimiter << std::chrono::duration_cast< std::chrono::microseconds>( metric.end.time_since_epoch()).count()
-                           << m_delimiter << std::chrono::duration_cast< std::chrono::microseconds>( metric.pending).count()
-                           << m_delimiter << common::code::string( metric.code)
+                           << m_settings.delimiter << metric.parent
+                           << m_settings.delimiter << metric.process.pid
+                           << m_settings.delimiter << metric.execution
+                           << m_settings.delimiter << metric.trid
+                           << m_settings.delimiter << std::chrono::duration_cast< std::chrono::microseconds>( metric.start.time_since_epoch()).count()
+                           << m_settings.delimiter << std::chrono::duration_cast< std::chrono::microseconds>( metric.end.time_since_epoch()).count()
+                           << m_settings.delimiter << std::chrono::duration_cast< std::chrono::microseconds>( metric.pending).count()
+                           << m_settings.delimiter << common::code::string( metric.code)
                            << '\n';
                      }
 
@@ -71,10 +78,48 @@ namespace casual
                         m_logfile.flush();
                      }
 
+                     void reopen()
+                     {
+                        common::log::line( event::log, "reopen: ",  m_settings.file);
+                        m_logfile.flush();
+                        m_logfile = open( m_settings.file);
+                     }
+
                   private:
+                     static std::ofstream open( const std::string& name)
+                     {
+                        // make sure we got the directory
+                        common::directory::create( common::directory::name::base( name));                           
+
+                        std::ofstream file{ name, std::ios::app};
+
+                        if( ! file)
+                           throw common::exception::system::invalid::Argument{ "failed to open file: " + name};
+
+                        return file;
+                     }
+
                      std::ofstream m_logfile;
-                     std::string m_delimiter;
+                     Settings m_settings;
                   };
+
+                  namespace error
+                  {
+                     auto handler( Handler& handler)
+                     {
+                        return [&handler]()
+                        {
+                           try
+                           {
+                              throw;
+                           }
+                           catch( const common::exception::signal::Hangup&) 
+                           {
+                              handler.reopen();
+                           }
+                        };
+                     }
+                  } // error
 
 
                   void main(int argc, char **argv)
@@ -91,23 +136,26 @@ namespace casual
                      }
 
                      // connect to domain
-                     common::communication::instance::connect( common::Uuid{ "c9d132c7249241c8b4085cc399b19714"});
+                     common::communication::instance::connect( 0xc9d132c7249241c8b4085cc399b19714_uuid);
 
-                     {
-                        Handler handler{ std::move( settings)};
+                     Handler handler{ std::move( settings)};
+                     
+                     // a helper that act on signal::hangup
+                     common::communication::ipc::Helper ipc{ error::handler( handler)};
 
-                        common::event::idle::listen(
-                           [&handler]()
-                           {
-                              // the queue is empty
-                              handler.idle();
-                           },
-                           [&handler]( common::message::event::service::Calls& event)
-                           {
-                              handler.log( event);
-                           }
-                        );
-                     }
+                     common::event::idle::listen(
+                        ipc,
+                        [&handler]()
+                        {
+                           // the queue is empty
+                           handler.idle();
+                        },
+                        [&handler]( common::message::event::service::Calls& event)
+                        {
+                           handler.log( event);
+                        }
+                     );
+                     
                   }
 
                            

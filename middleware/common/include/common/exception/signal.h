@@ -29,6 +29,7 @@ namespace casual
             using Terminate = base< code::signal::terminate>;
             using User = base< code::signal::user>;
             using Pipe = base< code::signal::pipe>;
+            using Hangup = base< code::signal::hangup>;
 
             namespace child
             {

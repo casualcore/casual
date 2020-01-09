@@ -305,8 +305,8 @@ namespace casual
                            case Directive::start: return out << "start";
                            case Directive::singleton: return out << "singleton";
                            case Directive::shutdown: return out << "shutdown";
-                           default: return out << "unknown";
                         }
+                        return out << "unknown";
                      }
 
                      Directive directive = Directive::start;

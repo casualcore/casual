@@ -127,7 +127,7 @@ namespace casual
                            return;
 
                         // We only want child signals
-                        signal::thread::scope::Mask mask{ signal::set::filled( signal::Type::child)};
+                        signal::thread::scope::Mask mask{ signal::set::filled( code::signal::child)};
 
 
                         auto pids = algorithm::transform( range::reverse( shutdownable), []( const auto& i){
@@ -338,7 +338,7 @@ namespace casual
                   log::line( verbose::log, "processes: ", processes);
                   
                   // We only want child signals
-                  signal::thread::scope::Mask mask{ signal::set::filled( signal::Type::child)};
+                  signal::thread::scope::Mask mask{ signal::set::filled( code::signal::child)};
 
                   // We need to correlate with the service-manager (broker), if it's up
 

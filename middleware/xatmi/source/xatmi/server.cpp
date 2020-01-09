@@ -66,7 +66,7 @@ namespace casual
                      casual::xatmi::Trace trace{ "casual::xatmi::server::local::start"};
 
                      // We block child so users can spawn stuff without actions/errors from casual
-                     common::signal::thread::scope::Block block( { common::signal::Type::child});
+                     common::signal::thread::scope::Block block( { common::code::signal::child});
 
                      common::server::start(
                            transform::services( argument),

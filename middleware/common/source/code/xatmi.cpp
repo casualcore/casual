@@ -43,8 +43,8 @@ namespace casual
                      case xatmi::buffer_output: return "TPEOTYPE: invalid output buffer type";
                      case xatmi::event: return "TPEEVENT: conversation event was received";
                      case xatmi::service_advertised: return "TPEMATCH: service is already advertised";
-                     default: return "unknown";
                   }
+                   return "unknown";
                }
 
                struct Category : std::error_category
@@ -122,8 +122,8 @@ namespace casual
                case xatmi::buffer_output: return "TPEOTYPE";
                case xatmi::event: return "TPEEVENT";
                case xatmi::service_advertised: return "TPEMATCH";
-               default: return "unknown";
             }
+            return "unknown";
          }
 
       } // code

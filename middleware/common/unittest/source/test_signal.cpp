@@ -15,11 +15,11 @@ namespace casual
 {
    namespace common
    {
-      template< typename E, signal::Type signal>
+      template< typename E, code::signal signal>
       struct holder
       {
          using exception_type = E;
-         static signal::Type get_signal() { return signal;}
+         static code::signal get_signal() { return signal;}
       };
 
       template <typename H>
@@ -33,15 +33,15 @@ namespace casual
 
       using signal_type = ::testing::Types<
 
-            holder< common::exception::signal::Terminate, signal::Type::interrupt>,
-            holder< common::exception::signal::Terminate, signal::Type::quit>,
-            holder< common::exception::signal::Terminate, signal::Type::terminate>,
+            holder< common::exception::signal::Terminate, code::signal::interrupt>,
+            holder< common::exception::signal::Terminate, code::signal::quit>,
+            holder< common::exception::signal::Terminate, code::signal::terminate>,
 
-            holder< common::exception::signal::User, signal::Type::user>,
+            holder< common::exception::signal::User, code::signal::user>,
 
-            holder< common::exception::signal::Timeout, signal::Type::alarm>,
+            holder< common::exception::signal::Timeout, code::signal::alarm>,
 
-            holder< common::exception::signal::child::Terminate, signal::Type::child>
+            holder< common::exception::signal::child::Terminate, code::signal::child>
        >;
 
       TYPED_TEST_CASE( casual_common_signal_types, signal_type);
@@ -212,7 +212,7 @@ namespace casual
          common::unittest::Trace trace;
 
 
-         signal::send( process::id(), signal::Type::terminate);
+         signal::send( process::id(), code::signal::terminate);
 
          EXPECT_THROW(
          {
@@ -227,8 +227,8 @@ namespace casual
       {
          common::unittest::Trace trace;
 
-         signal::send( process::id(), signal::Type::terminate);
-         signal::send( process::id(), signal::Type::child);
+         signal::send( process::id(), code::signal::terminate);
+         signal::send( process::id(), code::signal::child);
 
          EXPECT_TRUE( signal::current::pending() == 2);
       }
@@ -238,8 +238,8 @@ namespace casual
          common::unittest::Trace trace;
 
 
-         signal::send( process::id(), signal::Type::terminate);
-         signal::send( process::id(), signal::Type::child);
+         signal::send( process::id(), code::signal::terminate);
+         signal::send( process::id(), code::signal::child);
 
          // note that child is thrown before terminate
          EXPECT_THROW(

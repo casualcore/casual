@@ -40,7 +40,7 @@ namespace casual
             namespace
             {
 
-               bool send( strong::process::id pid, Type signal)
+               bool send( strong::process::id pid, code::signal signal)
                {
                   log::line( verbose::log, "local::signal::send pid: ", pid, " signal: ", signal);
 
@@ -74,58 +74,34 @@ namespace casual
    {
       namespace signal
       {
-         std::ostream& operator << ( std::ostream& out, signal::Type signal)
-         {
-            const auto value = cast::underlying( signal);
-            switch( signal)
-            {
-               case Type::none: return out << "none";
-               case Type::alarm: return out << value << ":alarm";
-               case Type::interrupt: return out << value << ":interrupt";
-               case Type::kill: return out << value << ":kill";
-               case Type::quit: return out << value << ":quit";
-               case Type::child: return out << value << ":child";
-               case Type::terminate: return out << value << ":terminate";
-               case Type::user: return out << value << ":user";
-               case Type::pipe: return out << value << ":pipe";
-            }
-            return out << value;
-         }
-
          namespace local
          {
             namespace
             {
-
                   namespace handler
                   {
-
-
                      std::atomic< long> global_total_pending{ 0};
 
-
-                     template< signal::Type signal>
+                     template< code::signal signal>
                      struct basic_pending
                      {
                         static void clear() { pending = false;}
                         static std::atomic< bool> pending;
                      };
-                     template< signal::Type Signal>
+                     template< code::signal Signal>
                      std::atomic< bool> basic_pending< Signal>::pending{ false};
 
 
 
-                     template< signal::Type Signal>
+                     template< code::signal Signal>
                      void signal_callback( platform::signal::native::type signal)
                      {
                         if( ! basic_pending< Signal>::pending.exchange( true))
-                        {
                            ++global_total_pending;
-                        }
                      }
 
                      template< typename H>
-                     void registration( signal::Type signal, H&& handler, int flags = 0)
+                     void registration( code::signal signal, H&& handler, int flags = 0)
                      {
                         struct sigaction sa = {};
 
@@ -195,6 +171,7 @@ namespace casual
                            m_interrupt.clear();
                            m_alarm.clear();
                            m_user.clear();
+                           m_hangup.clear();
                         }
 
                      private:
@@ -202,7 +179,7 @@ namespace casual
                         Handle() 
                         {
                            // make sure we ignore sigpipe
-                           local::handler::registration( signal::Type::pipe, SIG_IGN);
+                           local::handler::registration( code::signal::pipe, SIG_IGN);
                         }
 
                         void dispatch( signal::Set current)
@@ -213,13 +190,14 @@ namespace casual
                            m_interrupt.handle( current);
                            m_alarm.handle( current);
                            m_user.handle( current);
+                           m_hangup.handle( current);
 
                            log::line( log::debug, "no signal handled with mask: ", current);
                         }
 
 
 
-                        template< signal::Type Signal, typename Exception, int Flags = 0>
+                        template< code::signal Signal, typename Exception, int Flags = 0>
                         struct basic_handler
                         {
                            using pending_type = basic_pending< Signal>;
@@ -262,12 +240,13 @@ namespace casual
                            }
                         };
 
-                        basic_handler< signal::Type::child, exception::signal::child::Terminate, SA_NOCLDSTOP> m_child;
-                        basic_handler< signal::Type::terminate, exception::signal::Terminate> m_terminate;
-                        basic_handler< signal::Type::quit, exception::signal::Terminate> m_quit;
-                        basic_handler< signal::Type::interrupt, exception::signal::Terminate> m_interrupt;
-                        basic_handler< signal::Type::alarm, exception::signal::Timeout> m_alarm;
-                        basic_handler< signal::Type::user, exception::signal::User> m_user;
+                        basic_handler< code::signal::child, exception::signal::child::Terminate, SA_NOCLDSTOP> m_child;
+                        basic_handler< code::signal::terminate, exception::signal::Terminate> m_terminate;
+                        basic_handler< code::signal::quit, exception::signal::Terminate> m_quit;
+                        basic_handler< code::signal::interrupt, exception::signal::Terminate> m_interrupt;
+                        basic_handler< code::signal::alarm, exception::signal::Timeout> m_alarm;
+                        basic_handler< code::signal::user, exception::signal::User> m_user;
+                        basic_handler< code::signal::hangup , exception::signal::Hangup> m_hangup;
 
                         // Only for handle
                         std::mutex m_mutex;
@@ -369,7 +348,7 @@ namespace casual
 
                   // We send the signal directly
                   log::line( log::debug, "timer - offset is less than zero: ", offset.count(), " - send alarm directly");
-                  signal::send( process::id(), signal::Type::alarm);
+                  signal::send( process::id(), code::signal::alarm);
                   return local::get();
                }
                else
@@ -468,7 +447,7 @@ namespace casual
          } // timer
 
 
-         bool send( strong::process::id pid, Type signal)
+         bool send( strong::process::id pid, code::signal signal)
          {
             return local::send( pid, signal);
          }
@@ -485,7 +464,7 @@ namespace casual
          }
 
 
-         Set::Set( std::initializer_list< Type> signals) : Set( empty_t{})
+         Set::Set( std::initializer_list< code::signal> signals) : Set( empty_t{})
          {
             for( auto&& signal : signals)
             {
@@ -493,18 +472,18 @@ namespace casual
             }
          }
 
-         void Set::add( Type signal)
+         void Set::add( code::signal signal)
          {
             sigaddset( &set, cast::underlying( signal));
          }
 
-         void Set::remove( Type signal)
+         void Set::remove( code::signal signal)
          {
             sigdelset( &set, cast::underlying( signal));
          }
 
 
-         bool Set::exists( Type signal) const
+         bool Set::exists( code::signal signal) const
          {
             return sigismember( &set, cast::underlying( signal)) == 1;
          }
@@ -525,7 +504,7 @@ namespace casual
             out << "[";
 
             bool exists = false;
-            for( auto& signal : { Type::alarm, Type::child, Type::interrupt, Type::kill, Type::pipe, Type::quit, Type::terminate, Type::user})
+            for( auto& signal : { code::signal::alarm, code::signal::child, code::signal::interrupt, code::signal::kill, code::signal::pipe, code::signal::quit, code::signal::terminate, code::signal::user})
             {
                if( value.exists( signal))
                {
@@ -601,14 +580,14 @@ namespace casual
 
          namespace thread
          {
-            void send( std::thread& thread, Type signal)
+            void send( std::thread& thread, code::signal signal)
             {
                log::line( log::debug, "signal::thread::send thread: ", thread.get_id(), " signal: ", signal);
 
                send( thread.native_handle(), signal);
             }
 
-            void send( common::thread::native::type thread, Type signal)
+            void send( common::thread::native::type thread, code::signal signal)
             {
                if( pthread_kill( thread, 0) == 0)
                {
@@ -617,7 +596,7 @@ namespace casual
                }
             }
 
-            void send( Type signal)
+            void send( code::signal signal)
             {
                log::line( log::debug, "signal::thread::send current thread - signal: ", signal);
                send( common::thread::native::current(), signal);

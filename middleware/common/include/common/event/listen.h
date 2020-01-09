@@ -24,14 +24,14 @@ namespace casual
          using device_type = common::communication::ipc::inbound::Device;
          using handler_type = device_type::handler_type;
          using message_type = common::message::Type;
+         using error_type = typename device_type::error_type;
 
          namespace detail
          {
             handler_type subscribe( handler_type&& handler);
 
             void listen( device_type& device, handler_type&& handler);
-            void listen( device_type& device, std::function< void()> empty, handler_type&& handler);
-            void listen( device_type& device, std::function< bool()> condition, handler_type&& handler);
+            void listen( device_type& device, std::function< void()> empty, handler_type&& handler, const error_type& error = nullptr);
 
          } // detail
 
@@ -68,6 +68,13 @@ namespace casual
             void listen( device_type& device, std::function< void()> empty, Callback&&... callbacks)
             {
                detail::listen( device, empty, device.handler( std::forward< Callback>( callbacks)...));
+            }
+
+            template< typename Device, typename... Callback>
+            auto listen( Device& device, std::function< void()> empty, Callback&&... callbacks) 
+               ->  decltype( detail::listen( device.device(), empty, device.handler( std::forward< Callback>( callbacks)...), device.error_handler()))
+            {
+               detail::listen( device.device(), empty, device.handler( std::forward< Callback>( callbacks)...), device.error_handler());
             }
 
             template< typename... Callback>

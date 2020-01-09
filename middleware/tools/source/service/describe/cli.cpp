@@ -60,13 +60,22 @@ namespace casual
                         {
                            switch( category)
                            {
-                              case serviceframework::service::model::type::Category::integer: return "integer";
-                              case serviceframework::service::model::type::Category::boolean: return "boolean";
-                              case serviceframework::service::model::type::Category::character: return "character";
-                              case serviceframework::service::model::type::Category::binary: return "binary";
-                              case serviceframework::service::model::type::Category::string: return "string";
-                              default: return "unknown";
+                              using Enum = serviceframework::service::model::type::Category;
+                              case Enum::unknown: return "unknown";
+                              case Enum::container: return "container";
+                              case Enum::composite: return "composite";
+
+                              case Enum::integer: return "integer";
+                              case Enum::floatingpoint: return "floatingpoint";
+                              
+                              case Enum::boolean: return "boolean";
+                              case Enum::character: return "character";
+                              
+                              case Enum::string: return "string";
+                              case Enum::binary: return "binary";
+                              case Enum::fixed_binary: return "fixed_binary";
                            }
+                           return "<unknown>";
                         }
                         void types( std::ostream& out, const std::vector< serviceframework::service::Model::Type>& types, std::size_t indent);
 

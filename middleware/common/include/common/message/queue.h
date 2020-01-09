@@ -534,8 +534,8 @@ namespace casual
                         case Directive::add: return out << "add";
                         case Directive::remove: return out << "remove";
                         case Directive::replace: return out << "replace";
-                        default: return out << "unknown";
-                     }
+                     } 
+                     return out << "unknown";
                   }
 
                   Directive directive = Directive::add;

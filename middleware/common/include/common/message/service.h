@@ -129,8 +129,8 @@ namespace casual
                      case Transaction::State::active: return out << "active";
                      case Transaction::State::rollback: return out << "rollback";
                      case Transaction::State::timeout: return out << "timeout";
-                     default: return out << "unknown";
                   }
+                  return out << "unknown";
                }
             };
             static_assert( traits::is_movable< Transaction>::value, "not movable");

@@ -49,9 +49,8 @@ namespace casual
                         case tx::no_begin_mixed: return "TX_MIXED_NO_BEGIN: mixed commit but failed to start new one";
                         case tx::no_begin_hazard: return "TX_HAZARD_NO_BEGIN: hazard commit but failed to start new one";
                         case tx::no_begin_committed: return "TX_COMMITTED_NO_BEGIN: transaction heuristically committed but failed to start new one";
-
-                        default: return "unknown";
                      }
+                     return "unknown";
                   }
                };
 

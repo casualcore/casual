@@ -115,7 +115,7 @@ namespace casual
                   template< typename M>
                   void connect( M&& message)
                   {
-                     signal::thread::scope::Mask block{ signal::set::filled( signal::Type::terminate, signal::Type::interrupt)};
+                     signal::thread::scope::Mask block{ signal::set::filled( code::signal::terminate, code::signal::interrupt)};
 
                      connect_reply( communication::ipc::call( outbound::domain::manager::device(), message));
                   }

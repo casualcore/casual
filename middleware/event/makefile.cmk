@@ -84,7 +84,10 @@ install_bin.append( target)
 	
 
 LinkUnittest( 'bin/test-casual-event',
-	[ Compile( 'unittest/source/test_dispatch.cpp')],
+	[ 
+      Compile( 'unittest/source/test_dispatch.cpp'),
+      Compile( 'unittest/source/service/test_log.cpp'),
+   ],
 	[
       lib_api,
 	   'casual-common',

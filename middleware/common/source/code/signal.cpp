@@ -32,18 +32,18 @@ namespace casual
                   {
                      switch( static_cast< code::signal>( code))
                      {
-                        //case signal::ok: return "ok";
+                        case signal::none : return "none";
                         case signal::alarm: return "alarm";
                         case signal::child: return "child";
-                        case signal::interupt: return "interupt";
+                        case signal::interrupt: return "interupt";
                         case signal::kill: return "kill";
                         case signal::pipe: return "pipe";
                         case signal::quit: return "quit";
                         case signal::terminate: return "terminate";
                         case signal::user: return "user";
-
-                        default: return "unknown";
+                        case signal::hangup: return "hangup";
                      }
+                     return "unknown";
                   }
                };
 

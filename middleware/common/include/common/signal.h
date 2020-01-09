@@ -9,10 +9,11 @@
 
 
 
-#include <cstddef>
+
 
 #include "casual/platform.h"
 #include "common/strong/id.h"
+#include "common/code/signal.h"
 #include "common/move.h"
 #include "common/algorithm.h"
 #include "common/thread.h"
@@ -20,6 +21,7 @@
 
 #include <atomic>
 #include <thread>
+#include <cstddef>
 
 // signal
 #include <signal.h>
@@ -31,23 +33,6 @@ namespace casual
    {
       namespace signal
       {
-
-         enum class Type : platform::signal::native::type
-         {
-            none = 0,
-            alarm = SIGALRM,
-            interrupt = SIGINT,
-            kill = SIGKILL,
-            quit = SIGQUIT,
-            child = SIGCHLD,
-            terminate = SIGTERM,
-            user = SIGUSR1,
-            pipe = SIGPIPE,
-         };
-
-         std::ostream& operator << ( std::ostream& out, signal::Type signal);
-
-
          namespace current
          {
             //! @returns the current number of pending signals
@@ -134,7 +119,7 @@ namespace casual
          //! Sends the signal to the process
          //!
          //! @return true if the signal was sent
-         bool send( strong::process::id pid, Type signal);
+         bool send( strong::process::id pid, code::signal signal);
 
          struct Set;
          namespace set
@@ -148,10 +133,10 @@ namespace casual
 
             Set();
             Set( type set);
-            Set( std::initializer_list< Type> signals);
+            Set( std::initializer_list< code::signal> signals);
 
-            void add( Type signal);
-            void remove( Type signal);
+            void add( code::signal signal);
+            void remove( code::signal signal);
 
 
 
@@ -160,7 +145,7 @@ namespace casual
             type set;
 
             //! @return true if @signal is present in the mask
-            bool exists( Type signal) const;
+            bool exists( code::signal signal) const;
 
             friend std::ostream& operator << ( std::ostream& out, const Set& value);
 
@@ -186,11 +171,11 @@ namespace casual
             //! @param excluded the signals that is excluded from the mask
             //!
             //! @return filled() - excluded
-            template< typename... Types>
-            signal::Set filled( signal::Type type, Types... types)
+            template< typename... Signals>
+            signal::Set filled( code::signal signal, Signals... signals)
             {
-               auto set = filled( types...);
-               set.remove( type);
+               auto set = filled( signals...);
+               set.remove( signal);
                return set;
             }
 
@@ -232,13 +217,13 @@ namespace casual
          namespace thread
          {
             //! Send signal to thread
-            void send( std::thread& thread, Type signal);
+            void send( std::thread& thread, code::signal signal);
 
             //! Send signal to thread
-            void send( common::thread::native::type thread, Type signal);
+            void send( common::thread::native::type thread, code::signal signal);
 
             //! Send signal to current thread
-            void send( Type signal);
+            void send( code::signal signal);
 
             namespace scope
             {
@@ -288,7 +273,7 @@ namespace casual
          } // thread
 
          //! @returns the most prioritized received signal, if any.
-         Type received();
+         code::signal received();
 
          //! Throws if there has been a signal received.
          //! And the signal is NOT blocked in the current

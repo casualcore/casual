@@ -9,9 +9,10 @@
 
 
 #include "common/log/stream.h"
-#include "common/signal.h"
 
 #include <system_error>
+
+#include <signal.h>
 
 namespace casual
 {
@@ -19,18 +20,18 @@ namespace casual
    {
       namespace code
       {
-         
-         enum class signal : int
+         enum class signal : platform::signal::native::type
          {
-            //ok = 0,
-            alarm = cast::underlying( common::signal::Type::alarm),
-            interupt = cast::underlying( common::signal::Type::interrupt),
-            kill = cast::underlying( common::signal::Type::kill),
-            quit = cast::underlying( common::signal::Type::quit),
-            child = cast::underlying( common::signal::Type::child),
-            terminate = cast::underlying( common::signal::Type::terminate),
-            user = cast::underlying( common::signal::Type::user),
-            pipe = cast::underlying( common::signal::Type::pipe),
+            none = 0,
+            alarm = SIGALRM,
+            interrupt = SIGINT,
+            kill = SIGKILL,
+            quit = SIGQUIT,
+            child = SIGCHLD,
+            terminate = SIGTERM,
+            user = SIGUSR1,
+            pipe = SIGPIPE,
+            hangup = SIGHUP,
          };
 
 

@@ -26,7 +26,7 @@ namespace casual
                Trace trace{ "common::domain::event::error::send"};
 
                // We block all signals but SIG_INT
-               signal::thread::scope::Mask block{ signal::set::filled( signal::Type::interrupt)};
+               signal::thread::scope::Mask block{ signal::set::filled( code::signal::interrupt)};
 
                message::event::domain::Error error;
                error.message = std::move( message);

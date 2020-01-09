@@ -102,8 +102,8 @@ namespace casual
                         case Stage::prepare: return out << "rollback";
                         case Stage::commit: return out << "commit";
                         case Stage::error: return out << "error";
-                        default: return out << "unknown";
                      }
+                     return out << "unknown";
                   }
                };
                static_assert( traits::is_movable< Reply>::value, "not movable");
@@ -151,8 +151,8 @@ namespace casual
                      {
                         case Stage::rollback: return out << "rollback";
                         case Stage::error: return out << "error";
-                        default: return out << "unknown";
                      }
+                     return out << "unknown";
                   }
 
                };

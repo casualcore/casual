@@ -167,7 +167,7 @@ namespace casual
          //
          // We don't want any sig-child
          //
-         signal::thread::scope::Block block{ { signal::Type::child}};
+         signal::thread::scope::Block block{ { code::signal::child}};
 
          const char* const arguments[] = { "sleep", "20", nullptr };
 

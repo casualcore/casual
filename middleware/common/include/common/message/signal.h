@@ -20,6 +20,7 @@ namespace casual
             using basic_signal = basic_message< type>;
 
             using Timeout = basic_signal< Type::signal_timeout>;
+            using Hangup = basic_signal< Type::signal_hangup>;
          } // signal
       } // message
    } // common

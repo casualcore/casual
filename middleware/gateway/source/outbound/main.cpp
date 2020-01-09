@@ -236,7 +236,7 @@ namespace casual
                         Trace trace{ "gateway::outbound::local::connect connect_thread"};
 
                         // We're only interested in sig-user
-                        common::signal::thread::scope::Mask block{ common::signal::set::filled( common::signal::Type::user)};
+                        common::signal::thread::scope::Mask block{ common::signal::set::filled( common::code::signal::user)};
 
                         message::outbound::connect::Done done;
 
@@ -337,7 +337,7 @@ namespace casual
                   auto worker_join = common::execute::scope( [&worker](){ worker.join();});
                   
                   // We block sig-user so worker always gets'em
-                  common::signal::thread::scope::Block block{ { common::signal::Type::user}};
+                  common::signal::thread::scope::Block block{ { common::code::signal::user}};
 
                   try
                   {
@@ -352,7 +352,7 @@ namespace casual
                   catch( ...)
                   {
                      // we're shutting down or something went wrong, either way, we shutdown the thread.
-                     signal::thread::send( worker, signal::Type::user);
+                     signal::thread::send( worker, code::signal::user);
                      throw;
                   }
                }

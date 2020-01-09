@@ -96,8 +96,9 @@ namespace casual
                {
                   case vo::Bound::in: return "in";
                   case vo::Bound::out: return "out";
-                  default: return "unknown";
+                  case vo::Bound::unknown: return "unknown";
                }
+               return "<unknown>";
             };
 
             auto format_runlevel = []( const vo& c)
@@ -108,8 +109,9 @@ namespace casual
                   case vo::Runlevel::online: return "online";
                   case vo::Runlevel::shutdown: return "shutdown";
                   case vo::Runlevel::error: return "error";
-                  default: return "absent";
+                  case vo::Runlevel::absent: return "absent";
                }
+               return "<unknown>";
             };
 
             auto format_local_address = []( const vo& c)

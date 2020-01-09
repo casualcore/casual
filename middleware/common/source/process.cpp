@@ -374,7 +374,7 @@ namespace casual
                platform::process::native::type native_pid{};
 
                // make sure we don't block interupt and terminate
-               signal::thread::scope::Unblock unblock{ signal::Set{ signal::Type::interrupt, signal::Type::terminate}};
+               signal::thread::scope::Unblock unblock{ signal::Set{ code::signal::interrupt, code::signal::terminate}};
 
                auto status =  posix_spawnp(
                      &native_pid,
@@ -554,7 +554,7 @@ namespace casual
             //
             // We'll only handle child signals.
             //
-            //signal::thread::scope::Mask block{ signal::set::filled( { signal::Type::child})};
+            //signal::thread::scope::Mask block{ signal::set::filled( { code::signal::child})};
 
             return local::wait( pid, 0).status;
          }
@@ -581,7 +581,7 @@ namespace casual
 
          bool terminate( strong::process::id pid)
          {
-            return signal::send( pid, signal::Type::terminate);
+            return signal::send( pid, code::signal::terminate);
          }
 
          void terminate( const Handle& process)
@@ -624,14 +624,14 @@ namespace casual
             {
                switch( value)
                {
-                  case Exit::Reason::exited: out << "exited"; break;
-                  case Exit::Reason::stopped: out << "stopped"; break;
-                  case Exit::Reason::continued: out << "continued"; break;
-                  case Exit::Reason::signaled: out <<  "signaled"; break;
-                  case Exit::Reason::core: out <<  "core"; break;
-                  default: out << "unknown"; break;
+                  case Exit::Reason::exited: return out << "exited";
+                  case Exit::Reason::stopped: return out << "stopped";
+                  case Exit::Reason::continued: return out << "continued";
+                  case Exit::Reason::signaled: return out <<  "signaled";
+                  case Exit::Reason::core: return out << "core";
+                  case Exit::Reason::unknown : return out << "unknown";
                }
-               return out;
+               return out << "<unknown>";
             }
 
             std::vector< lifetime::Exit> ended()
@@ -639,7 +639,7 @@ namespace casual
                Trace trace{ "process::lifetime::ended"};
 
                // We'll only handle child signals.
-               signal::thread::scope::Mask block{ signal::set::filled( signal::Type::child)};
+               signal::thread::scope::Mask block{ signal::set::filled( code::signal::child)};
 
                std::vector< lifetime::Exit> terminations;
 

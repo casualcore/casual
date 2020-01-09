@@ -483,6 +483,45 @@ domain:
 
          }
 
+         TEST( casual_domain_manager, simple_server__signal_hangup)
+         {
+            common::unittest::Trace trace;
+
+            constexpr auto configuration = R"(
+domain:
+  name: simple-server
+  servers:
+    - path: ./bin/test-simple-server
+      instances: 1
+)";
+
+            unittest::Process manager{ { configuration}};
+
+            auto state = local::call::state();
+            ASSERT_TRUE( state.servers.size() == 2) << CASUAL_NAMED_VALUE( state);
+
+            auto& instance = state.servers.at( 1).instances.at( 0);
+
+            common::signal::send( instance.handle.pid, common::code::signal::hangup);
+
+            common::communication::instance::ping( instance.handle.ipc);
+
+            // check that the signal has been received
+            {
+               auto checker = local::get_variable_checker( instance.handle);
+               EXPECT_TRUE( checker( "CASUAL_SIMPLE_SERVER_HANGUP_SIGNAL", "true"));
+            }
+
+            common::communication::instance::ping( instance.handle.ipc);
+
+            // check that the internal message that simple-server has pushed to it self has been received
+            {
+               auto checker = local::get_variable_checker( instance.handle);
+               EXPECT_TRUE( checker( "CASUAL_SIMPLE_SERVER_HANGUP_MESSAGE", "true"));
+            }
+         }
+
+
          TEST( casual_domain_manager, scale_in___expect__prepare_shutdown_to_service_manager)
          {
             common::unittest::Trace trace;

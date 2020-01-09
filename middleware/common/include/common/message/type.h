@@ -218,6 +218,7 @@ namespace casual
             // signals as messages, used to postpone and normalize handling of signals
             SIGNAL_BASE = 8000,
             signal_timeout = SIGNAL_BASE,
+            signal_hangup, 
 
             UNITTEST_BASE = 10000000, // avoid conflict with real messages
             unittest_message,

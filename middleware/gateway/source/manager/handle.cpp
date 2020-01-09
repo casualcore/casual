@@ -72,7 +72,7 @@ namespace casual
                            Trace trace{ "gateway::manager::handle::local::shutdown::Connection"};
 
                            // We only want to handle terminate during this
-                           common::signal::thread::scope::Mask mask{ signal::set::filled( signal::Type::terminate)};
+                           common::signal::thread::scope::Mask mask{ signal::set::filled( code::signal::terminate)};
 
                            if( connection.running())
                            {
@@ -166,7 +166,7 @@ namespace casual
                Trace trace{ "gateway::manager::handle::shutdown"};
 
                // We only want to handle child-signals during this stage
-               common::signal::thread::scope::Mask mask{ signal::set::filled( signal::Type::child)};
+               common::signal::thread::scope::Mask mask{ signal::set::filled( code::signal::child)};
 
                state.runlevel = State::Runlevel::shutdown;
 
