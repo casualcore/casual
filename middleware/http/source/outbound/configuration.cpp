@@ -9,15 +9,14 @@
 //!
 
 #include "http/outbound/configuration.h"
-
 #include "http/common.h"
 
+#include "casual/platform.h"
 
 #include "common/algorithm.h"
-
 #include "common/serialize/create.h"
-#include "casual/platform.h"
 #include "common/file.h"
+#include "common/environment/normalize.h"
 
 namespace casual
 {
@@ -53,36 +52,13 @@ namespace casual
                } // <unnamed>
             } // local
 
-            std::ostream& operator << ( std::ostream& out, const Header& value)
-            {
-               return out << "{ name: " << value.name
-                  << ", value: " << value.value
-                  << '}';
-            }
 
-            std::ostream& operator << ( std::ostream& out, const Service& value)
-            {
-               out << "{ " << value.name
-                  << ", url: " << value.url
-                  << ", headers: " << common::range::make( value.headers);
-               if( value.discard_transaction)
-                  out << ", discard_transaction: " << value.discard_transaction.value();
-
-               return out << '}';
-            }
 
             Default operator + ( Default lhs, Default rhs)
             {
                lhs.service.discard_transaction = rhs.service.discard_transaction;
                common::algorithm::append( rhs.service.headers, lhs.service.headers);
                return lhs;
-            }
-
-            std::ostream& operator << ( std::ostream& out, const Default& value)
-            {
-               return out << "{ discard_transaction: " << value.service.discard_transaction
-                  << ", headers: " << common::range::make( value.service.headers)
-                 << '}';
             }
 
             Model operator + ( Model lhs, Model rhs)
@@ -92,18 +68,16 @@ namespace casual
                return lhs;
             }
 
-            std::ostream& operator << ( std::ostream& out, const Model& value)
-            {
-               return out << "{ default: " << value.casual_default
-                  << ", services: " << common::range::make( value.services)
-                  << '}';
-            }
-
             Model get( const std::string& file)
             {
                Trace trace{ "http::outbound::configuration::get"};
 
-               return local::get( Model{}, file);
+               auto result = local::get( Model{}, file);
+               
+               // normalize environment stuff
+               common::environment::normalize( result);
+
+               return result;
             }
 
             Model get( const std::vector< std::string>& files)
@@ -112,7 +86,12 @@ namespace casual
 
                common::log::line( verbose::log, "files: ", files);
 
-               return common::algorithm::accumulate( files, Model{}, &local::get);
+               auto result = common::algorithm::accumulate( files, Model{}, &local::get);
+
+               // normalize environment stuff
+               common::environment::normalize( result);
+
+               return result;
             }
 
          } // configuration
