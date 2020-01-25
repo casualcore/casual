@@ -95,17 +95,14 @@ namespace casual
 
          auto terminated = process::lifetime::ended();
 
-         //
          // We wait for signal that the child died
-         //
-         try
+
+         ASSERT_THROW(
          {
-            process::sleep( std::chrono::seconds( 2));
-         }
-         catch( const exception::signal::child::Terminate&)
-         {
-            terminated = process::lifetime::ended();
-         }
+            process::sleep( std::chrono::seconds{ 2});
+         }, exception::signal::child::Terminate);
+
+         terminated = process::lifetime::ended();
 
          ASSERT_TRUE( terminated.size() == 1) << "terminated.size(): " << terminated.size();
          EXPECT_TRUE( terminated.front().pid == pid);

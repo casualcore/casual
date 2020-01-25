@@ -171,7 +171,7 @@ namespace casual
 
                               instance.state( state::resource::Proxy::Instance::State::shutdown);
 
-                              if( ! ipc::device().non_blocking_send( instance.process.ipc, message::shutdown::Request{}))
+                              if( ! communication::ipc::non::blocking::send( instance.process.ipc, message::shutdown::Request{}))
                               {
                                  // We couldn't send shutdown for some reason, we send it to pending
                                  casual::domain::pending::message::send( instance.process, message::shutdown::Request{});
@@ -219,7 +219,7 @@ namespace casual
                         {
                            Trace trace{ "transaction::action::resource::instance::request"};
 
-                           if( ipc::device().non_blocking_push( instance.process.ipc, message))
+                           if( communication::ipc::non::blocking::put( instance.process.ipc, message))
                            {
                               instance.state( state::resource::Proxy::Instance::State::busy);
                               instance.metrics.requested = platform::time::clock::type::now();
@@ -259,8 +259,7 @@ namespace casual
                   else
                   {
                      auto& domain = state.get_external( message.resource);
-
-                     ipc::device().blocking_push( domain.process.ipc, message.message);
+                     communication::ipc::blocking::put( domain.process.ipc, message.message);
                   }
                   return true;
                }

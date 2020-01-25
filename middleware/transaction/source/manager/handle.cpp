@@ -30,21 +30,9 @@ namespace casual
          namespace ipc
          {
 
-            const common::communication::ipc::Helper& device()
+            common::communication::ipc::inbound::Device& device()
             {
-               static common::communication::ipc::Helper ipc{
-                  common::communication::error::handler::callback::on::Terminate
-                  {
-                     []( const common::process::lifetime::Exit& exit)
-                     {
-                        // We put a dead process event on our own ipc device, that
-                        // will be handled later on.
-                        common::message::event::process::Exit event{ exit};
-                        common::communication::ipc::inbound::device().push( std::move( event));
-                     }
-                  }
-               };
-               return ipc;
+               return common::communication::ipc::inbound::device();
             }
 
             namespace
@@ -56,10 +44,10 @@ namespace casual
                   {
                      try
                      {
-                        if( ! ipc::device().non_blocking_send( target.ipc, message))
+                        if( ! common::communication::ipc::non::blocking::send( target.ipc, message))
                         {
                            common::log::line( log, "failed to send reply directly to : ", target,  " - action: pend reply");
-                           casual::domain::pending::message::send( target, message, ipc::device().error_handler());
+                           casual::domain::pending::message::send( target, message);
                         }
                      }
                      catch( const common::exception::system::communication::Unavailable&)
@@ -69,25 +57,6 @@ namespace casual
 
                   }
                } // pending
-
-               namespace optional
-               {
-                  
-                  template< typename D, typename M>
-                  void send( D&& device, M&& message)
-                  {
-                     try
-                     {
-                        ipc::device().blocking_send( device, message);
-                        common::log::line( verbose::log, "sent message: ", message);
-                     }
-                     catch( const common::exception::system::communication::Unavailable&)
-                     {
-                        common::log::line( log, "failed to send message to queue: ", device);
-                     }
-                  }
-               } // optional
-
 
             } //
          } // ipc
@@ -113,7 +82,7 @@ namespace casual
 
                         auto direct_send = []( auto& message)
                         {
-                           return common::message::pending::non::blocking::send( message, ipc::device().error_handler());
+                           return common::message::pending::non::blocking::send( message);
                         };
 
                         // try send directly
@@ -124,7 +93,7 @@ namespace casual
 
                         auto pending_send = []( auto& message)
                         {
-                           casual::domain::pending::message::send( message, ipc::device().error_handler());
+                           casual::domain::pending::message::send( message);
                         };
                         
                         // send failed non-blocking sends to pending
@@ -253,7 +222,7 @@ namespace casual
                            Transaction::Resource::Stage new_stage, 
                            common::flag::xa::Flags flags = common::flag::xa::Flag::no_flags)
                         {
-                           Trace trace{ "transaction::handle::send::resource::request"};
+                           Trace trace{ "transaction::handle::local::send::resource::request"};
 
                            auto branch_request = [&]( auto& branch)
                            {
@@ -290,11 +259,11 @@ namespace casual
 
                               common::log::line( verbose::log, "resources: ", resources);
 
-                              //! send request to all resources associated with this branch
+                              // send request to all resources associated with this branch
                               common::algorithm::for_each( branch.resources, resource_request);
                            };
 
-                           //! send request to all resources associated to all branches
+                           // send request to all resources associated to all branches
                            common::algorithm::for_each( transaction.branches, branch_request);
                         }
 
@@ -309,20 +278,16 @@ namespace casual
 
                         instance.state( state::resource::Proxy::Instance::State::idle);
 
-
                         if( request)
                         {
                            // We got a pending request for this resource, let's oblige
-                           if( ipc::device().non_blocking_push( instance.process.ipc, request->message))
+                           if( common::communication::ipc::non::blocking::put( instance.process.ipc, request->message))
                            {
                               instance.state( state::resource::Proxy::Instance::State::busy);
-
                               state.pending.requests.erase( std::begin( request));
                            }
                            else
-                           {
                               common::log::line( common::log::category::error, "failed to send pending request to resource, although the instance (", instance , ") reported idle");
-                           }
                         }
                      }
 
@@ -854,15 +819,25 @@ namespace casual
 
             namespace process
             {
-               void Exit::operator () ( message_type& message)
+               void exit( const common::process::lifetime::Exit& exit)
                {
+                  Trace trace{ "transaction::handle::process::exit"};
+                  common::log::line( verbose::log, "exit: ", exit);
 
+                  // push it to handle it later together with other process exit events
+                  ipc::device().push( common::message::event::process::Exit{ exit});
+               }
+
+               void Exit::operator () ( common::message::event::process::Exit& message)
+               {
                   Trace trace{ "transaction::handle::process::Exit"};
+                  common::log::line( verbose::log, "message: ", message);
 
                   // Check if it's a resource proxy instance
                   if( m_state.remove_instance( message.state.pid))
                   {
-                     ipc::device().blocking_send( common::communication::instance::outbound::domain::manager::device(), message);
+                     common::communication::ipc::blocking::send( 
+                        common::communication::instance::outbound::domain::manager::device(), message);
                      return;
                   }
 
@@ -895,6 +870,7 @@ namespace casual
                void Lookup::operator () ( common::message::transaction::resource::lookup::Request& message)
                {
                   Trace trace{ "transaction::handle::resource::Lookup"};
+                  common::log::line( verbose::log, "message: ", message);
 
                   auto reply = common::message::reverse::type( message);
 
@@ -915,13 +891,12 @@ namespace casual
                      }
                   }
 
-                  ipc::optional::send( message.process.ipc, reply);
+                  common::communication::ipc::blocking::optional::send( message.process.ipc, reply);
                }
 
                void Involved::operator () ( common::message::transaction::resource::involved::Request& message)
                {
                   Trace trace{ "transaction::handle::resource::Involved"};
-
                   common::log::line( verbose::log, "message: ",  message);
 
                   auto& branch = local::branch::find_or_add( m_state, message);
@@ -929,7 +904,7 @@ namespace casual
                   // prepare and send the reply
                   auto reply = common::message::reverse::type( message);
                   reply.involved = branch.involved();
-                  ipc::optional::send( message.process.ipc, reply);
+                  common::communication::ipc::blocking::optional::send( message.process.ipc, reply);
 
                   // partition what we don't got since before
                   auto involved = std::get< 1>( common::algorithm::intersection( message.involved, reply.involved));
@@ -959,7 +934,6 @@ namespace casual
                   void Wrapper< H>::operator () ( message_type& message)
                   {
                      Trace trace{ "transaction::handle::resource::reply::Wrapper"};
-
                      common::log::line( verbose::log, "message: ", message);
 
                      if( state::resource::id::local( message.resource))
@@ -1101,7 +1075,6 @@ namespace casual
             void basic_commit::operator () ( message_type& message)
             {
                Trace trace{ "transaction::handle::Commit"};
-
                common::log::line( verbose::log, "message: ", message);
 
                auto position = local::transaction::find_or_add_and_involve( m_state, message);
@@ -1151,7 +1124,7 @@ namespace casual
                   case 1:
                   {
                      // Only one resource involved, we do a one-phase-commit optimization.
-                     common::log::line( log, transaction.global, " only one resource involved");
+                     common::log::line( log, "global: ", transaction.global, " - only one resource involved");
 
                      // Keep the correlation so we can send correct reply
                      transaction.correlation = message.correlation;
@@ -1192,7 +1165,6 @@ namespace casual
             void basic_rollback::operator () ( message_type& message)
             {
                Trace trace{ "transaction::handle::Rollback"};
-
                common::log::line( log, "message: ", message);
 
                auto location = local::transaction::find_or_add_and_involve( m_state, message);
@@ -1239,7 +1211,6 @@ namespace casual
                void Involved::operator () ( common::message::transaction::resource::external::Involved& message)
                {
                   Trace trace{ "transaction::handle::external::Involved"};
-
                   common::log::line( log, "message: ", message);
 
                   auto id = state::resource::external::proxy::id( m_state, message.process);
@@ -1284,7 +1255,6 @@ namespace casual
                void Prepare::operator () ( message_type& message)
                {
                   Trace trace{ "transaction::handle::domain::prepare request"};
-
                   common::log::line( log, "message: ", message);
 
                   // Find the transaction
@@ -1391,7 +1361,6 @@ namespace casual
                void Commit::operator () ( message_type& message)
                {
                   Trace trace{ "transaction::handle::domain::commit request"};
-
                   common::log::line( log, "message: ", message);
 
                   // Find the transaction
@@ -1427,10 +1396,10 @@ namespace casual
                Directive Commit::handle( message_type& message, Transaction& transaction)
                {
                   Trace trace{ "transaction::handle::domain::Commit::handle"};
+                  common::log::line( verbose::log, "message: ", message);
 
                   transaction.correlation = message.correlation;
 
-                  common::log::line( log, "message: ", message);
                   common::log::line( verbose::log, "transaction: ", transaction);
 
                   if( transaction.implementation)
@@ -1502,8 +1471,7 @@ namespace casual
                void Rollback::operator () ( message_type& message)
                {
                   Trace trace{ "transaction::handle::domain::rollback request"};
-
-                  common::log::line( log, "message: ", message);
+                  common::log::line( verbose::log, "message: ", message);
 
                   // Find the transaction
                   auto found = common::algorithm::find( m_state.transactions, message.trid);
@@ -1526,6 +1494,7 @@ namespace casual
                Directive Rollback::handle( message_type& message, Transaction& transaction)
                {
                   Trace trace{ "transaction::handle::domain::Rollback::handle"};
+                  common::log::line( verbose::log, "message: ", message);
 
                   using Stage = Transaction::Resource::Stage;
 
@@ -1633,7 +1602,7 @@ namespace casual
                                  reply.resource.closeinfo = resource.closeinfo;
                               }
 
-                              ipc::optional::send( message.process.ipc, reply);
+                              common::communication::ipc::blocking::optional::send( message.process.ipc, reply);
                            };
 
                         }
@@ -1689,8 +1658,7 @@ namespace casual
                   handle::domain::Commit{ state},
                   handle::domain::Rollback{ state},
                   common::server::handle::admin::Call{
-                     manager::admin::services( state),
-                     ipc::device().error_handler()}
+                     manager::admin::services( state)}
                );
             }
          } // handle

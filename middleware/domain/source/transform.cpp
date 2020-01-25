@@ -41,9 +41,7 @@ namespace casual
                            process.alias = file::name::base( process.path);
 
                            if( process.alias.empty())
-                           {
                               throw exception::casual::invalid::Configuration{ string::compose( "executables has to have a path - process_ ", process)};
-                           }
                         }
 
                         auto& count = m_mapping[ process.alias];
@@ -75,13 +73,9 @@ namespace casual
                      auto found = common::algorithm::find( groups, name);
 
                      if( found)
-                     {
                         result.push_back( found->id);
-                     }
                      else
-                     {
                         throw exception::casual::invalid::Configuration{ "unresolved dependency to group '" + name + "'" };
-                     }
                   }
 
                   return result;
@@ -96,14 +90,13 @@ namespace casual
                   {
                      manager::state::Group result{ group.name, { m_state.group_id.master}, group.note};
 
-                     if( group.resources.has_value()) result.resources = group.resources.value();
+                     if( group.resources.has_value()) 
+                        result.resources = group.resources.value();
 
                      if( group.dependencies)
                      {
                         for( auto& dependency : group.dependencies.value())
-                        {
                            result.dependencies.push_back( id( dependency));
-                        }
                      }
 
                      return result;
@@ -118,9 +111,8 @@ namespace casual
                      });
 
                      if( found)
-                     {
                         return found->id;
-                     }
+
                      throw exception::casual::invalid::Configuration{ "unresolved dependency to group '" + name + "'" };
                   }
 

@@ -36,10 +36,9 @@ namespace casual
       {
          namespace ipc
          {
-            const common::communication::ipc::Helper& device()
+            common::communication::ipc::inbound::Device& device()
             {
-               static communication::ipc::Helper singleton{ communication::error::handler::callback::on::Terminate{ &handle::process_exit}};
-               return singleton;
+               return common::communication::ipc::inbound::device();
             }
          } // ipc
 
@@ -57,7 +56,7 @@ namespace casual
                         try
                         {
                            log::line( verbose::log, "send message: ", message);
-                           ipc::device().blocking_send( device, message);
+                           communication::ipc::blocking::send( device, message);
                            return true;
                         }
                         catch( const common::exception::system::communication::Unavailable&)
@@ -102,8 +101,8 @@ namespace casual
 
                         try
                         {
-                           if( ! communication::ipc::non::blocking::send( detail::get::device( device), message, ipc::device().error_handler()))
-                              casual::domain::pending::message::send( detail::get::process( device), std::forward< M>( message), ipc::device().error_handler());
+                           if( ! communication::ipc::non::blocking::send( detail::get::device( device), message))
+                              casual::domain::pending::message::send( detail::get::process( device), std::forward< M>( message));
                         }
                         catch( const common::exception::system::communication::Unavailable&)
                         {
@@ -120,7 +119,7 @@ namespace casual
                         auto pending = state.events( state.metric.message());
                         state.metric.clear();
 
-                        if( ! common::message::pending::non::blocking::send( pending, manager::ipc::device().error_handler()))
+                        if( ! common::message::pending::non::blocking::send( pending))
                            casual::domain::pending::message::send( pending);
                      }
                   } // metric
@@ -405,7 +404,7 @@ namespace casual
                      request.services.push_back( name);
 
                      // If there is no gateway, this will throw
-                     ipc::device().blocking_send( communication::instance::outbound::gateway::manager::optional::device(), request);
+                     communication::ipc::blocking::send( communication::instance::outbound::gateway::manager::optional::device(), request);
 
                      m_state.pending.requests.emplace_back( std::move( message), platform::time::clock::type::now());
 
@@ -511,7 +510,7 @@ namespace casual
 
                      algorithm::for_each( message.services, known_services);
 
-                     ipc::device().blocking_send( message.process.ipc, reply);
+                     communication::ipc::blocking::send( message.process.ipc, reply);
                   }
 
                   void Reply::operator () ( common::message::gateway::domain::discover::accumulated::Reply& message)
@@ -543,7 +542,7 @@ namespace casual
                            reply.service.name = pending.request.requested;
                            reply.state = decltype( reply.state)::absent;
 
-                           ipc::device().blocking_send( pending.request.process.ipc, reply);
+                           communication::ipc::blocking::send( pending.request.process.ipc, reply);
                         }
                      }
                      else
@@ -616,7 +615,7 @@ namespace casual
 
             void Policy::reply( common::strong::ipc::id id, common::message::service::call::Reply& message)
             {
-               ipc::device().blocking_send( id, message);
+               communication::ipc::blocking::send( id, message);
             }
 
             void Policy::ack( const common::message::service::call::ACK& ack)

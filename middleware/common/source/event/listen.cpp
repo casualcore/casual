@@ -125,7 +125,7 @@ namespace casual
 
             }
 
-            void listen( device_type& device, std::function< void()> empty, handler_type&& h, const error_type& error)
+            void listen( device_type& device, std::function< void()> empty, handler_type&& h)
             {
                Trace trace{ "common::event::detail::listen"};
 
@@ -135,13 +135,13 @@ namespace casual
 
                while( true)
                {
-                  while( handler( device.next( typename device_type::non_blocking_policy{}, error)))
+                  while( handler( device.next( typename device_type::non_blocking_policy{})))
                      ; // no-op
 
                   // queue is empty, notify caller
                   empty();
 
-                  handler( device.next( typename device_type::blocking_policy{}, error));
+                  handler( device.next( typename device_type::blocking_policy{}));
                }
 
             }

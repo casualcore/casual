@@ -82,10 +82,8 @@ namespace casual
                {
                   namespace coordinate
                   {
-                     //
                      // Policy to coordinate discover request from another domain, 
                      // used with common::message::Coordinate
-                     //
                      struct Policy 
                      {
                         Policy( const communication::Socket& external) : m_external( external) {}
@@ -107,9 +105,7 @@ namespace casual
                         {
                            Trace trace{ "gateway::inbound::handle::domain::discover::coordinate::Policy::send"};
 
-                           //
                            // Set our domain-id to the reply so the outbound can deduce stuff
-                           //
                            message.domain = common::domain::identity();
                            message.process = common::process::handle();
 
@@ -354,7 +350,6 @@ namespace casual
                                  // Make sure we gets the reply
                                  message.process = common::process::handle();
 
-                                 //
                                  // Forward to broker and possible casual-queue
 
                                  std::vector< common::strong::process::id> pids;
@@ -466,7 +461,6 @@ namespace casual
                         void operator() ( message_type& message)
                         {
                            Trace trace{ "gateway::inbound::handle::basic_forward::operator()"};
-
                            common::log::line( verbose::log, "forward message: ", message);
 
                            m_state.external.send( message);
@@ -541,14 +535,11 @@ namespace casual
                         {
                            struct Reply : state::Base
                            {
-                              using message_type = common::message::queue::lookup::Reply;
                               using state::Base::Base;
 
-
-                              void operator() ( message_type& message) const
+                              void operator() ( common::message::queue::lookup::Reply& message) const
                               {
                                  Trace trace{ "gateway::inbound::handle::internal::queue::lookup::Reply"};
-
                                  common::log::line( verbose::log, "message: ", message);
 
                                  auto request = m_state.get_complete( message.correlation);
@@ -567,14 +558,14 @@ namespace casual
                            private:
 
                               template< typename R>
-                              void send_error_reply( message_type& message) const
+                              void send_error_reply( common::message::queue::lookup::Reply& message) const
                               {
                                  R reply;
                                  reply.correlation = message.correlation;
                                  m_state.external.send( reply);
                               }
 
-                              void send_error_reply( message_type& message, common::message::Type type) const
+                              void send_error_reply( common::message::queue::lookup::Reply& message, common::message::Type type) const
                               {
                                  switch( type)
                                  {
@@ -776,6 +767,8 @@ namespace casual
 
                void start( State&& state)
                {
+                  Trace trace{ "gateway::inbound::local::start"};
+
                   // 'connect' to our local domain
                   common::communication::instance::connect();
 
@@ -793,27 +786,19 @@ namespace casual
                   );
                }
 
-               int main( int argc, char **argv)
+               void main( int argc, char **argv)
                {
-                  try
+                  Settings settings;
                   {
-                     Settings settings;
-                     {
-                        argument::Parse parse{ "tcp inbound",
-                           argument::Option( std::tie( settings.descriptor.underlaying()), { "--descriptor"}, "socket descriptor"),
-                           argument::Option( std::tie( settings.limit.messages), { "--limit-messages"}, "# of concurrent messages"),
-                           argument::Option( std::tie( settings.limit.size), { "--limit-size"}, "max size of concurrent messages")
-                        };
-                        parse( argc, argv);
-                     }
+                     argument::Parse parse{ "tcp inbound",
+                        argument::Option( std::tie( settings.descriptor.underlaying()), { "--descriptor"}, "socket descriptor"),
+                        argument::Option( std::tie( settings.limit.messages), { "--limit-messages"}, "# of concurrent messages"),
+                        argument::Option( std::tie( settings.limit.size), { "--limit-size"}, "max size of concurrent messages")
+                     };
+                     parse( argc, argv);
+                  }
 
-                     start( State{ settings});
-                  }
-                  catch( ...)
-                  {
-                     return exception::handle();
-                  }
-                  return 0;
+                  start( State{ settings});
                }
             } // <unnamed>
          } // local
@@ -826,5 +811,8 @@ namespace casual
 
 int main( int argc, char **argv)
 {
-   return casual::gateway::inbound::local::main( argc, argv);
+   return casual::common::exception::guard( [=]()
+   {
+      casual::gateway::inbound::local::main( argc, argv);
+   });
 }

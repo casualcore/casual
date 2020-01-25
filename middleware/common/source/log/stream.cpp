@@ -77,38 +77,27 @@ namespace casual
                         << std::endl; // we need to flush the line.
                   }
 
+                  void reopen() 
+                  {
+                     m_output = File::open();
+                  }
+
                private:
-                  File()
+                  File() : m_output{ File::open()} {}
+
+                  static std::ofstream open()
                   {
-                     open();
-                  }
+                     auto path = common::environment::log::path();
 
-                  bool open( const std::string& file)
-                  {
-                     auto open_file = []( auto& stream, const auto& name)
-                     {
-                        stream.open( name, std::ios::app | std::ios::out);
-                        return ! stream.fail();
-                     };
+                     // make sure we got the directory
+                     common::directory::create( common::directory::name::base( path));                           
 
-                     if( ! open_file( m_output, file))
-                     {
-                        // we try to create the directory
-                        auto base = directory::name::base( file);
-                        if( ! directory::exists( base) && directory::create( base) && open_file( m_output, file))
-                           return true;
+                     std::ofstream file{ path, std::ios::app};
 
-                        // TODO semantics: We don't want to throw... Or do we?
-                        std::cerr << process::path() << " - could not open log-file: " << file << '\n';
-                        return false;
-                     }
-                     return true;
+                     if( ! file)
+                        throw common::exception::system::invalid::Argument{ "failed to open log file: " + path};
 
-                  }
-
-                  void open()
-                  {
-                     open( common::environment::log::path());
+                     return file;
                   }
 
                   std::ofstream m_output;
@@ -120,9 +109,6 @@ namespace casual
                   {
                      return std::regex{ common::environment::variable::get( "CASUAL_LOG", "error")};
                   }
-
-
-
                } // user
 
                namespace error
@@ -295,6 +281,11 @@ namespace casual
             {
                thread::Lock lock;
                local::File::instance().log( category, message);
+            }
+
+            void reopen()
+            {
+               local::File::instance().reopen(); 
             }
          } // stream
 

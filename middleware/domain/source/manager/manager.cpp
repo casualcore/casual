@@ -34,6 +34,15 @@ namespace casual
          {
             Trace trace{ "domain::Manager ctor"};
 
+            // make sure we handle death of our children
+            signal::callback::registration< code::signal::child>( []()
+            {
+               algorithm::for_each( process::lifetime::ended(), []( auto& exit)
+               {
+                  manager::handle::event::process::exit( exit);
+               });
+            });   
+
             // Set the process variables so children can communicate with us.
             common::environment::variable::process::set(
                   common::environment::variable::name::ipc::domain::manager(),
@@ -71,7 +80,7 @@ namespace casual
                         try
                         {
                            // We always block
-                           handler( manager::ipc::device().blocking_next());
+                           handler( manager::ipc::device().next( manager::ipc::device().policy_blocking()));
                         }
                         catch( const exception::casual::Shutdown&)
                         {

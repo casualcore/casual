@@ -57,7 +57,10 @@ namespace casual
 
                   namespace repository
                   {
-                     auto root = environment::variable::get( "CASUAL_REPOSITORY_ROOT");
+                     auto root()
+                     {
+                        return environment::variable::get( "CASUAL_REPOSITORY_ROOT");
+                     }
                   } // repository
                } // <unnamed>
             } // local
@@ -105,7 +108,7 @@ domain:
 
                   void activate()
                   {
-                     environment::variable::set( "CASUAL_HOME", local::repository::root + "/test/home");
+                     environment::variable::set( "CASUAL_HOME", local::repository::root() + "/test/home");
                      environment::variable::set( "CASUAL_DOMAIN_HOME", home);
 
                      if( file::exists( environment::domain::singleton::file()))

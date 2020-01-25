@@ -266,11 +266,6 @@ namespace casual
                   }
 
 
-                  Admin::Admin( communication::error::type handler)
-                     : m_error_handler{ std::move( handler)}
-                  {}
-
-
                   void Admin::configure( server::Arguments& arguments)
                   {
                      // Connection to the domain has been done before...
@@ -286,14 +281,13 @@ namespace casual
 
                   void Admin::reply( strong::ipc::id id, message::service::call::Reply& message)
                   {
-                     communication::ipc::blocking::send( id, message, m_error_handler);
+                     communication::ipc::blocking::send( id, message);
                   }
 
                   void Admin::ack( const message::service::call::ACK& message)
                   {
-                     communication::ipc::blocking::send( communication::instance::outbound::service::manager::device(), message, m_error_handler);
+                     communication::ipc::blocking::send( communication::instance::outbound::service::manager::device(), message);
                   }
-
 
                   void Admin::statistics( strong::ipc::id id, message::event::service::Call& event)
                   {

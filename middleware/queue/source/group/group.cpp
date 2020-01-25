@@ -29,6 +29,15 @@ namespace casual
          {
             Trace trace{ "queue::group::Server::Server"};
 
+            // make sure we handle "alarms"
+            signal::callback::registration< code::signal::alarm>( []()
+            {
+               // Timeout has occurred, we push the corresponding 
+               // signal to our own "queue", and handle it "later"
+               handle::ipc::device().push( common::message::signal::Timeout{});
+            });
+
+
             // Talk to queue-manager to get configuration
             auto reply = communication::ipc::call(  
                common::communication::instance::outbound::queue::manager::device(),

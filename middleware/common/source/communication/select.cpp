@@ -1,5 +1,7 @@
 #include "common/communication/select.h"
+#include "common/communication/device.h"
 
+#include "common/exception/system.h"
 #include "common/signal.h"
 #include "common/result.h"
 #include "common/memory.h"
@@ -72,10 +74,10 @@ namespace casual
                      signal::thread::scope::Block block;
 
                      // check pending signals
-                     signal::handle( block.previous());
+                     if( signal::pending( block.previous()))
+                        throw exception::system::Interupted{};
 
                      log::line( verbose::log, "pselect - blocked signals: ", block.previous());
-
                     
                      posix::result( 
                          // will set previous signal mask atomically 
@@ -84,7 +86,17 @@ namespace casual
                         block.previous().set);
 
                      return result;
-                }
+                  }
+
+                  namespace handle
+                  {
+                     void error()
+                     {
+                        Trace trace{ "common::communication::select::dispatch::detail::handle::error"};
+                        device::handle::error();
+                     }
+                  } // handle
+
                } // detail
 
             } // dispatch

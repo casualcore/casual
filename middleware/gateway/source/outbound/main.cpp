@@ -933,26 +933,19 @@ namespace casual
 
                }
 
-               int main( int argc, char* argv[])
+               void main( int argc, char* argv[])
                {
-                  try
+                  Settings settings;
                   {
-                     Settings settings;
-                     {
-                        argument::Parse parse{ "tcp outbound",
-                           argument::Option( std::tie( settings.address), { "-a", "--address"}, "address to the remote domain [(ip|domain):]port"),
-                           argument::Option( std::tie( settings.order), { "-o", "--order"}, "order of the outbound connector"),
-                        };
-                         parse( argc, argv);
-                     }
+                     argument::Parse parse{ "tcp outbound",
+                        argument::Option( std::tie( settings.address), { "-a", "--address"}, "address to the remote domain [(ip|domain):]port"),
+                        argument::Option( std::tie( settings.order), { "-o", "--order"}, "order of the outbound connector"),
+                     };
+                        parse( argc, argv);
+                  }
 
-                     start( connect( std::move( settings)));
-                  }
-                  catch( ...)
-                  {
-                     return exception::handle();
-                  }
-                  return 0;
+                  start( connect( std::move( settings)));
+    
                }
             } // <unnamed>
          } // local
@@ -964,6 +957,9 @@ namespace casual
 
 int main( int argc, char* argv[])
 {
-   return casual::gateway::outbound::local::main( argc, argv);
+   return casual::common::exception::guard( [=]()
+   {
+      casual::gateway::outbound::local::main( argc, argv);
+   });
 } // main
 

@@ -17,6 +17,7 @@
 #include "common/move.h"
 #include "common/algorithm.h"
 #include "common/thread.h"
+#include "common/execute.h"
 
 
 #include <atomic>
@@ -159,7 +160,7 @@ namespace casual
          };
 
          //! @return current pending signals that has been blocked
-         Set pending();
+         //Set pending();
 
          namespace set
          {
@@ -272,23 +273,73 @@ namespace casual
             } // scope
          } // thread
 
-         //! @returns the most prioritized received signal, if any.
-         code::signal received();
 
-         //! Throws if there has been a signal received.
-         //! And the signal is NOT blocked in the current
-         //! threads signal mask
+         namespace callback
+         {
+            namespace detail
+            {
+               void registration( code::signal signal, std::function< void()> callback);
+
+               struct Replace
+               {
+                  code::signal signal;
+                  std::vector< std::function< void()>> callbacks;
+               };
+               Replace replace( Replace wanted);
+               
+            } // detail
+
+            template< code::signal signal, typename T>
+            auto registration( T&& callback)
+            {
+               static_assert( algorithm::compare::any( signal, 
+                  code::signal::alarm, 
+                  code::signal::hangup,
+                  code::signal::user,
+                  code::signal::child), "not a valid signal for callback");
+
+               return detail::registration( signal, std::forward< T>( callback));
+            }
+
+            namespace scoped
+            {
+               template< code::signal signal, typename T>
+               auto replace( T&& callback)
+               {
+                  static_assert( algorithm::compare::any( signal, 
+                     code::signal::alarm, 
+                     code::signal::hangup,
+                     code::signal::user,
+                     code::signal::child), "not a valid signal for callback");
+
+                  detail::Replace value;
+                  value.signal = signal;
+                  value.callbacks.emplace_back( std::forward< T>( callback));
+
+                  return execute::scope( [ old = detail::replace( std::move( value))]()
+                  {
+                     detail::replace( std::move( old));
+                  });
+               }
+            } // scoped
+         } // callback
+
+         //! Dispatch pending signal to callbacks, that is not blocked by current signal mask.
+         //! if no callbacks been registred an exception will be thrown
          //!
-         //! @throw subtype to exception::signal::Base
-         void handle();
+         //! @throw subtype to exception::signal::exception
+         void dispatch();
 
-         //! Throws if there has been a signal received.
-         //! And the signal is part of the provied signal-sets
+         //! Dispatch pending signal to callbacks, that is not blocked by the provided signal mask
+         //! if no callbacks been registred an exception will be thrown
          //!
-         //! @throw subtype to exception::signal::Base
-         void handle( signal::Set set);
+         //! @throw subtype to exception::signal::exception
+         void dispatch( signal::Set mask);
 
-         //! Clears all pending signals.
+         //! @return true if there are signals that hasn't been consumed/dispatched on.
+         bool pending( signal::Set mask);
+
+         //! Clears all pending signals, only for unittests...
          void clear();
 
       } // signal

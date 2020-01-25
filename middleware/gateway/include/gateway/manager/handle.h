@@ -28,7 +28,7 @@ namespace casual
       {
          namespace ipc
          {
-            const common::communication::ipc::Helper& device();
+            common::communication::ipc::inbound::Device& device();
          } // ipc
 
 
@@ -66,16 +66,6 @@ namespace casual
 
                };
             } // process
-
-            namespace select
-            {
-               struct Error : process::Exit
-               {
-                  using process::Exit::Exit;
-
-                  void operator () ();
-               };
-            } // select
 
             namespace domain
             {

@@ -30,10 +30,9 @@ namespace casual
       {
          namespace ipc
          {
-            const common::communication::ipc::Helper& device()
+            common::communication::ipc::inbound::Device& device()
             {
-               static communication::ipc::Helper singleton{ communication::error::handler::callback::on::Terminate{ &handle::process::exit}};
-               return singleton;
+               return common::communication::ipc::inbound::device();
             }
          } // ipc
 
@@ -43,23 +42,6 @@ namespace casual
             {
                namespace
                {
-                  namespace optional
-                  {
-                     template< typename D, typename M>
-                     bool send( D&& device, M&& message)
-                     {
-                        try
-                        {
-                           ipc::device().blocking_send( device, message);
-                           return true;
-                        }
-                        catch( const common::exception::system::communication::Unavailable&)
-                        {
-                           return false;
-                        }
-                     }
-
-                  } // optional
 
                   namespace shutdown
                   {
@@ -197,7 +179,6 @@ namespace casual
 
             namespace process
             {
-
                void exit( const common::process::lifetime::Exit& exit)
                {
                   Trace trace{ "gateway::manager::handle::process::exit"};
@@ -213,7 +194,7 @@ namespace casual
                   Trace trace{ "gateway::manager::handle::process::Exit"};
 
                   // Send the exit notification to domain.
-                  ipc::device().blocking_send( communication::instance::outbound::domain::manager::device(), message);
+                  communication::ipc::blocking::send( communication::instance::outbound::domain::manager::device(), message);
 
                   if( auto inbound_found = algorithm::find( state().connections.inbound, message.state.pid))
                   {
@@ -240,36 +221,11 @@ namespace casual
 
                   }
                   else
-                  {
                      log::line( log::category::error, "failed to correlate child termination - state: ",  message.state, " - action: discard");
-                  }
                }
 
             } // process
 
-            namespace select
-            {
-
-               void Error::operator () ()
-               {
-                  Trace trace{ "gateway::manager::handle::select::Error"};
-
-                  try
-                  {
-                     throw;
-                  }
-                  catch( const exception::signal::child::Terminate& exception)
-                  {
-                     auto terminated = common::process::lifetime::ended();
-                     for( auto& exit : terminated)
-                     {
-                        common::message::event::process::Exit event{ exit};
-                        process::Exit::operator()( event);
-                     }
-                  }
-               }
-
-            } // select
 
             namespace domain
             {
@@ -294,7 +250,7 @@ namespace casual
                      auto send_request = [&]( const state::outbound::Connection& outbound)
                      {
                         // We don't send to the same domain that is the requester.
-                        if( outbound.remote != message.domain && local::optional::send( outbound.process.ipc, message))
+                        if( outbound.remote != message.domain && communication::ipc::blocking::optional::send( outbound.process.ipc, message))
                            requested.push_back( outbound.process.pid);
                         
                      };
@@ -331,7 +287,7 @@ namespace casual
                      auto reply = common::message::reverse::type( message);
 
                      auto send_reply = common::execute::scope( [&](){
-                        local::optional::send( message.process.ipc, reply);
+                        communication::ipc::blocking::optional::send( message.process.ipc, reply);
                      });
 
                      if( auto found = algorithm::find( state().connections.outbound, message.process.pid))
@@ -428,8 +384,7 @@ namespace casual
          {
             auto& device = ipc::device();
             static common::server::handle::admin::Call admin{
-               manager::admin::services( state),
-               device.error_handler()};
+               manager::admin::services( state)};
 
             return device.handler(
                common::message::handle::defaults( device),

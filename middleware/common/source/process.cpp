@@ -17,6 +17,7 @@
 #include "common/environment.h"
 #include "common/environment/normalize.h"
 #include "common/uuid.h"
+#include "common/result.h"
 
 #include "common/message/domain.h"
 #include "common/message/server.h"
@@ -168,21 +169,17 @@ namespace casual
                   time - std::chrono::seconds{ posix_time.tv_sec}).count();
 
             // We check signals before we sleep
-            signal::handle();
+            signal::dispatch();
 
             if( nanosleep( &posix_time, nullptr) == -1)
             {
                switch( code::last::system::error())
                {
                   case code::system::interrupted:
-                  {
-                     signal::handle();
+                     signal::dispatch();
                      break;
-                  }
                   default:
-                  {
                      exception::system::throw_from_errno();
-                  }
                }
             }
          }
@@ -440,24 +437,16 @@ namespace casual
             {
                lifetime::Exit wait( strong::process::id pid, int flags = WNOHANG)
                {
-                  auto handle_signal = []()
+                  // replace possible signal callbacks får child::terminate
+                  auto restore = signal::callback::scoped::replace< code::signal::child>( []()
                   {
-                     try
-                     {
-                        signal::handle();
-                     }
-                     catch( const exception::signal::child::Terminate&)
-                     {
-                        // no-op
-                     }
-                  };
+                     log::line( verbose::log, "code::signal::child ignored");
+                  });
 
                   lifetime::Exit exit;
 
                   auto loop = [&]()
                   {
-                     handle_signal();
-
                      auto result = waitpid( pid.value(), &exit.status, flags);
 
                      if( result == -1)
@@ -465,22 +454,18 @@ namespace casual
                         switch( code::last::system::error())
                         {
                            case code::system::no_child_process:
-                           {
                               // no child
                               break;
-                           }
+
                            case code::system::interrupted:
-                           {
-                              handle_signal();
+                              signal::dispatch();
 
                               // We do another turn in the loop
                               return true;
-                           }
+
                            default:
-                           {
                               log::line( log::category::error, "failed to check state of pid: ", exit.pid, " - ", code::last::system::error());
                               exception::system::throw_from_errno();
-                           }
                         }
                      }
                      else if( result != 0)
@@ -534,14 +519,9 @@ namespace casual
                      auto exit = local::wait( strong::process::id{ -1}, 0);
 
                      if( algorithm::find( pids, exit.pid))
-                     {
                         result.push_back( std::move( exit));
-                     }
                      else if( ! exit.pid)
-                     {//
-                        // No children exists
-                        return;
-                     }
+                        return; // No children exists
                   }
                }
 
@@ -551,32 +531,17 @@ namespace casual
 
          int wait( strong::process::id pid)
          {
-            //
-            // We'll only handle child signals.
-            //
-            //signal::thread::scope::Mask block{ signal::set::filled( { code::signal::child})};
-
             return local::wait( pid, 0).status;
          }
-
-
-
 
          std::vector< strong::process::id> terminate( const std::vector< strong::process::id>& pids)
          {
             log::line( verbose::log, "process::terminate pids: ", pids);
 
-            std::vector< strong::process::id> result;
-            for( auto pid : pids)
-            {
-               if( terminate( pid))
-               {
-                  result.push_back( pid);
-               }
-            }
-            return result;
+            return algorithm::transform_if( pids, 
+               []( auto pid){ return pid;}, 
+               []( auto pid){ return terminate( pid);});
          }
-
 
 
          bool terminate( strong::process::id pid)
@@ -593,17 +558,12 @@ namespace casual
                communication::ipc::blocking::send( process.ipc, request);
             }
             else if( process.pid)
-            {
                terminate( process.pid);
-            }
             else
-            {
                return;
-            }
+
             wait( process.pid);
          }
-
-
 
 
 

@@ -32,7 +32,7 @@
 
 namespace casual
 {
-
+   using namespace common;
    namespace queue
    {
       namespace manager
@@ -122,10 +122,9 @@ namespace casual
 
                      const auto filter = handler.types();
 
+                     // TODO maintainence: change to message::dispatch::...conditional
                      while( ! common::algorithm::all_of( state.groups, std::mem_fn(&State::Group::connected)))
-                     {
-                        handler( ipc::device().blocking_next( filter));
-                     }
+                        handler( communication::ipc::blocking::next( ipc::device(), filter));
                   }
                }
 
@@ -139,6 +138,15 @@ namespace casual
       {
          Trace trace( "queue::Manager::Manager");
 
+         // make sure we handle death of our children
+         signal::callback::registration< code::signal::child>( []()
+         {
+            algorithm::for_each( process::lifetime::ended(), []( auto& exit)
+            {
+               manager::handle::process::exit( exit);
+            });
+         }); 
+
          // Set environment variable so children can find us easy
          common::environment::variable::process::set(
                common::environment::variable::name::ipc::queue::manager(),
@@ -151,10 +159,12 @@ namespace casual
 
          try
          {
-
             common::process::children::terminate(
-                  std::bind( &manager::handle::process::Exit::apply, manager::handle::process::Exit{ m_state}, std::placeholders::_1),
-                  m_state.processes());
+               [&]( auto& exit)
+               {
+                  manager::handle::process::Exit{ m_state}( message::event::process::Exit{ exit});
+               },
+               m_state.processes());
 
             common::log::line( common::log::category::information, "casual-queue-manager is off-line");
 
@@ -183,11 +193,8 @@ namespace casual
          common::communication::instance::connect( common::communication::instance::identity::queue::manager);
 
          common::log::line( common::log::category::information, "casual-queue-manager is on-line");
-
-         while( true)
-         {
-            handler( manager::ipc::device().blocking_next());
-         }
+         
+         message::dispatch::blocking::pump( handler, manager::ipc::device());
       }
    } // queue
 

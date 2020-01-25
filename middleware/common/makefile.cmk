@@ -42,9 +42,6 @@ casual_common_objectfiles = [
 
     Compile( 'source/strong/id.cpp'),
 
-    Compile( 'source/communication/instance.cpp'),
-    Compile( 'source/communication/select.cpp'),
-
     Compile( 'source/server/context.cpp'),
     Compile( 'source/server/lifetime.cpp'),
     Compile( 'source/server/service.cpp'),
@@ -78,6 +75,9 @@ casual_common_objectfiles = [
     Compile( 'source/communication/ipc.cpp'),
     Compile( 'source/communication/socket.cpp'),
     Compile( 'source/communication/tcp.cpp'),
+    Compile( 'source/communication/instance.cpp'),
+    Compile( 'source/communication/select.cpp'),
+    Compile( 'source/communication/device.cpp'),
     
     Compile( 'source/communication/message.cpp'),
     Compile( 'source/communication/log.cpp'),

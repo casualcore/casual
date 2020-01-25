@@ -42,6 +42,7 @@ namespace casual
             {
                namespace
                {
+                  /*
                   namespace queue
                   {
                      struct Policy
@@ -59,6 +60,7 @@ namespace casual
                         }
                      };
                   } // queue
+                  */
 
                   namespace validate
                   {

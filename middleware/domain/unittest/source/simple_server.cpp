@@ -12,6 +12,7 @@
 #include "common/exception/handle.h"
 #include "common/exception/signal.h"
 #include "common/environment.h"
+#include "common/signal.h"
 
 namespace casual
 {
@@ -22,26 +23,18 @@ namespace casual
       {
          void main(int argc, char **argv)
          {
-            communication::instance::connect();
-
-            auto error_handler = []()
+            
+            signal::callback::registration< code::signal::hangup>( []()
             {
-               try
-               {
-                  throw;
-               }
-               catch( const exception::signal::Hangup& exception)
-               {
-                  log::line( log::category::information, "exception: ", exception);
+               log::line( log::category::information, "signal callback - ", code::signal::hangup);
 
-                  // push to our own ipc
-                  communication::ipc::inbound::device().push( message::signal::Hangup{});
+               // push to our own ipc
+               communication::ipc::inbound::device().push( message::signal::Hangup{});
 
-                  common::environment::variable::set( "CASUAL_SIMPLE_SERVER_HANGUP_SIGNAL", "true");
-               }
-            };
+               common::environment::variable::set( "CASUAL_SIMPLE_SERVER_HANGUP_SIGNAL", "true");
+            });
 
-            communication::ipc::Helper ipc{ std::move( error_handler)};
+            communication::instance::connect();
 
 
             auto handle_hangup = []( const message::signal::Hangup& message)
@@ -51,12 +44,10 @@ namespace casual
                common::environment::variable::set( "CASUAL_SIMPLE_SERVER_HANGUP_MESSAGE", "true");
             };
 
+            auto& ipc = communication::ipc::inbound::device();
 
-
-            auto handler = ipc.device().handler(
-                  message::handle::Ping{},
-                  message::handle::Shutdown{},
-                  message::handle::global::State{},
+            auto handler = ipc.handler(
+                  message::handle::defaults( ipc),
                   std::move( handle_hangup)
             );
 

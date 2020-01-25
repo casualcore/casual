@@ -51,19 +51,9 @@ namespace casual
                   
                   namespace handle
                   {
-                     struct Base
+                     auto request( State& state)
                      {
-                        Base( State& state) : m_state( state) {}
-
-                     protected:
-                        State& m_state;
-                     };
-
-                     struct Request : Base
-                     {
-                        using Base::Base;
-
-                        void operator () ( message::Request& message)
+                        return [&state]( message::Request& message)
                         {
                            Trace trace{ "domain::pending::message::local::handle::Request"};
 
@@ -74,39 +64,27 @@ namespace casual
 
                            // we try to send the message directly
                            if( ! ipc::send( message))
-                              m_state.messages.push_back( std::move( message));
-                        }
-                     };
-
-                     void timeout( State& state)
-                     {
-                        Trace trace{ "domain::pending::message::local::handle::timeout"};
-
-                        // we block all signals during non-blocking-send
-                        signal::thread::scope::Block block;
-
-                        common::algorithm::trim( state.messages, common::algorithm::filter( state.messages, &ipc::send));
+                              state.messages.push_back( std::move( message));
+                        };
                      }
-
-                     struct Timeout : Base
-                     {
-                        using Base::Base;
-
-                        void operator() ()
-                        {
-                           try
-                           {
-                              throw;
-                           }
-                           catch( const exception::signal::Timeout&)
-                           {
-                              // Timeout has occurred, lets try to send the delayed messages
-                              timeout( m_state);
-                           }
-                        }
-                     };
-
                   } // handle
+
+                  namespace callback
+                  {
+                     auto timeout( State& state)
+                     {
+                        return [&state]()
+                        {
+                           Trace trace{ "domain::pending::message::local::handle::timeout"};
+
+                           // we block all signals during non-blocking-send
+                           signal::thread::scope::Block block;
+
+                           common::algorithm::trim( state.messages, common::algorithm::filter( state.messages, &ipc::send));
+
+                        };
+                     }
+                  } // callback
 
                      
                   void start()
@@ -115,30 +93,31 @@ namespace casual
 
                      State state;
 
-                     communication::ipc::Helper ipc{ handle::Timeout{ state}};
+                     // register the alarm callback.
+                     signal::callback::registration< code::signal::alarm>( callback::timeout( state));
+
+                     auto& ipc = communication::ipc::inbound::device();
 
                      // connect process
                      {
                         pending::message::Connect connect;
                         connect.process = common::process::handle();
-                        ipc.blocking_send( communication::instance::outbound::domain::manager::device(), connect);
+                        communication::ipc::blocking::send( communication::instance::outbound::domain::manager::device(), connect);
                      }
                      
                      // Connect singleton to domain
                      communication::instance::connect( message::environment::identification);
 
-
                      auto handler = ipc.handler(
                         common::message::handle::defaults( ipc),
-                        handle::Request{ state}
-                     );
+                        handle::request( state));
 
                      while( true)
                      {
                         // Set timeout, if any
                         signal::timer::set( state.timeout());
 
-                        handler( ipc.blocking_next());
+                        handler( communication::ipc::blocking::next( ipc));
                      }
                   }
 

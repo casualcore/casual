@@ -40,14 +40,14 @@ namespace casual
             {
                namespace blocking
                {
-                  bool send( Message& message, const communication::error::type& handler)
+                  bool send( Message& message)
                   {
                      auto send = [&]( const common::process::Handle& process)
                      {
                         try
                         {
                            communication::ipc::outbound::Device device{ process.ipc};
-                           return static_cast< bool>( device.put( message.complete, communication::ipc::policy::non::Blocking{}, handler));
+                           return static_cast< bool>( device.put( message.complete, communication::ipc::policy::non::Blocking{}));
                         }
                         catch( const exception::system::communication::Unavailable&)
                         {

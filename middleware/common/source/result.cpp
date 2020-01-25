@@ -16,25 +16,9 @@ namespace casual
          {
             namespace
             {
-               void error( common::code::system last_error, signal::Set mask)
+               void error( common::code::system code, signal::Set mask)
                {
-                  using system = common::code::system;
-                  switch( last_error)
-                  {
-                     case system::interrupted:
-                     {
-                        common::signal::handle( mask);
-
-                        // we got a signal we don't have a handle for
-                        // We fall through
-                        common::log::line( common::log::category::warning, "no signal handler for signal - ", last_error);
-
-                     } // @fallthrough
-                     default:
-                     {
-                        exception::system::throw_from_code( last_error);
-                     }
-                  }
+                  exception::system::throw_from_code( code);
                }
             } // <unnamed>
          } // local
@@ -42,18 +26,16 @@ namespace casual
          int result( int result)
          {
             if( result == -1)
-            {
                local::error( common::code::last::system::error(), signal::mask::current());
-            }
+
             return result;
          }
 
          int result( int result, signal::Set mask)
          {
             if( result == -1)
-            {
                local::error( common::code::last::system::error(), mask);
-            }
+
             return result;
          }
 
@@ -62,9 +44,7 @@ namespace casual
             void result( int result) noexcept
             {
                if( result == -1)
-               {
                   common::log::line( common::log::category::error, common::code::last::system::error());
-               }
             }
 
          } // log
@@ -72,9 +52,8 @@ namespace casual
          optional_error error( int result) noexcept
          {
             if( result == -1)
-            {
                return optional_error{ common::code::last::system::error()};
-            }
+
             return {};
          }
       } // posix

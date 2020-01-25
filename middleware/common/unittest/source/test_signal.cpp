@@ -9,6 +9,7 @@
 #include "common/signal.h"
 #include "common/process.h"
 #include "common/exception/signal.h"
+#include "common/exception/system.h"
 
 
 namespace casual
@@ -19,7 +20,7 @@ namespace casual
       struct holder
       {
          using exception_type = E;
-         static code::signal get_signal() { return signal;}
+         static constexpr code::signal get_signal() { return signal;}
       };
 
       template <typename H>
@@ -27,8 +28,6 @@ namespace casual
       {
 
       };
-
-
 
 
       using signal_type = ::testing::Types<
@@ -51,7 +50,7 @@ namespace casual
       {
          common::unittest::Trace trace;
 
-         EXPECT_NO_THROW( signal::handle());
+         EXPECT_NO_THROW( signal::dispatch());
 
          signal::send( process::id(), TestFixture::get_signal());
 
@@ -69,7 +68,7 @@ namespace casual
       {
          common::unittest::Trace trace;
 
-         EXPECT_NO_THROW( signal::handle());
+         EXPECT_NO_THROW( signal::dispatch());
 
          {
             signal::thread::scope::Block block;
@@ -78,7 +77,7 @@ namespace casual
 
             EXPECT_NO_THROW(
             {
-               signal::handle();
+               signal::dispatch();
             }) << "signal mask: " << signal::mask::current();
          }
 
@@ -97,7 +96,7 @@ namespace casual
       {
          common::unittest::Trace trace;
 
-         EXPECT_NO_THROW( signal::handle());
+         EXPECT_NO_THROW( signal::dispatch());
 
          {
 
@@ -107,7 +106,7 @@ namespace casual
 
             EXPECT_NO_THROW(
             {
-               signal::handle();
+               signal::dispatch();
             }) << "signal mask: " << signal::mask::current();
          }
 
@@ -124,7 +123,7 @@ namespace casual
       {
          common::unittest::Trace trace;
 
-         EXPECT_NO_THROW( signal::handle());
+         EXPECT_NO_THROW( signal::dispatch());
 
          {
             signal::thread::scope::Block block( { TestFixture::get_signal()});
@@ -133,7 +132,7 @@ namespace casual
 
             EXPECT_NO_THROW(
             {
-               signal::handle();
+               signal::dispatch();
             }) << "signal mask: " << signal::mask::current();
          }
 
@@ -151,7 +150,7 @@ namespace casual
          common::unittest::Trace trace;
 
 
-         EXPECT_NO_THROW( signal::handle());
+         EXPECT_NO_THROW( signal::dispatch());
 
          {
             signal::send( process::id(), TestFixture::get_signal());
@@ -160,7 +159,7 @@ namespace casual
 
             EXPECT_NO_THROW(
             {
-               signal::handle();
+               signal::dispatch();
             }) << "signal mask: " << signal::mask::current();
          }
 
@@ -177,7 +176,7 @@ namespace casual
       {
          common::unittest::Trace trace;
 
-         EXPECT_NO_THROW( signal::handle());
+         EXPECT_NO_THROW( signal::dispatch());
 
          signal::send( process::id(), TestFixture::get_signal());
          signal::send( process::id(), TestFixture::get_signal());
@@ -196,13 +195,13 @@ namespace casual
 
          EXPECT_THROW(
          {
-            signal::handle();
+            signal::dispatch();
          }, exception_type);
 
          EXPECT_TRUE( signal::current::pending() == 0);
 
          EXPECT_NO_THROW({
-            signal::handle();
+            signal::dispatch();
          });
       }
 
@@ -237,19 +236,18 @@ namespace casual
       {
          common::unittest::Trace trace;
 
-
          signal::send( process::id(), code::signal::terminate);
          signal::send( process::id(), code::signal::child);
 
          // note that child is thrown before terminate
          EXPECT_THROW(
          {
-            signal::handle();
+            signal::dispatch();
          }, exception::signal::child::Terminate);
 
          EXPECT_THROW(
          {
-            signal::handle();
+            signal::dispatch();
          }, exception::signal::Terminate);
 
          EXPECT_TRUE( signal::current::pending() == 0);
@@ -260,15 +258,13 @@ namespace casual
       {
          common::unittest::Trace trace;
 
-
-         EXPECT_NO_THROW( signal::handle());
+         EXPECT_NO_THROW( signal::dispatch());
 
          signal::timer::Scoped timer{ std::chrono::milliseconds{ 1}};
 
          EXPECT_THROW(
          {
             process::sleep( std::chrono::seconds{ 2});
-
          }, exception::signal::Timeout);
       }
 
@@ -277,13 +273,12 @@ namespace casual
          common::unittest::Trace trace;
 
 
-         EXPECT_NO_THROW( signal::handle());
+         EXPECT_NO_THROW( signal::dispatch());
 
          signal::timer::Scoped timer1{ std::chrono::milliseconds{ 5}};
 
          {
             signal::timer::Scoped timer2{ std::chrono::milliseconds{ 1}};
-
 
             EXPECT_THROW(
             {

@@ -37,6 +37,15 @@ namespace casual
                {
                   Trace trace{ "gateway::manager::local::connect"};
 
+                  // make sure we handle death of our children
+                  signal::callback::registration< code::signal::child>( []()
+                  {
+                     algorithm::for_each( process::lifetime::ended(), []( auto& exit)
+                     {
+                        manager::handle::process::exit( exit);
+                     });
+                  }); 
+
                   // Set environment variable to make it easier for connections to get in
                   // touch with us
                   common::environment::variable::process::set(
@@ -56,9 +65,9 @@ namespace casual
                   request.process = process::handle();
 
                   return gateway::transform::state(
-                        manager::ipc::device().call(
-                              communication::instance::outbound::domain::manager::device(),
-                              request).domain);
+                     communication::ipc::call(
+                        communication::instance::outbound::domain::manager::device(),
+                        request).domain);
 
                }
 
@@ -81,7 +90,7 @@ namespace casual
 
                      bool consume()
                      {
-                        return m_handler( ipc::device().non_blocking_next());
+                        return m_handler( communication::ipc::non::blocking::next( ipc::device()));
                      } 
                      handler_type m_handler;
                   };
@@ -140,14 +149,9 @@ namespace casual
 
          log::line( log::category::information, "casual-gateway-manager is online");
 
-
          // start message pump
-         communication::select::dispatch::pump( m_state.directive, inbound, listeners, 
-            manager::handle::select::Error{ m_state});
+         communication::select::dispatch::pump( m_state.directive, inbound, listeners);
       }
 
-
    } // gateway
-
-
 } // casual

@@ -29,54 +29,13 @@ namespace casual
    {
       namespace communication
       {
-         namespace error
+         namespace device
          {
-
-            using type = std::function<void()>;
-
-            namespace handler
+            namespace handle
             {
-               struct Default
-               {
-                  void operator () () const { throw;}
-               };
-
-               namespace callback
-               {
-                  namespace on
-                  {
-                     //! A common policy that does a callback when a
-                     //! process terminates
-                     struct Terminate
-                     {
-                        using callback_type = std::function<void(const process::lifetime::Exit&)>;
-
-                        inline Terminate( callback_type callback) : m_callback{ std::move( callback)} {};
-
-                        inline void operator () () const
-                        {
-                           try
-                           {
-                              throw;
-                           }
-                           catch( const exception::signal::child::Terminate& exception)
-                           {
-                              auto terminated = process::lifetime::ended();
-                              for( auto& death : terminated)
-                              {
-                                 m_callback( death);
-                              }
-                           }
-                        }
-
-                     protected:
-                        std::function<void(const process::lifetime::Exit&)> m_callback;
-                     };
-
-                  } // on
-               } // callback
-            } // handler
-         } // error
+               void error();
+            } // handle
+         } // device
 
          namespace inbound
          {
@@ -95,7 +54,6 @@ namespace casual
                using non_blocking_policy = typename connector_type::non_blocking_policy;
 
                using deserialize_type = Deserialize;
-               using error_type = std::function<void()>;
 
                using handler_type = common::message::dispatch::basic_handler< deserialize_type>;
 
@@ -136,12 +94,11 @@ namespace casual
                //! @return a logical complete message if there is one,
                //!         otherwise the message has absent_message as type
                template< typename P>
-               complete_type next( P&& policy, const error_type& handler = nullptr)
+               complete_type next( P&& policy)
                {
                   return select(
                         std::forward< P>( policy),
-                        []( auto& m){ return true;},
-                        handler);
+                        []( auto& m){ return true;});
                }
 
                //! Tries to find the first logic complete message with a specific type
@@ -149,12 +106,11 @@ namespace casual
                //! @return a logical complete message if there is one,
                //!         otherwise the message has absent_message as type
                template< typename P>
-               complete_type next( message_type type, P&& policy, const error_type& handler = nullptr)
+               complete_type next( message_type type, P&& policy)
                {
                   return select(
                         std::forward< P>( policy),
-                        [=]( const complete_type& m){ return m.type == type;},
-                        handler);
+                        [=]( const complete_type& m){ return m.type == type;});
                }
 
                //! Tries to find the first logic complete message with any of the types in @p types
@@ -163,14 +119,13 @@ namespace casual
                //! @return a logical complete message if there is one,
                //!         otherwise the message has absent_message as type
                template< typename R, typename P>
-               auto next( R&& types, P&& policy, const error_type& handler = nullptr) 
+               auto next( R&& types, P&& policy) 
                   // `types` is a temple to enable other forms of containers than std::vector
                   -> std::enable_if_t< traits::concrete::is_same< decltype( *std::begin( types)), message_type>::value, complete_type>
                {
                   return select(
                         std::forward< P>( policy),
-                        [&]( const complete_type& m){ return ! common::algorithm::find( types, m.type).empty();},
-                        handler);
+                        [&]( const complete_type& m){ return ! common::algorithm::find( types, m.type).empty();});
                }
 
                //! Tries to find the logic complete message with correlation @p correlation
@@ -178,12 +133,11 @@ namespace casual
                //! @return a logical complete message if there is one,
                //!         otherwise the message has absent_message as type
                template< typename P>
-               complete_type next( const Uuid& correlation, P&& policy, const error_type& handler = nullptr)
+               complete_type next( const Uuid& correlation, P&& policy)
                {
                   return select(
                         std::forward< P>( policy),
-                        [&]( const complete_type& m){ return m.correlation == correlation;},
-                        handler);
+                        [&]( const complete_type& m){ return m.correlation == correlation;});
                }
 
                //! Tries to find a logic complete message a specific type and correlation
@@ -191,12 +145,11 @@ namespace casual
                //! @return a logical complete message if there is one,
                //!         otherwise the message has absent_message as type
                template< typename P>
-               complete_type next( message_type type, const Uuid& correlation, P&& policy, const error_type& handler = nullptr)
+               complete_type next( message_type type, const Uuid& correlation, P&& policy)
                {
                   return select(
                         std::forward< P>( policy),
-                        [&]( const complete_type& m){ return m.type == type && m.correlation == correlation;},
-                        handler);
+                        [&]( const complete_type& m){ return m.type == type && m.correlation == correlation;});
                }
 
                //! Tries to find a logic complete message that fulfills the predicate
@@ -204,11 +157,10 @@ namespace casual
                //! @return a logical complete message if there is one,
                //!         otherwise the message has absent_message as type
                template< typename Policy, typename Predicate>
-               complete_type select( Policy&& policy, Predicate&& predicate, const error_type& handler = nullptr)
+               complete_type select( Policy&& policy, Predicate&& predicate)
                {
                   auto found = find(
                         std::forward< Policy>( policy),
-                        handler,
                         predicate::make_and(
                               []( const auto& m){ return m.complete();},
                               std::forward< Predicate>( predicate)));
@@ -228,13 +180,12 @@ namespace casual
                //! @return true if we found one, and message is deserialized. false otherwise.
                //! @note depending on the policy it may not ever return false (ie with a blocking policy)
                template< typename M, typename P>
-               bool receive( M& message, P&& policy, const error_type& handler = nullptr)
+               bool receive( M& message, P&& policy)
                {
                   return deserialize(
                         this->next(
                               common::message::type( message),
-                              std::forward< P>( policy),
-                              handler),
+                              std::forward< P>( policy)),
                         message);
                }
 
@@ -243,14 +194,13 @@ namespace casual
                //! @return true if we found one, and message is deserialized. false otherwise.
                //! @note depending on the policy it may not ever return false (ie with a blocking policy)
                template< typename M, typename P>
-               bool receive( M& message, const Uuid& correlation, P&& policy, const error_type& handler = nullptr)
+               bool receive( M& message, const Uuid& correlation, P&& policy)
                {
                   return deserialize(
                         this->next(
                               common::message::type( message),
                               correlation,
-                              std::forward< P>( policy),
-                              handler),
+                              std::forward< P>( policy)),
                         message);
                }
 
@@ -264,19 +214,14 @@ namespace casual
                   if( complete)
                   {
                      if( ! complete->complete())
-                     {
                         m_discarded.push_back( correlation);
-                     }
+
                      m_cache.erase( complete.begin());
                   }
                   else
                   {
-                     auto found = algorithm::find( m_discarded, correlation);
-
-                     if( ! found)
-                     {
+                     if( ! algorithm::find( m_discarded, correlation))
                         m_discarded.push_back( correlation);
-                     }
                   }
                }
 
@@ -305,9 +250,7 @@ namespace casual
                   auto count = platform::batch::flush;
 
                   while( next( message_type::flush_ipc, non_blocking_policy{}) && --count > 0)
-                  {
-                     ;
-                  }
+                     ; // no op
                }
 
                //! Clear and discard all messages in cache and on the device.
@@ -343,7 +286,7 @@ namespace casual
 
 
                template< typename Policy, typename Predicate>
-               cache_range_type find( Policy&& policy, const error_type& handler, Predicate&& predicate)
+               cache_range_type find( Policy&& policy, Predicate&& predicate)
                {
                   while( true)
                   {
@@ -364,11 +307,7 @@ namespace casual
                      }
                      catch( ...)
                      {
-                        // Delegate the errors to the handler, if provided
-                        if( ! handler)
-                           throw;
-
-                        handler();
+                        communication::device::handle::error();
                      }
                   }
                }
@@ -406,8 +345,6 @@ namespace casual
 
                using serialize_type = Serialize;
 
-               using error_type = std::function<void()>;
-
                template< typename... Args>
                Device( Args&&... args) : m_connector{ std::forward< Args>( args)...} {}
 
@@ -419,9 +356,9 @@ namespace casual
 
 
                template< typename Policy>
-               Uuid put( const message::Complete& complete, Policy&& policy, const error_type& handler = nullptr)
+               Uuid put( const message::Complete& complete, Policy&& policy)
                {
-                  return apply( policy, complete, handler);
+                  return apply( policy, complete);
                }
 
                //! Tries to send a message to the connector @p message
@@ -429,12 +366,10 @@ namespace casual
                //! @return true if we found one, and message is deserialized. false otherwise.
                //! @note depending on the policy it may not ever return false (ie with a blocking policy)
                template< typename M, typename P>
-               Uuid send( M&& message, P&& policy, const error_type& handler = nullptr)
+               Uuid send( M&& message, P&& policy)
                {
                   if( ! message.execution)
-                  {
                      message.execution = execution::id();
-                  }
 
                   message::Complete complete( 
                      common::message::type( message), 
@@ -445,20 +380,19 @@ namespace casual
 
                   return apply(
                         std::forward< P>( policy),
-                        complete,
-                        handler);
+                        complete);
                }
 
                template< typename M>
-               Uuid blocking_send( M&& message, const error_type& handler = nullptr)
+               Uuid blocking_send( M&& message)
                {
-                  return send( message, blocking_policy{}, handler);
+                  return send( message, blocking_policy{});
                }
 
                template< typename M>
-               Uuid non_blocking_send( M&& message, const error_type& handler = nullptr)
+               Uuid non_blocking_send( M&& message)
                {
-                  return send( message, non_blocking_policy{}, handler);
+                  return send( message, non_blocking_policy{});
                }
 
                CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
@@ -469,7 +403,7 @@ namespace casual
             private:
 
                template< typename Policy>
-               Uuid apply( Policy&& policy, const message::Complete& complete, const error_type& handler)
+               Uuid apply( Policy&& policy, const message::Complete& complete)
                {
                   while( true)
                   {
@@ -483,18 +417,9 @@ namespace casual
                         // Let connector take a crack at resolving this problem...
                         m_connector.reconnect();
                      }
-                     catch( const exception::signal::Pipe&)
-                     {
-                        m_connector.reconnect();
-                     }
                      catch( ...)
                      {
-                        // Delegate the errors to the handler, if provided
-                        if( ! handler)
-                        {
-                           throw;
-                        }
-                        handler();
+                        device::handle::error(); 
                      }
                   }
                }
@@ -502,7 +427,6 @@ namespace casual
             };
 
          } // outbound
-         
       } // communication
    } // common
 } // casual

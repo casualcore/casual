@@ -98,7 +98,7 @@ domain:
             } // <unnamed>
          } // local
 
-         TEST( casual_domain_manager, empty_configuration__expect_boot)
+         TEST( domain_manager, empty_configuration__expect_boot)
          {
             common::unittest::Trace trace;
 
@@ -107,7 +107,7 @@ domain:
             });
          }
 
-         TEST( casual_domain_manager, echo_configuration__expect_boot)
+         TEST( domain_manager, echo_configuration__expect_boot)
          {
             common::unittest::Trace trace;
 
@@ -117,7 +117,7 @@ domain:
          }
 
 
-         TEST( casual_domain_manager, non_existing_path___expect_boot)
+         TEST( domain_manager, non_existing_path___expect_boot)
          {
             common::unittest::Trace trace;
 
@@ -135,7 +135,7 @@ domain:
             });
          }
 
-         TEST( casual_domain_manager, non_existing_path__restart___expect_restart_ignored_during_boot)
+         TEST( domain_manager, non_existing_path__restart___expect_restart_ignored_during_boot)
          {
             common::unittest::Trace trace;
 
@@ -155,7 +155,7 @@ domain:
          }
 
 
-         TEST( casual_domain_manager, echo_restart_configuration__expect_boot)
+         TEST( domain_manager, echo_restart_configuration__expect_boot)
          {
             common::unittest::Trace trace;
 
@@ -165,7 +165,7 @@ domain:
          }
 
 
-         TEST( casual_domain_manager, sleep_configuration__expect_boot)
+         TEST( domain_manager, sleep_configuration__expect_boot)
          {
             common::unittest::Trace trace;
 
@@ -174,7 +174,7 @@ domain:
             });
          }
 
-         TEST( casual_domain_manager, non_existent_executable__expect_boot)
+         TEST( domain_manager, non_existent_executable__expect_boot)
          {
             common::unittest::Trace trace;
 
@@ -267,7 +267,7 @@ domain:
             } // <unnamed>
          } // local
          
-         TEST( casual_domain_manager, state_contains_domain_identity)
+         TEST( domain_manager, state_contains_domain_identity)
          {
             common::unittest::Trace trace;
 
@@ -279,7 +279,7 @@ domain:
             EXPECT_TRUE( state.identity.id);
          }
 
-         TEST( casual_domain_manager, state_long_running_processes_5__expect_5)
+         TEST( domain_manager, state_long_running_processes_5__expect_5)
          {
             common::unittest::Trace trace;
 
@@ -295,7 +295,7 @@ domain:
 
 
 
-         TEST( casual_domain_manager, state_long_running_processes_5__scale_out_to_10___expect_10)
+         TEST( domain_manager, state_long_running_processes_5__scale_out_to_10___expect_10)
          {
             common::unittest::Trace trace;
 
@@ -311,7 +311,7 @@ domain:
             EXPECT_TRUE( state.executables.at( 0).instances.size() == 10) << CASUAL_NAMED_VALUE( state);
          }
 
-         TEST( casual_domain_manager, long_running_processes_5__scale_in_to_0___expect_0)
+         TEST( domain_manager, long_running_processes_5__scale_in_to_0___expect_0)
          {
             common::unittest::Trace trace;
 
@@ -330,7 +330,7 @@ domain:
          }
 
 
-         TEST( casual_domain_manager, state_simple_server__expect_boot)
+         TEST( domain_manager, state_simple_server__expect_boot)
          {
             common::unittest::Trace trace;
 
@@ -386,7 +386,7 @@ domain:
             } // <unnamed>
          } // local
 
-         TEST( casual_domain_manager, simple_server__1_instance__CASUAL_INSTANCE_ALIAS__CASUAL_INSTANCE_NUMBER)
+         TEST( domain_manager, simple_server__1_instance__CASUAL_INSTANCE_ALIAS__CASUAL_INSTANCE_NUMBER)
          {
             common::unittest::Trace trace;
 
@@ -410,7 +410,7 @@ domain:
 
          }
 
-         TEST( casual_domain_manager, simple_server__10_instance__CASUAL_INSTANCE_ALIAS__CASUAL_INSTANCE_NUMBER)
+         TEST( domain_manager, simple_server__10_instance__CASUAL_INSTANCE_ALIAS__CASUAL_INSTANCE_NUMBER)
          {
             common::unittest::Trace trace;
 
@@ -444,7 +444,7 @@ domain:
             }
          }         
 
-         TEST( casual_domain_manager, simple_server__nested_environment_variables__expect_boot)
+         TEST( domain_manager, simple_server__nested_environment_variables__expect_boot)
          {
             common::unittest::Trace trace;
 
@@ -483,7 +483,7 @@ domain:
 
          }
 
-         TEST( casual_domain_manager, simple_server__signal_hangup)
+         TEST( domain_manager, simple_server__signal_hangup)
          {
             common::unittest::Trace trace;
 
@@ -522,7 +522,7 @@ domain:
          }
 
 
-         TEST( casual_domain_manager, scale_in___expect__prepare_shutdown_to_service_manager)
+         TEST( domain_manager, scale_in___expect__prepare_shutdown_to_service_manager)
          {
             common::unittest::Trace trace;
 
@@ -568,7 +568,7 @@ domain:
          }
 
 
-         TEST( casual_domain_manager, groups_4__with_5_executables___start_with_instances_1__scale_to_10)
+         TEST( domain_manager, groups_4__with_5_executables___start_with_instances_1__scale_to_10)
          {
             common::unittest::Trace trace;
 
@@ -735,7 +735,7 @@ domain:
                } // predicate
             } // <unnamed>
          } // local
-         TEST( casual_domain_manager, restart_executable)
+         TEST( domain_manager, restart_executable)
          {
             common::unittest::Trace trace;
 
@@ -778,7 +778,7 @@ domain:
          }
 
 
-         TEST( casual_domain_manager, restart_server)
+         TEST( domain_manager, restart_server)
          {
             common::unittest::Trace trace;
 

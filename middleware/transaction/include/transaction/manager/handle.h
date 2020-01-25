@@ -31,7 +31,7 @@ namespace casual
       {
          namespace ipc
          {
-            const common::communication::ipc::Helper& device();
+            common::communication::ipc::inbound::Device& device();
          } // ipc
 
          namespace user
@@ -55,11 +55,10 @@ namespace casual
                struct Exit : state::Base
                {
                   using Base::Base;
-
-                  using message_type = common::message::event::process::Exit;
-
-                  void operator () ( message_type& message);
+                  void operator () ( common::message::event::process::Exit& message);
                };
+
+               void exit( const common::process::lifetime::Exit& exit);
 
             } // process
 

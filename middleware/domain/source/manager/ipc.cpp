@@ -22,28 +22,25 @@ namespace casual
 
          namespace ipc
          {
-            const communication::ipc::Helper& device()
+            communication::ipc::inbound::Device& device()
             {
-               static communication::ipc::Helper singleton{
-                  communication::error::handler::callback::on::Terminate{ &handle::event::process::exit}};
-
-               return singleton;
+               return communication::ipc::inbound::device(); 
             }
 
             namespace pending
             {
                void send( const State& state, common::message::pending::Message&& pending)
                {
-                  ipc::device().blocking_send( 
-                     state.process.pending.handle().ipc, 
+                  communication::ipc::blocking::send( 
+                     state.process.pending.handle().ipc,
                      casual::domain::pending::message::Request{ std::move( pending)});
                }
-               
+
             } // pending
 
             void send( const State& state, common::message::pending::Message&& pending)
             {
-                if( ! message::pending::non::blocking::send( pending, manager::ipc::device().error_handler()))
+                if( ! message::pending::non::blocking::send( pending))
                      ipc::pending::send( state, std::move( pending));
             }
 

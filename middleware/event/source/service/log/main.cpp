@@ -103,25 +103,6 @@ namespace casual
                      Settings m_settings;
                   };
 
-                  namespace error
-                  {
-                     auto handler( Handler& handler)
-                     {
-                        return [&handler]()
-                        {
-                           try
-                           {
-                              throw;
-                           }
-                           catch( const common::exception::signal::Hangup&) 
-                           {
-                              handler.reopen();
-                           }
-                        };
-                     }
-                  } // error
-
-
                   void main(int argc, char **argv)
                   {
                      Settings settings;
@@ -139,12 +120,11 @@ namespace casual
                      common::communication::instance::connect( 0xc9d132c7249241c8b4085cc399b19714_uuid);
 
                      Handler handler{ std::move( settings)};
-                     
-                     // a helper that act on signal::hangup
-                     common::communication::ipc::Helper ipc{ error::handler( handler)};
+
+                     // make sure we reopen file on SIGHUP
+                     common::signal::callback::registration< common::code::signal::hangup>( [&handler](){ handler.reopen();});
 
                      common::event::idle::listen(
-                        ipc,
                         [&handler]()
                         {
                            // the queue is empty

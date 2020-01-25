@@ -31,21 +31,9 @@ namespace casual
 
          namespace ipc
          {
-            const common::communication::ipc::Helper& device()
+            communication::ipc::inbound::Device& device()
             {
-               static common::communication::ipc::Helper ipc{
-                  common::communication::error::handler::callback::on::Terminate
-                  {
-                     []( const common::process::lifetime::Exit& exit)
-                     {
-                        // We put a dead process event on our own ipc device, that
-                        // will be handled later on.
-                        common::message::event::process::Exit event{ exit};
-                        common::communication::ipc::inbound::device().push( std::move( event));
-                     }
-                  }
-               };
-               return ipc;
+               return communication::ipc::inbound::device();
             }
 
          } // ipc
@@ -60,78 +48,52 @@ namespace casual
                   template< typename G, typename M>
                   void send( State& state, G&& groups, M&& message)
                   {
-                     // TODO: until we get "auto lambdas"
-                     using group_type = decltype( *std::begin( groups));
-
                      // Try to send it first with no blocking.
-                     auto busy = common::algorithm::partition( groups, [&]( group_type& g)
-                           {
-                              return ! ipc::device().non_blocking_send( g.queue, message);
-                           });
+                     auto busy = common::algorithm::filter( groups, [&message]( auto& group)
+                     {
+                        return ! communication::ipc::non::blocking::send( group.queue, message);
+                     });
 
                      // Block for the busy ones, if any
-                     for( auto&& group : std::get< 0>( busy))
-                        ipc::device().blocking_send( group.queue, message);
-
-                  }
-
-                  namespace optional
-                  {
-                     template< typename D, typename M>
-                     bool send( D&& device, M&& message)
+                     algorithm::for_each( busy, [&message]( auto& group)
                      {
-                        try
-                        {
-                           ipc::device().blocking_send( device, std::forward< M>( message));
-                           return true;
-                        }
-                        catch( const common::exception::system::communication::Unavailable&)
-                        {
-                           return false;
-                        }
-                     }
-                  } // optional
-
-                  template< typename D, typename M>
-                  void reply( D&& device, M&& message)
-                  {
-                     if( ! optional::send( std::forward< D>( device), std::forward< M>( message)))
-                     {
-                        log::line( log::category::error, "device [", device, "] unavailable for reply - action: ignore");
-                     }
+                        communication::ipc::blocking::send( group.queue, message);
+                     });
                   }
-
-
-
                } // <unnamed>
             } // local
 
             namespace process
             {
-               void Exit::operator () ( message_type& message)
+               void Exit::operator () ( const common::message::event::process::Exit& message)
                {
-                  apply( message.state);
+                  common::log::line( verbose::log, "message: ", message);
+                  m_state.remove( message.state.pid);
                }
 
-               void Exit::apply( const common::process::lifetime::Exit& exit)
+               void exit( const common::process::lifetime::Exit& exit)
                {
-                  Trace trace{ "handle::process::Exit"};
+                  Trace trace{ "handle::process::exit"};
+                  common::log::line( verbose::log, "exit: ", exit);
 
-                  m_state.remove( exit.pid);
+                  // we handle it later
+                  ipc::device().push( common::message::event::process::Exit{ exit});
 
                }
             } // process
 
             namespace shutdown
             {
-               void Request::operator () ( message_type& message)
+               void Request::operator () ( common::message::shutdown::Request& message)
                {
-                  std::vector< common::process::Handle> groups;
-                  common::algorithm::transform( m_state.groups, groups, std::mem_fn( &manager::State::Group::process));
+                  auto groups = common::algorithm::transform( m_state.groups, std::mem_fn( &manager::State::Group::process));
 
                   common::algorithm::for_each(
-                        common::server::lifetime::soft::shutdown( groups, std::chrono::seconds( 1)),
-                        std::bind( &process::Exit::apply, process::Exit{ m_state}, std::placeholders::_1));
+                     common::server::lifetime::soft::shutdown( groups, std::chrono::seconds{ 1}),
+                     []( auto& group)
+                     {
+                        process::exit( group);
+                     });
 
                   throw common::exception::casual::Shutdown{};
                }
@@ -140,11 +102,9 @@ namespace casual
 
             namespace lookup
             {
-
-               void Request::operator () ( message_type& message)
+               void Request::operator () ( common::message::queue::lookup::Request& message)
                {
                   Trace trace{ "handle::lookup::Request"};
-
                   common::log::line( verbose::log, "message: ", message);
 
                   auto reply = common::message::reverse::type( message);
@@ -153,7 +113,7 @@ namespace casual
                   auto send_reply = common::execute::scope( [&]()
                   {
                      common::log::line( verbose::log, "reply.execution: ", reply.execution);
-                     local::reply( message.process.ipc, reply);
+                     communication::ipc::blocking::optional::send( message.process.ipc, reply);
                   });
 
                   auto found = common::algorithm::find( m_state.queues, message.name);
@@ -182,7 +142,8 @@ namespace casual
                      request.process = common::process::handle();
                      request.queues.push_back(  message.name);
 
-                     if( local::optional::send( common::communication::instance::outbound::gateway::manager::optional::device(), std::move( request)))
+                     if( communication::ipc::blocking::optional::send( 
+                        common::communication::instance::outbound::gateway::manager::optional::device(), std::move( request)))
                      {
                         m_state.pending.push_back( std::move( message));
 
@@ -225,11 +186,9 @@ namespace casual
                         });
                      }
                      else
-                     {
                         common::log::line( common::log::category::error, "failed to correlate configuration for group - ", group.name);
-                     }
-
-                     ipc::device().blocking_send( request.process.ipc, reply);
+                     
+                     communication::ipc::blocking::send( request.process.ipc, reply);
                   }
                   else
                   {
@@ -267,17 +226,16 @@ namespace casual
 
             namespace concurrent
             {
-               void Advertise::operator () ( message_type& message)
+               void Advertise::operator () ( common::message::queue::concurrent::Advertise& message)
                {
                   Trace trace{ "handle::domain::Advertise"};
-
                   log::line( verbose::log, "message: ", message);
 
                   m_state.update( message);
 
                   using directive_type = decltype( message.directive);
 
-                  if( common::compare::any( message.directive, { directive_type::add, directive_type::replace}))
+                  if( common::algorithm::compare::any( message.directive, directive_type::add, directive_type::replace))
                   {
                      // Queues has been added, we check if there are any pending
 
@@ -306,10 +264,9 @@ namespace casual
             {
                namespace discover
                {
-                  void Request::operator () ( message_type& message)
+                  void Request::operator () ( common::message::gateway::domain::discover::Request& message)
                   {
                      Trace trace{ "handle::domain::discover::Request"};
-
                      common::log::line( verbose::log, "message: ", message);
 
                      auto reply = common::message::reverse::type( message);
@@ -327,13 +284,12 @@ namespace casual
 
                      common::log::line( verbose::log, "reply: ", reply);
 
-                     ipc::device().blocking_send( message.process.ipc, reply);
+                     communication::ipc::blocking::send( message.process.ipc, reply);
                   }
 
-                  void Reply::operator () ( message_type& message)
+                  void Reply::operator () ( common::message::gateway::domain::discover::accumulated::Reply& message)
                   {
                      Trace trace{ "handle::domain::discover::Reply"};
-
                      common::log::line( verbose::log, "message: ", message);
 
                      // outbound has already advertised the queues (if any), so we have that handled
@@ -359,12 +315,10 @@ namespace casual
                            reply.queue = queue.queue;
                         }
 
-                        local::reply( request.process.ipc, reply);
+                        communication::ipc::blocking::optional::send( request.process.ipc, reply);
                      }
                      else
-                     {
                         log::line( log, "no pending was found for discovery reply");
-                     }
                   }
                } // discover
             } // domain
@@ -385,8 +339,7 @@ namespace casual
                manager::handle::domain::discover::Reply{ state},
 
                common::server::handle::admin::Call{
-                  manager::admin::services( state),
-                  ipc::device().error_handler()},
+                  manager::admin::services( state)},
             };
          }
 

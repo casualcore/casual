@@ -43,8 +43,6 @@ namespace casual
 
                manager::unittest::Process domain;
 
-               common::communication::ipc::Helper ipc;
-
                {
                   common::message::service::lookup::Request message;
                   message.requested = "foo";
@@ -53,7 +51,7 @@ namespace casual
 
                {
                   common::message::service::lookup::Request message;
-                  ipc.blocking_receive( message);
+                  common::communication::ipc::blocking::receive( common::communication::ipc::inbound::device(), message);
 
                   EXPECT_TRUE( message.requested ==  "foo");
                }

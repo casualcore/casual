@@ -84,8 +84,8 @@ namespace casual
                   {
                      Trace trace{ "manager::state::coordinate::outbound::Policy send"};
 
-                     manager::ipc::device().blocking_send( queue, message);
-
+                     // TODO maintainence: state should not communicate with anything, just hold state.
+                     communication::ipc::blocking::send( queue, message);
                   }
                } // outbound
 

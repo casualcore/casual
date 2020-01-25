@@ -363,10 +363,8 @@ namespace casual
 
                      ssize_t send( const descriptor_type descriptor, const void* const data, size_type const size, common::Flags< Flag> flags)
                      {
-                        common::signal::handle();
-
-                        return posix::result(
-                              ::send( descriptor.value(), data, size, flags.underlaying()));
+                        return posix::result( 
+                           ::send( descriptor.value(), data, size, flags.underlaying()));
                      }
 
                      char* receive(
@@ -382,8 +380,6 @@ namespace casual
 
                         while( first != last)
                         {
-                           common::signal::handle();
-
                            const auto bytes = posix::result(
                                  ::recv( descriptor.value(), first, last - first, flags.underlaying()));
 
@@ -404,7 +400,6 @@ namespace casual
                Uuid send( const Socket& socket, const communication::message::Complete& complete, common::Flags< Flag> flags)
                {
                   Trace trace{ "tcp::native::send"};
-
 
                   try
                   {

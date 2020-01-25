@@ -56,8 +56,6 @@ namespace casual
 
                   struct Admin
                   {
-                     Admin( communication::error::type handler);
-
                      void configure( server::Arguments& arguments);
                      void reply( strong::ipc::id id, message::service::call::Reply& message);
                      void ack( const message::service::call::ACK& message);
@@ -73,9 +71,6 @@ namespace casual
 
 
                      void forward( common::service::invoke::Forward&& forward, const message::service::call::callee::Request& message);
-
-                  private:
-                     communication::error::type m_error_handler;
                   };
 
                } // call

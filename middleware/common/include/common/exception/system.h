@@ -24,6 +24,8 @@ namespace casual
 
             template< code::system error>
             using base = common::exception::basic_error< exception, error>;
+
+            using Interupted = system::base< code::system::interrupted>;
             
 
             namespace invalid

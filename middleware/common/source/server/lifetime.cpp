@@ -25,33 +25,22 @@ namespace casual
                std::vector< process::lifetime::Exit> shutdown( const std::vector< process::Handle>& servers, platform::time::unit timeout)
                {
                   Trace trace{ "common::server::lifetime::soft::shutdown"};
-
                   log::line( log::debug, "servers: ", servers);
 
                   auto result = process::lifetime::ended();
 
-
-                  std::vector< strong::process::id> requested;
-
-                  for( auto& handle : servers)
+                  auto requested = algorithm::transform_if( servers, []( auto& handle){ return handle.pid;}, []( auto& handle)
                   {
-                     message::shutdown::Request message;
-
                      try
                      {
-                        if( communication::ipc::non::blocking::send( handle.ipc, message))
-                        {
-                           requested.push_back( handle.pid);
-                        }
+                        return ! communication::ipc::non::blocking::send( handle.ipc, message::shutdown::Request{}).empty();
                      }
                      catch( const exception::system::communication::Unavailable&)
                      {
-                        //
-                        // The server's queue is absent...
-                        //
+                        return false;
                      }
+                  });
 
-                  }
 
                   auto terminated = process::lifetime::wait( requested, timeout);
 

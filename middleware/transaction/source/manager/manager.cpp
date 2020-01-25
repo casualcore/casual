@@ -37,6 +37,15 @@ namespace casual
       {
          log::line( log, "transaction manager start");
 
+         // make sure we handle death of our children
+         signal::callback::registration< code::signal::child>( []()
+         {
+            algorithm::for_each( process::lifetime::ended(), []( auto& exit)
+            {
+               manager::handle::process::exit( exit);
+            });
+         }); 
+
          // Set the process variables so children can communicate with us.
          common::environment::variable::process::set(
             common::environment::variable::name::ipc::transaction::manager(),
@@ -53,8 +62,11 @@ namespace casual
             // Make sure we wait for the resources to get ready
             auto handler = manager::handle::startup::handlers( m_state);
 
+            const auto types = handler.types();
+
+            // TODO maintainence: change to message::dispatch...
             while( ! m_state.booted())
-               handler( manager::ipc::device().blocking_next( handler.types()));
+               handler( communication::ipc::blocking::next( manager::ipc::device(), types));
          }
 
          log::line( log::category::information, "transaction-manager is on-line");

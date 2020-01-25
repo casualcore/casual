@@ -41,7 +41,6 @@ namespace casual
                         return communication::ipc::call(
                               outbound::domain::manager::device(),
                               request,
-                              nullptr,
                               inbound).process;
                      }
                   } // <unnamed>

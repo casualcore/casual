@@ -37,7 +37,7 @@ namespace casual
 
          namespace ipc
          {
-            const common::communication::ipc::Helper& device();
+            common::communication::ipc::inbound::Device& device();
          } // ipc
 
 
@@ -50,17 +50,13 @@ namespace casual
 
             namespace process
             {
-
                struct Exit : Base
                {
                   using Base::Base;
-
-                  using message_type = common::message::event::process::Exit;
-
-                  void operator () ( message_type& message);
-
-                  void apply( const common::process::lifetime::Exit& exit);
+                  void operator () ( const common::message::event::process::Exit& message);    
                };
+
+               void exit( const common::process::lifetime::Exit& exit);
 
             } // process
 
@@ -68,11 +64,8 @@ namespace casual
             {
                struct Request : Base
                {
-                  using message_type = common::message::shutdown::Request;
-
                   using Base::Base;
-
-                  void operator () ( message_type& message);
+                  void operator () ( common::message::shutdown::Request& message);
                };
 
             } // shutdown
@@ -82,11 +75,8 @@ namespace casual
             {
                struct Request : Base
                {
-                  using message_type = common::message::queue::lookup::Request;
-
                   using Base::Base;
-
-                  void operator () ( message_type& message);
+                  void operator () ( common::message::queue::lookup::Request& message);
                };
 
             } // lookup
@@ -117,10 +107,8 @@ namespace casual
                //!
                struct Advertise : Base
                {
-                  using message_type = common::message::queue::concurrent::Advertise;
                   using Base::Base;
-
-                  void operator () ( message_type& message);
+                  void operator () ( common::message::queue::concurrent::Advertise& message);
                };
             } // concurrent
 
@@ -130,18 +118,14 @@ namespace casual
                {
                   struct Request : Base
                   {
-                     using message_type = common::message::gateway::domain::discover::Request;
                      using Base::Base;
-
-                     void operator () ( message_type& message);
+                     void operator () ( common::message::gateway::domain::discover::Request& message);
                   };
 
                   struct Reply : Base
                   {
-                     using message_type = common::message::gateway::domain::discover::accumulated::Reply;
                      using Base::Base;
-
-                     void operator () ( message_type& message);
+                     void operator () ( common::message::gateway::domain::discover::accumulated::Reply& message);
                   };
 
                } // discover
@@ -150,11 +134,8 @@ namespace casual
 
          handle::dispatch_type handlers( State& state);
 
-      } // broker
+      } // manager
    } // queue
-
-
-
 } // casual
 
 

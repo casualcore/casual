@@ -40,7 +40,7 @@ namespace casual
                         {
                            common::message::queue::information::queues::Request request;
                            request.process = common::process::handle();
-                           return ipc::device().blocking_send( group.process.ipc, request);
+                           return communication::ipc::blocking::send( group.process.ipc, request);
                         };
 
                         std::vector< common::Uuid> correlations;
@@ -51,7 +51,7 @@ namespace casual
                         auto receive = [&]( const common::Uuid& correlation)
                            {
                               common::message::queue::information::queues::Reply reply;
-                              ipc::device().blocking_receive( reply, correlation);
+                              communication::ipc::blocking::receive( ipc::device(), reply, correlation);
                               return reply;
                            };
 
@@ -81,7 +81,7 @@ namespace casual
                            request.process = common::process::handle();
                            request.qid = found->second.front().queue;
 
-                           return transform::messages( ipc::device().call( found->second.front().process.ipc, request));
+                           return transform::messages( communication::ipc::call( found->second.front().process.ipc, request));
                         }
 
                         return {};
@@ -97,7 +97,7 @@ namespace casual
                            request.queue = found->second.front().queue;
                            request.ids = std::move( ids);
 
-                           return ipc::device().call( found->second.front().process.ipc, request).ids;
+                           return communication::ipc::call( found->second.front().process.ipc, request).ids;
                         }
 
                         return {};
@@ -133,7 +133,7 @@ namespace casual
                         request.process = common::process::handle();
                         request.queues.push_back( queue->queue);
 
-                        auto reply = manager::ipc::device().call( queue->process.ipc, request);
+                        auto reply = communication::ipc::call( queue->process.ipc, request);
 
                         if( ! reply.affected.empty())
                         {
@@ -171,7 +171,7 @@ namespace casual
                         common::message::queue::clear::Request request{ common::process::handle()};
                         request.queues.push_back( queue.pointer->queue);
                         
-                        auto reply = manager::ipc::device().call( queue.pointer->process.ipc, request);
+                        auto reply = communication::ipc::call( queue.pointer->process.ipc, request);
 
                         model::Affected result;
                         result.queue.name = std::move( queue.name);

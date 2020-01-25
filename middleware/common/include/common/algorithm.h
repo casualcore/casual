@@ -1201,24 +1201,33 @@ namespace casual
                }
             } // emplace
          } // container
+
+         namespace compare
+         {
+            namespace detail
+            {
+               template< typename V, typename T>
+               constexpr bool any( V&& value, T&& t)
+               {
+                  return value == t;
+               }
+
+               template< typename V, typename T, typename... Ts>
+               constexpr bool any( V&& value, T&& t, Ts&&... ts)
+               {
+                  return value == t || any( std::forward< V>( value), std::forward< Ts>( ts)...);
+               }
+               
+            } // detail
+            
+            //! @returns true if `value` is equal to ane other `values`
+            template< typename V, typename... Vs>
+            constexpr bool any( V&& value, Vs&&... values)
+            {
+               return detail::any( std::forward< V>( value), std::forward< Vs>( values)...);
+            }
+         } // compare
       } // algorithm
-
-      namespace compare
-      {
-         template< typename T, typename R>
-         bool any( T&& value, R&& range)
-         {
-            return ! algorithm::find( range, value).empty();
-         }
-
-         template< typename T, typename V>
-         bool any( T&& value, std::initializer_list< V> range)
-         {
-            return ! algorithm::find( range, value).empty();
-         }
-      } // compare
-
-
    } // common
 } // casual
 

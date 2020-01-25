@@ -615,21 +615,21 @@ namespace casual
       {
          common::unittest::Trace trace;
 
-         EXPECT_TRUE( compare::any( 1, { 1}));
+         EXPECT_TRUE( algorithm::compare::any( 1, 1));
       }
 
       TEST( casual_common_algorithm_compare_any, value_1__range_2__expect_false)
       {
          common::unittest::Trace trace;
 
-         EXPECT_FALSE( compare::any( 1, { 2}));
+         EXPECT_FALSE( algorithm::compare::any( 1, 2));
       }
 
       TEST( casual_common_algorithm_compare_any, value_1__range_5_3_2_1__expect_true)
       {
          common::unittest::Trace trace;
 
-         EXPECT_TRUE( compare::any( 1, { 5, 4, 3, 2, 1}));
+         EXPECT_TRUE( algorithm::compare::any( 1, 5, 4, 3, 2, 1));
       }
 
 

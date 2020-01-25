@@ -168,7 +168,7 @@ namespace casual
 
                      // wait for connect
                      casual::domain::pending::message::Connect connect;
-                     ipc::device().blocking_receive( connect);
+                     communication::ipc::blocking::receive( ipc::device(), connect);
 
                      process.handle( connect.process);
                      environment::variable::process::set( casual::domain::pending::message::environment::variable, process.handle());
@@ -351,7 +351,7 @@ namespace casual
 
                   try
                   {
-                     manager::ipc::device().blocking_send( service_manager.ipc, prepare);
+                     communication::ipc::blocking::send( service_manager.ipc, prepare);
                   }
                   catch( const exception::system::communication::Unavailable&)
                   {
@@ -842,8 +842,8 @@ namespace casual
                      {
                         using common::server::handle::policy::call::Admin::Admin;
 
-                        Policy( common::communication::error::type handler, manager::State& state)
-                           : base_type( std::move( handler)), m_state( state) {}
+                        Policy( manager::State& state)
+                           :  m_state( state) {}
 
                         void configure( common::server::Arguments& arguments)
                         {
@@ -858,7 +858,7 @@ namespace casual
                            try
                            {
                               auto service_manager = m_state.singleton( common::communication::instance::identity::service::manager);
-                              manager::ipc::device().blocking_send( service_manager.ipc, message);
+                              communication::ipc::blocking::send( service_manager.ipc, message);
                            }
                            catch( const exception::system::communication::Unavailable&)
                            {
@@ -898,9 +898,7 @@ namespace casual
                manager::handle::configuration::Server{ state},
                handle::local::server::Handle{
                   manager::admin::services( state),
-                  ipc::device().error_handler(), 
                   state}
-
             };
 
          }

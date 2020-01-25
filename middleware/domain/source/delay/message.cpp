@@ -53,13 +53,13 @@ namespace casual
                } // process
 
 
-               void send( const message::Request& request, const communication::ipc::outbound::Device::error_type error_handler = nullptr)
+               void send( const message::Request& request)
                {
                   while( true)
                   {
                      try
                      {
-                        communication::ipc::blocking::send( local::process::get().ipc, request, error_handler);
+                        communication::ipc::blocking::send( local::process::get().ipc, request);
                         return;
                      }
                      catch( const exception::system::communication::Unavailable&)

@@ -193,8 +193,6 @@ domain:
          local::Domain domain;
 
          {
-            common::communication::ipc::Helper ipc;
-
             // Send request
             common::message::queue::lookup::Request request;
             request.process = common::process::handle();
@@ -220,8 +218,6 @@ domain:
          local::Domain domain;
 
          {
-            common::communication::ipc::Helper ipc;
-
             // Send request
             common::message::queue::lookup::Request request;
             request.process = common::process::handle();

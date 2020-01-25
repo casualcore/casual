@@ -90,14 +90,14 @@ namespace casual
 
                   auto& transaction = common::transaction::context().current();
 
-                  casual::common::communication::ipc::Helper ipc;
-
                   auto group = lookup();
 
                   if( ! group)
                      throw exception::no::Queue{ "failed to lookup queue: " + lookup.name()};
 
                   const auto correlation = common::uuid::make();
+
+                  auto& ipc = common::communication::ipc::inbound::device();
 
                   auto forget_blocking = common::execute::scope( [&]()
                   {
@@ -109,14 +109,14 @@ namespace casual
 
                      try
                      {
-                        ipc.blocking_send( group.process.ipc, request);
+                        common::communication::ipc::blocking::send( group.process.ipc, request);
 
                         auto handler = ipc.handler(
                            []( common::message::queue::dequeue::forget::Request& request) {}, // no-op
                            []( common::message::queue::dequeue::forget::Reply& request) {} // no-op
                         );
 
-                        handler( ipc.blocking_next( handler.types()));
+                        handler( common::communication::ipc::blocking::next( ipc, handler.types()));
                      }
                      catch( const common::exception::system::communication::Unavailable&)
                      {
@@ -140,7 +140,7 @@ namespace casual
 
                      common::log::line( verbose::log, "request: ", request);
 
-                     ipc.blocking_send( group.process.ipc, request);
+                     common::communication::ipc::blocking::send( group.process.ipc, request);
                   };
 
                   std::vector< Message> result;
@@ -191,7 +191,7 @@ namespace casual
                      common::message::shutdown::Request::type());
 
                   // wait for the reply
-                  handler( ipc.blocking_next( types));
+                  handler( common::communication::ipc::blocking::next( ipc, types));
 
                   // We don't need to send forget, since it went as it should.
                   forget_blocking.release();
@@ -208,7 +208,7 @@ namespace casual
          common::Uuid enqueue( const std::string& queue, const Message& message)
          {
             Trace trace( "casual::queue::enqueue");
-
+            
             queue::Lookup lookup( queue);
 
             return local::enqueue( lookup, message);

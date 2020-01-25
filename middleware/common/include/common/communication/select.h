@@ -153,47 +153,6 @@ namespace casual
                      iterate( std::forward< F>( functor), holders...);
                   }
 
-                  namespace error
-                  {
-                     namespace is
-                     {
-                        namespace detail
-                        {
-                           template< typename T>
-                           using invocable = decltype( std::declval< T&>()());
-                        } // detail
-
-                        template< typename T>
-                        using invocable = traits::detect::is_detected< detail::invocable, T>;
-                     } // is
-
-                     template< typename H> 
-                     std::enable_if_t< ! is::invocable< H>::value>
-                     handle( H& handler) {}
-
-                     template< typename H> 
-                     std::enable_if_t< is::invocable< H>::value>
-                     handle( H& handler) 
-                     { 
-                        handler();
-                     }
-
-
-                     template< typename... Hs> 
-                     bool dispatch( Hs&... holders)
-                     {
-                        // will only invoke holders that are "error invocable"
-                        auto invoke = []( auto& handler){
-                           handle( handler);
-                        };
-                        iterate( invoke, holders...);
-
-                        // return if there were any invocable, so the pump can act accordingly 
-                        return traits::any_of< is::invocable, Hs...>::value;
-                     }
-                     
-                  } // error
-
 
                   template< typename... Hs> 
                   void dispatch( const Directive& directive, Hs&... holders)
@@ -226,6 +185,11 @@ namespace casual
                      }
                   } // consume
 
+                  namespace handle
+                  {
+                     void error();
+                  } // handle
+
                } // detail
 
                namespace create
@@ -255,8 +219,7 @@ namespace casual
                      }
                      catch( ...)
                      {
-                        if( ! detail::error::dispatch( handlers...))
-                           throw;
+                        detail::handle::error();
                      }
                   }
                }
@@ -264,9 +227,7 @@ namespace casual
 
             namespace block
             {
-               //!
                //! block until descriptor is ready for read.
-               //!
                void read( strong::file::descriptor::id descriptor);
 
             } // block

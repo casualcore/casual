@@ -98,26 +98,38 @@ namespace casual
                {
                   namespace
                   {
-                     bool check_error()
+
+                     bool check_error( code::system code)
                      {
-                        auto error = code::last::system::error();
-                        switch( error)
+                        switch( code)
                         {
+                           case code::system::no_buffer_space:
+                              // try again...
+                              std::this_thread::sleep_for( std::chrono::microseconds{ 10});
+                              break;
+
+                           case code::system::no_such_file_or_directory:
+                              throw exception::system::communication::unavailable::File{}; 
+
                            case code::system::resource_unavailable_try_again:
 #if EAGAIN != EWOULDBLOCK
                            case code::system::operation_would_block: 
-#endif
-                           {
+#endif                           
                               // return false
                               break;
-                           }
+                           
                            default: 
-                           {
+                           
                               // will allways throw
-                              exception::system::throw_from_code( error);
-                           }
+                              exception::system::throw_from_code( code);   
+                        
                         }
                         return false;
+                     }
+
+                     bool check_error()
+                     {
+                        return check_error( code::last::system::error());
                      } 
                   } // <unnamed>
                } // local
@@ -169,37 +181,9 @@ namespace casual
                            return true;
                         }
 
+                        local::check_error();
                         log::line( verbose::log, "ipc ---> blocking send - error: ", error, ", destination: ", destination);
-                     
-                        switch( error.value())
-                        {
-
-                           case code::system::resource_unavailable_try_again:
-#if EAGAIN != EWOULDBLOCK
-                           case code::system::operation_would_block: 
-#endif
-                           {
-                              return false;
-                           }
-                           // This is "only" for BSD/OS X crap handling
-                           case code::system::no_buffer_space:
-                           {
-                              // try again...
-                              // We flush inbound
-                              //ipc::inbound::device().flush();
-                              std::this_thread::sleep_for( std::chrono::microseconds{ 10});
-                              break;
-                           }
-                           case code::system::no_such_file_or_directory:
-                              throw exception::system::communication::unavailable::File{};   
-                           default:
-                           {
-                              // will allways throw
-                              exception::system::throw_from_code( error.value());
-                           }
-                        }
                      }
-                     return true;
                   }
 
                   bool receive( const Handle& handle, message::Transport& transport)
@@ -219,15 +203,12 @@ namespace casual
                         0); // | cast::underlying( platform::flag::msg::no_signal));
 
                      if( result == -1)
-                     {
                         return local::check_error();
-                     }
 
                      log::line( verbose::log, "ipc <--- blocking receive - handle: ", handle, ", transport: ", transport);
-
                      assert( result == transport.size());
 
-                     return true;
+                     return true;                     
                   }
                   
                } // blocking
@@ -236,38 +217,7 @@ namespace casual
                {
                   namespace blocking
                   {
-                     namespace local
-                     {
-                        namespace
-                        {
-                           namespace handle
-                           {
-                              bool error( code::system error)
-                              {
-                                 switch( error)
-                                 {
-                                    case code::system::resource_unavailable_try_again:
-#if EAGAIN != EWOULDBLOCK
-                                    case code::system::operation_would_block: 
-#endif
-                                    case code::system::no_buffer_space:
-                                    {
-                                       // return false;
-                                       break;
-                                    }
-                                    case code::system::no_such_file_or_directory:
-                                       throw exception::system::communication::unavailable::File{};   
-                                    default:
-                                    {
-                                       // will allways throw
-                                       exception::system::throw_from_code( error);
-                                    }
-                                 }
-                                 return false;
-                              } 
-                           } // handle
-                        } // <unnamed>
-                     } // local
+
                      bool send( const Socket& socket, const Address& destination, const message::Transport& transport)
                      {
                         Trace trace{ "common::communication::ipc::native::non::blocking::send"};
@@ -283,9 +233,7 @@ namespace casual
                         );
 
                         if( error)
-                        {
-                           return local::handle::error( error.value());
-                        }
+                           return local::check_error( error.value());
 
                         log::line( verbose::log, "---> non blocking send - socket: ", socket, ", destination: ", destination, ", transport: ", transport);
                         return true;
@@ -295,9 +243,6 @@ namespace casual
                      {
                         Trace trace{ "common::communication::ipc::native::non::blocking::receive"};
 
-                        // check pending signals
-                        signal::handle();
-
                         auto result = ::recv(
                            handle.socket().descriptor().value(),
                            transport.data(),
@@ -305,11 +250,9 @@ namespace casual
                            cast::underlying( Flag::non_blocking)); // | cast::underlying( platform::flag::msg::no_signal));
 
                         if( result == -1)
-                        {
-                           return local::handle::error( code::last::system::error());
-                        }
+                           return local::check_error();
 
-                        log::line( verbose::log, "<--- non-blocking-receive - handle: ", handle, ", transport: ", transport);
+                        log::line( verbose::log, "<--- non blocking receive - handle: ", handle, ", transport: ", transport);
 
                         assert( result == transport.size());
 
@@ -390,9 +333,7 @@ namespace casual
 
                         // send the physical message
                         if( ! native::blocking::send( socket, destination, transport))
-                        {
                            return uuid::empty();
-                        }
 
                         part_begin = part_end;
                      }

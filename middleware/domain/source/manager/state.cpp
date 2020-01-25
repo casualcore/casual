@@ -103,7 +103,7 @@ namespace casual
                         using state_type = typename I::value_type::state_type;
 
                         auto split = algorithm::stable_partition( instances, []( auto& i){
-                           return compare::any( i.state, { state_type::running, state_type::scale_out});
+                           return algorithm::compare::any( i.state, state_type::running, state_type::scale_out);
                         });
 
                         auto running = std::get< 0>( split);

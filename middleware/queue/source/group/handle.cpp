@@ -30,22 +30,9 @@ namespace casual
 
             namespace ipc
             {
-               const common::communication::ipc::Helper& device()
+               communication::ipc::inbound::Device& device()
                {
-                  static communication::ipc::Helper singleton{ []()
-                  {
-                     try
-                     {
-                        throw;
-                     }
-                     catch( const exception::signal::Timeout&)
-                     {
-                        // Timeout has occurred, we push the corresponding 
-                        // signal to our own "queue", and handle it "later"
-                        common::communication::ipc::inbound::device().push( common::message::signal::Timeout{});
-                     }
-                  }};
-                  return singleton;
+                  return communication::ipc::inbound::device();
                }
             } // ipc
 
@@ -55,32 +42,15 @@ namespace casual
                {
                   namespace ipc
                   {
-                     namespace blocking
-                     {
-                        template< typename D, typename M>
-                        void send( D&& device, M&& message)
-                        {
-                           try
-                           {
-                              handle::ipc::device().blocking_send( device, std::forward< M>( message));
-                           }
-                           catch( const common::exception::system::communication::Unavailable&)
-                           {
-                              log::line( log, "destination not available: ", device, " - action: ignore");
-                              log::line( verbose::log, "dropped message: ", message);
-                           }
-                        }
-                     } // blocking
-
                      namespace eventually
                      {
                         template< typename M>
                         void send( const process::Handle& destination, M&& message)
                         {
                            try
-                           {
-                              if( ! handle::ipc::device().non_blocking_send( destination.ipc, message))
-                                 casual::domain::pending::message::send( destination, message, handle::ipc::device().error_handler()); 
+                           {  
+                              if( ! communication::ipc::non::blocking::send(  destination.ipc, message))
+                                 casual::domain::pending::message::send( destination, message);
                            }
                            catch( const common::exception::system::communication::Unavailable&)
                            {
@@ -94,9 +64,8 @@ namespace casual
                      {
                         void send( common::message::pending::Message& pending)
                         {
-                           const auto& error_handler = handle::ipc::device().error_handler();
-                           if( ! common::message::pending::non::blocking::send( pending, error_handler))
-                              casual::domain::pending::message::send( pending, error_handler);
+                           if( ! common::message::pending::non::blocking::send( pending))
+                              casual::domain::pending::message::send( pending);
                         }
                      } // pending
 
@@ -109,7 +78,7 @@ namespace casual
                      {
                         if( ! algorithm::find( state.involved, message.trid))
                         {
-                           ipc::blocking::send( 
+                           communication::ipc::blocking::optional::send( 
                               communication::instance::outbound::transaction::manager::device(),
                               common::message::transaction::resource::external::involved::create( message));
                         }
@@ -316,7 +285,7 @@ namespace casual
                         // transaction messages of their own (since
                         // we send 'involved' first).
                         local::transaction::involved( m_state, message);
-                        local::ipc::blocking::send( message.process.ipc, reply);
+                        communication::ipc::blocking::optional::send( message.process.ipc, reply);
                      }
                      else
                      {
@@ -369,7 +338,7 @@ namespace casual
                   // make sure we always send reply
                   auto send_reply = execute::scope( [&]()
                   {
-                     local::ipc::blocking::send( message.process.ipc, reply);
+                     communication::ipc::blocking::optional::send( message.process.ipc, reply);
                   });
 
                   if( ! reply.message.empty())
@@ -489,7 +458,8 @@ namespace casual
                      reply.trid = message.trid;
                      reply.state = common::code::xa::ok;
 
-                     local::ipc::blocking::send( common::communication::instance::outbound::transaction::manager::device(), reply);
+                     communication::ipc::blocking::optional::send(
+                        common::communication::instance::outbound::transaction::manager::device(), reply);
                   }
                }
 
@@ -538,7 +508,7 @@ namespace casual
                   auto reply = common::message::reverse::type( message);
 
                   auto send_reply = common::execute::scope( [&](){
-                     local::ipc::blocking::send( message.process.ipc, reply);
+                     communication::ipc::blocking::optional::send( message.process.ipc, reply);
                   });
 
                   reply.affected = common::algorithm::transform( message.queues, [&]( auto queue){

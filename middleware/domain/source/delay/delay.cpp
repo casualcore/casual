@@ -88,80 +88,57 @@ namespace casual
 
          namespace handle
          {
-            struct Base
+            auto request( State& state)
             {
-               Base( State& state) : m_state( state) {}
-
-            protected:
-               State& m_state;
-            };
-
-            struct Request : Base
-            {
-               using Base::Base;
-
-               void operator () ( message::Request& message)
+               return [&state]( message::Request& message)
                {
-                  Trace trace{ "domain::delay::handle::Request"};
-
+                  Trace trace{ "domain::delay::handle::request"};
                   log::line( verbose::log, "message: ", message);
 
-                  m_state.add( std::move( message));
-               }
-            };
-
-            void timeout( State& state)
-            {
-               Trace trace{ "domain::delay::handle::timeout"};
-
-               signal::thread::scope::Block block;
-
-               for( auto&& message : state.passed())
-               {
-                  try
-                  {
-                     communication::ipc::outbound::Device ipc{ message.destination};
-
-                     if( ! ipc.put( message.message, communication::ipc::policy::non::Blocking{}))
-                     {
-                        log::line( log, "failed to send delayed message to ipc: ", message.destination, " - action: try to resend in 500ms");
-
-                        // Could not send... We set a new timeout in .5s
-                        message::Request request;
-                        request.destination = message.destination;
-                        request.message = std::move( message.message);
-                        request.delay = std::chrono::milliseconds{ 500};
-                        state.add( std::move( request));
-
-                     }
-                  }
-                  catch( const exception::system::communication::Unavailable&)
-                  {
-                     log::line( log, "failed to send delayed message to destination: ", message.destination, " queue is unavailable - action: ignore");
-                  }
-               }
+                  state.add( std::move( message));
+               };
             }
 
-            struct Timeout : Base
-            {
-               using Base::Base;
-
-               void operator() ()
-               {
-                  try
-                  {
-                     throw;
-                  }
-                  catch( const exception::signal::Timeout&)
-                  {
-                     // Timeout has occurred, lets try to send the delayed messages
-                     timeout( m_state);
-                  }
-               }
-            };
-
-
          } // handle
+
+         namespace callback
+         {
+            auto timeout( State& state)
+            {
+               return [&state]()
+               {
+                  Trace trace{ "domain::delay::callback::timeout"};
+
+                  signal::thread::scope::Block block;
+
+                  for( auto&& message : state.passed())
+                  {
+                     try
+                     {
+                        communication::ipc::outbound::Device ipc{ message.destination};
+
+                        if( ! ipc.put( message.message, communication::ipc::policy::non::Blocking{}))
+                        {
+                           log::line( log, "failed to send delayed message to ipc: ", message.destination, " - action: try to resend in 500ms");
+
+                           // Could not send... We set a new timeout in .5s
+                           message::Request request;
+                           request.destination = message.destination;
+                           request.message = std::move( message.message);
+                           request.delay = std::chrono::milliseconds{ 500};
+                           state.add( std::move( request));
+
+                        }
+                     }
+                     catch( const exception::system::communication::Unavailable&)
+                     {
+                        log::line( log, "failed to send delayed message to destination: ", message.destination, " queue is unavailable - action: ignore");
+                     }
+                  }
+               };
+            }
+         } // callback
+
 
          namespace message
          {
@@ -172,20 +149,20 @@ namespace casual
                // make sure we listen to signals
                common::signal::mask::unblock( common::signal::set::filled());
 
+               signal::callback::registration< code::signal::alarm>( callback::timeout( state));
 
-               communication::ipc::Helper ipc{ handle::Timeout{ state}};
+               auto& ipc = communication::ipc::inbound::device();
 
                auto handler = ipc.handler(
                   common::message::handle::defaults( ipc),
-                  handle::Request{ state}
-               );
+                  handle::request( state));
 
                while( true)
                {
                   // Set timeout, if any
                   signal::timer::set( state.timeout());
 
-                  handler( ipc.blocking_next());
+                  handler( communication::ipc::blocking::next( ipc));
                }
             }
          } // message

@@ -8,6 +8,7 @@
 
 #include "common/communication/device.h"
 #include "common/communication/socket.h"
+#include "common/communication/log.h"
 
 #include "casual/platform.h"
 #include "common/strong/id.h"
@@ -16,6 +17,7 @@
 #include "common/memory.h"
 #include "common/flag.h"
 #include "common/file.h"
+
 
 
 
@@ -380,49 +382,93 @@ namespace casual
 
 
 
-            using error_type = typename outbound::Device::error_type;
-
             template< typename D, typename M, typename P>
-            auto send( D& device, M&& message, P&& policy, const error_type& handler = nullptr)
+            auto send( D& device, M&& message, P&& policy)
              -> std::enable_if_t< ! std::is_same< std::decay_t< D>, strong::ipc::id>::value, Uuid>
             {
-               return device.send( message, policy, handler);
+               return device.send( message, policy);
             }
 
             template< typename M, typename P>
-            Uuid send( strong::ipc::id ipc, M&& message, P&& policy, const error_type& handler = nullptr)
+            Uuid send( strong::ipc::id ipc, M&& message, P&& policy)
             {
-               return outbound::Device{ ipc}.send( message, policy, handler);
+               return outbound::Device{ ipc}.send( message, policy);
             }
 
+            template< typename D, typename M, typename P>
+            auto put( D&& device, M&& message, P&& policy) 
+               -> decltype( device.put( message, policy))
+            {
+               return device.put( message, policy);
+            }
 
+            template< typename M, typename P>
+            auto put( strong::ipc::id ipc, M&& message, P&& policy)
+            {
+               return put( outbound::Device{ ipc}, std::forward< M>( message), std::forward< P>( policy));
+            }
+
+            template< typename D, typename... Ts>
+            auto next( D& device, Ts&&... ts) 
+               -> decltype( device.next( std::forward< Ts>( ts)...))
+            {
+               return device.next( std::forward< Ts>( ts)...);
+            }
 
             namespace blocking
             {
-               using error_type = typename inbound::Device::error_type;
-
                template< typename S, typename M>
-               bool receive( inbound::basic_device< S>& device, M& message, const error_type& handler = nullptr)
+               auto receive( inbound::basic_device< S>& device, M& message)
                {
-                  return device.receive( message, policy::Blocking{}, handler);
+                  return device.receive( message, policy::Blocking{});
                }
 
                template< typename S, typename M>
-               bool receive( inbound::basic_device< S>& device, M& message, const Uuid& correlation, const error_type& handler = nullptr)
+               auto receive( inbound::basic_device< S>& device, M& message, const Uuid& correlation)
                {
-                  return device.receive( message, correlation, policy::Blocking{}, handler);
+                  return device.receive( message, correlation, policy::Blocking{});
                }
 
-               template< typename S>
-               inline communication::message::Complete next( inbound::basic_device< S>& device, const error_type& handler = nullptr)
+               template< typename D, typename... Ts>
+               auto next( D& device, Ts&&... ts) 
+                  -> decltype( device.next( std::forward< Ts>( ts)..., policy::Blocking{}))
                {
-                  return device.next( policy::Blocking{}, handler);
+                  return device.next( std::forward< Ts>( ts)..., policy::Blocking{});
                }
 
                template< typename D, typename M>
-               Uuid send( D&& device, M&& message, const error_type& handler = nullptr)
+               auto send( D&& device, M&& message)
                {
-                  return ipc::send( std::forward< D>( device), message, policy::Blocking{}, handler);
+                  return ipc::send( std::forward< D>( device), message, policy::Blocking{});
+               }
+
+               namespace optional
+               {
+                  //! blocked send of the message, if callee is unreachable (i.e. the process has died)
+                  //! `false` is returned
+                  //! @returns true if sent, false if Unavailable
+                  template< typename D, typename M>
+                  bool send( D&& device, M&& message)
+                  {
+                     try 
+                     {
+                        blocking::send( std::forward< D>( device), std::forward< M>( message));
+                        return true;
+                     }
+                     catch( const exception::system::communication::Unavailable&)
+                     {
+                        log::line( log, "failed to send message - target unavailable: ", device);
+                        log::line( verbose::log, "message: ", message);
+                        return false;
+                     }
+                  }
+               } // optional
+
+               template< typename D, typename M>
+               auto put( D&& device, M&& message)
+                  -> decltype( ipc::put( std::forward< D>( device), std::forward< M>( message), policy::Blocking{}))
+               {
+                  return ipc::put( std::forward< D>( device), std::forward< M>( message), policy::Blocking{});
                }
 
             } // blocking
@@ -431,44 +477,48 @@ namespace casual
             {
                namespace blocking
                {
-                  using error_type = typename inbound::Device::error_type;
-
                   template< typename S, typename M>
-                  bool receive( inbound::basic_device< S>& device, M& message, const error_type& handler = nullptr)
+                  bool receive( inbound::basic_device< S>& device, M& message)
                   {
-                     return device.receive( message, policy::non::Blocking{}, handler);
+                     return device.receive( message, policy::non::Blocking{});
                   }
 
                   template< typename S, typename M>
-                  bool receive( inbound::basic_device< S>& device, M& message, const Uuid& correlation, const error_type& handler = nullptr)
+                  bool receive( inbound::basic_device< S>& device, M& message, const Uuid& correlation)
                   {
-                     return device.receive( message, correlation, policy::non::Blocking{}, handler);
+                     return device.receive( message, correlation, policy::non::Blocking{});
                   }
 
                   template< typename S>
-                  inline communication::message::Complete next( inbound::basic_device< S>& device, const error_type& handler = nullptr)
+                  inline communication::message::Complete next( inbound::basic_device< S>& device)
                   {
-                     return device.next( policy::non::Blocking{}, handler);
+                     return device.next( policy::non::Blocking{});
                   }
 
                   template< typename D, typename M>
-                  Uuid send( D&& device, M&& message, const error_type& handler = nullptr)
+                  Uuid send( D&& device, M&& message)
                   {
-                     return ipc::send( std::forward< D>( device), message, policy::non::Blocking{}, handler);
+                     return ipc::send( std::forward< D>( device), message, policy::non::Blocking{});
                   }
 
-                  
+                  template< typename D, typename M>
+                  auto put( D&& device, M&& message)
+                     -> decltype( ipc::put( std::forward< D>( device), std::forward< M>( message), policy::non::Blocking{}))
+                  {
+                     return ipc::put( std::forward< D>( device), std::forward< M>( message), policy::non::Blocking{});
+                  }
+
                   namespace optional
                   {
                      //! tries to send the message, if callee is unreachable (i.e. the process has died)
                      //! the send is regarded as successfull
                      //! @returns true if successfull
                      template< typename D, typename M>
-                     bool send( D&& device, M&& message, const error_type& handler = nullptr)
+                     bool send( D&& device, M&& message)
                      {
                         try 
                         {
-                           if( ! ipc::send( std::forward< D>( device), message, policy::non::Blocking{}, handler))
+                           if( ! ipc::send( std::forward< D>( device), message, policy::non::Blocking{}))
                               return false;
                         }
                         catch( const exception::system::communication::Unavailable&)
@@ -485,13 +535,12 @@ namespace casual
             auto call(
                   D&& destination,
                   M&& message,
-                  const error::type& handler = nullptr,
                   Device& device = inbound::device())
             {
-               auto correlation = blocking::send( std::forward< D>( destination), message, handler);
+               auto correlation = blocking::send( std::forward< D>( destination), message);
 
                auto reply = common::message::reverse::type( std::forward< M>( message));
-               blocking::receive( device, reply, correlation, handler);
+               blocking::receive( device, reply, correlation);
                return reply;
             }
 
@@ -506,105 +555,6 @@ namespace casual
                using Handler =  typename inbound::Device::handler_type;
             } // dispatch
 
-            struct Helper
-            {
-               using blocking_policy = policy::Blocking;
-               using non_blocking_policy = policy::non::Blocking;
-
-               inline Helper(std::function<void()> error_handler)
-                     : m_error_handler{std::move(error_handler)} {};
-               inline Helper() : Helper( nullptr) {}
-
-               template< typename... Args>
-               static auto handler( Args&&... args)
-               {
-                  return common::communication::ipc::inbound::device().handler( std::forward<Args>(args)...);
-               }
-
-               template< typename D, typename M>
-               auto blocking_send( D&& device, M &&message) const
-               {
-                  return common::communication::ipc::blocking::send( std::forward<D>(device), message, m_error_handler);
-               }
-
-               template< typename D, typename M>
-               auto non_blocking_send( D&& device, M &&message) const
-               {
-                  return common::communication::ipc::non::blocking::send( std::forward<D>(device), message, m_error_handler);
-               }
-
-               template< typename M, typename... Args>
-               auto blocking_receive( M& message, Args &&... args) const
-               {
-                  return common::communication::ipc::blocking::receive(
-                        common::communication::ipc::inbound::device(), message, std::forward<Args>(args)..., m_error_handler);
-               }
-
-               template< typename M, typename... Args>
-               auto non_blocking_receive( M& message, Args &&... args) const
-               {
-                  return common::communication::ipc::non::blocking::receive(
-                        common::communication::ipc::inbound::device(), message, std::forward<Args>(args)..., m_error_handler);
-               }
-
-               template< typename... Args>
-               common::communication::message::Complete next(Args &&... args) const
-               {
-                  return common::communication::ipc::inbound::device().next(
-                        std::forward<Args>(args)...,
-                        m_error_handler);
-               }
-
-               template< typename... Args>
-               common::communication::message::Complete blocking_next( Args &&... args) const
-               {
-                  return common::communication::ipc::inbound::device().next(
-                        std::forward<Args>(args)...,
-                        common::communication::ipc::policy::Blocking{},
-                        m_error_handler);
-               }
-
-               template< typename... Args>
-               common::communication::message::Complete non_blocking_next( Args &&... args) const
-               {
-                  return common::communication::ipc::inbound::device().next(
-                        std::forward<Args>(args)...,
-                        common::communication::ipc::policy::non::Blocking{},
-                        m_error_handler);
-               }
-
-               Uuid blocking_push(outbound::Device ipc, const communication::message::Complete &complete) const
-               {
-                  return ipc.put(complete,
-                                 common::communication::ipc::policy::Blocking{},
-                                 m_error_handler);
-               }
-         
-               Uuid non_blocking_push(outbound::Device ipc, const communication::message::Complete &complete) const
-               {
-                  return ipc.put(complete,
-                                 common::communication::ipc::policy::non::Blocking{},
-                                 m_error_handler);
-               }
-
-               template< typename D, typename M>
-               auto call(D &&ipc, M &&message) const -> decltype(common::message::reverse::type(std::forward<M>(message)))
-               {
-                  return ipc::call(
-                     std::forward<D>(ipc),
-                     std::forward<M>(message),
-                     m_error_handler);
-               }
-
-               inbound::Device &device() const { return inbound::device();}
-               decltype( auto) ipc() const { return inbound::ipc();}
-
-               inline const std::function<void()> &error_handler() const { return m_error_handler;}
-
-            private:
-               std::function<void()> m_error_handler;
-
-            };
 
          } // ipc
       } // communication

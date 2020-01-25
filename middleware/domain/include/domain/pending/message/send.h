@@ -18,12 +18,12 @@ namespace casual
       {
          namespace message
          {
-            void send( const common::message::pending::Message& message, const common::communication::error::type& handler = nullptr);
+            void send( const common::message::pending::Message& message);
 
             template< typename M>
-            void send( const common::process::Handle& destination, M&& message, const common::communication::error::type& handler = nullptr)
+            void send( const common::process::Handle& destination, M&& message)
             {
-               message::send( common::message::pending::Message{ std::forward< M>( message), destination}, handler);
+               message::send( common::message::pending::Message{ std::forward< M>( message), destination});
             }
          } // message
          

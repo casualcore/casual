@@ -36,13 +36,13 @@ namespace casual
                } // <unnamed>
             } // local
 
-            void send( const common::message::pending::Message& message, const common::communication::error::type& handler)
+            void send( const common::message::pending::Message& message)
             {
                Trace trace{ "domain::pending::message::send"};
 
                log::line( verbose::log, "message: ", message);
 
-               communication::ipc::blocking::send( local::device(), caller::Request{ message}, handler);
+               communication::ipc::blocking::send( local::device(), caller::Request{ message});
             }   
          } // message
       } // pending

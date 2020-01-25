@@ -21,7 +21,7 @@ namespace casual
 
          namespace ipc
          {
-            const common::communication::ipc::Helper& device();
+            common::communication::ipc::inbound::Device& device();
 
             namespace pending
             {
@@ -36,7 +36,7 @@ namespace casual
             {
                try
                {
-                  if( ! manager::ipc::device().non_blocking_send( process.ipc, message))
+                  if( ! common::communication::ipc::non::blocking::send( process.ipc, message))
                      ipc::pending::send( state, common::message::pending::Message{ std::forward< M>( message), process});
                }
                catch( const common::exception::system::communication::Unavailable&)
@@ -50,7 +50,7 @@ namespace casual
             template< typename M>
             void push( M&& message)
             {
-               ipc::device().device().push( std::forward< M>( message));
+               ipc::device().push( std::forward< M>( message));
             }
 
 

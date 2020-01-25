@@ -39,7 +39,6 @@ namespace casual
          {
             namespace
             {
-
                bool send( strong::process::id pid, code::signal signal)
                {
                   log::line( verbose::log, "local::signal::send pid: ", pid, " signal: ", signal);
@@ -60,222 +59,248 @@ namespace casual
                   return true;
                }
 
-            } // <unnamed>
-         } // local
-      } // signal
-   } // common
-} // casual
+               namespace handler
+               {
+                  std::atomic< long> global_total_pending{ 0};
 
-
-namespace casual
-{
-
-   namespace common
-   {
-      namespace signal
-      {
-         namespace local
-         {
-            namespace
-            {
-                  namespace handler
+                  template< code::signal signal>
+                  struct basic_pending
                   {
-                     std::atomic< long> global_total_pending{ 0};
+                     static std::atomic< bool> pending;
+                  };
+                  template< code::signal Signal>
+                  std::atomic< bool> basic_pending< Signal>::pending{ false};
 
-                     template< code::signal signal>
-                     struct basic_pending
+                  template< code::signal signal>
+                  void clear() 
+                  {
+                     basic_pending< signal>::pending = false;
+                  }
+
+                  template< code::signal signal, code::signal next, code::signal... signals>
+                  void clear()
+                  {
+                     clear< signal>();
+                     clear< next, signals...>();
+                  }
+
+                  template< code::signal signal>
+                  bool pending( signal::Set mask)
+                  {
+                     return basic_pending< signal>::pending.load() && ! mask.exists( signal);
+                  }
+
+
+                  template< code::signal signal, code::signal next, code::signal... signals>
+                  bool pending( signal::Set mask)
+                  {
+                     return pending< signal>( mask) || 
+                        pending< next, signals...>( mask);
+                  }
+
+                  template< code::signal Signal>
+                  void signal_callback( platform::signal::native::type signal)
+                  {
+                     if( ! basic_pending< Signal>::pending.exchange( true))
+                        ++global_total_pending;
+                  }
+
+                  template< typename H>
+                  void registration( code::signal signal, H&& handler, int flags = 0)
+                  {
+                     struct sigaction sa = {};
+
+                     sa.sa_handler = handler;
+                     sa.sa_flags = flags;
+
+                     if( ::sigaction( cast::underlying( signal), &sa, nullptr) == -1)
                      {
-                        static void clear() { pending = false;}
-                        static std::atomic< bool> pending;
+                        std::cerr << "failed to register handle for signal: " << signal << " - "  << code::last::system::error() << '\n';
+                        exception::system::throw_from_errno();
+                     }
+                  }
+
+                  struct Handle
+                  {
+                     static Handle& instance()
+                     {
+                        static Handle handle;
+                        return handle;
+                     }
+
+                     void handle( signal::Set mask)
+                     {
+                        // We only allow one thread at a time to actually handle the
+                        // pending signals
+                        if( --handler::global_total_pending >= 0)
+                        {
+                           // if no signal was consumed based on the mask, we need to restore the global
+                           if( ! dispatch( mask))
+                              ++handler::global_total_pending;
+                        }
+                        else
+                        {
+                           // There was no pending signals, and we need to 'restore' the global
+                           ++handler::global_total_pending;
+                        }
+                     }
+
+                     bool pending( signal::Set set)
+                     {
+                        return handler::global_total_pending.load() > 0 
+                           && handler::pending<                            
+                              code::signal::child,
+                              code::signal::user,
+                              code::signal::hangup,
+                              code::signal::alarm,
+                              code::signal::terminate,
+                              code::signal::quit,
+                              code::signal::interrupt>( set);
+                     }
+
+                     void registration( code::signal signal, std::function< void()> callback)
+                     {
+                       if( auto found = algorithm::find_if( m_handlers, [signal]( auto& handler){ return handler.signal == signal;}))
+                           found->callbacks.push_back( std::move( callback));
+                        else 
+                           throw exception::system::invalid::Argument{ string::compose( "failed to find signal handler for: ", signal)};
+                     }
+
+                     callback::detail::Replace replace( callback::detail::Replace wanted)
+                     {
+                        if( auto found = algorithm::find_if( m_handlers, [signal = wanted.signal]( auto& handler){ return handler.signal == signal;}))
+                        {
+                           std::swap( wanted.callbacks, found->callbacks);
+                        }
+                        return wanted;
+                     }
+
+                     void clear()
+                     {
+                        global_total_pending = 0;
+
+                        local::handler::clear< 
+                           code::signal::child,
+                           code::signal::user,
+                           code::signal::hangup,
+                           code::signal::alarm,
+                           code::signal::terminate,
+                           code::signal::quit,
+                           code::signal::interrupt>();
+                     }
+
+                  private:
+
+                     Handle() 
+                     {
+                        // make sure we ignore sigpipe
+                        local::handler::registration( code::signal::pipe, SIG_IGN);
+                     }
+
+                     bool dispatch( signal::Set current)
+                     {
+                        return algorithm::any_of( m_handlers, [&current]( auto& handler){ return handler( current);});
+                     }
+
+                     struct Handler
+                     {
+                        using callbacks_type = std::vector< std::function< void()>>;
+
+                        bool operator () ( const signal::Set& current) const 
+                        {
+                           return disptacher( current, callbacks);
+                        }
+
+                        code::signal signal{};
+                        std::function< bool( const signal::Set&, const callbacks_type&)> disptacher;
+                        callbacks_type callbacks;
+                        
                      };
-                     template< code::signal Signal>
-                     std::atomic< bool> basic_pending< Signal>::pending{ false};
 
-
-
-                     template< code::signal Signal>
-                     void signal_callback( platform::signal::native::type signal)
+                     template< code::signal signal, typename Exception>
+                     static auto create_dispatcher()
                      {
-                        if( ! basic_pending< Signal>::pending.exchange( true))
-                           ++global_total_pending;
-                     }
-
-                     template< typename H>
-                     void registration( code::signal signal, H&& handler, int flags = 0)
-                     {
-                        struct sigaction sa = {};
-
-                        sa.sa_handler = handler;
-                        sa.sa_flags = flags;
-
-                        if( ::sigaction( cast::underlying( signal), &sa, nullptr) == -1)
+                        return []( const signal::Set& current, const Handler::callbacks_type& callbacks)
                         {
-                           std::cerr << "failed to register handle for signal: " << signal << " - "  << code::last::system::error() << '\n';
-                           exception::system::throw_from_errno();
-                        }
-                     }
-
-                     struct Handle
-                     {
-                        static Handle& instance()
-                        {
-                           static Handle handle;
-                           return handle;
-                        }
-
-                        void handle()
-                        {
-                           // We assume that loading from atomic is cheaper than mutex-lock
-
-                           if( handler::global_total_pending.load() > 0)
+                           // check that: not masked and the signal was pending
+                           if( ! current.exists( signal) && basic_pending< signal>::pending.exchange( false))
                            {
-                              std::lock_guard< std::mutex> lock{ m_mutex};
+                              // Signal is not blocked
+                              log::line( log::debug, "signal: handling signal: ", signal);
 
-                              // We only allow one thread at a time to actually handle the
-                              // pending signals
-                              //
-                              // We check the total-pending again
-                              if( handler::global_total_pending.load() > 0)
-                              {
-                                 dispatch( signal::mask::current());
-                              }
+                              // if we don't have any handlers we need to propagate the signal via exception.
+                              if( callbacks.empty())
+                                 throw Exception{};
+                              
+                              // execute the "callbacks"
+                              algorithm::for_each( callbacks, []( auto& callback){ callback();});
+
+                              return true;
                            }
-                        }
-
-                        void handle( signal::Set set)
-                        {
-                           // We assume that loading from atomic is cheaper than mutex-lock
-
-                           if( handler::global_total_pending.load() > 0)
-                           {
-                              std::lock_guard< std::mutex> lock{ m_mutex};
-
-                              // We only allow one thread at a time to actually handle the
-                              // pending signals
-                              //
-                              // We check the total-pending again
-                              if( handler::global_total_pending.load() > 0)
-                              {
-                                 dispatch( set);
-                              }
-                           }
-                        }
-
-                        void clear()
-                        {
-                           global_total_pending = 0;
-
-                           m_child.clear();
-                           m_terminate.clear();
-                           m_quit.clear();
-                           m_interrupt.clear();
-                           m_alarm.clear();
-                           m_user.clear();
-                           m_hangup.clear();
-                        }
-
-                     private:
-
-                        Handle() 
-                        {
-                           // make sure we ignore sigpipe
-                           local::handler::registration( code::signal::pipe, SIG_IGN);
-                        }
-
-                        void dispatch( signal::Set current)
-                        {
-                           m_child.handle( current);
-                           m_terminate.handle( current);
-                           m_quit.handle( current);
-                           m_interrupt.handle( current);
-                           m_alarm.handle( current);
-                           m_user.handle( current);
-                           m_hangup.handle( current);
-
-                           log::line( log::debug, "no signal handled with mask: ", current);
-                        }
-
-
-
-                        template< code::signal Signal, typename Exception, int Flags = 0>
-                        struct basic_handler
-                        {
-                           using pending_type = basic_pending< Signal>;
-
-                           basic_handler()
-                           {
-                              // Register the signal handler for this signal
-                              local::handler::registration( Signal, &signal_callback< Signal>, Flags);
-                           }
-
-                           basic_handler( const basic_handler&) = delete;
-                           basic_handler operator = ( const basic_handler&) = delete;
-
-                           void handle( const signal::Set& current)
-                           {
-                              // We know that this function is invoked with mutex, so we
-                              // can ignore concurrency problem
-
-                              if( pending_type::pending.load())
-                              {
-                                 if( ! current.exists( Signal))
-                                 {
-                                    // Signal is not blocked
-                                    log::line( log::debug, "signal: handling signal: ", Signal);
-
-                                    // We've consumed the signal
-                                    pending_type::pending.store( false);
-
-                                    // Decrement the global count
-                                    --handler::global_total_pending;
-
-                                    throw Exception{};
-                                 }
-                              }
-                           }
-
-                           void clear()
-                           {
-                              basic_pending< Signal>::clear();
-                           }
+                           return false;
                         };
+                     }
 
-                        basic_handler< code::signal::child, exception::signal::child::Terminate, SA_NOCLDSTOP> m_child;
-                        basic_handler< code::signal::terminate, exception::signal::Terminate> m_terminate;
-                        basic_handler< code::signal::quit, exception::signal::Terminate> m_quit;
-                        basic_handler< code::signal::interrupt, exception::signal::Terminate> m_interrupt;
-                        basic_handler< code::signal::alarm, exception::signal::Timeout> m_alarm;
-                        basic_handler< code::signal::user, exception::signal::User> m_user;
-                        basic_handler< code::signal::hangup , exception::signal::Hangup> m_hangup;
+                     template< typename Exception, code::signal signal = Exception::type()>
+                     static Handler create_handler( int flags = 0)
+                     {
+                        // Register the signal handler for this signal
+                        local::handler::registration( signal, &signal_callback< signal>, flags);
 
-                        // Only for handle
-                        std::mutex m_mutex;
+                        Handler result;
+                        result.signal = signal;
+                        result.disptacher = create_dispatcher< signal, Exception>();
+                        return result;
+                     }
+
+                     template< typename Exception, typename C, code::signal signal = Exception::type()>
+                     static Handler create_handler( C&& callback, int flags = 0)
+                     {
+                        auto result = create_handler< Exception, signal>( flags);
+                        result.callbacks.push_back( std::move( callback));
+                        return result;
+                     }
+
+                     std::vector< Handler> m_handlers = {
+
+                        Handle::create_handler< exception::signal::child::Terminate>( SA_NOCLDSTOP),
+                        Handle::create_handler< exception::signal::Timeout>(),
+                        Handle::create_handler< exception::signal::User>(),
+
+                        // reopen 'casual.log' on hangup
+                        Handle::create_handler< exception::signal::Hangup>( []()
+                        {
+                           log::stream::reopen();
+                        }),
+
+                        Handle::create_handler< exception::signal::Terminate, code::signal::terminate>(),
+                        Handle::create_handler< exception::signal::Terminate, code::signal::quit>(),
+                        Handle::create_handler< exception::signal::Terminate, code::signal::interrupt>(),
                      };
+                  };
 
+               } // handler
 
-                  } // handler
-
-            } // <unnamed>
-         } // local
-
-
-         namespace local
-         {
-            namespace
-            {
                // We need to instantiate the handler globally to trigger signal-handler-registration
                handler::Handle& global_handler = handler::Handle::instance();
             } // <unnamed>
          } // local
 
-         void handle()
+
+
+         void dispatch()
          {
-            local::global_handler.handle();
+            dispatch( signal::mask::current());
          }
 
-         void handle( signal::Set set)
+         void dispatch( signal::Set mask)
          {
-            local::global_handler.handle( set);
+            local::global_handler.handle( mask);
+         }
+
+         bool pending( signal::Set mask)
+         {
+            return local::global_handler.pending( mask);
          }
 
          void clear()
@@ -291,6 +316,22 @@ namespace casual
             }
          } // current
 
+         namespace callback
+         {
+            namespace detail
+            {
+               void registration( code::signal signal, std::function< void()> callback)
+               {
+                  local::handler::Handle::instance().registration( signal, std::move( callback));
+               }
+
+               Replace replace( Replace wanted)
+               {
+                  return local::global_handler.replace( std::move( wanted));
+               }
+               
+            } // detail
+         } // callback
 
          namespace timer
          {
@@ -302,9 +343,7 @@ namespace casual
                   platform::time::unit convert( const itimerval& value)
                   {
                      if( value.it_value.tv_sec == 0 && value.it_value.tv_usec == 0)
-                     {
                         return platform::time::unit::min();
-                     }
 
                      return std::chrono::seconds( value.it_value.tv_sec) + std::chrono::microseconds( value.it_value.tv_usec);
                   }
@@ -314,9 +353,8 @@ namespace casual
                      itimerval old;
 
                      if( ::getitimer( ITIMER_REAL, &old) != 0)
-                     {
                         exception::system::throw_from_errno( "timer::get");
-                     }
+
                      return convert( old);
                   }
 
@@ -399,13 +437,9 @@ namespace casual
                if( m_active)
                {
                   if( m_old == platform::time::point::limit::zero())
-                  {
                      timer::unset();
-                  }
                   else
-                  {
                      timer::set( m_old - platform::time::clock::type::now());
-                  }
                }
             }
 
@@ -413,13 +447,9 @@ namespace casual
             Deadline::Deadline( const platform::time::point::type& deadline, const platform::time::point::type& now)
             {
                if( deadline != platform::time::point::type::max())
-               {
                   timer::set( deadline - now);
-               }
                else
-               {
                   timer::unset();
-               }
             }
 
             Deadline::Deadline( const platform::time::point::type& deadline)
@@ -436,9 +466,7 @@ namespace casual
             Deadline::~Deadline()
             {
                if( m_active)
-               {
                   timer::unset();
-               }
             }
 
             Deadline::Deadline( Deadline&&) = default;
@@ -453,23 +481,15 @@ namespace casual
          }
 
 
-         Set::Set() : Set( empty_t{})
-         {
+         Set::Set() : Set( empty_t{}) {}
 
-         }
-
-         Set::Set( set::type set) : set( std::move( set))
-         {
-
-         }
+         Set::Set( set::type set) : set( std::move( set)) {}
 
 
          Set::Set( std::initializer_list< code::signal> signals) : Set( empty_t{})
          {
             for( auto&& signal : signals)
-            {
                add( signal);
-            }
          }
 
          void Set::add( code::signal signal)
@@ -521,17 +541,8 @@ namespace casual
             return out << ']';
          }
 
-
-         Set pending()
-         {
-            Set result;
-            ::sigpending( &result.set);
-            return result;
-         }
-
          namespace set
          {
-
             signal::Set filled()
             {
                return { signal::Set::filled_t{}};
@@ -610,9 +621,7 @@ namespace casual
                Reset::~Reset()
                {
                   if( m_active)
-                  {
                      mask::set( m_mask);
-                  }
                }
 
                const signal::Set& Reset::previous() const

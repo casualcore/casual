@@ -28,7 +28,7 @@ namespace casual
 
             namespace ipc
             {
-               const common::communication::ipc::Helper& device();
+               common::communication::ipc::inbound::Device& device();
             }
 
             struct Base
