@@ -9,8 +9,10 @@
 
 #include "common/algorithm.h"
 #include "common/buffer/type.h"
+#include "common/string.h"
 
 #include "casual/buffer/field.h"
+#include "casual/buffer/string.h"
 
 namespace casual
 {
@@ -115,11 +117,6 @@ namespace casual
 
       namespace protocol
       {
-         const std::string& x_octet() { static const auto name = std::string("application/casual-x-octet"); return name;}
-         const std::string& binary() { static const auto name = std::string("application/casual-binary"); return name;}
-         const std::string& json() { static const auto name = std::string("application/json"); return name;}
-         const std::string& xml() { static const auto name = std::string("application/xml"); return name;}
-         const std::string& field() { static const auto name = std::string("application/casual-field"); return name;}
 
          namespace convert
          {
@@ -127,16 +124,16 @@ namespace casual
             {
                namespace
                {
-                  template< typename C, typename K>
-                  auto find( C& container, const K& key)
+                  template< typename C, typename K, typename G>
+                  auto find( C& container, const K& key, G&& generic)
                   {
                      auto found = common::algorithm::find( container, key);
 
                      if( found)
                         return found->second;
 
-                     log::line( verbose::log, "failed to find key: ", key);
-                     return decltype( found->second){};
+                     log::line( verbose::log, "failed to find key: ", key, " - using generic buffer type protocol");
+                     return generic( key);
                   }
 
                   namespace buffer
@@ -144,12 +141,11 @@ namespace casual
                      namespace type
                      {
                         auto fielded() { return common::buffer::type::combine( CASUAL_FIELD, nullptr);}
-
-
+                        auto string() { return common::buffer::type::combine( CASUAL_STRING, nullptr);}
                      } // type
-
-
                   } // buffer
+
+                  const std::string generic_prefix{ "application/casual-generic/"};
 
                } // <unnamed>
             } // local
@@ -158,13 +154,20 @@ namespace casual
                std::string buffer( const std::string& buffer)
                {
                   static const std::map< std::string, std::string> mapping{
-                     { common::buffer::type::x_octet(), protocol::x_octet()},
-                     { common::buffer::type::binary(), protocol::binary()},
-                     { common::buffer::type::json(), protocol::json()},
-                     { common::buffer::type::xml(), protocol::xml()},
-                     { local::buffer::type::fielded(), protocol::field()},
+                     { common::buffer::type::x_octet(), protocol::x_octet},
+                     { common::buffer::type::binary(), protocol::binary},
+                     { common::buffer::type::json(), protocol::json},
+                     { common::buffer::type::xml(), protocol::xml},
+                     { local::buffer::type::fielded(), protocol::field},
+                     { local::buffer::type::string(), protocol::string},
                   };
-                  return local::find( mapping, buffer);
+
+                  auto generic = []( auto& buffer)
+                  {
+                     return common::string::compose( local::generic_prefix, buffer);
+                  };
+
+                  return local::find( mapping, buffer, generic);
                }
             } // from
 
@@ -173,18 +176,119 @@ namespace casual
                std::string buffer( const std::string& content)
                {
                   static const std::map< std::string, std::string> mapping{
-                     { protocol::x_octet(), common::buffer::type::x_octet()},
-                     { protocol::binary(), common::buffer::type::binary()},
-                     { protocol::json(), common::buffer::type::json()},
-                     { protocol::xml(), common::buffer::type::xml()},
-                     { protocol::field(), local::buffer::type::fielded()},
+                     { protocol::x_octet, common::buffer::type::x_octet()},
+                     { protocol::binary, common::buffer::type::binary()},
+                     { protocol::json, common::buffer::type::json()},
+                     { protocol::xml, common::buffer::type::xml()},
+                     { protocol::field, local::buffer::type::fielded()},
+                     { protocol::string, local::buffer::type::string()},
                   };
 
-                  return local::find( mapping, content);
+                  // tries to deduce the buffer type generic
+                  auto generic = []( auto& content) -> std::string
+                  {
+                     auto prefix = common::algorithm::search( content, local::generic_prefix);
+
+                     if( std::begin( prefix) != std::begin( content))
+                     {
+                        log::line( common::log::category::error , "failed to deduce casual generic content - content: ", content);
+                        return {};
+                     }
+
+                     return { std::begin( content) + local::generic_prefix.size(), std::end( content)};
+                  };
+
+                  return local::find( mapping, content, generic);
                }
             } // to
          } // convert
       } // protocol
+
+      namespace buffer
+      {
+         namespace transcode
+         {
+            namespace local
+            {
+               namespace
+               {
+                  auto transcode_none = []( common::buffer::Payload& payload)
+                  {
+                     // no-op
+                  };
+
+               } // <unnamed>
+            } // local
+            namespace from
+            {
+               void wire( common::buffer::Payload& buffer)
+               {
+                  Trace trace{ "http::buffer::transcode::from::wire"};
+
+                  auto decode_base64 = []( common::buffer::Payload& payload)
+                  {
+                     // make sure we've got null termination on payload...
+                     payload.memory.push_back( '\0');
+
+                     auto last = common::transcode::base64::decode( payload.memory, std::begin( payload.memory), std::end( payload.memory));
+                     payload.memory.erase( last, std::end( payload.memory));
+                  };
+
+                  static const auto mapping = std::map< std::string, std::function< void( common::buffer::Payload&)>>
+                  {
+                     { common::buffer::type::json(), local::transcode_none},
+                     { common::buffer::type::xml(), local::transcode_none},
+                     
+                     { common::buffer::type::binary(), decode_base64},
+                     { common::buffer::type::x_octet(), decode_base64},
+                     { protocol::convert::local::buffer::type::fielded(), decode_base64},
+                     { protocol::convert::local::buffer::type::string(), decode_base64},
+                  };
+
+                  if( auto found = algorithm::find( mapping, buffer.type))
+                     found->second( buffer);
+                  else
+                     // all other buffers we assume is base64 encoded...
+                     decode_base64( buffer);
+
+               }
+
+            } // from
+
+            namespace to
+            {
+               void wire( common::buffer::Payload& buffer)
+               {
+                  Trace trace{ "http::buffer::transcode::to::wire"};
+                  
+                  auto encode_base64 = []( common::buffer::Payload& payload)
+                  {
+                     auto buffer = std::exchange( payload.memory, {});
+                     common::transcode::base64::encode( buffer, payload.memory);
+                  };
+
+                  static const auto mapping = std::map< std::string, std::function< void( common::buffer::Payload&)>>
+                  {
+                     { common::buffer::type::json(), local::transcode_none},
+                     { common::buffer::type::xml(), local::transcode_none},
+
+                     { common::buffer::type::binary(), encode_base64},
+                     { common::buffer::type::x_octet(), encode_base64},
+                     { protocol::convert::local::buffer::type::fielded(), encode_base64},
+                     { protocol::convert::local::buffer::type::string(), encode_base64},
+                  };
+
+                  if( auto found = algorithm::find( mapping, buffer.type))
+                     found->second( buffer);
+                  else
+                     // all other buffers we assume is base64 encoded...
+                     encode_base64( buffer);
+               }
+            } // from 
+
+         } // transcode
+      } // buffer
+
    } // http
 } // casual
 

@@ -21,7 +21,10 @@ namespace casual
          {
             Manager( const std::vector< std::string>& configuration);
 
-            inline Manager() : Manager{ { configuration}} {}
+            inline Manager( const std::string& configuration) : Manager{ std::vector< std::string>{ configuration}} {}
+            inline Manager( const char* configuration) : Manager{ std::string{ configuration}} {}
+
+            inline Manager() : Manager{ configuration} {}
 
             constexpr static auto configuration = R"(
 domain:

@@ -6,11 +6,13 @@
 
 
 #include "common/unittest.h"
+#include "common/unittest/file.h"
 
 
 #include "casual/test/domain.h"
 
 #include "common/communication/instance.h"
+#include "common/transcode.h"
 
 #include "xatmi.h"
 
@@ -30,7 +32,7 @@ namespace casual
                {
                   auto a()
                   {
-                     return mockup::file::temporary::content( ".yaml", R"(
+                     return  R"(
 domain:
    name: A
    transaction:
@@ -38,70 +40,92 @@ domain:
 
    executables:
       - path: ${CASUAL_UNITTEST_HTTP_INBOUND_PATH}
-        alias: casual-http-inbounds
+        alias: casual-http-inbound
         arguments: [ -p, "${CASUAL_DOMAIN_HOME}", -c, "${CASUAL_UNITTEST_HTTP_INBOUND_CONFIG}" ]
    
    servers:
       - path: ${CASUAL_HOME}/bin/casual-example-server
-)");
+      - path: ${CASUAL_HOME}/bin/casual-service-manager
+)";
                   }
 
                   auto b( const std::string& outbound)
                   {
-                     return mockup::file::temporary::content( ".yaml", R"(
+                     return R"(
 domain:
    name: B
    transaction:
       log: ":memory:"
 
    servers:
+      - path: ${CASUAL_HOME}/bin/casual-service-manager
       - path: ${CASUAL_HOME}/bin/casual-http-outbound
-        arguments: [ --configuration, )" + outbound + "]");
+        arguments: [ --configuration, )" + outbound + "]";
+      
                   }
 
                   auto outbound() 
                   {
-                     return mockup::file::temporary::content( ".yaml", R"(
+                     return unittest::file::temporary::content( ".yaml", R"(
 http:
   services:
     - name: casual/example/echo
-      url: http://localhost:8080/casual/casual/example/echo
+      url: http://localhost:8042/casual/casual/example/echo
 )");
                   }
                   
                } // configuration
+
+               void call_echo_in_other_domain( const std::string& buffer_type)
+               {
+                  auto outbound = local::configuration::outbound();
+
+                  domain::Manager a{ local::configuration::a()};
+                  domain::Manager b{ local::configuration::b( outbound)};
+
+                  {
+                     b.activate();
+
+                     auto string = unittest::random::string( 200);
+                     string.push_back( '\0');
+
+                     auto buffer = tpalloc( buffer_type.c_str(), nullptr, string.size());
+                     assert( buffer);
+                     common::algorithm::copy( string, buffer);
+                     auto len = tptypes( buffer, nullptr, nullptr);
+                     EXPECT_TRUE( len == static_cast< long>( string.size()));
+
+                     EXPECT_TRUE( tpcall( "casual/example/echo", buffer, len, &buffer, &len, 0) == 0) << "tperrno: " << tperrnostring( tperrno);
+                     auto result = common::range::make( buffer, len);
+
+                     EXPECT_TRUE( algorithm::equal( string, result)) 
+                        << "binary: " << common::transcode::hex::encode( string) << '\n'
+                        << "result: " << common::transcode::hex::encode( result);
+
+
+                     tpfree( buffer);
+                  }
+
+               }
+
             } // <unnamed>
          } // local
         
 
 
-         TEST( test_domain_http, call_echo_in_other_domain)
+         TEST( test_domain_http, call_echo_in_other_domain_X_OCTET)
          {
             common::unittest::Trace trace;
 
-            auto outbound = local::configuration::outbound();
-
-            domain::Manager a{ local::configuration::a()};
-            domain::Manager b{ local::configuration::b( outbound)};
-
-            {
-               b.activate();
-
-               auto binary = unittest::random::binary( 200);
-
-               auto buffer = tpalloc( X_OCTET, nullptr, binary.size());
-               common::algorithm::copy( binary, buffer);
-               auto len = tptypes( buffer, nullptr, nullptr);
-
-               EXPECT_TRUE( tpcall( "casual/example/echo", buffer, len, &buffer, &len, 0) == 0) << "tperrno: " << tperrnostring( tperrno);
-               auto result = common::range::make( buffer, len);
-
-               EXPECT_TRUE( algorithm::equal( binary, result));
-
-               tpfree( buffer);
-            }
+            local::call_echo_in_other_domain( X_OCTET);
          }
 
+         TEST( test_domain_http, call_echo_in_other_domain_CSTRING)
+         {
+            common::unittest::Trace trace;
+
+            local::call_echo_in_other_domain( "CSTRING");
+         }
 
          struct Count 
          {
@@ -176,7 +200,6 @@ http:
          }
 
 
-
          const std::vector< Count> counts{
             Count{ 100, 10},
             Count{ 100, 100},
@@ -186,14 +209,12 @@ http:
             //Count{ 1000, 10000},
          };
 
-
          INSTANTIATE_TEST_CASE_P( 
             http,
             test_parallel_http,
             ::testing::ValuesIn( counts)
          );
-
+      
       } // domain
-
    } // test
 } // casual

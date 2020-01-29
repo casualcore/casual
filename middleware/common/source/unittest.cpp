@@ -97,6 +97,18 @@ namespace casual
                return result;
             }
 
+            std::string string( size_type size)
+            {
+               std::string result( size, '\0');
+
+               std::uniform_int_distribution< short> distribution( 32, 123);
+
+               for( auto& value : result)
+                  value = distribution( local::engine());
+
+               return result;
+            }
+
             unittest::Message message( size_type size)
             {
                unittest::Message result( size);

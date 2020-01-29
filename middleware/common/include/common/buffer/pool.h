@@ -128,6 +128,8 @@ namespace casual
 
                   payload::Send get( platform::buffer::raw::immutable::type handle, platform::binary::size::type user_size) override
                   {
+                     log::line( log::category::buffer, "handle: @", static_cast< const void*>( handle), ", user_size: ", user_size);
+
                      auto& buffer = m_pool.get( handle);
 
                      payload::Send result{ buffer.payload, buffer.transport( user_size), buffer.reserved()};
@@ -144,6 +146,8 @@ namespace casual
 
                   Payload release( platform::buffer::raw::immutable::type handle, platform::binary::size::type user_size) override
                   {
+                     log::line( log::category::buffer, "handle: @", static_cast< const void*>( handle), ", user_size: ", user_size);
+                     
                      auto buffer = m_pool.release( handle);
 
                      log::line( log::category::buffer, "pool::release - payload: ", buffer.payload, " - transport: ", buffer.transport( user_size));

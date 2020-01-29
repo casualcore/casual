@@ -64,6 +64,7 @@ namespace casual
             unittest::Message message( size_type size);
 
             platform::binary::type binary( size_type size);
+            std::string string( size_type size);
 
 
             platform::binary::type::value_type byte();

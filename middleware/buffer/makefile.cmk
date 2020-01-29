@@ -2,7 +2,6 @@ from casual.middleware.make.dsl import *
 
 IncludePaths( [
    'include',
-   '../serviceframework/include',
    '../common/include',
    '../xatmi/include',
    '$(CASUAL_OPTIONAL_INCLUDE_PATHS)',
@@ -11,7 +10,6 @@ IncludePaths( [
 
 LibraryPaths([
     'bin',
-    '../serviceframework/bin',
     '../common/bin',
     '../xatmi/bin',
     '$(CASUAL_OPTIONAL_LIBRARY_PATHS)',
@@ -33,7 +31,7 @@ lib_buffer = LinkLibrary( 'bin/casual-buffer',
      Compile( 'source/internal/field/string.cpp'),
     ],
     [
-     'casual-common', 'casual-serviceframework'
+     'casual-common'
     ])
 
 install_lib.append( lib_buffer)
@@ -51,8 +49,7 @@ casual_field_make_header = LinkExecutable( 'bin/casual_field_make_header',
      Compile( 'tools/source/field.cpp'),
     ], 
     [ 
-     'casual-common', 
-     'casual-serviceframework', 
+     'casual-common',  
       lib_buffer
     ])
 

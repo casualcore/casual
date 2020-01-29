@@ -10,6 +10,7 @@
 
 #include "common/log/trace.h"
 #include "common/code/xatmi.h"
+#include "common/buffer/type.h"
 
 namespace casual
 {
@@ -68,12 +69,12 @@ namespace casual
       namespace protocol
       {
 
-         const std::string& x_octet();
-         const std::string& binary();
-         const std::string& json();
-         const std::string& xml();
-         const std::string& field();
-
+         constexpr auto x_octet = "application/casual-x-octet";
+         constexpr auto binary = "application/casual-binary";
+         constexpr auto json = "application/json";
+         constexpr auto xml = "application/xml";
+         constexpr auto field = "application/casual-field";
+         constexpr auto string = "application/casual-string";
 
          namespace convert
          {
@@ -87,8 +88,27 @@ namespace casual
                std::string buffer( const std::string& content);
             } // to
          } // convert
-
       } //protocol
+
+      namespace buffer
+      {
+         namespace transcode
+         {
+            namespace from
+            {
+               //! might base64 decode, based on buffer.type
+               void wire( common::buffer::Payload& buffer);
+            } // from
+
+            namespace to
+            {
+               //! might base64 encode, based on buffer.type
+               void wire( common::buffer::Payload& buffer);
+            } // from 
+
+         } // transcode
+      } // buffer
+
    } // http
 } // casual
 
