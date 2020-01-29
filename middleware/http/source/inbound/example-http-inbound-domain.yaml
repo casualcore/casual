@@ -15,7 +15,7 @@ domain:
           note: Arbitary information of this server
       
     executables:
-        - alias: casual-inbound-server
+        - alias: casual-http-inbound
           note: nginx casual style
           path: ${CASUAL_HOME}/nginx/sbin/nginx
           arguments: 

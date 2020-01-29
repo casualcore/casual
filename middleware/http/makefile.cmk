@@ -39,7 +39,7 @@ common_outbound_archive = LinkArchive( 'bin/casual-http-outbound-common',
        Compile( 'source/outbound/state.cpp'),
        Compile( 'source/outbound/request.cpp'),
      ])
-        
+
 common_inbound_library = LinkLibrary( 'bin/casual-http-inbound-common',
    [
        Compile( 'source/inbound/caller.cpp')
@@ -61,7 +61,6 @@ target = LinkExecutable( 'bin/casual-http-outbound',
    [ 
       common_outbound_archive,
       common_archive,
-      'casual-serviceframework', 
       'casual-common', 
       'curl'
    ])

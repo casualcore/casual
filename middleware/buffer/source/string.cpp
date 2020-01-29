@@ -47,18 +47,13 @@ namespace casual
                   const auto size = payload.memory.size();
                   const auto used = std::strlen( payload.memory.data()) + 1;
 
-                  //
                   // We do need to check that it is a real null-terminated
                   // string within allocated area
-                  //
 
                   if( used > size)
-                  {
                      throw common::exception::xatmi::invalid::Argument{ "string is longer than allocated size"};
-                  }
 
                   return used;
-
                }
 
             }
@@ -68,21 +63,16 @@ namespace casual
             {
                using common::buffer::Buffer::Buffer;
 
-               //!
                //! Implement Buffer::transport
-               //!
                platform::binary::size::type transport( const platform::binary::size::type user_size) const
                {
-                  //
                   // Just ignore user-size all together
                   //
                   // ... but we do need to validate it
-                  //
                   return local::validate( payload);
                }
 
             };
-
 
 
             class Allocator : public common::buffer::pool::basic_pool<Buffer>
@@ -123,9 +113,7 @@ namespace casual
 
                platform::buffer::raw::type insert( common::buffer::Payload payload)
                {
-                  //
                   // Validate it before we move it
-                  //
                   local::validate( payload);
 
                   m_pool.emplace_back( std::move( payload));
@@ -239,9 +227,7 @@ namespace casual
 
                   if( used > size)
                   {
-                     //
                      // We need to report this
-                     //
                      buffer.payload.memory.at( used);
                   }
 

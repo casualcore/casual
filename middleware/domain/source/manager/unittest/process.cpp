@@ -110,13 +110,11 @@ domain:
                   {
                      environment::variable::set( "CASUAL_HOME", local::repository::root() + "/test/home");
                      environment::variable::set( "CASUAL_DOMAIN_HOME", home);
-
-                     if( file::exists( environment::domain::singleton::file()))
-                        file::remove( environment::domain::singleton::file());
                      
                      if( callback)
                         callback( home);
 
+                     // reset all (hopefolly) environment based 'values' 
                      environment::reset();
                   }
    

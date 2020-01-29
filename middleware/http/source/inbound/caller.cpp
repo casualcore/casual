@@ -37,10 +37,8 @@ namespace casual
 
                   namespace key
                   {
-                     // 
                      // Must be able to tell if key is set or not
                      // No practical risc to overflow
-                     //
                      long next{ 1};
                   }
 
@@ -86,9 +84,7 @@ namespace casual
                      common::service::header::Fields result;
 
                      for( auto& header : common::range::make( headers.data, headers.size))
-                     {
                         result.emplace_back( header.key, header.value);
-                     }
 
                      return result;
                   }
@@ -99,7 +95,7 @@ namespace casual
                      header_type result;
 
                      result.size = headers.size();
-                     result.data = reinterpret_cast< header_data_type*>( malloc( result.size * sizeof (header_data_type)));
+                     result.data = reinterpret_cast< header_data_type*>( malloc( result.size * sizeof( header_data_type)));
 
                      auto index = 0;
                      for( const auto& header : headers)
@@ -208,97 +204,6 @@ namespace casual
 
                namespace buffer
                {
-                  namespace input
-                  {
-                     common::buffer::Payload transform( common::buffer::Payload&& buffer, const std::string& protocol)
-                     {
-                        const http::Trace trace("casual::http::inbound::local::buffer::input::transform");
-                        auto transcode_base64 = [&]( common::buffer::Payload&& buffer)
-                        {
-                           common::buffer::Payload result;
-                           result.type = std::move( buffer.type);
-                           result.memory = common::transcode::base64::decode( std::string( buffer.memory.begin(), buffer.memory.end()));
-
-                           return result;
-                     };
-
-                        auto transcode_none = [&]( common::buffer::Payload&& buffer)
-                        {
-                           common::buffer::Payload result;
-                           result.type = std::move( buffer.type);
-                           result.memory = std::move( buffer.memory);
-
-                           return result;
-                        };
-
-                        const static auto mapping = std::map< std::string, std::function<common::buffer::Payload(common::buffer::Payload&&)> >
-                        {
-                           { http::protocol::binary(), transcode_base64},
-                           { http::protocol::x_octet(), transcode_base64},
-                           { http::protocol::field(), transcode_base64},
-                           { http::protocol::json(), transcode_none},
-                           { http::protocol::xml(), transcode_none}
-                        };
-
-                        auto found = common::algorithm::find( mapping, protocol);
-                        if( found)
-                        {
-                           log::line( verbose::log, "found protocol transcoder: ", found->first);
-
-                           // Do the actual transforming
-                           return found->second( std::move( buffer));
-                        }
-
-                        log::line( log::category::error, "failed to find transcoder for protocol: ", protocol);
-                        return {};
-                     }
-                  }
-                  namespace output
-                  {
-                     common::buffer::Payload transform( common::buffer::Payload&& buffer, const std::string& protocol)
-                     {
-                        const http::Trace trace("casual::http::inbound::local::buffer::output::transform");
-                        auto transcode_base64 = [&]( common::buffer::Payload&& buffer)
-                        {
-                           common::buffer::Payload result;
-                           result.type = std::move( buffer.type);
-                           auto encoded = common::transcode::base64::encode( buffer.memory);
-                           result.memory = platform::binary::type( encoded.begin(), encoded.end());
-
-                           return result;
-                        };
-
-                        auto transcode_none = [&]( common::buffer::Payload&& buffer)
-                        {
-                           common::buffer::Payload result;
-                           result.type = std::move( buffer.type);
-                           result.memory = std::move( buffer.memory);
-
-                           return result;
-                        };
-
-                        const static auto mapping = std::map< std::string, std::function<common::buffer::Payload(common::buffer::Payload&&)> >
-                        {
-                           { http::protocol::binary(), transcode_base64},
-                           { http::protocol::x_octet(), transcode_base64},
-                           { http::protocol::field(), transcode_base64},
-                           { http::protocol::json(), transcode_none},
-                           { http::protocol::xml(), transcode_none}
-                        };
-
-                        auto found = common::algorithm::find( mapping, protocol);
-                        if (found)
-                        {
-                           //
-                           // Do the actual transforming
-                           //
-                           return found->second( std::move(buffer));
-                        }
-
-                        return {};
-                     }
-                  }
-
                   template< typename Type>
                   buffer_type copy( const Type& input)
                   {
@@ -311,22 +216,14 @@ namespace casual
 
                   platform::binary::type assemble( casual_buffer_type* transport, const parameter::container& parameters, const std::string& protocol)
                   {
-                     platform::binary::type buffer;
-                     if ( protocol == http::protocol::json() && transport->payload.size < 1)
-                     {
-                        buffer = parameter::make_json( parameters);
-                     }
-                     else if ( protocol == http::protocol::xml() && transport->payload.size < 1)
-                     {
-                        buffer = parameter::make_xml( parameters);
-                     }
-                     else
-                     {
-                        buffer = platform::binary::type( transport->payload.data, transport->payload.data + transport->payload.size);
-                     }
-                     return buffer;
+                     if ( protocol == http::protocol::json && transport->payload.size < 1)
+                        return parameter::make_json( parameters);
+                     else if ( protocol == http::protocol::xml && transport->payload.size < 1)
+                        return parameter::make_xml( parameters);
+                        
+                     return platform::binary::type( transport->payload.data, transport->payload.data + transport->payload.size);
                   }
-               }
+               } // buffer
 
                namespace exception
                {
@@ -369,11 +266,10 @@ namespace casual
 
                namespace service
                {
-                  //
+
                   // Contacts service-manager and gets a lookup object.
                   // When lookup object returns true, the service-manager is
                   // ready to handle the actual call
-                  //
                   long lookup( casual_buffer_type* transport)
                   {
                      const http::Trace trace("casual::http::inbound::local::service::lookup");
@@ -383,10 +279,9 @@ namespace casual
 
                      try
                      { 
-                        if ( transport->lookup_key == 0) 
-                        {
+                        if( transport->lookup_key == 0) 
                            transport->lookup_key = lookup::add( service);
-                        }
+
                         const auto key = transport->lookup_key;
                         log::line( verbose::log, "key: ", key);
 
@@ -422,10 +317,9 @@ namespace casual
                         const auto& parameters = parameter::copy( transport->parameter);
                         log::line( verbose::log, "parameters: ", parameters);
 
-                        // Handle buffer
-                        auto buffer = buffer::assemble( transport, parameters, protocol);
-                        common::buffer::Payload payload( protocol::convert::to::buffer( protocol), buffer);
-                        payload = buffer::input::transform( std::move( payload), protocol);
+                        // possible transcode buffer from wire-encoding
+                        common::buffer::Payload payload( protocol::convert::to::buffer( protocol), buffer::assemble( transport, parameters, protocol));
+                        http::buffer::transcode::from::wire( payload);
 
                         // Call service
                         namespace call = common::service::call;
@@ -460,13 +354,15 @@ namespace casual
 
                      try
                      {
+                        const http::Trace trace("casual::http::inbound::service::service::receive reply");
+
                         // Handle reply
                         namespace call = common::service::call;
                         auto reply = call::context().reply( descriptor, call::reply::Flag::no_block);
 
-                        // Handle buffer
-                        auto output = buffer::output::transform( std::move( reply.buffer), protocol);
-                        transport->payload = buffer::copy( output.memory);
+                        // possible transcode buffer to wire-encoding
+                        http::buffer::transcode::to::wire( reply.buffer);
+                        transport->payload = buffer::copy( reply.buffer.memory);
 
                         // Handle reply headers
                         auto header = header::codes::add( cast::underlying( common::code::xatmi::ok), reply.user);

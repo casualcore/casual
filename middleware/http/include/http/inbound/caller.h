@@ -33,26 +33,18 @@ extern "C"
 
    typedef struct casual_buffer_s
    {
-      //!
       //! header information
-      //!
       header_type header_in;
       header_type header_out;
 
-      //!
       //! actual data
-      //!
       buffer_type payload;
       buffer_type parameter;
 
-      //!
       //! state
-      //!
       long context;
 
-      //!
       //! misc
-      //!
       char service[ XATMI_SERVICE_NAME_LENGTH];
       char protocol[80];
 
@@ -61,21 +53,16 @@ extern "C"
       long code;
    } casual_buffer_type;
 
-   //!
    //! Communicate with service manager
-   //!
    long casual_xatmi_lookup( casual_buffer_type* data);
-   //!
+
    //! Make the call
-   //!
    long casual_xatmi_send( casual_buffer_type* data);
-   //!
+
    //! Get the response
-   //!
    long casual_xatmi_receive( casual_buffer_type* data);
-   //!
+
    //! Abort the call
-   //!
    long casual_xatmi_cancel( casual_buffer_type* data);
 
    enum

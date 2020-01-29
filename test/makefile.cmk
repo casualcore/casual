@@ -60,14 +60,15 @@ if "CASUAL_UNITTEST_HTTP_INBOUND_CONFIG" in os.environ and "CASUAL_UNITTEST_HTTP
 LinkUnittest( 'unittest/bin/test-casual-basic',
     unittest_object,
     [ 
-        test_archive,
+      test_archive,
 		'casual-common', 
-		'casual-serviceframework', 
+		#'casual-serviceframework', 
+      'casual-buffer',
 		'casual-xatmi', 
 		'yaml-cpp', 
 		'casual-unittest',
-        'casual-mockup-rm',
-        'casual-domain-unittest'
+      'casual-mockup-rm',
+      'casual-domain-unittest'
 	])
 	
 
