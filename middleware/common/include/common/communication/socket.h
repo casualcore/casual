@@ -9,6 +9,8 @@
 
 #include "common/strong/id.h"
 
+#include <fcntl.h>
+
 namespace casual
 {
    namespace common
@@ -54,6 +56,11 @@ namespace casual
                   std::chrono::seconds m_time;
                };
 
+               enum class File 
+               {
+                  no_block = O_NONBLOCK,
+               };
+
             } // option
 
          } // socket
@@ -64,12 +71,6 @@ namespace casual
 
             using descriptor_type = socket::descriptor_type;
             using size_type = platform::size::type;
-
-            enum class Option : int
-            {
-               reuse_address = SO_REUSEADDR,
-               linger = SO_LINGER,
-            };
 
             Socket() noexcept = default;
             explicit Socket( descriptor_type descriptor) noexcept;
@@ -91,6 +92,9 @@ namespace casual
 
             descriptor_type descriptor() const noexcept;
 
+            //! return SO_ERROR from getsockopt
+            std::error_code error() const;
+
 
             template< typename Option>
             void set( Option&& option)
@@ -98,6 +102,9 @@ namespace casual
                auto&& value = option.value();
                Socket::option( option.level(), option.option(), &value, sizeof( std::decay_t< decltype( value)>));
             }
+
+            void set( socket::option::File option);
+            void unset( socket::option::File option);
 
             // for logging only
             CASUAL_CONST_CORRECT_SERIALIZE_WRITE(

@@ -209,6 +209,49 @@ namespace casual
                }
             }
 
+            namespace conditional
+            {
+               template< typename Unmarshal, typename D, typename C>
+               void pump( 
+                  basic_handler< Unmarshal>& handler, 
+                  D& device,
+                  C&& done)
+               {
+                  using device_type = std::decay_t< decltype( device)>;
+
+                  const auto types = handler.types();
+
+                  while( ! done())
+                  {
+                     while( handler( device.next( types, typename device_type::non_blocking_policy{})))
+                        ; // no op
+
+                     if( done())
+                        return;
+
+                     // we block
+                     handler( device.next( types, typename device_type::blocking_policy{}));
+                  }   
+               }
+            } // conditiaonl
+
+            namespace reply
+            {
+               template< typename Reply, typename H, typename D>
+               auto pump( H&& handler, D& device)
+               {
+                  Reply reply;
+
+                  conditional::pump( handler, device, [&reply]()
+                  {
+                     return ! reply.correlation.empty();
+                  });
+
+                  return reply;
+               }
+               
+            } // reply
+
             
             namespace empty
             {

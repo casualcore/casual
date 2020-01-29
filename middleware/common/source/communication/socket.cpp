@@ -78,6 +78,18 @@ namespace casual
             local::check::result( ::setsockopt( m_descriptor.value(), level, optname, optval, optlen));
          }
 
+         void Socket::set( socket::option::File option)
+         {
+            auto flags = ::fcntl( m_descriptor.value(), F_GETFL);
+            local::check::result(::fcntl( m_descriptor.value(), F_SETFL, flags | cast::underlying( option)));
+         }
+
+         void Socket::unset( socket::option::File option)
+         {
+            auto flags = ::fcntl( m_descriptor.value(), F_GETFL);
+            local::check::result(::fcntl( m_descriptor.value(), F_SETFL, flags & ~cast::underlying( option)));
+         }
+
          Socket& Socket::operator = ( const Socket& other)
          {
             Socket copy{ other};
@@ -91,6 +103,15 @@ namespace casual
          Socket::descriptor_type Socket::descriptor() const noexcept
          {
             return m_descriptor;
+         }
+
+         std::error_code Socket::error() const
+         {
+            int optval{};
+            socklen_t optlen = sizeof( optval);
+            local::check::result( ::getsockopt( m_descriptor.value(), SOL_SOCKET, SO_ERROR, &optval, &optlen));
+
+            return std::make_error_code( std::errc( optval));
          }
 
          Socket::descriptor_type Socket::release() noexcept

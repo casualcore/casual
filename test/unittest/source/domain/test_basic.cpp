@@ -29,7 +29,7 @@ domain:
   name: empty_configuration
 )";
 
-            domain::Manager manager{ { configuration}};
+            domain::Manager manager{ configuration};
 
             EXPECT_TRUE( communication::instance::ping( manager.handle().ipc) == manager.handle());
          }
@@ -49,8 +49,8 @@ domain:
   name: B
 )";
 
-            domain::Manager a{ {A}};
-            domain::Manager b{ {B}};
+            domain::Manager a{ A};
+            domain::Manager b{ B};
 
             EXPECT_TRUE( communication::instance::ping( a.handle().ipc) == a.handle());
             EXPECT_TRUE( communication::instance::ping( b.handle().ipc) == b.handle());

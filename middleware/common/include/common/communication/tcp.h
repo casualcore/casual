@@ -13,6 +13,7 @@
 #include "common/communication/message.h"
 #include "common/communication/device.h"
 #include "common/serialize/native/network.h"
+#include "common/pimpl.h"
 
 #include "casual/platform.h"
 #include "common/flag.h"
@@ -52,14 +53,9 @@ namespace casual
                Address( Port port);
                Address( Host host, Port port);
 
-               inline operator std::string() const { return host + ':' + port;} 
+               inline operator std::string() const { return host + ':' + port;}
 
-               // for logging only
-               CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
-               {
-                  CASUAL_SERIALIZE( host);
-                  CASUAL_SERIALIZE( port);
-               })
+               friend std::ostream& operator << ( std::ostream& out, const Address& value);
 
                std::string host;
                std::string port;
@@ -93,6 +89,14 @@ namespace casual
 
 
             Socket connect( const Address& address);
+
+            namespace non
+            {
+               namespace blocking
+               {
+                  Socket connect( const Address& address);
+               } // blocking
+            } // non
 
             namespace retry
             {

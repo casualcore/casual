@@ -175,12 +175,16 @@ Format of the logfile:\n
 
         elif not sys.stdin.isatty():
             format(sys.stdin, sys.stdout, args.colorize)
+        
+        elif os.environ['CASUAL_LOG_PATH']:
+            path = os.environ['CASUAL_LOG_PATH']
+            with open( path) as file:
+                format( file, sys.stdout, args.colorize)
 
         elif os.environ['CASUAL_DOMAIN_HOME']:
-            with open(
-                os.path.join(os.environ['CASUAL_DOMAIN_HOME'], 'casual.log')
-            ) as infile:
-                format(infile, sys.stdout, args.colorize)
+            path = os.path.join(os.environ['CASUAL_DOMAIN_HOME'], 'casual.log')
+            with open( path) as file:
+                format( file, sys.stdout, args.colorize)
 
     except IOError as e:
         if e.errno != errno.EPIPE:

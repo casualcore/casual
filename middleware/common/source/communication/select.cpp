@@ -28,6 +28,17 @@ namespace casual
                      FD_ZERO( &value);
 #endif 
                   }
+
+                  template< typename T>
+                  auto& print_fd( std::ostream& out, const T& set, traits::priority::tag< 0>) { return out;}
+
+                  template< typename T>
+                  auto print_fd( std::ostream& out, const T& set, traits::priority::tag< 1>) 
+                     -> decltype( stream::write( out, set.fds_bits))
+                  {
+                     return stream::write( out, set.fds_bits);
+                  }
+
                } // <unnamed>
             } // local
             namespace directive
@@ -54,7 +65,10 @@ namespace casual
 
                std::ostream& operator << ( std::ostream& out, const Set& value)
                {
-                  return out << "{}";
+                  if( out)
+                     local::print_fd( out, value.m_set, traits::priority::tag< 1>{});
+
+                  return out;
                }
   
             } // directive

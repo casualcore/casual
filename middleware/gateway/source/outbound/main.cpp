@@ -204,23 +204,69 @@ namespace casual
                   {
                      Trace trace{ "gateway::outbound::local::inbound::message"};
 
-                     Message message;
-                     
-                     {
-                        auto handler = common::communication::ipc::inbound::device().handler(
-                           common::message::handle::Shutdown{},
-                           // we don't handle ping until we're up'n running common::message::handle::ping(),
-                           common::message::handle::assign( message));
-
-                        while( ! message.correlation)
-                        {
-                           auto& device = common::communication::ipc::inbound::device();
-                           handler( device.next( handler.types(), device.policy_blocking()));
-                        }
-                     }
-                     return message;
+                     return common::message::dispatch::reply::pump< Message>(
+                        common::message::handle::defaults( common::communication::ipc::inbound::device()),
+                        common::communication::ipc::inbound::device());
                   }
                } // inbound
+
+
+               auto connect( communication::tcp::Address address)
+               {
+                  Trace trace{ "gateway::outbound::local::connect"};
+
+                  try
+                  {
+                     // we try to connect directly
+                     return communication::tcp::connect( address);
+                  }
+                  catch( const exception::system::communication::Refused&)
+                  {
+                     // no-op
+                  }
+
+                  // no one is listening on the other side, yet... Let's start the
+                  // retry dance...
+
+                  communication::Socket socket;
+
+                  auto signal_alarm = [&address, &socket]()
+                  {
+                     try
+                     {
+                        socket = communication::tcp::connect( address);
+                        // we're connected, push message to our own ipc so we end
+                        // our plocking message pump
+
+                        communication::ipc::inbound::device().push( message::outbound::connect::Done{});
+                     }
+                     catch( const exception::system::communication::Refused&)
+                     {
+                        common::signal::timer::set( std::chrono::seconds{ 1});
+                     }
+                  };
+
+                  auto restore = signal::callback::scoped::replace< code::signal::alarm>( std::move( signal_alarm));
+
+                  // set the first timeout
+                  common::signal::timer::set( std::chrono::seconds{ 1});
+
+                  auto handler = communication::ipc::inbound::device().handler( 
+                     common::message::handle::defaults( communication::ipc::inbound::device()), 
+                     []( const message::outbound::connect::Done&) {} // no-op 
+                     );
+                  
+                  common::message::dispatch::conditional::pump( 
+                     handler,
+                     communication::ipc::inbound::device(),
+                     [&socket]()
+                     {
+                        return socket ? true : false;
+                     });
+
+                  return socket;
+               }
+
 
                State connect( Settings&& settings)
                {
@@ -229,132 +275,25 @@ namespace casual
                   // 'connect' to our local domain
                   common::communication::instance::connect();
 
-                  auto connect_thread = []( std::string&& address)
+                  // connect to the other domain, this will try unitl succes or "shutdown"
+                  communication::tcp::inbound::Device inbound{ connect( std::move( settings.address))};
+
+                  // send connect request
                   {
-                     try
-                     {
-                        Trace trace{ "gateway::outbound::local::connect connect_thread"};
+                     Trace trace{ "gateway::outbound::local::connect send domain connect request"};
 
-                        // We're only interested in sig-user
-                        common::signal::thread::scope::Mask block{ common::signal::set::filled( common::code::signal::user)};
+                     common::message::gateway::domain::connect::Request request;
+                     request.domain = common::domain::identity();
+                     request.versions = { common::message::gateway::domain::protocol::Version::version_1};
+                     
+                     log::line( verbose::log, "request: ", request);
 
-                        message::outbound::connect::Done done;
-
-                        // we'll use if the descriptor is valid or not do deduce if the
-                        // connection was succesfull or not, from the main thread
-                        auto send_done = execute::scope( [&done]()
-                           {
-                              try
-                              {
-                                 common::signal::thread::scope::Block block;
-
-                                 log::line( verbose::log, "send main_connect: ", done);
-                                 common::communication::ipc::blocking::send( common::communication::ipc::inbound::ipc(), done);
-                              }
-                              catch( ...)
-                              {
-                                 common::exception::handle();
-                              }
-                           }
-                        );
-
-                        // try forever to connect to remote
-                        communication::tcp::inbound::Device inbound( communication::tcp::retry::connect( address, {
-                           { std::chrono::seconds{ 1}, 60}, // 1min
-                           { std::chrono::seconds{ 10}, 0} // forever
-                        }));
-
-                        // send connect request
-                        {
-                           Trace trace{ "gateway::outbound::local::connect send domain connect request"};
-
-                           common::message::gateway::domain::connect::Request request;
-                           request.domain = common::domain::identity();
-                           request.versions = { common::message::gateway::domain::protocol::Version::version_1};
-                           
-                           log::line( verbose::log, "request: ", request);
-
-                           communication::tcp::outbound::blocking::send( inbound.connector().socket(), request);
-                        }
-
-                        // wait for reply
-                        common::message::gateway::domain::connect::Reply reply;
-                        {
-                           Trace trace{ "gateway::outbound::local::connect connect_thread wait for reply"};
-
-                           auto handler = inbound.handler(
-                              common::message::handle::assign( reply)
-                           );
-
-                           while( ! reply.correlation)
-                           {
-                              handler( inbound.next( inbound.policy_blocking()));
-                           }
-
-                           log::line( verbose::log, "reply: ", reply);
-
-                           if( reply.version != common::message::gateway::domain::protocol::Version::version_1)
-                              throw common::exception::system::invalid::Argument{ "invalid protocol"};
-                        }
-
-                        // connect to gateway
-                        {
-                           Trace trace{ "gateway::outbound::local::connect connect_thread send connect to gateway"};
-
-                           message::outbound::Connect connect;
-                           connect.process = common::process::handle();
-                           connect.domain = reply.domain;
-                           connect.version = reply.version;
-                           const auto& socket = inbound.connector().socket();
-                           connect.address.local = communication::tcp::socket::address::host( socket);
-                           connect.address.peer = communication::tcp::socket::address::peer( socket);
-
-                           log::line( verbose::log, "connect: ", connect);
-
-                           common::communication::ipc::blocking::send(
-                              common::communication::instance::outbound::gateway::manager::device(),
-                              connect);
-                        }
-
-                        // we're done, release the responsibility of the socket
-                        // and 'done' will be sent to main thread
-                        done.descriptor = inbound.connector().socket().release();
-                     }
-                     catch( const exception::signal::User&)
-                     {
-                        // we've been asked to shutdown from the main thread.
-                     }
-                     catch( ...)
-                     {
-                        // we've already sent the connect::Done to main thread
-                        common::exception::handle();
-                     }
-                  };
-
-                  std::thread worker{ connect_thread, std::move( settings.address)};
-
-                  // make sure we allways join the worker
-                  auto worker_join = common::execute::scope( [&worker](){ worker.join();});
-                  
-                  // We block sig-user so worker always gets'em
-                  common::signal::thread::scope::Block block{ { common::code::signal::user}};
-
-                  try
-                  {
-                     // wait for the connect
-                     auto done = inbound::message< message::outbound::connect::Done>();
-
-                     if( ! done.descriptor)
-                        throw exception::system::communication::unavailable::no::Connect{ "failed to connect to remote domain"};
-
-                     return State{ communication::Socket{ done.descriptor}, settings.order};
+                     communication::tcp::outbound::blocking::send( inbound.connector().socket(), request);
                   }
-                  catch( ...)
-                  {
-                     // we're shutting down or something went wrong, either way, we shutdown the thread.
-                     signal::thread::send( worker, code::signal::user);
-                     throw;
-                  }
+
+                  // the reply will be handled in the main message pump
+
+                  return State{ std::move( inbound), settings.order};
                }
 
                namespace handle
@@ -385,6 +324,49 @@ namespace casual
                         }
 
                      } // branch
+
+
+                     namespace connect
+                     {
+                        auto reply( State& state)
+                        {
+                           return [&state]( const common::message::gateway::domain::connect::Reply& message)
+                           {
+                              Trace trace{ "gateway::outbound::local::handle::external::connect::reply"};
+                              log::line( verbose::log, "message: ", message);
+                
+                              if( message.version != common::message::gateway::domain::protocol::Version::version_1)
+                                 throw common::exception::system::invalid::Argument{ "invalid protocol"};
+
+                              // connect to gateway
+                              {
+                                 message::outbound::Connect connect;
+                                 connect.process = common::process::handle();
+                                 connect.domain = message.domain;
+                                 connect.version = message.version;
+                                 const auto& socket =  state.external.inbound.connector().socket();
+                                 connect.address.local = communication::tcp::socket::address::host( socket);
+                                 connect.address.peer = communication::tcp::socket::address::peer( socket);
+
+                                 log::line( verbose::log, "connect: ", connect);
+
+                                 common::communication::ipc::blocking::send(
+                                    common::communication::instance::outbound::gateway::manager::device(),
+                                    connect);
+                              }
+
+                              // ask for configuration, reply will be handle by the main message pump
+                              {                              
+                                 message::outbound::configuration::Request request;
+                                 request.process = common::process::handle();
+
+                                 common::communication::ipc::blocking::send(
+                                    common::communication::instance::outbound::gateway::manager::device(),
+                                    request);
+                              }
+                           };
+                        }
+                     } // connect
 
                      template< typename M>
                      struct basic_reply : state::Base
@@ -581,6 +563,8 @@ namespace casual
                      auto handler( State& state)
                      {
                         return state.external.inbound.handler(
+                           // the reply from the other side, will only be invoked once.
+                           connect::reply( state),
                            
                            // service
                            service::call::Reply{ state},
@@ -620,7 +604,6 @@ namespace casual
 
                   namespace internal
                   {
-                     
                      namespace branch
                      {
                         template< typename M>
@@ -786,7 +769,6 @@ namespace casual
                            void operator() ( message_type& message)
                            {
                               Trace trace{ "gateway::outbound::local::handle::internal::queue::basic_request"};
-
                               log::line( verbose::log, "message: ", message);
 
                               // we don't bother with branching on casual-queue, since it does not bother.
@@ -809,12 +791,44 @@ namespace casual
                         } // dequeue
                      } // queue
 
+                     namespace configuration
+                     {
+                        auto reply( State& state)
+                        {
+                           return [&state]( const message::outbound::configuration::Reply& message)
+                           {
+                              Trace trace{ "gateway::outbound::local::handle::internal::configuration::reply"};
+                              log::line( verbose::log, "message: ", message);
+
+                              if( ! message.services.empty() || ! message.queues.empty())
+                              {
+                                 common::message::gateway::domain::discover::Request request;
+
+                                 // make sure we have a correlation id.
+                                 request.correlation = common::uuid::make();
+
+                                 // We make sure we get the reply (hence not forwarding to some other process)
+                                 request.process = common::process::handle();
+                                 request.domain = common::domain::identity();
+                                 request.services = message.services;
+                                 request.queues = message.queues;
+
+                                 // Use regular handler to manage the "routing"
+                                 handle::internal::domain::discover::Request{ state}( request);
+                              }
+                           };
+
+                        }
+                     } // configuration
+
                      auto handler( State& state)
                      {
                         auto& device = communication::ipc::inbound::device();
                         return device.handler(
                            
                            common::message::handle::defaults( device),
+
+                           configuration::reply( state),
 
                            // service
                            service::call::Request{ state},
@@ -867,49 +881,10 @@ namespace casual
                   } // internal
                } // handle
 
-               void configure( State& state)
-               {
-                  Trace trace{ "gateway::outbound::local::configure"};
-                  
-                  
-                  {
-                     message::outbound::configuration::Request request;
-                     request.process = common::process::handle();
-
-                     common::communication::ipc::blocking::send(
-                           common::communication::instance::outbound::gateway::manager::device(),
-                           request);
-                  }
-                  
-                  {
-                     Trace trace{ "gateway::outbound::local::configure send discover"};
-
-                     auto configuration = inbound::message< message::outbound::configuration::Reply>();
-
-                     if( ! configuration.services.empty() || ! configuration.queues.empty())
-                     {
-                        common::message::gateway::domain::discover::Request request;
-
-                        // make sure we have a correlation id.
-                        request.correlation = common::uuid::make();
-
-                        // We make sure we get the reply (hence not forwarding to some other process)
-                        request.process = common::process::handle();
-                        request.domain = common::domain::identity();
-                        request.services = configuration.services;
-                        request.queues = configuration.queues;
-
-                        // Use regular handler to manage the "routing"
-                        handle::internal::domain::discover::Request{ state}( request);
-                     }
-                  }
-               }
-
+        
                void start( State&& state)
                {
                   Trace trace{ "gateway::outbound::local::start"};
-
-                  configure( state);
 
                   log::line( log::category::information, "outbound connected: ", 
                      communication::tcp::socket::address::peer( state.external.inbound.connector().socket()));
@@ -936,13 +911,11 @@ namespace casual
                void main( int argc, char* argv[])
                {
                   Settings settings;
-                  {
-                     argument::Parse parse{ "tcp outbound",
-                        argument::Option( std::tie( settings.address), { "-a", "--address"}, "address to the remote domain [(ip|domain):]port"),
-                        argument::Option( std::tie( settings.order), { "-o", "--order"}, "order of the outbound connector"),
-                     };
-                        parse( argc, argv);
-                  }
+
+                  argument::Parse{ "tcp outbound",
+                     argument::Option( std::tie( settings.address), { "-a", "--address"}, "address to the remote domain [(ip|domain):]port"),
+                     argument::Option( std::tie( settings.order), { "-o", "--order"}, "order of the outbound connector"),
+                  }( argc, argv);
 
                   start( connect( std::move( settings)));
     

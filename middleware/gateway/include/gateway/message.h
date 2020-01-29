@@ -87,15 +87,8 @@ namespace casual
 
             namespace connect
             {
-               struct Done : common::message::basic_message< common::message::Type::gateway_outbound_connect_done>
-               {
-                  common::strong::socket::id descriptor;
+               using Done = common::message::basic_message< common::message::Type::gateway_outbound_connect_done>;
 
-                  CASUAL_CONST_CORRECT_SERIALIZE({
-                     base_type::serialize( archive);
-                     CASUAL_SERIALIZE( descriptor);
-                  })
-               };
             } // connect
 
          } // outbound

@@ -24,6 +24,16 @@ namespace casual
                constexpr static auto moved() noexcept { return moved_value;}
                constexpr static bool moved( const T& value) noexcept { return value == moved();} 
             };
+
+            template< typename T>
+            struct Pointer
+            {
+               constexpr static auto active() noexcept { return nullptr;}
+               constexpr static auto moved() noexcept { return nullptr;}
+               constexpr static bool moved( const T* value) noexcept { return value == moved();} 
+            };
+
+
          } // policy
 
          template< typename T, T active_value = T{}, typename P = policy::Default< T, active_value>> 
@@ -63,6 +73,9 @@ namespace casual
          //!  use Active attribute in dtor do deduce if instance of <some type> still
          //!  has responsibility...
          using Active = basic_active< bool, true>;
+
+         template< typename T> 
+         using Pointer = basic_active< T*, nullptr, policy::Pointer< T>>;
 
          
       } // move

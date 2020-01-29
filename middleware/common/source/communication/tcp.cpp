@@ -22,6 +22,20 @@
 #include <netdb.h>
 #include <netinet/tcp.h>
 
+
+
+std::ostream& operator << ( std::ostream& out, const struct addrinfo& value)
+{
+   out << "{ protocol: " << value.ai_protocol
+      << ", family: " << value.ai_family;
+   
+   if( value.ai_canonname)
+      out << ", canonname: " << value.ai_canonname;
+
+   return out << '}';
+}
+
+
 namespace casual
 {
    namespace common
@@ -49,6 +63,17 @@ namespace casual
 
                      } // option
 
+                     namespace outcome
+                     {
+                        enum class Create : short
+                        {
+                           ok,
+                           pending,
+                           error,
+                        };
+
+                     } // outcome
+
 
                      enum class Flag
                      {
@@ -56,6 +81,7 @@ namespace casual
                         // AI_ADDRCONFIG only return addresses if configured
                         passive = AI_PASSIVE,
                         address_config = AI_ADDRCONFIG,
+                        cannonical = AI_CANONNAME,
                      };
 
                      namespace address
@@ -75,41 +101,84 @@ namespace casual
                         {
                            return null_if_empty( address.port);
                         }
-                     }
+
+                        struct Native 
+                        {
+                           explicit Native( const tcp::Address& address, Flags< Flag> flags = {})
+                           {
+                              Trace trace( "common::communication::tcp::local::socket::address::Natice::Native");
+                              log::line( verbose::log, "address: ", address, ", flags: ", flags);
+
+                              struct addrinfo hints{};
+
+                              // IPV4 or IPV6 doesn't matter
+                              hints.ai_family = PF_UNSPEC;
+                              // TCP/IP
+                              hints.ai_socktype = SOCK_STREAM;
+
+                              flags |= Flag::cannonical;
+                              hints.ai_flags = flags.underlaying();
+
+                              if( const int result = getaddrinfo( address::host( address), address::port( address), &hints, &information.value))
+                              {
+                                 throw exception::system::invalid::Argument( string::compose( 
+                                    gai_strerror( result), " address: ", address));
+                              }
+                           }
+
+                           Native() = default;
+
+                           ~Native()
+                           {
+                              if( information)
+                                 freeaddrinfo( information.value);
+                           }
+
+                           Native( Native&&) noexcept = default;
+                           Native& operator = ( Native&&) noexcept = default;
+
+                           struct iterator
+                           {
+                              iterator() = default;
+                              iterator( const addrinfo* data) : data{ data} {}
+
+                              auto& operator * () const { return *data;}
+                              auto operator -> () const { return data;}
+
+                              iterator& operator ++ () { data = data->ai_next; return *this;}
+                              iterator operator ++ ( int) { iterator result{ data}; data = data->ai_next; return result;}
+
+                              friend bool operator == ( iterator lhs, iterator rhs) { return lhs.data == rhs.data;}
+                              friend bool operator != ( iterator lhs, iterator rhs) { return ! ( lhs == rhs);}
+                              const addrinfo* data = nullptr;
+                           };
+
+                           auto begin() { return iterator{ information.value};}
+                           auto end() { return iterator{};}
+                           auto begin() const { return iterator{ information.value};}
+                           auto end() const { return iterator{};}
+
+                           bool empty() const noexcept { return information.value == nullptr;}
+
+                           common::move::Pointer< addrinfo> information;
+                        };
+
+                     } // address
 
                      template< typename F>
                      Socket create( const Address& address, F binder, Flags< Flag> flags = {})
                      {
                         Trace trace( "common::communication::tcp::local::socket::create");
 
-                        struct addrinfo* information = nullptr;
+                        address::Native native{ address, flags};                   
+                        log::line( verbose::log, "native: ", native);
 
-                        // resolve the address
-                        {
-                           struct addrinfo hints{ };
-
-                           // IPV4 or IPV6 doesn't matter
-                           hints.ai_family = PF_UNSPEC;
-                           // TCP/IP
-                           hints.ai_socktype = SOCK_STREAM;
-
-                           hints.ai_flags = flags.underlaying();
-
-                           if( const int result = getaddrinfo( address::host( address), address::port( address), &hints, &information))
-                           {
-                              throw exception::system::invalid::Argument( string::compose( 
-                                 gai_strerror( result), " address: ", address));
-                           }
-                        }
-
-                        auto deleter = memory::guard( information, &freeaddrinfo);
-
-                        for( const struct addrinfo* info = information; info; info = info->ai_next)
+                        for( auto& info : native)
                         {
                            auto socket = Socket{ 
-                              descriptor_type{ ::socket( info->ai_family, info->ai_socktype, info->ai_protocol)}};
+                              descriptor_type{ ::socket( info.ai_family, info.ai_socktype, info.ai_protocol)}};
 
-                           if( socket && binder( socket, *info))
+                           if( socket && binder( socket, info))
                            {
                               socket.set( local::socket::option::no_delay{});
                               return socket;
@@ -121,9 +190,7 @@ namespace casual
                            case common::code::system::connection_refused:
                               throw exception::system::communication::Refused( string::compose( address));
                            default:
-                           {
                               exception::system::throw_from_errno();
-                           }
                         }
                         // will never be reached...
                         return {};
@@ -137,20 +204,19 @@ namespace casual
                         //common::signal::thread::scope::Block block;
 
                         return create( address,[]( Socket& s, const addrinfo& info)
-                              {
-                                 Trace trace( "common::communication::tcp::local::socket::connect lambda");
+                        {
+                           Trace trace( "common::communication::tcp::local::socket::connect lambda");
 
-                                 // To avoid possible TIME_WAIT from previous
-                                 // possible connections
-                                 s.set( communication::socket::option::reuse_address< true>{});
-                                 s.set( communication::socket::option::linger{ std::chrono::seconds{ 1}});
+                           // To avoid possible TIME_WAIT from previous
+                           // possible connections
+                           s.set( communication::socket::option::reuse_address< true>{});
+                           s.set( communication::socket::option::linger{ std::chrono::seconds{ 1}});
 
-                                 return ::connect( s.descriptor().value(), info.ai_addr, info.ai_addrlen) != -1;
-                              });
+                           return ::connect( s.descriptor().value(), info.ai_addr, info.ai_addrlen) != -1;
+                        });
                      }
 
-
-                     Socket local( const Address& address)
+                     auto local( const Address& address)
                      {
                         Trace trace( "common::communication::tcp::local::socket::local");
 
@@ -159,7 +225,7 @@ namespace casual
 
                         static const Flags< Flag> flags{ Flag::address_config, Flag::passive};
 
-                        return create( address,[]( Socket& s, const addrinfo& info)
+                        return create( address,[]( Socket& socket, const addrinfo& info)
                         {
                            Trace trace( "common::communication::tcp::local::socket::local lambda");
 
@@ -169,14 +235,12 @@ namespace casual
                            // This might get not get desired results though
                            //
                            // Checkout SO_LINGER as well
-                           s.set( communication::socket::option::reuse_address< true>{});
-                           s.set( communication::socket::option::linger{ std::chrono::seconds{ 1}});
+                           socket.set( communication::socket::option::reuse_address< true>{});
+                           socket.set( communication::socket::option::linger{ std::chrono::seconds{ 1}});
 
-                           return ::bind( s.descriptor().value(), info.ai_addr, info.ai_addrlen) != -1;
+                           return ::bind( socket.descriptor().value(), info.ai_addr, info.ai_addrlen) != -1;
                         }, flags);
                      }
-
-
 
                      Address names( const struct sockaddr& info, const socklen_t size)
                      {
@@ -242,9 +306,16 @@ namespace casual
             {
             }
 
+            std::ostream& operator << ( std::ostream& out, const Address& value)
+            {
+               return out << "{ host: " << value.host
+                  << ", port: " << value.port
+                  << '}';
+
+            }
+
             namespace socket
             {
-
                namespace address
                {
                   Address host( const descriptor_type descriptor)
@@ -301,17 +372,13 @@ namespace casual
 
                   return local::socket::accept( listener.descriptor());
                }
-
             } // socket
-
-
 
             Socket connect( const Address& address)
             {
                Trace trace( "common::communication::tcp::connect");
 
                return local::socket::connect( address);
-
             }
 
             namespace retry

@@ -44,6 +44,7 @@ namespace casual
             struct Directive 
             {
                directive::Set read;
+               // directive::Set write; no need for write as of now
 
                CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
                { 
@@ -71,48 +72,17 @@ namespace casual
 
                   Directive select( const Directive& directive);
 
-                  namespace has
-                  {
-                     namespace detail
-                     {
-                        template< typename T>
-                        using read = decltype( std::declval< T&>().read( strong::file::descriptor::id{}));
-
-                        template< typename T>
-                        using descriptor = decltype( std::declval< T&>().descriptor()); 
-
-                        template< typename T>
-                        using descriptors = decltype( std::declval< T&>().descriptors());
-
-                        template< typename T>
-                        using consume = decltype( std::declval< T&>().consume());                   
-                     } // detail
-
-                     template< typename T>
-                     using read = traits::detect::is_detected< detail::read, T>;
-
-                     template< typename T>
-                     using descriptor = traits::detect::is_detected< detail::descriptor, T>;
-
-                     template< typename T>
-                     using descriptors = traits::detect::is_detected< detail::descriptors, T>;
-
-                     template< typename T>
-                     using consume = traits::detect::is_detected< detail::consume, T>;
-                  } // has
 
                   namespace descriptor
                   {
                      template< typename H, typename F> 
-                     std::enable_if_t< has::descriptor< H>::value>
-                     dispatch( H& handler, F&& functor)
+                     auto dispatch( H& handler, F&& functor, traits::priority::tag< 0>) -> decltype( handler.descriptor(), void())
                      {
                         functor( handler, handler.descriptor());
                      }
                      
                      template< typename H, typename F> 
-                     std::enable_if_t< has::descriptors< H>::value>
-                     dispatch( H& handler, F&& functor)
+                     auto dispatch( H& handler, F&& functor, traits::priority::tag< 1>) -> decltype( handler.descriptors(), void())
                      {
                         for( auto descriptor : handler.descriptors())
                            functor( handler, descriptor);
@@ -120,68 +90,72 @@ namespace casual
                   } // descriptor
                   
 
-                  namespace read
+                  namespace handle
                   {
                      template< typename H> 
-                     std::enable_if_t< ! has::read< H>::value>
-                     dispatch( const Directive& directive, H& handler) {}
+                     void read( H& handler, strong::file::descriptor::id descriptor, traits::priority::tag< 0>) {}
+                     
+                     template< typename H> 
+                     auto read( H& handler, strong::file::descriptor::id descriptor, traits::priority::tag< 1>)
+                        -> decltype( handler.read( descriptor), void()) 
+                     {
+                        handler.read( descriptor);
+                     }
+
 
                      template< typename H>
-                     std::enable_if_t< has::read< H>::value>
-                     dispatch( const Directive& directive, H& handler)
+                     void dispatch( const Directive& directive, H& handler)
                      {
                         descriptor::dispatch( handler, [&directive]( auto& handler, auto descriptor)
                         {
                            if( directive.read.ready( descriptor))
-                           {
-                              handler.read( descriptor);
-                           }
-                        });
+                              handle::read( handler, descriptor, traits::priority::tag< 1>{});
+
+                        }, traits::priority::tag< 1>{});
                      }
-                  } // read
+                  } // handle
 
 
 
                   // "sentinel"
-                  template< typename D> 
-                  void iterate( D&& dispatch) {}
+                  template< typename F> 
+                  void iterate( F&& functor) {}
 
                   template< typename F, typename H, typename... Hs> 
-                  void iterate( F&& functor, H& handler, Hs&... holders)
+                  void iterate( F&& functor, H& handler, Hs&... handlers)
                   {
                      functor( handler);
-                     iterate( std::forward< F>( functor), holders...);
+                     iterate( std::forward< F>( functor), handlers...);
                   }
 
 
                   template< typename... Hs> 
-                  void dispatch( const Directive& directive, Hs&... holders)
+                  void dispatch( const Directive& directive, Hs&... handlers)
                   {
-                     auto read = [&directive]( auto& handler){
-                        read::dispatch( directive, handler);
+                     auto invoke = [&directive]( auto& handler){
+                        handle::dispatch( directive, handler);
                      };
-                     iterate( read, holders...);
+                     iterate( invoke, handlers...);
                   }
 
                   namespace consume
                   {
                      template< typename H> 
-                     std::enable_if_t< ! has::consume< H>::value, bool>
-                     handle( H& handler) { return false;}
+                     auto handle( H& handler, traits::priority::tag< 0>) { return false;}
 
                      template< typename H>
-                     std::enable_if_t< has::consume< H>::value, bool>
-                     handle( H& handler)
+                     auto handle( H& handler, traits::priority::tag< 1>) -> decltype( handler.consume())
                      {
                         return handler.consume();
                      }
-
+                     
+                     //! sentinel
                      constexpr bool dispatch() { return false;}
 
                      template< typename H, typename... Hs> 
                      bool dispatch( H& handler, Hs&... handlers)
                      {
-                        return handle( handler) || dispatch( handlers...);
+                        return handle( handler, traits::priority::tag< 1>{}) || dispatch( handlers...);
                      }
                   } // consume
 
@@ -223,6 +197,37 @@ namespace casual
                      }
                   }
                }
+
+               namespace conditional
+               {
+                  //! same as dispatch::pump, but calls `done` to ask caller if we're done or not
+                  template< typename... Ts>  
+                  void pump( const Directive& directive, const std::function< bool()>& done, Ts&&... handlers)
+                  {
+                     while( true)
+                     {
+                        try
+                        {
+                           // make sure we try to consume from the handlers before
+                           // we might block forever. Handlers could have cached messages
+                           // that wont be triggered via multiplexing on file descriptors
+                           while( detail::consume::dispatch( handlers...))
+                              ; // no-op.
+
+                           if( done())
+                              return;
+
+                           auto result = detail::select( directive);
+                           detail::dispatch( result, handlers...);
+                        }
+                        catch( ...)
+                        {
+                           detail::handle::error();
+                        }
+                     }
+                  }
+                  
+               } // conditional
             } // dispatch
 
             namespace block
