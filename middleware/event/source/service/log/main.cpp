@@ -37,34 +37,44 @@ namespace casual
                   {
                      std::string delimiter = "|";
                      std::string file = "statistics.log";
+                     std::string discard;
+                     std::string filter;
 
                      CASUAL_CONST_CORRECT_SERIALIZE_WRITE({
                         CASUAL_NAMED_VALUE( file);
                         CASUAL_NAMED_VALUE( delimiter);
+                        CASUAL_NAMED_VALUE( discard);
+                        CASUAL_NAMED_VALUE( filter);
                      })
                   };
 
-                  struct Handler
+                  template< typename Filter>
+                  struct basic_handler
                   {
-                     Handler( Settings settings) 
-                        : m_logfile{ Handler::open( settings.file)}, m_settings{ std::move( settings)}
+                     basic_handler( Settings settings) 
+                        : m_filter{ settings}, 
+                        m_logfile{ basic_handler::open( settings.file)}, 
+                        m_file{ std::move( settings.delimiter), 
+                        std::move( settings.file)}
                      {
-                        common::log::line( event::log, "settings: ", m_settings);
                      }
 
                      void log( const common::message::event::service::Metric& metric)
                      {
+                        if( ! m_filter( metric))
+                           return;
+
                         common::log::line( event::verbose::log, "metric: ", metric);
 
                         m_logfile << metric.service
-                           << m_settings.delimiter << metric.parent
-                           << m_settings.delimiter << metric.process.pid
-                           << m_settings.delimiter << metric.execution
-                           << m_settings.delimiter << metric.trid
-                           << m_settings.delimiter << std::chrono::duration_cast< std::chrono::microseconds>( metric.start.time_since_epoch()).count()
-                           << m_settings.delimiter << std::chrono::duration_cast< std::chrono::microseconds>( metric.end.time_since_epoch()).count()
-                           << m_settings.delimiter << std::chrono::duration_cast< std::chrono::microseconds>( metric.pending).count()
-                           << m_settings.delimiter << common::code::string( metric.code)
+                           << m_file.delimiter << metric.parent
+                           << m_file.delimiter << metric.process.pid
+                           << m_file.delimiter << metric.execution
+                           << m_file.delimiter << metric.trid
+                           << m_file.delimiter << std::chrono::duration_cast< std::chrono::microseconds>( metric.start.time_since_epoch()).count()
+                           << m_file.delimiter << std::chrono::duration_cast< std::chrono::microseconds>( metric.end.time_since_epoch()).count()
+                           << m_file.delimiter << std::chrono::duration_cast< std::chrono::microseconds>( metric.pending).count()
+                           << m_file.delimiter << common::code::string( metric.code)
                            << '\n';
                      }
 
@@ -80,9 +90,9 @@ namespace casual
 
                      void reopen()
                      {
-                        common::log::line( event::log, "reopen: ",  m_settings.file);
+                        common::log::line( event::log, "reopen: ", m_file.name);
                         m_logfile.flush();
-                        m_logfile = open( m_settings.file);
+                        m_logfile = open( m_file.name);
                      }
 
                   private:
@@ -99,48 +109,111 @@ namespace casual
                         return file;
                      }
 
+                     Filter m_filter;
+
                      std::ofstream m_logfile;
-                     Settings m_settings;
+                     struct 
+                     {
+                        std::string delimiter;
+                        std::string name;
+                     } m_file;
                   };
 
-                  void main(int argc, char **argv)
+                  namespace policy
+                  {
+                     struct None
+                     {
+                        None( const Settings&) {}
+                        bool operator () ( const common::message::event::service::Metric& metric) const { return true;}
+
+                     };
+
+                     struct Discard
+                     {
+                        Discard( const Settings& settings) : discard{ settings.discard} {}
+                        bool operator () ( const common::message::event::service::Metric& metric) const 
+                        {
+                            return ! std::regex_match( metric.service, discard);
+                        }
+
+                        std::regex discard;
+                     };
+
+                     struct Filter
+                     {
+                        Filter( const Settings& settings) : filter{ settings.filter} {}
+                        bool operator () ( const common::message::event::service::Metric& metric) const 
+                        {
+                            return std::regex_match( metric.service, filter);
+                        }
+
+                        std::regex filter;
+                     };
+                  } // policy
+
+                  namespace detail
+                  {
+                     template< typename H> 
+                     void pump( H&& handler)
+                     {
+                        // make sure we reopen file on SIGHUP
+                        common::signal::callback::registration< common::code::signal::hangup>( [&handler](){ handler.reopen();});
+
+                        common::event::idle::listen(
+                           [&handler]()
+                           {
+                              // the queue is empty
+                              handler.idle();
+                           },
+                           [&handler]( common::message::event::service::Calls& event)
+                           {
+                              handler.log( event);
+                           }
+                        );
+                     }
+                  } // detail
+
+
+                  void pump( Settings settings)
+                  {
+                     if( ! settings.discard.empty())
+                        detail::pump( basic_handler< policy::Discard>{ std::move( settings)});
+                     else if( ! settings.filter.empty())
+                        detail::pump( basic_handler< policy::Filter>{ std::move( settings)});
+                     else
+                        detail::pump( basic_handler< policy::None>{ std::move( settings)});
+                  }
+
+                  namespace information
+                  {
+                     constexpr auto discard = "regexp pattern - if matched on service name metrics are discarded\nmutally exclusive with --filter";
+                     constexpr auto filter = "regexp pattern - only services with matched names will be logged\nmutally exclusive with --discard";
+                  } // information
+
+                  void main( int argc, char **argv)
                   {
                      Settings settings;
 
                      {
                         using namespace casual::common::argument;
-                        Parse parse{ "service log", 
+                        Parse{ "service log", 
                            Option( std::tie( settings.file), { "-f", "--file"}, "path to log-file (default: '" + settings.file + "')"),
                            Option( std::tie( settings.delimiter), { "-d", "--delimiter"}, "delimiter between columns (default: '" + settings.delimiter + "')"),
-                        };
-                        parse( argc, argv);
+                           Option( std::tie( settings.discard), { "--discard"}, information::discard),
+                           Option( std::tie( settings.filter), { "--filter"}, information::filter),
+                        }( argc, argv);
                      }
+
+                     common::log::line( event::log, "settings: ", settings);
 
                      // connect to domain
                      common::communication::instance::connect( 0xc9d132c7249241c8b4085cc399b19714_uuid);
 
-                     Handler handler{ std::move( settings)};
-
-                     // make sure we reopen file on SIGHUP
-                     common::signal::callback::registration< common::code::signal::hangup>( [&handler](){ handler.reopen();});
-
-                     common::event::idle::listen(
-                        [&handler]()
-                        {
-                           // the queue is empty
-                           handler.idle();
-                        },
-                        [&handler]( common::message::event::service::Calls& event)
-                        {
-                           handler.log( event);
-                        }
-                     );
-                     
-                  }
-
-                           
+                     pump( std::move( settings));
+                  }        
                } // <unnamed>
             } // local
+
          } // log
       } // service
    } // event

@@ -895,6 +895,18 @@ namespace casual
             return divide_first( std::forward< R1>( range), std::forward< R2>( lookup), std::equal_to<>{});
          }
 
+         //! Divide @p range in two parts [range-first, divider), [divider, range-last).
+         //! where divider is the first occurrence of the whole match in @p to_find,
+         //! hence, second part (if not empty) starts with the content of `to_find` 
+         //!
+         //! @return a tuple with the two ranges
+         template< typename R1, typename R2>
+         auto divide_search( R1&& range, R2&& to_find)
+         {
+            auto divider = search( range, to_find);
+            return std::make_tuple( range::make( std::begin( range), std::begin( divider)), divider);
+         }
+
          //! Divide @p range in two parts [range-first, intersection-end), [intersection-end, range-last).
          //! where the first range is the intersection of the @p range and @p lookup
          //! and the second range is the complement of @range with regards to @p lookup

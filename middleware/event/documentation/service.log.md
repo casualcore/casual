@@ -11,12 +11,13 @@ NAME
 DESCRIPTION
   service log
 
-OPTIONS          c  value  vc  description
----------------  -  -----  --  -------------------------------------------
--f, --file       ?          1  path to log-file (default: 'statistics.log')
--d, --delimiter  ?          1  delimiter between columns (default: '|')
---help           ?          *  use --help <option> to see further details
-
+OPTIONS          c  value    vc  description                                                      
+---------------  -  -------  --  -----------------------------------------------------------------
+-f, --file       ?  <value>   1  path to log-file (default: 'statistics.log')
+-d, --delimiter  ?  <value>   1  delimiter between columns (default: '|')
+--discard        ?  <value>   1  regexp pattern - if matched on service name metrics are discarded
+--filter         ?  <value>   1  regexp pattern - only services with matched names will be logged
+--help           ?  <value>   *  use --help <option> to see further details
 ```
 
 ### example

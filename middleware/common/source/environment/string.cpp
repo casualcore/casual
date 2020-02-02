@@ -38,7 +38,7 @@ namespace casual
                   auto handle_part = [&out, &get_variable]( auto range)
                   {
                      // find _the beginning of variable_ (if any).
-                     auto split = algorithm::divide_first( range, "${");
+                     auto split = algorithm::divide_search( range, view::String{ "${"});
 
                      // might be the whole value/string
                      out << view::String{ std::get< 0>( split)};
