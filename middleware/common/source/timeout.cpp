@@ -37,10 +37,5 @@ namespace casual
          return start + timeout;
       }
 
-      std::ostream& operator << ( std::ostream& out, const Timeout& rhs)
-      {
-         return stream::write( out, "{ start: ", rhs.start, ", timeout: ", rhs.timeout, "}");
-      }
-
    } // common
 } // casual

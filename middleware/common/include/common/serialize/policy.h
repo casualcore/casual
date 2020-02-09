@@ -107,9 +107,7 @@ namespace casual
 
                   inline friend std::ostream& operator << ( std::ostream& out, const Representation& value)
                   {
-                     return out << "{ stack: " << common::range::make( value.m_stack)
-                        << ", canonical: " << common::range::make( value.m_canonical)
-                        << '}';
+                     return stream::write( out, "{ stack: ", value.m_stack, ", canonical: ", value.m_canonical, '}');
                   }
 
                private:

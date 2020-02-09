@@ -10,10 +10,18 @@
 #include <utility>
 #include <functional>
 
+#include "../../../../thirdparty/function2/include/function2/function2.hpp"
+
 namespace casual
 {
    namespace common
    {
+      template <typename... Signatures>
+      using unique_function = fu2::unique_function< Signatures...>;
+      
+      template <typename... Signatures>
+      using function = fu2::function< Signatures...>; 
+
 
 #if __cplusplus >= 201703L
       using std::apply;
@@ -22,10 +30,7 @@ namespace casual
 
       namespace detail
       {
-
-         //!
          //! memberfunction
-         //!
          template< typename Base, typename R, typename Derived, typename... Args>
          constexpr decltype( auto) invoke_implementation( R Base::*pmf, Derived& derived, Args&&... args)
          {
@@ -38,9 +43,7 @@ namespace casual
             return ( derived->*pmf)( std::forward<Args>(args)...);
          }
 
-         //!
          //! free function/functor
-         //!
          template< typename F, typename... Args>
          constexpr decltype( auto) invoke_implementation( F&& function, Args&&... args)
          {

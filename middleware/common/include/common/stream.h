@@ -14,6 +14,8 @@
 
 #include <ostream>
 
+
+
 namespace casual
 {
    namespace common
@@ -21,17 +23,92 @@ namespace casual
       namespace stream
       {
 
-         template< typename S, typename... Ts>
-         S& write( S& stream, Ts&&... ts);
-
          template< typename T, typename Enable = void>
          struct has_formatter : std::false_type{};
          
+         namespace detail
+         {
+            // just a helper to get rid of syntax
+            template< typename T> 
+            auto formatter( std::ostream& out, const T& value) 
+               -> decltype( typename stream::has_formatter< traits::remove_cvref_t< T>>::formatter{}( out, value), out)
+            {
+               typename stream::has_formatter< traits::remove_cvref_t< T>>::formatter{}( out, value);
+               return out;
+            }
+
+            template< typename T>
+            auto write( std::ostream& out, const T& value) 
+               -> decltype( formatter( out, value))
+            {
+               return formatter( out, value);
+            }
+
+         } // detail
+
+      } // stream
+   } // common
+} // casual
+
+
+// std stream operator is a better match then this, hence this is a fallback
+// this also need to be declared before used by formatters below
+template< typename S, typename T>
+auto operator << ( S& out, const T& value) -> decltype( casual::common::stream::detail::write( out, value)) 
+{
+   return casual::common::stream::detail::write( out, value);
+}
+
+
+
+
+namespace casual
+{
+   namespace common
+   {
+      namespace stream
+      {
+
+         namespace detail
+         {
+            // lower, takes all that have a defined formatter
+            template< typename T> 
+            auto indirection( std::ostream& out, T&& value, traits::priority::tag< 0>) 
+               -> decltype( void( std::declval< serialize::line::Writer&>() << std::forward< T>( value)), out)
+            {
+               serialize::line::Writer archive{ out};
+               archive << std::forward< T>( value);
+               return out;
+            }
+
+            // higher priority, takes all that can use the ostream stream operator
+            template< typename T> 
+            auto indirection( std::ostream& out, T&& value, traits::priority::tag< 1>) 
+               -> decltype( out << std::forward< T>( value))
+            {
+               return out << std::forward< T>( value);
+            }
+            
+         } // detail
+
+         //! sentinel
+         inline std::ostream& write( std::ostream& out) { return out;}
+
+         //! write multible values
+         template< typename T, typename... Ts>
+         auto write( std::ostream& out, T&& t, Ts&&... ts) 
+            -> decltype( detail::indirection( out, std::forward< T>( t), traits::priority::tag< 1>{})) 
+         {
+            detail::indirection( out, std::forward< T>( t), traits::priority::tag< 1>{});
+            return write( out, std::forward< Ts>( ts)...);
+         }
+
          //! Specialization for iterables, to log ranges
          template< typename C> 
          struct has_formatter< C, std::enable_if_t< 
             traits::is::iterable< C>::value 
-            && ! traits::is::string::like< C>::value>>
+            && ! traits::is::string::like< C>::value
+            >>
             : std::true_type
          {
             struct formatter
@@ -61,7 +138,8 @@ namespace casual
          {
             struct formatter
             {
-               void operator () ( std::ostream& out, C value) const
+               template< typename S>
+               void operator () ( std::ostream& out, const C& value) const
                {
                   auto code = std::error_code( value);
                   out << '[' << code << ' ' << code.message() << ']';
@@ -77,7 +155,7 @@ namespace casual
          {
             struct formatter
             {
-               void operator () ( std::ostream& out, C value) const
+               void operator () ( std::ostream& out, const C& value) const
                {
                   auto condition = std::error_condition( value);
                   out << condition.category().name() << ':' << condition.value() << " - " << condition.message();
@@ -93,14 +171,12 @@ namespace casual
             struct formatter
             {
                template< typename C>
-               void operator () ( std::ostream& out, C&& value) const
+               void operator () ( std::ostream& out, const C& value) const
                {
                   stream::write( out, value.name(), ": ", value.value());
                }
             };
          };
-
-
 
          //! Specialization for std::exception
          template< typename T>
@@ -109,21 +185,20 @@ namespace casual
          {
             struct formatter
             {
-
                template< typename C>
-               void operator () ( std::ostream& out, C&& value) const
+               void operator () ( std::ostream& out, const C& value) const
                {
                   indirection( out, value);
                }
 
                static void indirection( std::ostream& out, const std::exception& value)
                {
-                  stream::write( out, value.what());
+                  out << value.what();
                }
 
                static void indirection( std::ostream& out, const std::system_error& value)
                {
-                  stream::write( out, value.code(), " ", value.what());
+                  out << value.code() << " " << value.what();
                }
             };
          };
@@ -136,95 +211,35 @@ namespace casual
             struct formatter
             {
                template< typename C>
-               void operator () ( std::ostream& out, C&& value) const
+               void operator () ( std::ostream& out, const C& value) const
                {
                   stream::write( out, value.get());
                }
             };
          };
 
-         namespace detail
+         //! Specialization for _messages_
+         template< typename T>
+         struct has_formatter< T, std::enable_if_t< serialize::traits::is::message::like< T>::value>>
+            : std::true_type
          {
-
-            // just a helper to get rid of syntax
-            template< typename S, typename T> 
-            auto formatter( S& out, T&& value) 
-               -> decltype( typename stream::has_formatter< traits::remove_cvref_t< T>>::formatter{}( out, std::forward< T>( value)))
+            struct formatter
             {
-               typename stream::has_formatter< traits::remove_cvref_t< T>>::formatter{}( out, std::forward< T>( value));
-            }
+               void operator () ( std::ostream& out, const T& value) const
+               {
+                  stream::write( out, "{ type: ", value.type(), ", correlation: ", value.correlation, ", payload: ");
+                  serialize::line::Writer archive{ out};
+                  value.serialize( archive);
+                  out << '}';
+               }
+            };
+         };
 
-            // lowest priority, take all that doesn't have a formatter, but can be serialized with serialize::line::Writer
-            template< typename T> 
-            auto indirection( std::ostream& out, T&& value, traits::priority::tag< 0>) 
-               -> decltype( std::declval< serialize::line::Writer&>() << std::forward< T>( value), void())
-            {
-               casual::common::serialize::line::Writer archive{ out};
-               archive << std::forward< T>( value);
-            }
-
-            // higher priority, takes all that have a defined formatter
-            template< typename T> 
-            auto indirection( std::ostream& out, T&& value, traits::priority::tag< 1>) 
-               -> decltype( (void)formatter( out, std::forward< T>( value)), void())
-            {
-               formatter( out, std::forward< T>( value));
-            }
-
-            // highest priority, takes all that have a defined ostream operator
-            template< typename T> 
-            auto indirection( std::ostream& out, T&& value, traits::priority::tag< 2>) 
-               -> decltype( out << std::forward< T>( value), void())
-            {
-               out << std::forward< T>( value);
-            }
-
-
-            template< typename S>
-            void part( S& stream) {}
-
-            template< typename S, typename T>
-            void part( S& stream, T&& value)
-            {
-               indirection( stream, std::forward< T>( value), traits::priority::tag< 2>{});
-            }
-
-            template< typename S, typename T, typename... Ts>
-            void part( S& stream, T&& value, Ts&&... ts) 
-            {
-               detail::part( stream, std::forward< T>( value));
-               detail::part( stream, std::forward< Ts>( ts)...);
-            }
-
-         } // detail
-
-         template< typename S, typename... Ts>
-         S& write( S& stream, Ts&&... ts)
-         {
-            detail::part( stream, std::forward< Ts>( ts)...);
-            return stream;
-         }
       } // stream
    } // common
 } // casual
 
-namespace std
-{
-   // extended stream operator for std... as I understand it, but I find it 
-   // hard to see what damage it could do, since it is restricted to the 
-   // customization point 'casual::common::log::has_formatter', so we roll with it...
-   template< typename T> 
-   std::enable_if_t< 
-      casual::common::stream::has_formatter< casual::common::traits::remove_cvref_t< T>>::value
-      , 
-      std::ostream&>
-   operator << ( std::ostream& out, T&& value)
-   {
-      using namespace casual::common;
-      typename stream::has_formatter< traits::remove_cvref_t< T>>::formatter{}( out, std::forward< T>( value));
-      return out;
-   }
-} // std
+
  
 
 

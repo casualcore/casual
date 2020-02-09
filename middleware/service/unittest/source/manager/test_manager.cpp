@@ -5,8 +5,6 @@
 //!
 
 
-
-#include <gtest/gtest.h>
 #include "common/unittest.h"
 
 #include "service/manager/admin/server.h"

@@ -120,6 +120,8 @@ namespace casual
 
       std::ostream& operator << ( std::ostream& out, const Uuid& uuid)
       {
+         if( uuid.empty())
+            return out << "nil";
          return transcode::hex::encode( out, uuid.m_uuid);
       }
 

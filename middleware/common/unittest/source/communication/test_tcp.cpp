@@ -4,7 +4,6 @@
 //! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-#include <gtest/gtest.h>
 #include "common/unittest.h"
 #include "common/unittest/thread.h"
 
@@ -110,15 +109,12 @@ namespace casual
 
             std::vector< tcp::Socket> connections;
 
-            for( int count = 0; count < 10; ++count)
-            {
+            algorithm::for_n< 10>( [&](){
                connections.push_back( tcp::retry::connect( address, { { std::chrono::milliseconds{ 1}, 0}}));
-            }
+            });
 
             for( auto& socket : connections)
-            {
                EXPECT_TRUE( local::boolean( socket)) << CASUAL_NAMED_VALUE( socket);
-            }
          }
 
          namespace local

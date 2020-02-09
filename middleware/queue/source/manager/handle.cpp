@@ -16,6 +16,7 @@
 #include "common/server/handle/call.h"
 #include "common/message/handle.h"
 #include "common/event/listen.h"
+#include "common/algorithm/compare.h"
 
 #include "common/communication/instance.h"
 

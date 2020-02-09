@@ -59,6 +59,7 @@ namespace casual
 
          Manager::~Manager()
          {
+            Trace trace{ "domain::Manager dtor"};
          }
 
 
@@ -66,21 +67,31 @@ namespace casual
          {
             namespace
             {
-               namespace message
+               namespace callback
                {
-                  void pump( State& state)
+                  auto idle( State& state)
                   {
-                     Trace trace{ "domain message pump"};
+                     return [&state]()
+                     {
+                        state.tasks.idle( state);
+                     };
+                  }
 
-                     auto handler = manager::handler( state);
+                  auto done( State& state)
+                  {
+                     return [&state]()
+                     {
+                        return ! state.execute();
+                     };
+                  }
 
-
-                     while( state.execute())
+                  auto error( State& state)
+                  {
+                     return [&state]()
                      {
                         try
                         {
-                           // We always block
-                           handler( manager::ipc::device().next( manager::ipc::device().policy_blocking()));
+                           throw;
                         }
                         catch( const exception::casual::Shutdown&)
                         {
@@ -100,17 +111,26 @@ namespace casual
                            state.runlevel( State::Runlevel::error);
                            handle::shutdown( state);
                         }
-                     }
-
+                     };
                   }
-               } // message
+
+               } // callback
 
             } // <unnamed>
          } // local
 
          void Manager::start()
          {
-            local::message::pump( m_state);
+            Trace trace{ "domain::Manager::start"};
+
+            auto handler = manager::handler( m_state);
+
+            message::dispatch::empty::conditional::pump(
+               handler,
+               manager::ipc::device(),
+               local::callback::idle( m_state),
+               local::callback::done( m_state),
+               local::callback::error( m_state));
          }
 
       } // manager

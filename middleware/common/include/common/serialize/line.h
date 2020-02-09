@@ -23,9 +23,7 @@ namespace casual
             namespace detail
             {
                constexpr auto first = "";
-               //constexpr auto init = "";
                constexpr auto scope = ", ";
-
             } // detail
 
             struct Writer
@@ -41,10 +39,11 @@ namespace casual
                void composite_end( const char*);
 
                template<typename T>
-               void write( const T& value, const char* name)
+               auto write( T&& value, const char* name)
+                  -> decltype( void( std::declval< std::ostream&>() << std::forward< T>( value)))
                {
                   in_scope();
-                  maybe_name( m_stream, name) << value;
+                  maybe_name( m_stream, name) << std::forward< T>( value);
                }
 
                void write( bool value, const char* name);
@@ -54,10 +53,11 @@ namespace casual
 
 
                template< typename T>
-               Writer& operator << ( T&& value)
+               friend auto operator << ( Writer& out, T&& value)
+                  -> decltype( (void)serialize::value::write( out, std::forward< T>( value), nullptr), out)
                {
-                  serialize::value::write( *this, std::forward< T>( value), nullptr);
-                  return *this;
+                  serialize::value::write( out, std::forward< T>( value), nullptr);
+                  return out;
                }
 
                template< typename T>
@@ -65,7 +65,6 @@ namespace casual
                {
                   return *this << std::forward< T>( value);
                }
-
 
             private:
 
@@ -79,43 +78,6 @@ namespace casual
             };
 
          } // line
-
-         //! Specialization for enum
-         template< typename T>
-         struct Value< T, line::Writer, std::enable_if_t< std::is_enum< T>::value>>
-         {
-
-            template< typename V> 
-            static void write( line::Writer& archive, V value, const char* name)
-            {
-               // dispatch to prioritized defined stream operator, and fallback
-               // to cast to underlying
-               priority_write( archive, value, name, traits::priority::tag< 2>{});
-            }
-
-         private:
-            template< typename V> 
-            static auto priority_write( 
-               line::Writer& archive, 
-               V value, 
-               const char* name, 
-               traits::priority::tag< 0>)
-            {
-               archive.write( cast::underlying( value), name);
-            }
-
-            template< typename V> 
-            static auto priority_write( 
-               line::Writer& archive, 
-               V value, 
-               const char* name, 
-               traits::priority::tag< 1>) -> decltype( std::declval< std::ostream&>() << value, void())
-            {
-               archive.write( value, name);
-            }
-
-            // TODO feature: we may need to dispatch on error_code also
-         };
 
       } // serialize
    } // common

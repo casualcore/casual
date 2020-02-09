@@ -95,10 +95,31 @@ namespace casual
                   inline void composite_end(  const char* name) { /* no-op */ }
 
 
-                  template< typename T> 
-                  void write( T&& value, const char*) 
+                  template< typename T>
+                  auto write( T&& value, const char*) -> std::enable_if_t< std::is_arithmetic< common::traits::remove_cvref_t< T>>::value>
+                  {
+                     policy_type::write( std::forward< T>( value), m_buffer);
+                  }
+
+                  void write( const std::string& value, const char*) 
                   { 
-                     save( std::forward< T>( value));
+                     write_size( value.size());
+                     append( value);
+                  }
+                  void write( const platform::binary::type& value, const char*) 
+                  { 
+                     write_size( value.size());
+                     append( value);
+                  }
+                  
+                  void write( view::immutable::Binary value, const char*) 
+                  {
+                     append( value);
+                  }
+
+                  void write_size( size_type value)
+                  {
+                     policy_type::write_size( value, m_buffer);
                   }
 
                private:
@@ -110,33 +131,6 @@ namespace casual
                         std::end( m_buffer),
                         std::begin( range),
                         std::end( range));
-                  }
-
-                  template< typename T>
-                  auto save( T&& value) -> std::enable_if_t< std::is_arithmetic< common::traits::remove_cvref_t< T>>::value>
-                  {
-                     policy_type::write( std::forward< T>( value), m_buffer);
-                  }
-
-                  void save( const std::string& value) 
-                  { 
-                     write_size( value.size());
-                     append( value);
-                  }
-                  void save( const platform::binary::type& value) 
-                  { 
-                     write_size( value.size());
-                     append( value);
-                  }
-                  
-                  void save( view::immutable::Binary value) 
-                  {
-                     append( value);
-                  }
-
-                  void write_size( size_type value)
-                  {
-                     policy_type::write_size( value, m_buffer);
                   }
 
                   platform::binary::type& m_buffer;
@@ -178,10 +172,30 @@ namespace casual
                   inline bool composite_start( const char*) { return true;}
                   inline void composite_end(  const char* name) {} // no-op
 
-                  template< typename T> 
-                  bool read( T&& value, const char*) 
-                  { 
-                     load( value);
+                  template< typename T>
+                  auto read( T& value, const char*) -> std::enable_if_t< std::is_arithmetic< common::traits::remove_cvref_t< T>>::value, bool>
+                  {
+                     m_offset = policy_type::read( m_buffer, m_offset, value);
+                     return true;
+                  }
+
+                  bool read( std::string& value, const char*)
+                  {
+                     value.resize( read_size());
+                     consume( value);
+                     return true;
+                  }
+
+                  bool read( platform::binary::type& value, const char*)
+                  {
+                     value.resize( read_size());
+                     consume( value);
+                     return true;
+                  }
+
+                  bool read( view::Binary value, const char*)
+                  {
+                     consume( value);
                      return true;
                   }
 
@@ -198,37 +212,12 @@ namespace casual
                      m_offset += range.size();
                   }
 
-                  template< typename T>
-                  auto load( T& value) -> std::enable_if_t< std::is_arithmetic< common::traits::remove_cvref_t< T>>::value>
-                  {
-                     m_offset = policy_type::read( m_buffer, m_offset, value);
-                  }
-
-                  void load( std::string& value)
-                  {
-                     value.resize( read_size());
-                     consume( value);
-                  }
-
-                  void load( platform::binary::type& value)
-                  {
-                     value.resize( read_size());
-                     consume( value);
-                  }
-
-                  void load( view::Binary value)
-                  {
-                     consume( value);
-                  }
-
                   auto read_size()
                   {
                      size_type size;
                      m_offset = policy_type::read_size( m_buffer, m_offset, size);
                      return size;
                   }
-
-               private:
 
                   const platform::binary::type& m_buffer;
                   platform::size::type m_offset = 0;

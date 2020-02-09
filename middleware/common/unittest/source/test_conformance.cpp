@@ -6,10 +6,9 @@
 
 
 
-#include <gtest/gtest.h>
-#include "common/unittest/log.h"
+#include "common/unittest.h"
 
-
+#include "common/stream.h"
 #include "common/algorithm.h"
 #include "common/traits.h"
 #include "common/signal.h"
@@ -220,7 +219,7 @@ namespace casual
                   terminated.push_back( pid);
                }
             }
-            EXPECT_TRUE( terminated == pids) << "terminated: " << range::make( terminated) << " - pids: " << range::make( pids);
+            EXPECT_TRUE( terminated == pids) << "terminated: " << terminated << ", pids: " << pids;
          }
       }
 

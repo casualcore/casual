@@ -54,10 +54,16 @@ namespace casual
                   return std::vector< std::string>{ "true", "false"};
                };
 
-               return argument::Option( std::tie( m_color), bool_completer, { "--color"}, "set/unset color")
-                  + argument::Option( std::tie( m_header), bool_completer, { "--header"}, "set/unset header")
-                  + argument::Option( std::tie( m_precision), { "--precision"}, "set number of decimal points used for output")
-                  + argument::Option( std::tie( m_porcelain), bool_completer, { "--porcelain"}, "easy to parse output format");
+               auto default_description = []( const char* message, auto value)
+               {
+                  return string::compose( message, " (default: ", value, ')');
+               };
+
+               return argument::Option( std::tie( m_color), bool_completer, { "--color"}, default_description( "set/unset color", m_color))
+                  + argument::Option( std::tie( m_header), bool_completer, { "--header"}, default_description( "set/unset header", m_header))
+                  + argument::Option( std::tie( m_precision), { "--precision"}, default_description( "set number of decimal points used for output", m_precision))
+                  + argument::Option( std::tie( m_block), bool_completer, { "--block"}, default_description( "set/unset blocking - if false return control to user as soon as possible", m_block))
+                  + argument::Option( std::tie( m_porcelain), bool_completer, { "--porcelain"}, default_description( "easy to parse output format", m_porcelain));
             }
 
 
@@ -71,7 +77,9 @@ namespace casual
                : m_color{ local::get( environment::variable::name::terminal::color(), true)},
                   m_porcelain{ local::get( environment::variable::name::terminal::porcelain(), false)},
                   m_header{ local::get( environment::variable::name::terminal::header(), true)},
+                  m_block{ local::get( environment::variable::name::terminal::precision(), true)},
                   m_precision{ local::get( environment::variable::name::terminal::precision(), 3)}
+                  
             {
 
             }
@@ -147,7 +155,8 @@ namespace casual
                      auto flags()
                      {
                         return std::ios::dec
-                           | std::ios::fixed;
+                           | std::ios::fixed 
+                           | std::ios::boolalpha;
                      }
 
                   } // <unnamed>

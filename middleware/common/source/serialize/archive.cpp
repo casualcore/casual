@@ -49,9 +49,7 @@ namespace casual
             try
             {
                if( m_protocol)
-               {
                   m_protocol->flush();
-               }
             }
             catch( ...)
             {
@@ -63,15 +61,15 @@ namespace casual
          Writer& Writer::operator = ( Writer&&) noexcept = default;
 
 
-         void Writer::write( const int value, const char* name)
+         void Writer::save( const int value, const char* name)
          {
-            write( static_cast< long>( value), name);
+            save( static_cast< long>( value), name);
          }
 
 
-         void Writer::write ( const unsigned long value, const char* name)
+         void Writer::save ( const unsigned long value, const char* name)
          {
-            write( static_cast< long>( value), name);
+            save( static_cast< long>( value), name);
          }
 
       } // serialize

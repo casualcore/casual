@@ -64,23 +64,19 @@ namespace casual
 
                   try
                   {
-
                      Settings settings;
 
-                     {
-                        common::argument::Parse parse{ "domain manager",
-                           common::argument::Option( std::tie( settings.configurationfiles), { "-c", "--configuration-files"}, "domain configuration files"),
-                           common::argument::Option( std::tie( settings.persist), { "--persist"}, "if domain should store current state persistent on shutdown"),
-                           common::argument::Option( std::tie( settings.bare), { "--bare"}, "if use 'bare' mode or not, ie, do not boot mandatory (broker, TM), mostly for unittest"),
+                     common::argument::Parse{ "domain manager",
+                        common::argument::Option( std::tie( settings.configurationfiles), { "-c", "--configuration-files"}, "domain configuration files"),
+                        common::argument::Option( std::tie( settings.persist), { "--persist"}, "if domain should store current state persistent on shutdown"),
+                        common::argument::Option( std::tie( settings.bare), { "--bare"}, "if use 'bare' mode or not, ie, do not boot mandatory (broker, TM), mostly for unittest"),
 
-                           common::argument::Option( [&]( std::string v){ settings.event( v);}, { "--event-ipc"}, "ipc to send events to"),
-                           common::argument::Option( std::tie( settings.events), { "--events"}, "events to send to the queue (process-spawn|process-exit)"),
-                           };
+                        common::argument::Option( [&]( std::string v){ settings.event( v);}, { "--event-ipc"}, "ipc to send events to"),
+                        common::argument::Option( std::tie( settings.events), { "--events"}, "events to send to the queue (process-spawn|process-exit)"),
+                        }( argc, argv);
 
+                     event_ipc = settings.event();
 
-                        parse( argc, argv);
-                        event_ipc = settings.event();
-                     }
 
                      Manager domain( std::move( settings));
                      domain.start();

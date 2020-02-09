@@ -95,7 +95,13 @@ namespace casual
 
             friend bool operator == ( const Transaction& lhs, const ID& rhs);
             friend bool operator == ( const Transaction& lhs, const XID& rhs);
-            friend std::ostream& operator << ( std::ostream& out, const Transaction& rhs);
+
+            CASUAL_CONST_CORRECT_SERIALIZE_WRITE({
+               CASUAL_SERIALIZE_NAME( m_involved, "involved");
+               CASUAL_SERIALIZE_NAME( m_pending, "pending");
+               CASUAL_SERIALIZE_NAME( m_dynamic, "dynamic");
+               CASUAL_SERIALIZE_NAME( m_external, "external");
+            })
 
          private:
             std::vector< strong::resource::id> m_involved;

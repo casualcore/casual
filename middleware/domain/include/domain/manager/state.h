@@ -9,6 +9,7 @@
 
 
 #include "domain/manager/task.h"
+#include "domain/strong/id.h"
 
 #include "common/message/domain.h"
 #include "common/message/pending.h"
@@ -50,7 +51,7 @@ namespace casual
 
             struct Group
             {
-               using id_type = id::type< Group>;
+               using id_type = strong::group::id;
                Group() = default;
 
                Group( std::string name, std::vector< id_type> dependencies, std::string note = "")
@@ -90,10 +91,12 @@ namespace casual
                )
             };
 
+            //! TODO maintainability: process is not a good name
 
+            template< typename ID>
             struct Process 
             {
-               using id_type = id::type< Group>;
+               using id_type = ID;
                using pid_type = common::strong::process::id;
 
                id_type id;
@@ -140,13 +143,14 @@ namespace casual
 
             namespace instance
             {
-               enum class State : int
+               enum class State : short
                {
                   running,
+                  spawned,
                   scale_out,
                   scale_in,
                   exit,
-                  spawn_error,
+                  error,
                };
 
                std::ostream& operator << ( std::ostream& out, State value);
@@ -171,7 +175,7 @@ namespace casual
                }
 
                friend bool operator == ( const Instance& lhs, common::strong::process::id pid) { return lhs.handle == pid;}
-               friend bool operator < ( const Instance& lhs, const Instance& rhs) { return lhs.state < rhs.state;}
+               friend bool operator == ( common::strong::process::id pid, const Instance& rhs) { return pid == rhs.handle;}
 
                CASUAL_CONST_CORRECT_SERIALIZE({
                   CASUAL_SERIALIZE( handle);
@@ -181,7 +185,7 @@ namespace casual
             };
 
 
-            struct Executable : Process
+            struct Executable : Process< strong::executable::id> 
             {
                struct instance_policy
                {
@@ -217,7 +221,7 @@ namespace casual
                })
             };
 
-            struct Server : Process
+            struct Server : Process< strong::server::id>
             {
                struct instance_policy
                {
@@ -228,7 +232,7 @@ namespace casual
                   static void spawned( common::strong::process::id pid, I& instance)
                   {
                      instance.handle.pid = pid;
-                     instance.state = state_type::scale_out;
+                     instance.state = state_type::spawned;
                   }
                };
 
@@ -252,59 +256,41 @@ namespace casual
 
                void scale( size_type instances);
 
-               instance_type instance( common::strong::process::id pid) const;
-               instance_type remove( common::strong::process::id pid);
+               const instance_type* instance( common::strong::process::id pid) const;
 
-               bool connect( common::process::Handle process);
+               //! @returns 'null handle' if not found
+               common::process::Handle remove( common::strong::process::id pid);
+
+               bool connect( const common::process::Handle& process);
 
                friend bool operator == ( const Server& lhs, common::strong::process::id rhs);
 
                //! For persistent state
-               template< typename A>
-               void serialize( A& archive)
-               {
-                  Process::serialize( archive);
-
+               CASUAL_CONST_CORRECT_SERIALIZE({
+                  Process::serialize( archive);;
                   CASUAL_SERIALIZE( resources);
                   CASUAL_SERIALIZE( restrictions);
-
-                  auto instances_count = instances.size();
-                  CASUAL_SERIALIZE( instances_count);
-                  instances.resize( instances_count);
-               }
-
-               template< typename A>
-               void serialize( A& archive) const
-               {
-                  Process::serialize( archive);
-
-                  CASUAL_SERIALIZE( resources);
-                  CASUAL_SERIALIZE( restrictions);
-
-                  auto instances_count = instances.size();
-                  CASUAL_SERIALIZE( instances_count);
-               }
-            };
-
-            struct Batch
-            {
-               Batch( Group::id_type group);
-
-               Group::id_type group;
-
-               std::vector< Executable::id_type> executables;
-               std::vector< Server::id_type> servers;
-
-               void log( std::ostream& out, const State& state) const;
-
-               inline bool empty() const { return executables.empty() && servers.empty();}
-
-               CASUAL_CONST_CORRECT_SERIALIZE_WRITE({
-                  CASUAL_SERIALIZE( executables);
-                  CASUAL_SERIALIZE( servers);
+                  CASUAL_SERIALIZE( instances);
                })
             };
-            static_assert( common::traits::is_movable< Batch>::value, "not movable");
+
+            namespace dependency
+            {
+               struct Group
+               {
+                  std::string description;
+                  std::vector< Server::id_type> servers;
+                  std::vector< Executable::id_type> executables;
+
+                  CASUAL_CONST_CORRECT_SERIALIZE_WRITE({
+                     CASUAL_SERIALIZE( description);
+                     CASUAL_SERIALIZE( executables);
+                     CASUAL_SERIALIZE( servers);
+                  })
+               };
+               
+            } // dependency
+
 
             namespace is
             {
@@ -346,7 +332,7 @@ namespace casual
             //! executable id of this domain manager
             state::Server::id_type manager_id;
 
-            struct 
+            struct
             {
                //! process for casual-domain-pending-message
                common::Process pending;
@@ -406,8 +392,8 @@ namespace casual
             void runlevel( Runlevel runlevel) noexcept;
             //! @}
 
-            std::vector< state::Batch> bootorder();
-            std::vector< state::Batch> shutdownorder();
+            std::vector< state::dependency::Group> bootorder();
+            std::vector< state::dependency::Group> shutdownorder();
 
             //! Cleans up an exit (server or executable).
             //!
@@ -416,19 +402,36 @@ namespace casual
             std::tuple< state::Server*, state::Executable*> remove( common::strong::process::id pid);
 
             //! @return environment variables for the process, including global/default variables
-            std::vector< common::environment::Variable> variables( const state::Process& process);
+            template< typename E>
+            inline std::vector< common::environment::Variable> variables( const E& executable)
+            {
+               return variables( executable.environment.variables);
+            }
 
             state::Group& group( state::Group::id_type id);
             const state::Group& group( state::Group::id_type id) const;
 
             state::Server* server( common::strong::process::id pid) noexcept;
             const state::Server* server( common::strong::process::id pid) const noexcept;
-            state::Server& server( state::Server::id_type id);
-            const state::Server& server( state::Server::id_type id) const;
-
             state::Executable* executable( common::strong::process::id pid) noexcept;
-            state::Executable& executable( state::Executable::id_type id);
-            const state::Executable& executable( state::Executable::id_type id) const;
+
+
+            state::Server& entity( state::Server::id_type id);
+            const state::Server& entity( state::Server::id_type id) const;
+            state::Executable& entity( state::Executable::id_type id);
+            const state::Executable& entity( state::Executable::id_type id) const;
+
+            struct Runnables
+            {
+               std::vector< std::reference_wrapper< state::Server>> servers;
+               std::vector< std::reference_wrapper< state::Executable>> executables;
+               CASUAL_CONST_CORRECT_SERIALIZE_WRITE({
+                  CASUAL_SERIALIZE( servers);
+                  CASUAL_SERIALIZE( executables);
+               })
+            };
+
+            Runnables runnables( std::vector< std::string> aliases);
 
             common::process::Handle grandchild( common::strong::process::id pid) const noexcept;
 
@@ -457,6 +460,8 @@ namespace casual
             bool persist = true;
 
          private:
+            std::vector< common::environment::Variable> variables( const std::vector< common::environment::Variable>& variables);
+            
             Runlevel m_runlevel = Runlevel::startup;
          };
 

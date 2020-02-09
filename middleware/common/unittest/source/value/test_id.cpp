@@ -14,6 +14,18 @@ namespace casual
 {
    namespace common
    {
+      TEST( casual_common_value_id, unique_initialize)
+      {
+         common::unittest::Trace trace;
+
+         struct tag{};
+         using id_type = value::basic_id< int, value::id::policy::unique_initialize< int, tag, 1>>;
+
+         id_type id;
+
+         EXPECT_TRUE( id.value() == 1);
+         EXPECT_TRUE( id == id_type{ 1});
+      }
       
       TEST( casual_common_value_id, int_value_by_value)
       {

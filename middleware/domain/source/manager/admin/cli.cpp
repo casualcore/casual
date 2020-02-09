@@ -40,6 +40,56 @@ namespace casual
             {
                namespace event
                {
+
+                  void print( std::ostream& out, const message::event::domain::task::Begin& event)
+                  {
+                     out << terminal::color::blue << "task: ";
+                     out << terminal::color::yellow << event.description << " - ";
+                     out << terminal::color::green << "started";
+                  }
+
+                  void print( std::ostream& out, const message::event::domain::task::End& event)
+                  {
+                     out << terminal::color::blue << "task: ";
+                     out << terminal::color::yellow << event.description << " - ";
+
+                     auto state_color = [&event]()
+                     {
+                        switch( event.state)
+                        {
+                           using Enum = decltype( event.state);
+                           case Enum::ok: return terminal::color::green;
+                           case Enum::aborted: return terminal::color::magenta;
+                           default: return terminal::color::red;
+                        }
+                     };
+                     
+                     out << state_color() << event.state;
+                  }
+
+                  void print( std::ostream& out, const message::event::domain::Error& event)
+                  {
+                     auto severity_color = [&event]()
+                     {
+                        switch( event.severity)
+                        {
+                           using Enum = decltype( event.severity);
+                           case Enum::warning : return terminal::color::green;
+                           case Enum::error : return terminal::color::magenta;
+                           default: return terminal::color::red;
+                        }
+                     };
+
+                     out << severity_color() << event.severity << ": ";
+                     if( ! event.executable.empty())
+                        out << terminal::color::yellow << event.executable << " ";
+                     if( event.pid)
+                        out << terminal::color::white << event.pid << ": ";
+                     out << terminal::color::white << event.message;
+                  }
+
+                  
+
                   struct Done{};
 
                   struct Handler
@@ -111,43 +161,10 @@ namespace casual
                            {
                               throw event::Done{};
                            },
-                           []( message::event::domain::Error& m)
+                           []( message::event::domain::Error& event)
                            {
-
-                              auto print_error = []( const message::event::domain::Error& m){
-                                 std::cerr << terminal::color::yellow << m.executable << " "
-                                       << terminal::color::white << m.pid << ": "
-                                       << terminal::color::white << m.message
-                                       << '\n';
-
-                                 for( auto& detail : m.details)
-                                 {
-                                    std::cerr << " |- " << detail << '\n';
-                                 }
-                              };
-
-                              switch( m.severity)
-                              {
-                                 case message::event::domain::Error::Severity::fatal:
-                                 {
-                                    std::cerr << terminal::color::red << "fatal: ";
-                                    print_error( m);
-                                    throw Done{};
-                                 }
-                                 case message::event::domain::Error::Severity::error:
-                                 {
-                                    std::cerr << terminal::color::red << "error: ";
-                                    print_error( m);
-                                    break;
-                                 }
-                                 default:
-                                 {
-                                    std::cerr << terminal::color::magenta << "warning ";
-                                    print_error( m);
-                                 }
-                              }
-
-
+                              event::print( std::cerr, event);
+                              std::cerr << '\n';
                            },
                            [&]( message::event::domain::Group& m)
                            {
@@ -227,35 +244,38 @@ namespace casual
                      return result;
                   }
 
-            
 
-                  auto scale_instances( const std::vector< admin::model::scale::Instances>& instances)
+                  namespace scale
                   {
-                     serviceframework::service::protocol::binary::Call call;
-                     call << CASUAL_NAMED_VALUE( instances);
+                     auto aliases( const std::vector< admin::model::scale::Alias>& aliases)
+                     {
+                        serviceframework::service::protocol::binary::Call call;
+                        call << CASUAL_NAMED_VALUE( aliases);
 
-                     auto reply = call( admin::service::name::scale::instances);
+                        auto reply = call( admin::service::name::scale::instances);
 
-                     std::vector< admin::model::scale::Instances> serviceReply;
+                        std::vector< strong::task::id> result;
+                        reply >> CASUAL_NAMED_VALUE( result);
 
-                     reply >> CASUAL_NAMED_VALUE( serviceReply);
+                        return result;
+                     }
+                  } // scale
 
-                     return serviceReply;
-                  }
+
 
                   namespace restart
                   {
-                     auto instances( const std::vector< admin::model::restart::Instances>& instances)
+                     auto instances( const std::vector< admin::model::restart::Alias>& aliases)
                      {
                         serviceframework::service::protocol::binary::Call call;
-                        call << CASUAL_NAMED_VALUE( instances);
+                        call << CASUAL_NAMED_VALUE( aliases);
 
                         auto reply = call( admin::service::name::restart::instances);
 
-                        std::vector< admin::model::restart::Result> serviceReply;
-                        reply >> CASUAL_NAMED_VALUE( serviceReply);
+                        std::vector< strong::task::id> result;
+                        reply >> CASUAL_NAMED_VALUE( result);
 
-                        return serviceReply;
+                        return result;
                      }
                      
                   } // restart
@@ -640,24 +660,78 @@ namespace casual
                      } // instances
                   } // list
 
-
-                  namespace scale
+                  namespace alias
                   {
-                     namespace instances
+                     namespace detail
                      {
-                        void call( const std::vector< std::tuple< std::string, int>>& values)
+                        // generalization of the event handling 
+                        auto invoke = []( auto&& invocable, auto&& argument)
+                        {
+                           // if no-block we don't mess with events
+                           if( ! terminal::output::directive().block())
+                           {
+                              invocable( argument);
+                              return;
+                           }
+
+                           // register for events
+                           auto unregister = common::event::scope::subscribe( 
+                              common::process::handle(), { 
+                                 message::Type::event_domain_task_end, 
+                                 message::Type::event_domain_task_begin,
+                                 message::Type::event_domain_error});
+
+                           auto tasks = invocable( argument);
+
+                           // listen for events
+                           common::event::no::subscription::conditional( 
+                              [ &tasks] () { return tasks.empty();}, // will end if true
+                              [ &tasks]( const message::event::domain::task::Begin& task)
+                              {
+                                 if( auto found = algorithm::find( tasks, task.id))
+                                 {
+                                    event::print( std::cout, task);
+                                    std::cout << '\n';
+                                 }
+                              },
+                              [ &tasks]( const message::event::domain::task::End& task)
+                              {
+                                 if( auto found = algorithm::find( tasks, task.id))
+                                 {
+                                    event::print( std::cout, task);
+                                    std::cout << '\n';
+                                    
+                                    // remove the task from our 'state'
+                                    tasks.erase( std::begin( found));
+                                 }
+                              },
+                              [&tasks]( const message::event::domain::Error& event)
+                              {
+                                 // if an error occurs - we bail out...
+                                 tasks.clear();
+
+                                 event::print( std::cerr, event);
+                                 std::cerr << '\n';
+                              }
+                           );
+                        };
+                        
+                     } // detail 
+
+                     namespace scale
+                     {
+                        void invoke( const std::vector< std::tuple< std::string, int>>& values)
                         {   
                            auto transform = []( auto& value){
-                              admin::model::scale::Instances result;
-                              result.alias = std::get< 0>( value);
+                              admin::model::scale::Alias result;
+                              result.name = std::get< 0>( value);
                               result.instances = std::get< 1>( value);
                               return result;
                            };
 
-                           call::scale_instances( common::algorithm::transform( values, transform));
+                           detail::invoke( call::scale::aliases, common::algorithm::transform( values, transform));
                         }
                      
-
                         auto completion = []( auto values, bool help) -> std::vector< std::string>
                         {
                            if( help)
@@ -668,69 +742,33 @@ namespace casual
                            else
                               return { "<value>"};
                         };
-                     } // instances
-                  } // scale
+
+                     } // scale
 
 
-
-                  namespace restart
-                  {
-                     void instances( std::vector< std::string> values)
+                     namespace restart
                      {
-                        auto transform = []( auto& value){
-                           admin::model::restart::Instances result;
-                           result.alias = std::move( value);
-                           return result;
+                        void invoke( std::vector< std::string> values)
+                        {
+                           auto transform = []( auto& value){
+                              //admin::model::restart::Alias result;
+                              //result.name = std::move( value);
+                              return admin::model::restart::Alias{ std::move( value)};
+                           };
+
+                           detail::invoke( call::restart::instances, common::algorithm::transform( values, transform));
+                        }
+
+                        auto completion = []( auto values, bool help) -> std::vector< std::string>
+                        {
+                           if( help)
+                              return { "<alias>"};
+                           
+                           return fetch_aliases();
                         };
+                     } // restart
+                  } // alias
 
-                        // register for events
-                        auto unregister = common::event::scope::subscribe( 
-                           common::process::handle(), { message::Type::event_domain_task_end, message::Type::event_domain_task_begin});
-
-                        auto result = call::restart::instances( common::algorithm::transform( values, transform));
-
-                        // listen for events
-                        common::event::no::subscription::conditional( 
-                           [ &result] () { return result.empty();}, // will end if true
-                           [ &result]( const message::event::domain::task::Begin& task)
-                           {
-                              auto found = algorithm::filter( result, [id = task.id]( auto& r) { return id == r.task;});
-
-                              algorithm::for_each( found, [&task]( auto& started)
-                              {
-                                 std::cout << terminal::color::blue << "task[" << task.id << "] " 
-                                    << terminal::color::green << "begin "
-                                    << terminal::color::yellow << started.alias
-                                    << terminal::color::white << " " << started.pids << '\n';
-                              });
-                           },
-                           [ &result]( const message::event::domain::task::End& task)
-                           {
-                              auto split = algorithm::partition( result, [id = task.id]( auto& r) { return id != r.task;});
-
-                              // print the removed
-                              algorithm::for_each( std::get< 1>( split), [&task]( auto& done)
-                              {
-                                 std::cout << terminal::color::blue << "task[" << task.id << "] " 
-                                    << terminal::color::green << "done "
-                                    << terminal::color::yellow << done.alias << '\n';
-                              });
-
-                              // remove correlated task
-                              algorithm::trim( result, std::get< 0>( split));
-                           }
-                        );
-                     };
-
-                     auto completion = []( auto values, bool help) -> std::vector< std::string>
-                     {
-                        if( help)
-                           return { "<alias>"};
-                        
-                        return fetch_aliases();
-                     };
-                     
-                  } // restart
 
                   namespace environment
                   {
@@ -739,7 +777,7 @@ namespace casual
                         void call( const std::string& name, const std::string& value, std::vector< std::string> aliases)
                         {
                            admin::model::set::Environment environment;
-                           environment.variables.variables.push_back( configuration::environment::Variable{ name, value});
+                           environment.variables.variables.push_back( casual::configuration::environment::Variable{ name, value});
                            environment.aliases = std::move( aliases);
 
                            call::environment::set( environment);
@@ -944,8 +982,8 @@ note: not all options has legend, use 'auto complete' to find out which legends 
                   return argument::Group{ [](){}, { "domain"}, "local casual domain related administration",
                      argument::Option( &local::action::list::servers::invoke, { "-ls", "--list-servers"}, local::action::list::servers::description),
                      argument::Option( &local::action::list::executables::invoke, { "-le", "--list-executables"}, local::action::list::executables::description),
-                     argument::Option( argument::option::one::many( &local::action::scale::instances::call), local::action::scale::instances::completion, { "-si", "--scale-instances"}, "<alias> <#> scale executable instances"),
-                     argument::Option( argument::option::one::many( &local::action::restart::instances), local::action::restart::completion, { "-ri", "--restart-instances"}, "<alias> restart instances for the given aliases"),
+                     argument::Option( argument::option::one::many( &local::action::alias::scale::invoke), local::action::alias::scale::completion, { "-si", "--scale-instances"}, "<alias> <#> scale executable instances"),
+                     argument::Option( argument::option::one::many( &local::action::alias::restart::invoke), local::action::alias::restart::completion, { "-ri", "--restart-instances"}, "<alias> restart instances for the given aliases"),
                      argument::Option( &local::action::list::instances::server::invoke, { "-lis", "--list-instances-server"}, local::action::list::instances::server::description),
                      argument::Option( &local::action::list::instances::executable::invoke, { "-lie", "--list-instances-executable"}, local::action::list::instances::executable::description),
                      argument::Option( &local::action::shutdown, { "-s", "--shutdown"}, "shutdown the domain"),

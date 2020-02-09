@@ -12,6 +12,7 @@
 #include "common/serialize/value.h"
 #include "common/traits.h"
 
+
 namespace casual
 {
    namespace common
@@ -50,14 +51,21 @@ namespace casual
                inline bool composite_start( const char*) { return true;}
                inline void composite_end(  const char*) {} // no-op
 
-               bool read( std::string& value, const char*) 
+               template< typename T> 
+               auto read( T&& value, const char*)
+                  -> std::enable_if_t< serialize::traits::is::archive::write::type< traits::remove_cvref_t< T>>::value, bool>
                { 
+                  return read( std::forward< T>( value));
+               }
+
+               bool read( std::string& value)
+               {
                   value = m_policy( value);
                   return true;
                }
 
                template< typename T> 
-               bool read( T&& value, const char*) { return false;} // no op
+               bool read( T&& value) { return false; } // no op
             
             private:
                Policy m_policy;

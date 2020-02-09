@@ -9,6 +9,7 @@
 
 
 #include "common/value/id.h"
+#include "common/stream.h"
 
 #include <ostream>
 

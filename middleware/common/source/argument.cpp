@@ -78,8 +78,8 @@ namespace casual
                            switch( information.size())
                            {
                               case 0: break;
-                              case 1: m_out << "  (" << information.front() << ") [" << option.invocable.cardinality() << ']'; break;
-                              default: m_out << "  (" << range::make( information) << ") ["  << option.invocable.cardinality() << ']'; break;
+                              case 1: stream::write( m_out, "  (", information.front(), ") [", option.invocable.cardinality(), ']'); break;
+                              default: stream::write( m_out, "  (", information, ") [" , option.invocable.cardinality(), ']'); break;
                            }
 
                         }
@@ -422,20 +422,20 @@ namespace casual
          {
             std::ostream& operator << ( std::ostream& out, const Representation& value)
             {
-               return out << "{ keys: " << range::make( value.keys)
-                  << ", cardinality.option: " << value.cardinality
-                  << ", cardinality.values: " << value.invocable.cardinality()
-                  << ", nested: " << range::make( value.nested)
-                  << '}';
+               return stream::write( out, "{ keys: ", value.keys, 
+                  ", cardinality.option: ", value.cardinality, 
+                  ", cardinality.values: ", value.invocable.cardinality(), 
+                  ", nested: ", value.nested, 
+                  '}');
             }
             
             std::ostream& operator << ( std::ostream& out, const Invoked& value)
             {
-               return out << "{ key: " << value.key
-                  << ", parent: " << value.parent
-                  << ", values: " << range::make( value.values)
-                  << ", cardinality: " << value.invocable.cardinality()
-                  << '}';
+               return stream::write( out, "{ key: ", value.key, 
+                  ", parent: ", value.parent, 
+                  ", values: ", value.values, 
+                  ", cardinality: ", 
+                  value.invocable.cardinality(), '}');
             }
 
             namespace validate

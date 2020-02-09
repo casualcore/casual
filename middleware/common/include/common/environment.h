@@ -191,6 +191,7 @@ namespace casual
                   constexpr auto color() { return "CASUAL_TERMINAL_COLOR";}
                   constexpr auto header() { return "CASUAL_TERMINAL_HEADER";}
                   constexpr auto porcelain() { return "CASUAL_TERMINAL_PORCELAIN";}
+                  constexpr auto block() { return "CASUAL_TERMINAL_BLOCK";}
                } // log
 
                namespace instance

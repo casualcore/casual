@@ -67,8 +67,6 @@ namespace casual
                   CASUAL_SERIALIZE( transaction);
                })
             };
-            static_assert( traits::is_movable< Base>::value, "not movable");
-
          } // service
 
          struct Service : service::Base
@@ -133,20 +131,19 @@ namespace casual
                   return out << "unknown";
                }
             };
-            static_assert( traits::is_movable< Transaction>::value, "not movable");
 
             namespace advertise
             {
                //! Represent service information in a 'advertise context'
                using Service = message::service::Base;
 
-               static_assert( traits::is_movable< Service>::value, "not movable");
-
             } // advertise
 
-
-            struct Advertise : basic_message< Type::service_advertise>
+            using base_advertise = basic_request< Type::service_advertise>;
+            struct Advertise : base_advertise
             {
+               using base_advertise::base_advertise;
+
                enum class Directive : short
                {
                   add,
@@ -164,20 +161,15 @@ namespace casual
                }
 
                Directive directive = Directive::add;
-
-               common::process::Handle process;
                std::vector< advertise::Service> services;
-
 
                CASUAL_CONST_CORRECT_SERIALIZE(
                {
-                  base_type::serialize( archive);
+                  base_advertise::serialize( archive);
                   CASUAL_SERIALIZE( directive);
-                  CASUAL_SERIALIZE( process);
                   CASUAL_SERIALIZE( services);
                })
             };
-            static_assert( traits::is_movable< Advertise>::value, "not movable");
 
             namespace concurrent
             {
@@ -202,13 +194,13 @@ namespace casual
                      })
                   };
 
-                  static_assert( traits::is_movable< Service>::value, "not movable");
-
                } // advertise
 
-
-               struct Advertise : basic_message< Type::service_concurrent_advertise>
+               using basic_advertise = basic_request< Type::service_concurrent_advertise>;
+               struct Advertise : basic_advertise
                {
+                  using basic_advertise::basic_advertise;
+
                   enum class Directive : short
                   {
                      add,
@@ -226,21 +218,18 @@ namespace casual
                   }
 
                   Directive directive = Directive::add;
-
-                  common::process::Handle process;
                   platform::size::type order = 0;
                   std::vector< advertise::Service> services;
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
                   {
-                     base_type::serialize( archive);
+                     basic_advertise::serialize( archive);
                      CASUAL_SERIALIZE( directive);
                      CASUAL_SERIALIZE( process);
                      CASUAL_SERIALIZE( order);
                      CASUAL_SERIALIZE( services);
                   })
                };
-               static_assert( traits::is_movable< Advertise>::value, "not movable");
               
             } // concurrent   
 
@@ -248,8 +237,11 @@ namespace casual
             namespace lookup
             {
                //! Represent "service-name-lookup" request.
-               struct Request : basic_message< Type::service_name_lookup_request>
+               using base_request = basic_request< Type::service_name_lookup_request>; 
+               struct Request : base_request
                {
+                  using base_request::base_request;
+
                   enum class Context : short
                   {
                      regular,
@@ -271,25 +263,23 @@ namespace casual
                   }
 
                   std::string requested;
-                  common::process::Handle process;
                   Context context = Context::regular;
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
                   {
-                     base_type::serialize( archive);
+                     base_request::serialize( archive);
                      CASUAL_SERIALIZE( requested);
-                     CASUAL_SERIALIZE( process);
                      CASUAL_SERIALIZE( context);
                   })
                };
-               static_assert( traits::is_movable< Request>::value, "not movable");
-
 
                //! Represent "service-name-lookup" response.
-               struct Reply : basic_message< Type::service_name_lookup_reply>
+               using base_reply = basic_reply< Type::service_name_lookup_reply>; 
+               struct Reply : base_reply
                {
+                  using base_reply::base_reply;
+
                   call::Service service;
-                  common::process::Handle process;
 
                   //! represent how long this request was pending (busy);
                   platform::time::unit pending{};
@@ -318,9 +308,8 @@ namespace casual
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
                   {
-                     base_type::serialize( archive);
+                     base_reply::serialize( archive);
                      CASUAL_SERIALIZE( service);
-                     CASUAL_SERIALIZE( process);
                      CASUAL_SERIALIZE( pending);
                      CASUAL_SERIALIZE( state);
                   })
@@ -328,20 +317,22 @@ namespace casual
 
                namespace discard
                {
-                  struct Request : basic_message< Type::service_name_lookup_discard_request>
+                  using base_request = basic_request< Type::service_name_lookup_discard_request>;
+                  struct Request : base_request
                   {
+                     using base_request::base_request;
+
                      std::string requested;
-                     common::process::Handle process;
 
                      CASUAL_CONST_CORRECT_SERIALIZE(
                      {
-                        base_type::serialize( archive);
+                        base_request::serialize( archive);
                         CASUAL_SERIALIZE( requested);
-                        CASUAL_SERIALIZE( process);
                      })
                   };
 
-                  struct Reply : basic_message< Type::service_name_lookup_discard_reply>
+                  using base_reply = basic_message< Type::service_name_lookup_discard_reply>;
+                  struct Reply : base_reply
                   {
                      enum class State : short
                      {
@@ -364,7 +355,7 @@ namespace casual
 
                      CASUAL_CONST_CORRECT_SERIALIZE(
                      {
-                        base_type::serialize( archive);
+                        base_reply::serialize( archive);
                         CASUAL_SERIALIZE( state);
                      })
                   };
@@ -439,7 +430,8 @@ namespace casual
 
 
                //! Represent service reply.
-               struct Reply :  basic_message< Type::service_reply>
+               using base_reply = basic_message< Type::service_reply>;
+               struct Reply : base_reply
                {
                   service::Code code;
                   Transaction transaction;
@@ -447,28 +439,26 @@ namespace casual
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
                   {
-                     base_type::serialize( archive);
+                     base_reply::serialize( archive);
                      CASUAL_SERIALIZE( code);
                      CASUAL_SERIALIZE( transaction);
                      CASUAL_SERIALIZE( buffer);
                   })
                };
-               static_assert( traits::is_movable< Reply>::value, "not movable");
 
                //! Represent the reply to the service-manager when a server is done handling
                //! a service-call and is ready for new calls
-               struct ACK : basic_message< Type::service_acknowledge>
+               using base_ack = basic_message< Type::service_acknowledge>;
+               struct ACK : base_ack
                {
                   event::service::Metric metric;
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
                   {
-                     base_type::serialize( archive);
+                     base_ack::serialize( archive);
                      CASUAL_SERIALIZE( metric);
                   })
                };
-               static_assert( traits::is_movable< ACK>::value, "not movable");
-
                
             } // call
 

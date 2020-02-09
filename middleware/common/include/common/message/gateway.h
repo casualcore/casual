@@ -42,28 +42,33 @@ namespace casual
 
                namespace connect
                {
-
-                  struct Request : basic_message< Type::gateway_domain_connect_request>
+                  using base_request = basic_message< Type::gateway_domain_connect_request>;
+                  struct Request : base_request
                   {
+                     using base_request::base_request;
+
                      common::domain::Identity domain;
                      std::vector< protocol::Version> versions;
 
                      CASUAL_CONST_CORRECT_SERIALIZE(
                      {
-                        base_type::serialize( archive);
+                        base_request::serialize( archive);
                         CASUAL_SERIALIZE( domain);
                         CASUAL_SERIALIZE( versions);
                      })
                   };
 
-                  struct Reply : basic_message< Type::gateway_domain_connect_reply>
+                  using base_reply = basic_message< Type::gateway_domain_connect_reply>;
+                  struct Reply : base_reply
                   {
+                     using base_reply::base_reply;
+
                      common::domain::Identity domain;
                      protocol::Version version = protocol::Version::invalid;
 
                      CASUAL_CONST_CORRECT_SERIALIZE(
                      {
-                        base_type::serialize( archive);
+                        base_reply::serialize( archive);
                         CASUAL_SERIALIZE( domain);
                         CASUAL_SERIALIZE( version);
                      })
@@ -78,49 +83,46 @@ namespace casual
                   //!
                   //! other domain -> inbound-connection -> gateway ---> casual-broker
                   //!                                               [ \-> casual-queue ]
-                  struct Request : basic_message< Type::gateway_domain_discover_request>
+                  using base_request = basic_request< Type::gateway_domain_discover_request>;
+                  struct Request :base_request
                   {
-                     common::process::Handle process;
+                     using base_request::base_request;
+
                      common::domain::Identity domain;
                      std::vector< std::string> services;
                      std::vector< std::string> queues;
 
                      CASUAL_CONST_CORRECT_SERIALIZE(
                      {
-                        base_type::serialize( archive);
-                        CASUAL_SERIALIZE( process);
+                        base_request::serialize( archive);
                         CASUAL_SERIALIZE( domain);
                         CASUAL_SERIALIZE( services);
                         CASUAL_SERIALIZE( queues);
                      })
 
                   };
-                  static_assert( traits::is_movable< Request>::value, "not movable");
 
                   //! Reply from a domain
                   //!    [casual-queue -\ ]
                   //!    casual-broker ----> gateway -> inbound-connection -> other domain
-                  struct Reply : basic_message< Type::gateway_domain_discover_reply>
+                  using base_reply = basic_request< Type::gateway_domain_discover_reply>;
+                  struct Reply : base_reply
                   {
                      using Service = service::concurrent::advertise::Service;
                      using Queue = queue::concurrent::advertise::Queue;
 
-                     common::process::Handle process;
                      common::domain::Identity domain;
                      std::vector< Service> services;
                      std::vector< Queue> queues;
 
                      CASUAL_CONST_CORRECT_SERIALIZE(
                      {
-                        base_type::serialize( archive);
-                        CASUAL_SERIALIZE( process);
+                        base_reply::serialize( archive);
                         CASUAL_SERIALIZE( domain);
                         CASUAL_SERIALIZE( services);
                         CASUAL_SERIALIZE( queues);
                      })
                   };
-                  static_assert( traits::is_movable< Reply>::value, "not movable");
-
 
                   namespace accumulated
                   {
@@ -130,23 +132,20 @@ namespace casual
                      //!                                            \- outbound connection -> domain 2
                      //!                                               ...
                      //!                                             |- outbound connection -> domain N
-                     struct Reply : basic_message< Type::gateway_domain_discover_accumulated_reply>
+                     using base_reply = basic_message< Type::gateway_domain_discover_accumulated_reply>;
+                     struct Reply : base_reply
                      {
                         std::vector< discover::Reply> replies;
 
                         CASUAL_CONST_CORRECT_SERIALIZE(
                         {
-                           base_type::serialize( archive);
+                           base_reply::serialize( archive);
                            CASUAL_SERIALIZE( replies);
                         })
                      };
-                     static_assert( traits::is_movable< Reply>::value, "not movable");
                   } // accumulated
-
                } // discover
-
             } // domain
-
          } // gateway
 
          namespace reverse

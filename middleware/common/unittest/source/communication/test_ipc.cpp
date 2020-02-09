@@ -5,7 +5,6 @@
 //!
 
 
-#include <gtest/gtest.h>
 #include "common/unittest.h"
 
 #include "common/communication/ipc.h"

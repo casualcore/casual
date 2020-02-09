@@ -30,60 +30,15 @@ namespace casual
             {
                namespace
                {
-                  namespace scale
-                  {
-                     std::vector< model::scale::Instances> instances( manager::State& state, std::vector< model::scale::Instances> instances)
-                     {
-                        std::vector< model::scale::Instances> result;
-
-                        auto scale_entities = [&]( auto& instance, auto& entities)
-                        {
-                           auto found = algorithm::find_if( entities, [&instance]( auto& e){
-                              return e.alias == instance.alias;
-                           });
-
-                           if( found)
-                           {
-                              found->scale( instance.instances);
-                              handle::scale::instances( state, *found);
-
-                              return true;
-                           }
-                           return false;
-                        };
-
-                        for( auto& instance : instances)
-                        {
-                           if( scale_entities( instance, state.servers) ||
-                                 scale_entities( instance, state.executables))
-                           {
-                              result.push_back( std::move( instance));
-                           }
-                        }
-
-                        return result;
-                     }
-
-                  } // scale
-
                   namespace restart
                   {
-                     std::vector< model::restart::Result> instances( manager::State& state, std::vector< model::restart::Instances> instances)
+                     auto aliases( manager::State& state, std::vector< model::restart::Alias> aliases)
                      {
                         Trace trace{ "domain::manager::admin::local::restart::instances"};
 
-                        auto result = handle::restart::instances( state, algorithm::transform( instances, []( auto& i){ return std::move( i.alias);}));
+                        auto transform_alias = []( auto& alias){ return std::move( alias.name);};
 
-                        auto transform = []( auto& v)
-                        {
-                           model::restart::Result result;
-                           result.alias = std::move( v.alias);
-                           result.pids = std::move( v.pids);
-                           result.task = v.task;
-                           return result;
-                        };
-
-                        return algorithm::transform( result, transform);                        
+                        return handle::restart::instances( state, algorithm::transform( aliases, transform_alias));                       
                      }
                   } // restart
 
@@ -91,72 +46,52 @@ namespace casual
                   {
                      auto environment( manager::State& state, const model::set::Environment& environment)
                      {
-
-                        // collect all relevant processes
-                        auto processes = [&]()
-                        {
-                           std::vector< state::Process*> result;
-
-                           if( environment.aliases.empty())
-                           {
-                              algorithm::transform( state.servers, result, []( auto& process){ return &process;});
-                              algorithm::transform( state.executables, result, []( auto& process){ return &process;});
-                           }
-                           else 
-                           {
-                              auto find_alias = [&]( auto& alias) -> state::Process*
-                              {
-                                 auto equal_alias = [&alias]( auto& p){ return p.alias == alias;};
-                                 {
-                                    auto found = algorithm::find_if( state.servers, equal_alias);
-                                    if( found)
-                                       return &( *found);
-                                 }
-                                 {
-                                    auto found = algorithm::find_if( state.executables, equal_alias);
-                                    if( found)
-                                       return &( *found);
-                                 }
-                                 return nullptr;
-                              };
-
-                              algorithm::transform( environment.aliases, result, find_alias);
-                              algorithm::trim( result, algorithm::remove( result, nullptr));
-                           }
-
-                           return result;
-                        }();
-
                         const auto variables = transform::environment::variables( environment.variables);
 
-                        auto update_variables = [&]( auto process)
+                        auto update_environment = [&variables]( auto& entity)
                         {
-
-                           // replace or add the variable
-                           auto update_variable = [&]( auto& variable)
+                           auto update_variable = [&entity]( const auto& variable)
                            {
-                              auto found = algorithm::find_if( process->environment.variables, [&]( auto& v)
-                              { 
-                                 auto equal_variable = []( auto& lhs, auto& rhs)
-                                 {
-                                    return lhs.name() == rhs.name();
-                                 };
+                              auto is_name = [&variable]( auto& value)
+                              {
+                                 return variable.name() == value.name();
+                              };
 
-                                 return equal_variable( v, variable);
-                              });
-
-                              if( found)
+                              if( auto found = algorithm::find_if( entity.environment.variables, is_name))
                                  *found = variable;
-                              else 
-                                 process->environment.variables.push_back( variable);
+                              else
+                                 entity.environment.variables.push_back( variable);
                            };
 
                            algorithm::for_each( variables, update_variable);
 
-                           return process->alias;
+                           return entity.alias;
                         };
 
-                        return algorithm::transform( processes, update_variables);
+                        // if empty, we update all 'entities'
+                        if( environment.aliases.empty())
+                        {
+                           auto result = algorithm::transform( state.servers, update_environment);
+                           algorithm::transform( state.executables, result, update_environment);
+                           return result;
+                        }
+
+                        // else, we correlate aliases
+
+                        std::vector< std::string> result;
+
+                        auto find_and_update = [&]( auto& entity)
+                        {
+                           auto is_alias = [&entity]( auto& alias){ return alias == entity.alias;};
+
+                           if( auto found = algorithm::find_if( environment.aliases, is_alias))
+                              result.push_back( update_environment( entity));
+                        };
+
+                        algorithm::for_each( state.servers, find_and_update);
+                        algorithm::for_each( state.executables, find_and_update);
+
+                        return result;
                      };
                   } // set
 
@@ -179,10 +114,10 @@ namespace casual
                         {
                            auto protocol = serviceframework::service::protocol::deduce( std::move( parameter));
 
-                           std::vector< model::scale::Instances> instances;
-                           protocol >> CASUAL_NAMED_VALUE( instances);
+                           std::vector< model::scale::Alias> aliases;
+                           protocol >> CASUAL_NAMED_VALUE( aliases);
 
-                           return serviceframework::service::user( std::move( protocol), &scale::instances, state, std::move( instances));
+                           return serviceframework::service::user( std::move( protocol), &handle::scale::aliases, state, std::move( aliases));
                         };
                      }
 
@@ -192,10 +127,10 @@ namespace casual
                         {
                            auto protocol = serviceframework::service::protocol::deduce( std::move( parameter));
                            
-                           std::vector< model::restart::Instances> instances;
-                           protocol >> CASUAL_NAMED_VALUE( instances);
+                           std::vector< model::restart::Alias> aliases;
+                           protocol >> CASUAL_NAMED_VALUE( aliases);
 
-                           return serviceframework::service::user( std::move( protocol), &restart::instances, state, std::move( instances));
+                           return serviceframework::service::user( std::move( protocol), &restart::aliases, state, std::move( aliases));
                         };
                      }
 

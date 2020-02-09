@@ -4,14 +4,10 @@
 //! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-
-#include <gtest/gtest.h>
 #include "common/unittest.h"
 
 #include "configuration/domain.h"
 #include "configuration/example/domain.h"
-
-
 
 
 #include "common/serialize/line.h"
@@ -23,7 +19,6 @@ namespace casual
 {
    namespace configuration
    {
-
 
       TEST( configuration_domain, domain_binary_serialize)
       {

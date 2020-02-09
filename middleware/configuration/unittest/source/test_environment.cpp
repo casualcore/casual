@@ -5,7 +5,6 @@
 //!
 
 
-#include <gtest/gtest.h>
 #include "common/unittest.h"
 
 #include "configuration/environment.h"
@@ -22,6 +21,8 @@ namespace casual
 
       TEST( configuration_environment_fetch, empty_files__expect_none)
       {
+         common::unittest::Trace trace;
+
          Environment empty;
 
          auto result = environment::fetch( empty);
@@ -31,6 +32,8 @@ namespace casual
 
       TEST( configuration_environment_fetch, empty_files__some_variables__expect_variables)
       {
+         common::unittest::Trace trace;
+
          Environment env;
          env.variables = {
             [](){

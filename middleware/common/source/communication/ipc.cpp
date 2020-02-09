@@ -33,7 +33,18 @@ namespace casual
          {
             namespace message
             {
-               static_assert( transport::max_message_size() <= platform::ipc::transport::size, "ipc message is too big'");
+               namespace transport
+               {
+                  std::ostream& operator << ( std::ostream& out, const Header& value)
+                  {
+                     out << "{ type: " << value.type << ", correlation: ";
+                     transcode::hex::encode( out, value.correlation);
+                     return stream::write( out, ", offset: ", value.offset, ", count: ", value.count, ", size: ", value.size, '}');
+                  }
+                  
+                  static_assert( max_message_size() <= platform::ipc::transport::size, "ipc message is too big'");
+               } // transport
+               
 
                std::ostream& operator << ( std::ostream& out, const Transport& value)
                {

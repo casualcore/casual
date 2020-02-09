@@ -41,14 +41,12 @@ namespace casual
             delay_message,
             inbound_ipc_connect,
 
-            process_spawn_request = 600, // not pinned 
-            process_lookup_request,
+            process_lookup_request = 600, // not pinned
             process_lookup_reply,
-
 
             // domain
             DOMAIN_BASE = 1000,
-            domain_scale_executable,
+            domain_spawn_entities,
             domain_process_connect_request,
             domain_process_connect_reply,
 
@@ -101,6 +99,7 @@ namespace casual
             EVENT_BASE = 4000,
             event_subscription_begin,
             event_subscription_end,
+            event_idle,
 
             EVENT_DOMAIN_BASE = 4100,
             event_domain_boot_begin = EVENT_DOMAIN_BASE,
@@ -249,9 +248,6 @@ namespace casual
          template< message::Type message_type>
          struct basic_message
          {
-
-            using base_type = basic_message< message_type>;
-
             constexpr static Type type() { return message_type;}
 
             Uuid correlation;
@@ -298,36 +294,11 @@ namespace casual
             })
          };
 
-
-
          template< typename M>
          auto correlation( M& message) -> decltype( message.correlation)
          {
             return message.correlation;
          }
-
-         //! Message to "force" exit/termination.
-         //! useful in unittest, to force exit on blocking read
-         namespace shutdown
-         {
-            struct Request : basic_message< Type::shutdown_request>
-            {
-               inline Request() = default;
-               inline Request( common::process::Handle process) : process{ std::move( process)} {}
-
-               common::process::Handle process = common::process::handle();
-               bool reply = false;
-
-               CASUAL_CONST_CORRECT_SERIALIZE(
-               {
-                  base_type::serialize( archive);
-                  CASUAL_SERIALIZE( process);
-                  CASUAL_SERIALIZE( reply);
-               })
-            };
-            static_assert( traits::is_movable< Request>::value, "not movable");
-
-         } // shutdown
 
          // Below, some basic message related types that is used by others
 
@@ -362,83 +333,24 @@ namespace casual
             })
          };
 
-
-         namespace server
+         //! Message to "force" exit/termination.
+         //! useful in unittest, to force exit on blocking read
+         namespace shutdown
          {
-            template< message::Type type>
-            struct basic_id : basic_request< type>
+            using base_request = basic_request< Type::shutdown_request>;
+            struct Request : base_request
             {
+               using base_request::base_request;
+               bool reply = false;
+
+               CASUAL_CONST_CORRECT_SERIALIZE(
+               {
+                  base_request::serialize( archive);
+                  CASUAL_SERIALIZE( reply);
+               })
             };
 
-            namespace connect
-            {
-               template< message::Type type>
-               struct basic_request : basic_id< type>
-               {
-                  std::string path;
-                  Uuid identification;
-
-                  CASUAL_CONST_CORRECT_SERIALIZE(
-                  {
-                     basic_id< type>::serialize( archive);
-                     CASUAL_SERIALIZE( path);
-                     CASUAL_SERIALIZE( identification);
-                  })
-               };
-
-               template< message::Type type>
-               struct basic_reply : basic_message< type>
-               {
-                  enum class Directive : char
-                  {
-                     start,
-                     singleton,
-                     shutdown
-                  };
-
-                  Directive directive = Directive::start;
-
-                  CASUAL_CONST_CORRECT_SERIALIZE(
-                  {
-                     basic_message< type>::serialize( archive);
-                     CASUAL_SERIALIZE( directive);
-                  })
-               };
-            } // connect
-
-
-
-            template< message::Type type>
-            struct basic_disconnect : basic_id< type>
-            {
-
-            };
-
-         } // server
-
-
-         namespace process
-         {
-            namespace spawn
-            {
-               struct Request : basic_message< Type::process_spawn_request>
-               {
-                  std::string executable;
-                  std::vector< std::string> arguments;
-                  std::vector< std::string> environment;
-
-                  CASUAL_CONST_CORRECT_SERIALIZE(
-                  {
-                     basic_message< Type::process_spawn_request>::serialize( archive);
-                     CASUAL_SERIALIZE( executable);
-                     CASUAL_SERIALIZE( arguments);
-                     CASUAL_SERIALIZE( environment);
-                  })
-               };
-               static_assert( traits::is_movable< Request>::value, "not movable");
-
-            } // spawn
-         } // process
+         } // shutdown
 
          namespace reverse
          {

@@ -5,12 +5,10 @@
 //!
 
 
-#include <gtest/gtest.h>
+#include "common/unittest.h"
 
 #include "http/outbound/configuration.h"
 
-
-#include "common/unittest.h"
 #include "common/unittest/file.h"
 #include "serviceframework/log.h"
 

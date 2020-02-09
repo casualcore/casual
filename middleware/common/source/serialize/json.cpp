@@ -51,11 +51,10 @@ namespace casual
                         auto read( const rapidjson::Value* const value, C&& checker, F&& fetcher)
                         {
                            if( common::invoke( checker, value))
-                           {
                               return common::invoke( fetcher, value);
-                           }
 
-                           throw exception::casual::invalid::Node{ "unexpected type"};
+                           // TODO operations: more information about what type and so on...
+                           throw exception::casual::invalid::Node{ string::compose( "unexpected type")};
                         }
                      } // check
 
@@ -64,18 +63,13 @@ namespace casual
                      {
                         // To support empty documents
                         if( ! json || json[ 0] == '\0')
-                        {
                            document.Parse( "{}");
-                        }
                         else
-                        {
                            document.Parse( json);
-                        }
-
+                        
                         if( document.HasParseError())
-                        {
                            throw exception::casual::invalid::Document{ rapidjson::GetParseError_En( document.GetParseError())};
-                        }
+                        
                         return document;
                      }
 
@@ -210,29 +204,22 @@ namespace casual
                         std::tuple< platform::size::type, bool> container_start( platform::size::type size, const char* const name)
                         {
                            if( ! start( name))
-                           {
                               return std::make_tuple( 0, false);
-                           }
 
                            const auto& node = *m_stack.back();
 
                            // This check is to avoid terminate (via assert)
                            if( ! node.IsArray())
-                           {
-                              throw exception::casual::invalid::Node{ "expected array"};
-                           }
+                              throw exception::casual::invalid::Node{ string::compose( "expected array - name: ", name ? name : "")};
 
                            // Stack 'em backwards
 
                            size = node.Size();
 
                            for( auto index = size; index > 0; --index)
-                           {
                               m_stack.push_back( &node[ index - 1]);
-                           }
 
                            return std::make_tuple( size, true);
-
                         }
 
                         void container_end( const char* const name)
@@ -243,21 +230,16 @@ namespace casual
                         bool composite_start( const char* const name)
                         {
                            if( ! start( name))
-                           {
                               return false;
-                           }
 
                            // This check is to avoid terminate (via assert)
                            if( ! m_stack.back()->IsObject())
-                           {
                               throw exception::casual::invalid::Node{ "expected object"};
-                           }
 
                            return true;
-
                         }
 
-                        void composite_end(  const char* const name)
+                        void composite_end( const char* const name)
                         {
                            end( name);
                         }
@@ -269,13 +251,9 @@ namespace casual
                               const auto result = m_stack.back()->FindMember( name);
 
                               if( result != m_stack.back()->MemberEnd())
-                              {
                                  m_stack.push_back( &result->value);
-                              }
                               else
-                              {
                                  return false;
-                              }
                            }
 
                            // Either we found the node or we assume it's an 'unnamed' container
@@ -298,12 +276,12 @@ namespace casual
                               {
                                  // Act (somehow) relaxed
 
+                                 // TODO maintainence: We mute callers state, why?
                                  value = T{};
                               }
                               else
-                              {
                                  read( value);
-                              }
+
                               end( name);
 
                               return true;
@@ -337,7 +315,7 @@ namespace casual
                               check::read( m_stack.back(), &rapidjson::Value::IsString, &rapidjson::Value::GetString));
                            
                            if( range::size( binary) != range::size( value))
-                              throw exception::casual::invalid::Node{ "binary size missmatch"};
+                              throw exception::casual::invalid::Node{ string::compose( "binary size missmatch - wanted: ", range::size( value), " got: ", range::size( binary))};
 
                            algorithm::copy( binary, std::begin( value));
                         }
@@ -410,7 +388,6 @@ namespace casual
                            if( name)
                            {
                               parent.AddMember( rapidjson::Value( name, m_allocator), rapidjson::Value(), m_allocator);
-
                               m_stack.push_back( &(*(parent.MemberEnd() - 1)).value);
                            }
                            else
@@ -454,9 +431,7 @@ namespace casual
                            rapidjson::PrettyWriter<rapidjson::StringBuffer> writer( buffer);
 
                            if( m_document.Accept( writer))
-                           {
                               json.assign( buffer.GetString(), buffer.GetString() + buffer.GetSize());
-                           }
                            else
                            {
                               // TODO: Better
@@ -469,9 +444,7 @@ namespace casual
                            rapidjson::StringBuffer buffer;
                            rapidjson::PrettyWriter<rapidjson::StringBuffer> writer( buffer);
                            if( m_document.Accept( writer))
-                           {
                               json << buffer.GetString();
-                           }
                            else
                            {
                               // TODO: Better

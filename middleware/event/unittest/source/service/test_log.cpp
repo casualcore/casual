@@ -82,6 +82,22 @@ domain:
                   return file.peek() == std::ifstream::traits_type::eof();
                };
 
+               namespace has
+               {
+                  auto content = []( auto& path)
+                  {
+                     int count = 0;
+                     while( file::empty( path))
+                     {
+                        if( ++count > 10)
+                           return false;
+                        
+                        common::process::sleep( std::chrono::milliseconds{ 2});
+                     }
+                     return true;
+                  };
+               } // has
+
                auto string = []( auto& path)
                {
                   std::ifstream file{ path};
@@ -122,8 +138,8 @@ domain:
          local::produce::metric( service_log_handle);
 
 
-         EXPECT_TRUE( ! local::file::empty( log_file)) << local::file::string( log_file);
-         EXPECT_TRUE( ! local::file::empty( rotated)) << local::file::string( rotated);
+         EXPECT_TRUE( local::file::has::content( log_file)) << local::file::string( log_file);
+         EXPECT_TRUE( local::file::has::content( rotated)) << local::file::string( rotated);
       }
 
 
@@ -187,7 +203,7 @@ domain:
          local::produce::metric( service_log_handle);
 
          // the call should match the filter, hence logged        
-         EXPECT_TRUE( ! local::file::empty( log_file)) << local::file::string( log_file);
+         EXPECT_TRUE( local::file::has::content( log_file)) << local::file::string( log_file);
       }
 
 

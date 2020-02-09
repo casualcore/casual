@@ -102,7 +102,6 @@ namespace casual
             template< typename... Events>
             struct Collection : event::Dispatch< Events>...
             {
-
                template< typename Event>
                event::Dispatch< Event>& event()
                {

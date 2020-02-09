@@ -20,10 +20,12 @@ namespace casual
             {
                namespace boot 
                {
-                  std::vector< state::Batch> order( 
+                  std::vector< state::dependency::Group> order(
+                     const State& state,
                      const std::vector< Server>& servers, 
-                     const std::vector< Executable>& executables,
-                     const std::vector< Group>& groups);
+                     const std::vector< Executable>& executables);
+
+                  std::vector< state::dependency::Group> order( const State& state);
                } // dependency   
                
             } // create

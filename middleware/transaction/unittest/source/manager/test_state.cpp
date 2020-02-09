@@ -4,12 +4,9 @@
 //! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-
-#include <gtest/gtest.h>
 #include "common/unittest.h"
 
 #include "transaction/manager/state.h"
-
 
 namespace casual
 {

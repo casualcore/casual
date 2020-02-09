@@ -276,21 +276,25 @@ namespace casual
             {
                namespace connect
                {
-                  struct Request : basic_message< Type::domain_process_connect_request>
+                  using base_request = basic_request< Type::domain_process_connect_request>;
+                  struct Request : base_request
                   {
-                     common::process::Handle process;
+                     using base_request::base_request;
+
                      Uuid identification;
 
                      CASUAL_CONST_CORRECT_SERIALIZE(
                      {
-                        base_type::serialize( archive);
-                        CASUAL_SERIALIZE( process);
+                        base_request::serialize( archive);
                         CASUAL_SERIALIZE( identification);
                      })
                   };
 
+                  using base_reply = basic_message< Type::domain_process_connect_reply>;
                   struct Reply : basic_message< Type::domain_process_connect_reply>
                   {
+                     using base_reply::base_reply;
+
                      enum class Directive : short
                      {
                         start,
@@ -313,7 +317,7 @@ namespace casual
 
                      CASUAL_CONST_CORRECT_SERIALIZE(
                      {
-                        base_type::serialize( archive);
+                        base_reply::serialize( archive);
                         CASUAL_SERIALIZE( directive);
                      })
                   };

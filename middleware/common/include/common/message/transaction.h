@@ -233,18 +233,22 @@ namespace casual
 
                namespace involved
                {  
-                  struct Request : basic_transaction< Type::transaction_resource_involved_request>
+                  using base_request = basic_transaction< Type::transaction_resource_involved_request>;
+                  struct Request : base_request
                   {
-                     //! potentially new resorces involved
+                     using base_request::base_request;
+
+                     //! potentially new resources involved
                      std::vector< strong::resource::id> involved;
 
                      CASUAL_CONST_CORRECT_SERIALIZE(
                      {
-                        base_type::serialize( archive);
+                        base_request::serialize( archive);
                         CASUAL_SERIALIZE( involved);
                      })
                   };
 
+                  using base_reply = basic_message< Type::transaction_resource_involved_reply>;
                   struct Reply : basic_message< Type::transaction_resource_involved_reply>
                   {
                      //! resources involved prior to the request
@@ -252,17 +256,16 @@ namespace casual
 
                      CASUAL_CONST_CORRECT_SERIALIZE(
                      {
-                        base_type::serialize( archive);
+                        base_reply::serialize( archive);
                         CASUAL_SERIALIZE( involved);
                      })
                   };
                } // involve
 
-
                template< message::Type type>
                struct basic_request : basic_transaction< type>
                {
-                  using base_type = basic_request;
+                  using basic_transaction< type>::basic_transaction;
 
                   id::type resource;
                   flag::xa::Flags flags = flag::xa::Flag::no_flags;

@@ -5,7 +5,8 @@
 //!
 
 
-#include <gtest/gtest.h>
+#include "common/unittest.h"
+
 #include "configuration/resource/property.h"
 #include "configuration/example/build/server.h"
 
@@ -32,6 +33,8 @@ namespace casual
 
          TEST_P( configuration_build_server, load_configuration)
          {
+            common::unittest::Trace trace;
+
             // serialize and deserialize
             auto model = build::server::get(
                   example::build::server::temporary( example::build::server::example(), GetParam()));
@@ -41,6 +44,8 @@ namespace casual
 
          TEST_P( configuration_build_server, default_service)
          {
+            common::unittest::Trace trace;
+
             // serialize and deserialize
             auto model = build::server::get(
                   example::build::server::temporary( example::build::server::example(), GetParam()));
@@ -54,6 +59,8 @@ namespace casual
 
          TEST_P( configuration_build_server, service_s1__expect_default)
          {
+            common::unittest::Trace trace;
+
             // serialize and deserialize
             auto model = build::server::get(
                   example::build::server::temporary( example::build::server::example(), GetParam()));
@@ -68,6 +75,8 @@ namespace casual
 
          TEST_P( configuration_build_server, service_s2__expect__overridden_transaction)
          {
+            common::unittest::Trace trace;
+
             // serialize and deserialize
             auto model = build::server::get(
                   example::build::server::temporary( example::build::server::example(), GetParam()));
@@ -80,6 +89,8 @@ namespace casual
 
          TEST_P( configuration_build_server, service_s3__expect__specified_function)
          {
+            common::unittest::Trace trace;
+
             // serialize and deserialize
             auto model = build::server::get(
                   example::build::server::temporary( example::build::server::example(), GetParam()));
@@ -92,6 +103,8 @@ namespace casual
 
          TEST_P( configuration_build_server, service_s3__expect__override_category)
          {
+            common::unittest::Trace trace;
+
             // serialize and deserialize
             auto model = build::server::get(
                   example::build::server::temporary( example::build::server::example(), GetParam()));

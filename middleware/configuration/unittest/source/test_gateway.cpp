@@ -5,8 +5,8 @@
 //!
 
 
-#include <gtest/gtest.h>
 #include "common/unittest.h"
+
 #include "configuration/domain.h"
 #include "configuration/example/domain.h"
 
@@ -29,10 +29,7 @@ namespace casual
             configuration_gateway,
          ::testing::Values(".yaml", ".json", ".xml", ".ini"));
 
-
-      //
       // Look at configuration/example/domain.yaml for what to expect.
-      //
 
       TEST_P( configuration_gateway, expect_3_connections)
       {

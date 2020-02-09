@@ -22,25 +22,28 @@ namespace casual
             {
                namespace boot 
                {
-                  std::vector< state::Batch> order( 
+                  std::vector< state::dependency::Group> order(
+                     const State& state,
                      const std::vector< Server>& source_servers, 
-                     const std::vector< Executable>& source_executables,
-                     const std::vector< Group>& source_groups)
+                     const std::vector< Executable>& source_executables)
                   {
                      Trace trace{ "domain::manager::state::create::boot::order"};
 
-                     auto group_wrapper = range::to_reference( source_groups);
+                     auto group_wrapper = range::to_reference( state.groups);
                      algorithm::stable_sort( group_wrapper, state::Group::boot::Order{});
 
                      auto server_wrappers = range::to_reference( source_servers);
                      auto excutable_wrappers = range::to_reference( source_executables);
 
                      auto executables = range::make( excutable_wrappers);
-                     auto servers = range::make( server_wrappers);
+
+                     auto is_domain_manager = [&state]( const Server& server) { return server.id == state.manager_id;};
+                     auto servers = algorithm::remove_if( range::make( server_wrappers), is_domain_manager);
 
                      auto batch_transform = [&]( const Group& group)
                      {
-                        state::Batch batch{ group.id};
+                        state::dependency::Group dependency;
+                        dependency.description = group.name;
 
                         auto extract = [&]( auto& entities, auto& output)
                         {
@@ -58,10 +61,10 @@ namespace casual
                            return std::get< 1>( slice);
                         };
 
-                        servers = extract( servers, batch.servers);
-                        executables = extract( executables, batch.executables);
+                        servers = extract( servers, dependency.servers);
+                        executables = extract( executables, dependency.executables);
 
-                        return batch;
+                        return dependency;
                      };
 
                      // Reverse the order, so we 'consume' executable based on the group
@@ -69,10 +72,16 @@ namespace casual
                      auto result = algorithm::transform( algorithm::reverse( group_wrapper), batch_transform);
 
                      // remove "empty"
-                     algorithm::trim( result, algorithm::remove_if( result, []( auto& batch){ return batch.empty();}));
+                     algorithm::trim( result, algorithm::remove_if( result, []( auto& group){ return group.servers.empty() && group.executables.empty();}));
 
                      // We reverse the result so the dependency order is correct
                      return algorithm::reverse( result);
+                  }
+
+
+                  std::vector< state::dependency::Group> order( const State& state)
+                  {
+                     return order( state, state.servers, state.executables);
                   }
                } // dependency   
                

@@ -8,6 +8,7 @@
 
 #include "domain/manager/task.h"
 #include "domain/manager/state.h"
+#include "domain/manager/admin/model.h"
 
 namespace casual
 {
@@ -25,15 +26,18 @@ namespace casual
                   manager::Task executable( State& state, state::Executable::id_type id);
                } // restart
 
-               namespace batch
+               namespace scale
                {
-                  manager::Task boot( state::Batch batch);
-                  std::vector< manager::Task> boot( std::vector< state::Batch> batch);
-                  manager::Task shutdown( state::Batch batch);
-                  std::vector< manager::Task> shutdown( std::vector< state::Batch> batch);
+                  manager::Task server( const State& state, state::Server::id_type id);
+                  manager::Task executable( const State& state, state::Executable::id_type id);
+
+                  std::vector< manager::Task> dependency( const State& state, std::vector< state::dependency::Group> groups);
+               } // scale
 
 
-               } // batch
+               //! groups tasks into a sequential task with the most restrictive Completion of all tasks 
+               manager::Task group( std::string description, std::vector< manager::Task>&& tasks);
+;
 
                namespace done
                {  

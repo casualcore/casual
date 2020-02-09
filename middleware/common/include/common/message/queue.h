@@ -80,7 +80,6 @@ namespace casual
                   CASUAL_CONST_CORRECT_SERIALIZE(
                   {
                      base_request::serialize( archive);
-                     CASUAL_SERIALIZE( process);
                      CASUAL_SERIALIZE( name);
                   })
                };
@@ -108,11 +107,13 @@ namespace casual
 
             namespace enqueue
             {
-               struct Request : basic_message< Type::queue_enqueue_request>
+               using base_request = basic_request< Type::queue_enqueue_request>;
+               struct Request : base_request
                {
+                  using base_request::base_request;
+
                   using Message = base_message;
 
-                  common::process::Handle process;
                   common::transaction::ID trid;
                   strong::queue::id queue;
                   std::string name;
@@ -121,23 +122,24 @@ namespace casual
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
                   {
-                     base_type::serialize( archive);
-                     CASUAL_SERIALIZE( process);
+                     base_request::serialize( archive);
                      CASUAL_SERIALIZE( trid);
                      CASUAL_SERIALIZE( queue);
                      CASUAL_SERIALIZE( name);
                      CASUAL_SERIALIZE( message);
                   })
                };
-               static_assert( traits::is_movable< Request>::value, "not movable");
 
-               struct Reply : basic_message< Type::queue_enqueue_reply>
+               using base_reply = basic_message< Type::queue_enqueue_reply>;
+               struct Reply : base_reply
                {
+                  using base_reply::base_reply;
+
                   common::Uuid id;
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
                   {
-                     base_type::serialize( archive);
+                     base_reply::serialize( archive);
                      CASUAL_SERIALIZE( id);
                   })
                };
@@ -159,9 +161,11 @@ namespace casual
                   })
                };
 
-               struct Request : basic_message< Type::queue_dequeue_request>
+               using base_request = basic_request< Type::queue_dequeue_request>;
+               struct Request : base_request
                {
-                  common::process::Handle process;
+                  using base_request::base_request;
+
                   common::transaction::ID trid;
                   strong::queue::id queue;
                   std::string name;
@@ -170,8 +174,7 @@ namespace casual
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
                   {
-                     base_type::serialize( archive);
-                     CASUAL_SERIALIZE( process);
+                     base_request::serialize( archive);
                      CASUAL_SERIALIZE( trid);
                      CASUAL_SERIALIZE( queue);
                      CASUAL_SERIALIZE( name);
@@ -181,8 +184,11 @@ namespace casual
                };
                static_assert( traits::is_movable< Request>::value, "not movable");
 
-               struct Reply : basic_message< Type::queue_dequeue_reply>
+               using base_reply = basic_message< Type::queue_dequeue_reply>;
+               struct Reply : base_reply
                {
+                  using base_reply::base_reply;
+
                   struct Message : base_message
                   {
                      Message( const base_message& m) : base_message( m) {}
@@ -204,7 +210,7 @@ namespace casual
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
                   {
-                     base_type::serialize( archive);
+                     base_reply::serialize( archive);
                      CASUAL_SERIALIZE( message);
                   })
                };
@@ -359,13 +365,11 @@ namespace casual
                      CASUAL_SERIALIZE( size);
                   })
                };
-               static_assert( traits::is_movable< Message>::value, "not movable");
-
 
                namespace queues
                {
 
-                  using Request = server::basic_id< Type::queue_queues_information_request>;
+                  using Request = common::message::basic_request< Type::queue_queues_information_request>;
 
                   using Reply = basic_information< Type::queue_queues_information_reply>;
 
@@ -373,35 +377,35 @@ namespace casual
 
                namespace messages
                {
-                  struct Request : server::basic_id< Type::queue_queue_information_request>
+                  using base_request = common::message::basic_request< Type::queue_queue_information_request>;
+                  struct Request : base_request
                   {
-                     using base_type = server::basic_id< Type::queue_queue_information_request>;
+                     using base_request::base_request;
 
                      strong::queue::id qid;
 
                      CASUAL_CONST_CORRECT_SERIALIZE(
                      {
-                        base_type::serialize( archive);
+                        base_request::serialize( archive);
                         CASUAL_SERIALIZE( qid);
                      })
 
                   };
-                  static_assert( traits::is_movable< Request>::value, "not movable");
-
-                  struct Reply : common::message::server::basic_id< Type::queue_queue_information_reply>
+                  
+                  using base_reply = common::message::basic_reply< Type::queue_queue_information_reply>;
+                  struct Reply : base_reply
                   {
-                     using base_type = common::message::server::basic_id< Type::queue_queue_information_reply>;
+                     using base_reply::base_reply;
 
                      std::vector< Message> messages;
 
                      CASUAL_CONST_CORRECT_SERIALIZE(
                      {
-                        base_type::serialize( archive);
+                        base_reply::serialize( archive);
                         CASUAL_SERIALIZE( messages);
                      })
 
                   };
-                  static_assert( traits::is_movable< Reply>::value, "not movable");
 
                } // messages
 
@@ -414,30 +418,34 @@ namespace casual
             {
                namespace information
                {
-                  struct Request : basic_message< Type::queue_peek_information_request>
+                  using base_request = basic_request< Type::queue_peek_information_request>;
+                  struct Request : base_request
                   {
-                     common::process::Handle process;
+                     using base_request::basic_request;
+
                      strong::queue::id queue;
                      std::string name;
                      dequeue::Selector selector;
 
                      CASUAL_CONST_CORRECT_SERIALIZE(
                      {
-                        base_type::serialize( archive);
-                        CASUAL_SERIALIZE( process);
+                        base_request::serialize( archive);
                         CASUAL_SERIALIZE( queue);
                         CASUAL_SERIALIZE( name);
                         CASUAL_SERIALIZE( selector);
                      })
                   };
 
-                  struct Reply : basic_message< Type::queue_peek_information_reply>
+                  using base_reply = basic_message< Type::queue_peek_information_reply>;
+                  struct Reply : base_reply
                   {
+                     using base_reply::base_reply;
+
                      std::vector< queue::information::Message> messages;
 
                      CASUAL_CONST_CORRECT_SERIALIZE(
                      {
-                        base_type::serialize( archive);
+                        base_reply::serialize( archive);
                         CASUAL_SERIALIZE( messages);
                      })
                   };
@@ -446,32 +454,33 @@ namespace casual
 
                namespace messages
                {
-                  struct Request : basic_message< Type::queue_peek_messages_request>
+                  using base_request = basic_request< Type::queue_peek_messages_request>;
+                  struct Request : base_request
                   {
-                     common::process::Handle process;
+                     using base_request::base_request;
+
                      std::vector< Uuid> ids;
 
                      CASUAL_CONST_CORRECT_SERIALIZE(
                      {
-                        base_type::serialize( archive);
-                        CASUAL_SERIALIZE( process);
+                        base_request::serialize( archive);
                         CASUAL_SERIALIZE( ids);
                      })
                   };
-                  static_assert( traits::is_movable< Request>::value, "not movable");
 
-
-                  struct Reply : basic_message< Type::queue_peek_messages_reply>
+                  using base_reply = basic_message< Type::queue_peek_messages_reply>;
+                  struct Reply : base_reply
                   {
+                     using base_reply::base_reply;
+
                      std::vector< dequeue::Reply::Message> messages;
 
                      CASUAL_CONST_CORRECT_SERIALIZE(
                      {
-                        base_type::serialize( archive);
+                        base_reply::serialize( archive);
                         CASUAL_SERIALIZE( messages);
                      })
                   };
-                  static_assert( traits::is_movable< Reply>::value, "not movable");
 
                } // messages
             } // peek
@@ -481,14 +490,17 @@ namespace casual
             {
                using Request = basic_request< Type::queue_connect_request>;
 
-               struct Reply : basic_message< Type::queue_connect_reply>
+               using base_reply = basic_message< Type::queue_connect_reply>;
+               struct Reply : base_reply
                {
+                  using base_reply::base_reply;
+
                   std::string name;
                   std::vector< Queue> queues;
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
                   {
-                     base_type::serialize( archive);
+                     base_reply::serialize( archive);
                      CASUAL_SERIALIZE( name);
                      CASUAL_SERIALIZE( queues);
                   })
@@ -517,9 +529,12 @@ namespace casual
                   };
                   static_assert( traits::is_movable< Queue>::value, "not movable");
                } // advertise
-
-               struct Advertise : basic_message< Type::queue_advertise>
+               
+               using base_advertise = basic_request< Type::queue_advertise>;
+               struct Advertise : base_advertise
                {
+                  using base_advertise::base_advertise;
+
                   enum class Directive : short
                   {
                      add,
@@ -538,18 +553,14 @@ namespace casual
                      return out << "unknown";
                   }
 
-                  Directive directive = Directive::add;
-
-                  common::process::Handle process;
                   platform::size::type order = 0;
                   std::vector< advertise::Queue> queues;
-
+                  Directive directive = Directive::add;
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
                   {
-                     base_type::serialize( archive);
+                     base_advertise::serialize( archive);
                      CASUAL_SERIALIZE( directive);
-                     CASUAL_SERIALIZE( process);
                      CASUAL_SERIALIZE( order);
                      CASUAL_SERIALIZE( queues);
                   })

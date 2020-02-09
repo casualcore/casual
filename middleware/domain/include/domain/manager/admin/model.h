@@ -92,10 +92,11 @@ namespace casual
                      enum class State : int
                      {
                         running,
+                        spawned,
                         scale_out,
                         scale_in,
                         exit,
-                        spawn_error,
+                        error,
                      };
 
                      inline std::ostream& operator << ( std::ostream& out, State state)
@@ -103,10 +104,11 @@ namespace casual
                         switch( state)
                         {
                            case State::running: return out << "running";
+                           case State::spawned: return out << "spawned";
                            case State::scale_out: return out << "scale-out";
                            case State::scale_in: return out << "scale-in";
                            case State::exit: return out << "exit";
-                           case State::spawn_error: return out << "spawn-error";
+                           case State::error: return out << "error";
                         }
                         assert( ! "invalid state");
                      }
@@ -217,43 +219,32 @@ namespace casual
 
                   namespace scale
                   {
-                     struct Instances
+                     struct Alias
                      {
-                        std::string alias;
+                        std::string name;
                         size_type instances;
 
                         CASUAL_CONST_CORRECT_SERIALIZE
                         (
-                           CASUAL_SERIALIZE( alias);
+                           CASUAL_SERIALIZE( name);
                            CASUAL_SERIALIZE( instances);
                         )
                      };
+
                   } // scale
 
                   namespace restart
                   {
-                     struct Instances
+                     struct Alias
                      {
-                        std::string alias;
+                        std::string name;
 
-                        CASUAL_CONST_CORRECT_SERIALIZE({
-                           CASUAL_SERIALIZE( alias);
-                        })
+                        CASUAL_CONST_CORRECT_SERIALIZE
+                        (
+                           CASUAL_SERIALIZE( name);
+                        )
                      };
                      
-                     struct Result
-                     {
-                        std::string alias;
-                        common::strong::task::id task;
-                        std::vector< common::strong::process::id> pids;
-
-                        CASUAL_CONST_CORRECT_SERIALIZE({
-                           CASUAL_SERIALIZE( alias);
-                           CASUAL_SERIALIZE( task);
-                           CASUAL_SERIALIZE( pids);
-                        })
-                     };
-                  
                   } // restart
 
                   namespace set

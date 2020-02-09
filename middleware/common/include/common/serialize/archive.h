@@ -184,21 +184,15 @@ namespace casual
             inline void composite_start( const char* name) { m_protocol->composite_start( name);}
             inline void composite_end(  const char* name) { m_protocol->composite_end(  name);}
 
-            inline void write( bool value, const char* name) { m_protocol->write( value, name);}
-            inline void write( char value, const char* name) { m_protocol->write( value, name);}
-            inline void write( short value, const char* name) { m_protocol->write( value, name);}
-            void write( int value, const char* name);
-            inline void write( long value, const char* name) { m_protocol->write( value, name);}
-            void write( unsigned long value, const char* name);
-            inline void write( long long value, const char* name) { m_protocol->write( value, name);}
-            inline void write( float value, const char* name) { m_protocol->write( value, name);}
-            inline void write( double value, const char* name) { m_protocol->write( value, name);}
-            inline void write( const std::string& value, const char* name) { m_protocol->write( value, name);}
-            inline void write( const platform::binary::type& value, const char* name) { m_protocol->write( value, name);}
-            
-            //! serialize raw data, no 'size' will be serialized, hence caller has to take care
-            //! of this if needed.
-            inline void write( view::immutable::Binary value, const char* name) { m_protocol->write( value, name);}
+
+            //! restricted write, so we don't consume convertable types by mistake
+            //! binary types, such as char[16] that easily converts to const std::string& 
+            template< typename T>
+            auto write( T&& value, const char* name) 
+               -> std::enable_if_t< traits::is::archive::write::type< common::traits::remove_cvref_t< T>>::value>
+            {
+               save( std::forward< T>( value), name);
+            }
 
             //! Flushes the archive, if the implementation has a flush member function.
             inline void flush() { m_protocol->flush();}
@@ -206,6 +200,22 @@ namespace casual
             inline auto type() const { return m_type;};
 
          private:
+
+            inline void save( bool value, const char* name) { m_protocol->write( value, name);}
+            inline void save( char value, const char* name) { m_protocol->write( value, name);}
+            inline void save( short value, const char* name) { m_protocol->write( value, name);}
+            void save( int value, const char* name);
+            inline void save( long value, const char* name) { m_protocol->write( value, name);}
+            void save( unsigned long value, const char* name);
+            inline void save( long long value, const char* name) { m_protocol->write( value, name);}
+            inline void save( float value, const char* name) { m_protocol->write( value, name);}
+            inline void save( double value, const char* name) { m_protocol->write( value, name);}
+            inline void save( const std::string& value, const char* name) { m_protocol->write( value, name);}
+            inline void save( const platform::binary::type& value, const char* name) { m_protocol->write( value, name);}
+            
+            //! serialize raw data, no 'size' will be serialized, hence caller has to take care
+            //! of this if needed.
+            inline void save( view::immutable::Binary value, const char* name) { m_protocol->write( value, name);}
 
             struct concept
             {
@@ -290,10 +300,10 @@ namespace casual
             return archive;
          }
 
-         template< typename NV>
-         Writer& operator & ( Writer& archive, NV&& named)
+         template< typename V>
+         Writer& operator & ( Writer& archive, V&& value)
          {
-            return operator << ( archive, std::forward< NV>( named));
+            return operator << ( archive, std::forward< V>( value));
          }
 
       } // serialize

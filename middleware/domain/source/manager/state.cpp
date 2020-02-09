@@ -13,6 +13,7 @@
 
 
 #include "common/message/domain.h"
+#include "common/algorithm/compare.h"
 
 namespace casual
 {
@@ -48,11 +49,12 @@ namespace casual
                {
                   switch( value)
                   {
-                     case State::scale_out: return out << "scale-out";
                      case State::running: return out << "running";
+                     case State::spawned : return out << "spawned";
+                     case State::scale_out: return out << "scale-out";
                      case State::scale_in: return out << "scale-in";
                      case State::exit: return out << "exit";
-                     case State::spawn_error: return out << "spawn-error";
+                     case State::error: return out << "serror";
                   }
                   return out << "unknown";
                }
@@ -94,16 +96,19 @@ namespace casual
                      }
 
                      template< typename I>
-                     void scale( I& instances, size_type count)
+                     void scale( I& source_instances, size_type count)
                      {
                         Trace trace{ "domain::manager::state::local::scale"};
+                        log::line( verbose::log, "instances: ", source_instances);
 
-                        log::line( verbose::log, "instances: ", instances);
+                        using state_type = decltype( std::begin( source_instances)->state);
 
-                        using state_type = typename I::value_type::state_type;
+                        // we need to keep the actual original order, hence we work with references.
+                        auto instances = range::to_reference( source_instances);
 
-                        auto split = algorithm::stable_partition( instances, []( auto& i){
-                           return algorithm::compare::any( i.state, state_type::running, state_type::scale_out);
+                        auto split = algorithm::stable_partition( instances, []( auto& i)
+                        {
+                           return algorithm::compare::any( i.get().state, state_type::running, state_type::scale_out);
                         });
 
                         auto running = std::get< 0>( split);
@@ -117,33 +122,38 @@ namespace casual
                            // check if we got any 'exit' to reuse
                            {
                               auto exit = std::get< 0>( algorithm::partition( std::get< 1>( split), []( auto& i){
-                                 return i.state == state_type::exit;
+                                 return algorithm::compare::any( i.get().state, state_type::exit, state_type::error);
                               }));
 
-                              count -= algorithm::for_each_n( exit, count, []( auto& i){
-                                 i.state = state_type::scale_out;
+                              count -= algorithm::for_each_n( exit, count, []( auto& i)
+                              {
+                                 i.get().state = state_type::scale_out;
                               }).size();
                            }
 
-                           // resize to get the rest, and rely on default ctor for instance_type.
-                           instances.resize( instances.size() + count);
-
+                           // resize the source to get the rest, and rely on default ctor for instance_type.
+                           source_instances.resize( source_instances.size() + count);
                         }
                         else
                         {
                            // scale in.
                            // We just advance the range, and scale_in the reminders.
                            algorithm::for_each( running.advance( count), []( auto& i){
-                              i.state = state_type::scale_in;
+                              i.get().state = state_type::scale_in;
                            });
+                           
+                           auto is_removable = []( auto& i)
+                           {
+                              return i.state == state_type::scale_in && ! process::id( i.handle);
+                           };
+
+                           // we can remove the backmarkers with invalid 'pids'
+                           algorithm::trim( source_instances,
+                              range::reverse( algorithm::remove_if( range::reverse( source_instances), is_removable)));
                         }
 
-                        algorithm::stable_sort( instances);
-
-                        log::line( verbose::log, "instances: ", instances);
-
+                        log::line( verbose::log, "instances: ", source_instances);
                      }
-
 
                   } // instance
                } // <unnamed>
@@ -173,10 +183,9 @@ namespace casual
             {
                Trace trace{ "domain::manager::state::Executable::remove"};
 
-               auto found = algorithm::find( instances, pid);
-
-               if( found)
+               if( auto found = algorithm::find( instances, pid))
                {
+                  log::line( verbose::log, "found: ", *found);
                   auto const state = found->state;
 
                   if( state == state_type::scale_in)
@@ -186,66 +195,55 @@ namespace casual
                   }
                   else
                   {
-                     log::line( verbose::log, "reset: ", *found);
                      found->handle = common::strong::process::id{};
                      found->state =  state == state_type::running && restart ? state_type::scale_out : state_type::exit;
+                     log::line( verbose::log, "reset: ", *found);
                   }
                }
             }
 
 
-            Server::instance_type Server::instance( common::strong::process::id pid) const
+            const Server::instance_type* Server::instance( common::strong::process::id pid) const
             {
-               auto found = algorithm::find_if( instances, [pid]( auto& p){
-                  return p.handle.pid == pid;
-               });
-
-               if( found)
-               {
-                  return *found;
-               }
-               return {};
+               return algorithm::find_if( instances, [pid]( auto& p){ return p.handle.pid == pid;}).data();
             }
 
-            Server::instance_type Server::remove( common::strong::process::id pid)
+            common::process::Handle Server::remove( common::strong::process::id pid)
             {
                Trace trace{ "domain::manager::state::Server::remove"};
 
                auto found = algorithm::find( instances, pid);
-
+               
                if( ! found)
                {
                   log::line( log, "failed to find server - pid: ", pid);
                   log::line( verbose::log, "instances: ", instances);
                   return {};
                }
- 
-               auto result = *found;
 
-               auto const state = found->state;
+               log::line( verbose::log, "found: ", *found);
 
-               if( state == state_type::scale_in)
+               auto result = std::exchange( found->handle, {});
+
+               if( found->state == state_type::scale_in)
                {
-                  log::line( verbose::log, "remove: ", *found);
-                  instances.erase( std::begin( found));
+                  found->state = state_type::exit;
+
+                  // find and remove all 'exit' from the back. We need to keep
+                  // the order of instances, hence we can only remove from the back 
+                  // (since the semantics dictate instance index based on actual index)
+                  if( ! algorithm::find_if( found, []( auto& i){ return i.state != state_type::exit;}))
+                     instances.erase( std::begin( found), std::end( found));
                }
-               else
-               {
-                  log::line( verbose::log, "reset: ", *found);
-                  found->handle = common::process::Handle{};
-                  found->state =  state == state_type::running && restart ? state_type::scale_out : state_type::exit;
-               }
-               
+               else 
+                  found->state = found->state == state_type::running && restart ? state_type::scale_out : state_type::exit;
+
                return result;
             }
 
-            bool Server::connect( common::process::Handle process)
+            bool Server::connect( const common::process::Handle& process)
             {
-               auto found = algorithm::find_if( instances, [=]( auto& i){
-                  return i.handle.pid == process.pid;
-               });
-
-               if( found)
+               if( auto found = algorithm::find( instances, process.pid))
                {
                   found->handle = process;
                   found->state = instance::State::running;
@@ -275,48 +273,21 @@ namespace casual
                local::instance::scale( instances, count);
             }
 
-
-
             bool operator == ( const Server& lhs, common::strong::process::id rhs)
             {
-               return lhs.instance( rhs).handle.pid == rhs;
+               return lhs.instance( rhs) != nullptr;
             }
-
-
-            Batch::Batch( Group::id_type group) : group(std::move( group)) {}
-
-            void Batch::log( std::ostream& out, const State& state) const
-            {
-               stream::write( out, "{ group: ", group);
-
-               auto delimiter = [&out](){ out << ", ";};
-
-               out << ", servers: [";
-               algorithm::for_each_interleave( servers, [&out,&state]( auto id){
-                  stream::write( out,  state.server( id));
-               }, delimiter);
-
-               out << "], executables: [";
-               algorithm::for_each_interleave( executables, [&out,&state]( auto id){
-                  stream::write( out, state.executable( id));
-               }, delimiter);
-
-               out << "]}";
-            }
-
-
 
          } // state
 
-
-         std::vector< state::Batch> State::bootorder()
+         std::vector< state::dependency::Group> State::bootorder()
          {
             Trace trace{ "domain::manager::State::bootorder"};
 
-            return state::create::boot::order( servers, executables, groups);
+            return state::create::boot::order( *this);
          }
 
-         std::vector< state::Batch> State::shutdownorder()
+         std::vector< state::dependency::Group> State::shutdownorder()
          {
             Trace trace{ "domain::manager::State::shutdownorder"};
 
@@ -332,88 +303,58 @@ namespace casual
             event.remove( pid);
 
             // We remove from pending 
+            algorithm::trim( pending.lookup, algorithm::remove_if( pending.lookup, [pid]( auto& m)
             {
-               algorithm::trim( pending.lookup, algorithm::remove_if( pending.lookup, [pid]( auto& m)
-               {
-                  return m.process == pid;
-               }));
-            }
+               return m.process == pid;
+            }));
 
             // Remove from singletons
-            {
-               auto found = algorithm::find_if( singletons, [pid]( auto& v){
-                  return v.second == pid;
-               });
+            auto is_singleton = [pid]( auto& v){ return v.second == pid;};
 
-               if( found)
-               {
-                  log::line( log, "remove singleton: ", found->second);
-                  singletons.erase( std::begin( found));
-               }
+            if( auto found = algorithm::find_if( singletons, is_singleton))
+            {
+               log::line( log, "remove singleton: ", found->second);
+               singletons.erase( std::begin( found));
             }
 
             using result_type = std::tuple< state::Server*, state::Executable*>;
 
             // Check if it's a server
+            if( auto found = server( pid))
             {
-               auto found = server( pid);
+               // we know the instance exists...
+               auto process = found->remove( pid);
+               
+               log::line( log, "remove server instance: ", process);
 
-               if( found)
-               {
-                  auto instance = found->remove( pid);
-                  log::line( log, "remove server instance: ", instance);
+               // Try to remove ipc-queue (no-op if it's removed already)
+               local::ipc::remove( process.ipc);
 
-                  // Try to remove ipc-queue (no-op if it's removed already)
-                  local::ipc::remove( instance.handle.ipc);
+               if( found->restart && runlevel() == Runlevel::running)
+                  return result_type{ found, nullptr};
 
-                  if( found->restart && runlevel() == Runlevel::running)
-                  {
-                     return result_type{ found, nullptr};
-                  }
-               }
             }
 
             // Find and remove from executable
+            if( auto found = executable( pid))
             {
-               auto found = executable( pid);
+               found->remove( pid);
+               log::line( log, "remove executable instance: ", pid);
 
-               if( found)
-               {
-                  found->remove( pid);
-                  log::line( log, "remove executable instance: ", pid);
-
-                  if( found->restart && runlevel() == Runlevel::running)
-                  {
-                     return result_type{ nullptr, found};
-                  }
-               }
+               if( found->restart && runlevel() == Runlevel::running)
+                  return result_type{ nullptr, found};
             }
 
             // check if it's a grandchild
+            if( auto found = algorithm::find( grandchildren, pid))
             {
-               auto found = algorithm::find_if( grandchildren, [=]( const auto& v){
-                  return v.pid == pid;
-               });
-
-               if( found)
-               {
-                  log::line( log, "remove grandchild: ", *found);
-                  grandchildren.erase( std::begin( found));
-               }
+               log::line( log, "remove grandchild: ", *found);
+               grandchildren.erase( std::begin( found));
             }
 
             return result_type{};
          }
 
-
-         std::vector< common::environment::Variable> State::variables( const state::Process& process)
-         {
-            auto result = casual::configuration::environment::transform( casual::configuration::environment::fetch( environment));
-
-            algorithm::append( process.environment.variables, result);
-
-            return result;
-         }
 
          namespace local
          {
@@ -423,7 +364,7 @@ namespace casual
                auto server( S& servers, common::strong::process::id pid) noexcept
                {
                   return algorithm::find_if( servers, [pid]( const auto& s){
-                     return s.instance( pid).handle.pid == pid;
+                     return s.instance( pid) != nullptr;
                   }).data();
                }
             } // <unnamed>
@@ -474,23 +415,50 @@ namespace casual
             } // <unnamed>
          } // local
 
-         state::Server& State::server( state::Server::id_type id)
+         state::Server& State::entity( state::Server::id_type id)
+         {
+            return local::executable( servers, id);
+         }
+         const state::Server& State::entity( state::Server::id_type id) const
          {
             return local::executable( servers, id);
          }
 
-         const state::Server& State::server( state::Server::id_type id) const
+         state::Executable& State::entity( state::Executable::id_type id)
          {
-            return local::executable( servers, id);
+            return local::executable( executables, id);
+         }
+         const state::Executable& State::entity( state::Executable::id_type id) const
+         {
+            return local::executable( executables, id);
          }
 
-         state::Executable& State::executable( state::Executable::id_type id)
+
+         State::Runnables State::runnables( std::vector< std::string> aliases)
          {
-            return local::executable( executables, id);
-         }
-         const state::Executable& State::executable( state::Executable::id_type id) const
-         {
-            return local::executable( executables, id);
+            auto range = algorithm::unique( algorithm::sort( aliases));
+
+            auto wanted_alias = [ &range]( auto& entity)
+            {
+               // partition all (0..1) instances to the end
+               auto split = algorithm::partition( range, [&entity]( auto& alias)
+               {
+                  return alias == entity.alias;
+               });
+
+               // we keep the non-mathced.
+               range = std::get< 1>( split);
+               // if the 'removed' is not empty, we have a match.
+               return ! std::get< 0>( split).empty();
+            };
+
+            Runnables runnables;
+
+            // convert to reference wrappers
+            algorithm::copy_if( servers, std::back_inserter( runnables.servers), wanted_alias);
+            algorithm::copy_if( executables, std::back_inserter( runnables.executables), wanted_alias);
+            
+            return runnables;
          }
 
          common::process::Handle State::grandchild( common::strong::process::id pid) const noexcept
@@ -549,6 +517,14 @@ namespace casual
             }
 
             return range::to_vector( algorithm::unique( algorithm::sort( resources)));
+         }
+
+
+         std::vector< common::environment::Variable> State::variables( const std::vector< common::environment::Variable>& variables)
+         {
+            auto result = casual::configuration::environment::transform( casual::configuration::environment::fetch( environment));
+            algorithm::append( variables, result);
+            return result;
          }
 
       } // manager

@@ -47,15 +47,15 @@ namespace casual
          template< common::message::Type type>
          struct basic_connect : common::message::basic_request< type>
          {
-            using base_type = common::message::basic_request< type>;
-            using base_type::base_type;
+            using base_connect = common::message::basic_request< type>;
+            using base_connect::base_connect;
 
             common::domain::Identity domain;
             common::message::gateway::domain::protocol::Version version;
             Address address;
 
             CASUAL_CONST_CORRECT_SERIALIZE({
-               base_type::serialize( archive);
+               base_connect::serialize( archive);
                CASUAL_SERIALIZE( domain);
                CASUAL_SERIALIZE( version);
                CASUAL_SERIALIZE( address);
@@ -66,11 +66,13 @@ namespace casual
          {
             namespace configuration
             {
-               using Request = common::message::server::basic_id< common::message::Type::gateway_outbound_configuration_request>;
+               using Request = common::message::basic_request< common::message::Type::gateway_outbound_configuration_request>;
 
-               using base_reply = common::message::server::basic_id< common::message::Type::gateway_outbound_configuration_reply>;
+               using base_reply = common::message::basic_reply< common::message::Type::gateway_outbound_configuration_reply>;
                struct Reply : base_reply
                {
+                  using base_reply::base_reply;
+
                   std::vector< std::string> services;
                   std::vector< std::string> queues;
 

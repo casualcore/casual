@@ -5,7 +5,6 @@
 //!
 
 
-#include <gtest/gtest.h>
 #include "common/unittest.h"
 
 #include "domain/manager/state.h"
@@ -42,10 +41,10 @@ namespace casual
                }
 
 
-               const state::Batch& find_batch( const State& state, const std::vector< state::Batch>& bootorder, const std::string& group)
+               const state::dependency::Group& find_batch( const State& state, const std::vector< state::dependency::Group>& bootorder, const std::string& group)
                {
-                  return common::range::front( common::algorithm::find_if( bootorder, [&]( const state::Batch& b){
-                     return state.group( b.group).name == group;
+                  return common::range::front( common::algorithm::find_if( bootorder, [&]( const state::dependency::Group& dependency){
+                     return dependency.description == group;
                   }));
                }
 
@@ -175,7 +174,7 @@ domain:
 
             EXPECT_TRUE( global.executables.size() == 1) << CASUAL_NAMED_VALUE( global);
             auto id = global.executables.at( 0);
-            EXPECT_TRUE( state.executable( id).path == "echo" );
+            EXPECT_TRUE( state.entity( id).path == "echo" );
          }
 
          TEST( domain_state_boot_order, group_1_exe1__global_exe2__expect__exe2_exe1)
@@ -204,12 +203,12 @@ domain:
             {
                auto& batch = local::find_batch( state, bootorder, ".global");
                ASSERT_TRUE( batch.executables.size() == 1) << CASUAL_NAMED_VALUE( state) << "\n" << CASUAL_NAMED_VALUE( batch);
-               EXPECT_TRUE( state.executable( batch.executables.at( 0)).path == "exe2");
+               EXPECT_TRUE( state.entity( batch.executables.at( 0)).path == "exe2");
             }
             {
                auto& batch = local::find_batch( state, bootorder, "group_1");
                ASSERT_TRUE( batch.executables.size() == 1);
-               EXPECT_TRUE(state.executable( batch.executables.at( 0)).path == "exe1");
+               EXPECT_TRUE(state.entity( batch.executables.at( 0)).path == "exe1");
             }
          }
 

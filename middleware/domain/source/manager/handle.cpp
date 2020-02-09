@@ -23,6 +23,7 @@
 #include "common/server/handle/call.h"
 #include "common/cast.h"
 #include "common/environment.h"
+#include "common/algorithm/compare.h"
 
 #include "common/communication/instance.h" 
 
@@ -42,79 +43,80 @@ namespace casual
             {
                namespace
                {
-                  template< typename E, typename V> 
-                  auto spawn( const E& executable, platform::size::type index, V variables) // note: copy of variables
-                  {
-                     // add casual information for the process.
-                     variables.emplace_back( string::compose( environment::variable::name::instance::index, '=', index));
-
-                     return common::process::spawn( executable.path, executable.arguments, std::move( variables));
-                  }
-
                   namespace scale
                   {
+                     template< typename E, typename V> 
+                     auto spawn( const E& executable, platform::size::type index, V variables) // note: copy of variables
+                     {
+                        // add casual information for the process.
+                        variables.emplace_back( string::compose( environment::variable::name::instance::index, '=', index));
+
+                        return common::process::spawn( executable.path, executable.arguments, std::move( variables));
+                     }
+                     
+
                      template< typename E>
-                     void out( State& state, E& executable)
+                     void out( State& state, E& entity)
                      {
                         Trace trace{ "domain::manager::handle::local::scale::out"};
 
-                        auto spawnable = executable.spawnable();
+                        auto spawnable = entity.spawnable();
 
                         if( ! spawnable)
                            return;
 
-                        try
-                        {
-                           auto variables = state.variables( executable);
-                           variables.emplace_back( string::compose( environment::variable::name::instance::alias, '=', executable.alias));
+                        // add casual information for the process.
+                        auto variables = state.variables( entity);
+                        variables.emplace_back( string::compose( environment::variable::name::instance::alias, '=', entity.alias));
 
-                           auto calculate_instance_index = [&executable]( auto& range)
+                        // we set error state now in case the spawn fails
+                        algorithm::for_each( spawnable, []( auto& entity){ entity.state = decltype( entity.state)::error;});
+
+                        // temporary to enable increment
+                        auto range = spawnable;
+                        
+                        while( range)
+                        {
+                           auto calculate_instance_index = [&entity]( auto& range)
                            {
-                              return std::distance( std::begin( executable.instances), std::begin( range));
+                              return std::distance( std::begin( entity.instances), std::begin( range));
                            };
 
-                           // temporary to enable increment
-                           auto range = spawnable;
-
-                           while( range)
+                           try 
                            {
-                              range->spawned( local::spawn( executable, calculate_instance_index( range), variables));
-                              ++range;
+                              range->spawned( scale::spawn( entity, calculate_instance_index( range), variables));
+                           }
+                           catch( const exception::system::invalid::Argument& exception)
+                           {
+                              log::line( log::category::error, "failed to spawn: ", entity, " - ", exception);
+
+                              manager::task::event::dispatch( state, [&]()
+                              {
+                                 common::message::event::domain::Error message;
+                                 message.severity = decltype( message.severity)::error;
+                                 message.message = string::compose( "failed to spawn '", entity.path, "' - ", exception);
+                                 return message;
+                              });
                            }
                            
-                           log::line( verbose::log, "spawnable: ", spawnable);
-
-                           manager::task::event::dispatch( state, [&]()
-                           {
-                              common::message::event::process::Spawn message;
-                              message.path = executable.path;
-                              message.alias = executable.alias;
-
-                              common::algorithm::transform( spawnable, message.pids, []( auto& i){
-                                 return common::process::id( i.handle);
-                              });
-                              return message;
-                           });
+                           ++range;
                         }
-                        catch( const exception::system::invalid::Argument& e)
+
+                        // send event, if any
+                        manager::task::event::dispatch( state, [&]()
                         {
-                           log::line( log::category::error, "failed to spawn executable: ", executable, " - ", e);
+                           common::message::event::process::Spawn message;
+                           message.path = entity.path;
+                           message.alias = entity.alias;
 
-                           common::algorithm::for_each( executable.spawnable(), []( auto& i){
-                              i.state = state::instance::State::exit;
-                           });
+                           algorithm::transform_if( spawnable, message.pids, 
+                           []( auto& instance){ return common::process::id( instance.handle);},
+                           []( auto& instance){ return instance.state != decltype( instance.state)::error;});
 
-                           manager::task::event::dispatch( state, [&]()
-                           {
-                              common::message::event::domain::Error message;
-                              message.severity = common::message::event::domain::Error::Severity::error;
-                              message.message = string::compose( "failed to spawn '", executable.path, "' - ", e);
-                              return message;
-                           });
-                        }
+                           return message;
+                        });
 
-                        log::line( verbose::log, "executable: ", executable);
-
+                        log::line( verbose::log, "entity: ", entity);
                      }
 
                      void in( const State& state, const state::Executable& executable)
@@ -245,12 +247,12 @@ namespace casual
 
                manager::task::event::dispatch( state, [&]()
                {
-                  message::event::domain::boot::Begin event;
+                  common::message::event::domain::boot::Begin event;
                   event.domain = common::domain::identity();
                   return event;
                });
 
-               state.tasks.add( state, manager::task::create::batch::boot( state.bootorder()));
+               state.tasks.add( state, manager::task::create::scale::dependency( state, state.bootorder()));
 
                // add a "sentinel" to fire an event when the boot is done
                state.tasks.add( state, manager::task::create::done::boot());
@@ -268,23 +270,25 @@ namespace casual
 
                manager::task::event::dispatch( state, [&]()
                {
-                  message::event::domain::shutdown::Begin event;
+                  common::message::event::domain::shutdown::Begin event;
                   event.domain = common::domain::identity();
                   return event;
                });
 
                // abort all abortble running or pending task
-               state.tasks.abort();
+               state.tasks.abort( state);
 
-               // Make sure we remove our self so we don't try to shutdown
-               algorithm::for_each( state.servers, [&]( auto& s){
-                  if( s.id == state.manager_id)
-                  {
-                     s.instances.clear();
-                  }
-               });
+               // prepare scaling to 0
+               auto prepare_shutdown = []( auto& entity)
+               {
+                  entity.scale( 0);
+               };
 
-               state.tasks.add( state, manager::task::create::batch::shutdown( state.shutdownorder()));
+               algorithm::for_each( state.executables, prepare_shutdown);
+               // Make sure we exclude our self so we don't try to shutdown
+               algorithm::for_each_if( state.servers, prepare_shutdown, [&state]( auto& entity){ return entity.id != state.manager_id;});
+
+               state.tasks.add( state, manager::task::create::scale::dependency( state, state.shutdownorder()));
 
                // add a "sentinel" to fire an event when the shutdown is done
                state.tasks.add( state, manager::task::create::done::shutdown());
@@ -307,27 +311,11 @@ namespace casual
             void Shutdown::operator () ( common::message::shutdown::Request& message)
             {
                Trace trace{ "domain::manager::handle::Shutdown"};
-               
                log::line( verbose::log, "message: ", message);
 
                state().tasks.add( state(), manager::task::create::shutdown());
             }
 
-            namespace task
-            {
-               namespace event
-               {
-                  void Done::operator () ( common::message::event::domain::task::End& message)
-                  {
-                     Trace trace{ "domain::manager::handle::task::event::Done"};
-
-                     log::line( verbose::log, "message: ", message);
-
-                     state().tasks.event( state(), message);
-                  }
-                
-               } // event
-            } // task
 
 
             namespace scale
@@ -342,9 +330,7 @@ namespace casual
 
                   // We need to correlate with the service-manager (broker), if it's up
 
-                  common::message::domain::process::prepare::shutdown::Request prepare;
-                  prepare.process = common::process::handle();
-
+                  common::message::domain::process::prepare::shutdown::Request prepare{ common::process::handle()};
                   prepare.processes = std::move( processes);
 
                   auto service_manager = state.singleton( common::communication::instance::identity::service::manager);
@@ -379,19 +365,61 @@ namespace casual
                   local::scale::out( state, executable);
                }
 
+               std::vector< common::strong::task::id> aliases( State& state, std::vector< admin::model::scale::Alias> aliases)
+               {
+                  Trace trace{ "domain::manager::handle::scale::aliases"};
+                  log::line( verbose::log, "aliases: ", aliases);
+
+                  auto runnables = state.runnables( algorithm::transform( aliases, []( auto& a){ return a.name;}));
+
+                  auto unrestartable_server = []( auto server)
+                  {
+                     // for now, only the domain-manager is unrestartable
+                     return server.get().instances.size() == 1 && common::process::id( server.get().instances[ 0].handle) == common::process::id();
+                  };
+
+                  algorithm::trim( runnables.servers, algorithm::remove_if( runnables.servers, unrestartable_server));
+
+                  // prepare the scaling
+                  {                  
+                     auto scale_runnable = [&aliases]( auto& runnable)
+                     {
+                        auto is_alias = [&runnable]( auto& alias){ return alias.name == runnable.get().alias;};
+
+                        if( auto found = algorithm::find_if( aliases, is_alias))
+                           runnable.get().scale( found->instances);
+                     };
+
+                     algorithm::for_each( runnables.servers, scale_runnable);
+                     algorithm::for_each( runnables.executables, scale_runnable);
+                  }
+
+                  auto add_task = [&state]( auto callable)
+                  {
+                     return [&state, callable]( auto entity)
+                     {
+                        return state.tasks.add( state, callable( state, entity.get().id));
+                     };
+                  };
+
+                  auto result = algorithm::transform( runnables.servers, add_task( &manager::task::create::scale::server));
+                  algorithm::transform( runnables.executables, result, add_task( &manager::task::create::scale::executable));
+
+                  return result;
+               }
+
                namespace prepare
                {
                   void Shutdown::operator () ( common::message::domain::process::prepare::shutdown::Reply& message)
                   {
                      Trace trace{ "domain::manager::handle::scale::prepare::shutdown::Reply"};
-
                      log::line( verbose::log, "message: ", message);
 
                      algorithm::for_each( message.processes, [&]( auto& process)
                      {
                         if( process)
                         {
-                           message::shutdown::Request shutdown{ common::process::handle()};
+                           common::message::shutdown::Request shutdown{ common::process::handle()};
 
                            // Just to make each shutdown easy to follow in log.
                            shutdown.execution = uuid::make();
@@ -399,9 +427,7 @@ namespace casual
                            manager::ipc::send( state(), process, shutdown);
                         }
                         else
-                        {
                            common::process::terminate( process.pid);
-                        }
                      });
                   }
                } // prepare
@@ -409,55 +435,31 @@ namespace casual
 
             namespace restart
             {
-               std::vector< Result> instances( State& state, std::vector< std::string> aliases)
+               std::vector< common::strong::task::id> instances( State& state, std::vector< std::string> aliases)
                {
                   Trace trace{ "domain::manager::handle::restart::instances"};
                   log::line( verbose::log, "aliases: ", aliases);
 
-                  auto range = algorithm::unique( algorithm::sort( aliases));
-
-                  auto wanted_alias = [ &range]( auto& entity)
-                  {
-
-                     // partition all (0..1) instances to the end
-                     auto split = algorithm::partition( range, [&entity]( auto& alias)
-                     {
-                        // negate to get them to the second range
-                        return ! ( alias == entity.alias);
-                     });
-
-                     // we consume the removed, if any.
-                     range = std::get< 0>( split);
-                     // if the 'removed' is not empty, we have a match.
-                     return ! std::get< 1>( split).empty();
-                  };
-
-                  // collect all wanted 'pointers'
-                  auto servers = algorithm::transform_if( state.servers, []( auto& entity){ return &entity;}, wanted_alias);
-                  auto executables = algorithm::transform_if( state.executables, []( auto& entity){ return &entity;}, wanted_alias);
+                  auto runnables = state.runnables( std::move( aliases));
 
                   auto add_task = [&state]( auto callable)
                   {
                      return [&state, callable]( auto entity)
                      {
-                        Result result;
-                        result.pids = algorithm::transform( entity->instances, []( auto& i){ return common::process::id( i.handle);});
-                        result.task = state.tasks.add( state, callable( state, entity->id));
-                        result.alias = entity->alias;
-                        return result;
+                        return state.tasks.add( state, callable( state, entity.get().id));
                      };
                   };
 
                   auto unrestartable_server = []( auto server)
                   {
                      // for now, only the domain-manager is unrestartable
-                     return server->instances.size() == 1 && common::process::id( server->instances[ 0].handle) == common::process::id();
+                     return server.get().instances.size() == 1 && common::process::id( server.get().instances[ 0].handle) == common::process::id();
                   };
 
-                  algorithm::trim( servers, algorithm::remove_if( servers, unrestartable_server));
+                  algorithm::trim( runnables.servers, algorithm::remove_if( runnables.servers, unrestartable_server));
 
-                  auto result = algorithm::transform( servers, add_task( &manager::task::create::restart::server));
-                  algorithm::transform( executables, result, add_task( &manager::task::create::restart::executable));
+                  auto result = algorithm::transform( runnables.servers, add_task( &manager::task::create::restart::server));
+                  algorithm::transform( runnables.executables, result, add_task( &manager::task::create::restart::executable));
 
                   return result;
 
@@ -471,7 +473,6 @@ namespace casual
                   void Begin::operator () ( const common::message::event::subscription::Begin& message)
                   {
                      Trace trace{ "domain::manager::handle::event::subscription::Begin"};
-
                      common::log::line( verbose::log, "message: ", message);
 
                      state().event.subscription( message);
@@ -482,7 +483,6 @@ namespace casual
                   void End::operator () ( const common::message::event::subscription::End& message)
                   {
                      Trace trace{ "domain::manager::handle::event::subscription::End"};
-
                      common::log::line( verbose::log, "message: ", message);
 
                      state().event.subscription( message);
@@ -577,7 +577,7 @@ namespace casual
                            auto server = state.server( pid);
                            
                            if( server)
-                              return server->instance( pid).handle;
+                              return server->instance( pid)->handle;
                            else
                               return state.grandchild( pid);
                         }
@@ -745,8 +745,8 @@ namespace casual
 
                         manager::task::event::dispatch( state(), [&message]()
                         {
-                           message::event::domain::Error event;
-                           event.severity = message::event::domain::Error::Severity::warning;
+                           common::message::event::domain::Error event;
+                           event.severity = decltype( event.severity)::warning;
                            event.message = string::compose( "server connect - only one instance is allowed for ", message.identification);
                            return event;
                         });
@@ -779,7 +779,7 @@ namespace casual
 
                   manager::task::event::dispatch( state(), [&message]()
                   {
-                     message::event::domain::server::Connect event;
+                     common::message::event::domain::server::Connect event;
                      event.process = message.process;
                      event.identification = message.identification;
                      return event;
@@ -792,9 +792,7 @@ namespace casual
                   Trace trace{ "domain::manager::handle::process::Lookup"};
 
                   if( ! local::Lookup{ state()}( message))
-                  {
                      state().pending.lookup.push_back( message);
-                  }
                }
 
             } // process
@@ -851,7 +849,7 @@ namespace casual
                         }
 
                         // overload ack so we use domain-manager internal stuff to lookup service-manager
-                        void ack( const message::service::call::ACK& message)
+                        void ack( const common::message::service::call::ACK& message)
                         {
                            Trace trace{ "domain::manager::handle::local::server::Policy::ack"};
 
@@ -873,10 +871,26 @@ namespace casual
                      using Handle = common::server::handle::basic_call< Policy>;
                   } // server
 
+                  namespace task
+                  {
+                     namespace event
+                     {
+                        auto done( State& state) 
+                        {
+                           return [&state]( common::message::event::domain::task::End& message)
+                           {
+                              Trace trace{ "domain::manager::handle::local::task::event::done"};
+                              log::line( verbose::log, "message: ", message);
+
+                              state.tasks.event( message);
+                           };
+                        }
+                     } // event
+                  } // task
+    
+
                } // <unnamed>
             } // local
-
-
          } // handle
 
          handle::dispatch_type handler( State& state)
@@ -891,7 +905,7 @@ namespace casual
                manager::handle::event::subscription::Begin{ state},
                manager::handle::event::subscription::End{ state},
                manager::handle::event::Error{ state},
-               manager::handle::task::event::Done{ state},
+               manager::handle::local::task::event::done( state),
                manager::handle::process::Connect{ state},
                manager::handle::process::Lookup{ state},
                manager::handle::configuration::Domain{ state},
@@ -904,8 +918,5 @@ namespace casual
          }
 
       } // manager
-
    } // domain
-
-
 } // casual

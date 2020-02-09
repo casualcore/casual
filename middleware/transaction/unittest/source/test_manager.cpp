@@ -12,10 +12,7 @@
 #define CASUAL_NO_XATMI_UNDEFINE
 
 
-
-#include <gtest/gtest.h>
 #include "common/unittest.h"
-
 
 #include "transaction/manager/handle.h"
 #include "transaction/manager/manager.h"

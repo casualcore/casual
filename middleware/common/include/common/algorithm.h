@@ -219,7 +219,8 @@ namespace casual
             } // output
 
             template< typename R, typename Out> 
-            auto copy( R&& range, Out&& output, traits::priority::tag< 0>) -> decltype( std::copy( std::begin( range), std::end( range), output))
+            auto copy( R&& range, Out&& output, traits::priority::tag< 0>) 
+               -> decltype( std::copy( std::begin( range), std::end( range), output))
             {
                return std::copy( std::begin( range), std::end( range), output);
             }
@@ -667,7 +668,6 @@ namespace casual
             for( platform::size::type count = 0; count < N; ++count)
                functor();
          }
-
 
          //! associate container specialization
          template< typename R, typename T,
@@ -1213,37 +1213,8 @@ namespace casual
                }
             } // emplace
          } // container
-
-         namespace compare
-         {
-            namespace detail
-            {
-               template< typename V, typename T>
-               constexpr bool any( V&& value, T&& t)
-               {
-                  return value == t;
-               }
-
-               template< typename V, typename T, typename... Ts>
-               constexpr bool any( V&& value, T&& t, Ts&&... ts)
-               {
-                  return value == t || any( std::forward< V>( value), std::forward< Ts>( ts)...);
-               }
-               
-            } // detail
-            
-            //! @returns true if `value` is equal to ane other `values`
-            template< typename V, typename... Vs>
-            constexpr bool any( V&& value, Vs&&... values)
-            {
-               return detail::any( std::forward< V>( value), std::forward< Vs>( values)...);
-            }
-         } // compare
       } // algorithm
    } // common
 } // casual
-
-
-
 
 

@@ -4,18 +4,13 @@
 //! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-
 #pragma once
-
-
-
-
 
 #include "casual/platform.h"
 #include "common/strong/id.h"
 #include "common/code/signal.h"
 #include "common/move.h"
-#include "common/algorithm.h"
+#include "common/algorithm/compare.h"
 #include "common/thread.h"
 #include "common/execute.h"
 

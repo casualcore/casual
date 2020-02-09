@@ -5,9 +5,7 @@
 //!
 
 
-
-#include <gtest/gtest.h>
-
+#include "common/unittest.h"
 
 #include "common/serialize/macro.h"
 #include "common/serialize/json.h"
@@ -18,11 +16,8 @@
 #include "common/log.h"
 
 
-
 #include <string>
 #include <vector>
-
-
 
 namespace casual
 {

@@ -53,77 +53,83 @@ namespace casual
             namespace indirection
             {
                // lowest priority
-               template< typename A, typename T>
-               auto read( A& archive, T&& value, const char* name, traits::priority::tag< 0>)
-               {
-                  return archive.read( std::forward< T>( value), name);
-               }
+
 
                template< typename A, typename T>
-               auto read( A& archive, T&& value, const char* name, traits::priority::tag< 1>) -> 
+               auto read( A& archive, T&& value, const char* name, traits::priority::tag< 0>) -> 
                   decltype( traits::value_t<T, A>::read( archive, std::forward< T>( value), name))
                {
                   return traits::value_t<T, A>::read( archive, std::forward< T>( value), name);
                }
 
                template< typename A, typename T>
-               auto read( A& archive, T&& value, const char* name, traits::priority::tag< 2>) -> 
+               auto read( A& archive, T&& value, const char* name, traits::priority::tag< 1>) -> 
                   decltype( value.serialize( archive, name))
                {
                   return value.serialize( archive, name);
                }
 
                template< typename A, typename T>
-               auto read( A& archive, T&& value, const char* name, traits::priority::tag< 3>) -> 
+               auto read( A& archive, T&& value, const char* name, traits::priority::tag< 2>) -> 
                   decltype( customize::traits::value_t<T, A>::serialize( archive, std::forward< T>( value), name))
                {
                   return customize::traits::value_t<T, A>::serialize( archive, std::forward< T>( value), name);
                }  
 
-               // highest priority
                template< typename A, typename T>
-               auto read( A& archive, T&& value, const char* name, traits::priority::tag< 4>) -> 
+               auto read( A& archive, T&& value, const char* name, traits::priority::tag< 3>) -> 
                   decltype( customize::traits::value_t<T, A>::read( archive, std::forward< T>( value), name))
                {
                   return customize::traits::value_t<T, A>::read( archive, std::forward< T>( value), name);
+               }
+               
+               // highest - the archive can natively handle the value
+               template< typename A, typename T>
+               auto read( A& archive, T&& value, const char* name, traits::priority::tag< 4>)
+                  -> decltype( archive.read( std::forward< T>( value), name))
+               {
+                  return archive.read( std::forward< T>( value), name);
                }
 
 
                // write
 
                // lowest priority
-               template< typename A, typename T>
-               void write( A& archive, T&& value, const char* name, traits::priority::tag< 0>)
-               {
-                  archive.write( std::forward< T>( value), name);
-               }
 
                template< typename A, typename T>
-               auto write( A& archive, T&& value, const char* name, traits::priority::tag< 1>) -> 
+               auto write( A& archive, T&& value, const char* name, traits::priority::tag< 0>) -> 
                   decltype( traits::value_t<T, A>::write( archive, std::forward< T>( value), name))
                {
                   traits::value_t<T, A>::write( archive, std::forward< T>( value), name);
                }
 
                template< typename A, typename T>
-               auto write( A& archive, T&& value, const char* name, traits::priority::tag< 2>) -> 
+               auto write( A& archive, T&& value, const char* name, traits::priority::tag< 1>) -> 
                   decltype( value.serialize( archive, name))
                {
                   value.serialize( archive, name);
                }
 
                template< typename A, typename T>
-               auto write( A& archive, T&& value, const char* name, traits::priority::tag< 3>) -> 
+               auto write( A& archive, T&& value, const char* name, traits::priority::tag< 2>) -> 
                   decltype( customize::traits::value_t<T, A>::serialize( archive, std::forward< T>( value), name))
                {
                   customize::traits::value_t<T, A>::serialize( archive, std::forward< T>( value), name);
                }
 
                template< typename A, typename T>
-               auto write( A& archive, T&& value, const char* name, traits::priority::tag< 4>) -> 
+               auto write( A& archive, T&& value, const char* name, traits::priority::tag< 3>) -> 
                   decltype( customize::traits::value_t<T, A>::write( archive, std::forward< T>( value), name))
                {
                   customize::traits::value_t<T, A>::write( archive, std::forward< T>( value), name);
+               }
+
+               // highest - the archive can natively handle the value
+               template< typename A, typename T>
+               auto write( A& archive, T&& value, const char* name, traits::priority::tag< 4>)
+                  -> decltype( archive.write( std::forward< T>( value), name))
+               {
+                  archive.write( std::forward< T>( value), name);
                }
 
 
@@ -153,7 +159,8 @@ namespace casual
 
 
             template< typename A, typename T>
-            void write( A& archive, T&& value, const char* name)
+            auto write( A& archive, T&& value, const char* name)
+               -> decltype( indirection::write( archive, std::forward< T>( value), name, traits::priority::tag< 4>{}))
             {
                // invoke the most prioritized implementation
                indirection::write( archive, std::forward< T>( value), name, traits::priority::tag< 4>{});
@@ -173,7 +180,7 @@ namespace casual
             template< typename A, typename T>
             auto read( A& archive, T&& value, const char* name) -> std::enable_if_t<
                std::is_same< 
-                  decltype( detail::read( archive, value, name)), 
+                  decltype( detail::read( archive, std::forward< T>( value), name)), 
                   bool
                >::value, bool>
             {
@@ -193,7 +200,8 @@ namespace casual
             }
 
             template< typename A, typename T>
-            auto serialize( A& archive, T&& value) -> decltype( indirection::serialize( archive, std::forward< T>( value), traits::priority::tag< 2>{}))
+            auto serialize( A& archive, T&& value) 
+               -> decltype( indirection::serialize( archive, std::forward< T>( value), traits::priority::tag< 2>{}))
             {
                // invoke the most prioritized implementation
                indirection::serialize( archive, std::forward< T>( value), traits::priority::tag< 2>{});

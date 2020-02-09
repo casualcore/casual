@@ -62,22 +62,22 @@ namespace casual
 
 
          template< typename... Args>
-         void write( std::ostream& stream, Args&&... args)
+         void write( std::ostream& out, Args&&... args)
          {
-            if( stream)
+            if( out)
             {
                stream::thread::Lock lock;
-               common::stream::write( stream, std::forward< Args>( args)...);
+               common::stream::write( out, std::forward< Args>( args)...);
             }
          }
 
          template< typename... Args>
-         void line( std::ostream& stream, Args&&... args)
+         void line( std::ostream& out, Args&&... args)
          {
-            if( stream)
+            if( out)
             {
                stream::thread::Lock lock;
-               common::stream::write( stream, std::forward< Args>( args)..., '\n');
+               common::stream::write( out, std::forward< Args>( args)..., '\n');
             }
          } 
 

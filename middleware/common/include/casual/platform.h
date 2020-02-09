@@ -118,9 +118,9 @@ namespace casual
 
          namespace domain
          {
-            //! Max number of consumed messages before trying to send
-            //! pending messages. 
-            constexpr size::type pending = 100;
+            //! Max number of _blocking_ spawns for servers and executables
+            //! (when spawning, no messages are consumed, hence no progress)
+            constexpr size::type spawn = 10;
          } // domain
 
          namespace queue

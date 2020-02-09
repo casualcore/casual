@@ -5,10 +5,10 @@
 //!
 
 
-#include <gtest/gtest.h>
+#include "common/unittest.h"
+
 #include "configuration/domain.h"
 #include "configuration/example/domain.h"
-
 
 #include "common/exception/casual.h"
 #include "common/file.h"
@@ -35,6 +35,8 @@ namespace casual
 
       TEST_P( configuration_queue, expect_3_groups)
       {
+         common::unittest::Trace trace;
+
          // serialize and deserialize
          auto queue = domain::get( { example::temporary( example::domain(), GetParam())}).queue;
 
@@ -44,6 +46,8 @@ namespace casual
 
       TEST_P( configuration_queue, expect_4_queues_in_group_1)
       {
+         common::unittest::Trace trace;
+
          // serialize and deserialize
          auto manager = domain::get( { example::temporary( example::domain(), GetParam())}).queue;
 
@@ -70,6 +74,8 @@ namespace casual
 
       TEST( casual_configuration_queue, validate__group_has_to_have_a_name)
       {
+         common::unittest::Trace trace;
+
          queue::Manager manager;
          manager.groups.resize( 1);
 
@@ -79,6 +85,8 @@ namespace casual
 
       TEST( casual_configuration_queue, validate__group_has_to_have_unique_name)
       {
+         common::unittest::Trace trace;
+
          queue::Manager manager;
          manager.groups.resize( 2);
          manager.groups.at( 0).name = "A";
@@ -92,6 +100,8 @@ namespace casual
 
       TEST( casual_configuration_queue, validate__group_has_to_have_unique_queuebase)
       {
+         common::unittest::Trace trace;
+
          queue::Manager manager;
          manager.groups.resize( 2);
          manager.groups.at( 0).name = "A";
@@ -105,6 +115,8 @@ namespace casual
 
       TEST( casual_configuration_queue, validate__multiple_groups_can_have_memory_queuebase)
       {
+         common::unittest::Trace trace;
+
          queue::Manager manager;
          manager.groups.resize( 2);
          manager.groups.at( 0).name = "A";
@@ -118,6 +130,8 @@ namespace casual
 
       TEST( casual_configuration_queue, validate__queue_has_to_have_unique_name)
       {
+         common::unittest::Trace trace;
+
          queue::Manager manager;
          manager.groups.resize( 1);
          manager.groups.at( 0).name = "A";
@@ -132,6 +146,8 @@ namespace casual
 
       TEST( casual_configuration_queue, validate__queue_has_to_have_unique_name_regardless_of_group)
       {
+         common::unittest::Trace trace;
+
          queue::Manager manager;
          manager.groups.resize( 2);
          manager.groups.at( 0).name = "A";
@@ -149,6 +165,8 @@ namespace casual
 
       TEST( casual_configuration_queue, default_values__retries)
       {
+         common::unittest::Trace trace;
+
          queue::Manager manager;
          manager.manager_default.queue.retries = 42;
          manager.groups.resize( 1);

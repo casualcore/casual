@@ -97,15 +97,6 @@ namespace casual
             return out << "<unknown>";
          }
 
-         std::ostream& operator << ( std::ostream& out, const Transaction& rhs)
-         {
-            return out << "{trid: " << rhs.trid 
-                  << ", state: " << rhs.state <<
-                  ", timeout: " << rhs.timout <<
-                  ", involved: " << rhs.m_involved <<
-                  ", dynamic: " << rhs.m_dynamic <<
-                  ", pending: " << rhs.m_pending << "}";
-         }
 
       } // transaction
    } // common

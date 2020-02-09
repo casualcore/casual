@@ -65,7 +65,7 @@ namespace casual
          friend std::istream& operator >> ( std::istream& in, Uuid& uuid);
 
       private:
-         uuid_type m_uuid = {};
+         uuid_type m_uuid{};
       };
 
       namespace uuid

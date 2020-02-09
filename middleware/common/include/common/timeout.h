@@ -7,9 +7,8 @@
 
 #pragma once
 
-
-
 #include "casual/platform.h"
+#include "common/serialize/macro.h"
 
 #include <iosfwd>
 #include <chrono>
@@ -32,8 +31,11 @@ namespace casual
 
          platform::time::point::type start;
          platform::time::unit timeout;
-
-         friend std::ostream& operator << ( std::ostream& out, const Timeout& rhs);
+         
+         CASUAL_CONST_CORRECT_SERIALIZE_WRITE({
+            CASUAL_SERIALIZE( start);
+            CASUAL_SERIALIZE( timeout);
+         })
       };
 
    } // common

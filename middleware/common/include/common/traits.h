@@ -391,6 +391,14 @@ namespace casual
                using size = detect::is_detected< detail::tuple::size, T>;
             } // tuple
             
+            namespace any
+            {
+               template< typename T, typename Option, typename... Options>
+               struct base : bool_constant< has::any::base< T, Option>::value || has::any::base< T, Options...>::value> {};
+
+               template< typename T, typename Option>
+               struct base< T, Option> : std::is_base_of< Option, T> {};
+            } // any
 
          } // has
 
@@ -530,6 +538,7 @@ namespace casual
                template< typename T>
                using iterable = detect::is_detected< detail::iterable, T>;
             } // reverse
+            
          } // is
 
          namespace iterable

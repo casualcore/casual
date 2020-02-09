@@ -68,7 +68,7 @@ namespace casual
                   return rhs == lhs;
                }
 
-               CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
+               CASUAL_CONST_CORRECT_SERIALIZE(
                { 
                   CASUAL_SERIALIZE( process);
                   CASUAL_SERIALIZE( remote);
@@ -101,7 +101,7 @@ namespace casual
 
                   void reset();
 
-                  CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
+                  CASUAL_CONST_CORRECT_SERIALIZE(
                   { 
                      base_connection::serialize( archive);
                      CASUAL_SERIALIZE( services);

@@ -4,10 +4,7 @@
 //! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-
-#include <gtest/gtest.h>
 #include "common/unittest.h"
-
 
 #include "queue/group/database.h"
 #include "queue/common/transform.h"
@@ -16,8 +13,6 @@
 #include "common/file.h"
 #include "common/environment.h"
 #include "common/chronology.h"
-
-
 
 
 namespace casual

@@ -12,6 +12,7 @@
 #include "common/serialize/archive/type.h"
 
 #include "common/traits.h"
+#include "common/view/binary.h"
 #include "casual/platform.h"
 
 #include <string>
@@ -126,6 +127,21 @@ namespace casual
                   || std::is_same< T, platform::binary::type>::value 
                >;
 
+               namespace archive
+               {
+                  namespace write
+                  {
+                     //! predicate which types a write-archive can write 'natively'
+                     template< typename T> 
+                     using type = traits::bool_constant< 
+                        traits::is_any< common::traits::remove_cvref_t< T>, 
+                           bool, char, short, int, long, unsigned long, long long, float, double,
+                           view::immutable::Binary, view::Binary>::value
+                        || common::traits::has::any::base< common::traits::remove_cvref_t< T>, std::string, platform::binary::type>::value
+                     >;
+                  } // read
+               } // archive
+
                namespace named
                {
                   namespace detail
@@ -149,6 +165,19 @@ namespace casual
                   template< typename A>
                   struct normalizing : bool_constant< detect::is_detected< detail::normalizing, A>::value>{};
                } // network
+
+               namespace message
+               {
+                  namespace detail
+                  {
+                     template< typename T>
+                     using like = decltype( std::declval< T&>().type(), std::declval< T&>().correlation, std::declval< T&>().execution);
+
+                  } // detail
+                  template< typename T>
+                  using like = detect::is_detected< detail::like, T>;
+               } // message
+            
             } // is
          } // traits
       } // serialize

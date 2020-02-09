@@ -5,7 +5,7 @@
 //!
 
 
-#include <gtest/gtest.h>
+#include "common/unittest.h"
 
 #include "serviceframework/service/protocol/describe.h"
 #include "serviceframework/service/protocol.h"
@@ -20,6 +20,8 @@ namespace casual
    {
       TEST( serviceframework_service_model, instancesate)
       {
+         common::unittest::Trace trace;
+
          service::Model model;
 
          service::Model::Type type;
@@ -29,6 +31,8 @@ namespace casual
 
       TEST( serviceframework_service_archive, basic_serialization)
       {
+         common::unittest::Trace trace;
+
          service::Model model;
 
          service::protocol::describe::Wrapper writer{ model.arguments.input};
@@ -48,6 +52,7 @@ namespace casual
 
       TEST( serviceframework_service_archive, container_serialization)
       {
+         common::unittest::Trace trace;
 
          service::Model model;
 
@@ -124,6 +129,7 @@ namespace casual
 
       TEST( serviceframework_service_archive, composite_serialization)
       {
+         common::unittest::Trace trace;
 
          service::Model model;
          service::protocol::describe::Wrapper writer{ model.arguments.input};
@@ -160,6 +166,7 @@ namespace casual
 
       TEST( serviceframework_service_archive, complex_serialization)
       {
+         common::unittest::Trace trace;
 
          service::Model model;
          service::protocol::describe::Wrapper writer{ model.arguments.input};

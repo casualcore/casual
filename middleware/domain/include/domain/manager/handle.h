@@ -11,6 +11,7 @@
 #include "domain/manager/state.h"
 #include "domain/manager/ipc.h"
 #include "domain/manager/task.h"
+#include "domain/manager/admin/model.h"
 
 #include "common/message/type.h"
 #include "common/message/domain.h"
@@ -64,24 +65,16 @@ namespace casual
                void operator () ( common::message::shutdown::Request& message);
             };
 
-            namespace task
-            {
-               namespace event
-               {
-                  struct Done : Base 
-                  {
-                     using Base::Base;
-                     void operator () ( common::message::event::domain::task::End& message);
-                  };
-               } // event
-            } // task
 
             namespace scale
             {
+
                void shutdown( State& state, std::vector< common::process::Handle> processes);
 
                void instances( State& state, state::Server& server);
                void instances( State& state, state::Executable& executable);
+
+               std::vector< common::strong::task::id> aliases( State& state, std::vector< admin::model::scale::Alias> aliases);
 
                namespace prepare
                {
@@ -98,14 +91,7 @@ namespace casual
 
             namespace restart
             {
-               struct Result
-               {
-                  std::string alias;
-                  common::strong::task::id task;
-                  std::vector< common::strong::process::id> pids;
-               };
-
-               std::vector< Result> instances( State& state, std::vector< std::string> aliases);
+               std::vector< common::strong::task::id> instances( State& state, std::vector< std::string> aliases);
             } // restart
 
             namespace event

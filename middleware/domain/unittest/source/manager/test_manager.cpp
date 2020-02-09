@@ -5,7 +5,6 @@
 //!
 
 
-#include <gtest/gtest.h>
 #include "common/unittest.h"
 
 #include "domain/manager/state.h"
@@ -204,27 +203,27 @@ domain:
                      return unittest::call< admin::model::State>( admin::service::name::state);
                   }
 
-                  std::vector< admin::model::scale::Instances> scale( const std::vector< admin::model::scale::Instances>& instances)
+                  auto scale( const std::vector< admin::model::scale::Alias>& aliases)
                   {
-                     return unittest::call< std::vector< admin::model::scale::Instances>>( admin::service::name::scale::instances, instances);
+                     return unittest::call< std::vector< strong::task::id>>( admin::service::name::scale::instances, aliases);
                   }
 
-                  std::vector< admin::model::scale::Instances> scale( const std::string& alias, platform::size::type instances)
+                  auto scale( const std::string& alias, platform::size::type instances)
                   {
                      return scale( { { alias, instances}});
                   }
 
-                  std::vector< admin::model::restart::Result> restart( const std::vector< admin::model::restart::Instances>& instances)
+                  auto restart( const std::vector< admin::model::restart::Alias>& aliases)
                   {
-                     return unittest::call< std::vector< admin::model::restart::Result>>( admin::service::name::restart::instances, instances);
+                     return unittest::call< std::vector< strong::task::id>>( admin::service::name::restart::instances, aliases);
                   }
 
-                  std::vector< admin::model::restart::Result> restart( std::vector< std::string> aliases)
+                  auto restart( std::vector< std::string> aliases)
                   {
                      auto transform = []( auto& a) 
                      {
-                        admin::model::restart::Instances result;
-                        result.alias = std::move( a);
+                        admin::model::restart::Alias result;
+                        result.name = std::move( a);
                         return result;
                      };
                      return restart( algorithm::transform( aliases, transform));
@@ -301,8 +300,8 @@ domain:
 
             unittest::Process manager{ { local::configuration::long_running_processes_5()}};
 
-            auto instances = local::call::scale( "sleep", 10);
-            EXPECT_TRUE( instances.size() == 1);
+            auto tasks = local::call::scale( "sleep", 10);
+            ASSERT_TRUE( tasks.size() == 1);
 
 
             auto state = local::call::state();
@@ -317,8 +316,8 @@ domain:
 
             unittest::Process manager{ { local::configuration::long_running_processes_5()}};
 
-            auto instances = local::call::scale( "sleep", 0);
-            EXPECT_TRUE( instances.size() == 1);
+            auto tasks = local::call::scale( "sleep", 0);
+            ASSERT_TRUE( tasks.size() == 1);
 
 
             auto state = local::call::state();
@@ -542,8 +541,19 @@ domain:
             // domain-manager
             communication::instance::connect( communication::instance::identity::service::manager);
 
-            auto instances = local::call::scale( "test-simple-server", 1);
-            ASSERT_TRUE( instances.size() == 1) << "instances: " << CASUAL_NAMED_VALUE( instances);
+            // make sure we 'disconnect' our self as service-manager before shutdown
+            // otherwise domain-manager will wait for approval from service-manager before
+            // each shutdown.
+            auto disconnect = execute::scope( []()
+            {
+               message::event::process::Exit event;
+               event.state.pid = common::process::id();
+               event.state.reason = common::process::lifetime::Exit::Reason::exited;
+               communication::ipc::blocking::send( communication::instance::outbound::domain::manager::device(), event);
+            });
+
+            auto tasks = local::call::scale( "test-simple-server", 1);
+            ASSERT_TRUE( tasks.size() == 1) << "tasks: " << CASUAL_NAMED_VALUE( tasks);
 
             // Consume the request and send reply.
             {
@@ -554,16 +564,6 @@ domain:
                auto reply = message::reverse::type( request);
                reply.processes = std::move( request.processes);
                communication::ipc::blocking::send( request.process.ipc, reply);
-            }
-
-            // make sure we 'un-connect' our self as service-manager before shutdown
-            // otherwise domain-manager will wait for approval from service-manager before
-            // each shutdown.
-            {
-               message::event::process::Exit event;
-               event.state.pid = common::process::id();
-               event.state.reason = common::process::lifetime::Exit::Reason::exited;
-               communication::ipc::blocking::send( communication::instance::outbound::domain::manager::device(), event);
             }
          }
 
@@ -696,7 +696,7 @@ domain:
 
             for( auto& instance : state.executables)
             {
-               local::call::scale( instance.alias, 10);
+               ASSERT_TRUE( local::call::scale( instance.alias, 10).size() == 1);
             }
 
             state = local::call::state();
@@ -754,7 +754,7 @@ domain:
             auto now = platform::time::clock::type::now();
 
             // register for events
-            auto unregister = common::event::scope::subscribe( common::process::handle(), { message::Type::event_domain_task_end});
+            auto unregister = common::event::scope::subscribe( { message::Type::event_domain_task_end});
 
             auto result = local::call::restart( { "sleep"});
             
@@ -764,7 +764,7 @@ domain:
                [ &result]( const message::event::domain::task::End& task)
                {
                   // remove correlated task
-                  algorithm::trim( result, algorithm::remove_if( result, [id = task.id]( auto& r) { return id == r.task;}));
+                  algorithm::trim( result, algorithm::remove( result, task.id));
                }
             );
 
@@ -807,7 +807,7 @@ domain:
                [ &result]( const message::event::domain::task::End& task)
                {
                   // remove correlated task
-                  algorithm::trim( result, algorithm::remove_if( result, [id = task.id]( auto& r) { return id == r.task;}));
+                  algorithm::trim( result, algorithm::remove( result, task.id));
                }
             );
 

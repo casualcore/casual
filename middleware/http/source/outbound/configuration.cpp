@@ -53,7 +53,6 @@ namespace casual
             } // local
 
 
-
             Default operator + ( Default lhs, Default rhs)
             {
                lhs.service.discard_transaction = rhs.service.discard_transaction;

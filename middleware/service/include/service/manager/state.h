@@ -269,8 +269,8 @@ namespace casual
 
                   CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
                   { 
-                     CASUAL_SERIALIZE( instances);
                      CASUAL_SERIALIZE( information);
+                     CASUAL_SERIALIZE( instances);
                   })
                };
 

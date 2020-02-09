@@ -249,12 +249,13 @@ namespace casual
                            switch( state)
                            {
                               case S::running: return manager::admin::model::instance::State::running;
+                              case S::spawned: return manager::admin::model::instance::State::spawned;
                               case S::scale_out: return manager::admin::model::instance::State::scale_out;
                               case S::scale_in: return manager::admin::model::instance::State::scale_in;
                               case S::exit: return manager::admin::model::instance::State::exit;
-                              case S::spawn_error: return manager::admin::model::instance::State::spawn_error;
+                              case S::error: return manager::admin::model::instance::State::error;
                            }
-                           return manager::admin::model::instance::State::spawn_error;
+                           return manager::admin::model::instance::State::error;
                         }
                      };
 

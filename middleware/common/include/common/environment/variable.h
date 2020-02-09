@@ -26,10 +26,8 @@ namespace casual
                : std::string( std::move( variable))
             {}
 
-
-
             inline view::String name() const { return { data(), data() + find_pivot( *this)};}
-            inline view::String value() const 
+            inline view::String value() const
             {  
                auto pivot = find_pivot( *this);
 

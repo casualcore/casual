@@ -34,6 +34,7 @@ namespace casual
                inline auto porcelain() const { return m_porcelain;}
                inline auto header() const { return m_header;}
                inline auto precision() const { return m_precision;}
+               inline auto block() const { return m_block;}
 
                //! sets no color 
                void plain();
@@ -46,6 +47,7 @@ namespace casual
                bool m_color;
                bool m_porcelain;
                bool m_header;
+               bool m_block;
                std::streamsize m_precision;
 
                Directive();

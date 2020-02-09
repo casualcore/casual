@@ -310,7 +310,7 @@ namespace casual
                            auto binary = common::transcode::base64::decode( m_stack.back().text().get());
 
                            if( range::size( binary) != range::size( value))
-                              throw exception::casual::invalid::Node{ "binary size missmatch"};
+                              throw exception::casual::invalid::Node{ string::compose( "binary size missmatch - wanted: ", range::size( value), " got: ", range::size( binary))};
 
                            algorithm::copy( binary, std::begin( value));
                         }

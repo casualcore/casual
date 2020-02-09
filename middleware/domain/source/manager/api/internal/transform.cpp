@@ -55,10 +55,12 @@ namespace casual
                         switch( state)
                         {
                            case Enum::running: return model::instance::State::running;
-                           case Enum::exit: return model::instance::State::exit;
-                           case Enum::scale_in: return model::instance::State::scale_in;
+                           // treat spawned as scale_out, for now.
+                           case Enum::spawned : return model::instance::State::scale_out;
                            case Enum::scale_out: return model::instance::State::scale_out;
-                           case Enum::spawn_error: return model::instance::State::spawn_error;
+                           case Enum::scale_in: return model::instance::State::scale_in;
+                           case Enum::exit: return model::instance::State::exit;
+                           case Enum::error: return model::instance::State::error;
                         }
                         assert( ! "unknown state");
                      };

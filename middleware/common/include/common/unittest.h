@@ -10,7 +10,6 @@
 #include "common/unittest/log.h"
 
 #include "casual/platform.h"
-#include "common/log.h"
 #include "common/serialize/macro.h"
 #include "common/message/type.h"
 #include "common/execute.h"

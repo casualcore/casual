@@ -32,7 +32,7 @@ namespace casual
                         manager::ipc::send( state, state.event( event));
 
                      if( state.tasks.active( common::message::type( event)))
-                        state.tasks.event( state, event);
+                        state.tasks.event( event);
                   }
                }
             } // event

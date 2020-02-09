@@ -24,26 +24,21 @@ namespace casual
             namespace ping
             {
 
-               struct Request : basic_id< Type::server_ping_request>
-               {
+               using Request = basic_request< Type::server_ping_request>;
 
-               };
-               static_assert( traits::is_movable< Request>::value, "not movable");
-
-               struct Reply : basic_id< Type::server_ping_reply>
+               using base_reply = basic_reply< Type::server_ping_reply>;
+               struct Reply : base_reply
                {
+                  using base_reply::base_reply;
                   Uuid uuid;
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
                   {
-                     basic_id< Type::server_ping_reply>::serialize( archive);
+                     base_reply::serialize( archive);
                      CASUAL_SERIALIZE( uuid);
                   })
                };
-               static_assert( traits::is_movable< Reply>::value, "not movable");
-
             } // ping
-
          } // server
 
          namespace reverse
@@ -51,11 +46,7 @@ namespace casual
             template<>
             struct type_traits< server::ping::Request> : detail::type< server::ping::Reply> {};
 
-
-
          } // reverse
-
-
       } // message
    } //common
 } // casual

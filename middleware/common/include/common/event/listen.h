@@ -44,6 +44,12 @@ namespace casual
                event::subscribe( process, types);
                return common::execute::scope( [&process, types = std::move( types)](){ event::unsubscribe( process, types);});
             }
+
+            inline auto subscribe( std::vector< message_type> types) 
+            { 
+               return subscribe( process::handle(), std::move( types));
+            }
+            
          } // scope
 
          //! Register and start listening on events.
@@ -83,16 +89,6 @@ namespace casual
             }
          } // idle
 
-         namespace conditional
-         {
-            template< typename... Callback>
-            void listen( std::function< bool()> condition, Callback&&... callbacks)
-            {
-               detail::listen( communication::ipc::inbound::device(), std::move( condition), std::forward< Callback>( callbacks)...);
-            }
-
-         } // conditional
-
          namespace no
          {
             namespace subscription
@@ -117,6 +113,17 @@ namespace casual
                }
             } // subscription
          } // no
+
+         namespace conditional
+         {
+            //! register and listen to events until `done` returns true
+            template< typename... Callback>
+            void listen( std::function< bool()> done, Callback&&... callbacks)
+            {
+               detail::listen( communication::ipc::inbound::device(), std::move( done), std::forward< Callback>( callbacks)...);
+            }
+
+         } // conditional
 
 
          template< typename... Callback>

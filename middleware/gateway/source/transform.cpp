@@ -112,9 +112,7 @@ namespace casual
 
             algorithm::transform( configuration.gateway.connections, state.connections.outbound, local::Connection{});
 
-            //
             // Define the order, hence the priority
-            //
             {
                std::size_t order = 0;
                for( auto& connection : state.connections.outbound)
@@ -153,10 +151,6 @@ namespace casual
             return result;
          }
 
-
       } // transform
-
    } // gateway
-
-
 } // casual

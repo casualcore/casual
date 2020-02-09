@@ -25,7 +25,7 @@ namespace casual
                constexpr static platform::process::native::type initialize() noexcept { return -1;}
                constexpr static bool empty( platform::process::native::type value) noexcept { return value < 0;}
             };
-            using id = value::basic_optional< platform::process::native::type, policy>;
+            using id = common::value::basic_optional< platform::process::native::type, policy>;
          } // process
 
          namespace ipc

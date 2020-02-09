@@ -57,15 +57,7 @@ namespace casual
                      //! size of the logical complete message
                      std::int64_t size;
 
-                     // for logging only
-                     CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
-                     {
-                        CASUAL_SERIALIZE( type);
-                        CASUAL_SERIALIZE( correlation);
-                        CASUAL_SERIALIZE( offset);
-                        CASUAL_SERIALIZE( count);
-                        CASUAL_SERIALIZE( size);
-                     })
+                     friend std::ostream& operator << ( std::ostream& out, const Header& value);
                   };
 
                   constexpr std::int64_t max_message_size() { return platform::ipc::transport::size;}
@@ -363,11 +355,10 @@ namespace casual
                   inline void reconnect() const { throw; }
                   inline void clear() { m_destination = Address{ strong::ipc::id{}};}
 
-                  // for logging only
-                  CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
-                  {
-                     CASUAL_SERIALIZE_NAME( m_destination, "destination");
-                  })
+                  inline friend std::ostream& operator << ( std::ostream& out, const Connector& rhs) 
+                  { 
+                     return out << "{ destination: " << rhs.m_destination << '}'; 
+                  }
 
                protected:
                   Address m_destination;

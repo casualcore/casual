@@ -188,7 +188,6 @@ namespace casual
                      }
                   } // extract
 
-
                   namespace task
                   {
                      auto complement( State& state, const casual::configuration::domain::Manager& configuration)
@@ -199,7 +198,7 @@ namespace casual
                         algorithm::append( servers, state.servers);
                         algorithm::append( executables, state.executables);
 
-                        auto tasks = manager::task::create::batch::boot( state::create::boot::order( servers, executables, state.groups));
+                        auto tasks = manager::task::create::scale::dependency( state, state::create::boot::order( state, servers, executables));
 
                         auto result = algorithm::transform( tasks, []( auto& task)
                         {

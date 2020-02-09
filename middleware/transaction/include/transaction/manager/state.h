@@ -312,15 +312,6 @@ namespace casual
                inline friend bool operator == ( const Resource& lhs, const Resource& rhs) { return lhs.id == rhs.id; }
                inline friend bool operator == ( const Resource& lhs, id_type id) { return lhs.id == id; }
 
-               // TODO remove
-               inline friend std::ostream& operator << ( std::ostream& out, const Resource& value)
-               { 
-                  return out << "{ id: " << value.id
-                     << ", state: " << value.stage
-                     << ", result: " << value.result
-                     << ", done: " << value.done();
-               }
-
                CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
                { 
                   CASUAL_NAMED_VALUE( id);

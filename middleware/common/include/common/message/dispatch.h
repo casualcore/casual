@@ -255,7 +255,6 @@ namespace casual
             
             namespace empty
             {
-
                template< typename Unmarshal, typename D, typename EC>
                void pump( 
                   basic_handler< Unmarshal>& handler, 
@@ -267,9 +266,7 @@ namespace casual
                   while( true)
                   {
                      while( handler( device.next( typename device_type::non_blocking_policy{})))
-                     {
-                        ; /* no op */
-                     }
+                        ; // no op
 
                      // input is empty, we call the callback
                      empty_callback();
@@ -278,6 +275,62 @@ namespace casual
                      handler( device.next( typename device_type::blocking_policy{}));
                   }   
                }
+
+               namespace conditional
+               {
+                  template< typename Unmarshal, typename D, typename EC, typename C>
+                  void pump( 
+                     basic_handler< Unmarshal>& handler, 
+                     D& device, 
+                     EC&& empty_callback,
+                     C&& done)
+                  {
+                     using device_type = std::decay_t< decltype( device)>;
+
+                     while( ! done())
+                     {
+                        while( handler( device.next( typename device_type::non_blocking_policy{})))
+                           ; // no op
+
+                        // input is empty, we call the callback
+                        empty_callback();
+
+                        // we block
+                        handler( device.next( typename device_type::blocking_policy{}));
+                     }   
+                  }
+
+                  template< typename Unmarshal, typename D, typename EC, typename C, typename EH>
+                  void pump( 
+                     basic_handler< Unmarshal>& handler, 
+                     D& device, 
+                     EC&& empty_callback,
+                     C&& done,
+                     EH&& error_handler)
+                  {
+                     using device_type = std::decay_t< decltype( device)>;
+
+                     while( ! done())
+                     {
+                        try 
+                        {   
+                           while( handler( device.next( typename device_type::non_blocking_policy{})))
+                              ; // no op
+
+                           // input is empty, we call the callback
+                           empty_callback();
+
+                           // we block
+                           handler( device.next( typename device_type::blocking_policy{}));
+                        }
+                        catch( ...)
+                        {
+                           error_handler();
+                        }
+                     }   
+                  }
+                  
+               } // conditional
             } // empty
             
 

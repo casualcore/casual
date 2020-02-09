@@ -85,7 +85,8 @@ namespace casual
                      scale_out,
                      scale_in,
                      exit,
-                     spawn_error,
+                     error,
+                     spawn_error [[deprecated]] = error,
                   };
                } // instance
 

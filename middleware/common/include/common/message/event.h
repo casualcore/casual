@@ -23,6 +23,10 @@ namespace casual
          {
             inline namespace v1 {
 
+            // used 'internally' to poke on running tasks to enable them
+            // to decide if they are done.
+            using Idle = message::basic_message< Type::event_idle>;
+
             template< Type type> 
             using basic_event = message::basic_request< type>;
 
@@ -55,18 +59,49 @@ namespace casual
             {
                namespace task
                {
+                  enum class State : short
+                  {
+                     ok,
+                     aborted,
+                     error
+                  };
+                  inline std::ostream& operator << ( std::ostream& out, State state)
+                  {
+                     switch( state)
+                     {
+                        case State::ok: return out << "ok";
+                        case State::aborted: return out << "aborted";
+                        case State::error: return out << "error";
+                     }
+                     return out << "<unknown>";
+                  }
+
+
                   template< Type type> 
                   struct basic_task : basic_event< type>
                   {
                      strong::task::id id;
+                     std::string description;
 
                      CASUAL_CONST_CORRECT_SERIALIZE({
-                         basic_event< type>::serialize( archive);
+                        basic_event< type>::serialize( archive);
                         CASUAL_SERIALIZE( id);
+                        CASUAL_SERIALIZE( description);
                      })
                   };
+
                   using Begin = basic_task< Type::event_domain_task_begin>;
-                  using End = basic_task< Type::event_domain_task_end>;
+                  
+                  using base_end = basic_task< Type::event_domain_task_end>;
+                  struct End : base_end
+                  {
+                     State state = State::ok;
+
+                     CASUAL_CONST_CORRECT_SERIALIZE({
+                        base_end::serialize( archive);
+                        CASUAL_SERIALIZE( state);
+                     })
+                  };
                } // task
 
                namespace server
@@ -88,6 +123,8 @@ namespace casual
                using base_error = basic_event< Type::event_domain_error>;
                struct Error : base_error
                {
+                  using base_error::base_error;
+                  
                   enum class Severity : short
                   {
                      fatal, // shutting down
@@ -190,6 +227,8 @@ namespace casual
                using base_spawn = basic_event< Type::event_domain_process_spawn>;
                struct Spawn : base_spawn
                {
+                  using base_spawn::base_spawn;
+
                   std::string alias;
                   std::string path;
                   std::vector< strong::process::id> pids;
