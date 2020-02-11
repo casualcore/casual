@@ -135,13 +135,6 @@ namespace casual
          {
             using q_type = manager::admin::model::Queue;
 
-
-            /*
-            auto format_error = [&]( const q_type& q){
-               return algorithm::find_if( state.queues, [&]( const q_type& e){ return e.id == q.error && e.group == q.group;}).at( 0).name;
-            };
-            */
-
             auto format_retry_delay = []( const q_type& q)
             {
                using second_t = std::chrono::duration< double>;
@@ -184,11 +177,16 @@ namespace casual
 
       } // format
 
-   namespace legend
-   {
-      void queues()
+
+      namespace local
       {
-         std::cout << R"(legend: list queues 
+         namespace
+         {
+            namespace legend
+            {
+               namespace list
+               {
+                  constexpr auto queues = R"(legend: list queues 
    name:
       name of the queue
    count:
@@ -208,11 +206,8 @@ namespace casual
    updated:
       the last time the queue was updated
 )";
-      }
 
-      void messages()
-      {
-         std::cout << R"(
+               constexpr auto messages =  R"(legend: list messages 
    id:
       the id of the message
    S:
@@ -236,54 +231,30 @@ namespace casual
       when the message was enqueued
       
 )";
-                        
-      }
-      
-   } // legend 
+               } // list            
+
+               void invoke( const std::string& option)
+               {
+                  if( option == "list-queues")
+                     std::cout << legend::list::queues;
+                  else if( option == "list-messages")
+                     std::cout << legend::list::messages;
+               }
+
+               auto complete = []( auto& values, bool help) -> std::vector< std::string>
+               {     
+                  return { "list-queues", "list-messages"};
+               };
+
+               constexpr auto description = R"(provide legend for the output for some of the options
+
+to view legend for --list-queues use casual queue --legend list-queues.
+
+use auto-complete to help which options has legends
+)";
+            } // legend 
 
 
-      void list_queues()
-      {
-
-         auto state = call::state();
-
-         auto formatter = format::queues( state);
-
-         formatter.print( std::cout, algorithm::sort( state.queues));
-      }
-
-      void list_remote_queues()
-      {
-         auto state = call::state();
-         
-         auto formatter = format::remote::queues( state);
-
-         formatter.print( std::cout, algorithm::sort( state.remote.queues));
-
-      }
-
-      void list_groups()
-      {
-         auto state = call::state();
-
-         auto formatter = format::groups();
-
-         formatter.print( std::cout, state.groups);
-      }
-
-      void list_messages( const std::string& queue)
-      {
-         auto messages = call::messages( queue);
-
-         auto formatter = format::messages();
-
-         formatter.print( std::cout, messages);
-      }
-
-      namespace local
-      {
-         namespace
-         {
             auto queues() 
             {
                auto state = call::state();
@@ -293,6 +264,66 @@ namespace casual
                   return std::move( q.name);
                });
             }
+
+            namespace list
+            {
+               namespace queues
+               {
+                  void invoke()
+                  {
+                     auto state = call::state();
+
+                     auto formatter = format::queues( state);
+
+                     formatter.print( std::cout, algorithm::sort( state.queues));
+                  }
+
+                  constexpr auto description = R"(list information of all queues in current domain)";
+               } // queues
+
+               namespace remote
+               {
+                  namespace queues
+                  {
+                     void invoke()
+                     {
+                        auto state = call::state();
+                        
+                        auto formatter = format::remote::queues( state);
+
+                        formatter.print( std::cout, algorithm::sort( state.remote.queues));
+                     }
+                     constexpr auto description = R"(list all remote discovered queues)";
+                  } // queues
+               } // remote
+
+               namespace groups
+               {
+                  void invoke()
+                  {
+                     auto state = call::state();
+
+                     auto formatter = format::groups();
+
+                     formatter.print( std::cout, state.groups);
+                  }
+                  constexpr auto description = R"(list information of all groups in current domain)";
+               } // groups
+
+               namespace messages
+               {
+                  void invoke( const std::string& queue)
+                  {
+                     auto messages = call::messages( queue);
+
+                     auto formatter = format::messages();
+
+                     formatter.print( std::cout, messages);
+                  }
+
+                  constexpr auto description = R"(list information of all messages of a queue)";
+               } // messages
+            } // list
 
             namespace enqueue
             {
@@ -311,8 +342,7 @@ namespace casual
                   common::buffer::payload::binary::stream( std::cin, dispatch);
                }
 
-               constexpr auto description = R"(
-enqueue buffer(s) to a queue from stdin
+               constexpr auto description = R"(enqueue buffer(s) to a queue from stdin
 
 Assumes a conformant buffer(s)
 
@@ -348,8 +378,7 @@ note: operation is atomic)";
                      throw Empty{ "queue is empty"};
                   }
                }
-               constexpr auto description = R"(
-dequeue buffer from a queue to stdout
+               constexpr auto description = R"(dequeue buffer from a queue to stdout
 
 Example:
 casual queue --dequeue <queue-name> > somefile.bin
@@ -377,11 +406,48 @@ note: operation is atomic)";
                   }
                }
 
-               constexpr auto description = R"(
-consumes a queue to stdout, dequeues until the queue is empty
+               constexpr auto description = R"(consumes a queue to stdout, dequeues until the queue is empty
 
 Example:
 casual queue --consume <queue-name> > somefile.bin 
+
+note: operation is atomic)";
+               
+            } // consume
+
+            namespace peek
+            {
+               void invoke( const std::string& queue, const std::vector< queue::Message::id_type>& ids)
+               {
+                  auto messages = queue::peek::messages( queue, ids);
+
+                  algorithm::for_each( messages, []( auto& message)
+                  {
+                     auto& payload = message.payload;
+                     common::buffer::payload::binary::stream( 
+                        common::buffer::Payload{ std::move( payload.type), std::move( payload.data)}, 
+                        std::cout);
+                  });
+               }
+
+               auto complete = []( auto& values, bool help) -> std::vector< std::string>
+               { 
+                  if( help) 
+                     return { "<queue>", "<id>"};//return { "<queue> <id>..."};
+
+                  if( values.empty())
+                     return local::queues();
+
+                  // complete on id
+                  return algorithm::transform( 
+                     call::messages( range::front( values)),
+                     []( auto& message){ return uuid::string( message.id);});
+               };
+
+               constexpr auto description = R"(peeks messages from the give queue and streams them to stdout
+
+Example:
+casual queue --peek <queue-name> <id1> <id2> > somefile.bin 
 
 note: operation is atomic)";
                
@@ -394,7 +460,7 @@ note: operation is atomic)";
                   format::affected().print( std::cout, queue::restore::queue( queues));
                }
 
-               constexpr auto description = R"("restores messages to queue
+               constexpr auto description = R"(restores messages to queue
 
 Messages will be restored to the queue they first was enqueued to (within the same queue-group)
 
@@ -422,7 +488,8 @@ casual queue --restore <queue-name>)";
                   auto complete = []( auto& values, bool help) -> std::vector< std::string>
                   { 
                      if( help) 
-                        return { "<queue-name> <message-id>[1..*]"};
+                        //return { "<queue>", "<message-id>[1..*]"};
+                        return { "<queue>", "<id>"};
                      
                      if( values.empty())
                         return local::queues();
@@ -430,20 +497,19 @@ casual queue --restore <queue-name>)";
                      return { "<value>"};
                   };
 
-                  constexpr auto description = R"("removes specific messages from a given queue)";
+                  constexpr auto description = R"(removes specific messages from a given queue)";
                } // remove
 
             } // messages
 
             namespace clear
             {
-               void invoke( std::string queue, std::vector< std::string> queues)
+               void invoke( std::vector< std::string> queues)
                {
-                  queues.insert( std::begin( queues), std::move( queue));
                   format::affected().print( std::cout, queue::clear::queue( queues));
                }
 
-               constexpr auto description = R"("clears all messages from provided queues
+               constexpr auto description = R"(clears all messages from provided queues
 
 Example:
 casual queue --clear queue-a queue-b)";
@@ -451,7 +517,7 @@ casual queue --clear queue-a queue-b)";
                auto complete = []( auto& values, bool help) -> std::vector< std::string>
                { 
                   if( help) 
-                     return { "<queue-name>"};
+                     return { "<queue>"};
                      
                   return local::queues();
                };
@@ -490,20 +556,20 @@ casual queue --clear queue-a queue-b)";
                      return local::queues();
                   };
 
-                  return common::argument::Group{ [](){}, { "queue"}, "queue related administration",
-                     common::argument::Option( &queue::list_queues, { "-q", "--list-queues"}, "list information of all queues in current domain"),
-                     common::argument::Option( &queue::list_remote_queues, { "-r", "--list-remote"}, "list all remote discovered queues"),
-                     common::argument::Option( &queue::list_groups, { "-g", "--list-groups"}, "list information of all groups in current domain"),
-                     common::argument::Option( &queue::list_messages, complete_queues, { "-m", "--list-messages"}, "list information of all messages of a queue"),
-                     common::argument::Option( local::restore::invoke, complete_queues, { "--restore"}, local::restore::description),
-                     common::argument::Option( &local::enqueue::invoke, complete_queues, { "-e", "--enqueue"}, local::enqueue::description),
-                     common::argument::Option( &local::dequeue::invoke, complete_queues, { "-d", "--dequeue"}, local::dequeue::description),
-                     common::argument::Option( &local::consume::invoke, complete_queues, { "--consume"}, local::consume::description),
-                     common::argument::Option( &local::clear::invoke, local::clear::complete, { "--clear"}, local::clear::description),
-                     common::argument::Option( &local::messages::remove::invoke, local::messages::remove::complete, { "--remove-messages"}, local::messages::remove::description),
-                     common::argument::Option( &queue::legend::queues, {"--legend-list-queues"}, "legend for --list-queues output"),
-                     common::argument::Option( &queue::legend::messages, {"--legend-list-messages"}, "legend for --list-messages output"),
-                     common::argument::Option( &queue::local::state, complete_state, {"--state"}, "queue state"),
+                  return argument::Group{ [](){}, { "queue"}, "queue related administration",
+                     argument::Option( &local::list::queues::invoke, { "-q", "--list-queues"}, local::list::queues::description),
+                     argument::Option( &local::list::remote::queues::invoke, { "-r", "--list-remote"}, local::list::remote::queues::description),
+                     argument::Option( &local::list::groups::invoke, { "-g", "--list-groups"}, local::list::groups::description),
+                     argument::Option( &local::list::messages::invoke, complete_queues, { "-m", "--list-messages"}, local::list::messages::description),
+                     argument::Option( local::restore::invoke, complete_queues, { "--restore"}, local::restore::description),
+                     argument::Option( &local::enqueue::invoke, complete_queues, { "-e", "--enqueue"}, local::enqueue::description),
+                     argument::Option( &local::dequeue::invoke, complete_queues, { "-d", "--dequeue"}, local::dequeue::description),
+                     argument::Option( &local::peek::invoke, local::peek::complete, { "-p", "--peek"}, local::peek::description),
+                     argument::Option( &local::consume::invoke, complete_queues, { "--consume"}, local::consume::description),
+                     argument::Option( argument::option::one::many( &local::clear::invoke), local::clear::complete, { "--clear"}, local::clear::description),
+                     argument::Option( &local::messages::remove::invoke, local::messages::remove::complete, { "--remove-messages"}, local::messages::remove::description),
+                     argument::Option( &local::legend::invoke, local::legend::complete, {"--legend"}, local::legend::description),
+                     argument::Option( &queue::local::state, complete_state, {"--state"}, "queue state"),
                   };
                }
             };

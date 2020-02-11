@@ -129,6 +129,10 @@ namespace casual
       {
          std::string string;
          in >> string;
+
+         if( ! std::regex_match( string, std::regex{ "[a-f0-9]{32}"}))
+            throw exception::system::invalid::Argument{ "invalid uuid"};
+
          transcode::hex::decode( string, value.m_uuid);
          return in;
       }
