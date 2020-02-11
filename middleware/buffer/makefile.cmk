@@ -44,7 +44,7 @@ install_headers += [
    ( 'include/casual/buffer/internal/field/string.h', 'casual/buffer/internal/field'),
 ]
 
-casual_field_make_header = LinkExecutable( 'bin/casual_field_make_header', 
+casual_field_make_header = LinkExecutable( 'bin/casual-buffer-field-make-header', 
     [
      Compile( 'tools/source/field.cpp'),
     ], 
@@ -73,7 +73,7 @@ LinkUnittest( 'bin/test-buffer',
    ])  
    
 # Sample
-exe_field_sample = LinkExecutable( 'bin/casual_buffer_protocol_sample',
+exe_field_sample = LinkExecutable( 'bin/casual-buffer-protocol-sample',
     [
      Compile( 'sample/protocol/source/field.cpp'),
     ],
@@ -83,7 +83,7 @@ exe_field_sample = LinkExecutable( 'bin/casual_buffer_protocol_sample',
     
     
 
-lib_casual_buffer_sample = LinkLibrary( 'bin/casual_buffer_sample',
+lib_casual_buffer_sample = LinkLibrary( 'bin/casual-buffer-sample',
     [
      Compile( 'sample/client/source/field.cpp'),
      Compile( 'sample/client/source/octet.cpp'),

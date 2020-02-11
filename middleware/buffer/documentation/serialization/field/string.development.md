@@ -93,7 +93,7 @@ Link the object file to the lib/executable to the lib/executable that uses the _
 
 ## invoke the serialization
 
-The developer uses the `C-api` to invoke a specifik transformation/serialization 
+The developer uses the `C-api` to invoke a specific transformation/serialization 
 by providing the arbitrary key (and the input/output - buffer/string)
 
 **Example:**

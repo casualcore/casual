@@ -60,18 +60,13 @@ namespace casual
          template< typename R, typename D>
          std::string join( R&& range, D&& delimiter)
          {
-            auto current = range::make( range);
+            std::ostringstream out;
+            algorithm::for_each_interleave( 
+               range, 
+               [&out]( auto& value){ out << value;},
+               [&out,&delimiter](){ out << delimiter;});
 
-            if( ! current)
-               return {};
-
-            std::string result = *current;
-            while( ++current)
-            {
-               result += delimiter;
-               result += *current;
-            }
-            return result;
+            return std::move( out).str();
          }
 
          template< typename R>
