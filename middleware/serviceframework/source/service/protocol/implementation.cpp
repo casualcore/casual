@@ -120,7 +120,7 @@ namespace casual
                Json::Json( protocol::parameter_type&& parameter)
                   : Base( std::move( parameter)),
                     m_reader( common::serialize::json::relaxed::reader( m_parameter.payload.memory)),
-                    m_writer( common::serialize::json::writer( m_result.payload.memory))
+                    m_writer( common::serialize::json::pretty::writer( m_result.payload.memory))
                {
                   Trace trace{ "protocol::Json::Json"};
 

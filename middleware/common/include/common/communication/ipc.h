@@ -169,7 +169,7 @@ namespace casual
                inline explicit operator bool () const { return ! m_socket.empty();}
 
                // for logging only
-               CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
+               CASUAL_LOG_SERIALIZE(
                {
                   CASUAL_SERIALIZE_NAME( m_socket, "socket");
                   CASUAL_SERIALIZE_NAME( m_ipc, "ipc");
@@ -316,7 +316,7 @@ namespace casual
                   inline auto descriptor() const { return m_handle.socket().descriptor();}
 
                   // for logging only
-                  CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
+                  CASUAL_LOG_SERIALIZE(
                   {
                      CASUAL_SERIALIZE_NAME( m_handle, "handle");
                   })

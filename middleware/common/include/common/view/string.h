@@ -45,7 +45,7 @@ namespace casual
 
             inline String( const platform::character::type* string)
                : String( string, std::char_traits< string::value::type>::length( string)) {}
-
+            
             inline String( iterator first, iterator last)
                : base_type( first, last) {}
 
@@ -53,7 +53,6 @@ namespace casual
             constexpr String( Range< T> range) : String( range.data(), range.size()) {};
 
             inline String( const std::string& other) noexcept : String( other.data(), other.size()) {}
-            //String( std::string&&) noexcept = delete;
             
             //! @return concrete std::string
             inline std::string value() const { return { begin(), end()};}

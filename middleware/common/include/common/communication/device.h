@@ -264,7 +264,7 @@ namespace casual
                const connector_type& connector() const { return m_connector;}
 
 
-               CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
+               CASUAL_LOG_SERIALIZE(
                {
                   CASUAL_SERIALIZE_NAME( m_connector, "connector");
                   CASUAL_SERIALIZE_NAME( m_cache, "cache");
@@ -395,7 +395,7 @@ namespace casual
                   return send( message, non_blocking_policy{});
                }
 
-               CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
+               CASUAL_LOG_SERIALIZE(
                {
                   CASUAL_SERIALIZE_NAME( m_connector, "connector");
                })

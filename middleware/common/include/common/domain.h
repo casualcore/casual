@@ -59,7 +59,7 @@ namespace casual
                process::Handle process;
                Identity identity;
 
-               CASUAL_CONST_CORRECT_SERIALIZE_WRITE({
+               CASUAL_LOG_SERIALIZE({
                   CASUAL_SERIALIZE( process);
                   CASUAL_SERIALIZE( identity);
                })

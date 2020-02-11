@@ -55,7 +55,7 @@ namespace casual
                      }
                      
                      // for loging
-                     CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
+                     CASUAL_LOG_SERIALIZE(
                      {
                         CASUAL_SERIALIZE( route);
                         CASUAL_SERIALIZE( duplex);

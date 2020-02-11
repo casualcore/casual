@@ -418,7 +418,7 @@ namespace casual
                   {
                      using Request = basic_request< Type::domain_instance_global_state_request>;
                      
-                     using base_reply = basic_reply< Type::domain_instance_global_state_reply>;
+                     using base_reply = basic_message< Type::domain_instance_global_state_reply>;
                      struct Reply : base_reply
                      {
                         using base_reply::base_reply;
@@ -434,10 +434,38 @@ namespace casual
                            
                         } environment;
 
+                        struct 
+                        {
+                           std::string alias;
+                           platform::size::type index{};
+
+                           CASUAL_CONST_CORRECT_SERIALIZE(
+                           {
+                              CASUAL_SERIALIZE( alias);
+                              CASUAL_SERIALIZE( index);
+                           })
+
+                        } instance;
+
+                        struct
+                        {
+                           common::process::Handle handle;
+                           std::string path;
+
+                           CASUAL_CONST_CORRECT_SERIALIZE(
+                           {
+                              CASUAL_SERIALIZE( handle);
+                              CASUAL_SERIALIZE( path);
+                           })
+
+                        } process;
+
                         CASUAL_CONST_CORRECT_SERIALIZE(
                         {
                            base_reply::serialize( archive);
                            CASUAL_SERIALIZE( environment);
+                           CASUAL_SERIALIZE( instance);
+                           CASUAL_SERIALIZE( process);
                         })
                      };
                      

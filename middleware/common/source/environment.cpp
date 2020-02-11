@@ -262,7 +262,7 @@ namespace casual
                   std::string singleton = get_domain() + "/.casual/singleton";
 
                   
-                  CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
+                  CASUAL_LOG_SERIALIZE(
                   {
                      CASUAL_SERIALIZE( domain);
                      CASUAL_SERIALIZE( detail);

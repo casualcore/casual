@@ -50,7 +50,7 @@ namespace casual
             friend bool operator == ( const Service& lhs, const std::string& rhs);
 
             // for logging only
-            CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
+            CASUAL_LOG_SERIALIZE(
             {
                CASUAL_SERIALIZE( name);
                CASUAL_SERIALIZE( transaction);

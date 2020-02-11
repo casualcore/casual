@@ -46,7 +46,7 @@ namespace casual
                directive::Set read;
                // directive::Set write; no need for write as of now
 
-               CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
+               CASUAL_LOG_SERIALIZE(
                { 
                   CASUAL_SERIALIZE( read);
                })

@@ -40,7 +40,7 @@ namespace casual
                Connection accept() const;
 
                
-               CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
+               CASUAL_LOG_SERIALIZE(
                { 
                   CASUAL_SERIALIZE_NAME( m_address, "address");
                   CASUAL_SERIALIZE_NAME( m_socket, "socket");

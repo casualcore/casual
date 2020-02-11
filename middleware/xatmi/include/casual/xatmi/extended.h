@@ -37,6 +37,25 @@ extern int casual_user_vlog( const char* category, const char* const format, va_
 
 extern int casual_user_log( const char* category, const char* const message);
 
+/**
+ * @returns the alias of the instance.
+ * 
+ * @attention could be NULL if the instance is *not* spawn by
+ * casual-domain-manager
+ */
+extern const char* casual_instance_alias();
+
+/**
+ * @returns the instance index. 
+ * Example: if a server is configured with 3 instances.
+ * each instance will have 0, 1, and 2, respectively.  
+ * 
+ * @attention could return -1 if the instance is *not* spawn by
+ * casual-domain-manager
+ */
+extern long casual_instance_index();
+
+
 #ifdef __cplusplus
 }
 #endif

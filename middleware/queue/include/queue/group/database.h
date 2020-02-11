@@ -45,7 +45,7 @@ namespace casual
                platform::size::type count;
                platform::time::point::type when;
 
-               CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
+               CASUAL_LOG_SERIALIZE(
                   CASUAL_SERIALIZE( queue);
                   CASUAL_SERIALIZE( count);
                   CASUAL_SERIALIZE( when);

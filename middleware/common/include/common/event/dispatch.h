@@ -90,7 +90,7 @@ namespace casual
             }
 
             // for logging only
-            CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
+            CASUAL_LOG_SERIALIZE(
             {
                CASUAL_SERIALIZE_NAME( Event::type(), "event");
                CASUAL_SERIALIZE_NAME( m_subscribers, "subscribers");

@@ -5,8 +5,6 @@
 //!
 
 
-
-#include <gtest/gtest.h>
 #include "common/unittest.h"
 
 #include "common/process.h"
@@ -31,7 +29,7 @@ namespace casual
          }
       }
 
-      TEST( casual_common_process, handle_equality)
+      TEST( common_process, handle_equality)
       {
          common::unittest::Trace trace;
 
@@ -44,7 +42,7 @@ namespace casual
          EXPECT_TRUE( handle.ipc == handle);
       }
 
-      TEST( casual_common_process, moved_from_not_valid)
+      TEST( common_process, moved_from_not_valid)
       {
          common::unittest::Trace trace;
 
@@ -56,7 +54,7 @@ namespace casual
          EXPECT_FALSE( moved_from);
       }
 
-      TEST( casual_common_process, spawn_one_process)
+      TEST( common_process, spawn_one_process)
       {
          common::unittest::Trace trace;
 
@@ -69,7 +67,7 @@ namespace casual
          EXPECT_TRUE( process::wait( pid) == 0);
       }
 
-      TEST( casual_common_process, spawn_one_process_with_argument)
+      TEST( common_process, spawn_one_process_with_argument)
       {
          common::unittest::Trace trace;
 
@@ -84,7 +82,7 @@ namespace casual
 
       }
 
-      TEST( casual_common_process, spawn_one_process_check_termination)
+      TEST( common_process, spawn_one_process_check_termination)
       {
          common::unittest::Trace trace;
 
@@ -109,7 +107,7 @@ namespace casual
       }
 
 
-      TEST( casual_common_process, spawn_10_process__children_terminate)
+      TEST( common_process, spawn_10_process__children_terminate)
       {
          common::unittest::Trace trace;
 
@@ -127,7 +125,7 @@ namespace casual
       }
 
 
-      TEST( casual_common_process, wait_timeout_non_existing_children)
+      TEST( common_process, wait_timeout_non_existing_children)
       {
          common::unittest::Trace trace;
 
@@ -136,7 +134,7 @@ namespace casual
          EXPECT_TRUE( terminated.empty());
       }
 
-      TEST( casual_common_process, spawn_non_existing_application__gives_exception)
+      TEST( common_process, spawn_non_existing_application__gives_exception)
       {
          common::unittest::Trace trace;
 

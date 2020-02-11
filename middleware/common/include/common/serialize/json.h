@@ -25,16 +25,16 @@ namespace casual
          {
             namespace strict 
             {
-               serialize::Reader reader( const std::string& destination);
-               serialize::Reader reader( std::istream& destination);
-               serialize::Reader reader( const platform::binary::type& destination);
+               serialize::Reader reader( const std::string& source);
+               serialize::Reader reader( std::istream& source);
+               serialize::Reader reader( const platform::binary::type& source);
             } // strict 
 
             namespace relaxed
             {    
-               serialize::Reader reader( const std::string& destination);
-               serialize::Reader reader( std::istream& destination);
-               serialize::Reader reader( const platform::binary::type& destination);
+               serialize::Reader reader( const std::string& source);
+               serialize::Reader reader( std::istream& source);
+               serialize::Reader reader( const platform::binary::type& source);
             } // relaxed
 
             namespace consumed
@@ -44,9 +44,16 @@ namespace casual
                serialize::Reader reader( const platform::binary::type& source);
             } // consumed
 
+            namespace pretty
+            {
+               serialize::Writer writer( std::string& destination);
+               serialize::Writer writer( std::ostream& destination);
+               serialize::Writer writer( platform::binary::type& destination);        
+            } // pretty
+
             serialize::Writer writer( std::string& destination);
             serialize::Writer writer( std::ostream& destination);
-            serialize::Writer writer( platform::binary::type& destination);
+            serialize::Writer writer( platform::binary::type& destination); 
 
          } // json
       } // serialize

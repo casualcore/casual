@@ -120,6 +120,7 @@ casual_common_objectfiles = [
     
     Compile( 'source/chronology.cpp'),
     Compile( 'source/process.cpp'),
+    Compile( 'source/instance.cpp'),
     Compile( 'source/thread.cpp'),
     Compile( 'source/domain.cpp'),
     Compile( 'source/execution.cpp'),
@@ -208,6 +209,7 @@ unittest_objectfiles = [
     Compile( 'unittest/source/test_uuid.cpp'),
     Compile( 'unittest/source/test_file.cpp'),
     Compile( 'unittest/source/test_process.cpp'),
+    Compile( 'unittest/source/test_instance.cpp'),
     Compile( 'unittest/source/test_string.cpp'),
     Compile( 'unittest/source/test_exception.cpp'),
 

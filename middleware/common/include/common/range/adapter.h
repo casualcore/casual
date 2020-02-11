@@ -32,34 +32,46 @@ namespace casual
 
                iterator() = default;
                iterator( next_type next, R range) 
-                  : m_next{ std::move( next)}, m_ranges{ m_next.value()( std::move( range))} {}
+                  : m_next{ std::move( next)}, m_ranges{ iterator::next( *m_next, std::move( range))} {}
 
                constexpr reference operator * () noexcept { return std::get< 0>( m_ranges);}
                constexpr iterator& operator ++ () noexcept
                {
-                  m_ranges = m_next.value()( std::get< 1>( m_ranges));
+                  m_ranges = next( *m_next, std::get< 1>( m_ranges));
                   return *this;
                }
 
                friend bool operator == ( const iterator& lhs, const iterator& rhs)
                {
                   if( ! rhs.m_next)
-                     return lhs.current().empty();
-                  return rhs.current().empty();
+                     return lhs.empty();
+                  return rhs.empty();
                }
 
                friend bool operator != ( const iterator& lhs, const iterator& rhs) { return ! (lhs == rhs);}
 
             private:
 
-               decltype( auto) current() const {  return std::get< 0>( m_ranges);}
+               static tuple_type next( next_type& next, value_type range)
+               {
+                  auto result = next( std::move( range));
+                  if( std::get< 0>( result).empty())
+                     std::swap( std::get< 0>( result), std::get< 1>( result));
+
+                  return result;
+               }
+
+               bool empty() const noexcept
+               {
+                  return std::get< 0>( m_ranges).empty();
+               }
 
                common::optional< next_type> m_next;
                tuple_type m_ranges{};
             };
 
             //!
-            //! constructs a _range adapter_ that privide a _range interface_ for
+            //! constructs a _range adapter_ that provide a _range interface_ for
             //! lazy "splitted" ranges. 
             //!
             //! @param next `functor` that takes a `range` and "split" it. has to return a tuple [next, rest]

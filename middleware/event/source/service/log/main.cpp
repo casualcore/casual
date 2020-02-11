@@ -40,7 +40,7 @@ namespace casual
                      std::string discard;
                      std::string filter;
 
-                     CASUAL_CONST_CORRECT_SERIALIZE_WRITE({
+                     CASUAL_LOG_SERIALIZE({
                         CASUAL_NAMED_VALUE( file);
                         CASUAL_NAMED_VALUE( delimiter);
                         CASUAL_NAMED_VALUE( discard);

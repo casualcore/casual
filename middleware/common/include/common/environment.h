@@ -118,6 +118,18 @@ namespace casual
             template< typename String>
             void unset( String&& name) { detail::unset( detail::get_name( name));}
 
+            //! consumes an environment variable (get and then unset)
+            template< typename String>
+            std::string consume( String&& name, std::string alternative) 
+            { 
+               if( ! exists( name))
+                  return alternative;
+
+               auto result = detail::get( detail::get_name( name));
+               unset( name);
+               return result;
+            }
+
             namespace process
             {
                common::process::Handle get( const char* name);

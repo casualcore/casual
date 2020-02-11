@@ -12,7 +12,6 @@
 #include "service/manager/state.h"
 #include "service/manager/admin/model.h"
 
-#include "common/message/server.h"
 #include "common/message/transaction.h"
 
 
@@ -22,12 +21,6 @@ namespace casual
    {
       namespace transform
       {
-         /*
-         struct Service
-         {
-            manager::state::Service operator () ( const common::message::Service& value) const;
-         };
-         */
 
          struct Instance
          {

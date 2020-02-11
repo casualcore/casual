@@ -66,7 +66,7 @@ namespace casual
 
                bool empty() const { return m_points.empty();}
 
-               CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
+               CASUAL_LOG_SERIALIZE(
                { 
                   CASUAL_SERIALIZE_NAME( m_points, "points");
                })
@@ -84,7 +84,7 @@ namespace casual
                common::process::Handle destination;
                common::message::Type type;
                
-               CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
+               CASUAL_LOG_SERIALIZE(
                { 
                   CASUAL_SERIALIZE( correlation);
                   CASUAL_SERIALIZE( destination);
@@ -113,7 +113,7 @@ namespace casual
                   std::string parent;
                   platform::time::point::type start;
 
-                  CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
+                  CASUAL_LOG_SERIALIZE(
                   { 
                      CASUAL_SERIALIZE( correlation);
                      CASUAL_SERIALIZE( destination);

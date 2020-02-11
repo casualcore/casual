@@ -9,6 +9,7 @@
 #include "common/exception/casual.h"
 #include "common/communication/ipc.h"
 #include "common/environment.h"
+#include "common/instance.h"
 
 namespace casual
 {
@@ -53,7 +54,6 @@ namespace casual
 
                auto reply = message::reverse::type( message);
                reply.process = common::process::handle();
-               reply.uuid = common::process::uuid();
 
                local::send( message.process, reply);
             }
@@ -67,11 +67,18 @@ namespace casual
                   log::line( log::debug, "message: ", message);
 
                   auto reply = message::reverse::type( message);
-                  reply.process = common::process::handle();
+                  reply.process.handle = common::process::handle();
+                  reply.process.path = common::process::path();
                   reply.environment.variables = environment::variable::native::current();
-                  
-                   local::send( message.process, reply);
+                  if( auto& instance = instance::information())
+                  {
+                     reply.instance.alias = instance.value().alias;
+                     reply.instance.index = instance.value().index;
+                  }
 
+                  log::line( log::debug, "reply: ", reply);
+                  
+                  local::send( message.process, reply);
                }
             } // global
 

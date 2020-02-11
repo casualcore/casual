@@ -43,7 +43,7 @@ namespace casual
                   inline bool done() const { return m_pids.empty();}
 
                   // for logging only
-                  CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
+                  CASUAL_LOG_SERIALIZE(
                   {
                      CASUAL_SERIALIZE_NAME( m_pids, "pids");
                   })
@@ -124,7 +124,7 @@ namespace casual
             platform::size::type size() const { return m_messages.size();}
 
             // for logging only
-            CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
+            CASUAL_LOG_SERIALIZE(
             {
                CASUAL_SERIALIZE_NAME( m_messages, "messages");
                CASUAL_SERIALIZE_NAME( m_policy, "policy");
@@ -148,7 +148,7 @@ namespace casual
                message_type message;
 
                // for logging only
-               CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
+               CASUAL_LOG_SERIALIZE(
                {
                   CASUAL_SERIALIZE( ipc);
                   CASUAL_SERIALIZE( policy);

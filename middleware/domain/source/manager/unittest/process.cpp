@@ -122,7 +122,7 @@ domain:
                   common::unittest::directory::temporary::Scoped home;
                   std::function< void( const std::string&)> callback;
 
-                  CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
+                  CASUAL_LOG_SERIALIZE(
                   {
                      CASUAL_SERIALIZE( home);
                   })
@@ -132,7 +132,7 @@ domain:
                std::vector< common::file::scoped::Path> files;
                common::Process process;
 
-               CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
+               CASUAL_LOG_SERIALIZE(
                {
                   CASUAL_SERIALIZE( files);
                   CASUAL_SERIALIZE( process);

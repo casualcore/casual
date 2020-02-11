@@ -50,7 +50,7 @@ namespace casual
                         std::unordered_map< std::string, Convert> actions;
                      } // global
                      
-                     const Convert& convert( const std::string& key)
+                     Convert& convert( const std::string& key)
                      {
                         auto found = global::actions.find( key);
                         if( found == std::end( global::actions))

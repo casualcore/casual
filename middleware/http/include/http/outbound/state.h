@@ -40,7 +40,7 @@ namespace casual
                std::shared_ptr< const common::service::header::Fields> headers;
                bool discard_transaction = false;
                
-               CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
+               CASUAL_LOG_SERIALIZE(
                { 
                   CASUAL_NAMED_VALUE( url);
                   CASUAL_NAMED_VALUE( headers);
@@ -92,7 +92,7 @@ namespace casual
                         offset = 0;
                      }
 
-                     CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
+                     CASUAL_LOG_SERIALIZE(
                      { 
                         CASUAL_NAMED_VALUE( payload);
                         CASUAL_NAMED_VALUE( offset);
@@ -117,7 +117,7 @@ namespace casual
                   
                   inline friend bool operator == ( const Request& lhs, curl::type::native::easy rhs) { return lhs.m_easy.get() == rhs;}
 
-                  CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
+                  CASUAL_LOG_SERIALIZE(
                   { 
                      CASUAL_NAMED_VALUE_NAME( m_easy, "easy");
                      CASUAL_NAMED_VALUE_NAME( m_state, "state");

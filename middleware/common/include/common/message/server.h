@@ -23,21 +23,8 @@ namespace casual
          {
             namespace ping
             {
-
                using Request = basic_request< Type::server_ping_request>;
-
-               using base_reply = basic_reply< Type::server_ping_reply>;
-               struct Reply : base_reply
-               {
-                  using base_reply::base_reply;
-                  Uuid uuid;
-
-                  CASUAL_CONST_CORRECT_SERIALIZE(
-                  {
-                     base_reply::serialize( archive);
-                     CASUAL_SERIALIZE( uuid);
-                  })
-               };
+               using Reply = basic_reply< Type::server_ping_reply>;
             } // ping
          } // server
 

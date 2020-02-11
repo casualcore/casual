@@ -336,7 +336,8 @@ namespace casual
                   
                   namespace writer
                   {
-                     class Implementation
+                     template< typename Writer>
+                     class basic_implementation
                      {
                      public:
 
@@ -344,14 +345,11 @@ namespace casual
 
                         static decltype( auto) keys() { return local::keys();}
                         
-                        explicit Implementation()
+                        explicit basic_implementation()
                            : m_allocator( m_document.GetAllocator()), m_stack{ &m_document}
                         {
                            m_document.SetObject();
                         }
-                        
-                        //Implementation( rapidjson::Value& object, rapidjson::Document::AllocatorType& allocator);
-                        ~Implementation() = default;
 
                         platform::size::type container_start( platform::size::type size, const char* const name)
                         {
@@ -428,7 +426,7 @@ namespace casual
                         void flush( platform::binary::type& json)
                         {
                            rapidjson::StringBuffer buffer;
-                           rapidjson::PrettyWriter<rapidjson::StringBuffer> writer( buffer);
+                           Writer writer( buffer);
 
                            if( m_document.Accept( writer))
                               json.assign( buffer.GetString(), buffer.GetString() + buffer.GetSize());
@@ -442,7 +440,7 @@ namespace casual
                         void flush( std::ostream& json)
                         {
                            rapidjson::StringBuffer buffer;
-                           rapidjson::PrettyWriter<rapidjson::StringBuffer> writer( buffer);
+                           Writer writer( buffer);
                            if( m_document.Accept( writer))
                               json << buffer.GetString();
                            else
@@ -458,6 +456,13 @@ namespace casual
                         rapidjson::Document::AllocatorType& m_allocator;
                         std::vector< rapidjson::Value*> m_stack;
                      };
+
+                     namespace pretty
+                     {
+                        using Implementation = basic_implementation< rapidjson::PrettyWriter< rapidjson::StringBuffer>>;
+                     } // pretty
+
+                     using Implementation = basic_implementation< rapidjson::Writer< rapidjson::StringBuffer>>;
 
                   } // writer
                } // <unnamed>
@@ -484,6 +489,24 @@ namespace casual
                serialize::Reader reader( const platform::binary::type& source) { return create::reader::consumed::create< local::reader::Implementation>( source);}
             } // consumed
 
+            namespace pretty
+            {
+               serialize::Writer writer( std::string& destination)
+               {
+                  return serialize::create::writer::create< local::writer::pretty::Implementation>( destination);
+               }
+
+               serialize::Writer writer( std::ostream& destination)
+               {
+                  return serialize::create::writer::create< local::writer::pretty::Implementation>( destination);
+               }
+
+               serialize::Writer writer( platform::binary::type& destination)
+               {
+                  return serialize::create::writer::create< local::writer::pretty::Implementation>( destination);
+               }
+            } // pretty
+
             serialize::Writer writer( std::string& destination)
             {
                return serialize::create::writer::create< local::writer::Implementation>( destination);
@@ -498,7 +521,6 @@ namespace casual
             {
                return serialize::create::writer::create< local::writer::Implementation>( destination);
             }
-
          } // json
          
          namespace create

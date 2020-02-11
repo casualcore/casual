@@ -357,14 +357,17 @@ domain:
          {
             namespace
             {
-               auto get_variable_checker = []( auto& process)
+               auto get_global_state = []( auto& process)
                {
                   common::message::domain::instance::global::state::Request message;
                   message.process = common::process::handle();
-                  auto reply = common::communication::ipc::call( process.ipc, message);
+                  return common::communication::ipc::call( process.ipc, message);
 
-                  
-                  return [reply = std::move( reply)]( std::string key, std::string value)
+               };
+
+               auto get_variable_checker = []( auto& process)
+               {
+                  return [reply = get_global_state( process)]( std::string key, std::string value)
                   {
                      auto found = common::algorithm::find_if( reply.environment.variables, [&key]( auto& v){ return v.name() == key;});
 
@@ -380,12 +383,11 @@ domain:
                      
                      return false;
                   };
-
                };
             } // <unnamed>
          } // local
 
-         TEST( domain_manager, simple_server__1_instance__CASUAL_INSTANCE_ALIAS__CASUAL_INSTANCE_NUMBER)
+         TEST( domain_manager, simple_server__1_instance__expect_alias_and_index)
          {
             common::unittest::Trace trace;
 
@@ -402,14 +404,13 @@ domain:
 
             auto state = local::call::state();
 
-            // get environment variables
-            auto checker = local::get_variable_checker( state.servers.at( 1).instances.at( 0).handle);
-            EXPECT_TRUE( checker( environment::variable::name::instance::alias, "foo"));
-            EXPECT_TRUE( checker( environment::variable::name::instance::index, "0"));
+            auto server = local::get_global_state( state.servers.at( 1).instances.at( 0).handle);
+            EXPECT_TRUE( server.instance.alias == "foo") << "server.instance.alias: " << server.instance.alias;
+            EXPECT_TRUE( server.instance.index == 0) << "server.instance.index: " << server.instance.index;
 
          }
 
-         TEST( domain_manager, simple_server__10_instance__CASUAL_INSTANCE_ALIAS__CASUAL_INSTANCE_NUMBER)
+         TEST( domain_manager, simple_server__10_instance__expect_alias_and_index)
          {
             common::unittest::Trace trace;
 
@@ -428,18 +429,16 @@ domain:
 
             EXPECT_TRUE( state.servers.at( 1).instances.size() == 10);
 
-            auto number = 0;
+            auto index = 0;
 
             auto order_spawnpoint = []( auto& l, auto& r){ return l.spawnpoint < r.spawnpoint;};
 
             for( auto& instance : algorithm::sort( state.servers.at( 1).instances, order_spawnpoint))
             {
-               // get environment variables for the instance
-               auto checker = local::get_variable_checker( instance.handle);
-               EXPECT_TRUE( checker( environment::variable::name::instance::alias, "foo"));
-               EXPECT_TRUE( checker( environment::variable::name::instance::index, std::to_string( number))) << CASUAL_NAMED_VALUE( instance);
-
-               ++number;
+               auto instance_state = local::get_global_state( instance.handle);
+               EXPECT_TRUE( instance_state.instance.alias == "foo");
+               EXPECT_TRUE( instance_state.instance.index == index)  << "instance-index: " << instance_state.instance.index << " - index: " << index;
+               ++index;
             }
          }         
 

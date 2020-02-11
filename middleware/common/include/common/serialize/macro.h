@@ -62,7 +62,7 @@ namespace casual
    } \
 
 
-#define CASUAL_CONST_CORRECT_SERIALIZE_WRITE( statement) \
+#define CASUAL_LOG_SERIALIZE( statement) \
    template< typename A>  \
    void serialize( A& archive) const\
    {  \

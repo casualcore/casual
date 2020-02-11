@@ -100,7 +100,7 @@ namespace casual
 
                      inline friend bool operator == ( const Instance& lhs, common::strong::process::id rhs) { return lhs.process.pid == rhs;}
 
-                     CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
+                     CASUAL_LOG_SERIALIZE(
                      { 
                         CASUAL_NAMED_VALUE( id);
                         CASUAL_NAMED_VALUE( process);
@@ -144,7 +144,7 @@ namespace casual
                   friend bool operator == ( const Proxy& lhs, id::type rhs) { return lhs.id == rhs; }
                   friend bool operator == ( id::type lhs, const Proxy& rhs) { return lhs == rhs.id; }
 
-                  CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
+                  CASUAL_LOG_SERIALIZE(
                   { 
                      CASUAL_NAMED_VALUE( id);
                      CASUAL_NAMED_VALUE( key);
@@ -312,7 +312,7 @@ namespace casual
                inline friend bool operator == ( const Resource& lhs, const Resource& rhs) { return lhs.id == rhs.id; }
                inline friend bool operator == ( const Resource& lhs, id_type id) { return lhs.id == id; }
 
-               CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
+               CASUAL_LOG_SERIALIZE(
                { 
                   CASUAL_NAMED_VALUE( id);
                   CASUAL_NAMED_VALUE( stage);
@@ -346,7 +346,7 @@ namespace casual
 
                inline friend bool operator == ( const Branch& lhs, const common::transaction::ID& rhs) { return lhs.trid == rhs;}
 
-               CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
+               CASUAL_LOG_SERIALIZE(
                { 
                   CASUAL_NAMED_VALUE( trid);
                   CASUAL_NAMED_VALUE( resources);
@@ -398,7 +398,7 @@ namespace casual
 
             inline friend bool operator == ( const Transaction& lhs, const global::ID& rhs) { return lhs.global == rhs;}
 
-            CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
+            CASUAL_LOG_SERIALIZE(
             { 
                CASUAL_NAMED_VALUE( global);
                CASUAL_NAMED_VALUE( branches);

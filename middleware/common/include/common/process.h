@@ -82,10 +82,6 @@ namespace casual
          inline strong::process::id id( const Handle& handle) { return handle.pid;}
          inline strong::process::id id( strong::process::id pid) { return pid;}
 
-         //! @return the uuid for this process.
-         //! used as a unique id over time
-         const Uuid& uuid();
-
          //! Sleep for a while
          //!
          //! @throws exception::signal::* when a signal is received
@@ -132,11 +128,9 @@ namespace casual
                    : Pattern{ std::chrono::duration_cast< platform::time::unit>( time), infinite_quantity{}}
                   {}
 
-
                   bool done();
 
-                  // for logging only
-                  CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
+                  CASUAL_LOG_SERIALIZE(
                   {
                      CASUAL_SERIALIZE_NAME( m_time, "time");
                      CASUAL_SERIALIZE_NAME( m_quantity, "quantity");
@@ -152,7 +146,7 @@ namespace casual
                bool operator () ();
 
                // for logging only
-               CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
+               CASUAL_LOG_SERIALIZE(
                {
                   CASUAL_SERIALIZE_NAME( m_pattern, "pattern");
                })
@@ -289,7 +283,7 @@ namespace casual
          void handle( const process::Handle& handle);
 
          // for logging only
-         CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
+         CASUAL_LOG_SERIALIZE(
          {
             CASUAL_SERIALIZE_NAME( m_handle, "handle");
          })

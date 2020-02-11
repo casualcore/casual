@@ -7,7 +7,8 @@
 #include "casual/buffer/field.h"
 #include "casual/platform.h"
 
-#include <functional>
+#include "common/functional.h"
+
 #include <stdexcept>
 #include <algorithm>
 #include <map>
@@ -311,8 +312,8 @@ namespace casual
 
                struct Convert
                {
-                  using callback_to_t = std::function< void( field::stream::Input&, stream::Output&)>;
-                  using callback_from_t = std::function< void( stream::Input&, field::stream::Output&)>;
+                  using callback_to_t = common::unique_function< void( field::stream::Input&, stream::Output&)>;
+                  using callback_from_t = common::unique_function< void( stream::Input&, field::stream::Output&)>;
 
                   inline Convert( callback_to_t to, callback_from_t from)
                      : to{ std::move( to)}, from{ std::move( from)} {}
@@ -320,7 +321,7 @@ namespace casual
                   //! generic callback that can handle both from-string and to-string
                   template< typename Callback>
                   Convert( Callback&& callback) 
-                     : to{ [callback]( field::stream::Input& input, stream::Output& output){ return callback( input, output);}},
+                     : to{ [callback]( field::stream::Input& input, stream::Output& output){ callback( input, output);}},
                      from{ [callback]( stream::Input& input, field::stream::Output& output){ callback( input, output);}}
                   {}
 

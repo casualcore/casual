@@ -96,7 +96,7 @@ namespace casual
             friend bool operator == ( const Transaction& lhs, const ID& rhs);
             friend bool operator == ( const Transaction& lhs, const XID& rhs);
 
-            CASUAL_CONST_CORRECT_SERIALIZE_WRITE({
+            CASUAL_LOG_SERIALIZE({
                CASUAL_SERIALIZE_NAME( m_involved, "involved");
                CASUAL_SERIALIZE_NAME( m_pending, "pending");
                CASUAL_SERIALIZE_NAME( m_dynamic, "dynamic");
