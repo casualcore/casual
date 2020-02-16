@@ -227,10 +227,10 @@ namespace casual
             {
                void operator () ( std::ostream& out, const T& value) const
                {
-                  stream::write( out, "{ type: ", value.type(), ", correlation: ", value.correlation, ", payload: ");
+                  stream::write( out, "{ type: ", value.type(), ", correlation: ", value.correlation, ", payload: {");
                   serialize::line::Writer archive{ out};
                   value.serialize( archive);
-                  out << '}';
+                  out << "}}";
                }
             };
          };

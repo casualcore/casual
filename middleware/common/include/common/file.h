@@ -170,10 +170,19 @@ namespace casual
 
          bool exists( const std::string& path);
 
+         namespace native
+         {
+            //! creates the directory path recursively
+            //! pure posix - no logging.
+            bool create( const std::string& path);
+         } // native
+
          //! creates the directory path recursively
          bool create( const std::string& path);
 
          bool remove( const std::string& path);
+
+
 
       } // directory
 

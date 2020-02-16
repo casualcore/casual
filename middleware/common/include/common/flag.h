@@ -120,6 +120,12 @@ namespace casual
          underlaying_type m_flags = underlaying_type{};
       };
 
+      namespace flag
+      {
+         template< typename Enum, typename... Enums>
+         constexpr auto make( Enum e, Enums... enums) noexcept { return Flags< Enum>{ e, enums...};}
+      } // flag
+
    } // common
 } // casual
 

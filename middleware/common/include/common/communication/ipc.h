@@ -60,9 +60,9 @@ namespace casual
                      friend std::ostream& operator << ( std::ostream& out, const Header& value);
                   };
 
-                  constexpr std::int64_t max_message_size() { return platform::ipc::transport::size;}
-                  constexpr std::int64_t header_size() { return sizeof( Header);}
-                  constexpr std::int64_t max_payload_size() { return max_message_size() - header_size();}
+                  constexpr std::int64_t max_message_size = platform::ipc::transport::size;
+                  constexpr std::int64_t header_size = sizeof( Header);
+                  constexpr std::int64_t max_payload_size = max_message_size - header_size;
 
                } // transport
 
@@ -70,7 +70,7 @@ namespace casual
                {
                   using correlation_type = Uuid::uuid_type;
 
-                  using payload_type = std::array< char, transport::max_payload_size()>;
+                  using payload_type = std::array< char, transport::max_payload_size>;
                   using range_type = range::type_t< payload_type>;
                   using const_range_type = range::const_type_t< payload_type>;
 
@@ -82,9 +82,9 @@ namespace casual
                   } message{}; // note the {} which initialize the memory to 0:s
 
 
-                  static_assert( transport::max_message_size() - transport::max_payload_size() < transport::max_payload_size(), "Payload is to small");
+                  static_assert( transport::max_message_size - transport::max_payload_size < transport::max_payload_size, "Payload is to small");
                   static_assert( std::is_trivially_copyable< message_t>::value, "Message has to be trivially copyable");
-                  static_assert( ( transport::header_size() + transport::max_payload_size()) == transport::max_message_size(), "something is wrong with padding");
+                  static_assert( transport::header_size + transport::max_payload_size == transport::max_message_size, "something is wrong with padding");
 
 
                   inline Transport() = default;
@@ -117,7 +117,7 @@ namespace casual
                   inline size_type complete_size() const { return message.header.size;}
 
                   //! @return the total size of the transport message including header.
-                  inline size_type size() const { return transport::header_size() + payload_size();}
+                  inline size_type size() const { return transport::header_size + payload_size();}
 
                   inline void* data() { return static_cast< void*>( &message);}
                   inline const void* data() const { return static_cast< const void*>( &message);}
@@ -141,7 +141,7 @@ namespace casual
                   void assign( R&& range)
                   {
                      message.header.count = range.size();
-                     assert( message.header.count <=  transport::max_payload_size());
+                     assert( message.header.count <=  transport::max_payload_size);
 
                      algorithm::copy( range, std::begin( message.payload));
                   }
@@ -154,91 +154,126 @@ namespace casual
 
             } // message
 
-
-            struct Handle
+            namespace file
             {
+               enum class Flag : int
+               {  
+                  read_only = O_RDONLY,
+                  write_only = O_WRONLY,
+                  no_block = O_NONBLOCK,
+               };
+               using Flags = common::Flags< file::Flag>;
 
-               explicit Handle( Socket&& socket, strong::ipc::id ipc);
-               Handle( Handle&& other) noexcept;
-               Handle& operator = ( Handle&& other) noexcept;
-               ~Handle();
-
-               inline const Socket& socket() const { return m_socket;}
-               inline strong::ipc::id ipc() const { return m_ipc;}
-
-               inline explicit operator bool () const { return ! m_socket.empty();}
-
-               // for logging only
-               CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
+               //! file handle abstraction
+               struct Descriptor 
                {
-                  CASUAL_SERIALIZE_NAME( m_socket, "socket");
-                  CASUAL_SERIALIZE_NAME( m_ipc, "ipc");
-               })
+                  Descriptor( const strong::ipc::id& ipc, file::Flags flags);
+                  ~Descriptor();
 
-            private:
-               Socket m_socket;
-               strong::ipc::id m_ipc;
-            };
+                  Descriptor( Descriptor&&) noexcept;
+                  Descriptor& operator = ( Descriptor&&) noexcept;
 
-            static_assert( sizeof( Handle) == sizeof( Socket) + sizeof( strong::ipc::id), "padding problem");
+                  strong::file::descriptor::id blocking() const;
+                  strong::file::descriptor::id non_blocking() const;
 
-            struct Address
+                  friend std::ostream& operator << ( std::ostream& out, const Descriptor& value);
+
+               private:
+                  strong::file::descriptor::id m_descriptor;
+               };
+            } // file
+
+            namespace named
             {
-               explicit Address( strong::ipc::id id);
+               //! owns the lifetime of the fifo
+               struct Pipe
+               {
+                  Pipe();
+                  ~Pipe();
 
-               inline const ::sockaddr_un& native() const noexcept { return m_native;}
+                  Pipe( Pipe&&) noexcept;
+                  Pipe& operator = ( Pipe&&) noexcept;
 
-               inline const ::sockaddr* native_pointer() const noexcept { return reinterpret_cast< const ::sockaddr*>( &m_native);}
-               inline auto native_size() const noexcept { return sizeof( m_native);}
+                  inline const strong::ipc::id& ipc() const { return m_ipc;}
+                  std::string path() const;
 
-               friend std::ostream& operator << ( std::ostream& out, const Address& rhs);
+                  CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
+                  {
+                     CASUAL_SERIALIZE_NAME( m_ipc, "ipc");
+                  })
 
-            private:
-               ::sockaddr_un m_native = {};
-            };
+               private:
+                  strong::ipc::id m_ipc;
+               };
+            } // named
+
+            namespace handle
+            {
+
+               //! owns the lifetime of the named::Pipe. Only for reading
+               struct Inbound
+               {
+                  Inbound();
+
+                  Inbound( Inbound&&) noexcept = default;
+                  Inbound& operator = ( Inbound&&) noexcept = default;
+
+                  inline const file::Descriptor& descriptor() const { return m_descriptor;}
+                  inline const auto& ipc() const { return m_pipe.ipc();}
+
+                  // for logging only
+                  CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
+                  {
+                     CASUAL_SERIALIZE_NAME( m_pipe, "pipe");
+                     CASUAL_SERIALIZE_NAME( m_descriptor, "descriptor");
+                  })
+
+               private:
+                  named::Pipe m_pipe;
+                  file::Descriptor m_descriptor;
+                  file::Descriptor m_dummy_writer;
+               };
+
+               //! does not own the fifo. Only for writing
+               struct Outbound
+               {
+                  Outbound( strong::ipc::id ipc);
+
+                  Outbound( Outbound&&) noexcept = default;
+                  Outbound& operator = ( Outbound&&) noexcept = default;
+
+                  inline auto& descriptor() const { return m_descriptor;}
+                  inline const strong::ipc::id& ipc() const { return m_ipc;}
+
+                  // for logging only
+                  CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
+                  {
+                     CASUAL_SERIALIZE_NAME( m_ipc, "ipc");
+                     CASUAL_SERIALIZE_NAME( m_descriptor, "descriptor");
+                  })
+               private:
+                  file::Descriptor m_descriptor;
+                  strong::ipc::id m_ipc;
+               };
+
+            } // handle
 
             namespace native
             {
-               namespace detail
-               {
-                  namespace create
-                  {
-                     namespace domain
-                     {
-                        Socket socket();
-                     } // domain
-                  } // create
-                  namespace outbound
-                  {
-                     const Socket& socket();
-                  } // outbound
-               } // detail
-
-               enum class Flag : int
-               {
-                  none = 0,
-                  non_blocking = platform::flag::value( platform::flag::tcp::no_wait)
-               };
-
-               bool send( const Socket& socket, const Address& destination, const message::Transport& transport, Flag flag);
-               bool receive( const Handle& handle, message::Transport& transport, Flag flag);
-
                namespace blocking
                {
-                  bool send( const Socket& socket, const Address& destination, const message::Transport& transport);
-                  bool receive( const Handle& handle, message::Transport& transport);
+                  //! exposed for unittest
+                  bool receive( handle::Inbound& handle, message::Transport& transport);
                } // blocking
-
                namespace non
                {
                   namespace blocking
                   {
-                     bool send( const Socket& socket, const Address& destination, const message::Transport& transport);
-                     bool receive( const Handle& handle, message::Transport& transport);
+                     //! exposed for unittest
+                     bool receive( handle::Inbound& handle, message::Transport& transport);
                   } // blocking
                } // non
             } // native
-
 
             namespace policy
             {
@@ -247,24 +282,23 @@ namespace casual
 
                namespace blocking
                {
-                  cache_range_type receive( Handle& handle, cache_type& cache);
-                  Uuid send( const Socket& socket, const Address& destination, const communication::message::Complete& complete);
+                  cache_range_type receive( handle::Inbound& handle, cache_type& cache);
+                  Uuid send( const handle::Outbound& handle, const communication::message::Complete& complete);
                } // blocking
 
 
                struct Blocking
                {
-
                   template< typename Connector>
-                  cache_range_type receive( Connector&& connector, cache_type& cache)
+                  auto receive( Connector&& connector, cache_type& cache)
                   {
                      return policy::blocking::receive( connector.handle(), cache);
                   }
 
                   template< typename Connector>
-                  Uuid send( Connector&& connector, const communication::message::Complete& complete)
+                  auto send( Connector&& connector, const communication::message::Complete& complete)
                   {
-                     return policy::blocking::send( connector.socket(), connector.destination(), complete);
+                     return policy::blocking::send( connector.handle(), complete);
                   }
                };
 
@@ -272,22 +306,22 @@ namespace casual
                {
                   namespace blocking
                   {
-                     cache_range_type receive( Handle& handle, cache_type& cache);
-                     Uuid send( const Socket& socket, const Address& destination, const communication::message::Complete& complete);
+                     cache_range_type receive( handle::Inbound& handle, cache_type& cache);
+                     Uuid send( const handle::Outbound& handle, const communication::message::Complete& complete);
                   } // blocking
 
                   struct Blocking
                   {
                      template< typename Connector>
-                     cache_range_type receive( Connector&& connector, cache_type& cache)
+                     auto receive( Connector&& connector, cache_type& cache)
                      {
                         return policy::non::blocking::receive( connector.handle(), cache);
                      }
 
                      template< typename Connector>
-                     Uuid send( Connector&& connector, const communication::message::Complete& complete)
+                     auto send( Connector&& connector, const communication::message::Complete& complete)
                      {
-                        return policy::non::blocking::send( connector.socket(), connector.destination(), complete);
+                        return policy::non::blocking::send( connector.handle(), complete);
                      }
                   };
 
@@ -304,16 +338,8 @@ namespace casual
                   using blocking_policy = policy::Blocking;
                   using non_blocking_policy = policy::non::Blocking;
 
-
-                  Connector();
-                  ~Connector();
-
-                  Connector( Connector&&) noexcept = default;
-                  Connector& operator = ( Connector&&) noexcept = default;
-
-                  inline const Handle& handle() const { return m_handle;}
-                  inline Handle& handle() { return m_handle;}
-                  inline auto descriptor() const { return m_handle.socket().descriptor();}
+                  inline const auto& handle() const { return m_handle;}
+                  inline auto& handle() { return m_handle;}
 
                   // for logging only
                   CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
@@ -322,7 +348,7 @@ namespace casual
                   })
 
                private:
-                  Handle m_handle;
+                  handle::Inbound m_handle;
                };
 
                template< typename S>
@@ -332,14 +358,13 @@ namespace casual
 
 
                Device& device();
-               inline Handle& handle() { return device().connector().handle();}
-               inline strong::ipc::id ipc() { return device().connector().handle().ipc();}
+               inline auto& handle() { return device().connector().handle();}
+               inline auto ipc() { return device().connector().handle().ipc();}
 
             } // inbound
 
             namespace outbound
             {
-
                struct Connector
                {
                   using transport_type = message::Transport;
@@ -347,21 +372,20 @@ namespace casual
                   using non_blocking_policy = policy::non::Blocking;
 
                   Connector( strong::ipc::id destination);
-                  ~Connector() = default;
 
-                  inline const Address& destination() const { return m_destination;}
-                  inline const Socket& socket() const { return native::detail::outbound::socket();}
+                  inline const auto& handle() const { return m_handle;}
 
                   inline void reconnect() const { throw; }
-                  inline void clear() { m_destination = Address{ strong::ipc::id{}};}
+                  inline void clear() { m_handle = handle::Outbound{ strong::ipc::id{}};}
 
-                  inline friend std::ostream& operator << ( std::ostream& out, const Connector& rhs) 
-                  { 
-                     return out << "{ destination: " << rhs.m_destination << '}'; 
-                  }
+                  // for logging only
+                  CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
+                  {
+                     CASUAL_SERIALIZE_NAME( m_handle, "handle");
+                  })
 
                protected:
-                  Address m_destination;
+                  handle::Outbound m_handle;
                };
 
                template< typename S>

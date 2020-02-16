@@ -81,10 +81,10 @@ namespace casual
                   {
                      Inbound( State& state) : m_handler( manager::handler( state)) 
                      {
-                        state.directive.read.add( communication::ipc::inbound::handle().socket().descriptor());
+                        state.directive.read.add( communication::ipc::inbound::handle().descriptor().blocking());
                      }
                      
-                     auto descriptor() const { return communication::ipc::inbound::handle().socket().descriptor();}
+                     auto descriptor() const { return communication::ipc::inbound::handle().descriptor().blocking();}
 
                      void operator () ( strong::file::descriptor::id descriptor)
                      {

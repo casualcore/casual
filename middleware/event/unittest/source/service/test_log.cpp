@@ -89,7 +89,7 @@ domain:
                      int count = 0;
                      while( file::empty( path))
                      {
-                        if( ++count > 10)
+                        if( ++count > 40)
                            return false;
                         
                         common::process::sleep( std::chrono::milliseconds{ 2});

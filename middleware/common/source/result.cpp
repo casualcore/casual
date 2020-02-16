@@ -2,8 +2,6 @@
 #include "common/result.h"
 
 #include "common/code/system.h"
-#include "common/signal.h"
-#include "common/log/category.h"
 #include "common/exception/system.h"
 
 namespace casual
@@ -12,50 +10,27 @@ namespace casual
    {
       namespace posix
       {
-         namespace local
-         {
-            namespace
-            {
-               void error( common::code::system code, signal::Set mask)
-               {
-                  exception::system::throw_from_code( code);
-               }
-            } // <unnamed>
-         } // local
-
+  
          int result( int result)
          {
             if( result == -1)
-               local::error( common::code::last::system::error(), signal::mask::current());
+               exception::system::throw_from_code( common::code::last::system::error());
 
             return result;
          }
 
-         int result( int result, signal::Set mask)
+         namespace error
          {
-            if( result == -1)
-               local::error( common::code::last::system::error(), mask);
-
-            return result;
-         }
-
-         namespace log
-         {
-            void result( int result) noexcept
+            optional_error optional( int result) noexcept
             {
                if( result == -1)
-                  common::log::line( common::log::category::error, common::code::last::system::error());
+                  return optional_error{ common::code::last::system::error()};
+
+               return {};
             }
+         } // error
 
-         } // log
 
-         optional_error error( int result) noexcept
-         {
-            if( result == -1)
-               return optional_error{ common::code::last::system::error()};
-
-            return {};
-         }
       } // posix
    } // common
 } // casual

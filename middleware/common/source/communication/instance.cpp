@@ -401,14 +401,6 @@ namespace casual
                         log::line( verbose::log, "connector: ", *this);
                      }
 
-                     void Connector::clear()
-                     {
-                        Trace trace{ "communication::instance::outbound::domain::manager::Connector::clear"};
-                        environment::variable::unset( environment::variable::name::ipc::domain::manager());
-                        m_connector.clear();
-                     }
-
-
                      Device& device()
                      {
                         static Device singelton;
@@ -434,13 +426,6 @@ namespace casual
                            }));
 
                            log::line( verbose::log, "connector: ", *this);
-                        }
-
-                        void Connector::clear()
-                        {
-                           Trace trace{ "communication::instance::outbound::domain::manager::optional::Connector::clear"};
-                           environment::variable::unset( environment::variable::name::ipc::domain::manager());
-                           m_connector.clear();
                         }
 
                         Device& device()

@@ -42,66 +42,81 @@ namespace casual
          {
             namespace
             {
-               class File
+              
+               namespace file
                {
-               public:
-                  static File& instance()
+                  struct Owner
                   {
-                     static File singleton;
-                     return singleton;
-                  }
+                     static Owner& instance()
+                     {
+                        static Owner singleton;
+                        return singleton;
+                     }
+
+                     template< typename M>
+                     void log( const std::string& category, M&& message)
+                     {
+                        // construct a local 'alias' so we delay the deduction.
+                        static auto alias = []() -> std::string
+                        {
+                           if( environment::variable::exists( environment::variable::name::instance::alias))
+                              return environment::variable::get( environment::variable::name::instance::alias);
+
+                           return common::process::basename();
+                        }();
+
+                        m_output << std::chrono::duration_cast< std::chrono::microseconds>( platform::time::clock::type::now().time_since_epoch()).count()
+                           << '|' << common::domain::identity().name
+                           << '|' << execution::id()
+                           << '|' << process::id()
+                           << '|' << std::this_thread::get_id()
+                           << '|' << alias
+                           << '|' << transaction::Context::instance().current().trid
+                           << '|' << execution::service::parent::name()
+                           << '|' << execution::service::name()
+                           << '|' << category
+                           << '|' << message
+                           << std::endl; // we need to flush the line.
+                     }
+
+                     void reopen() 
+                     {
+                        m_output = Owner::open();
+                     }
+
+                  private:
+                     Owner() : m_output{ Owner::open()} {}
+
+                     static std::ofstream open()
+                     {
+                        auto path = common::environment::log::path();
+
+                        // make sure we got the directory
+                        common::directory::native::create( common::directory::name::base( path));                           
+
+                        std::ofstream file{ path, std::ios::app};
+
+                        if( ! file)
+                           throw common::exception::system::invalid::Argument{ "failed to open log file: " + path};
+
+                        return file;
+                     }
+
+                     std::ofstream m_output;
+                  };
+
 
                   template< typename M>
                   void log( const std::string& category, M&& message)
                   {
-                     // construct a local 'alias' so we delay the deduction.
-                     static auto alias = []() -> std::string
-                     {
-                        if( environment::variable::exists( environment::variable::name::instance::alias))
-                           return environment::variable::get( environment::variable::name::instance::alias);
-
-                        return common::process::basename();
-                     }();
-
-                     m_output << std::chrono::duration_cast< std::chrono::microseconds>( platform::time::clock::type::now().time_since_epoch()).count()
-                        << '|' << common::domain::identity().name
-                        << '|' << execution::id()
-                        << '|' << process::id()
-                        << '|' << std::this_thread::get_id()
-                        << '|' << alias
-                        << '|' << transaction::Context::instance().current().trid
-                        << '|' << execution::service::parent::name()
-                        << '|' << execution::service::name()
-                        << '|' << category
-                        << '|' << message
-                        << std::endl; // we need to flush the line.
+                     Owner::instance().log( category, std::forward< M>( message));
                   }
 
-                  void reopen() 
+                  void reopen()
                   {
-                     m_output = File::open();
+                     Owner::instance().reopen();
                   }
-
-               private:
-                  File() : m_output{ File::open()} {}
-
-                  static std::ofstream open()
-                  {
-                     auto path = common::environment::log::path();
-
-                     // make sure we got the directory
-                     common::directory::create( common::directory::name::base( path));                           
-
-                     std::ofstream file{ path, std::ios::app};
-
-                     if( ! file)
-                        throw common::exception::system::invalid::Argument{ "failed to open log file: " + path};
-
-                     return file;
-                  }
-
-                  std::ofstream m_output;
-               };
+               } // file
 
                namespace user
                {
@@ -150,7 +165,7 @@ namespace casual
 
                      void log()
                      {
-                        File::instance().log(  m_category, m_buffer);
+                        file::log( m_category, m_buffer);
                         m_buffer.clear();
                      }
 
@@ -280,12 +295,12 @@ namespace casual
             void write( const std::string& category, const std::string& message)
             {
                thread::Lock lock;
-               local::File::instance().log( category, message);
+               local::file::log( category, message);
             }
 
             void reopen()
             {
-               local::File::instance().reopen(); 
+               local::file::reopen(); 
             }
          } // stream
 

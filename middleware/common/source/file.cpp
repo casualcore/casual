@@ -336,23 +336,29 @@ namespace casual
             return memory::guard( opendir( path.c_str()), &closedir).get() != nullptr;
          }
 
+         namespace native
+         {
+            bool create( const std::string& path)
+            {
+               auto parent = name::base( path);
+
+               if( parent.size() < path.size() && parent != "/")
+               {
+                  // We got a parent, make sure we create it first
+                  create( parent);
+               }
+
+               return mkdir( path.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) == 0 || errno == EEXIST;
+            }
+         } // native
+
          bool create( const std::string& path)
          {
-            auto parent = name::base( path);
+            if( native::create( path))
+               return true;
 
-            if( parent.size() < path.size() && parent != "/")
-            {
-               // We got a parent, make sure we create it first
-               create( parent);
-            }
-
-            if( mkdir( path.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) != 0 && errno != EEXIST)
-            {
-               log::line( log::category::error, "failed to create ", path, " - ", code::last::system::error());
-               return false;
-            }
-
-            return true;
+            log::line( log::category::error, code::last::system::error(), " - failed to create ", path);
+            return false;
          }
 
          bool remove( const std::string& path)

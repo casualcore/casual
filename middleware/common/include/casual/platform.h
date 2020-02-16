@@ -191,14 +191,7 @@ namespace casual
 
          namespace transport
          {
-
-#ifdef __APPLE__
-            // OSX has very tight limits on IPC
-            constexpr size::type size = 1024 * 1;
-#else
-            constexpr size::type size = 1024 * 8;
-#endif
-
+            constexpr size::type size = PIPE_BUF;
          } // transport
 
       } // ipc

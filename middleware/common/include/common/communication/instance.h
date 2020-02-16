@@ -103,19 +103,15 @@ namespace casual
                      using non_blocking_policy = ipc::outbound::Connector::blocking_policy;
 
                      inline base_connector( process::Handle process)
-                        : m_process{ std::move( process)}, m_connector( m_process.ipc),
-                           m_socket( ipc::native::detail::create::domain::socket()) {}
+                        : m_process{ std::move( process)}, m_connector{ m_process.ipc} {}
 
-                     inline const Socket& socket() const { return m_socket;}
-
-                     inline const process::Handle& process() const { return m_process;}
-                     inline const ipc::Address& destination() const { return m_connector.destination();}
+                     inline auto& process() const { return m_process;}
+                     inline auto& handle() const { return m_connector.handle();}
 
                      CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
                      {
                         CASUAL_SERIALIZE_NAME( m_process, "process");
                         CASUAL_SERIALIZE_NAME( m_connector, "connector");
-                        CASUAL_SERIALIZE_NAME( m_socket, "socket");
                      })
 
                   protected:
@@ -127,7 +123,6 @@ namespace casual
 
                      process::Handle m_process;
                      ipc::outbound::Connector m_connector;
-                     Socket m_socket;
                   };
 
                   template< fetch::Directive directive>
@@ -222,7 +217,6 @@ namespace casual
                      {
                         Connector();
                         void reconnect();
-                        void clear();
                      };
                      using Device = communication::outbound::Device< Connector>;
                      Device& device();
@@ -233,20 +227,14 @@ namespace casual
                         {
                            Connector();
                            void reconnect();
-                           void clear();
                         };
 
                         using Device = communication::outbound::Device< Connector>;
                         Device& device();
                      } // optional
                   } // manager
-
-                  //! resets all outbound instances, hence they will start
-                  //! configure them self from the environment
-                  //! @attention only for unittests
-                  //void reset();
-
                } // domain
+               
             } // outbound
          } // instance
       } // communication

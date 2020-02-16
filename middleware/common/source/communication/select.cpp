@@ -95,9 +95,7 @@ namespace casual
                     
                      posix::result( 
                          // will set previous signal mask atomically 
-                        ::pselect( FD_SETSIZE, result.read.native(), nullptr, nullptr, nullptr, &block.previous().set),
-                        // we need to pass previous set to be able to dispatch on signals
-                        block.previous().set);
+                        ::pselect( FD_SETSIZE, result.read.native(), nullptr, nullptr, nullptr, &block.previous().set));
 
                      return result;
                   }

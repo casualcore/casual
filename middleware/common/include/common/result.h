@@ -8,6 +8,7 @@
 
 #include "common/value/optional.h"
 #include "common/code/system.h"
+#include "common/log/category.h"
 #include "common/signal.h"
 
 namespace casual
@@ -16,25 +17,49 @@ namespace casual
    {
       namespace posix
       {
-         //! checks posix result, and throws appropriate exception if error
-         //! 
-         //! @returns value of result, if no errors detected 
-         int result( int result);
+         namespace detail
+         {
+            template< typename... Ts>
+            void log( Ts&&... ts) noexcept
+            {
+               common::log::line( common::log::category::error, common::code::last::system::error(), " - ", std::forward< Ts>( ts)...);
+            }
 
-         
-         int result( int result, signal::Set mask);
-
+         } // detail
          namespace log
          {
             //! checks posix result, and logs if error
-            void result( int result) noexcept;
+            template< typename... Ts>
+            int result( int result, Ts&&... ts) noexcept
+            {
+               if( result == -1)
+                  detail::log( std::forward< Ts>( ts)...);
+               return result;
+            }
          } // log
 
-         constexpr auto no_error = static_cast< code::system>( 0);
+         //! checks posix result, and throws appropriate exception if error
+         //! @returns value of result, if no errors detected 
+         int result( int result);
+         
+         namespace error
+         {
+            //! checks posix result, - if 'error' - log the error and throws appropriate exception
+            //! @returns value of result, if no errors detected 
+            template< typename... Ts>
+            int result( int result, Ts&&... ts) noexcept
+            {
+               if( result == -1)
+                  detail::log( std::forward< Ts>( ts)...);
+               return posix::result( result);
+            }
 
-         using optional_error = value::Optional< code::system, no_error>;
+            constexpr auto no_error = static_cast< code::system>( 0);
+            using optional_error = value::Optional< code::system, no_error>;
 
-         optional_error error( int result) noexcept;
+            //! @return an optional error code if there are a posix-error.
+            optional_error optional( int result) noexcept;
+         } // error
 
       } // posix
    } // common

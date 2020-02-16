@@ -37,6 +37,7 @@ namespace casual
             // make sure we handle death of our children
             signal::callback::registration< code::signal::child>( []()
             {
+               Trace trace{ "domain::Manager child signal callback"};
                algorithm::for_each( process::lifetime::ended(), []( auto& exit)
                {
                   manager::handle::event::process::exit( exit);
@@ -73,6 +74,7 @@ namespace casual
                   {
                      return [&state]()
                      {
+                        Trace trace{ "domain::manager::local::callback::idle"};
                         state.tasks.idle( state);
                      };
                   }
@@ -81,6 +83,7 @@ namespace casual
                   {
                      return [&state]()
                      {
+                        Trace trace{ "domain::manager::local::callback::done"};
                         return ! state.execute();
                      };
                   }
@@ -89,6 +92,7 @@ namespace casual
                   {
                      return [&state]()
                      {
+                        Trace trace{ "domain::manager::local::callback::error"};
                         try
                         {
                            throw;

@@ -27,17 +27,9 @@ namespace casual
             {
                namespace payload
                {
-                  const platform::binary::type& get()
+                  const auto& get()
                   {
-                     auto create = [](){
-                        platform::binary::type result( 1000);
-                        algorithm::numeric::iota( result, 0);
-                        std::random_device rd;
-                        std::shuffle( std::begin( result), std::end( result), std::mt19937{ rd()});
-
-                        return result;
-                     };
-                     static auto result = create();
+                     static const auto result = unittest::random::binary( 1000);
                      return result;
                   }
 
@@ -90,7 +82,7 @@ namespace casual
             } // <unnamed>
          } // local
 
-         TEST( casual_common_communication_message, complete_add__ordered)
+         TEST( common_communication_message, complete_add__ordered)
          {
             common::unittest::Trace trace;
 
@@ -109,7 +101,7 @@ namespace casual
             EXPECT_TRUE( complete.payload == local::payload::get());
          }
 
-         TEST( casual_common_communication_message, complete_add__reverse_ordered)
+         TEST( common_communication_message, complete_add__reverse_ordered)
          {
             common::unittest::Trace trace;
 
@@ -130,7 +122,7 @@ namespace casual
          }
 
 
-         TEST( casual_common_communication_ipc, instantiate)
+         TEST( common_communication_ipc, instantiate)
          {
             common::unittest::Trace trace;
 
@@ -138,7 +130,7 @@ namespace casual
          }
 
 
-         TEST( casual_common_communication_ipc, non_blocking_receive__expect_no_messages)
+         TEST( common_communication_ipc, non_blocking_receive__expect_no_messages)
          {
             common::unittest::Trace trace;
 
@@ -149,7 +141,7 @@ namespace casual
 
          }
 
-         TEST( casual_common_communication_ipc, send_receive__small_message)
+         TEST( common_communication_ipc, send_receive__small_message)
          {
             common::unittest::Trace trace;
 
@@ -169,11 +161,11 @@ namespace casual
          }
 
 
-         TEST( casual_common_communication_ipc, send_receive__1_exactly_transport_size__expect_exactly_1_transport_message)
+         TEST( common_communication_ipc, send_receive__1_exactly_transport_size__expect_exactly_1_transport_message)
          {
             common::unittest::Trace trace;
 
-            auto send_message = unittest::random::message( ipc::message::transport::max_payload_size());
+            auto send_message = unittest::random::message( ipc::message::transport::max_payload_size);
 
             unittest::eventually::send( ipc::inbound::ipc(), send_message);
 
@@ -181,14 +173,14 @@ namespace casual
             {
 
                ipc::message::Transport transport;
-               EXPECT_TRUE( ipc::native::receive( ipc::inbound::handle(), transport, ipc::native::Flag::none));
+               EXPECT_TRUE( ipc::native::blocking::receive( ipc::inbound::handle(), transport));
                EXPECT_TRUE( transport.message.header.offset == 0);
-               EXPECT_TRUE( transport.message.header.count == ipc::message::transport::max_payload_size());
+               EXPECT_TRUE( transport.message.header.count == ipc::message::transport::max_payload_size);
 
                // we expect no more transports
                {
                   ipc::message::Transport dummy;
-                  EXPECT_FALSE( ipc::native::receive( ipc::inbound::handle(), dummy, ipc::native::Flag::non_blocking));
+                  EXPECT_FALSE( ipc::native::non::blocking::receive( ipc::inbound::handle(), dummy));
                }
 
                message::Complete complete{ transport.type(), transport.correlation(), transport.complete_size(), transport};
@@ -199,11 +191,11 @@ namespace casual
          }
 
 
-         TEST( casual_common_communication_ipc, send_receive__1__2x_transport_size__expect_exactly_2_transport_message)
+         TEST( common_communication_ipc, send_receive__1__2x_transport_size__expect_exactly_2_transport_message)
          {
             common::unittest::Trace trace;
 
-            auto send_message = unittest::random::message( 2 * ipc::message::transport::max_payload_size());
+            auto send_message = unittest::random::message( 2 * ipc::message::transport::max_payload_size);
             unittest::eventually::send( ipc::inbound::ipc(), send_message);
 
 
@@ -211,20 +203,20 @@ namespace casual
             {
 
                ipc::message::Transport transport;
-               EXPECT_TRUE( ipc::native::receive( ipc::inbound::handle(), transport, ipc::native::Flag::none));
+               EXPECT_TRUE( ipc::native::blocking::receive( ipc::inbound::handle(), transport));
                EXPECT_TRUE( transport.message.header.offset == 0);
-               EXPECT_TRUE( transport.message.header.count == ipc::message::transport::max_payload_size());
+               EXPECT_TRUE( transport.message.header.count == ipc::message::transport::max_payload_size);
 
                message::Complete complete{ transport.type(), transport.correlation(), transport.complete_size(), transport};
 
-               EXPECT_TRUE( ipc::native::receive( ipc::inbound::handle(), transport, ipc::native::Flag::none));
+               EXPECT_TRUE( ipc::native::blocking::receive( ipc::inbound::handle(), transport));
                EXPECT_TRUE( transport.message.header.offset == transport.message.header.count);
-               EXPECT_TRUE( transport.message.header.count == ipc::message::transport::max_payload_size());
+               EXPECT_TRUE( transport.message.header.count == ipc::message::transport::max_payload_size);
 
                // we expect no more transports
                {
                   ipc::message::Transport dummy;
-                  EXPECT_FALSE( ipc::native::receive( ipc::inbound::handle(), dummy, ipc::native::Flag::non_blocking));
+                  EXPECT_FALSE( ipc::native::non::blocking::receive( ipc::inbound::handle(), dummy));
                }
                complete.add( transport);
 
@@ -235,11 +227,11 @@ namespace casual
          }
 
 
-         TEST( casual_common_communication_ipc, send_receive__1__10x_transport_size__expect_correct_assembly)
+         TEST( common_communication_ipc, send_receive__1__10x_transport_size__expect_correct_assembly)
          {
             common::unittest::Trace trace;
 
-            auto send_message = unittest::random::message( 10 * ipc::message::transport::max_payload_size());
+            auto send_message = unittest::random::message( 10 * ipc::message::transport::max_payload_size);
 
             unittest::eventually::send( ipc::inbound::ipc(), send_message);
 
@@ -248,7 +240,7 @@ namespace casual
             EXPECT_TRUE( ( algorithm::equal( receive_message.payload, send_message.payload)));
          }
 
-         TEST( casual_common_communication_ipc, send_receive__1__message_size_1103__expect_correct_assembly)
+         TEST( common_communication_ipc, send_receive__1__message_size_1103__expect_correct_assembly)
          {
             common::unittest::Trace trace;
 
@@ -266,13 +258,13 @@ namespace casual
 
 
 
-         TEST( casual_common_communication_ipc, send_receive__10__3x_transport_size__expect_correct_assembly)
+         TEST( common_communication_ipc, send_receive__10__3x_transport_size__expect_correct_assembly)
          {
             common::unittest::Trace trace;
 
             std::vector< common::Uuid> correlations;
 
-            auto send_message = unittest::random::message( 3 * ipc::message::transport::max_payload_size());
+            auto send_message = unittest::random::message( 3 * ipc::message::transport::max_payload_size);
 
             for( int count = 10; count > 0; --count)
             {
@@ -292,7 +284,7 @@ namespace casual
             }
          }
 
-         TEST( casual_common_communication_ipc, send_receive__service_call_reply)
+         TEST( common_communication_ipc, send_receive__service_call_reply)
          {
             common::unittest::Trace trace;
 
@@ -365,35 +357,35 @@ namespace casual
             } // <unnamed>
          } // local
 
-         TEST( casual_common_communication_ipc, send_receive_100_messages__1kB)
+         TEST( common_communication_ipc, send_receive_100_messages__1kB)
          {
             common::unittest::Trace trace;
 
             local::test_send( 1024, 100);
          }
 
-         TEST( DISABLED_casual_common_communication_ipc, send_receive_1000_messages__1kB)
+         TEST( common_communication_ipc, send_receive_1000_messages__1kB)
          {
             common::unittest::Trace trace;
 
             local::test_send( 1024, 1000);
          }
 
-         TEST( DISABLED_casual_common_communication_ipc, send_receive_1000_messages__10kB)
+         TEST( DISABLED_common_communication_ipc, send_receive_1000_messages__10kB)
          {
             common::unittest::Trace trace;
 
             local::test_send( 1024 * 10, 1000);
          }
 
-         TEST( DISABLED_casual_common_communication_ipc, send_receive_1000_messages__100kB)
+         TEST( DISABLED_common_communication_ipc, send_receive_1000_messages__100kB)
          {
             common::unittest::Trace trace;
 
             local::test_send( 1024 * 100, 1000);
          }
 
-         TEST( DISABLED_casual_common_communication_ipc, send_receive_10000_messages__100kB)
+         TEST( DISABLED_common_communication_ipc, send_receive_10000_messages__100kB)
          {
             common::unittest::Trace trace;
 
