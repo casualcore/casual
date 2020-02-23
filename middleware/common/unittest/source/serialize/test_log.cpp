@@ -16,7 +16,7 @@
 
 namespace casual
 {
-   TEST( serviceframework_log_writer, serialize_pod)
+   TEST( common_serialize_log_writer, serialize_pod)
    {
       std::ostringstream out;
       {
@@ -24,7 +24,7 @@ namespace casual
          long value = 10;
          archive << CASUAL_NAMED_VALUE( value);
       }
-      EXPECT_TRUE( out.str() == "-value..[10]\n") << "out.str(): " << out.str();
+      EXPECT_TRUE( out.str() == "value: 10\n") << "out.str(): " << out.str();
    }
 
    namespace local
@@ -47,7 +47,7 @@ namespace casual
       } // <unnamed>
    } // local
 
-   TEST( serviceframework_log_writer, serialize_composite)
+   TEST( common_serialize_log_writer, serialize_composite)
    {
       std::ostringstream out;
       {
@@ -56,14 +56,15 @@ namespace casual
          archive << CASUAL_NAMED_VALUE( composite);
       }
 
-      auto expected = R"(-composite
-|-a..[42]
-|-b..[foo]
-|-c..[X]
+      constexpr auto expected = R"(composite: {
+  a: 42
+  b: "foo"
+  c: 'X'
+}
 )";
 
 
-      EXPECT_TRUE( out.str() == expected) << "out.str(): " << out.str() << "expected: " << expected; 
+      EXPECT_TRUE( out.str() == expected) << "out.str(): '" << out.str() << "'expected: '" << expected << "'"; 
    }
 
 } // casual
