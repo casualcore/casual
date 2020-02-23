@@ -20,16 +20,9 @@ namespace casual
       {
          namespace log
          {
-
-            //!
-            //! |-someStuff
-            //! ||-name...........[blabla]
-            //! ||-someOtherName..[foo]
-            //! ||-composite
-            //! |||-foo..[slkjf]
-            //! |||-bar..[42]
-            //! ||-
-            //!
+            //! @returns a 'writer' that serialize to a
+            //! _yaml-like_ format that is (subjectively) easy 
+            // to read for a human
             Writer writer( std::ostream& out);
 
          } // log
