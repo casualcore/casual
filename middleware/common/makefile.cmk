@@ -196,7 +196,9 @@ unittest_objectfiles = [
     Compile( 'unittest/source/test_algorithm.cpp'),
     Compile( 'unittest/source/test_range.cpp'),
     Compile( 'unittest/source/test_execute.cpp'),
-    
+    Compile( 'unittest/source/test_execution.cpp'),
+
+
     Compile( 'unittest/source/test_memory.cpp'),
     Compile( 'unittest/source/test_pimpl.cpp'),
     

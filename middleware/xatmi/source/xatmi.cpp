@@ -17,6 +17,8 @@
 #include "common/memory.h"
 
 #include "common/string.h"
+#include "common/execution.h"
+#include "common/uuid.h"
 
 #include <array>
 #include <cstdarg>
@@ -167,7 +169,13 @@ void tpsvrdone()
    tx_close();
 }
 
+void casual_execution_id_set( const uuid_t* id)
+{
+   casual::common::execution::id( casual::common::Uuid( *id));
+}
 
-
-
+const uuid_t* casual_execution_id_get()
+{
+   return &casual::common::execution::id().get();
+}
 

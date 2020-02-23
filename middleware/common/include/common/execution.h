@@ -7,7 +7,6 @@
 
 #pragma once
 
-
 #include <string>
 
 namespace casual
@@ -53,5 +52,3 @@ namespace casual
       } // execution
    } // common
 } // casual
-
-

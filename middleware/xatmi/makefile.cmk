@@ -1,4 +1,5 @@
 from casual.middleware.make.dsl import *
+import sys
 
 IncludePaths([
 	'include', 
@@ -53,13 +54,17 @@ install_include += [
     'include/xa.h',
 ]
 
+platform_specific_libs = []
+if not sys.platform.startswith('darwin'):
+   platform_specific_libs = ['uuid']
+
 LinkUnittest( 'bin/test-casual-xatmi',
     [
        Compile( 'unittest/source/test_buffer.cpp'),
        Compile( 'unittest/source/test_tx.cpp'),
-       
+       Compile( 'unittest/source/test_xatmi.cpp')
     ],
-    [ lib_xatmi, 'casual-common', 'casual-unittest'])
+    [ lib_xatmi, 'casual-common', 'casual-unittest'] + platform_specific_libs )
 
 # Install
 Install( install_lib, '$(CASUAL_HOME)/lib')

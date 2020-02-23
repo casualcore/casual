@@ -8,6 +8,7 @@
 
 
 #include <stdarg.h>
+#include <uuid/uuid.h>
 
 
 
@@ -36,6 +37,9 @@ extern int casual_vlog( casual_log_category_t category, const char* const format
 extern int casual_user_vlog( const char* category, const char* const format, va_list ap);
 
 extern int casual_user_log( const char* category, const char* const message);
+
+extern void casual_execution_id_set( const uuid_t* id);
+extern const uuid_t* casual_execution_id_get();
 
 /**
  * @returns the alias of the instance.
