@@ -37,6 +37,9 @@ namespace casual
                   {
                      invalid = 0,
                      version_1 = 1000,
+
+                     // make sure this 'points' to the latest version
+                     latest = version_1
                   };
                } // protocol
 
