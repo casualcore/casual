@@ -15,8 +15,9 @@ COMPILER = $(CXX)
 # clang has false warning for noexcept if there are any throws within, even if we catch all
 #   we add -Wno-exceptions 
 #   TODO: remove as soon as they fix it
-WARNING_DIRECTIVE = -Wall -Wextra -Werror -Wsign-compare -Wuninitialized  -Winit-self -Woverloaded-virtual -Wno-missing-declarations -Wno-unused-parameter -Wno-exceptions
+WARNING_DIRECTIVE = -Wall -Wextra -Werror -Wsign-compare -Wuninitialized  -Winit-self -Woverloaded-virtual -Wno-missing-declarations -Wno-unused-parameter -Wno-exceptions  -Wno-implicit-fallthrough
 
+VERSION_DIRECTIVE = -DCASUAL_BUILD_VERSION=\"$(CASUAL_BUILD_VERSION)\"
 
 
 # Linkers
@@ -58,7 +59,7 @@ export EXECUTABLE_LINKER
 GENERAL_LINK_DIRECTIVE = -fPIC
 
 ifdef DEBUG
-   COMPILE_DIRECTIVES = -ggdb -c -fPIC $(WARNING_DIRECTIVE) $(STD_DIRECTIVE) $(OPTIONAL_FLAGS)
+   COMPILE_DIRECTIVES = -ggdb -c -fPIC $(VERSION_DIRECTIVE) $(WARNING_DIRECTIVE) $(STD_DIRECTIVE) $(OPTIONAL_FLAGS)
    LINK_DIRECTIVES_LIB =  -ggdb -dynamiclib $(WARNING_DIRECTIVE) $(GENERAL_LINK_DIRECTIVE)
    LINK_DIRECTIVES_EXE =  -ggdb $(WARNING_DIRECTIVE) $(GENERAL_LINK_DIRECTIVE)
    LINK_DIRECTIVES_ARCHIVE =  -ggdb $(WARNING_DIRECTIVE) $(GENERAL_LINK_DIRECTIVE)
@@ -70,7 +71,7 @@ ifdef DEBUG
    endif
    
 else
-   COMPILE_DIRECTIVES =  -c -O3 -fPIC $(WARNING_DIRECTIVE) $(STD_DIRECTIVE) -pthread $(OPTIONAL_FLAGS)
+   COMPILE_DIRECTIVES =  -c -O3 -fPIC $(VERSION_DIRECTIVE) $(WARNING_DIRECTIVE) $(STD_DIRECTIVE) -pthread $(OPTIONAL_FLAGS)
    LINK_DIRECTIVES_LIB =  -dynamiclib -O3 $(GENERAL_LINK_DIRECTIVE) $(WARNING_DIRECTIVE) $(STD_DIRECTIVE)
    LINK_DIRECTIVES_EXE =  -O3 $(GENERAL_LINK_DIRECTIVE) $(WARNING_DIRECTIVE) $(STD_DIRECTIVE)
    LINK_DIRECTIVES_ARCHIVE = -O3 $(GENERAL_LINK_DIRECTIVE) $(WARNING_DIRECTIVE) -$(STD_DIRECTIVE) -pthread

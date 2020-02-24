@@ -100,6 +100,7 @@ CASUAL_VERSION=''' + env.CASUAL_VERSION + '''
 CASUAL_RELEASE=''' + rpmRelease() + '''
 DISTRIBUTION="centos"
 BRANCH=''' + env.BRANCH_NAME + '''
+export CASUAL_BUILD_VERSION=''' + totalVersion() + '''
 
 performCoverageMeasuring()
 {
@@ -121,6 +122,7 @@ CASUAL_VERSION=''' + env.CASUAL_VERSION + '''
 CASUAL_RELEASE=''' + rpmRelease() + '''
 DISTRIBUTION="suse"
 BRANCH=''' + env.BRANCH_NAME + '''
+export CASUAL_BUILD_VERSION=''' + totalVersion() + '''
 
 performCoverageMeasuring()
 {
