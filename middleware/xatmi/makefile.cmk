@@ -17,21 +17,28 @@ LibraryPaths([
 install_lib = []
 install_include = []
  
+lib_xatmi_explicit = LinkLibrary( 'bin/casual-xatmi-explicit',
+	[
+      Compile( 'source/xatmi/explicit/buffer.cpp'),
+      Compile( 'source/xatmi/explicit/service.cpp'),
+      Compile( 'source/xatmi/internal/code.cpp'),
+      Compile( 'source/xatmi/internal/log.cpp'),
+	],
+	['casual-common'])
+
+install_lib.append( lib_xatmi_explicit)
 
 lib_xatmi = LinkLibrary( 'bin/casual-xatmi',
 	[
       Compile( 'source/xatmi.cpp'),
+      Compile( 'source/xatmi/extended.cpp'),
       Compile( 'source/xatmi/server.cpp'),
       Compile( 'source/xatmi/executable.cpp'),
       Compile( 'source/xatmi/conversation.cpp'),
-      Compile( 'source/xatmi/call.cpp'),
-      Compile( 'source/xatmi/extended.cpp'),
-      Compile( 'source/xatmi/internal/code.cpp'),
-      Compile( 'source/xatmi/internal/log.cpp'),
       Compile( 'source/xa.cpp'),
       Compile( 'source/tx.cpp'),
 	],
-	['casual-common'])
+	[ lib_xatmi_explicit, 'casual-common'])
 
 install_lib.append( lib_xatmi)
 
@@ -39,6 +46,7 @@ install_include += [
    ( 'include/casual/xatmi/server.h', 'casual/xatmi'),
    ( 'include/casual/xatmi/executable.h', 'casual/xatmi'),
    ( 'include/casual/xatmi/extended.h', 'casual/xatmi'),
+   ( 'include/casual/xatmi/explicit.h', 'casual/xatmi'),
    ( 'include/casual/xatmi/defines.h', 'casual/xatmi'),
    ( 'include/casual/xatmi/flag.h', 'casual/xatmi'),
    ( 'include/casual/xatmi/code.h', 'casual/xatmi'),

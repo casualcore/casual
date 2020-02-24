@@ -9,6 +9,7 @@
 #include "casual/tx.h"
 
 #include "casual/xatmi/internal/code.h"
+#include "casual/xatmi/explicit.h"
 
 #include "common/buffer/pool.h"
 #include "common/server/context.h"
@@ -36,119 +37,60 @@ long casual_get_tpurcode()
    return casual::xatmi::internal::user::code::get();
 }
 
-
-
 char* tpalloc( const char* type, const char* subtype, long size)
 {
-   casual::xatmi::internal::error::clear();
-
-   try
-   {
-      // TODO: Shall we report size less than zero ?
-      return casual::common::buffer::pool::Holder::instance().allocate( type, subtype, size < 0 ? 0 : size);
-   }
-   catch( ...)
-   {
-      casual::xatmi::internal::error::set( casual::common::exception::xatmi::handle());
-      return nullptr;
-   }
+   return casual_buffer_allocate( type, subtype, size);
 }
 
 char* tprealloc( const char* ptr, long size)
 {
-   casual::xatmi::internal::error::clear();
-
-   try
-   {
-      // TODO: Shall we report size less than zero ?
-      return casual::common::buffer::pool::Holder::instance().reallocate( ptr, size < 0 ? 0 : size);
-   }
-   catch( ...)
-   {
-      casual::xatmi::internal::error::set( casual::common::exception::xatmi::handle());
-      return nullptr;
-   }
-
+   return casual_buffer_reallocate( ptr, size);
 }
 
-
-long tptypes( const char* const ptr, char* const type, char* const subtype)
+long tptypes( const char* buffer, char* type, char* subtype)
 {
-   casual::xatmi::internal::error::clear();
-
-   try
-   {
-      auto buffer = casual::common::buffer::pool::Holder::instance().get( ptr);
-
-      auto combined = casual::common::buffer::type::dismantle( buffer.payload().type);
-
-
-      // type is optional
-      if( type)
-      {
-         auto destination = casual::common::range::make( type, 8);
-         casual::common::memory::clear( destination);
-         casual::common::algorithm::copy_max( std::get< 0>( combined), destination);
-      }
-
-      // subtype is optional
-      if( subtype)
-      {
-         auto destination = casual::common::range::make( subtype, 16);
-         casual::common::memory::clear( destination);
-         casual::common::algorithm::copy_max( std::get< 1>( combined), destination);
-      }
-
-      return buffer.reserved();
-   }
-   catch( ...)
-   {
-      casual::xatmi::internal::error::set( casual::common::exception::xatmi::handle());
-      return -1;
-   }
-
+   return casual_buffer_type( buffer, type, subtype);
 }
 
-void tpfree( const char* const ptr)
+void tpfree( const char* ptr)
 {
-   try
-   {
-      casual::common::buffer::pool::Holder::instance().deallocate( ptr);
-   }
-   catch( ...)
-   {
-      casual::xatmi::internal::error::set( casual::common::exception::xatmi::handle());
-   }
+   casual_buffer_free( ptr);
 }
 
-void tpreturn( const int rval, const long rcode, char* const data, const long len, const long /* flags for future use */)
+void tpreturn( int rval, long rcode, char* data, long len, long flags)
 {
-   casual::xatmi::internal::error::wrap( [&](){
-      casual::common::server::context().jump_return( 
-         static_cast< casual::common::flag::xatmi::Return>( rval), rcode, data, len);
-   });
+   casual_service_return( rval, rcode, data, len, flags);
 }
-
-
-
-
-
 
 int tpadvertise( const char* service, void (*function)( TPSVCINFO *))
 {
-   return casual::xatmi::internal::error::wrap( [&](){
-      casual::common::server::context().advertise( service, function);
-   });
+   return casual_service_advertise( service, function);
 }
 
 int tpunadvertise( const char* const service)
 {
-   return casual::xatmi::internal::error::wrap( [&](){
-      casual::common::server::context().unadvertise( service);
-   });
+   return casual_service_unadvertise( service);
 }
 
+int tpcall( const char* const service, char* idata, const long ilen, char** odata, long* olen, const long bitmap)
+{
+   return casual_service_call( service, idata, ilen, odata, olen, bitmap);
+}
 
+int tpacall( const char* const service, char* idata, const long ilen, const long flags)
+{
+   return casual_service_asynchronous_send( service, idata, ilen, flags);
+}
+
+int tpgetrply( int *const descriptor, char** odata, long* olen, const long bitmap)
+{
+   return casual_service_asynchronous_receive( descriptor, odata, olen, bitmap);
+}
+
+int tpcancel( int id)
+{
+   return casual_service_asynchronous_cancel( id);
+}
 
 
 

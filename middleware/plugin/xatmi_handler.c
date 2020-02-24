@@ -12,9 +12,9 @@ long xatmi_tperrno;
 //Global representation av senaste context där fel uppstod.
 enum xatmi_context xatmi_error_context;
 
-buffer_type copy( ngx_str_t source)
+http_buffer_type copy( ngx_str_t source)
 {
-   buffer_type buffer;
+   http_buffer_type buffer;
    buffer.data = (char*)malloc( source.len + 1);
    memcpy( buffer.data, (char*)source.data, source.len);
    buffer.data[source.len] = '\0';
@@ -22,7 +22,7 @@ buffer_type copy( ngx_str_t source)
    return buffer;
 }
 
-ngx_str_t copy_buffer( buffer_type source, ngx_http_request_t* r)
+ngx_str_t copy_buffer( http_buffer_type source, ngx_http_request_t* r)
 {
    ngx_str_t destination;
    destination.data = ngx_pcalloc( r->pool, source.size + 1);
@@ -43,7 +43,7 @@ ngx_str_t copy_data( const char* const source, ngx_http_request_t* r)
    return destination;
 }
 
-ngx_int_t set_custom_header_in_headers_out(ngx_http_request_t* r, header_type header_out)
+ngx_int_t set_custom_header_in_headers_out(ngx_http_request_t* r, http_header_type header_out)
 {
    for ( int i = 0; i < header_out.size; i++)
    {
@@ -84,7 +84,7 @@ ngx_int_t xatmi_call( ngx_http_xatmi_ctx_t* client_context, ngx_http_request_t* 
    ngx_log_debug1(NGX_LOG_DEBUG_ALL, r->connection->log, 0, "xatmi: calling service [%s]", client_context->service);
    ngx_log_debug1(NGX_LOG_DEBUG_ALL, r->connection->log, 0, "xatmi: call [%V]", &client_context->call);
 
-   casual_buffer_type transport;
+    casual_http_buffer_type transport;
    strcpy( transport.service, (char*)client_context->service);
    strcpy( transport.protocol, (char*)client_context->protocol);
 
@@ -162,7 +162,7 @@ ngx_int_t xatmi_receive( ngx_http_xatmi_ctx_t* client_context, ngx_http_request_
 {
    ngx_log_debug1(NGX_LOG_DEBUG_ALL, r->connection->log, 0,  "xatmi: receiving... descriptor [%d]", client_context->descriptor);
 
-   casual_buffer_type transport;
+   casual_http_buffer_type transport;
    transport.header_in.size = 0; // No header needed
    transport.descriptor = client_context->descriptor;
    transport.header_out.data = 0;
@@ -189,7 +189,7 @@ void xatmi_cancel( ngx_http_xatmi_ctx_t* client_context, ngx_http_request_t* r)
 {
    ngx_log_debug1(NGX_LOG_DEBUG_ALL, r->connection->log, 0,  "xatmi: canceling... descriptor [%d]", client_context->descriptor);
 
-   casual_buffer_type transport;
+   casual_http_buffer_type transport;
    transport.header_in.size = 0; // No header needed
    transport.descriptor = client_context->descriptor;
    strcpy( transport.protocol, (char*)client_context->protocol);

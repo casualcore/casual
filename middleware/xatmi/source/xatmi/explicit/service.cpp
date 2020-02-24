@@ -5,11 +5,22 @@
 //!
 
 
-#include "casual/xatmi.h"
+#include "casual/xatmi/explicit.h"
+#include "casual/tx.h"
+
 #include "casual/xatmi/internal/code.h"
 
 #include "common/buffer/pool.h"
+#include "common/server/context.h"
 #include "common/service/call/context.h"
+#include "casual/platform.h"
+#include "common/log.h"
+#include "common/memory.h"
+
+#include "common/string.h"
+
+#include <array>
+#include <cstdarg>
 
 
 namespace local
@@ -35,7 +46,8 @@ namespace local
    } // <unnamed>
 } // local
 
-int tpcall( const char* const service, char* idata, const long ilen, char** odata, long* olen, const long bitmap)
+
+int casual_service_call( const char* const service, char* idata, const long ilen, char** odata, long* olen, const long bitmap)
 {
    casual::xatmi::internal::clear();
 
@@ -85,7 +97,7 @@ int tpcall( const char* const service, char* idata, const long ilen, char** odat
    return -1;
 }
 
-int tpacall( const char* const service, char* idata, const long ilen, const long flags)
+int casual_service_asynchronous_send( const char* const service, char* idata, const long ilen, const long flags)
 {
    casual::xatmi::internal::clear();
 
@@ -120,7 +132,7 @@ int tpacall( const char* const service, char* idata, const long ilen, const long
    return -1;
 }
 
-int tpgetrply( int *const descriptor, char** odata, long* olen, const long bitmap)
+int casual_service_asynchronous_receive( int *const descriptor, char** odata, long* olen, const long bitmap)
 {
    casual::xatmi::internal::clear();
 
@@ -162,9 +174,31 @@ int tpgetrply( int *const descriptor, char** odata, long* olen, const long bitma
    return -1;
 }
 
-int tpcancel( int id)
+int casual_service_asynchronous_cancel( int id)
 {
    return casual::xatmi::internal::error::wrap( [id](){
       casual::common::service::call::Context::instance().cancel( id);
+   });
+}
+
+void casual_service_return( const int rval, const long rcode, char* const data, const long len, const long /* flags for future use */)
+{
+   casual::xatmi::internal::error::wrap( [&](){
+      casual::common::server::context().jump_return( 
+         static_cast< casual::common::flag::xatmi::Return>( rval), rcode, data, len);
+   });
+}
+
+int casual_service_advertise( const char* service, void (*function)( TPSVCINFO *))
+{
+   return casual::xatmi::internal::error::wrap( [&](){
+      casual::common::server::context().advertise( service, function);
+   });
+}
+
+int casual_service_unadvertise( const char* const service)
+{
+   return casual::xatmi::internal::error::wrap( [&](){
+      casual::common::server::context().unadvertise( service);
    });
 }
