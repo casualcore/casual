@@ -44,7 +44,7 @@ def rpmRelease()
       return "beta." + env.BUILD_NUMBER
    if ( isRelease())
       return env.BUILD_NUMBER
-   return "alpha." + env.BUILD_NUMBER
+   return normalizeBranchName( env.BRANCH_NAME) + "." + env.BUILD_NUMBER
 }
 
 def selectExtendedVersion()
