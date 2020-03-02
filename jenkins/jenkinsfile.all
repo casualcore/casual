@@ -35,7 +35,7 @@ def isPublishable()
 
 def normalizeBranchName( string)
 {
-   return string.replaceAll("/","-").replaceAll("feature","alpha")
+   return string.replaceAll("/","_").replaceAll("feature","")
 }
 
 def rpmRelease()
@@ -44,7 +44,7 @@ def rpmRelease()
       return "beta." + env.BUILD_NUMBER
    if ( isRelease())
       return env.BUILD_NUMBER
-   return normalizeBranchName( env.BRANCH_NAME) + "." + env.BUILD_NUMBER
+   return "alpha." + normalizeBranchName( env.BRANCH_NAME) + "." + env.BUILD_NUMBER
 }
 
 def selectExtendedVersion()
@@ -53,7 +53,7 @@ def selectExtendedVersion()
       return "-beta." + env.BUILD_NUMBER
    if ( isRelease())
       return ""
-   return "-" + normalizeBranchName( env.BRANCH_NAME) + "." + env.BUILD_NUMBER
+   return "-alpha." + normalizeBranchName( env.BRANCH_NAME) + "." + env.BUILD_NUMBER
 }
 
 def totalVersion()
