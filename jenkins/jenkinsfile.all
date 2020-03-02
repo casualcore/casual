@@ -35,7 +35,7 @@ def isPublishable()
 
 def normalizeBranchName( string)
 {
-   return string.replaceAll("/","_").replaceAll("feature","")
+   return string.replaceAll("/","_").replaceAll("feature","").replaceAll("-", "_") 
 }
 
 def rpmRelease()
