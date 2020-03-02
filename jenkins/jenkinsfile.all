@@ -33,13 +33,18 @@ def isPublishable()
    return false
 }
 
+def normalizeBranchName( string)
+{
+   return string.replaceAll("/","-").replaceAll("feature","alpha")
+}
+
 def rpmRelease()
 {
    if (isDevelop())
       return "beta." + env.BUILD_NUMBER
    if ( isRelease())
       return env.BUILD_NUMBER
-   return "alpha." + env.BUILD_NUMBER
+   return normalizeBranchName( env.BRANCH_NAME) + "." + env.BUILD_NUMBER
 }
 
 def selectExtendedVersion()
@@ -48,7 +53,7 @@ def selectExtendedVersion()
       return "-beta." + env.BUILD_NUMBER
    if ( isRelease())
       return ""
-   return "-alpha." + env.BUILD_NUMBER
+   return "-" + normalizeBranchName( env.BRANCH_NAME) + "." + env.BUILD_NUMBER
 }
 
 def totalVersion()
@@ -361,8 +366,6 @@ try
 
    node( "publishing")
    {
-      if ( isPublishable() )
-      {
          stage('Tag')
          {
             checkout scm
@@ -394,7 +397,6 @@ try
                """
             }
          }
-      }
    }
 
    slackSend color: "good", message: "Build finished: ${env.JOB_NAME} - ${env.BUILD_NUMBER} (<${env.JOB_URL}|Open>)"
