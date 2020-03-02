@@ -73,7 +73,7 @@ namespace casual
 
                friend bool operator < ( const Queue& lhs, const Queue& rhs);
 
-               CASUAL_CONST_CORRECT_SERIALIZE_WRITE({
+               CASUAL_LOG_SERIALIZE({
                   CASUAL_SERIALIZE( process);
                   CASUAL_SERIALIZE( queue);
                   CASUAL_SERIALIZE( order);

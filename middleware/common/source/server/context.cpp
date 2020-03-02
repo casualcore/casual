@@ -8,10 +8,7 @@
 #include "common/server/context.h"
 #include "common/server/argument.h"
 
-
-#include "common/message/server.h"
 #include "common/service/call/context.h"
-
 
 #include "common/communication/instance.h"
 #include "common/buffer/pool.h"

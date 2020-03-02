@@ -17,6 +17,7 @@
 #include "common/event/send.h"
 #include "common/communication/instance.h"
 #include "common/exception/casual.h"
+#include "common/instance.h"
 
 #include "domain/pending/message/send.h"
 
@@ -112,8 +113,6 @@ namespace casual
 
                   if( count > 0)
                   {
-                     // let the _instance name_ be the proxy name. It might help reading the log
-                     environment::Variable variable{ string::compose( environment::variable::name::instance::alias, '=', proxy.name)};
                      while( count-- > 0)
                      {
                         auto& info = m_state.resource_properties.at( proxy.key);
@@ -128,7 +127,7 @@ namespace casual
                               {
                                  "--id", std::to_string( proxy.id.value()),
                               },
-                              { variable}
+                              { common::instance::variable( { proxy.name, proxy.id.value()})}
                            );
 
                            instance.state( state::resource::Proxy::Instance::State::started);

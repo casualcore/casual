@@ -29,6 +29,28 @@ namespace casual
                   using id_type = platform::size::type;
                   using size_type = platform::size::type;
 
+                  struct Version
+                  {
+                     std::string casual;
+                     std::string compiler;
+
+                     struct
+                     {
+                        std::vector< size_type> protocols;
+
+                        CASUAL_CONST_CORRECT_SERIALIZE({
+                           CASUAL_SERIALIZE( protocols);
+                        })
+                     } gateway;
+
+                     CASUAL_CONST_CORRECT_SERIALIZE({
+                        CASUAL_SERIALIZE( casual);
+                        CASUAL_SERIALIZE( compiler);
+                        CASUAL_SERIALIZE( gateway);
+                     })
+
+                  };
+
                   struct Group
                   {
                      id_type id;
@@ -176,6 +198,7 @@ namespace casual
 
                   struct State
                   {
+                     model::Version version; 
                      common::domain::Identity identity;
                      std::vector< model::Group> groups;
                      std::vector< model::Executable> executables;
@@ -206,6 +229,7 @@ namespace casual
 
                      CASUAL_CONST_CORRECT_SERIALIZE(
                      {
+                        CASUAL_SERIALIZE( version);
                         CASUAL_SERIALIZE( identity);
                         CASUAL_SERIALIZE( groups);
                         CASUAL_SERIALIZE( executables);

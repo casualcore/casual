@@ -75,7 +75,7 @@ namespace casual
                static auto reader( T&& buffer) { return serialize::json::strict::reader( buffer);}
 
                template< typename T>
-               static auto writer( T&& buffer) { return serialize::json::writer( buffer);}
+               static auto writer( T&& buffer) { return serialize::json::pretty::writer( buffer);}
             };
 
             namespace relaxed    

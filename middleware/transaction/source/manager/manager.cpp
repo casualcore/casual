@@ -60,13 +60,10 @@ namespace casual
                manager::action::resource::Instances( m_state));
 
             // Make sure we wait for the resources to get ready
-            auto handler = manager::handle::startup::handlers( m_state);
-
-            const auto types = handler.types();
-
-            // TODO maintainence: change to message::dispatch...
-            while( ! m_state.booted())
-               handler( communication::ipc::blocking::next( manager::ipc::device(), types));
+            common::message::dispatch::conditional::pump( 
+               manager::handle::startup::handlers( m_state),
+               manager::ipc::device(),
+               [&](){ return m_state.booted();});
          }
 
          log::line( log::category::information, "transaction-manager is on-line");

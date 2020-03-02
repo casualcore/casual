@@ -138,9 +138,6 @@ namespace casual
       {
          Trace trace( "queue::Manager::Manager");
 
-         // unset our alias variable, so our children doesn't inherit the name...
-         common::environment::variable::unset( common::environment::variable::name::instance::alias);
-
          // make sure we handle death of our children
          signal::callback::registration< code::signal::child>( []()
          {

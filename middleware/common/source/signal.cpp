@@ -158,7 +158,7 @@ namespace casual
                               code::signal::interrupt>( set);
                      }
 
-                     void registration( code::signal signal, std::function< void()> callback)
+                     void registration( code::signal signal, common::function< void()> callback)
                      {
                        if( auto found = algorithm::find_if( m_handlers, [signal]( auto& handler){ return handler.signal == signal;}))
                            found->callbacks.push_back( std::move( callback));
@@ -204,15 +204,15 @@ namespace casual
 
                      struct Handler
                      {
-                        using callbacks_type = std::vector< std::function< void()>>;
+                        using callbacks_type = std::vector< common::function< void()>>;
 
-                        bool operator () ( const signal::Set& current) const 
+                        bool operator () ( const signal::Set& current)
                         {
                            return disptacher( current, callbacks);
                         }
 
                         code::signal signal{};
-                        std::function< bool( const signal::Set&, const callbacks_type&)> disptacher;
+                        common::function< bool( const signal::Set&, callbacks_type&)> disptacher;
                         callbacks_type callbacks;
                         
                      };
@@ -220,7 +220,7 @@ namespace casual
                      template< code::signal signal, typename Exception>
                      static auto create_dispatcher()
                      {
-                        return []( const signal::Set& current, const Handler::callbacks_type& callbacks)
+                        return []( const signal::Set& current, Handler::callbacks_type& callbacks)
                         {
                            // check that: not masked and the signal was pending
                            if( ! current.exists( signal) && basic_pending< signal>::pending.exchange( false))
@@ -320,7 +320,7 @@ namespace casual
          {
             namespace detail
             {
-               void registration( code::signal signal, std::function< void()> callback)
+               void registration( code::signal signal, common::function< void()> callback)
                {
                   local::handler::Handle::instance().registration( signal, std::move( callback));
                }

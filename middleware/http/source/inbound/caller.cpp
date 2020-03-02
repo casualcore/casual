@@ -77,7 +77,7 @@ namespace casual
                }
                namespace header
                {
-                  common::service::header::Fields copy( const header_type& headers)
+                  common::service::header::Fields copy( const http_header_type& headers)
                   {
                      const http::Trace trace("casual::http::inbound::local::header::copy");
 
@@ -88,11 +88,11 @@ namespace casual
 
                      return result;
                   }
-                  header_type copy( const common::service::header::Fields& headers)
+                  http_header_type copy( const common::service::header::Fields& headers)
                   {
                      const http::Trace trace("casual::http::inbound::local::header::copy");
 
-                     header_type result;
+                     http_header_type result;
 
                      result.size = headers.size();
                      result.data = reinterpret_cast< header_data_type*>( malloc( result.size * sizeof( header_data_type)));
@@ -136,7 +136,7 @@ namespace casual
                namespace parameter
                {
                   using container = std::vector< std::pair< std::string, std::string> >;
-                  container copy( const buffer_type& buffer)
+                  container copy( const http_buffer_type& buffer)
                   {
                      container result;
                      const auto parameters = common::string::split( buffer.data, '&');
@@ -205,16 +205,16 @@ namespace casual
                namespace buffer
                {
                   template< typename Type>
-                  buffer_type copy( const Type& input)
+                  http_buffer_type copy( const Type& input)
                   {
-                     buffer_type output;
+                     http_buffer_type output;
                      output.data = reinterpret_cast<char*>( malloc( input.size()));
                      output.size = input.size();
                      common::algorithm::copy( input, output.data);
                      return output;
                   }
 
-                  platform::binary::type assemble( casual_buffer_type* transport, const parameter::container& parameters, const std::string& protocol)
+                  platform::binary::type assemble( casual_http_buffer_type* transport, const parameter::container& parameters, const std::string& protocol)
                   {
                      if ( protocol == http::protocol::json && transport->payload.size < 1)
                         return parameter::make_json( parameters);
@@ -227,7 +227,7 @@ namespace casual
 
                namespace exception
                {
-                  long handle( casual_buffer_type* transport)
+                  long handle( casual_http_buffer_type* transport)
                   {
                      auto usercode{ 0};
                      try
@@ -270,7 +270,7 @@ namespace casual
                   // Contacts service-manager and gets a lookup object.
                   // When lookup object returns true, the service-manager is
                   // ready to handle the actual call
-                  long lookup( casual_buffer_type* transport)
+                  long lookup( casual_http_buffer_type* transport)
                   {
                      const http::Trace trace("casual::http::inbound::local::service::lookup");
                      const auto& service = transport->service;
@@ -294,7 +294,7 @@ namespace casual
                      }
                   }
 
-                  long send( casual_buffer_type* transport)
+                  long send( casual_http_buffer_type* transport)
                   {
                      const http::Trace trace("casual::http::inbound::local::service::send");
                      const auto& protocol = transport->protocol;
@@ -339,7 +339,7 @@ namespace casual
                      return OK;
                   }
 
-                  long receive( casual_buffer_type* transport)
+                  long receive( casual_http_buffer_type* transport)
                   {
                      const http::Trace trace("casual::http::inbound::service::service::receive");
                      const auto& protocol = transport->protocol;
@@ -381,7 +381,7 @@ namespace casual
                      }
                   }
 
-                  long cancel( casual_buffer_type* transport)
+                  long cancel( casual_http_buffer_type* transport)
                   {
                      const http::Trace trace("casual::http::inbound::service::service::cancel");
                      const auto& protocol = transport->protocol;
@@ -414,22 +414,22 @@ namespace casual
    } // http
 } // casual
 
-long casual_xatmi_lookup( casual_buffer_type* data)
+long casual_xatmi_lookup( casual_http_buffer_type* data)
 {
    return casual::http::inbound::local::service::lookup( data);
 }
 
-long casual_xatmi_send( casual_buffer_type* data)
+long casual_xatmi_send( casual_http_buffer_type* data)
 {
    return casual::http::inbound::local::service::send( data);
 }
 
-long casual_xatmi_receive( casual_buffer_type* data)
+long casual_xatmi_receive( casual_http_buffer_type* data)
 {
    return casual::http::inbound::local::service::receive( data);
 }
 
-long casual_xatmi_cancel( casual_buffer_type* data)
+long casual_xatmi_cancel( casual_http_buffer_type* data)
 {
    return casual::http::inbound::local::service::cancel( data);
 }

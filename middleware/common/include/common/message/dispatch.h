@@ -91,7 +91,7 @@ namespace casual
                }
 
                // for logging only
-               CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
+               CASUAL_LOG_SERIALIZE(
                {
                   CASUAL_SERIALIZE_NAME( m_handlers, "handlers");
                })
@@ -211,9 +211,9 @@ namespace casual
 
             namespace conditional
             {
-               template< typename Unmarshal, typename D, typename C>
+               template< typename H, typename D, typename C>
                void pump( 
-                  basic_handler< Unmarshal>& handler, 
+                  H&& handler, 
                   D& device,
                   C&& done)
                {
@@ -233,7 +233,7 @@ namespace casual
                      handler( device.next( types, typename device_type::blocking_policy{}));
                   }   
                }
-            } // conditiaonl
+            } // conditional
 
             namespace reply
             {

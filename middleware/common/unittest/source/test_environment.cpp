@@ -17,27 +17,15 @@ namespace casual
 {
    namespace common
    {
-      TEST( casual_common_environment, string__no_variable__expect_same)
+      TEST( common_environment, string__no_variable__expect_same)
       {
          common::unittest::Trace trace;
 
          EXPECT_TRUE( environment::string( "test/a/b/c") == "test/a/b/c");
       }
 
-      TEST( casual_common_environment, environment_string__variable_in_middle__expect_altered)
-      {
-         common::unittest::Trace trace;
 
-         ASSERT_TRUE( environment::variable::exists( "HOME"));
-
-         auto home = environment::variable::get( "HOME");
-
-         auto result =  environment::string( "a/b/c/${HOME}/a/b/c");
-
-         EXPECT_TRUE( result == "a/b/c/" + home + "/a/b/c") << "result: " << result;
-      }
-
-      TEST( casual_common_environment, string_variable__expect_altered)
+      TEST( common_environment, environment_string__variable_at_beginning__expect_altered)
       {
          common::unittest::Trace trace;
 
@@ -50,17 +38,40 @@ namespace casual
          EXPECT_TRUE( result == home + "/a/b/c") << "result: " << result;
       }
 
-      TEST( casual_common_environment, string_variable__not_correct_format__expect_throw)
+      TEST( common_environment, environment_string__variable_in_middle__expect_altered)
       {
          common::unittest::Trace trace;
 
-         EXPECT_THROW(
-         {
-            environment::string( "${HOME/a/b/c");
-         }, exception::system::invalid::Argument);
+         ASSERT_TRUE( environment::variable::exists( "HOME"));
+
+         auto home = environment::variable::get( "HOME");
+
+         auto result =  environment::string( "a/b/c/${HOME}/a/b/c");
+
+         EXPECT_TRUE( result == "a/b/c/" + home + "/a/b/c") << "result: " << result;
       }
 
-      TEST( casual_common_environment, process___expect_serialized)
+      TEST( common_environment, string_variable__expect_altered)
+      {
+         common::unittest::Trace trace;
+
+         ASSERT_TRUE( environment::variable::exists( "HOME"));
+
+         auto home = environment::variable::get( "HOME");
+
+         auto result =  environment::string( "${HOME}/a/b/c");
+
+         EXPECT_TRUE( result == home + "/a/b/c") << "result: " << result;
+      }
+
+      TEST( common_environment, string_variable__not_correct_format__expect_no_alteration)
+      {
+         common::unittest::Trace trace;
+
+         EXPECT_TRUE( environment::string( "${HOME/a/b/c") == "${HOME/a/b/c");
+      }
+
+      TEST( common_environment, process___expect_serialized)
       {
          common::unittest::Trace trace;
 
@@ -72,7 +83,7 @@ namespace casual
 
       }
 
-      TEST( casual_common_environment, environment_CASUAL_HOME__variable_in_middle__expect_altered)
+      TEST( common_environment, environment_CASUAL_HOME__variable_in_middle__expect_altered)
       {
          common::unittest::Trace trace;
 
@@ -83,7 +94,7 @@ namespace casual
          EXPECT_TRUE( result == "main.cpp -Itest/include") << "result: " << result;
       }
 
-      TEST( casual_common_environment, environment_CASUAL_HOME__variable_before_dash_I__expect_altered)
+      TEST( common_environment, environment_CASUAL_HOME__variable_before_dash_I__expect_altered)
       {
          common::unittest::Trace trace;
 
@@ -94,7 +105,7 @@ namespace casual
          EXPECT_TRUE( result == "-Itest/include") << "result: " << result;
       }
 
-      TEST( casual_common_environment, local_repository)
+      TEST( common_environment, local_repository)
       {
          common::unittest::Trace trace;
 
@@ -105,7 +116,7 @@ namespace casual
          EXPECT_TRUE( result == "foobar") << "result: " << result;
       }
 
-      TEST( casual_common_environment, local_repository_complex)
+      TEST( common_environment, local_repository_complex)
       {
          common::unittest::Trace trace;
 
@@ -116,7 +127,7 @@ namespace casual
          EXPECT_TRUE( result == "afoobbarc") << "result: " << result;
       }
 
-      TEST( casual_common_environment, local_repository__fallback_environment)
+      TEST( common_environment, local_repository__fallback_environment)
       {
          common::unittest::Trace trace;
 

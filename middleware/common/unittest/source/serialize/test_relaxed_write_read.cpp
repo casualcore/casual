@@ -34,7 +34,7 @@ namespace casual
                std::string data;
 
                {
-                  auto writer = serialize::json::writer( data);
+                  auto writer = serialize::json::pretty::writer( data);
                   writer << serialize::named::value::make( from, "value");
                }
 

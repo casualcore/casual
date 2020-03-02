@@ -103,7 +103,6 @@ namespace casual
 
                inline Send( const Payload& payload)
                   : m_payload( payload), m_transport( payload.memory.size()) {}
-                  // Send( payload, payload.memory.size(), payload.memory.size()) {}
 
                inline const Payload& payload() const noexcept { return m_payload.get();};
 
@@ -111,7 +110,7 @@ namespace casual
                inline auto reserved() const noexcept { return m_reserved;}
 
                // We mimic buffer::Payload and only send 'transport' portion of memory
-               CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
+               CASUAL_LOG_SERIALIZE(
                {
                   CASUAL_SERIALIZE_NAME( payload().type, "type");
                   CASUAL_SERIALIZE_NAME( m_transport, "size"); // size of the memory
@@ -142,7 +141,7 @@ namespace casual
             platform::binary::size::type transport( platform::binary::size::type user_size) const;
             platform::binary::size::type reserved() const;
 
-            CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
+            CASUAL_LOG_SERIALIZE(
             {
                CASUAL_SERIALIZE( payload);
             })

@@ -55,7 +55,6 @@ namespace casual
                   {
                      []( internal::field::stream::Input& input, internal::field::string::stream::Output output)  // to
                      {
-                        return output;
                      },
                      []( internal::field::string::stream::Input input, internal::field::stream::Output& output)  // from
                      {
@@ -73,7 +72,6 @@ namespace casual
                         auto value = input.get< local::fld::string_1>();
                         auto view = output.consume( ::strlen( value));
                         std::copy( value, value + view.size, std::begin( view));
-                        //return output;
                      },
                      []( internal::field::string::stream::Input input, internal::field::stream::Output& output)  // from string
                      {

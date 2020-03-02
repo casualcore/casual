@@ -30,7 +30,7 @@ WARNING_DIRECTIVE = -Wall \
  -Wno-noexcept-type \
  -Wno-implicit-fallthrough
 
-
+VERSION_DIRECTIVE = -DCASUAL_BUILD_VERSION=\"$(CASUAL_BUILD_VERSION)\"
 
 
 STD_DIRECTIVE = -std=c++14
@@ -60,7 +60,7 @@ export EXECUTABLE_LINKER
 # Compile and link directives
 #
 ifdef DEBUG
-   COMPILE_DIRECTIVES = -g -pthread -c  -fpic $(WARNING_DIRECTIVE) $(STD_DIRECTIVE)
+   COMPILE_DIRECTIVES = -g -pthread -c  -fpic $(VERSION_DIRECTIVE) $(WARNING_DIRECTIVE) $(STD_DIRECTIVE)
    LINK_DIRECTIVES_LIB = -g -pthread -shared  -fpic
    LINK_DIRECTIVES_EXE = -g -pthread  -fpic
    LINK_DIRECTIVES_ARCHIVE = -g  
@@ -72,7 +72,7 @@ ifdef DEBUG
    endif
 
 else
-   COMPILE_DIRECTIVES = -pthread -c -O3 -fpic $(WARNING_DIRECTIVE) $(STD_DIRECTIVE)
+   COMPILE_DIRECTIVES = -pthread -c -O3 -fpic $(VERSION_DIRECTIVE) $(WARNING_DIRECTIVE) $(STD_DIRECTIVE)
    LINK_DIRECTIVES_LIB = -pthread -shared -O3 -fpic $(WARNING_DIRECTIVE) $(STD_DIRECTIVE)
    LINK_DIRECTIVES_EXE = -pthread -O3 -fpic $(WARNING_DIRECTIVE) $(STD_DIRECTIVE)
    LINK_DIRECTIVES_ARCHIVE = 

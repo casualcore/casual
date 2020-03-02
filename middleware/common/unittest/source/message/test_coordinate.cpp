@@ -44,7 +44,7 @@ namespace casual
                   Uuid correlation;
                   bool sent = false;
 
-                  CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
+                  CASUAL_LOG_SERIALIZE(
                   {
                      CASUAL_SERIALIZE( correlation);
                      CASUAL_SERIALIZE( sent);

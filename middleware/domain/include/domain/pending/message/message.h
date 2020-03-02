@@ -55,7 +55,7 @@ namespace casual
                   
                   const common::message::pending::Message& message;
 
-                  CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
+                  CASUAL_LOG_SERIALIZE(
                   {
                      base_request::serialize( archive);
                      CASUAL_SERIALIZE( message);

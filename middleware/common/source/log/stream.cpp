@@ -19,18 +19,13 @@
 #include "common/algorithm.h"
 #include "common/string.h"
 #include "common/domain.h"
+#include "common/instance.h"
 
-//
-// std
-//
 #include <fstream>
 #include <map>
 #include <iostream>
-
 #include <memory>
 #include <thread>
-
-
 
 namespace casual
 {
@@ -42,7 +37,6 @@ namespace casual
          {
             namespace
             {
-              
                namespace file
                {
                   struct Owner
@@ -56,21 +50,12 @@ namespace casual
                      template< typename M>
                      void log( const std::string& category, M&& message)
                      {
-                        // construct a local 'alias' so we delay the deduction.
-                        static auto alias = []() -> std::string
-                        {
-                           if( environment::variable::exists( environment::variable::name::instance::alias))
-                              return environment::variable::get( environment::variable::name::instance::alias);
-
-                           return common::process::basename();
-                        }();
-
                         m_output << std::chrono::duration_cast< std::chrono::microseconds>( platform::time::clock::type::now().time_since_epoch()).count()
                            << '|' << common::domain::identity().name
                            << '|' << execution::id()
                            << '|' << process::id()
                            << '|' << std::this_thread::get_id()
-                           << '|' << alias
+                           << '|' << m_alias
                            << '|' << transaction::Context::instance().current().trid
                            << '|' << execution::service::parent::name()
                            << '|' << execution::service::name()
@@ -103,6 +88,14 @@ namespace casual
                      }
 
                      std::ofstream m_output;
+                     std::string m_alias = []()
+                     {
+                        auto& information = instance::information();
+                        if( information)
+                           return information.value().alias;
+
+                        return process::basename();
+                     }();
                   };
 
 

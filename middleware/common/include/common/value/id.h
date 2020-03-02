@@ -118,6 +118,8 @@ namespace casual
 
             value_type& underlaying() noexcept { return m_value;}
 
+            friend std::istream& operator >> ( std::istream& in, basic_id& id) { return in >> id.m_value;}
+
          protected:
                template< typename policy>
                using has_moved = decltype( policy::moved());

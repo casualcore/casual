@@ -19,27 +19,27 @@ extern "C"
       char value[80];
    } header_data_type;
 
-   typedef struct header_s
+   typedef struct http_header_s
    {
       header_data_type *data;
       long size;
-   } header_type;
+   } http_header_type;
 
-   typedef struct buffer_s
+   typedef struct http_buffer_s
    {
       char *data;
       long size;
-   } buffer_type;
+   } http_buffer_type;
 
-   typedef struct casual_buffer_s
+   typedef struct casual_http_buffer_s
    {
       //! header information
-      header_type header_in;
-      header_type header_out;
+      http_header_type header_in;
+      http_header_type header_out;
 
       //! actual data
-      buffer_type payload;
-      buffer_type parameter;
+      http_buffer_type payload;
+      http_buffer_type parameter;
 
       //! state
       long context;
@@ -51,19 +51,19 @@ extern "C"
       long descriptor;
       long lookup_key;
       long code;
-   } casual_buffer_type;
+   } casual_http_buffer_type;
 
    //! Communicate with service manager
-   long casual_xatmi_lookup( casual_buffer_type* data);
+   long casual_xatmi_lookup( casual_http_buffer_type* data);
 
    //! Make the call
-   long casual_xatmi_send( casual_buffer_type* data);
+   long casual_xatmi_send( casual_http_buffer_type* data);
 
    //! Get the response
-   long casual_xatmi_receive( casual_buffer_type* data);
+   long casual_xatmi_receive( casual_http_buffer_type* data);
 
    //! Abort the call
-   long casual_xatmi_cancel( casual_buffer_type* data);
+   long casual_xatmi_cancel( casual_http_buffer_type* data);
 
    enum
    {

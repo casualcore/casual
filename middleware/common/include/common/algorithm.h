@@ -633,11 +633,11 @@ namespace casual
             return std::forward< R>( range);
          }
 
-         template< typename R, typename N, typename F>
-         auto for_each_n( R&& range, N n, F functor) -> decltype( range::make( std::forward< R>( range)))
+         template< typename R, typename F>
+         auto for_each_n( R&& range, platform::size::type n, F functor) -> decltype( range::make( std::forward< R>( range)))
          {
             if( range::size( range) <= n)
-               return for_each( std::forward< R>( range), functor);
+               return for_each( range::make( range), functor);
             else
                return for_each( range::make( std::begin( range), n), functor);
          }
@@ -663,9 +663,16 @@ namespace casual
          
          //! applies `functor` `N` times
          template< platform::size::type N, typename F>
-         void for_n( F functor)
+         constexpr void for_n( F functor)
          {
             for( platform::size::type count = 0; count < N; ++count)
+               functor();
+         }
+
+         template< typename F>
+         constexpr void for_n( platform::size::type n, F functor)
+         {
+            for( platform::size::type count = 0; count < n; ++count)
                functor();
          }
 

@@ -9,7 +9,6 @@
 
 
 #include "common/message/domain.h"
-#include "common/message/server.h"
 #include "common/message/gateway.h"
 #include "common/message/service.h"
 #include "common/message/pending.h"
@@ -82,7 +81,7 @@ namespace casual
                   inline friend bool operator < ( const base_instance& lhs, const base_instance& rhs) { return lhs.process.pid < rhs.process.pid;}
                   inline friend bool operator == ( const base_instance& lhs, common::strong::process::id rhs) { return lhs.process.pid == rhs;}
 
-                  CASUAL_CONST_CORRECT_SERIALIZE_WRITE({
+                  CASUAL_LOG_SERIALIZE({
                      CASUAL_SERIALIZE( process);
                   })
                };
@@ -128,7 +127,7 @@ namespace casual
 
                   friend std::ostream& operator << ( std::ostream& out, State value);
 
-                  CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
+                  CASUAL_LOG_SERIALIZE(
                   {
                      base_instance::serialize( archive);   
                      CASUAL_SERIALIZE_NAME( m_service, "service");
@@ -154,7 +153,7 @@ namespace casual
 
                   friend bool operator < ( const Concurrent& lhs, const Concurrent& rhs);
 
-                  CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
+                  CASUAL_LOG_SERIALIZE(
                   {
                      base_instance::serialize( archive);   
                      CASUAL_SERIALIZE( order);
@@ -176,7 +175,7 @@ namespace casual
                   common::message::service::lookup::Request request;
                   platform::time::point::type when;
 
-                  CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
+                  CASUAL_LOG_SERIALIZE(
                   { 
                      CASUAL_SERIALIZE( request);
                      CASUAL_SERIALIZE( when);
@@ -253,7 +252,7 @@ namespace casual
 
                      inline void partition() { common::algorithm::stable_sort( concurrent);}
 
-                     CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
+                     CASUAL_LOG_SERIALIZE(
                      { 
                         CASUAL_SERIALIZE( sequential);
                         CASUAL_SERIALIZE( concurrent);
@@ -267,7 +266,7 @@ namespace casual
                   void remove( common::strong::process::id instance);
                   state::instance::Sequential& sequential( common::strong::process::id instance);
 
-                  CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
+                  CASUAL_LOG_SERIALIZE(
                   { 
                      CASUAL_SERIALIZE( information);
                      CASUAL_SERIALIZE( instances);
@@ -295,7 +294,7 @@ namespace casual
                   inline void reset() { *this = Metric{};}
                   void update( const common::message::event::service::Metric& metric);
 
-                  CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
+                  CASUAL_LOG_SERIALIZE(
                   { 
                      CASUAL_SERIALIZE( invoked);
                      CASUAL_SERIALIZE( pending);
@@ -314,7 +313,7 @@ namespace casual
                   const common::process::Handle& caller, 
                   const common::Uuid& correlation);
 
-               CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
+               CASUAL_LOG_SERIALIZE(
                { 
                   service::Advertised::serialize( archive);
                   CASUAL_SERIALIZE( metric);
@@ -412,7 +411,7 @@ namespace casual
             void connect_manager( std::vector< common::server::Service> services);
 
             
-            CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
+            CASUAL_LOG_SERIALIZE(
             {
                CASUAL_SERIALIZE( routes);
                CASUAL_SERIALIZE( services);

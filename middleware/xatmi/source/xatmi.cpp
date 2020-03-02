@@ -9,6 +9,7 @@
 #include "casual/tx.h"
 
 #include "casual/xatmi/internal/code.h"
+#include "casual/xatmi/explicit.h"
 
 #include "common/buffer/pool.h"
 #include "common/server/context.h"
@@ -17,6 +18,8 @@
 #include "common/memory.h"
 
 #include "common/string.h"
+#include "common/execution.h"
+#include "common/uuid.h"
 
 #include <array>
 #include <cstdarg>
@@ -34,119 +37,60 @@ long casual_get_tpurcode()
    return casual::xatmi::internal::user::code::get();
 }
 
-
-
 char* tpalloc( const char* type, const char* subtype, long size)
 {
-   casual::xatmi::internal::error::clear();
-
-   try
-   {
-      // TODO: Shall we report size less than zero ?
-      return casual::common::buffer::pool::Holder::instance().allocate( type, subtype, size < 0 ? 0 : size);
-   }
-   catch( ...)
-   {
-      casual::xatmi::internal::error::set( casual::common::exception::xatmi::handle());
-      return nullptr;
-   }
+   return casual_buffer_allocate( type, subtype, size);
 }
 
 char* tprealloc( const char* ptr, long size)
 {
-   casual::xatmi::internal::error::clear();
-
-   try
-   {
-      // TODO: Shall we report size less than zero ?
-      return casual::common::buffer::pool::Holder::instance().reallocate( ptr, size < 0 ? 0 : size);
-   }
-   catch( ...)
-   {
-      casual::xatmi::internal::error::set( casual::common::exception::xatmi::handle());
-      return nullptr;
-   }
-
+   return casual_buffer_reallocate( ptr, size);
 }
 
-
-long tptypes( const char* const ptr, char* const type, char* const subtype)
+long tptypes( const char* buffer, char* type, char* subtype)
 {
-   casual::xatmi::internal::error::clear();
-
-   try
-   {
-      auto buffer = casual::common::buffer::pool::Holder::instance().get( ptr);
-
-      auto combined = casual::common::buffer::type::dismantle( buffer.payload().type);
-
-
-      // type is optional
-      if( type)
-      {
-         auto destination = casual::common::range::make( type, 8);
-         casual::common::memory::clear( destination);
-         casual::common::algorithm::copy_max( std::get< 0>( combined), destination);
-      }
-
-      // subtype is optional
-      if( subtype)
-      {
-         auto destination = casual::common::range::make( subtype, 16);
-         casual::common::memory::clear( destination);
-         casual::common::algorithm::copy_max( std::get< 1>( combined), destination);
-      }
-
-      return buffer.reserved();
-   }
-   catch( ...)
-   {
-      casual::xatmi::internal::error::set( casual::common::exception::xatmi::handle());
-      return -1;
-   }
-
+   return casual_buffer_type( buffer, type, subtype);
 }
 
-void tpfree( const char* const ptr)
+void tpfree( const char* ptr)
 {
-   try
-   {
-      casual::common::buffer::pool::Holder::instance().deallocate( ptr);
-   }
-   catch( ...)
-   {
-      casual::xatmi::internal::error::set( casual::common::exception::xatmi::handle());
-   }
+   casual_buffer_free( ptr);
 }
 
-void tpreturn( const int rval, const long rcode, char* const data, const long len, const long /* flags for future use */)
+void tpreturn( int rval, long rcode, char* data, long len, long flags)
 {
-   casual::xatmi::internal::error::wrap( [&](){
-      casual::common::server::context().jump_return( 
-         static_cast< casual::common::flag::xatmi::Return>( rval), rcode, data, len);
-   });
+   casual_service_return( rval, rcode, data, len, flags);
 }
-
-
-
-
-
 
 int tpadvertise( const char* service, void (*function)( TPSVCINFO *))
 {
-   return casual::xatmi::internal::error::wrap( [&](){
-      casual::common::server::context().advertise( service, function);
-   });
+   return casual_service_advertise( service, function);
 }
 
 int tpunadvertise( const char* const service)
 {
-   return casual::xatmi::internal::error::wrap( [&](){
-      casual::common::server::context().unadvertise( service);
-   });
+   return casual_service_unadvertise( service);
 }
 
+int tpcall( const char* const service, char* idata, const long ilen, char** odata, long* olen, const long bitmap)
+{
+   return casual_service_call( service, idata, ilen, odata, olen, bitmap);
+}
 
+int tpacall( const char* const service, char* idata, const long ilen, const long flags)
+{
+   return casual_service_asynchronous_send( service, idata, ilen, flags);
+}
+
+int tpgetrply( int *const descriptor, char** odata, long* olen, const long bitmap)
+{
+   return casual_service_asynchronous_receive( descriptor, odata, olen, bitmap);
+}
+
+int tpcancel( int id)
+{
+   return casual_service_asynchronous_cancel( id);
+}
 
 
 
@@ -167,101 +111,13 @@ void tpsvrdone()
    tx_close();
 }
 
-
-void casual_service_forward( const char* service, char* data, long size)
+void casual_execution_id_set( const uuid_t* id)
 {
-   casual::common::server::context().forward( service, data, size);
+   casual::common::execution::id( casual::common::Uuid( *id));
 }
 
-namespace local
+const uuid_t* casual_execution_id_get()
 {
-   namespace
-   {
-      template< typename L>
-      int vlog( L&& logger, const char* const format, va_list arglist)
-      {
-         std::array< char, 2048> buffer;
-         std::vector< char> backup;
-
-         va_list argcopy;
-         va_copy( argcopy, arglist);
-         auto written = vsnprintf( buffer.data(), buffer.max_size(), format, argcopy);
-         va_end( argcopy );
-
-         auto data = buffer.data();
-
-         if( written >= static_cast< decltype( written)>( buffer.max_size()))
-         {
-            backup.resize( written + 1);
-            va_copy( argcopy, arglist);
-            written = vsnprintf( backup.data(), backup.size(), format, argcopy);
-            va_end( argcopy );
-            data = backup.data();
-         }
-
-         logger( data);
-
-         return written;
-      }
-
-   } // <unnamed>
-} // local
-
-int casual_vlog( casual_log_category_t category, const char* const format, va_list arglist)
-{
-
-   auto catagory_logger = [=]( const char* data){
-
-      switch( category)
-      {
-      case casual_log_category_t::c_log_debug:
-         casual::common::log::stream::write( "debug", data);
-         break;
-      case casual_log_category_t::c_log_information:
-         casual::common::log::stream::write( "information", data);
-         break;
-      case casual_log_category_t::c_log_warning:
-         casual::common::log::stream::write( "warning", data);
-         break;
-      default:
-         casual::common::log::stream::write( "error", data);
-         break;
-      }
-   };
-
-   return local::vlog( catagory_logger, format, arglist);
+   return &casual::common::execution::id().get();
 }
-
-int casual_user_vlog( const char* category, const char* const format, va_list arglist)
-{
-   auto user_logger = [=]( const char* data){
-      casual::common::log::stream::write( category, data);
-   };
-
-   return local::vlog( user_logger, format, arglist);
-}
-
-int casual_user_log( const char* category, const char* const message)
-{
-   casual::common::log::stream::write( category, message);
-
-   return 0;
-}
-
-int casual_log( casual_log_category_t category, const char* const format, ...)
-{
-   va_list arglist;
-   va_start( arglist, format );
-   auto result = casual_vlog( category, format, arglist);
-   va_end( arglist );
-
-   return result;
-}
-
-
-
-
-
-
-
 

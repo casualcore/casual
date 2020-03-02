@@ -876,14 +876,12 @@ The semantics are similar to http PUT:
 
                   namespace ping
                   {
-                     void invoke( std::string alias, std::vector< std::string> aliases)
+                     void invoke( std::vector< std::string> aliases)
                      {
                         // make sure we set precision and such for cout.
                         terminal::format::customize::Stream scope{ std::cout};
 
                         auto state = local::call::state();
-
-                        aliases.insert( std::begin( aliases), std::move( alias));
 
                         auto servers = std::get< 0>( algorithm::intersection( state.servers, aliases, []( auto& l, auto& r){ return l.alias == r;}));
                         
@@ -930,6 +928,61 @@ The semantics are similar to http PUT:
 <alias> <ipc> <pid> <time>
 )"; 
                   } // ping
+
+                  namespace global
+                  {
+                     namespace state
+                     {
+                        void invoke( platform::process::native::type pid, const optional< std::string>& format)
+                        {
+                           auto handle = communication::instance::fetch::handle( 
+                              common::strong::process::id{ pid}, communication::instance::fetch::Directive::direct);
+
+                           if( ! handle)
+                              return;
+
+                           auto state = communication::ipc::call( handle.ipc, message::domain::instance::global::state::Request{ process::handle()}); 
+                           auto archive = common::serialize::create::writer::from( format.value_or( ""), std::cout);
+                           archive << CASUAL_NAMED_VALUE( state);
+                        }
+
+                        auto complete() 
+                        {
+                           return []( auto values, auto help) -> std::vector< std::string>
+                           {
+                              if( help)
+                                 return { "<pid>", "[<format>]"};
+
+                              if( ! values.empty())
+                                 return serialize::create::writer::complete::format()( values, help);
+                              
+                              // to provide auto-complete for pids might be overkill... But it's 
+                              // consistent with other stuff...
+
+                              auto state = local::call::state();
+                              std::vector< std::string> result;
+
+                              algorithm::for_each( 
+                                 state.servers,
+                                 [&result]( auto& server)
+                                 {
+                                    algorithm::transform_if( 
+                                       server.instances, 
+                                       std::back_inserter( result),
+                                       []( auto& instance){ return std::to_string( instance.handle.pid.value());},
+                                       []( auto& instance){ return ! instance.handle.pid.empty();});
+                                 }
+                              );
+
+                              return result;
+                           };
+                        }
+
+                        constexpr auto description = R"(get the 'global state' for the provided pid
+)";
+
+                     } // state
+                  } // global
 
                   namespace legend
                   {
@@ -992,7 +1045,8 @@ note: not all options has legend, use 'auto complete' to find out which legends 
                      argument::Option( &local::action::configuration::persist, { "-p", "--persist-state"}, "persist current state"),
                      argument::Option( &local::action::configuration::get, configuration_format, { "--configuration-get"}, "get configuration (as provided format)"),
                      argument::Option( &local::action::configuration::put::call, configuration_format, { "--configuration-put"}, local::action::configuration::put::description),
-                     argument::Option( &local::action::ping::invoke, local::action::ping::complete(), { "--ping"}, local::action::ping::description),
+                     argument::Option( argument::option::one::many( &local::action::ping::invoke), local::action::ping::complete(), { "--ping"}, local::action::ping::description),
+                     argument::Option( &local::action::global::state::invoke, local::action::global::state::complete(), { "--instance-global-state"}, local::action::global::state::description),
                      argument::Option( &local::action::legend::invoke, local::action::legend::complete(), { "--legend"}, local::action::legend::description),
                      argument::Option( &local::action::state, state_format, { "--state"}, "domain state (as provided format)")
                   };

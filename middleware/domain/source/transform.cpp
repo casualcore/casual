@@ -13,6 +13,7 @@
 
 #include "common/domain.h"
 #include "common/exception/casual.h"
+#include "common/message/gateway.h"
 
 
 namespace casual
@@ -305,6 +306,31 @@ namespace casual
                      return result;
                   }
 
+                  // TODO maintenance: This should perhaps be in a more central place?
+                  auto version()
+                  {
+                     manager::admin::model::Version result;
+
+                     // casual version
+#ifdef CASUAL_BUILD_VERSION
+                     result.casual = CASUAL_BUILD_VERSION;
+#endif 
+                     // compiler version
+#ifdef __clang_version__
+                     result.compiler = string::compose( "clang: ", __clang_version__);
+#elif __GNUC__
+                     result.compiler = string::compose( "g++: ", __GNUC__, '.', __GNUC_MINOR__, '.', __GNUC_PATCHLEVEL__);
+#endif
+
+                     // gateway protocols
+                     result.gateway.protocols = { 
+                        cast::underlying( message::gateway::domain::protocol::Version::version_1)
+                     };
+                     static_assert( message::gateway::domain::protocol::Version::version_1 == message::gateway::domain::protocol::Version::latest, "fix versions...");
+
+                     return result;
+                  }
+
                } // model
 
             } // <unnamed>
@@ -325,6 +351,7 @@ namespace casual
          {
             manager::admin::model::State result;
 
+            result.version = local::model::version();
             result.identity = common::domain::identity();
 
             result.groups = algorithm::transform( state.groups, local::model::Group{});

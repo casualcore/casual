@@ -20,22 +20,16 @@
 #include "common/result.h"
 
 #include "common/message/domain.h"
-#include "common/message/server.h"
 #include "common/communication/ipc.h"
 #include "common/flag.h"
 #include "common/chronology.h"
 
-//
-// std
-//
+
 #include <algorithm>
 #include <functional>
 #include <fstream>
 #include <system_error>
 
-
-// TODO: temp
-#include <iostream>
 
 #include <unistd.h>
 #include <sys/wait.h>
@@ -130,7 +124,6 @@ namespace casual
             return local::instantiated::basename;
          }
 
-
          strong::process::id id()
          {
             return local::instantiated::pid;
@@ -150,13 +143,6 @@ namespace casual
          bool operator < ( const Handle& lhs, const Handle& rhs)
          {
             return std::tie( lhs.pid, lhs.ipc) < std::tie( rhs.pid, rhs.ipc);
-         }
-
-
-         const Uuid& uuid()
-         {
-            static const Uuid singleton = uuid::make();
-            return singleton;
          }
 
          void sleep( platform::time::unit time)

@@ -282,7 +282,7 @@ namespace casual
                   std::vector< Server::id_type> servers;
                   std::vector< Executable::id_type> executables;
 
-                  CASUAL_CONST_CORRECT_SERIALIZE_WRITE({
+                  CASUAL_LOG_SERIALIZE({
                      CASUAL_SERIALIZE( description);
                      CASUAL_SERIALIZE( executables);
                      CASUAL_SERIALIZE( servers);
@@ -425,7 +425,7 @@ namespace casual
             {
                std::vector< std::reference_wrapper< state::Server>> servers;
                std::vector< std::reference_wrapper< state::Executable>> executables;
-               CASUAL_CONST_CORRECT_SERIALIZE_WRITE({
+               CASUAL_LOG_SERIALIZE({
                   CASUAL_SERIALIZE( servers);
                   CASUAL_SERIALIZE( executables);
                })

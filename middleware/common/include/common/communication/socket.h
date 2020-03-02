@@ -107,7 +107,7 @@ namespace casual
             void unset( socket::option::File option);
 
             // for logging only
-            CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
+            CASUAL_LOG_SERIALIZE(
             {
                CASUAL_SERIALIZE_NAME( m_descriptor, "descriptor");
             })

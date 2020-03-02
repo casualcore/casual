@@ -15,7 +15,6 @@
 
 #include "common/flag.h"
 
-#include "common/message/server.h"
 #include "common/message/transaction.h"
 
 #include "common/execute.h"

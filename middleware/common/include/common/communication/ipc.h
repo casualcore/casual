@@ -197,7 +197,7 @@ namespace casual
                   inline const strong::ipc::id& ipc() const { return m_ipc;}
                   std::string path() const;
 
-                  CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
+                  CASUAL_LOG_SERIALIZE(
                   {
                      CASUAL_SERIALIZE_NAME( m_ipc, "ipc");
                   })
@@ -221,8 +221,7 @@ namespace casual
                   inline const file::Descriptor& descriptor() const { return m_descriptor;}
                   inline const auto& ipc() const { return m_pipe.ipc();}
 
-                  // for logging only
-                  CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
+                  CASUAL_LOG_SERIALIZE(
                   {
                      CASUAL_SERIALIZE_NAME( m_pipe, "pipe");
                      CASUAL_SERIALIZE_NAME( m_descriptor, "descriptor");
@@ -245,8 +244,7 @@ namespace casual
                   inline auto& descriptor() const { return m_descriptor;}
                   inline const strong::ipc::id& ipc() const { return m_ipc;}
 
-                  // for logging only
-                  CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
+                  CASUAL_LOG_SERIALIZE(
                   {
                      CASUAL_SERIALIZE_NAME( m_ipc, "ipc");
                      CASUAL_SERIALIZE_NAME( m_descriptor, "descriptor");
@@ -342,7 +340,7 @@ namespace casual
                   inline auto& handle() { return m_handle;}
 
                   // for logging only
-                  CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
+                  CASUAL_LOG_SERIALIZE(
                   {
                      CASUAL_SERIALIZE_NAME( m_handle, "handle");
                   })
@@ -378,8 +376,7 @@ namespace casual
                   inline void reconnect() const { throw; }
                   inline void clear() { m_handle = handle::Outbound{ strong::ipc::id{}};}
 
-                  // for logging only
-                  CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
+                  CASUAL_LOG_SERIALIZE(
                   {
                      CASUAL_SERIALIZE_NAME( m_handle, "handle");
                   })

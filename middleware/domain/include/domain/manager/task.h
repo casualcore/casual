@@ -56,7 +56,7 @@ namespace casual
                   inline friend bool operator == ( const Callback& lhs, task::id::type rhs) { return lhs.m_id == rhs;}
                   inline friend bool operator != ( const Callback& lhs, task::id::type rhs) { return ! ( lhs == rhs);}
 
-                  CASUAL_CONST_CORRECT_SERIALIZE_WRITE({
+                  CASUAL_LOG_SERIALIZE({
                      CASUAL_SERIALIZE_NAME( type(), "type");
                      CASUAL_SERIALIZE_NAME( m_id, "id");
                   })
@@ -160,7 +160,7 @@ namespace casual
             inline friend bool operator != ( const Task& lhs, task::id::type rhs) { return ! ( lhs.m_id == rhs);}
 
 
-            CASUAL_CONST_CORRECT_SERIALIZE_WRITE({
+            CASUAL_LOG_SERIALIZE({
                CASUAL_SERIALIZE_NAME( m_id, "id");
                CASUAL_SERIALIZE_NAME( m_property, "property");
                CASUAL_SERIALIZE_NAME( m_description, "description");
@@ -195,7 +195,7 @@ namespace casual
 
                friend bool operator == ( const Running& lhs, common::message::Type rhs);
 
-               CASUAL_CONST_CORRECT_SERIALIZE_WRITE({
+               CASUAL_LOG_SERIALIZE({
                   Task::serialize( archive);
                   CASUAL_SERIALIZE_NAME( m_callbacks, "callbacks");
                })
@@ -260,7 +260,7 @@ namespace casual
                inline const auto& pending() const { return m_pending;}
 
 
-               CASUAL_CONST_CORRECT_SERIALIZE_WRITE({
+               CASUAL_LOG_SERIALIZE({
                   CASUAL_SERIALIZE_NAME( m_running, "running");
                   CASUAL_SERIALIZE_NAME( m_pending, "pending");
                })

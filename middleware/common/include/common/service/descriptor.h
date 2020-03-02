@@ -44,7 +44,7 @@ namespace casual
                friend bool operator == ( descriptor::type cd, const basic_information& d) { return cd == d.descriptor;}
                friend bool operator == ( const basic_information& d, descriptor::type cd) { return cd == d.descriptor;}
 
-               CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
+               CASUAL_LOG_SERIALIZE(
                {
                   CASUAL_SERIALIZE( active);
                   CASUAL_SERIALIZE( descriptor);
@@ -76,7 +76,7 @@ namespace casual
                   }).empty();
                }
 
-               CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
+               CASUAL_LOG_SERIALIZE(
                {
                   CASUAL_SERIALIZE_NAME( m_descriptors, "descriptors");
                })

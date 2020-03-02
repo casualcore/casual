@@ -8,6 +8,7 @@
 #include "http/common.h"
 
 #include "common/algorithm.h"
+#include "common/algorithm/compare.h"
 #include "common/buffer/type.h"
 #include "common/string.h"
 
@@ -234,7 +235,7 @@ namespace casual
                      payload.memory.erase( last, std::end( payload.memory));
                   };
 
-                  static const auto mapping = std::map< std::string, std::function< void( common::buffer::Payload&)>>
+                  static const auto mapping = std::map< std::string, common::function< void( common::buffer::Payload&) const>>
                   {
                      { common::buffer::type::json(), local::transcode_none},
                      { common::buffer::type::xml(), local::transcode_none},
@@ -267,7 +268,7 @@ namespace casual
                      common::transcode::base64::encode( buffer, payload.memory);
                   };
 
-                  static const auto mapping = std::map< std::string, std::function< void( common::buffer::Payload&)>>
+                  static const auto mapping = std::map< std::string, common::function< void( common::buffer::Payload&) const>>
                   {
                      { common::buffer::type::json(), local::transcode_none},
                      { common::buffer::type::xml(), local::transcode_none},

@@ -50,7 +50,7 @@ namespace casual
                friend void swap( Lookup& lhs, Lookup& rhs);
 
                // for logging only
-               CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
+               CASUAL_LOG_SERIALIZE(
                {
                   CASUAL_SERIALIZE_NAME( m_service, "service");
                   CASUAL_SERIALIZE_NAME( m_correlation, "correlation");

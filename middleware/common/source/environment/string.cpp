@@ -9,6 +9,8 @@
 
 #include "common/algorithm.h"
 #include "common/range/adapter.h"
+#include "common/log.h"
+
 
 namespace casual
 {
@@ -27,34 +29,66 @@ namespace casual
 
                   auto range = range::make( value);
                   
-                  // replace all '}' with '\0' to be c-compatible
-                  // we'll use the view::String later to find the actual
-                  // environment variable via c-api (with const char*), hence
-                  // it need to be null terminated.
-                  algorithm::replace( range, '}', '\0');
-                  
-                  // split the range to _the end of variable_ (if any) (which is now '\0')
-                  auto next_range = []( auto range){ return algorithm::split( range, '\0');};
+                  // split the range to the next beginning of the variable, if any
+                  auto next_range = []( auto range)
+                  { 
+                     const auto delimiter = view::String{ "${"};
+
+                     auto result = algorithm::divide_search( range, delimiter);
+                     if( std::get< 0>( result).empty() && ! std::get< 1>( result).empty())
+                     {
+                        auto second = std::get< 1>( result);
+                        auto found = algorithm::search( second + 2, delimiter);
+
+                        return std::make_tuple( range::make( std::begin( second), std::begin( found)), found);
+                     }
+                     return result;
+                  };
+
                   auto handle_part = [&out, &get_variable]( auto range)
                   {
-                     // find _the beginning of variable_ (if any).
-                     auto split = algorithm::divide_search( range, view::String{ "${"});
+                     // check if this 'sub-range' is a _variable indirection_ (minimal possible variable is ${X} )
+                     auto is_variable_declaration = []( auto range)
+                     {
+                        if( range.size() < 4)
+                           return false;
 
-                     // might be the whole value/string
-                     out << view::String{ std::get< 0>( split)};
+                        return algorithm::equal( range::make( std::begin( range), 2), view::String{ "${"});
+                     };
 
-                     auto variable = view::String{ std::get< 1>( split)};
-                     
-                     if( ! variable)
+                     if( ! is_variable_declaration( range))
+                     {
+                        out << view::String{ range};
                         return;
+                     }
 
-                     // get rid of the found "${"
-                     variable.advance( 2);
+                     // find the end of the declaration
+                     auto found = algorithm::find( range, '}');
+
+                     if( ! found)
+                     {
+                        // not a correct variable, we dont replace
+                        out << view::String{ range};
+                        return;
+                     }
+
+                     // ok, now we have a "correct" variable, lets resolve it...
+
+                     // get rid of the "${"
+                     range.advance( 2);
+
+                     // replace '}' with '\0' to be c-compatible, for variable 'lookup'
+                     *found = '\0';
+
+                     auto variable = view::String{ range::make( std::begin( range), std::begin( found))};
 
                      // let the functor take care of extracting the variable
                      // it might be from a "local repository"
                      // `variable` is now a view::String with null termination.
                      get_variable( out, variable);
+
+                     // handle the rest, which might be _noting_
+                     out << view::String{ range::make( std::begin( found + 1), std::end( range))};
                   };
 
                   algorithm::for_each( 

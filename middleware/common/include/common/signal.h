@@ -11,6 +11,7 @@
 #include "common/code/signal.h"
 #include "common/move.h"
 #include "common/algorithm/compare.h"
+#include "common/functional.h"
 #include "common/thread.h"
 #include "common/execute.h"
 
@@ -273,12 +274,12 @@ namespace casual
          {
             namespace detail
             {
-               void registration( code::signal signal, std::function< void()> callback);
+               void registration( code::signal signal, common::function< void()> callback);
 
                struct Replace
                {
                   code::signal signal;
-                  std::vector< std::function< void()>> callbacks;
+                  std::vector< common::function< void()>> callbacks;
                };
                Replace replace( Replace wanted);
                

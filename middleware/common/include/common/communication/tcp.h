@@ -205,7 +205,7 @@ namespace casual
                inline auto descriptor() const { return m_socket.descriptor();}
 
                // for logging only
-               CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
+               CASUAL_LOG_SERIALIZE(
                {
                   CASUAL_SERIALIZE_NAME( m_socket, "socket");
                })

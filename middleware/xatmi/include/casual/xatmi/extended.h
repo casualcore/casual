@@ -6,9 +6,8 @@
 
 #pragma once
 
-
 #include <stdarg.h>
-
+#include <uuid/uuid.h>
 
 
 #define CASUAL_BUFFER_BINARY_TYPE ".binary"
@@ -34,8 +33,29 @@ extern int casual_log( casual_log_category_t category, const char* const format,
 extern int casual_vlog( casual_log_category_t category, const char* const format, va_list ap);
 
 extern int casual_user_vlog( const char* category, const char* const format, va_list ap);
-
 extern int casual_user_log( const char* category, const char* const message);
+
+extern void casual_execution_id_set( const uuid_t* id);
+extern const uuid_t* casual_execution_id_get();
+
+/**
+ * @returns the alias of the instance.
+ * 
+ * @attention could be NULL if the instance is *not* spawn by
+ * casual-domain-manager
+ */
+extern const char* casual_instance_alias();
+
+/**
+ * @returns the instance index. 
+ * Example: if a server is configured with 3 instances.
+ * each instance will have 0, 1, and 2, respectively.  
+ * 
+ * @attention could return -1 if the instance is *not* spawn by
+ * casual-domain-manager
+ */
+extern long casual_instance_index();
+
 
 #ifdef __cplusplus
 }

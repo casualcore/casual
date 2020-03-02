@@ -44,7 +44,7 @@ namespace casual
 
             friend void validate( const Directive& settings);
 
-            CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
+            CASUAL_LOG_SERIALIZE(
                CASUAL_SERIALIZE( compiler);
                CASUAL_SERIALIZE( output);
                CASUAL_SERIALIZE( directives);

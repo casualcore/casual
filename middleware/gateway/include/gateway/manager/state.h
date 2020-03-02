@@ -47,7 +47,7 @@ namespace casual
                   std::string local;
                   std::string peer;
 
-                  CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
+                  CASUAL_LOG_SERIALIZE(
                   { 
                      CASUAL_SERIALIZE( local);
                      CASUAL_SERIALIZE( peer);
@@ -118,7 +118,7 @@ namespace casual
                std::vector< outbound::Connection> outbound;
                std::vector< inbound::Connection> inbound;
 
-               CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
+               CASUAL_LOG_SERIALIZE(
                {
                   CASUAL_SERIALIZE( outbound);
                   CASUAL_SERIALIZE( inbound);
@@ -138,7 +138,7 @@ namespace casual
                      void send( common::strong::ipc::id queue, message_type& message);
 
                      // nothing to "log"
-                     CASUAL_CONST_CORRECT_SERIALIZE_WRITE()
+                     CASUAL_LOG_SERIALIZE()
                   };
 
                   using Discover = common::message::Coordinate< Policy>;
@@ -175,7 +175,7 @@ namespace casual
                state::coordinate::outbound::Discover outbound;
                void remove( common::strong::process::id pid);
 
-               CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
+               CASUAL_LOG_SERIALIZE(
                { 
                   CASUAL_SERIALIZE( outbound);
                })
@@ -184,7 +184,7 @@ namespace casual
 
             Runlevel runlevel = Runlevel::startup;
 
-            CASUAL_CONST_CORRECT_SERIALIZE_WRITE(
+            CASUAL_LOG_SERIALIZE(
             { 
                CASUAL_SERIALIZE( directive);
                CASUAL_SERIALIZE( connections);

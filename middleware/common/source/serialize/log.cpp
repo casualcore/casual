@@ -40,86 +40,69 @@ namespace casual
                         return { "", "log"};
                      }
 
-                     Implementation();
                      Implementation( std::ostream& out) : m_output( out) {}
 
-                     Implementation( Implementation&&) = default;
                      ~Implementation() 
                      {
-                        flush();
+                        m_output.flush();
                      }
-
 
                      platform::size::type container_start( const platform::size::type size, const char* name)
                      {
-                        add( name);
-
-                        ++m_indent;
-
-                        m_buffer.back().size = size;
-                        m_buffer.back().type = Type::container;
-                        flush();
-
+                        prefix( name);
+                        
+                        if( size == 0)
+                           m_output << "[]";
+                              
+                        m_output << '\n';
+                        
+                        start( "  - ");
                         return size;
                      }
 
                      void container_end( const char*)
                      {
-                        --m_indent;
-                        flush();
+                        end();
                      }
 
                      void composite_start( const char* name)
                      {
-                        add( name);
-                        ++m_indent;
-                        m_buffer.back().type = Type::composite;
-                        flush();
+                        prefix( name) << "{\n";
+                        start( "  ");
                      }
                      
                      void composite_end(  const char*)
                      {
-                        --m_indent;
-                        flush();
+                        end( "}\n");
                      }
 
                      template<typename T>
                      void write( T value, const char* name)
                      {
-                        write( std::to_string( value), name);
-                     }
-
-                     void write( std::string&& value, const char* name)
-                     {
-                        add( name);
-                        m_buffer.back().value = std::move( value);
+                        prefix( name) << value << '\n';
                      }
 
                      void write( bool value, const char* name)
                      {
-                        add( name);
-                        m_buffer.back().value = value ? "true" : "false";
+                        prefix( name) << ( value ? "true" : "false") << '\n';
                      }
 
                      void write( char value, const char* name)
                      {
-                        add( name);
-                        m_buffer.back().value.push_back( value);
+                        prefix( name) << "'" << value << "'" << '\n';
                      }
 
                      void write( const std::string& value, const char* name)
                      {
-                        add( name);
-                        m_buffer.back().value = value;
+                        prefix( name) << std::quoted( value) << '\n';
                      }
 
                      void write( view::immutable::Binary value, const char* name)
                      {
-                        add( name);
                         if( value.size() > 32) 
-                           m_buffer.back().value = string::compose( '"', "binary size: ", value.size(), '"');
+                           transcode::hex::encode( prefix( name), view::binary::make( std::begin( value), 32)) << "... (size: " << value.size() << ")\n";
                         else
-                           m_buffer.back().value = string::compose( "0x", transcode::hex::encode(value));
+                           transcode::hex::encode( prefix( name),value) << '\n';
                      }
 
                      void write( const platform::binary::type& value, const char* name)
@@ -129,76 +112,49 @@ namespace casual
 
                   private:
 
-                     void add( const char* name)
+                     void start( const char* prefix)
                      {
-                        if( ! name)
+                        m_prefix.emplace_back( prefix);
+                     }
+
+                     void end()
+                     {
+                        m_prefix.pop_back();
+                     }
+
+                     template< typename... Ts>
+                     void end( Ts&&... ts)
+                     {
+                        m_prefix.pop_back();
+
+                        whitespace( m_prefix);
+
+                        common::stream::write( m_output, std::forward< Ts>( ts)...);
+                     }
+
+                     std::ostream& prefix( const char* name)
+                     {
+                        if( ! m_prefix.empty())
                         {
-                           name = "element";
+                           whitespace( range::make( std::begin( m_prefix), m_prefix.size() - 1));
+                           m_output << m_prefix.back();
                         }
-                        m_buffer.emplace_back( m_indent, name);
+
+                        if( name)
+                           m_output << name << ": ";
+                        
+                        return m_output;
                      }
 
-                     void flush()
+                     template< typename R> 
+                     void whitespace( R&& range)
                      {
-                        // Find the longest name
-                        auto size = common::algorithm::accumulate( m_buffer, 0L, []( auto size, const auto& value){
-                           return common::value::max( size, value.name.size());
-                        });
-
-                        auto writer = [&]( const auto& value)
-                        {
-                           m_output << std::right << std::setfill( '|') << std::setw( value.indent);
-
-                           switch( value.type)
-                           {
-                              case Type::composite:
-                              {
-                                 m_output << '-' << value.name;
-                                 break;
-                              }
-                              case Type::container:
-                              {
-                                 m_output << '-' << value.name;
-                                 if( value.size) { m_output << " (size: " << value.size << ')';}
-                                 break;
-                              }
-                              default:
-                              {
-                                 m_output << '-' << value.name<< std::setfill( '.') << std::setw( ( size + 3) - value.name.size()) << '[' << value.value << ']';
-                                 break;
-                              }
-                           }
-                           m_output << '\n';
-                        };
-
-                        std::for_each( std::begin( m_buffer), std::end( m_buffer), writer);
-
-                        m_buffer.clear();
+                        auto count = algorithm::accumulate( range, 0, []( auto value, auto& range){ return value + range.size();});
+                        m_output << std::setw( count) << "";
                      }
-
-
-                     enum class Type
-                     {
-                        value,
-                        container,
-                        composite
-                     };
-
-                     struct buffer_type
-                     {
-                        buffer_type( platform::size::type indent, const char* name) : indent( indent), name( name) {}
-                        buffer_type( buffer_type&&) = default;
-
-                        platform::size::type indent;
-                        std::string name;
-                        std::string value;
-                        platform::size::type size = 0;
-                        Type type = Type::value;
-                     };
 
                      std::ostream& m_output;
-                     std::vector< buffer_type> m_buffer;
-                     platform::size::type m_indent = 1;
+                     std::vector< common::view::String> m_prefix;
                   };
                } // <unnamed>
             } // local

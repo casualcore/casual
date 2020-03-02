@@ -32,7 +32,7 @@ namespace casual
          platform::time::point::type start;
          platform::time::unit timeout;
          
-         CASUAL_CONST_CORRECT_SERIALIZE_WRITE({
+         CASUAL_LOG_SERIALIZE({
             CASUAL_SERIALIZE( start);
             CASUAL_SERIALIZE( timeout);
          })

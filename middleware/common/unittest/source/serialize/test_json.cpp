@@ -24,7 +24,7 @@ namespace casual
             template< typename T>
             void value_to_string( T&& value, std::string& string)
             {
-               auto writer = serialize::json::writer( string);
+               auto writer = serialize::json::pretty::writer( string);
                writer << CASUAL_NAMED_VALUE( value);
             }
 
@@ -89,7 +89,7 @@ namespace casual
 
          {
             
-            auto writer = serialize::json::writer( json);
+            auto writer = serialize::json::pretty::writer( json);
             writer << CASUAL_NAMED_VALUE_NAME( origin, "value");
             writer.flush();
          }

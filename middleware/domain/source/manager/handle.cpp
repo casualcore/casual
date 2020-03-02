@@ -24,6 +24,7 @@
 #include "common/cast.h"
 #include "common/environment.h"
 #include "common/algorithm/compare.h"
+#include "common/instance.h"
 
 #include "common/communication/instance.h" 
 
@@ -46,10 +47,10 @@ namespace casual
                   namespace scale
                   {
                      template< typename E, typename V> 
-                     auto spawn( const E& executable, platform::size::type index, V variables) // note: copy of variables
+                     auto spawn( const E& executable, const instance::Information& instance, V variables) // note: copy of variables
                      {
-                        // add casual information for the process.
-                        variables.emplace_back( string::compose( environment::variable::name::instance::index, '=', index));
+                        // add casual instance information for the process.
+                        variables.push_back( instance::variable( instance));
 
                         return common::process::spawn( executable.path, executable.arguments, std::move( variables));
                      }
@@ -65,9 +66,10 @@ namespace casual
                         if( ! spawnable)
                            return;
 
-                        // add casual information for the process.
                         auto variables = state.variables( entity);
-                        variables.emplace_back( string::compose( environment::variable::name::instance::alias, '=', entity.alias));
+
+                        instance::Information instance;
+                        instance.alias = entity.alias;
 
                         // we set error state now in case the spawn fails
                         algorithm::for_each( spawnable, []( auto& entity){ entity.state = decltype( entity.state)::error;});
@@ -77,14 +79,12 @@ namespace casual
                         
                         while( range)
                         {
-                           auto calculate_instance_index = [&entity]( auto& range)
-                           {
-                              return std::distance( std::begin( entity.instances), std::begin( range));
-                           };
+   
+                           instance.index = std::distance( std::begin( entity.instances), std::begin( range));
 
                            try 
                            {
-                              range->spawned( scale::spawn( entity, calculate_instance_index( range), variables));
+                              range->spawned( scale::spawn( entity, instance, variables));
                            }
                            catch( const exception::system::invalid::Argument& exception)
                            {
