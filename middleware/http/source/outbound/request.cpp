@@ -17,6 +17,7 @@
 #include "common/environment.h"
 #include "common/communication/ipc.h"
 #include "common/message/handle.h"
+#include "common/stream.h"
 
 
 #include <curl/curl.h>
@@ -245,13 +246,6 @@ namespace casual
                
                curl::easy::set::option( easy, CURLOPT_URL, node.url.data());
                curl::easy::set::option( easy, CURLOPT_FOLLOWLOCATION, 1L);
-               curl::easy::set::option( easy, CURLOPT_FAILONERROR, 1L);
-
-               // connection stuff
-               {
-                  // TODO: we probably don't want to do this...
-                  curl::easy::set::option( easy, CURLOPT_FRESH_CONNECT, 1L);
-               }
                
                // always POST? probably...
                curl::easy::set::option( easy, CURLOPT_POST, 1L);
@@ -292,44 +286,37 @@ namespace casual
             {
                common::message::service::Code transform( const state::pending::Request& request, curl::type::code::easy code) noexcept
                {
-                  common::message::service::Code result;
+                  Trace trace{ "http::outbound::request::code::transform"};
 
-                  using common::code::xatmi;
-                  using curl::type::code::easy;
-                  switch( code)
+                  auto& header = request.state().header.reply;
+                  log::line( verbose::log, "header: ", header);
+
+                  // check if we've got casual header codes, if so that is the "state", regardless of what curl thinks.
+
+                  if( auto value = header.find( http::header::name::result::code))
                   {
-                     case easy::CURLE_OK:
-                     {
-                        // the call went ok from curls point of view, lets check 
-                        // from casuals point of view.
+                     common::message::service::Code result;
+                     result.result = http::header::value::result::code( *value);
+;
+                     if( auto value = header.find( http::header::name::result::user::code))
+                        result.user = http::header::value::result::user::code( *value);
 
-                        auto& header = request.state().header.reply;
-                        {
-                           
-                           auto value = header.find( http::header::name::result::code);
-                           if( value)
-                              result.result = http::header::value::result::code( *value);
-                        }
-                     
-                        {
-                           auto value = header.find( http::header::name::result::user::code);
-                           if( value)
-                              result.user = http::header::value::result::user::code( *value);
-                        }
-                        break;
-                     }
-                     default:
-                     {
-                        log::line( common::log::category::error, "curl error: ", curl_easy_strerror( code));
-                        log::line( common::log::category::verbose::error, "request: ", request);
-
-                        result.result = xatmi::service_error;
-                        break;
-
-                     }
-                     
+                     return result;
                   }
-                  return result;
+                  else if( code == curl::type::code::easy::CURLE_OK)
+                  {
+                     log::line( common::log::category::error, common::code::xatmi::protocol, " curl says OK, but no casual headers");
+                     log::line( common::log::category::verbose::error, CASUAL_NAMED_VALUE( request));
+
+                     return { common::code::xatmi::protocol, 0};
+                  }
+                  else
+                  {
+                     log::line( common::log::category::error, common::code::xatmi::service_error, " curl error: ", curl_easy_strerror( code));
+                     log::line( common::log::category::verbose::error, CASUAL_NAMED_VALUE( request));
+
+                     return { common::code::xatmi::service_error, 0};
+                  }
                }
             } // code
 

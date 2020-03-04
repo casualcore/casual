@@ -234,10 +234,11 @@ namespace casual
                      {
                         throw;
                      }
-                     catch ( const common::service::call::Fail& exception)
+                     catch ( common::service::call::Fail& exception)
                      {
                         transport->code = cast::underlying( code::xatmi::service_fail);
-                        transport->payload = buffer::copy( exception.code().message());
+                        http::buffer::transcode::to::wire( exception.result.buffer);
+                        transport->payload = buffer::copy( exception.result.buffer.memory);
                         usercode = exception.result.user;
                      }
                      catch ( const common::exception::xatmi::exception& exception)

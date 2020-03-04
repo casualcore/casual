@@ -83,6 +83,11 @@ namespace casual
                         //! holds the reply headers, when the call is done
                         common::service::header::Fields reply;
 
+                        CASUAL_LOG_SERIALIZE(
+                        { 
+                           CASUAL_NAMED_VALUE( reply);
+                        })   
+
                      } header;
 
                      inline auto range() noexcept { return common::range::make( std::begin( payload.memory) + offset, std::end( payload.memory));}
@@ -91,7 +96,7 @@ namespace casual
                         payload.memory.clear();
                         offset = 0;
                      }
-
+                     
                      CASUAL_LOG_SERIALIZE(
                      { 
                         CASUAL_NAMED_VALUE( payload);
@@ -102,10 +107,8 @@ namespace casual
                         CASUAL_NAMED_VALUE( start);
                         CASUAL_NAMED_VALUE( service);
                         CASUAL_NAMED_VALUE( parent);
-                     })
-
-                  private:
-                     
+                        CASUAL_NAMED_VALUE( header);
+                     })                     
                   };
 
                   inline const curl::type::easy& easy() const { return m_easy;}
@@ -120,7 +123,7 @@ namespace casual
                   CASUAL_LOG_SERIALIZE(
                   { 
                      CASUAL_NAMED_VALUE_NAME( m_easy, "easy");
-                     CASUAL_NAMED_VALUE_NAME( m_state, "state");
+                     CASUAL_NAMED_VALUE_NAME( state(), "state");
                   })
 
                private:
