@@ -53,8 +53,9 @@ namespace casual
                   request.service.name = std::move( service);
                   request.buffer.type = common::buffer::type::binary();
 
-                  auto archive = common::serialize::binary::writer( request.buffer.memory);
+                  auto archive = common::serialize::binary::writer();
                   detail::serialize( archive, std::forward< Ts>( arguments)...);
+                  archive.consume( request.buffer.memory);
 
                   return common::communication::ipc::blocking::send( common::communication::instance::outbound::domain::manager::device(), request);
                }();

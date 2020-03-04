@@ -227,8 +227,8 @@ namespace casual
                   
                   std::string casual = []() -> std::string
                   {
-                     if( variable::exists( variable::name::home()))
-                        return variable::get( variable::name::home());
+                     if( variable::exists( variable::name::home))
+                        return variable::get( variable::name::home);
 
                      return "/opt/casual";
                   }();
@@ -237,8 +237,8 @@ namespace casual
                   {
                      auto file = []( ) -> std::string
                      {
-                        if( variable::exists( variable::name::log::path()))
-                           return variable::get( variable::name::log::path());
+                        if( variable::exists( variable::name::log::path))
+                           return variable::get( variable::name::log::path);
 
                         return get_domain() + "/casual.log";
                      }();
@@ -251,8 +251,8 @@ namespace casual
                   {
                      auto get = []()
                      {
-                        if( variable::exists( variable::name::ipc::directory()))
-                           return variable::get( variable::name::ipc::directory());
+                        if( variable::exists( variable::name::ipc::directory))
+                           return variable::get( variable::name::ipc::directory);
 
                         return environment::directory::temporary() + "/casual/ipc";
                      };
@@ -276,8 +276,8 @@ namespace casual
                private:
                   static std::string get_domain()
                   {
-                     if( variable::exists( variable::name::domain::home()))
-                        return variable::get( variable::name::domain::home());
+                     if( variable::exists( variable::name::domain::home))
+                        return variable::get( variable::name::domain::home);
 
                      return "./";
                   }

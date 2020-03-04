@@ -48,7 +48,7 @@ namespace casual
 
          // Set the process variables so children can communicate with us.
          common::environment::variable::process::set(
-            common::environment::variable::name::ipc::transaction::manager(),
+            common::environment::variable::name::ipc::transaction::manager,
             common::process::handle());
 
          // Start resource-proxies

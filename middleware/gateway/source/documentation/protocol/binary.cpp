@@ -59,10 +59,10 @@ namespace casual
                      {
                         return [format]( auto&& message, const std::string& base)
                         {
-                           auto file = local::file( message, base, format);
-                           auto archive = common::serialize::create::writer::from( format, file);
-
+                           auto archive = common::serialize::create::writer::from( format);
                            archive << CASUAL_NAMED_VALUE( message);
+                           auto file = local::file( message, base, format);
+                           archive.consume( file);
                         };
                      };
                   } // generator

@@ -74,12 +74,11 @@ namespace casual
             }
 
             Directive::Directive()
-               : m_color{ local::get( environment::variable::name::terminal::color(), true)},
-                  m_porcelain{ local::get( environment::variable::name::terminal::porcelain(), false)},
-                  m_header{ local::get( environment::variable::name::terminal::header(), true)},
-                  m_block{ local::get( environment::variable::name::terminal::precision(), true)},
-                  m_precision{ local::get( environment::variable::name::terminal::precision(), 3)}
-                  
+               : m_color{ local::get( environment::variable::name::terminal::color, true)},
+                  m_porcelain{ local::get( environment::variable::name::terminal::porcelain, false)},
+                  m_header{ local::get( environment::variable::name::terminal::header, true)},
+                  m_block{ local::get( environment::variable::name::terminal::precision, true)},
+                  m_precision{ local::get( environment::variable::name::terminal::precision, 3)}
             {
 
             }

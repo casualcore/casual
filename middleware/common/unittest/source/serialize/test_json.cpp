@@ -24,8 +24,9 @@ namespace casual
             template< typename T>
             void value_to_string( T&& value, std::string& string)
             {
-               auto writer = serialize::json::pretty::writer( string);
+               auto writer = serialize::json::pretty::writer();
                writer << CASUAL_NAMED_VALUE( value);
+               writer.consume( string);
             }
 
             template< typename T>
@@ -83,19 +84,19 @@ namespace casual
       TEST( common_serialize_json, array)
       {
          common::unittest::Trace trace;
-         platform::binary::type json;
+         
+
+         auto writer = serialize::json::pretty::writer();
 
          const std::array< char, 4> origin{ '1', '2', '3', '4' };
 
-         {
-            
-            auto writer = serialize::json::pretty::writer( json);
+         {   
             writer << CASUAL_NAMED_VALUE_NAME( origin, "value");
-            writer.flush();
          }
 
          {
             std::array< char, 4> value;
+            auto json = writer.consume< platform::binary::type>();
             auto reader = serialize::json::strict::reader( json);
             reader >> CASUAL_NAMED_VALUE( value);
 

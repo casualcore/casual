@@ -43,8 +43,9 @@ namespace casual
             template<typename T>
             void value_to_string( T&& value, std::string& string)
             {
-               auto writer = serialize::yaml::writer( string);
+               auto writer = serialize::yaml::writer();
                writer << CASUAL_NAMED_VALUE( value);
+               writer.consume( string);
             }
 
             struct Empty
@@ -118,20 +119,16 @@ value:
       TEST( common_serialize_yaml, array)
       {
          common::unittest::Trace trace;
-         platform::binary::type yaml;
 
          const std::array< char, 4> origin{ '1', '2', '3', '4' };
 
-         {
-            
-            auto writer = serialize::yaml::writer( yaml);
-            writer << CASUAL_NAMED_VALUE_NAME( origin, "value");
-            writer.flush();
-
-            EXPECT_TRUE( ! yaml.empty()) << CASUAL_NAMED_VALUE( yaml.size()) << " - " << CASUAL_NAMED_VALUE( yaml);
-         }
+         auto writer = serialize::yaml::writer();
+         writer << CASUAL_NAMED_VALUE_NAME( origin, "value");
 
          {
+            auto yaml = writer.consume< platform::binary::type>();
+            ASSERT_TRUE( ! yaml.empty()) << CASUAL_NAMED_VALUE( yaml.size()) << " - " << CASUAL_NAMED_VALUE( yaml.data());
+
             std::array< char, 4> value;
             auto reader = serialize::yaml::strict::reader( yaml);
             reader >> CASUAL_NAMED_VALUE( value);

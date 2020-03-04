@@ -78,9 +78,9 @@ namespace casual
                   //auto persistent = local::persistent( state);
 
                   common::file::Output file{ name};
-                  auto archive = common::serialize::create::writer::from( file.extension(), file);
-                  
+                  auto archive = common::serialize::create::writer::from( file.extension());
                   archive << CASUAL_NAMED_VALUE( state);
+                  archive.consume( file);
                }
 
                State load( const std::string& name)

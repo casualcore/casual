@@ -31,8 +31,9 @@ namespace casual
             template<typename T>
             void value_to_string( T&& value, std::string& string)
             {
-               auto writer = serialize::ini::writer( string);
+               auto writer = serialize::ini::writer();
                writer << CASUAL_NAMED_VALUE( value);
+               writer.consume( string);
             }
 
             template<typename T>
@@ -45,18 +46,17 @@ namespace casual
          } // local
       } //
 
-      TEST( serviceframework_ini_archive, writer_archive_type)
+      TEST( common_serialize_ini_archive, writer_archive_type)
       {
          common::unittest::Trace trace;
 
-         std::string buffer;
-         auto writer = serialize::ini::writer( buffer);
+         auto writer = serialize::ini::writer();
 
          EXPECT_TRUE( writer.archive_type() == common::serialize::archive::Type::dynamic_type) << "writer.archive_type: " << writer.archive_type();
          EXPECT_TRUE( writer.type() == common::serialize::archive::dynamic::Type::named) << "writer.type(): " << writer.type();
       }
 
-      TEST( serviceframework_ini_archive, reader_archive_type)
+      TEST( common_serialize_ini_archive, reader_archive_type)
       {
          common::unittest::Trace trace;
 
@@ -67,7 +67,7 @@ namespace casual
          EXPECT_TRUE( reader.type() == common::serialize::archive::dynamic::Type::named) << "reader.type(): " << reader.type();
       }
 
-      TEST( serviceframework_ini_archive, write_read_string_with_new_line)
+      TEST( common_serialize_ini_archive, write_read_string_with_new_line)
       {
          common::unittest::Trace trace;
 
@@ -80,7 +80,7 @@ namespace casual
          EXPECT_TRUE( source == target);
       }
 
-      TEST( serviceframework_ini_archive, write_read_boolean)
+      TEST( common_serialize_ini_archive, write_read_boolean)
       {
          common::unittest::Trace trace;
 
@@ -91,7 +91,7 @@ namespace casual
          EXPECT_TRUE( target == true);
       }
 
-      TEST( serviceframework_ini_archive, write_read_decimal)
+      TEST( common_serialize_ini_archive, write_read_decimal)
       {
          common::unittest::Trace trace;
 
@@ -103,7 +103,7 @@ namespace casual
          EXPECT_TRUE( source == target);
       }
 
-      TEST( serviceframework_ini_archive, write_read_container)
+      TEST( common_serialize_ini_archive, write_read_container)
       {
          common::unittest::Trace trace;
 
@@ -171,7 +171,7 @@ namespace casual
 
          };
 
-         TEST( serviceframework_ini_archive, write_read_serializable)
+         TEST( common_serialize_ini_archive, write_read_serializable)
          {
             common::unittest::Trace trace;
 
@@ -211,7 +211,7 @@ namespace casual
          }
 
 
-         TEST( serviceframework_ini_archive, test_control_characters)
+         TEST( common_serialize_ini_archive, test_control_characters)
          {
             common::unittest::Trace trace;
 
@@ -244,7 +244,7 @@ namespace casual
          }
       };
 
-      TEST( serviceframework_ini_archive, nested_stuff)
+      TEST( common_serialize_ini_archive, nested_stuff)
       {
          std::string ini;
          //std::vector<std::vector<std::vector<long>>> source{ {{1, 3, 5}, {2, 4, 6, 8}}, {{4, 3, 2}} };

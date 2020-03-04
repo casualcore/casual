@@ -23,7 +23,7 @@ namespace casual
             //! @returns a 'writer' that serialize to a
             //! _yaml-like_ format that is (subjectively) easy 
             // to read for a human
-            Writer writer( std::ostream& out);
+            Writer writer();
 
          } // log
       } // serialize

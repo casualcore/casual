@@ -76,9 +76,9 @@ namespace casual
                common::file::scoped::Path name{ common::file::name::unique( common::directory::temporary() + "/domain", extension)};
                
                common::file::Output file{ name};
-               auto archive = common::serialize::create::writer::from( file.extension(), file);
-               
+               auto archive = common::serialize::create::writer::from( file.extension());
                archive << CASUAL_NAMED_VALUE( environment);
+               archive.consume( file);
 
                return name;
             }

@@ -8,7 +8,7 @@
 #pragma once
 
 #include "common/serialize/archive/type.h"
-#include "common/serialize/named/value.h"
+#include "common/serialize/archive/consume.h"
 #include "common/serialize/traits.h"
 #include "common/serialize/value.h"
 #include "casual/platform.h"
@@ -65,6 +65,20 @@ namespace casual
             inline void validate() { m_protocol->validate();}
 
             inline auto type() const { return m_type;};
+
+
+            template< typename V>
+            Reader& operator >> ( V&& value)
+            {
+               serialize::value::read( *this, std::forward< V>( value), nullptr);
+               return *this;
+            }
+
+            template< typename V>
+            Reader& operator & ( V&& value)
+            {
+               return Reader::operator >> ( std::forward< V>( value));
+            }
 
          private:
 
@@ -149,20 +163,6 @@ namespace casual
 
          static_assert( traits::archive::type< Reader>::value == archive::Type::dynamic_type, "");
 
-         //! Reader interface
-         template< typename V>
-         Reader& operator >> ( Reader& archive, V&& value)
-         {
-            serialize::value::read( archive, std::forward< V>( value), nullptr);
-            return archive;
-         }
-
-         template< typename V>
-         Reader& operator & ( Reader& archive, V&& value)
-         {
-            return operator >> ( archive, std::forward< V>( value));
-         }
-
 
          class Writer
          {
@@ -182,7 +182,7 @@ namespace casual
             inline void container_end( const char* name) { m_protocol->container_end( name);}
 
             inline void composite_start( const char* name) { m_protocol->composite_start( name);}
-            inline void composite_end(  const char* name) { m_protocol->composite_end(  name);}
+            inline void composite_end(  const char* name) { m_protocol->composite_end( name);}
 
 
             //! restricted write, so we don't consume convertable types by mistake
@@ -194,10 +194,37 @@ namespace casual
                save( std::forward< T>( value), name);
             }
 
-            //! Flushes the archive, if the implementation has a flush member function.
-            inline void flush() { m_protocol->flush();}
+            //! consumes the writer
+            //! @{
+            inline void consume( platform::binary::type& destination) { m_protocol->consume( destination);};
+            inline void consume( std::ostream& destination) { m_protocol->consume( destination);};
+            inline void consume( std::string& destination) { m_protocol->consume( destination);};
+
+            template< typename T>
+            auto consume()
+            {
+               T destination;
+               consume( destination);
+               return destination;
+            }
+            //! @}
+
 
             inline auto type() const { return m_type;};
+
+
+            template< typename V>
+            Writer& operator << ( V&& value)
+            {
+               serialize::value::write( *this, std::forward< V>( value), nullptr);
+               return *this;
+            }
+
+            template< typename V>
+            Writer& operator & ( V&& value)
+            {
+               return Writer::operator << ( std::forward< V>( value));
+            }
 
          private:
 
@@ -238,14 +265,14 @@ namespace casual
                virtual void write( const platform::binary::type& value, const char* name) = 0;
                virtual void write( view::immutable::Binary value, const char* name) = 0;
 
-               virtual void flush() = 0;
+               virtual void consume( platform::binary::type& destination) = 0;
+               virtual void consume( std::ostream& destination) = 0;
+               virtual void consume( std::string& destination) = 0;
             };
 
-            template< typename P>
+            template< typename protocol_type>
             struct model : concept
             {
-               using protocol_type = P;
-
                template< typename... Ts>
                model( Ts&&... ts) : m_protocol( std::forward< Ts>( ts)...) {}
 
@@ -266,18 +293,11 @@ namespace casual
                void write( const platform::binary::type&value, const char* name) override { m_protocol.write( value, name);}
                void write( view::immutable::Binary value, const char* name) override { m_protocol.write( value, name);}
 
-               void flush() override { selective_flush( m_protocol);}
+               void consume( platform::binary::type& destination) override { serialize::writer::consume( m_protocol, destination);};
+               void consume( std::ostream& destination) override { serialize::writer::consume( m_protocol, destination);};
+               void consume( std::string& destination) override { serialize::writer::consume( m_protocol, destination);};
 
             private:
-               template< typename T>
-               static auto selective_flush( T& protocol) -> std::enable_if_t< common::traits::has::flush< T>::value>
-               {
-                  protocol.flush();
-               }
-               
-               template< typename T>
-               static auto selective_flush( T& protocol) -> std::enable_if_t< ! common::traits::has::flush< T>::value> {}
-
                protocol_type m_protocol;
             };
 
@@ -292,19 +312,6 @@ namespace casual
 
          static_assert( traits::archive::type< Writer>::value == archive::Type::dynamic_type, "");
 
-
-         template< typename V>
-         Writer& operator << ( Writer& archive, V&& value)
-         {
-            serialize::value::write( archive, std::forward< V>( value), nullptr);
-            return archive;
-         }
-
-         template< typename V>
-         Writer& operator & ( Writer& archive, V&& value)
-         {
-            return operator << ( archive, std::forward< V>( value));
-         }
 
       } // serialize
    } // common

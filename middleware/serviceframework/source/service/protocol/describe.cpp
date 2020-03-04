@@ -49,7 +49,6 @@ namespace casual
                            {
                               m_stack.pop_back();
                            }
-
                            
                            void composite_start( const char* name)
                            {

@@ -16,6 +16,7 @@
 #include "common/serialize/ini.h"
 #include "common/serialize/line.h"
 #include "common/serialize/native/binary.h"
+#include "common/serialize/archive/consume.h"
 
 #include "common/log.h"
 
@@ -44,14 +45,13 @@ namespace casual
             template< typename T>
             static T write_read( const T& value)
             {
-               auto buffer = policy_type::buffer(); 
+               auto writer = policy_type::writer();
+               writer << CASUAL_NAMED_VALUE( value);
 
                {
-                  auto writer = policy_type::writer( buffer);
-                  writer << CASUAL_NAMED_VALUE( value);
-               }
+                  auto buffer = policy_type::buffer();
+                  serialize::writer::consume( writer, buffer);
 
-               {
                   auto reader = policy_type::reader( buffer);
                   T value;
                   reader >> CASUAL_NAMED_VALUE( value);
@@ -74,8 +74,7 @@ namespace casual
                template< typename T>
                static auto reader( T&& buffer) { return serialize::json::strict::reader( buffer);}
 
-               template< typename T>
-               static auto writer( T&& buffer) { return serialize::json::pretty::writer( buffer);}
+               static auto writer() { return serialize::json::pretty::writer();}
             };
 
             namespace relaxed    
@@ -94,8 +93,7 @@ namespace casual
                template< typename T>
                static auto reader( T&& buffer) { return serialize::yaml::strict::reader( buffer);}
 
-               template< typename T>
-               static auto writer( T&& buffer) { return serialize::yaml::writer( buffer);}
+               static auto writer() { return serialize::yaml::writer();}
             };
 
             namespace relaxed    
@@ -114,8 +112,7 @@ namespace casual
                template< typename T>
                static auto reader( T&& buffer) { return serialize::xml::strict::reader( buffer);}
 
-               template< typename T>
-               static auto writer( T&& buffer) { return serialize::xml::writer( buffer);}
+               static auto writer() { return serialize::xml::writer();}
             };
 
             namespace relaxed    
@@ -133,8 +130,7 @@ namespace casual
                template< typename T>
                static auto reader( T&& buffer) { return serialize::native::binary::reader( buffer);}
 
-               template< typename T>
-               static auto writer( T&& buffer) { return serialize::native::binary::writer( buffer);}
+               static auto writer() { return serialize::native::binary::writer();}
             };
 
          } // policy
@@ -144,7 +140,6 @@ namespace casual
       template <typename H>
       struct common_serialize_write_read : public ::testing::Test, public H
       {
-
       };
 
       using archive_types = ::testing::Types<

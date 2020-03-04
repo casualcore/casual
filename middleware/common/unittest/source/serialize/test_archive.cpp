@@ -6,7 +6,7 @@
 
 
 
-#include <gtest/gtest.h>
+#include <common/unittest.h>
 
 
 #include "common/serialize/macro.h"
@@ -27,11 +27,11 @@
 namespace casual
 {
 
-
    TEST( serialize_binary_writer, archive_type)
    {
-      platform::binary::type buffer;
-      auto writer = common::serialize::binary::writer( buffer);
+      common::unittest::Trace trace;
+
+      auto writer = common::serialize::binary::writer();
 
       EXPECT_TRUE( writer.archive_type() == common::serialize::archive::Type::dynamic_type) << "writer.archive_type: " << writer.archive_type();
       EXPECT_TRUE( writer.type() == common::serialize::archive::dynamic::Type::order_type) << "writer.type(): " << writer.type();
@@ -40,21 +40,21 @@ namespace casual
 
    TEST( serialize_binary_writer, serialize_pod)
    {
+      common::unittest::Trace trace;
 
-      platform::binary::type buffer;
-      auto writer = common::serialize::native::binary::writer( buffer);
-
+      auto writer = common::serialize::native::binary::writer();
       writer << CASUAL_NAMED_VALUE( 10);
    }
 
    TEST( serialize_binary_writer, serialize_string)
    {
+      common::unittest::Trace trace;
 
-      platform::binary::type buffer;
-      auto writer = common::serialize::native::binary::writer( buffer);
+      auto writer = common::serialize::native::binary::writer();
 
       writer << CASUAL_NAMED_VALUE( std::string{ "test"});
 
+      auto buffer = writer.consume();
       auto reader = common::serialize::native::binary::reader( buffer);
 
       std::string result;
@@ -63,19 +63,18 @@ namespace casual
 
       EXPECT_TRUE( result == "test") << "result: " << result;
 
-
-
    }
 
 
    TEST( serialize_binary_reader_writer, serialize_pod)
    {
+      common::unittest::Trace trace;
 
-      platform::binary::type buffer;
-      auto writer = common::serialize::native::binary::writer( buffer);
 
+      auto writer = common::serialize::native::binary::writer();
       writer << CASUAL_NAMED_VALUE( 34L);
 
+      auto buffer = writer.consume();
       auto reader = common::serialize::native::binary::reader( buffer);
 
       long result;
@@ -90,10 +89,9 @@ namespace casual
 
    TEST( serialize_binary_reader_writer, serialize_vector_long)
    {
+      common::unittest::Trace trace;
 
-      platform::binary::type buffer;
-      auto writer = common::serialize::native::binary::writer( buffer);
-
+      auto writer = common::serialize::native::binary::writer();
 
       std::vector< long> someInts = { 1, 2, 3, 4 };
 
@@ -101,6 +99,7 @@ namespace casual
 
       std::vector< long> result;
 
+      auto buffer = writer.consume();
       auto reader = common::serialize::native::binary::reader( buffer);
 
       reader >> CASUAL_NAMED_VALUE( result);
@@ -116,9 +115,9 @@ namespace casual
 
    TEST( serialize_binary_reader_writer, map_long_string)
    {
+      common::unittest::Trace trace;
 
-      platform::binary::type buffer;
-      auto writer = common::serialize::native::binary::writer( buffer);
+      auto writer = common::serialize::native::binary::writer();
 
       std::map< long, std::string> value = { { 1, "test 1"}, { 2, "test 2"}, { 3, "test 3"}, { 4, "test 4"} };
 
@@ -127,6 +126,7 @@ namespace casual
 
       std::map< long, std::string> result;
 
+      auto buffer = writer.consume();
       auto reader = common::serialize::native::binary::reader( buffer);
 
       reader >> CASUAL_NAMED_VALUE( result);
@@ -156,12 +156,11 @@ namespace casual
 
    TEST( serialize_binary_reader_writer, serializable)
    {
+      common::unittest::Trace trace;
 
-      platform::binary::type buffer;
+      auto writer = common::serialize::native::binary::writer();
 
       {
-         auto writer = common::serialize::native::binary::writer( buffer);
-
          Serializible value;
          value.someLong = 23;
          value.someString = "kdjlfskjf";
@@ -170,6 +169,7 @@ namespace casual
       }
 
       {
+         auto buffer = writer.consume();
          auto reader = common::serialize::native::binary::reader( buffer);
 
          Serializible value;
@@ -183,8 +183,9 @@ namespace casual
 
    TEST( serialize_binary_reader_writer, complex_serializable)
    {
+      common::unittest::Trace trace;
 
-      platform::binary::type buffer;
+      auto writer = common::serialize::native::binary::writer();
 
       {
          test::Composite value;
@@ -194,15 +195,13 @@ namespace casual
          std::get< 1>( value.m_tuple) = "poop";
          std::get< 2>( value.m_tuple).m_short = 42;
 
-
          std::vector< test::Composite> range{ value, value, value, value};
-
-         auto writer = common::serialize::native::binary::writer( buffer);
+         
          writer << CASUAL_NAMED_VALUE( range);
-
       }
 
       {
+         auto buffer = writer.consume();
          auto reader = common::serialize::native::binary::reader( buffer);
 
          std::vector< test::Composite> range;

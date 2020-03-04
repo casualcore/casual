@@ -56,24 +56,26 @@ namespace casual
                      using Flag = service::call::Flag;
                      using Flags = service::call::Flags;
 
-                     basic_call() : m_payload( input_policy::type()), m_input( m_payload)
+                     basic_call() : m_payload( input_policy::type())
                      {
                      }
 
                      template< typename T>
                      basic_call& operator << ( T&& value)
                      {
-                        m_input.archive() << std::forward< T>( value);
+                        m_input.archive << std::forward< T>( value);
                         return *this;
                      }
 
                      result_type operator () ( const std::string& service)
                      {
+                        m_input.archive.consume( m_payload.memory);
                         return { service::call::invoke( service, m_payload)};
                      }
 
                      result_type operator () ( const std::string& service, Flags flags)
                      {
+                        m_input.archive.consume( m_payload.memory);
                         return { service::call::invoke( service, m_payload, flags)};
                      }
 
@@ -154,15 +156,8 @@ namespace casual
                   {
                      struct Input
                      {
-                        Input( service::payload_type& payload) : m_archive( common::serialize::binary::writer( payload.memory))
-                        {
-                        }
-                        auto& archive() { return m_archive;}
-
                         static const std::string& type() { return common::buffer::type::binary();};
-
-                     private:
-                        common::serialize::Writer m_archive;
+                        common::serialize::Writer archive = common::serialize::binary::writer();
                      };
 
                      struct Result

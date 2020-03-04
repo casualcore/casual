@@ -45,7 +45,7 @@ namespace casual
 
             // Set the process variables so children can communicate with us.
             common::environment::variable::process::set(
-                  common::environment::variable::name::ipc::domain::manager(),
+                  common::environment::variable::name::ipc::domain::manager,
                   common::process::handle());
 
             // start casual-domain-pending-message

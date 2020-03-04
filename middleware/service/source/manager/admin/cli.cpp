@@ -603,8 +603,9 @@ namespace casual
             {
                auto state = admin::api::state();
 
-               auto archive = common::serialize::create::writer::from( format.value_or( ""), std::cout);
+               auto archive = common::serialize::create::writer::from( format.value_or( ""));
                archive << CASUAL_NAMED_VALUE( state);
+               archive.consume( std::cout);
             }
 
             namespace metric

@@ -82,6 +82,7 @@ namespace casual
 
                Complete();
                Complete( common::message::Type type, const Uuid& correlation);
+               Complete( common::message::Type type, const Uuid& correlation, payload_type&& payload);
                Complete( const complete::network::Header& header);
 
                template< typename Chunk>

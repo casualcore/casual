@@ -52,8 +52,8 @@ namespace casual
                Identity& identity()
                {
                   static Identity id{
-                     Uuid{ environment::variable::get( environment::variable::name::domain::id(), "00000000000000000000000000000000")},
-                     environment::variable::get( environment::variable::name::domain::name(), "")};
+                     Uuid{ environment::variable::get( environment::variable::name::domain::id, "00000000000000000000000000000000")},
+                     environment::variable::get( environment::variable::name::domain::name, "")};
                   return id;
 
                }
@@ -72,8 +72,8 @@ namespace casual
             {
                local::identity().id = uuid::make();
             }
-            environment::variable::set( environment::variable::name::domain::name(), local::identity().name);
-            environment::variable::set( environment::variable::name::domain::id(), uuid::string( local::identity().id));
+            environment::variable::set( environment::variable::name::domain::name, local::identity().name);
+            environment::variable::set( environment::variable::name::domain::id, uuid::string( local::identity().id));
 
          }
 
@@ -117,7 +117,7 @@ namespace casual
 
                // Set domain-process so children easy can send messages to us.
                environment::variable::process::set(
-                     environment::variable::name::ipc::domain::manager(),
+                     environment::variable::name::ipc::domain::manager,
                      process);
 
                domain::identity( identity);
@@ -156,7 +156,7 @@ namespace casual
                      result.identity.id = Uuid{ uuid};
                   }
 
-                  environment::variable::process::set( environment::variable::name::ipc::domain::manager(), result.process);
+                  environment::variable::process::set( environment::variable::name::ipc::domain::manager, result.process);
                   common::domain::identity( result.identity);
 
                   log::line( log::debug, "domain information - id: ", result.identity, ", process: ", result.process);

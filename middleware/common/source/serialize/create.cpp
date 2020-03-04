@@ -20,11 +20,11 @@ namespace casual
             {
                namespace
                {
-                  template< typename Map, typename Out>
-                  auto create( Map& map, const std::string& key, Out& out)
+                  template< typename Map, typename... Ts>
+                  auto create( Map& map, const std::string& key, Ts&&... ts)
                   {
                      if( auto found = common::algorithm::find( map, key))
-                        return found->second.create( out);
+                        return found->second.create( std::forward< Ts>( ts)...);
                      else 
                         throw exception::system::invalid::Argument{ common::string::compose( "failed to find archive creator for key: ", key)};
                   }
@@ -142,11 +142,6 @@ namespace casual
                         } 
                      } // global
    
-                     template< typename Out>
-                     decltype( auto) create( const std::string& key, Out& out)
-                     {
-                         return serialize::create::local::create( global::creators(), key, out);
-                     }
                   } // <unnamed>
                } // local
 
@@ -159,14 +154,9 @@ namespace casual
                } // detail
 
 
-               serialize::Writer from( const std::string& key, std::ostream& stream)
+               serialize::Writer from( const std::string& key)
                {
-                  return local::create( key, stream);
-               }
-
-               serialize::Writer from( const std::string& key, platform::binary::type& data)
-               {
-                  return local::create( key, data);
+                  return serialize::create::local::create( local::global::creators(), key);
                }
 
                std::vector< std::string> keys()

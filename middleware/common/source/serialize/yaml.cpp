@@ -343,8 +343,6 @@ namespace casual
 
                         inline constexpr static auto archive_type() { return archive::Type::static_need_named;}
 
-                        using buffer_type = YAML::Emitter;
-
                         static decltype( auto) keys() { return local::keys();}
 
                         Implementation()
@@ -353,14 +351,9 @@ namespace casual
                            m_output << YAML::BeginMap;
                         }
 
-
                         platform::size::type container_start( const platform::size::type size, const char* const name)
                         {
-                           if( name)
-                           {
-                              m_output << YAML::Key << name;
-                              m_output << YAML::Value;
-                           }
+                           maybe_name( name);
                            m_output << YAML::BeginSeq;
 
                            return size;
@@ -374,11 +367,7 @@ namespace casual
 
                         void composite_start( const char* const name)
                         {
-                           if( name)
-                           {
-                              m_output << YAML::Key << name;
-                              m_output << YAML::Value;
-                           }
+                           maybe_name( name);
                            m_output << YAML::BeginMap;
                         }
 
@@ -391,31 +380,36 @@ namespace casual
                         template< typename T>
                         void write( const T& value, const char* name)
                         {
-                           if( name)
-                           {
-                              m_output << YAML::Key << name;
-                              m_output << YAML::Value;
-                           }
-
+                           maybe_name( name);
                            write( value);
                         }
 
                         const YAML::Emitter& document() const { return m_output;}
 
-                        void flush( std::ostream& yaml)
+                        auto consume()
                         {
-                           yaml << m_output.c_str();
-                        }
+                           m_output << YAML::EndMap;
+                           m_output << YAML::EndDoc;
 
-                        void flush( platform::binary::type& yaml)
-                        {
-                           yaml.resize( m_output.size());
-                           common::algorithm::copy(
-                              common::range::make( m_output.c_str(), m_output.size()),
-                              std::begin( yaml));
+                           auto size = m_output.size();
+                           auto offset = std::exchange( m_offset, size);
+
+                           m_output << YAML::BeginDoc;
+                           m_output << YAML::BeginMap;
+
+                           return common::range::make( m_output.c_str() + offset, size - offset);
                         }
 
                      private:
+
+                        void maybe_name( const char* name)
+                        {
+                           if( name)
+                           {
+                              m_output << YAML::Key << name;
+                              m_output << YAML::Value;
+                           }
+                        }
 
                         template< typename T>
                         void write( const T& value)
@@ -448,6 +442,7 @@ namespace casual
                         }
 
                         YAML::Emitter m_output;
+                        platform::size::type m_offset = 0;
                      };
 
                   } // writer
@@ -474,19 +469,9 @@ namespace casual
                serialize::Reader reader( const platform::binary::type& source) { return create::reader::consumed::create< local::reader::Implementation>( source);}
             }
 
-            serialize::Writer writer( std::string& destination)
+            serialize::Writer writer()
             {
-               return serialize::create::writer::create< local::writer::Implementation>( destination);
-            }
-
-            serialize::Writer writer( std::ostream& destination)
-            {
-               return serialize::create::writer::create< local::writer::Implementation>( destination);
-            }
-
-            serialize::Writer writer( platform::binary::type& destination)
-            {
-               return serialize::create::writer::create< local::writer::Implementation>( destination);
+               return serialize::create::writer::create< local::writer::Implementation>();
             }
 
          } // yaml

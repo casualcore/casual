@@ -19,8 +19,8 @@ namespace casual
       {
          namespace binary
          {
-            serialize::Reader reader( const platform::binary::type& destination);
-            serialize::Writer writer( platform::binary::type& destination);
+            serialize::Reader reader( const platform::binary::type& source);
+            serialize::Writer writer();
          } // binary
       } // serialize
    } // common

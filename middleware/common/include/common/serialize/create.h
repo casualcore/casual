@@ -80,13 +80,26 @@ namespace casual
                //! @returns all registred reader keys
                std::vector< std::string> keys();
 
+               namespace detail
+               {
+                  namespace indirection
+                  {
+                     template< typename Implementation> 
+                     auto registration( const std::vector< std::string>& keys) 
+                        -> std::enable_if_t< Implementation::archive_type() != archive::Type::static_order_type>
+                     {
+                        relaxed::detail::registration( reader::Creator::construct< Implementation, policy::Relaxed>(), keys);
+                        strict::detail::registration( reader::Creator::construct< Implementation, policy::Strict>(), keys);
+                        consumed::detail::registration( reader::Creator::construct< Implementation, policy::Consumed>(), keys);
+                     }
+                  } // indirection
+               } // detail
+
                template< typename Implementation>
                auto registration()
                {
                   const auto keys = Implementation::keys();
-                  relaxed::detail::registration( reader::Creator::construct< Implementation, policy::Relaxed>(), keys);
-                  strict::detail::registration( reader::Creator::construct< Implementation, policy::Strict>(), keys);
-                  consumed::detail::registration( reader::Creator::construct< Implementation, policy::Consumed>(), keys);
+                  detail::indirection::registration< Implementation>( keys);
                   return true;
                }
 
@@ -120,12 +133,10 @@ namespace casual
                   void registration( writer::Creator&& creator, const std::vector< std::string>& keys);
                } // detail
                
-               serialize::Writer from( const std::string& key, std::ostream& stream);
-               serialize::Writer from( const std::string& key, platform::binary::type& data);
+               serialize::Writer from( const std::string& key);
 
-
-               template< typename I, typename D> 
-               auto create( D& destination) { return detail::create< I>( destination);}
+               template< typename I> 
+               auto create() { return detail::create< I>();}
 
                //! @returns all registred writer keys
                std::vector< std::string> keys();

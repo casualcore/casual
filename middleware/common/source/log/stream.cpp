@@ -101,7 +101,7 @@ namespace casual
                {
                   std::regex filter()
                   {
-                     return std::regex{ common::environment::variable::get( "CASUAL_LOG", "error")};
+                     return std::regex{ common::environment::variable::get( common::environment::variable::name::log::pattern, "error")};
                   }
                } // user
 

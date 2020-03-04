@@ -40,13 +40,6 @@ namespace casual
                         return { "", "log"};
                      }
 
-                     Implementation( std::ostream& out) : m_output( out) {}
-
-                     ~Implementation() 
-                     {
-                        m_output.flush();
-                     }
-
                      platform::size::type container_start( const platform::size::type size, const char* name)
                      {
                         prefix( name);
@@ -110,6 +103,13 @@ namespace casual
                         write( view::binary::make( value), name);
                      }
 
+                     void consume( std::string& destination)
+                     {
+                        std::ostringstream output;
+                        std::swap( output, m_output);
+                        destination = std::move( output).str();
+                     }
+
                   private:
 
                      void start( const char* prefix)
@@ -153,16 +153,16 @@ namespace casual
                         m_output << std::setw( count) << "";
                      }
 
-                     std::ostream& m_output;
+                     std::ostringstream m_output;
                      std::vector< common::view::String> m_prefix;
                   };
                } // <unnamed>
             } // local
 
 
-            Writer writer( std::ostream& out)
+            Writer writer()
             {
-               return Writer::emplace< local::Implementation>( out);
+               return Writer::emplace< local::Implementation>();
             }
 
          } // log

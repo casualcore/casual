@@ -84,7 +84,6 @@ namespace casual
 
             } // fetch
 
-
             namespace local
             {
                namespace
@@ -259,7 +258,7 @@ namespace casual
                      {
                         static detail::Device singelton{
                            identity::service::manager,
-                           common::environment::variable::name::ipc::service::manager()};
+                           common::environment::variable::name::ipc::service::manager};
 
                         return singelton;
                      }
@@ -276,7 +275,7 @@ namespace casual
                      {
                         static detail::Device singelton{
                            identity::transaction::manager,
-                           common::environment::variable::name::ipc::transaction::manager()};
+                           common::environment::variable::name::ipc::transaction::manager};
                         return singelton;
                      }
 
@@ -291,7 +290,7 @@ namespace casual
                      {
                         static detail::Device singelton{
                            identity::gateway::manager,
-                           environment::variable::name::ipc::gateway::manager()};
+                           environment::variable::name::ipc::gateway::manager};
 
                         return singelton;
                      }
@@ -302,7 +301,7 @@ namespace casual
                         {
                            static detail::optional::Device singelton{
                               identity::gateway::manager,
-                              environment::variable::name::ipc::gateway::manager()};
+                              environment::variable::name::ipc::gateway::manager};
 
                            return singelton;
                         }
@@ -319,7 +318,7 @@ namespace casual
                      {
                         static detail::Device singelton{
                            identity::queue::manager,
-                           environment::variable::name::ipc::queue::manager()};
+                           environment::variable::name::ipc::queue::manager};
 
                         return singelton;
                      }
@@ -330,7 +329,7 @@ namespace casual
                         {
                            static detail::optional::Device singelton{
                               identity::queue::manager,
-                              environment::variable::name::ipc::queue::manager()};
+                              environment::variable::name::ipc::queue::manager};
 
                            return singelton;
                         }
@@ -355,8 +354,8 @@ namespace casual
 
                               auto from_environment = []()
                               {
-                                 if( environment::variable::exists( environment::variable::name::ipc::domain::manager()))
-                                    return environment::variable::process::get( environment::variable::name::ipc::domain::manager());
+                                 if( environment::variable::exists( environment::variable::name::ipc::domain::manager))
+                                    return environment::variable::process::get( environment::variable::name::ipc::domain::manager);
 
                                  return process::Handle{};
                               };
@@ -371,7 +370,7 @@ namespace casual
                                  return process;
                               }
 
-                              common::log::line( log, "failed to locate domain manager via ", environment::variable::name::ipc::domain::manager(), " - trying 'singleton file'");
+                              common::log::line( log, "failed to locate domain manager via ", environment::variable::name::ipc::domain::manager, " - trying 'singleton file'");
 
                               process = singleton_policy();
 
@@ -404,7 +403,7 @@ namespace casual
                      void Connector::clear()
                      {
                         Trace trace{ "communication::instance::outbound::domain::manager::Connector::clear"};
-                        environment::variable::unset( environment::variable::name::ipc::domain::manager());
+                        environment::variable::unset( environment::variable::name::ipc::domain::manager);
                         m_connector.clear();
                      }
 
@@ -439,7 +438,7 @@ namespace casual
                         void Connector::clear()
                         {
                            Trace trace{ "communication::instance::outbound::domain::manager::optional::Connector::clear"};
-                           environment::variable::unset( environment::variable::name::ipc::domain::manager());
+                           environment::variable::unset( environment::variable::name::ipc::domain::manager);
                            m_connector.clear();
                         }
 

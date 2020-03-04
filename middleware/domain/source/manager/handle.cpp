@@ -658,7 +658,7 @@ namespace casual
 
                            // so new spawned processes get it easier
                            environment::variable::process::set( 
-                              environment::variable::name::ipc::service::manager(), process);
+                              environment::variable::name::ipc::service::manager, process);
                         }
 
                         void tm( State& state, const common::process::Handle& process)
@@ -667,7 +667,7 @@ namespace casual
 
                            // so new spawned processes get it easier
                            environment::variable::process::set( 
-                              environment::variable::name::ipc::transaction::manager(), process);
+                              environment::variable::name::ipc::transaction::manager, process);
                         }
 
                         void queue( State& state, const common::process::Handle& process)
@@ -676,7 +676,7 @@ namespace casual
 
                            // so new spawned processes get it easier
                            environment::variable::process::set(
-                                 environment::variable::name::ipc::queue::manager(), process);
+                                 environment::variable::name::ipc::queue::manager, process);
                         }
 
                         void connect( State& state, const common::message::domain::process::connect::Request& message)

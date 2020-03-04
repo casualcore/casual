@@ -25,7 +25,12 @@ namespace casual
             struct Service
             {
                std::string name;
+
+               CASUAL_LOG_SERIALIZE({
+                  CASUAL_SERIALIZE( name);
+               })
             };
+
             struct Parameter
             {
                enum class Flag : long
@@ -48,6 +53,14 @@ namespace casual
                std::string parent;
                buffer::Payload payload;
                platform::descriptor::type descriptor = 0;
+
+               CASUAL_LOG_SERIALIZE({
+                  CASUAL_SERIALIZE( flags);
+                  CASUAL_SERIALIZE( service);
+                  CASUAL_SERIALIZE( parent);
+                  CASUAL_SERIALIZE( payload);
+                  CASUAL_SERIALIZE( descriptor);
+               })
             };
 
             struct Result

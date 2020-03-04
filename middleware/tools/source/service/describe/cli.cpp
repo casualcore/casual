@@ -46,11 +46,9 @@ namespace casual
                      std::ostream& indentation( std::ostream& out, std::size_t indent)
                      {
                         while( indent-- > 0)
-                        {
                            out << "  ";
-                        }
-                        return out;
 
+                        return out;
                      }
 
                      namespace cli
@@ -88,7 +86,6 @@ namespace casual
                                  indentation( out, indent) << common::terminal::color::cyan << "container";
                                  out << " " << type.role << '\n';
 
-
                                  types( out, type.attribues, indent + 1);
                                  break;
                               }
@@ -98,7 +95,6 @@ namespace casual
                                  out << " " << type.role << '\n';
 
                                  types( out, type.attribues, indent + 1);
-
                                  break;
                               }
                               default:
@@ -114,12 +110,8 @@ namespace casual
                         void types( std::ostream& out, const std::vector< serviceframework::service::Model::Type>& types, std::size_t indent)
                         {
                            for( auto& type : types)
-                           {
                               cli::type( out, type, indent);
-                           }
-
                         }
-
 
                         void print( std::ostream& out, const serviceframework::service::Model& model)
                         {
@@ -130,10 +122,7 @@ namespace casual
 
                            out << common::terminal::color::white << "output\n";
                            types( out, model.arguments.output, 1);
-
-
                         }
-
 
                      } // cli
                   } // format
@@ -144,19 +133,25 @@ namespace casual
 
                      auto models = service::describe::invoke( { service});
 
-
-                     for( auto& model : models)
+                     auto print_format = []( auto& format)
                      {
-                        if( format)
+                        return [ &format]( auto& model)
                         {
-                           auto archive = common::serialize::create::writer::from( format.value(), std::cout);
+                           auto archive = common::serialize::create::writer::from( format);
                            archive << CASUAL_NAMED_VALUE( model);
-                        }
-                        else
-                        {
-                           format::cli::print( std::cout, model);
-                        }
-                     }
+                           archive.consume( std::cout);
+                        };
+                     }; 
+
+                     auto print_custom = []( auto& model)
+                     {
+                        format::cli::print( std::cout, model);
+                     };
+
+                     if( format)
+                        algorithm::for_each( models, print_format( format.value()));
+                     else 
+                        algorithm::for_each( models, print_custom);
                   }
 
                   std::vector< std::string> describe_format()

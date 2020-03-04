@@ -8,6 +8,8 @@
 #include "common/serialize/binary.h"
 #include "common/serialize/policy.h"
 #include "common/serialize/native/binary.h"
+#include "common/serialize/create.h"
+#include "common/buffer/type.h"
 
 #include "common/memory.h"
 #include "common/network/byteorder.h"
@@ -20,63 +22,70 @@ namespace casual
       {
          namespace binary
          {
-            /*
             namespace local
             {
                namespace
                {
+                  std::vector< std::string> keys() { return { "binary", common::buffer::type::binary()};};
+
                   namespace implementation
                   {
-                     using size_type = platform::size::type;
-
-                     using writer_base = native::binary::Writer;
-                     struct Writer : writer_base
+                     struct Writer : native::binary::Writer
                      {
-                        using writer_base::writer_base;
+                        inline constexpr static auto archive_type() { return archive::Type::static_order_type;}
 
-                        size_type container_start( const size_type size, const char*)
-                        {
-                           write( size, nullptr);
-                           return size;
-                        }
+                        static decltype( auto) keys() { return local::keys();}
+
                      };
 
-                     using reader_base = native::binary::Reader;
-                     struct Reader : reader_base
+  
+                     struct Reader : native::binary::Reader
                      {
-                        using reader_base::reader_base;
+                        inline constexpr static auto archive_type() { return archive::Type::static_order_type;}
 
-                        bool composite_start( const char*) { return true;}
+                        Reader( const platform::binary::type& buffer) : native::binary::Reader{ buffer} {}
 
-                        std::tuple< size_type, bool> container_start( size_type size, const char*)
+                        Reader( std::istream& in) : native::binary::Reader{ m_buffer} 
                         {
-                           read( size, nullptr);
-                           return std::make_tuple( size, true);
+                           while( in)
+                              m_buffer.push_back( in.get());
                         }
 
-                        template< typename T> 
-                        bool read( T& value, const char*)
-                        {
-                           reader_base::read( value, nullptr);
-                           return true;
-                        }
+                        static decltype( auto) keys() { return local::keys();}
+
+                     private:
+                        platform::binary::type m_buffer;
+
                      };
                   } // implementation
                } // <unnamed>
             } // local
-            */
+
 
             serialize::Reader reader( const platform::binary::type& source)
             {
                return serialize::Reader::emplace< native::binary::Reader>( source);
             }
 
-            serialize::Writer writer( platform::binary::type& destination)
+            serialize::Writer writer()
             {
-               return serialize::Writer::emplace< native::binary::Writer>( destination);
+               return serialize::Writer::emplace< native::binary::Writer>();
             }
 
          } // binary
+
+         namespace create
+         {
+            namespace reader
+            {
+               //template struct Registration< binary::local::implementation::Reader>;
+            } // writer
+            namespace writer
+            {
+               //template struct Registration< binary::local::implementation::Writer>;
+            } // writer
+         } // create
+
       } // serialize
    } // common
 } // casual

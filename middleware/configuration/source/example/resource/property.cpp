@@ -49,8 +49,9 @@ namespace casual
                void write( const resources_type& resources, const std::string& name)
                {
                   common::file::Output file{ name};
-                  auto archive = common::serialize::create::writer::from( file.extension(), file);
+                  auto archive = common::serialize::create::writer::from( file.extension());
                   archive << CASUAL_NAMED_VALUE( resources);
+                  archive.consume( file);
                }
 
                common::file::scoped::Path temporary(const resources_type& resources, const std::string& extension)

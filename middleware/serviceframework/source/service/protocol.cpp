@@ -10,6 +10,7 @@
 #include "serviceframework/log.h"
 
 #include "common/exception/system.h"
+#include "common/log/stream.h"
 
 namespace casual
 {
@@ -22,6 +23,11 @@ namespace casual
 
          Protocol::Protocol( Protocol&&) = default;
          Protocol& Protocol::operator = ( Protocol&&) = default;
+
+         std::ostream& operator << ( std::ostream& out, const Protocol& value)
+         {
+            return out << "{ type: " << value.type() << '}';
+         }
 
          namespace protocol
          {
@@ -47,7 +53,7 @@ namespace casual
 
             Factory::Factory()
             {
-               registration< service::protocol::implementation::Yaml>( );
+               registration< service::protocol::implementation::Yaml>();
                registration< service::protocol::implementation::Binary>();
                registration< service::protocol::implementation::Json>();
                registration< service::protocol::implementation::Xml>();
@@ -56,19 +62,23 @@ namespace casual
 
             Protocol Factory::create( common::service::invoke::Parameter&& parameter)
             {
-               auto found = common::algorithm::find( m_creators, parameter.payload.type);
+               Trace trace{ "service::protocol::Factory::create"};
+               common::log::line( log::debug, "parameter: ", parameter);
 
-               if( found)
+               if( auto found = common::algorithm::find( m_creators, parameter.payload.type))
                {
+                  auto protocol = found->second( std::move( parameter));
+
+                  // should we wrap it in 'adapters'?
+                  if( log::parameter)
+                     protocol = Protocol::emplace< protocol::implementation::parameter::Log>( std::move( protocol));
+                  
                   if( local::describe( parameter))
-                  {
-                     common::log::line( log::debug, "casual-service-describe protocol");
+                     protocol = Protocol::emplace< protocol::implementation::Describe>( std::move( protocol));
 
-                     // service-describe protocol
-                     return protocol::implementation::Describe( found->second( std::move( parameter)));
-                  }
+                  common::log::line( log::debug, "protocol: ", protocol);
 
-                  return found->second( std::move( parameter));
+                  return protocol;
                }
                throw common::exception::system::invalid::Argument( "no suitable protocol was found for type: " + parameter.payload.type);
             }

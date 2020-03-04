@@ -101,6 +101,14 @@ namespace casual
                return { std::make_unique< model< P>>( std::forward< Args>( args)...)};
             }
 
+            friend std::ostream& operator << ( std::ostream& out, const Protocol& value);
+
+            //! @attention internal use only
+            //! @{
+            auto& input() { return m_implementation->input();}
+            auto& output() { return m_implementation->output();}
+            //! @}
+
          private:
 
             struct concept
@@ -108,7 +116,7 @@ namespace casual
                virtual ~concept() = default;
                virtual protocol::io::Input& input() = 0;
                virtual protocol::io::Output& output() = 0;
-               virtual bool call() const = 0;
+               virtual bool call() = 0;
                virtual protocol::result_type finalize() = 0;
                virtual void exception() = 0;
 
@@ -126,7 +134,7 @@ namespace casual
 
                protocol::io::Input& input() override { return m_protocol.input();}
                protocol::io::Output& output() override { return m_protocol.output();}
-               bool call() const override { return m_protocol.call();}
+               bool call() override { return m_protocol.call();}
                protocol::result_type finalize() override { return m_protocol.finalize();}
                void exception() override { m_protocol.exception();}
 
@@ -137,21 +145,13 @@ namespace casual
             };
 
             template< typename T, typename A>
-            void serialize( T&& value, A& io)
+            void serialize( const T& value, A& io)
             {
-               for( auto&& archive : io.readers)
-               {
-                  *archive >> std::forward< T>( value);
-               }
-
-               for( auto&& archive : io.writers)
-               {
-                  *archive << std::forward< T>( value);
-               }
+               common::algorithm::for_each( io.readers, [&value]( auto& archive){ *archive >> value;});
+               common::algorithm::for_each( io.writers, [&value]( auto& archive){ *archive << value;});
             }
 
             std::unique_ptr< concept> m_implementation;
-
          };
 
 

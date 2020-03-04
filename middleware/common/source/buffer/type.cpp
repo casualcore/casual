@@ -105,11 +105,10 @@ namespace casual
 
                   log::line( log::category::buffer, "payload: ", value);
 
-                  platform::binary::type binary;
-                  {
-                     common::serialize::native::binary::network::Writer archive{ binary};
-                     archive << value;
-                  }
+                  common::serialize::native::binary::network::Writer archive;
+                  archive << value;
+                  auto binary = archive.consume();
+                  
                   out.write( binary.data(), binary.size());
                   out.flush();
                }

@@ -378,9 +378,10 @@ namespace casual
 
                         const pugi::xml_document& document() const { return m_document;}
 
-                        void flush( std::ostream& xml)
+                        void consume( std::ostream& xml)
                         {
                            m_document.save( xml, " ");
+                           m_document.reset();
                         }
 
                      private:
@@ -463,19 +464,9 @@ namespace casual
                serialize::Reader reader( const platform::binary::type& source) { return create::reader::consumed::create< local::reader::Implementation>( source);}
             } // consumed
 
-            serialize::Writer writer( std::string& destination)
+            serialize::Writer writer()
             {
-               return serialize::create::writer::create< local::writer::Implementation>( destination);
-            }
-
-            serialize::Writer writer( std::ostream& destination)
-            {
-               return serialize::create::writer::create< local::writer::Implementation>( destination);
-            }
-
-            serialize::Writer writer( platform::binary::type& destination)
-            {
-               return serialize::create::writer::create< local::writer::Implementation>( destination);
+               return serialize::create::writer::create< local::writer::Implementation>();
             }
 
          } // xml

@@ -142,27 +142,34 @@ namespace casual
 
             namespace name
             {
-               //! @return variable name representing casual home. Where casual is installed
-               constexpr auto home() { return "CASUAL_HOME";};
+               //! variable name representing casual home. Where casual is installed
+               constexpr auto home = "CASUAL_HOME";
 
                namespace domain
                {
-                  constexpr auto home() { return "CASUAL_DOMAIN_HOME";}
-                  constexpr auto id() { return "CASUAL_DOMAIN_ID";}
-                  constexpr auto path() { return "CASUAL_DOMAIN_PATH";}
-                  constexpr auto name() { return "CASUAL_DOMAIN_NAME";}
+                  constexpr auto home = "CASUAL_DOMAIN_HOME";
+                  constexpr auto id = "CASUAL_DOMAIN_ID";
+                  constexpr auto path = "CASUAL_DOMAIN_PATH";
+                  constexpr auto name = "CASUAL_DOMAIN_NAME";
                } // domain
 
                namespace log
                {
-                  constexpr auto path() { return "CASUAL_LOG_PATH";}
+                  constexpr auto pattern = "CASUAL_LOG";
+                  constexpr auto path = "CASUAL_LOG_PATH";
+
+                  namespace parameter
+                  {
+                     constexpr auto format = "CASUAL_LOG_PARAMETER_FORMAT";
+                  } // parameter
+
                } // log
 
                
                namespace ipc
                {
                   //! where to hold transient files, such as named-pipes.
-                  constexpr auto directory() { return "CASUAL_IPC_DIRECTORY";}
+                  constexpr auto directory = "CASUAL_IPC_DIRECTORY";
                } // transient
                
 
@@ -172,46 +179,39 @@ namespace casual
                {
                   namespace domain
                   {
-                     constexpr auto manager() { return "CASUAL_DOMAIN_MANAGER_PROCESS";}
+                     constexpr auto manager = "CASUAL_DOMAIN_MANAGER_PROCESS";
                   } // domain
 
                   namespace service
                   {
-                     constexpr auto manager() { return "CASUAL_SERVICE_MANAGER_PROCESS";}
+                     constexpr auto manager = "CASUAL_SERVICE_MANAGER_PROCESS";
                   } // service
 
                   namespace transaction
                   {
-                     constexpr auto manager() { return "CASUAL_TRANSACTION_MANAGER_PROCESS";}
+                     constexpr auto manager = "CASUAL_TRANSACTION_MANAGER_PROCESS";
                   } // transaction
 
                   namespace queue
                   {
-                     constexpr auto manager() { return "CASUAL_QUEUE_MANAGER_PROCESS";}
+                     constexpr auto manager = "CASUAL_QUEUE_MANAGER_PROCESS";
                   } // queue
 
                   namespace gateway
                   {
-                     constexpr auto manager() { return "CASUAL_GATEWAY_MANAGER_PROCESS";}
+                     constexpr auto manager = "CASUAL_GATEWAY_MANAGER_PROCESS";
                   } // gateway
                } // ipc
                //! @}
 
                namespace terminal
                {
-                  constexpr auto precision() { return "CASUAL_TERMINAL_PRECISION";}
-                  constexpr auto color() { return "CASUAL_TERMINAL_COLOR";}
-                  constexpr auto header() { return "CASUAL_TERMINAL_HEADER";}
-                  constexpr auto porcelain() { return "CASUAL_TERMINAL_PORCELAIN";}
-                  constexpr auto block() { return "CASUAL_TERMINAL_BLOCK";}
+                  constexpr auto precision = "CASUAL_TERMINAL_PRECISION";
+                  constexpr auto color = "CASUAL_TERMINAL_COLOR";
+                  constexpr auto header = "CASUAL_TERMINAL_HEADER";
+                  constexpr auto porcelain = "CASUAL_TERMINAL_PORCELAIN";
+                  constexpr auto block = "CASUAL_TERMINAL_BLOCK";
                } // log
-
-               namespace instance
-               {
-                  constexpr auto alias = "CASUAL_INSTANCE_ALIAS";
-                  constexpr auto index = "CASUAL_INSTANCE_INDEX";
-               } // instance
-
 
             } // name
          } // variable

@@ -18,7 +18,7 @@ namespace casual
 {
    namespace serviceframework
    {
-      TEST( serviceframework_service_model, instancesate)
+      TEST( serviceframework_service_model, instansiate)
       {
          common::unittest::Trace trace;
 
