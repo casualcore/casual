@@ -296,16 +296,14 @@ namespace casual
                      // outbound has already advertised the queues (if any), so we have that handled
                      // check if there are any pending lookups for this reply
 
-                     auto found = common::algorithm::find_if( m_state.pending, [&]( const auto& r){
-                        return r.correlation == message.correlation;
-                     });
+                     auto is_correlated = [&message]( auto& pending){ return pending.correlation == message.correlation;};
 
-                     if( found)
+                     if( auto found = common::algorithm::find_if( m_state.pending, is_correlated))
                      {
                         auto request = std::move( *found);
                         m_state.pending.erase( std::begin( found));
 
-                        auto reply = common::message::reverse::type( *found);
+                        auto reply = common::message::reverse::type( request);
 
                         auto found_queue = common::algorithm::find( m_state.queues, request.name);
 
