@@ -530,8 +530,9 @@ casual queue --clear queue-a queue-b)";
             {
                auto state = call::state();
 
-               auto archive = common::serialize::create::writer::from( format.value(), std::cout);
+               auto archive = common::serialize::create::writer::from( format.value());
                archive << CASUAL_NAMED_VALUE( state);
+               archive.consume( std::cout);
             }
          } // <unnamed>
       } // local

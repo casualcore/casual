@@ -26,11 +26,10 @@ namespace casual
 
          auto buffer = []()
          {
-            platform::binary::type buffer;
-            auto archive = common::serialize::native::binary::writer( buffer);
+            auto archive = common::serialize::native::binary::writer();
             domain::Manager domain;
             archive << CASUAL_NAMED_VALUE( domain);
-            return buffer;
+            return archive.consume();
          }();
 
          
@@ -60,13 +59,11 @@ namespace casual
          auto param = GetParam() + 1;
 
          domain::Manager domain;
-         std::stringstream buffer;
-         {
-            auto output = common::serialize::create::writer::from( param, buffer);
-            output << CASUAL_NAMED_VALUE( domain);
-         }
+         auto output = common::serialize::create::writer::from( param);
+         output << CASUAL_NAMED_VALUE( domain);
          
          EXPECT_NO_THROW({
+            auto buffer = output.consume< std::stringstream>();
             auto input = common::serialize::create::reader::relaxed::from( param, buffer);
             input >> CASUAL_NAMED_VALUE( domain);
          });

@@ -71,7 +71,7 @@ namespace casual
 
                   // Set the process variables so children can find us easier.
                   common::environment::variable::process::set(
-                     common::environment::variable::name::ipc::service::manager(),
+                     common::environment::variable::name::ipc::service::manager,
                      common::process::handle());
 
                   // Get configuration from domain-manager

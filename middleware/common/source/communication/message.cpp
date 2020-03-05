@@ -48,6 +48,9 @@ namespace casual
 
             Complete::Complete( message_type_type type, const Uuid& correlation) : type{ type}, correlation{ correlation} {}
 
+            Complete::Complete( common::message::Type type, const Uuid& correlation, payload_type&& payload)
+               : type{ type}, correlation{ correlation}, payload{ std::move( payload)} {}
+
             Complete::Complete( const complete::network::Header& header)
               : type{ complete::host::header::type( header)}, correlation{ header.correlation}
             {

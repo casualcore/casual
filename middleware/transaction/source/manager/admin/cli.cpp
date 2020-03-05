@@ -274,12 +274,14 @@ namespace casual
                      {
                         auto state = call::state();
 
-                        auto debug = common::serialize::log::writer( std::cout);
+                        auto debug = common::serialize::log::writer();
 
                         debug << CASUAL_NAMED_VALUE( state.pending.requests);
                         debug << CASUAL_NAMED_VALUE( state.persistent.requests);
                         debug << CASUAL_NAMED_VALUE( state.persistent.replies);
                         debug << CASUAL_NAMED_VALUE( state.log);
+
+                        debug.consume( std::cout);
 
                      }
 
@@ -336,9 +338,9 @@ namespace casual
                      void state( const common::optional< std::string>& format)
                      {
                         auto state = call::state();
-                        auto archive = common::serialize::create::writer::from( format.value_or( ""), std::cout);
-
+                        auto archive = common::serialize::create::writer::from( format.value_or( ""));
                         archive << CASUAL_NAMED_VALUE( state);
+                        archive.consume( std::cout);
                      }
 
                   } // dispatch

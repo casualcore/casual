@@ -839,8 +839,9 @@ for all servers and executables
                      void get( const common::optional< std::string>& format)
                      {
                         auto domain = call::configuration::get();
-                        auto archive = common::serialize::create::writer::from( format.value_or( ""), std::cout);
+                        auto archive = common::serialize::create::writer::from( format.value_or( ""));
                         archive << CASUAL_NAMED_VALUE( domain);
+                        archive.consume( std::cout);
                      }
 
                      namespace put
@@ -869,9 +870,9 @@ The semantics are similar to http PUT:
                   void state( const common::optional< std::string>& format)
                   {
                      auto state = call::state();
-                     auto archive = common::serialize::create::writer::from( format.value_or( ""), std::cout);
-
+                     auto archive = common::serialize::create::writer::from( format.value_or( ""));
                      archive << CASUAL_NAMED_VALUE( state);
+                     archive.consume( std::cout);
                   }
 
                   namespace ping
@@ -942,8 +943,9 @@ The semantics are similar to http PUT:
                               return;
 
                            auto state = communication::ipc::call( handle.ipc, message::domain::instance::global::state::Request{ process::handle()}); 
-                           auto archive = common::serialize::create::writer::from( format.value_or( ""), std::cout);
+                           auto archive = common::serialize::create::writer::from( format.value_or( ""));
                            archive << CASUAL_NAMED_VALUE( state);
+                           archive.consume( std::cout);
                         }
 
                         auto complete() 

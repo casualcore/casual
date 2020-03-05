@@ -7,7 +7,7 @@
 #pragma once
 
 #include "common/serialize/value.h"
-#include "common/serialize/archive/type.h"
+#include "common/serialize/archive.h"
 #include "common/cast.h"
 
 #include <ostream>
@@ -30,7 +30,7 @@ namespace casual
             {
                inline constexpr static auto archive_type() { return archive::Type::static_need_named;}
 
-               Writer( std::ostream& stream) : m_stream( stream) {}
+               static std::vector< std::string> keys();
 
                platform::size::type container_start( const platform::size::type size, const char* name);
                void container_end( const char*);
@@ -43,7 +43,7 @@ namespace casual
                   -> decltype( void( std::declval< std::ostream&>() << std::forward< T>( value)))
                {
                   in_scope();
-                  maybe_name( m_stream, name) << std::forward< T>( value);
+                  maybe_name( name) << std::forward< T>( value);
                }
 
                void write( bool value, const char* name);
@@ -53,11 +53,11 @@ namespace casual
 
 
                template< typename T>
-               friend auto operator << ( Writer& out, T&& value)
-                  -> decltype( (void)serialize::value::write( out, std::forward< T>( value), nullptr), out)
+               auto operator << ( T&& value)
+                  -> decltype( (void)serialize::value::write( *this, std::forward< T>( value), nullptr), *this)
                {
-                  serialize::value::write( out, std::forward< T>( value), nullptr);
-                  return out;
+                  serialize::value::write( *this, std::forward< T>( value), nullptr);
+                  return *this;
                }
 
                template< typename T>
@@ -66,16 +66,22 @@ namespace casual
                   return *this << std::forward< T>( value);
                }
 
+               void consume( std::ostream& destination);
+               std::string consume();
+
             private:
 
-               static std::ostream& maybe_name( std::ostream& stream, const char* name);
+               std::ostream& maybe_name( const char* name);
 
                void begin_scope();
                void in_scope();
 
-               std::ostream& m_stream;
+               std::ostringstream m_stream;
                const char* m_prefix = detail::first;
             };
+
+            //! type erased line writer 
+            serialize::Writer writer();
 
          } // line
 

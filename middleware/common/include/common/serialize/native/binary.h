@@ -67,8 +67,7 @@ namespace casual
 
                   using policy_type = P;
 
-                  basic_writer( platform::binary::type& buffer)
-                     : m_buffer( buffer)
+                  basic_writer()
                   {
                      m_buffer.reserve( 128);
                   }
@@ -122,6 +121,11 @@ namespace casual
                      policy_type::write_size( value, m_buffer);
                   }
 
+                  platform::binary::type consume() 
+                  {
+                     return std::exchange( m_buffer, {});
+                  }
+
                private:
 
                   template< typename Range>
@@ -133,7 +137,7 @@ namespace casual
                         std::end( range));
                   }
 
-                  platform::binary::type& m_buffer;
+                  platform::binary::type m_buffer;
                };
 
 
@@ -225,16 +229,16 @@ namespace casual
 
                using Reader = basic_reader< Policy>;
 
-               inline auto writer( platform::binary::type& buffer) { return binary::Writer{ buffer};}
+               inline auto writer() { return binary::Writer{};}
                inline auto reader( const platform::binary::type& buffer) { return binary::Reader{ buffer};}
 
                namespace create
                {
                   struct Writer
                   {
-                     inline auto operator () ( platform::binary::type& buffer) const
+                     inline auto operator () () const
                      {
-                        return binary::writer( buffer);
+                        return binary::writer();
                      }
                   };
 

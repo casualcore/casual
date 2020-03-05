@@ -27,23 +27,19 @@ namespace casual
          {
             namespace implementation
             {
-               class Base
+               struct Base : common::traits::unrelocatable
                {
-
-               public:
                   Base( protocol::parameter_type&& parameter);
-                  Base( Base&&);
 
                   bool call() const;
-
-                  protocol::result_type finalize();
-
                   void exception();
 
                   io::Input& input();
                   io::Output& output();
 
                protected:
+
+                  protocol::result_type finalize();
 
                   protocol::parameter_type m_parameter;
                   protocol::result_type m_result;
@@ -53,13 +49,11 @@ namespace casual
                };
 
 
-               class Binary : public Base
+               struct Binary : public Base
                {
-               public:
                   Binary( protocol::parameter_type&& parameter);
-                  Binary( Binary&&);
-
                   static const std::string& type();
+                  protocol::result_type finalize();
 
                private:
                   common::serialize::Reader m_reader;
@@ -67,10 +61,8 @@ namespace casual
 
                };
 
-               class Yaml : public Base
+               struct Yaml : public Base
                {
-               public:
-
                   Yaml( protocol::parameter_type&& parameter);
 
                   protocol::result_type finalize();
@@ -81,10 +73,8 @@ namespace casual
                   common::serialize::Writer m_writer;
                };
 
-               class Json : public Base
+               struct Json : public Base
                {
-               public:
-
                   Json( protocol::parameter_type&& parameter);
 
                   protocol::result_type finalize();
@@ -95,10 +85,8 @@ namespace casual
                   common::serialize::Writer m_writer;
                };
 
-               class Xml : public Base
+               struct Xml : public Base
                {
-               public:
-
                   Xml( protocol::parameter_type&& parameter);
 
                   protocol::result_type finalize();
@@ -109,9 +97,8 @@ namespace casual
                   common::serialize::Writer m_writer;
                };
 
-               class Ini : public Base
+               struct Ini : public Base
                {
-               public:
                   Ini( protocol::parameter_type&& parameter);
 
                   protocol::result_type finalize();
@@ -124,49 +111,41 @@ namespace casual
 
                namespace parameter
                {
-                  template< typename B>
-                  class Log : public B
+                  struct Log : common::traits::unrelocatable
                   {
-                  public:
-                     using base_type = B;
+                     Log( service::Protocol&& protocol);
 
-                     Log( protocol::parameter_type&& parameter) 
-                        : base_type( std::move( parameter)), m_writer( common::serialize::log::writer( log::parameter))
-                     {
-                        this->m_input.writers.push_back( &m_writer);
-                        this->m_output.writers.push_back( &m_writer);
-                     }
+                     inline const std::string& type() const { return m_protocol.type();}
 
-                     Log( Log&&) = default;
+                     bool call();
+                     protocol::result_type finalize();
+                     inline void exception() { m_protocol.exception();}
+
+                     inline io::Input& input() { return m_protocol.input();}
+                     inline io::Output& output() { return m_protocol.output();}
 
                   private:
+                     service::Protocol m_protocol;
                      common::serialize::Writer m_writer;
-
+                     
                   };
                } // parameter
 
-               class Describe
+
+               struct Describe : common::traits::unrelocatable
                {
-               public:
-
                   Describe( service::Protocol&& protocol);
-
-                  Describe( Describe&& other);
-                  Describe& operator = ( Describe&& other);
-
 
                   bool call() const;
                   protocol::result_type finalize();
                   const std::string& type() const;
 
-                  void exception() { m_protocol.exception();}
+                  inline void exception() { m_protocol.exception();}
 
                   inline io::Input& input() { return m_input;}
                   inline io::Output& output() { return m_output;}
 
                private:
-
-                  void setup();
 
                   io::Input m_input;
                   io::Output m_output;
@@ -175,9 +154,9 @@ namespace casual
 
                   common::serialize::Reader m_prepare = service::protocol::describe::prepare();
 
-                  struct writer_t
+                  struct Writer
                   {
-                     writer_t( Model& model) 
+                     Writer( Model& model) 
                         : input( service::protocol::describe::writer( model.arguments.input)), 
                           output( service::protocol::describe::writer( model.arguments.output)) {}
 

@@ -1639,7 +1639,7 @@ namespace casual
 
                   common::log::line( verbose::log, "buffer.payload.type: ", buffer.payload.type, " - protocol: ", protocol);
 
-                  auto archive = common::serialize::create::writer::from( protocol, stream);
+                  auto archive = common::serialize::create::writer::from( protocol);
 
                   std::vector< write> fields;
 
@@ -1652,6 +1652,7 @@ namespace casual
                   }
 
                   archive << CASUAL_NAMED_VALUE( fields);
+                  archive.consume( stream);
                }
 
                common::buffer::Payload stream( std::istream& stream, const std::string& protocol)

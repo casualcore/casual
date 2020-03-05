@@ -43,9 +43,7 @@ namespace casual
                serialize::Reader reader( const platform::binary::type& source);
             }
 
-            serialize::Writer writer( std::string& destination);
-            serialize::Writer writer( std::ostream& destination);
-            serialize::Writer writer( platform::binary::type& destination);
+            serialize::Writer writer();
 
          } // yaml
       } // serialize

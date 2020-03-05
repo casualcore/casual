@@ -60,15 +60,12 @@ namespace casual
                long someLong = 3;
                std::string someString = "banan";
 
-               platform::binary::type buffer;
-               auto output = output_type{}( buffer);
+               auto output = output_type{}();
 
                output << someLong;
-
-               EXPECT_TRUE( buffer.size() == sizeof( long)) <<  buffer.size();
-
                output << someString;
-
+               
+               auto buffer = output.consume();
                auto input = input_type{}( buffer);
 
                long resultLong;
@@ -89,18 +86,12 @@ namespace casual
                using input_type = typename TestFixture::input_type;
                using output_type = typename TestFixture::output_type;
 
-               std::vector< char> binaryInput;
+               auto binaryInput = unittest::random::binary( 3000);
 
-               for( int index = 0; index < 3000; ++index)
-               {
-                  binaryInput.push_back( static_cast< char>( index));
-
-               }
-
-               platform::binary::type buffer;
-               auto output = output_type{}( buffer);
+               auto output = output_type{}();
                output << binaryInput;
 
+               auto buffer = output.consume();
                EXPECT_TRUE( buffer.size() == binaryInput.size() + sizeof( binaryInput.size())) <<  buffer.size();
 
                auto input = input_type{}( buffer);
@@ -188,12 +179,11 @@ namespace casual
                using output_type = typename TestFixture::output_type;
 
                transaction::ID xid_source;
-
-               platform::binary::type buffer;
-               auto output = output_type{}( buffer);
+               auto output = output_type{}();
 
                output << xid_source;
 
+               auto buffer = output.consume();
                auto input = input_type{}( buffer);
 
                transaction::ID xid_target;
@@ -212,11 +202,11 @@ namespace casual
 
                auto xid_source = transaction::id::create();
 
-               platform::binary::type buffer;
-               auto output = output_type{}( buffer);
+               auto output = output_type{}();
 
                output & xid_source;
 
+               auto buffer = output.consume();
                auto input = input_type{}( buffer);
 
                transaction::ID xid_target;
@@ -236,14 +226,12 @@ namespace casual
 
                const auto expected = platform::time::serialization::unit::zero();
 
-               platform::binary::type buffer;
-               {
-                  auto output = output_type{}( buffer);
-                  output << expected;
-               }
+               auto output = output_type{}();
+               output << expected;
 
                platform::time::serialization::unit target;
                {
+                  auto buffer = output.consume();
                   auto input = input_type{}( buffer);
                   input >> target;
                }
@@ -264,14 +252,12 @@ namespace casual
 
                const auto expected = platform::time::unit::zero();
 
-               platform::binary::type buffer;
-               {
-                  auto output = output_type{}( buffer);
-                  output << expected;
-               }
+               auto output = output_type{}();
+               output << expected;
 
                platform::time::unit target;
                {
+                  auto buffer = output.consume();
                   auto input = input_type{}( buffer);
                   input >> target;
                }
@@ -292,14 +278,12 @@ namespace casual
 
                const platform::time::point::type expected;
 
-               platform::binary::type buffer;
-               {
-                  auto output = output_type{}( buffer);
-                  output << expected;
-               }
+               auto output = output_type{}();
+               output << expected;
 
                platform::time::point::type target;
                {
+                  auto buffer = output.consume();
                   auto input = input_type{}( buffer);
                   input >> target;
                }
@@ -318,14 +302,13 @@ namespace casual
                using input_type = typename TestFixture::input_type;
                using output_type = typename TestFixture::output_type;
 
-               platform::binary::type buffer;
-
                const std::string info( "test string");
                const std::string type{ "X_OCTET/binary"};
 
+               auto output = output_type{}();
+
                // marshal
                {
-
                   // header
                   {
                      auto& header = service::header::fields();
@@ -345,7 +328,6 @@ namespace casual
                   message::service::call::caller::Request message{ buffer::payload::Send{ payload, 100, 100}};
                   message.header = service::header::fields();
 
-                  auto output = output_type{}( buffer);
                   output << message;
 
                   // header
@@ -360,6 +342,7 @@ namespace casual
 
                   message::service::call::callee::Request message;
 
+                  auto buffer = output.consume();
                   auto input = input_type{}( buffer);
                   input >> message;
 
@@ -386,8 +369,6 @@ namespace casual
                using input_type = typename TestFixture::input_type;
                using output_type = typename TestFixture::output_type;
 
-               platform::binary::type buffer;
-
                common::message::queue::enqueue::Request source;
 
                {
@@ -395,9 +376,10 @@ namespace casual
                   source.message.payload = { 0, 2, 3, 4, 2, 45, 45, 2, 3};
                }
 
-               auto output = output_type{}( buffer);
+               auto output = output_type{}();
                output & source;
 
+               auto buffer = output.consume();
                auto input = input_type{}( buffer);
                common::message::queue::enqueue::Request target;
 

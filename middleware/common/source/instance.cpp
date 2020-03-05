@@ -52,10 +52,10 @@ namespace casual
          {
             std::ostringstream out;
             out << local::variable::name << '=';
-            {
-               auto archive = serialize::json::writer( out);
-               archive << CASUAL_NAMED_VALUE( instance);
-            }
+
+            auto archive = serialize::json::writer();
+            archive << CASUAL_NAMED_VALUE( instance);
+            out << archive.consume< std::string>();
 
             return { std::move( out).str()};
          };

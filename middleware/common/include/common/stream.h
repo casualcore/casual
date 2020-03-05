@@ -76,8 +76,9 @@ namespace casual
             auto indirection( std::ostream& out, T&& value, traits::priority::tag< 0>) 
                -> decltype( void( std::declval< serialize::line::Writer&>() << std::forward< T>( value)), out)
             {
-               serialize::line::Writer archive{ out};
+               serialize::line::Writer archive;
                archive << std::forward< T>( value);
+               archive.consume( out);
                return out;
             }
 
@@ -228,8 +229,9 @@ namespace casual
                void operator () ( std::ostream& out, const T& value) const
                {
                   stream::write( out, "{ type: ", value.type(), ", correlation: ", value.correlation, ", payload: {");
-                  serialize::line::Writer archive{ out};
+                  serialize::line::Writer archive;
                   value.serialize( archive);
+                  archive.consume( out);
                   out << "}}";
                }
             };

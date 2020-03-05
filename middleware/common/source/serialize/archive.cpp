@@ -42,32 +42,17 @@ namespace casual
             return false;
          }
 
-
-
-         Writer::~Writer()
-         {
-            try
-            {
-               if( m_protocol)
-                  m_protocol->flush();
-            }
-            catch( ...)
-            {
-               common::exception::handle();
-            }
-         }
+         Writer::~Writer() = default;
 
          Writer::Writer( Writer&&) noexcept = default;
          Writer& Writer::operator = ( Writer&&) noexcept = default;
-
 
          void Writer::save( const int value, const char* name)
          {
             save( static_cast< long>( value), name);
          }
 
-
-         void Writer::save ( const unsigned long value, const char* name)
+         void Writer::save( const unsigned long value, const char* name)
          {
             save( static_cast< long>( value), name);
          }

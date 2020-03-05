@@ -87,46 +87,44 @@ namespace casual
                   return basename;
                }
 
-               namespace instantiated
+               namespace global
                {
                   auto pid = strong::process::id{ ::getpid()};
                   
-               } // instantiated
+               } // global
 
                const Handle& handle()
                {
                   static const Handle result{ 
-                     instantiated::pid, 
+                     global::pid, 
                      communication::ipc::inbound::ipc()};
                   return result;
                }
 
 
-               namespace instantiated
+               namespace global
                {
                   std::string& path = local::path();
                   std::string& basename = local::basename();
-                  //const Handle& handle = local::handle();
-               } // instantiated
 
-
+               } // global
 
             } // <unnamed>
          } // local
 
          const std::string& path()
          {
-            return local::instantiated::path;
+            return local::global::path;
          }
 
          const std::string& basename()
          {
-            return local::instantiated::basename;
+            return local::global::basename;
          }
 
          strong::process::id id()
          {
-            return local::instantiated::pid;
+            return local::global::pid;
          }
 
          const Handle& handle()

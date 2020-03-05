@@ -199,11 +199,11 @@ namespace casual
                EXPECT_TRUE( message.buffer.payload().memory.size() == 128) << "message.buffer.payload.memory.size(): " << message.buffer.payload().memory.size();
                EXPECT_TRUE( message.buffer.payload().memory.data() == info);
 
-               serialize::native::binary::Writer output( marshal_buffer);
+               serialize::native::binary::Writer output;
                output << message;
-
+               marshal_buffer = output.consume();
+               
                buffer::pool::Holder::instance().deallocate( handle);
-
             }
 
             // unmarshal
@@ -232,8 +232,9 @@ namespace casual
                payload.memory = unittest::random::binary( 256);
             }
             {
-               serialize::native::binary::Writer output( buffer);
+               serialize::native::binary::Writer output;
                output << buffer::payload::Send{ payload};
+               buffer = output.consume();
             }
 
             {

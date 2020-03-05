@@ -527,7 +527,7 @@ namespace casual
 
                         const tree& document() const { return m_document;}
 
-                        void flush( std::ostream& destination) 
+                        void consume( std::ostream& destination) 
                         {
                            write_flat( Implementation::document(), destination);
                         }
@@ -589,19 +589,9 @@ namespace casual
                serialize::Reader reader( const platform::binary::type& source) { return create::reader::relaxed::create< local::reader::Implementation>( source);}
             } // relaxed
 
-            serialize::Writer writer( std::string& destination)
+            serialize::Writer writer()
             {
-               return serialize::create::writer::create< local::writer::Implementation>( destination);
-            }
-
-            serialize::Writer writer( std::ostream& destination)
-            {
-               return serialize::create::writer::create< local::writer::Implementation>( destination);
-            }
-
-            serialize::Writer writer( platform::binary::type& destination)
-            {
-               return serialize::create::writer::create< local::writer::Implementation>( destination);
+               return serialize::create::writer::create< local::writer::Implementation>();
             }
 
          } // ini

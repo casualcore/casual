@@ -8,6 +8,7 @@
 
 #include "common/serialize/line.h"
 #include "common/serialize/macro.h"
+#include "common/serialize/create.h"
 
 namespace casual
 {
@@ -24,7 +25,7 @@ namespace casual
                   long long_value{};
                   short short_value{};
 
-                  CASUAL_CONST_CORRECT_SERIALIZE(
+                  CASUAL_LOG_SERIALIZE(
                   {
                      CASUAL_SERIALIZE( long_value);
                      CASUAL_SERIALIZE( short_value);
@@ -36,7 +37,7 @@ namespace casual
                   long long_value{};
                   short short_value{};
 
-                  CASUAL_CONST_CORRECT_SERIALIZE(
+                  CASUAL_LOG_SERIALIZE(
                   {
                      CASUAL_SERIALIZE( long_value);
                      CASUAL_SERIALIZE( short_value);
@@ -54,9 +55,23 @@ namespace casual
             local::A value{ 42, 2};
 
             std::ostringstream out;
-            out <<  CASUAL_NAMED_VALUE( value);
+            out << CASUAL_NAMED_VALUE( value);
 
-            EXPECT_TRUE( out.str() == "value: { long_value: 42, short_value: 2}") << CASUAL_NAMED_VALUE( value);
+            EXPECT_TRUE( out.str() == "value: { long_value: 42, short_value: 2}") << "out.str(): " << out.str();
+         }
+
+         TEST( casual_serialize_line, explicit_serialize_composite)
+         {
+            common::unittest::Trace trace;
+
+            local::A value{ 42, 2};
+
+            auto writer = line::Writer{};
+            writer << CASUAL_NAMED_VALUE( value);
+
+            auto string = writer.consume();
+
+            EXPECT_TRUE( string == "value: { long_value: 42, short_value: 2}") << "string: " << string;
          }
 
          TEST( casual_serialize_line, serialize_overridden_ostream_stream_operator)
@@ -66,10 +81,41 @@ namespace casual
             local::B value{ 42, 2};
 
             std::ostringstream out;
-            out << "value: " << value;
+            out << CASUAL_NAMED_VALUE( value);
 
             EXPECT_TRUE( out.str() == "value: overridden") << CASUAL_NAMED_VALUE( value);
          }
+
+         TEST( casual_serialize_line, create_writer)
+         {
+            common::unittest::Trace trace;
+
+            local::A value{ 42, 2};
+
+            auto archive = line::writer();            
+            archive << CASUAL_NAMED_VALUE( value);
+
+            auto result = archive.consume< std::string>();
+
+            EXPECT_TRUE( result == "value: { long_value: 42, short_value: 2}") << CASUAL_NAMED_VALUE( result);
+         }
+
+
+         TEST( casual_serialize_line, create_writer_from)
+         {
+            common::unittest::Trace trace;
+
+            local::A value{ 42, 2};
+
+            auto archive = serialize::create::writer::from( "line");
+            
+            archive << CASUAL_NAMED_VALUE( value);
+
+            EXPECT_TRUE( archive.consume< std::string>() == "value: { long_value: 42, short_value: 2}") << CASUAL_NAMED_VALUE( value);
+         }
+
+
+         
       } //serialize
    } // common
 } // casual

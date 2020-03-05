@@ -101,17 +101,16 @@ namespace casual
 
          auto directive = this->param();
 
-         std::stringstream data;
+         auto writer = serialize::create::writer::from( directive.format);
 
          {
-            auto archive = serialize::create::writer::from( directive.format, data);
             int int_value = 42;
-
-            archive << CASUAL_NAMED_VALUE( int_value);
+            writer << CASUAL_NAMED_VALUE( int_value);
          }
 
          {
-            auto archive = local::create::reader( directive, data);
+            auto stream = writer.consume< std::stringstream>();
+            auto archive = local::create::reader( directive, stream);
             int int_value = 0;
             archive >> CASUAL_NAMED_VALUE( int_value);
 
@@ -126,16 +125,15 @@ namespace casual
 
          auto directive = this->param();
 
-         platform::binary::type data;
+         auto writer = serialize::create::writer::from( directive.format);
 
          {
-            auto archive = serialize::create::writer::from( directive.format, data);
             int int_value = 42;
-
-            archive << CASUAL_NAMED_VALUE( int_value);
+            writer << CASUAL_NAMED_VALUE( int_value);
          }
 
          {
+            auto data = writer.consume< platform::binary::type>();
             auto archive = local::create::reader( directive, data);
             int int_value = 0;
             archive >> CASUAL_NAMED_VALUE( int_value);
@@ -151,10 +149,39 @@ namespace casual
 
          EXPECT_THROW(
          {
-            serialize::create::writer::from( "foo", std::cout);
+            serialize::create::writer::from( "foo");
          }, exception::system::invalid::Argument);
 
       }
 
+      TEST( archive_create, create_consumed_reader_from_unknown_archive__expecting_exception)
+      {
+         common::unittest::Trace trace;
+
+         EXPECT_THROW(
+         {
+            serialize::create::reader::consumed::from( "foo", std::cin);
+         }, exception::system::invalid::Argument);
+      }
+
+      TEST( archive_create, create_strict_reader_from_unknown_archive__expecting_exception)
+      {
+         common::unittest::Trace trace;
+
+         EXPECT_THROW(
+         {
+            serialize::create::reader::strict::from( "foo", std::cin);
+         }, exception::system::invalid::Argument);
+      }
+
+      TEST( archive_create, create_relaxed_reader_from_unknown_archive__expecting_exception)
+      {
+         common::unittest::Trace trace;
+
+         EXPECT_THROW(
+         {
+            serialize::create::reader::relaxed::from( "foo", std::cin);
+         }, exception::system::invalid::Argument);
+      }
    } // common
 } // casual

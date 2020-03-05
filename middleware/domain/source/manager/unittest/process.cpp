@@ -87,7 +87,7 @@ namespace casual
                   // Set environment variable to make it easier for other processes to
                   // reach domain-manager (should work any way...)
                   common::environment::variable::process::set(
-                     common::environment::variable::name::ipc::domain::manager(),
+                     common::environment::variable::name::ipc::domain::manager,
                      process.handle());
                   
                }

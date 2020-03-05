@@ -25,13 +25,14 @@ namespace casual
                if( ! message.execution)
                   message.execution = execution::id();
 
-               using casual::common::message::type;
-               communication::message::Complete complete( type( message), message.correlation ? message.correlation : uuid::make());
-
-               auto archive = creator( complete.payload);
+               auto archive = creator();
                archive << message;
 
-               return complete;
+               using casual::common::message::type;
+               return communication::message::Complete{
+                  type( message), 
+                  message.correlation ? message.correlation : uuid::make(),
+                  archive.consume()};
             }
 
             template< typename M, typename C = binary::create::Reader>

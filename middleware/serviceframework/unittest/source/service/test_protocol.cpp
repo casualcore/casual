@@ -16,14 +16,14 @@
 
 namespace casual
 {
+   using namespace common;
+   
    namespace serviceframework
    {
-      
       namespace local
       {
          namespace 
          {
-            //serviceframework::service::protocol::parameter_type prepare( std::string protocol)
             auto prepare( std::string protocol)
             {
                serviceframework::service::protocol::parameter_type result;
@@ -33,13 +33,13 @@ namespace casual
             }
 
             template< typename T>
-            serviceframework::service::protocol::parameter_type prepare( std::string protocol, T& value)
-            //auto prepare( std::string protocol, T& value) // why does not auto return type deduction work?!
+            auto prepare( std::string protocol, T& value)
             {
                auto result = prepare( std::move( protocol));
 
-               auto writer = common::serialize::create::writer::from( result.payload.type, result.payload.memory);
+               auto writer = common::serialize::create::writer::from( result.payload.type);
                writer << CASUAL_NAMED_VALUE( value);
+               writer.consume( result.payload.memory);
 
                return result;
             }
@@ -128,6 +128,68 @@ namespace casual
             EXPECT_TRUE( value.m_long == 42);
             EXPECT_TRUE( value.m_string == "poop");
          }
+      }
+
+      namespace local
+      {
+         namespace
+         {
+            struct Value
+            {
+               long m_long{};
+               std::string m_string;
+
+               CASUAL_CONST_CORRECT_SERIALIZE
+               (
+                  CASUAL_SERIALIZE( m_long);
+                  CASUAL_SERIALIZE( m_string);
+               )
+            };
+         } // <unnamed>
+      } // local
+
+      TEST_P( protocol, input_output_parameter_log)
+      {
+         common::unittest::Trace trace;
+
+         // make sure parameter is active
+         common::log::stream::activate( "parameter");
+         ASSERT_TRUE( common::log::category::parameter);
+
+         // capture parameter
+         std::ostringstream parameter;
+         auto reset = common::unittest::capture::output::stream( common::log::category::parameter, parameter);
+
+
+         local::Value value{ 42, "foo"};
+         auto protocol = service::protocol::deduce( local::prepare( GetParam(), value));
+
+         // input
+         {
+            local::Value value{};
+            protocol >> CASUAL_NAMED_VALUE( value);
+            EXPECT_TRUE( value.m_long == 42) << "value.m_long: " << value.m_long;
+            EXPECT_TRUE( value.m_string == "foo") << "value.m_string: " << value.m_string;
+         }
+
+         // output
+         {
+            local::Value result{ 43, "bar"};
+            protocol << CASUAL_NAMED_VALUE( result);
+         }
+            
+         protocol.finalize();
+
+         auto log = std::move( parameter).str();
+
+         // remove all ws and " to make it less likely to fail if we change format.
+         algorithm::trim( log, algorithm::remove( algorithm::remove( log, '"'), ' '));
+
+         constexpr auto expected = R"(value:{m_long:42,m_string:foo},result:{m_long:43,m_string:bar}
+)";
+
+         EXPECT_TRUE( log == expected) << "log: " << log;
+         
       }
 
       INSTANTIATE_TEST_CASE_P( casual_sf_service,

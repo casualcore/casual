@@ -363,7 +363,7 @@ namespace casual
 
                //! Tries to send a message to the connector @p message
                //!
-               //! @return true if we found one, and message is deserialized. false otherwise.
+               //! @return true if we found one, and message is unserialized. false otherwise.
                //! @note depending on the policy it may not ever return false (ie with a blocking policy)
                template< typename M, typename P>
                Uuid send( M&& message, P&& policy)
@@ -371,16 +371,17 @@ namespace casual
                   if( ! message.execution)
                      message.execution = execution::id();
 
-                  message::Complete complete( 
-                     common::message::type( message), 
-                     message.correlation ? message.correlation : uuid::make());
+                  auto writer = serialize_type{}();
+                  writer << message;
 
-                  auto serialize = serialize_type()( complete.payload);
-                  serialize << message;
+                  message::Complete complete{
+                     common::message::type( message), 
+                     message.correlation ? message.correlation : uuid::make(),
+                     writer.consume()};
 
                   return apply(
-                        std::forward< P>( policy),
-                        complete);
+                     std::forward< P>( policy),
+                     complete);
                }
 
                template< typename M>

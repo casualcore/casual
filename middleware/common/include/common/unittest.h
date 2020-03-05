@@ -82,15 +82,27 @@ namespace casual
 
          namespace capture
          {
+            namespace output
+            {
+               //! capture source to target
+               //! @param source the stream to capture
+               //! @param target the stream that is used instead
+               //! @returns an execution scope that restores the source stream at end of scope
+               inline auto stream( std::ostream& source, std::ostream& target)
+               {
+                  auto origin = source.rdbuf( target.rdbuf());
+
+                  return execute::scope( [origin, &source](){
+                     source.rdbuf( origin);
+                  });
+               }
+            } // outpout
+
             namespace standard
             {
                inline auto out( std::ostream& out)
                {
-                  auto origin = std::cout.rdbuf( out.rdbuf());
-
-                  return execute::scope( [=](){
-                     std::cout.rdbuf( origin);
-                  });
+                  return capture::output::stream( std::cout, out);
                }
 
             } // standard

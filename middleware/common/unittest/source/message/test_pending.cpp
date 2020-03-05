@@ -24,11 +24,9 @@ namespace casual
             {
                auto serialize = []( auto&& message)
                {
-                  platform::binary::type buffer;
-                  {
-                     auto output = serialize::native::binary::create::Writer{}( buffer);
-                     output << message;
-                  }
+                  auto output = serialize::native::binary::writer();
+                  output << message;
+                  auto buffer = output.consume();
 
                   std::decay_t< decltype( message)> result;
                   auto input = serialize::native::binary::create::Reader{}( buffer);

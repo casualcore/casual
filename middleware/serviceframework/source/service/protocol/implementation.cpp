@@ -14,15 +14,18 @@
 #include "common/serialize/yaml.h"
 #include "common/serialize/ini.h"
 #include "common/serialize/log.h"
+#include "common/serialize/create.h"
 
 #include "common/execution.h"
 #include "common/exception/handle.h"
+#include "common/environment.h"
 
 #include "xatmi.h"
 
 namespace casual
 {
-
+   using namespace common;
+   
    namespace serviceframework
    {
       namespace service
@@ -37,40 +40,33 @@ namespace casual
                   m_result.payload.type = m_parameter.payload.type;
                }
 
-               Base::Base( Base&&) = default;
-
-
                bool Base::call() const
                {
                   return true;
                }
 
-               protocol::result_type Base::finalize()
-               {
-                  Trace trace{ "protocol::Base::finalize"};
-
-                  common::log::line( log::debug, "result: ", m_result);
-
-                  return std::move( m_result);
-               }
-
                void Base::exception()
                {
-                  m_result.transaction = common::service::invoke::Result::Transaction::rollback;
-                  common::exception::handle();
+                  m_result.transaction = decltype( m_result.transaction)::rollback;
+                  exception::handle();
                }
 
                io::Input& Base::input() { return m_input;}
                io::Output& Base::output() { return m_output;}
 
+               
+               protocol::result_type Base::finalize()
+               {
+                  Trace trace{ "protocol::implementation::Base::finalize"};
+                  return std::move( m_result);
+               }
 
 
-               Binary::Binary( Binary&&) = default;
 
                Binary::Binary( protocol::parameter_type&& parameter)
                   : Base( std::move( parameter)),
-                     m_reader( common::serialize::binary::reader( m_parameter.payload.memory)), 
-                     m_writer( common::serialize::binary::writer( m_result.payload.memory))
+                     m_reader( serialize::binary::reader( m_parameter.payload.memory)), 
+                     m_writer( serialize::binary::writer())
                {
                   Trace trace{ "protocol::Binary::Binary"};
 
@@ -81,17 +77,21 @@ namespace casual
 
                const std::string& Binary::type()
                {
-                  return common::buffer::type::binary();
+                  return buffer::type::binary();
+               }
+
+               protocol::result_type Binary::finalize()
+               {
+                  auto result = Base::finalize();
+                  m_writer.consume( result.payload.memory);
+                  return result;
                }
 
 
-
-               //Yaml::Yaml( Yaml&&) = default;
-
                Yaml::Yaml( protocol::parameter_type&& parameter)
                   : Base( std::move( parameter)),
-                    m_reader( common::serialize::yaml::relaxed::reader( m_parameter.payload.memory)),
-                    m_writer( common::serialize::yaml::writer( m_result.payload.memory))
+                    m_reader{ serialize::yaml::relaxed::reader( m_parameter.payload.memory)},
+                    m_writer{ serialize::yaml::writer()}
                {
                   Trace trace{ "protocol::Yaml::Yaml"};
 
@@ -105,22 +105,23 @@ namespace casual
 
                const std::string& Yaml::type()
                {
-                  return common::buffer::type::yaml();
+                  return buffer::type::yaml();
                }
 
                protocol::result_type Yaml::finalize()
                {
                   Trace trace{ "protocol::Yaml::finalize"};
 
-                  m_writer.flush();
-                  return Base::finalize();
+                  auto result = Base::finalize();
+                  m_writer.consume( result.payload.memory);
+                  return result;
                }
 
 
                Json::Json( protocol::parameter_type&& parameter)
                   : Base( std::move( parameter)),
-                    m_reader( common::serialize::json::relaxed::reader( m_parameter.payload.memory)),
-                    m_writer( common::serialize::json::pretty::writer( m_result.payload.memory))
+                    m_reader{ common::serialize::json::relaxed::reader( m_parameter.payload.memory)},
+                    m_writer{ common::serialize::json::writer()}
                {
                   Trace trace{ "protocol::Json::Json"};
 
@@ -134,23 +135,24 @@ namespace casual
 
                const std::string& Json::type()
                {
-                  return common::buffer::type::json();
+                  return buffer::type::json();
                }
 
                protocol::result_type Json::finalize()
                {
                   Trace trace{ "protocol::Json::finalize"};
 
-                  m_writer.flush();
-                  return Base::finalize();
+                  auto result = Base::finalize();
+                  m_writer.consume( result.payload.memory);
+                  return result;
                }
 
 
 
                Xml::Xml( protocol::parameter_type&& parameter)
                   : Base( std::move( parameter)),
-                    m_reader( common::serialize::xml::relaxed::reader( m_parameter.payload.memory)),
-                    m_writer( common::serialize::xml::writer( m_result.payload.memory))
+                    m_reader{ serialize::xml::relaxed::reader( m_parameter.payload.memory)},
+                    m_writer{ serialize::xml::writer()}
                {
                   Trace trace{ "protocol::Xml::Xml"};
 
@@ -166,22 +168,23 @@ namespace casual
 
                const std::string& Xml::type()
                {
-                  return common::buffer::type::xml();
+                  return buffer::type::xml();
                }
 
                protocol::result_type Xml::finalize()
                {
                   Trace trace{ "protocol::Xml::finalize"};
 
-                  m_writer.flush();
-                  return Base::finalize();
+                  auto result = Base::finalize();
+                  m_writer.consume( result.payload.memory);
+                  return result;
                }
 
 
                Ini::Ini( protocol::parameter_type&& parameter)
                : Base( std::move( parameter)),
-                 m_reader( common::serialize::ini::relaxed::reader( m_parameter.payload.memory)),
-                 m_writer( common::serialize::ini::writer( m_result.payload.memory))
+                 m_reader( serialize::ini::relaxed::reader( m_parameter.payload.memory)),
+                 m_writer( serialize::ini::writer())
                {
                   Trace trace{ "protocol::Ini::Ini"};
 
@@ -197,35 +200,79 @@ namespace casual
                {
                   Trace trace{ "protocol::Ini::finalize"};
 
-                  m_writer.flush();
-                  return Base::finalize();
+                  auto result = Base::finalize();
+                  m_writer.consume( result.payload.memory);
+                  return result;
                }
 
                const std::string& Ini::type()
                {
-                  return common::buffer::type::ini();
+                  return buffer::type::ini();
                }
+
+
+               namespace parameter
+               {
+                  namespace local
+                  {
+                     namespace
+                     {
+                        auto writer() 
+                        { 
+                           Trace trace{ "protocol::parameter::local::writer"};
+
+                           auto parameter_format = environment::variable::get( 
+                              environment::variable::name::log::parameter::format,
+                              "line");
+
+                           common::log::line( verbose::log, "parameter format: ", parameter_format);
+
+                           return serialize::create::writer::from( parameter_format);
+                        }
+
+                     } // <unnamed>
+                  } // local
+                  
+                  Log::Log( service::Protocol&& protocol) 
+                     : m_protocol{ std::move( protocol)}, m_writer{ local::writer()}
+                  {
+                     Trace trace{ "protocol::parameter::Log::Log"};
+                     common::log::line( verbose::log, "protocol: ", m_protocol);
+
+                     m_protocol.input().writers.push_back( &m_writer);
+                     m_protocol.output().writers.push_back( &m_writer);
+                  }
+
+                  bool Log::call() 
+                  {
+                     Trace trace{ "protocol::implementation::parameter::Log::call"};
+
+                     m_writer.consume( log::parameter);
+                     static_cast< std::ostream&>( log::parameter) << "\n";
+
+                     return m_protocol.call();
+                  }
+
+                  protocol::result_type Log::finalize() 
+                  { 
+                     Trace trace{ "protocol::implementation::parameter::Log::finalize"};
+
+                     m_writer.consume( log::parameter);
+                     static_cast< std::ostream&>( log::parameter) << "\n";
+
+                     return m_protocol.finalize();
+                  }
+
+               } // parameter
 
 
                Describe::Describe( service::Protocol&& protocol)
                      :  m_writer( m_model), m_protocol( std::move( protocol))
                {
                   Trace trace{ "protocol::Describe::Describe"};
+                  common::log::line( verbose::log, "protocol: ", m_protocol);
 
-                  setup();
-               }
-
-               Describe::Describe( Describe&& other)
-                  : m_model( std::move( other.m_model)), m_writer( m_model), m_protocol( std::move( other.m_protocol))
-               {
-                  Trace trace{ "protocol::Describe move ctor"};
-
-                  setup();
-               }
-
-               void Describe::setup()
-               {
-                  m_model.service = common::execution::service::name();
+                  m_model.service = execution::service::name();
 
                   m_input.readers.push_back( &m_prepare);
                   m_input.writers.push_back( &m_writer.input);
@@ -233,8 +280,6 @@ namespace casual
                   m_output.readers.push_back( &m_prepare);
                   m_output.writers.push_back( &m_writer.output);
                }
-
-               //Describe& Describe::operator = ( Describe&& other);
 
 
                bool Describe::call() const
@@ -251,7 +296,7 @@ namespace casual
                {
                   Trace trace{ "protocol::Describe::finalize"};
 
-                  m_protocol << common::serialize::named::value::make( m_model, "model");
+                  m_protocol << serialize::named::value::make( m_model, "model");
 
                   return m_protocol.finalize();
                }

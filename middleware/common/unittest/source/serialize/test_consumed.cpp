@@ -19,7 +19,7 @@ namespace casual
          auto param() const { return ::testing::TestWithParam<const char*>::GetParam();}
       };
 
-      INSTANTIATE_TEST_CASE_P(casual_sf_consumed_archive,
+      INSTANTIATE_TEST_CASE_P( common_serialize_consumed_archive,
             archive_maker,
             ::testing::Values("yaml", "json", "xml"));
 
@@ -27,17 +27,16 @@ namespace casual
       {
          common::unittest::Trace trace;
 
-         std::stringstream stream;
+         auto writer = serialize::create::writer::from( this->param());
 
          {
-            auto archive = serialize::create::writer::from( this->param(), stream);
             int int_value = 42;
-
-            archive << CASUAL_NAMED_VALUE( int_value);
+            writer << CASUAL_NAMED_VALUE( int_value);
          }
 
 
          EXPECT_NO_THROW({
+            auto stream = writer.consume< std::stringstream>();
             auto archive = serialize::create::reader::consumed::from( this->param(), stream);
          });
       }
@@ -46,14 +45,14 @@ namespace casual
       {
          common::unittest::Trace trace;
 
-         std::stringstream stream;
+         auto writer = serialize::create::writer::from( this->param());
 
          {
-            auto archive = serialize::create::writer::from( this->param(), stream);
             int int_value = 42;
-
-            archive << CASUAL_NAMED_VALUE( int_value);
+            writer << CASUAL_NAMED_VALUE( int_value);
          }
+
+         auto stream = writer.consume< std::stringstream>();
 
          EXPECT_THROW({
             auto archive = serialize::create::reader::consumed::from( this->param(), stream);
@@ -65,14 +64,14 @@ namespace casual
       {
          common::unittest::Trace trace;
 
-         std::stringstream stream;
+         auto writer = serialize::create::writer::from( this->param());
 
          {
-            auto archive = serialize::create::writer::from( this->param(), stream);
             std::vector< int> sequence{ 42, 43};
-
-            archive << CASUAL_NAMED_VALUE( sequence);
+            writer << CASUAL_NAMED_VALUE( sequence);
          }
+
+         auto stream = writer.consume< std::stringstream>();
 
          EXPECT_THROW({
             auto archive = serialize::create::reader::consumed::from(  this->param(), stream);
@@ -103,13 +102,14 @@ namespace casual
       {
          common::unittest::Trace trace;
 
-         std::stringstream stream;
+         auto writer = serialize::create::writer::from( this->param());
          
          {
-            auto archive = serialize::create::writer::from( this->param(), stream);
             local::Composite composite;
-            archive << CASUAL_NAMED_VALUE( composite);
+            writer << CASUAL_NAMED_VALUE( composite);
          }
+
+         auto stream = writer.consume< std::stringstream>();
 
          EXPECT_THROW({
             auto archive = serialize::create::reader::consumed::from(  this->param(), stream);
@@ -125,23 +125,22 @@ namespace casual
          
          const std::vector< int> expected{ 42, 43};
 
-         std::stringstream stream;
+         auto writer = serialize::create::writer::from( this->param());
 
          {
-            auto archive = serialize::create::writer::from( this->param(), stream);
             auto& sequence = expected;
-
-            archive << CASUAL_NAMED_VALUE( sequence);
+            writer << CASUAL_NAMED_VALUE( sequence);
          }
 
-         auto archive = serialize::create::reader::consumed::from( this->param(), stream);
+         auto stream = writer.consume< std::stringstream>();
+         auto reader = serialize::create::reader::consumed::from( this->param(), stream);
 
          std::vector< int> sequence;
 
-         archive >> CASUAL_NAMED_VALUE( sequence);
+         reader >> CASUAL_NAMED_VALUE( sequence);
 
          EXPECT_NO_THROW({  
-            archive.validate();
+            reader.validate();
          });
 
          EXPECT_TRUE( sequence == expected);
@@ -153,27 +152,26 @@ namespace casual
       {
          common::unittest::Trace trace;
          
-         std::stringstream stream;
+         auto writer = serialize::create::writer::from( this->param());
 
          {
-            auto archive = serialize::create::writer::from( this->param(), stream);
             local::Composite composite;
             composite.my_long = 42;
             composite.my_string = "foo";
             composite.sequence = { 42, 43};
 
-            archive << CASUAL_NAMED_VALUE( composite);
+            writer << CASUAL_NAMED_VALUE( composite);
          }
 
-
-         auto archive = serialize::create::reader::consumed::from( this->param(), stream);
+         auto stream = writer.consume< std::stringstream>();
+         auto reader = serialize::create::reader::consumed::from( this->param(), stream);
 
          local::Composite composite;
 
-         archive >> CASUAL_NAMED_VALUE( composite);
+         reader >> CASUAL_NAMED_VALUE( composite);
 
          EXPECT_NO_THROW({  
-            archive.validate();
+            reader.validate();
          });
 
          std::vector< int> expected{ 42, 43};
@@ -206,10 +204,9 @@ namespace casual
       {
          common::unittest::Trace trace;
          
-         std::stringstream stream;
+         auto writer = serialize::create::writer::from( this->param());
 
          {
-            auto archive = serialize::create::writer::from( this->param(), stream);
             local::Nested nested;
             nested.my_long = 42;
             nested.composite.my_long = 43;
@@ -217,18 +214,18 @@ namespace casual
             nested.composite.sequence = { 42, 43};
             nested.sequence.push_back( nested.composite);
 
-            archive << CASUAL_NAMED_VALUE( nested);
+            writer << CASUAL_NAMED_VALUE( nested);
          }
 
-
-         auto archive = serialize::create::reader::consumed::from( this->param(), stream);
+         auto stream = writer.consume< std::stringstream>();
+         auto reader = serialize::create::reader::consumed::from( this->param(), stream);
 
          local::Nested nested;
 
-         archive >> CASUAL_NAMED_VALUE( nested);
+         reader >> CASUAL_NAMED_VALUE( nested);
 
          EXPECT_NO_THROW({  
-            archive.validate();
+            reader.validate();
          });
 
          std::vector< int> expected{ 42, 43};
@@ -299,21 +296,21 @@ namespace casual
       {
          common::unittest::Trace trace;
 
-         std::stringstream stream;
+         auto writer = serialize::create::writer::from( this->param());
          
          // input
          {
-            auto archive = serialize::create::writer::from( this->param(), stream);
             local::input::Composite composite;
-            archive << CASUAL_NAMED_VALUE( composite);
+            writer << CASUAL_NAMED_VALUE( composite);
          }
 
          EXPECT_THROW(
          {
-            auto archive = serialize::create::reader::consumed::from( this->param(), stream);
+            auto stream = writer.consume< std::stringstream>();
+            auto reader = serialize::create::reader::consumed::from( this->param(), stream);
             local::structure::Composite composite;
-            archive >> CASUAL_NAMED_VALUE( composite);
-            archive.validate();
+            reader >> CASUAL_NAMED_VALUE( composite);
+            reader.validate();
 
          }, common::exception::casual::invalid::Configuration);
       }

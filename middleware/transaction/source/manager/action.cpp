@@ -39,6 +39,8 @@ namespace casual
          {
             State state( manager::Settings settings)
             {
+               Trace trace{ "transaction::manager::action::state"};
+
                State state{ common::environment::string( std::move( settings.log))};
 
                // fetch configuration from domain-manager

@@ -43,9 +43,9 @@ namespace casual
                void write( const configuration::build::Executable& executable, const std::string& name)
                {
                   common::file::Output file{ name};
-                  auto archive = common::serialize::create::writer::from( file.extension(), file);
-                  
+                  auto archive = common::serialize::create::writer::from( file.extension());
                   archive << CASUAL_NAMED_VALUE( executable);
+                  archive.consume( file);
                }
 
             } // executable

@@ -4,8 +4,9 @@
 //! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-
 #include "common/serialize/line.h"
+
+#include "common/serialize/create.h"
 
 #include "casual/platform.h"
 #include "common/transcode.h"
@@ -23,18 +24,23 @@ namespace casual
          namespace line
          {
 
-            std::ostream& Writer::maybe_name( std::ostream& stream, const char* name)
+            std::vector< std::string> Writer::keys() 
+            { 
+               return { "line"};
+            }
+
+            std::ostream& Writer::maybe_name( const char* name)
             {
                if( name)
-                  stream << name << ": ";
+                  m_stream << name << ": ";
 
-               return stream;
+               return m_stream;
             }
 
             platform::size::type Writer::container_start( const platform::size::type size, const char* name)
             {
                begin_scope();
-               maybe_name( m_stream, name) << ( size == 0 ? "[" : "[ ");
+               maybe_name( name) << ( size == 0 ? "[" : "[ ");
                return size;
             }
 
@@ -47,7 +53,7 @@ namespace casual
             void Writer::composite_start( const char* name)
             {
                begin_scope();
-               maybe_name( m_stream, name) << "{ ";
+               maybe_name( name) << "{ ";
             }
             
             void Writer::composite_end( const char*)
@@ -59,13 +65,13 @@ namespace casual
             void Writer::write( bool value, const char* name)
             {
                in_scope();
-               maybe_name( m_stream, name) << ( value ? "true" : "false"); 
+               maybe_name( name) << ( value ? "true" : "false"); 
             }
 
             void Writer::write( view::immutable::Binary value, const char* name)
             {
                in_scope();
-               maybe_name( m_stream, name);
+               maybe_name( name);
                
                if( value.size() > 32) 
                   m_stream << "\"binary size: " << value.size() << '"';
@@ -83,7 +89,7 @@ namespace casual
             void Writer::write( const std::string& value, const char* name)
             {
                in_scope();
-               maybe_name( m_stream, name) << std::quoted( value);
+               maybe_name( name) << std::quoted( value);
             }
 
             void Writer::begin_scope()
@@ -96,7 +102,32 @@ namespace casual
                m_stream << std::exchange( m_prefix, detail::scope);
             }
 
-         } // log
+            void Writer::consume( std::ostream& destination)
+            {
+               destination << consume();
+               // TODO conformance: is ostringstream::rdbuf "special"?
+               // destination << m_stream.rdbuf(); does not work fully... 
+            }
+
+            std::string Writer::consume()
+            {
+               return std::exchange( m_stream, std::ostringstream{}).str();
+            }
+            
+            serialize::Writer writer()
+            {
+               return serialize::Writer::emplace< line::Writer>();
+            }
+         } // line
+
+         namespace create
+         {
+            namespace writer
+            {
+               template struct Registration< line::Writer>;
+            } // writer
+         } // create
+
       } // serialize
    } // common
 } // casual

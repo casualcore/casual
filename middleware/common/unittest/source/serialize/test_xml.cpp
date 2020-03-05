@@ -26,8 +26,9 @@ namespace casual
             template<typename T>
             void value_to_string( const T& value, std::string& string)
             {
-               auto writer = serialize::xml::writer( string);
+               auto writer = serialize::xml::writer();
                writer << CASUAL_NAMED_VALUE( value);
+               writer.consume( string);
             }
 
             template<typename T>
@@ -41,7 +42,7 @@ namespace casual
       }
 
 
-      TEST( serviceframework_xml_archive, relaxed_read_serializable)
+      TEST( common_serialize_xml_archive, relaxed_read_serializable)
       {
 
          auto reader = serialize::xml::relaxed::reader( test::SimpleVO::xml());
@@ -56,7 +57,7 @@ namespace casual
 
       }
 
-      TEST( serviceframework_xml_archive, write_read_vector_long)
+      TEST( common_serialize_xml_archive, write_read_vector_long)
       {
          std::string xml;
 
@@ -77,7 +78,7 @@ namespace casual
 
       }
 
-      TEST( serviceframework_xml_archive, simple_write_read)
+      TEST( common_serialize_xml_archive, simple_write_read)
       {
          std::string xml;
 
@@ -103,7 +104,7 @@ namespace casual
       }
 
 
-      TEST( serviceframework_xml_archive, complex_write_read)
+      TEST( common_serialize_xml_archive, complex_write_read)
       {
          std::string xml;
 
@@ -126,7 +127,7 @@ namespace casual
          }
       }
 
-      TEST( serviceframework_xml_archive, write_and_read_negative_long_and_empty_string__expecting_equality)
+      TEST( common_serialize_xml_archive, write_and_read_negative_long_and_empty_string__expecting_equality)
       {
          std::string xml;
 
@@ -149,7 +150,7 @@ namespace casual
 
       }
 
-      TEST( serviceframework_xml_archive, load_invalid_document__expecting_exception)
+      TEST( common_serialize_xml_archive, load_invalid_document__expecting_exception)
       {
          const std::string xml{ "<?xml version='1.0'?><root>" };
 
@@ -160,7 +161,7 @@ namespace casual
 
       }
 
-      TEST( serviceframework_xml_archive, read_with_invalid_long__expecting_exception)
+      TEST( common_serialize_xml_archive, read_with_invalid_long__expecting_exception)
       {
          const std::string xml
          {
@@ -184,7 +185,7 @@ namespace casual
 
       }
 
-      TEST( serviceframework_xml_archive, read_with_invalid_bool__expecting_exception)
+      TEST( common_serialize_xml_archive, read_with_invalid_bool__expecting_exception)
       {
          const std::string xml
          {
@@ -207,7 +208,7 @@ namespace casual
          }, exception::casual::invalid::Node);
       }
 
-      TEST( serviceframework_xml_archive, read_with_too_long_short__expecting_exception)
+      TEST( common_serialize_xml_archive, read_with_too_long_short__expecting_exception)
       {
          const std::string xml
          {

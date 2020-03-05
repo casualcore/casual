@@ -446,24 +446,20 @@ namespace casual
 
                queue::Lookup lookup{ queuename};
 
-               std::vector< Message> result;
-
-               common::message::queue::peek::messages::Request request;
-               {
-                  request.process = common::process::handle();
-                  request.ids = ids;
-               }
+               common::message::queue::peek::messages::Request request{ common::process::handle()};
+               request.ids = ids;
 
                auto queue = lookup();
 
                if( queue.order > 0)
-               {
                   throw exception::invalid::Argument{ "not possible to peek a remote queue"};
-               }
+
+               if( ! queue.process)
+                  throw exception::no::Queue{};
 
                auto reply = common::communication::ipc::call( queue.process.ipc, request);
 
-               common::algorithm::transform( reply.messages , result, []( common::message::queue::dequeue::Reply::Message& m){
+               return common::algorithm::transform( reply.messages, []( auto& m){
                   Message message;
                   message.id = m.id;
                   message.attributes.available = m.available;
@@ -473,8 +469,6 @@ namespace casual
                   message.payload.data = std::move( m.payload);
                   return message;
                });
-
-               return result;
             }
          } // peek
 

@@ -346,7 +346,7 @@ namespace casual
                         static decltype( auto) keys() { return local::keys();}
                         
                         explicit basic_implementation()
-                           : m_allocator( m_document.GetAllocator()), m_stack{ &m_document}
+                           : m_allocator( &m_document.GetAllocator()), m_stack{ &m_document}
                         {
                            m_document.SetObject();
                         }
@@ -385,13 +385,13 @@ namespace casual
 
                            if( name)
                            {
-                              parent.AddMember( rapidjson::Value( name, m_allocator), rapidjson::Value(), m_allocator);
+                              parent.AddMember( rapidjson::Value( name, *m_allocator), rapidjson::Value(), *m_allocator);
                               m_stack.push_back( &(*(parent.MemberEnd() - 1)).value);
                            }
                            else
                            {
                               // We are in a container
-                              parent.PushBack( rapidjson::Value(), m_allocator);
+                              parent.PushBack( rapidjson::Value(), *m_allocator);
                               m_stack.push_back( &(*(parent.End() - 1)));
                            }
                         }
@@ -417,19 +417,22 @@ namespace casual
                         void write( const long long value) { m_stack.back()->SetInt64( value); }
                         void write( const float value) { m_stack.back()->SetDouble( value); }
                         void write( const double value) { m_stack.back()->SetDouble( value); }
-                        void write( const std::string& value) { m_stack.back()->SetString( common::transcode::utf8::encode( value), m_allocator);}
-                        void write( const platform::binary::type& value) { m_stack.back()->SetString( common::transcode::base64::encode( value), m_allocator);}
-                        void write( view::immutable::Binary value) { m_stack.back()->SetString( common::transcode::base64::encode( value), m_allocator);}
+                        void write( const std::string& value) { m_stack.back()->SetString( common::transcode::utf8::encode( value), *m_allocator);}
+                        void write( const platform::binary::type& value) { m_stack.back()->SetString( common::transcode::base64::encode( value), *m_allocator);}
+                        void write( view::immutable::Binary value) { m_stack.back()->SetString( common::transcode::base64::encode( value), *m_allocator);}
 
                         const rapidjson::Document& document() const { return m_document;}
 
-                        void flush( platform::binary::type& json)
+                        auto consume( platform::binary::type& destination)
                         {
                            rapidjson::StringBuffer buffer;
                            Writer writer( buffer);
 
                            if( m_document.Accept( writer))
-                              json.assign( buffer.GetString(), buffer.GetString() + buffer.GetSize());
+                           {
+                              destination.assign( buffer.GetString(), buffer.GetString() + buffer.GetSize());
+                              reset();
+                           }
                            else
                            {
                               // TODO: Better
@@ -437,12 +440,15 @@ namespace casual
                            }
                         }
 
-                        void flush( std::ostream& json)
+                        void consume( std::ostream& json)
                         {
                            rapidjson::StringBuffer buffer;
                            Writer writer( buffer);
                            if( m_document.Accept( writer))
+                           {
                               json << buffer.GetString();
+                              reset();
+                           }
                            else
                            {
                               // TODO: Better
@@ -452,8 +458,18 @@ namespace casual
 
                      private:
 
+                        void reset()
+                        {
+                           rapidjson::Document document;
+                           m_document.Swap( document);
+                           m_allocator = &m_document.GetAllocator();
+
+                           m_stack.erase( std::begin( m_stack) + 1, std::end( m_stack));
+                           m_document.SetObject();
+                        }
+
                         rapidjson::Document m_document;
-                        rapidjson::Document::AllocatorType& m_allocator;
+                        rapidjson::Document::AllocatorType* m_allocator;
                         std::vector< rapidjson::Value*> m_stack;
                      };
 
@@ -491,36 +507,17 @@ namespace casual
 
             namespace pretty
             {
-               serialize::Writer writer( std::string& destination)
+               serialize::Writer writer()
                {
-                  return serialize::create::writer::create< local::writer::pretty::Implementation>( destination);
-               }
-
-               serialize::Writer writer( std::ostream& destination)
-               {
-                  return serialize::create::writer::create< local::writer::pretty::Implementation>( destination);
-               }
-
-               serialize::Writer writer( platform::binary::type& destination)
-               {
-                  return serialize::create::writer::create< local::writer::pretty::Implementation>( destination);
+                  return serialize::create::writer::create< local::writer::pretty::Implementation>();
                }
             } // pretty
 
-            serialize::Writer writer( std::string& destination)
+            serialize::Writer writer()
             {
-               return serialize::create::writer::create< local::writer::Implementation>( destination);
+               return serialize::create::writer::create< local::writer::Implementation>();
             }
 
-            serialize::Writer writer( std::ostream& destination)
-            {
-               return serialize::create::writer::create< local::writer::Implementation>( destination);
-            }
-
-            serialize::Writer writer( platform::binary::type& destination)
-            {
-               return serialize::create::writer::create< local::writer::Implementation>( destination);
-            }
          } // json
          
          namespace create

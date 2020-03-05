@@ -46,14 +46,10 @@ namespace casual
 
             namespace pretty
             {
-               serialize::Writer writer( std::string& destination);
-               serialize::Writer writer( std::ostream& destination);
-               serialize::Writer writer( platform::binary::type& destination);        
+               serialize::Writer writer();
             } // pretty
 
-            serialize::Writer writer( std::string& destination);
-            serialize::Writer writer( std::ostream& destination);
-            serialize::Writer writer( platform::binary::type& destination); 
+            serialize::Writer writer();
 
          } // json
       } // serialize

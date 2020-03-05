@@ -49,7 +49,7 @@ namespace casual
                   // Set environment variable to make it easier for connections to get in
                   // touch with us
                   common::environment::variable::process::set(
-                        common::environment::variable::name::ipc::gateway::manager(),
+                        common::environment::variable::name::ipc::gateway::manager,
                         process::handle());
 
 
