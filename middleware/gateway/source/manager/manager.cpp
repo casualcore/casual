@@ -26,9 +26,9 @@ namespace casual
 
    namespace gateway
    {
-
       namespace manager
-      {
+      {         
+      
          namespace local
          {
             namespace
@@ -120,16 +120,11 @@ namespace casual
       {
          Trace trace{ "gateway::Manager::~Manager"};
 
-         try
+         common::exception::guard( [&]()
          {
             // make sure we shutdown
             manager::handle::shutdown( m_state);
-         }
-         catch( ...)
-         {
-            common::exception::handle();
-         }
-
+         });
       }
 
       void Manager::start()

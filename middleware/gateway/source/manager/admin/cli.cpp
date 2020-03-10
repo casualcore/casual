@@ -5,7 +5,7 @@
 //!
 
 #include "gateway/manager/admin/cli.h"
-#include "gateway/manager/admin/vo.h"
+#include "gateway/manager/admin/model.h"
 #include "gateway/manager/admin/server.h"
 
 #include "common/argument.h"
@@ -14,6 +14,7 @@
 #include "common/chronology.h"
 #include "common/transcode.h"
 #include "common/exception/handle.h"
+#include "common/event/listen.h"
 
 #include "serviceframework/service/protocol/call.h"
 #include "common/serialize/create.h"
@@ -31,7 +32,6 @@ namespace casual
    {
       namespace normalize
       {
-
          std::string timestamp( const platform::time::point::type& time)
          {
             if( time != platform::time::point::limit::zero())
@@ -40,21 +40,28 @@ namespace casual
             }
             return "-";
          }
-
-
-
-
       } // normalize
 
       namespace call
       {
 
-         manager::admin::vo::State state()
+         manager::admin::model::State state()
          {
             serviceframework::service::protocol::binary::Call call;
-            auto reply = call( manager::admin::service::name::state());
+            auto reply = call( manager::admin::service::name::state);
 
-            manager::admin::vo::State result;
+            manager::admin::model::State result;
+            reply >> CASUAL_NAMED_VALUE( result);
+
+            return result;
+         }
+
+         auto rediscover()
+         {
+            serviceframework::service::protocol::binary::Call call;
+            auto reply = call( manager::admin::service::name::rediscover);
+
+            std::vector< Uuid> result;
             reply >> CASUAL_NAMED_VALUE( result);
 
             return result;
@@ -74,7 +81,7 @@ namespace casual
 
          auto connections()
          {
-            using vo = manager::admin::vo::Connection;
+            using vo = manager::admin::model::Connection;
 
             auto format_domain_name = []( const vo& c) -> std::string
             { 
@@ -124,7 +131,7 @@ namespace casual
                return dash_if_empty( c.address.peer);
             };
 
-            return terminal::format::formatter<  manager::admin::vo::Connection>::construct( 
+            return terminal::format::formatter<  manager::admin::model::Connection>::construct( 
                terminal::format::column( "name", format_domain_name, terminal::color::yellow),
                terminal::format::column( "id", format_domain_id, terminal::color::blue),
                terminal::format::column( "bound", format_bound, terminal::color::magenta),
@@ -138,7 +145,7 @@ namespace casual
 
          auto listeners() 
          {
-            using vo = manager::admin::vo::Listener;
+            using vo = manager::admin::model::Listener;
 
             auto format_host = []( const vo& l){ return l.address.host;};
             auto format_port = []( const vo& l){ return l.address.port;};
@@ -189,6 +196,43 @@ namespace casual
             archive.consume( std::cout);
          }
 
+         namespace rediscover
+         {
+            void invoke() 
+            {
+               if( ! terminal::output::directive().block())
+               {
+                  call::rediscover();
+                  return;
+               }
+               
+               decltype( call::rediscover()) tasks;
+
+               auto once = [&tasks]() { tasks = call::rediscover();};
+               auto done = [&tasks](){ return tasks.empty();};
+               
+               event::conditional::listen( std::move( once), std::move( done), 
+                  [&tasks]( const common::message::event::general::Task& task)
+                  {
+                     common::message::event::terminal::print( std::cout, task);
+
+                     if( task.done())
+                        algorithm::trim( tasks, algorithm::remove( tasks, task.correlation));
+                  },
+                  []( const common::message::event::general::sub::Task& task)
+                  {
+                     common::message::event::terminal::print( std::cout, task);
+                  }
+               );
+            }
+
+            constexpr auto description = R"(rediscover all outbound connections
+            
+)";
+         } // rediscover
+
+ 
+
       } // action
 
       namespace manager
@@ -206,6 +250,7 @@ namespace casual
                   return common::argument::Group{ [](){}, { "gateway"}, "gateway related administration",
                      common::argument::Option( &gateway::action::list_connections, { "-c", "--list-connections"}, "list all connections"),
                      common::argument::Option( &gateway::action::list_listeners, { "-l", "--list-listeners"}, "list all listeners"),
+                     common::argument::Option( &gateway::action::rediscover::invoke, { "--rediscover"}, gateway::action::rediscover::description),
                      common::argument::Option( &gateway::action::state, complete_state, {"--state"}, "gateway state"),
                   };
                }

@@ -84,6 +84,7 @@ casual_common_objectfiles = [
         
     Compile( 'source/message/handle.cpp'),
     Compile( 'source/message/pending.cpp'),
+    Compile( 'source/message/event.cpp'),
 
     Compile( 'source/event/listen.cpp'),
     Compile( 'source/event/dispatch.cpp'),

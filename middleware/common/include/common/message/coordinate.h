@@ -66,8 +66,8 @@ namespace casual
             explicit Coordinate( Args&&... args) : m_policy{ std::forward< Args>( args)...} {}
 
 
-            template< typename... Requested>
-            void add( const Uuid& correlation, strong::ipc::id destination, Requested&&... requested)
+            template< typename Send, typename... Requested>
+            void add( const Uuid& correlation, strong::ipc::id destination, Send&& send, Requested&&... requested)
             {
                m_messages.emplace_back(
                      destination,
@@ -77,27 +77,25 @@ namespace casual
 
                if( m_messages.back().policy.done())
                {
-                  m_policy.send( m_messages.back().ipc, m_messages.back().message);
+                  send( m_messages.back().ipc, m_messages.back().message);
                   m_messages.pop_back();
                }
             }
 
-            template< typename Reply>
-            bool accumulate( Reply&& message)
+            template< typename Reply, typename Send>
+            bool accumulate( Reply&& message, Send&& send)
             {
-               auto found = algorithm::find_if( m_messages, [&message]( const holder_type& m){
-                  return m.message.correlation == message.correlation;
-               });
+               auto found = algorithm::find( m_messages, message.correlation);
 
                if( found && found->policy.consume( message.process.pid))
                {
                   // Accumulate message
-                  m_policy.accumulate( found->message, std::forward< Reply>( message));
+                  m_policy( found->message, std::forward< Reply>( message));
 
                   if( found->policy.done())
                   {
                      // We're done, send reply...
-                     m_policy.send( found->ipc, found->message);
+                     send( found->ipc, found->message);
                      m_messages.erase( std::begin( found));
                   }
 
@@ -106,12 +104,14 @@ namespace casual
                return false;
             }
 
-            void remove( strong::process::id pid)
+            template< typename Send>
+            void remove( strong::process::id pid, Send&& send)
             {
-               algorithm::trim( m_messages, algorithm::remove_if( m_messages, [=]( holder_type& h){
+               algorithm::trim( m_messages, algorithm::remove_if( m_messages, [pid, &send]( auto& h)
+               {
                   if( h.policy.consume( pid) && h.policy.done())
                   {
-                     m_policy.send( h.ipc, h.message);
+                     send( h.ipc, h.message);
                      return true;
                   }
                   return false;
@@ -123,7 +123,6 @@ namespace casual
 
             platform::size::type size() const { return m_messages.size();}
 
-            // for logging only
             CASUAL_LOG_SERIALIZE(
             {
                CASUAL_SERIALIZE_NAME( m_messages, "messages");
@@ -146,6 +145,8 @@ namespace casual
                strong::ipc::id ipc;
                message_policy_type policy;
                message_type message;
+
+               inline friend bool operator == ( const holder_type& lhs, const Uuid& rhs) { return lhs.message.correlation == rhs;}
 
                // for logging only
                CASUAL_LOG_SERIALIZE(

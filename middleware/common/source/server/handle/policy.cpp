@@ -39,7 +39,7 @@ namespace casual
                         {
                            message::service::Advertise advertise;
                            advertise.process = process::handle();
-                           advertise.services = std::move( services);
+                           advertise.services.add = std::move( services);
 
                            log::line( log::debug, "advertise: ", advertise);
 

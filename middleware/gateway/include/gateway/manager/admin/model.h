@@ -20,10 +20,9 @@ namespace casual
       {
          namespace admin
          {
-
-            namespace vo
+            namespace model
             {
-               inline namespace v1_0
+               inline namespace v1
                {
                   struct Connection
                   {
@@ -62,8 +61,6 @@ namespace casual
                      common::process::Handle process;
                      common::domain::Identity remote;
                      Address address;
-
-
 
                      CASUAL_CONST_CORRECT_SERIALIZE(
                      {
@@ -116,7 +113,6 @@ namespace casual
                         CASUAL_SERIALIZE( limit);
                         CASUAL_SERIALIZE( address);
                      })
-
                   };
 
 
@@ -130,11 +126,10 @@ namespace casual
                         CASUAL_SERIALIZE( connections);
                         CASUAL_SERIALIZE( listeners);
                      })
-
                   };
 
-               } // v1_0
-            } // vo
+               } // v1
+            } // model
          } // admin
       } // manager
    } // gateway

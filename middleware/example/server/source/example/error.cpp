@@ -122,9 +122,8 @@ namespace casual
                            return service;
                         };
 
-                        message::service::Advertise message;
-                        message.process = process::handle();
-                        message.services = algorithm::transform( code::mapping, transform_service);
+                        message::service::Advertise message{ process::handle()};
+                        message.services.add = algorithm::transform( code::mapping, transform_service);
 
                         communication::ipc::blocking::send( communication::instance::outbound::service::manager::device(), message);
                      }

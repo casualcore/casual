@@ -387,7 +387,7 @@ domain:
             remote.process.pid = common::strong::process::id{ 666};
             remote.process.ipc = common::strong::ipc::id{ common::uuid::make()};
 
-            remote.queues.emplace_back( "remote-queue");
+            remote.queues.add.emplace_back( "remote-queue");
 
             common::communication::ipc::blocking::send( 
                common::communication::instance::outbound::queue::manager::device(), remote);

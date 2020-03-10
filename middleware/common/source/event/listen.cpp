@@ -9,6 +9,7 @@
 
 #include "common/execute.h"
 #include "common/message/handle.h"
+#include "common/message/dispatch.h"
 
 #include "common/communication/instance.h"
 
@@ -125,25 +126,26 @@ namespace casual
 
             }
 
-            void listen( device_type& device, std::function< void()> empty, handler_type&& h)
+            void listen( device_type& device, function< void()> empty, handler_type&& h)
             {
                Trace trace{ "common::event::detail::listen"};
 
                auto handler = local::standard::handler( std::move( h));
-
                auto subscription = local::subscription( device.connector().handle().ipc(), handler.types());
 
-               while( true)
-               {
-                  while( handler( device.next( typename device_type::non_blocking_policy{})))
-                     ; // no-op
+               message::dispatch::empty::pump( handler, device, std::move( empty));
+            }
 
-                  // queue is empty, notify caller
-                  empty();
+            void listen( device_type& device, function< void()> once, function< bool()> done, handler_type&& h)
+            {
+               Trace trace{ "common::event::detail::listen"};
 
-                  handler( device.next( typename device_type::blocking_policy{}));
-               }
+               auto handler = local::standard::handler( std::move( h));
+               auto subscription = local::subscription( device.connector().handle().ipc(), handler.types());
 
+               once();
+
+               message::dispatch::conditional::pump( handler, device, std::move( done));
             }
          } // detail
 
@@ -184,7 +186,7 @@ namespace casual
                      message::dispatch::blocking::pump( handler, device);
                   }
 
-                  void conditional( device_type& device, std::function< bool()> done, handler_type&& handler)
+                  void conditional( device_type& device, function< bool()> done, handler_type&& handler)
                   {
                      const auto types = handler.types();
                      while( true)

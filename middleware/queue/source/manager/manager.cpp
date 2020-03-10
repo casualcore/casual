@@ -69,11 +69,9 @@ namespace casual
                } // transform
 
 
-               struct Spawn : manager::handle::Base
+               auto spawn( State& state)
                {
-                  using manager::handle::Base::Base;
-
-                  State::Group operator () ( const common::message::domain::configuration::queue::Group& group)
+                  return [&state]( const common::message::domain::configuration::queue::Group& group)
                   {
                      Trace trace( "queue::manager::local::Spawn");
 
@@ -84,7 +82,7 @@ namespace casual
                      try
                      {
                         result.process.pid = casual::common::process::spawn(
-                           m_state.group_executable,
+                           state.group_executable,
                            { "--queuebase", group.queuebase, "--name", group.name});
                      }
                      catch( const common::exception::base& exception)
@@ -96,36 +94,31 @@ namespace casual
                      }
 
                      return result;
-                  }
-               };
-
+                  };
+               }
 
 
                void startup( State& state)
                {
                   Trace trace( "queue::manager::local::startup");
                   
-                  casual::common::algorithm::transform( state.configuration.groups, state.groups, Spawn( state));
+                  casual::common::algorithm::transform( state.configuration.groups, state.groups, local::spawn( state));
 
                   common::algorithm::trim( state.groups, common::algorithm::remove_if( state.groups, []( auto& g){
                      return ! g.process.pid;
                   }));
+
+                  auto done = [&]()
+                  {
+                     return common::algorithm::all_of( state.groups, []( auto& group){ return group.connected();});
+                  };
             
                   // Make sure all groups are up and running before we continue
-                  {
-                     auto handler = ipc::device().handler(
-                        manager::handle::connect::Request{ state},
-                        manager::handle::connect::Information{ state},
-                        manager::handle::process::Exit{ state},
-                        common::message::handle::Shutdown{}
-                     );
+                  common::message::dispatch::conditional::pump( 
+                     manager::startup::handlers( state),
+                     ipc::device(),
+                     done);
 
-                     const auto filter = handler.types();
-
-                     // TODO maintainence: change to message::dispatch::...conditional
-                     while( ! common::algorithm::all_of( state.groups, std::mem_fn(&State::Group::connected)))
-                        handler( communication::ipc::blocking::next( ipc::device(), filter));
-                  }
                }
 
             } // <unnamed>
@@ -162,7 +155,7 @@ namespace casual
             common::process::children::terminate(
                [&]( auto& exit)
                {
-                  manager::handle::process::Exit{ m_state}( message::event::process::Exit{ exit});
+                  m_state.remove( exit.pid);
                },
                m_state.processes());
 

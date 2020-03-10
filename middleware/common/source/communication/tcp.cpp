@@ -455,6 +455,7 @@ namespace casual
                               // Fake an error-description
                               throw exception::system::communication::unavailable::Pipe{};
                            }
+                           common::log::line( verbose::log, "bytes: ", bytes); 
 
                            first += bytes;
                         }
@@ -470,7 +471,6 @@ namespace casual
 
                   try
                   {
-
                      auto local_send = []( auto descriptor, auto first, auto last, auto flags){
                         while( first != last)
                         {
@@ -516,8 +516,7 @@ namespace casual
 
                   try
                   {
-
-                     communication::message::complete::network::Header header;
+                     communication::message::complete::network::Header header{};
 
                      auto current = reinterpret_cast< char*>( &header);
 
@@ -526,9 +525,6 @@ namespace casual
                         const auto header_end = current + communication::message::complete::network::header::size();
 
                         local::receive( socket.descriptor(), current, header_end, flags);
-
-                        common::log::line( verbose::log, "header: ", header);
-
                      }
 
                      // Now we can get the payload

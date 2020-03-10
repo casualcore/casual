@@ -13,10 +13,8 @@
 #include "common/server/lifetime.h"
 #include "common/algorithm.h"
 #include "common/environment/normalize.h"
-
 #include "common/process.h"
 
-// std
 #include <functional>
 
 namespace casual
@@ -376,22 +374,18 @@ namespace casual
                }
 
 
-               template< typename I, typename S>
-               void remove_services( State& state, I& instances, S& services, common::process::Handle process)
+               template< typename I>
+               void remove_services( State& state, I& instance, const std::vector< std::string>& services)
                {
                   Trace trace{ "service::manager::local::remove_services"};
 
-                  auto& instance = find_or_add( instances, process);
-
-                  for( auto& s : services)
+                  auto remove = [&]( auto& name)
                   {
-                     auto service = state.find_service( s.name);
-
-                     if( service)
-                     {
+                     if( auto service = state.find_service( name))
                         service->remove( instance.process.pid);
-                     }
-                  }
+                  };
+
+                  algorithm::for_each( services, remove);
                }
 
             } // <unnamed>
@@ -436,37 +430,33 @@ namespace casual
                return;
             }
 
-            switch( message.directive)
+
+            if( message.clear())
             {
-               case common::message::service::Advertise::Directive::add:
-               {
-                  auto& instance = local::find_or_add( instances.sequential, message.process);
-
-                  auto add_service = [&]( auto& service)
-                  {
-                     auto add_instance = [&instance]( auto& service)
-                     {
-                        service.add( instance);
-                     };
-                     local::find_or_add_service( *this, local::transform( service, default_timeout), add_instance);
-                  };
-
-                  algorithm::for_each( message.services, add_service);
-
-                  break;
-               }
-               case common::message::service::Advertise::Directive::remove:
-               {
-                  local::remove_services( *this, instances.sequential, message.services, message.process);
-                  break;
-               }
-               default:
-               {
-                  log::line( log::category::error, "failed to deduce gateway advertise directive - action: ignore");
-                  log::line( verbose::log, "message: ", message);
-                  break;
-               }
+               // we just remove the process all together.
+               remove( message.process.pid);
+               return;
             }
+
+            auto& instance = local::find_or_add( instances.sequential, message.process);
+
+            // add
+            {
+               auto add_service = [&]( auto& service)
+               {
+                  auto add_instance = [&instance]( auto& service)
+                  {
+                     service.add( instance);
+                  };
+                  local::find_or_add_service( *this, local::transform( service, default_timeout), add_instance);
+               };
+
+               algorithm::for_each( message.services.add, add_service);
+            }
+
+            // remove
+            local::remove_services( *this, instance, message.services.remove);
+
          }
 
 
@@ -481,39 +471,28 @@ namespace casual
                return;
             }
 
-            using Directive = common::message::service::concurrent::Advertise::Directive;
+            if( message.reset)
+               remove( message.process.pid);
 
-            switch( message.directive)
+            auto& instance = local::find_or_add( instances.concurrent, message.process);
+            instance.order = message.order;
+
+            // add
             {
-               case Directive::add:
+               auto add_service = [&]( auto& service)
                {
-                  auto& instance = local::find_or_add( instances.concurrent, message.process);
-                  instance.order = message.order;
-
-                  auto add_service = [&]( auto& service)
+                  auto add_instance = [&instance, hops = service.hops]( auto& service)
                   {
-                     auto add_instance = [&instance, hops = service.hops]( auto& service)
-                     {
-                        service.add( instance, hops);
-                     };
-                     local::find_or_add_service( *this, local::transform( service), add_instance);
+                     service.add( instance, hops);
                   };
+                  local::find_or_add_service( *this, local::transform( service), add_instance);
+               };
 
-                  algorithm::for_each( message.services, add_service);
-
-                  break;
-               }
-               case Directive::remove:
-               {
-                  local::remove_services( *this, instances.concurrent, message.services, message.process);
-                  break;
-               }
-               default:
-               {
-                  log::line( log::category::error, "failed to deduce gateway advertise directive - action: ignore");
-                  log::line( log::category::verbose::error, "message: ", message);
-               }
+               algorithm::for_each( message.services.add, add_service);
             }
+
+            // remove
+            local::remove_services( *this, instance, message.services.remove);
          }
 
          std::vector< std::string> State::metric_reset( std::vector< std::string> lookup)
@@ -565,21 +544,19 @@ namespace casual
 
          void State::connect_manager( std::vector< common::server::Service> services)
          {
-            common::message::service::Advertise message;
+            Trace trace{ "service::manager::State::connect_manager"};
 
-            message.directive = common::message::service::Advertise::Directive::add;
-
-            algorithm::transform( services, message.services, []( common::server::Service& s){
+            auto transform_service = []( auto& service)
+            {
                common::message::service::advertise::Service result;
-
-               result.category = s.category;
-               result.name = s.name;
-               result.transaction = s.transaction;
-
+               result.category = service.category;
+               result.name = service.name;
+               result.transaction = service.transaction;
                return result;
-            });
+            };
 
-            message.process = process::handle();
+            common::message::service::Advertise message{ process::handle()};
+            message.services.add = algorithm::transform( services, transform_service);
 
             update( message);
          }

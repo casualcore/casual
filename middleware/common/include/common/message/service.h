@@ -144,29 +144,25 @@ namespace casual
             {
                using base_advertise::base_advertise;
 
-               enum class Directive : short
+               struct
                {
-                  add,
-                  remove
-               };
+                  std::vector< advertise::Service> add;
+                  std::vector< std::string> remove;
 
-               inline friend std::ostream& operator << ( std::ostream& out, Advertise::Directive value)
-               {
-                  switch( value)
+                  CASUAL_CONST_CORRECT_SERIALIZE(
                   {
-                     case Advertise::Directive::add: return out << "add";
-                     case Advertise::Directive::remove: return out << "remove";
-                  }
-                  return out << "unknown";
-               }
+                     CASUAL_SERIALIZE( add);
+                     CASUAL_SERIALIZE( remove);
+                  })
+               } services;
 
-               Directive directive = Directive::add;
-               std::vector< advertise::Service> services;
+
+               //! @return true ii the intention is to remove all advertised services for the server
+               inline bool clear() const { return services.add.empty() && services.remove.empty();}
 
                CASUAL_CONST_CORRECT_SERIALIZE(
                {
                   base_advertise::serialize( archive);
-                  CASUAL_SERIALIZE( directive);
                   CASUAL_SERIALIZE( services);
                })
             };
@@ -201,33 +197,29 @@ namespace casual
                {
                   using basic_advertise::basic_advertise;
 
-                  enum class Directive : short
-                  {
-                     add,
-                     remove
-                  };
-
-                  inline friend std::ostream& operator << ( std::ostream& out, Advertise::Directive value)
-                  {
-                     switch( value)
-                     {
-                        case Advertise::Directive::add: return out << "add";
-                        case Advertise::Directive::remove: return out << "remove";
-                     }
-                     return out << "unknown";
-                  }
-
-                  Directive directive = Directive::add;
                   platform::size::type order = 0;
-                  std::vector< advertise::Service> services;
+
+                  struct
+                  {
+                     std::vector< advertise::Service> add;
+                     std::vector< std::string> remove;
+
+                     CASUAL_CONST_CORRECT_SERIALIZE(
+                     {
+                        CASUAL_SERIALIZE( add);
+                        CASUAL_SERIALIZE( remove);
+                     })
+                  } services;
+
+                  //! indicate to remove all current advertised services, and replace with content in this message
+                  bool reset = false;
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
                   {
                      basic_advertise::serialize( archive);
-                     CASUAL_SERIALIZE( directive);
-                     CASUAL_SERIALIZE( process);
                      CASUAL_SERIALIZE( order);
                      CASUAL_SERIALIZE( services);
+                     CASUAL_SERIALIZE( reset);
                   })
                };
               

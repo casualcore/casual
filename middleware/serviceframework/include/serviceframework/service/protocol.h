@@ -154,6 +154,57 @@ namespace casual
             std::unique_ptr< concept> m_implementation;
          };
 
+                  namespace protocol
+         {
+            class Factory
+            {
+            public:
+               static Factory& instance();
+
+               using creator_type = std::function< Protocol( protocol::parameter_type&&)>;
+
+               Protocol create( protocol::parameter_type&& parameter);
+
+               template< typename Protocol>
+               const std::string& registration( const std::string& type)
+               {
+                  m_creators[ type] = Creator< Protocol>{};
+                  return type;
+               }
+
+               template< typename Protocol>
+               const std::string& registration()
+               {
+                  m_creators[ Protocol::type()] = Creator< Protocol>{};
+                  return Protocol::type();
+               }
+
+            private:
+
+               template< typename P>
+               struct Creator
+               {
+                  using protocol_type = P;
+
+                  service::Protocol operator()( protocol::parameter_type&& parameter) const
+                  {
+                     return service::Protocol::emplace< protocol_type>( std::move( parameter));
+                  }
+
+               };
+
+               Factory();
+
+               using mapping_type = std::map< std::string, creator_type>;
+
+               mapping_type m_creators;
+            };
+
+            //! @returns a protocol deduced from `parameter`
+            Protocol deduce( protocol::parameter_type&& parameter);
+
+         } // protocol
+
 
          template< typename F, typename... Args>
          auto user( Protocol& protocol, F&& function, Args&&... args)
@@ -208,56 +259,13 @@ namespace casual
             return implementation::call( std::move( protocol), std::forward< F>( function), std::forward< Args>( args)...);
          }
 
-
-         namespace protocol
+         //! takes ownership of `parameter` and deduces protocol and serializes the result (if not void) and return 
+         //! common::service::invoke::Result
+         template< typename... Ts>
+         auto user( common::service::invoke::Parameter&& parameter, Ts&&... ts)
          {
-            class Factory
-            {
-            public:
-               static Factory& instance();
-
-               using creator_type = std::function< Protocol( protocol::parameter_type&&)>;
-
-               Protocol create( protocol::parameter_type&& parameter);
-
-               template< typename Protocol>
-               const std::string& registration( const std::string& type)
-               {
-                  m_creators[ type] = Creator< Protocol>{};
-                  return type;
-               }
-
-               template< typename Protocol>
-               const std::string& registration()
-               {
-                  m_creators[ Protocol::type()] = Creator< Protocol>{};
-                  return Protocol::type();
-               }
-
-            private:
-
-               template< typename P>
-               struct Creator
-               {
-                  using protocol_type = P;
-
-                  service::Protocol operator()( protocol::parameter_type&& parameter) const
-                  {
-                     return service::Protocol::emplace< protocol_type>( std::move( parameter));
-                  }
-
-               };
-
-               Factory();
-
-               using mapping_type = std::map< std::string, creator_type>;
-
-               mapping_type m_creators;
-            };
-
-            Protocol deduce( protocol::parameter_type&& parameter);
-
-         } // protocol
+            return service::user( protocol::deduce( std::move( parameter)), std::forward< Ts>( ts)...);
+         }
 
       } // service
    } // serviceframework

@@ -650,9 +650,8 @@ namespace casual
                               return result;
                            };
 
-                           common::message::service::Advertise message;
-                           message.process = common::process::handle();
-                           message.services = algorithm::transform( manager::admin::services( state).services, transform_service);
+                           common::message::service::Advertise message{ common::process::handle()};
+                           message.services.add = algorithm::transform( manager::admin::services( state).services, transform_service);
                               
                            manager::ipc::send( state, process, message);
 
@@ -871,24 +870,53 @@ namespace casual
                      using Handle = common::server::handle::basic_call< Policy>;
                   } // server
 
-                  namespace task
+                  namespace event
                   {
-                     namespace event
+                     namespace domain
                      {
-                        auto done( State& state) 
+                        namespace task
                         {
-                           return [&state]( common::message::event::domain::task::End& message)
+                           auto end( State& state) 
                            {
-                              Trace trace{ "domain::manager::handle::local::task::event::done"};
+                              return [&state]( common::message::event::domain::task::End& message)
+                              {
+                                 Trace trace{ "domain::manager::handle::local::event::domain::task::end"};
+                                 log::line( verbose::log, "message: ", message);
+
+                                 state.tasks.event( message);
+                              };
+                           }
+                        } // task  
+                     } // domain
+                     namespace general
+                     {
+                        auto task( State& state) 
+                        {
+                           return [&state]( common::message::event::general::Task& message)
+                           {
+                              Trace trace{ "domain::manager::handle::local::event::general::task"};
                               log::line( verbose::log, "message: ", message);
 
-                              state.tasks.event( message);
+                              manager::task::event::dispatch( state, [&message](){ return message;});
                            };
                         }
-                     } // event
-                  } // task
-    
 
+                        namespace sub
+                        {
+                           auto task( State& state) 
+                           {
+                              return [&state]( common::message::event::general::sub::Task& message)
+                              {
+                                 Trace trace{ "domain::manager::handle::local::event::general::sub::task"};
+                                 log::line( verbose::log, "message: ", message);
+
+                                 manager::task::event::dispatch( state, [&message](){ return message;});
+                              };
+                           }
+                        } // task
+                     } // general
+                   } // event
+    
                } // <unnamed>
             } // local
          } // handle
@@ -905,7 +933,9 @@ namespace casual
                manager::handle::event::subscription::Begin{ state},
                manager::handle::event::subscription::End{ state},
                manager::handle::event::Error{ state},
-               manager::handle::local::task::event::done( state),
+               manager::handle::local::event::domain::task::end( state),
+               manager::handle::local::event::general::task( state),
+               manager::handle::local::event::general::sub::task( state),
                manager::handle::process::Connect{ state},
                manager::handle::process::Lookup{ state},
                manager::handle::configuration::Domain{ state},

@@ -8,6 +8,7 @@
 #pragma once
 
 #include "common/message/event.h"
+#include "common/serialize/native/complete.h"
 
 #include <string>
 
@@ -17,6 +18,18 @@ namespace casual
    {
       namespace event
       {
+         namespace detail
+         {
+            void send( communication::message::Complete&& message);
+         } // detail
+
+         template< typename Event>
+         constexpr void send( Event&& event)
+         {
+            static_assert( message::is::event::message< Event>(), "only events can be sent");
+            detail::send( serialize::native::complete( std::forward< Event>( event)));
+         }
+
          namespace error
          {
             using Severity = message::event::domain::Error::Severity;

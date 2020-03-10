@@ -367,6 +367,8 @@ namespace casual
             common::event::dispatch::Collection<
                common::message::event::process::Spawn,
                common::message::event::process::Exit,
+               common::message::event::general::Task,
+               common::message::event::general::sub::Task,
                common::message::event::domain::task::Begin,
                common::message::event::domain::task::End,
                common::message::event::domain::boot::Begin,

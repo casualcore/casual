@@ -101,8 +101,13 @@ namespace casual
             event_subscription_end,
             event_idle,
 
+
             EVENT_DOMAIN_BASE = 4100,
-            event_domain_boot_begin = EVENT_DOMAIN_BASE,
+            
+            event_general_task = EVENT_DOMAIN_BASE,
+            event_general_sub_task,
+
+            event_domain_boot_begin,
             event_domain_boot_end,
             event_domain_shutdown_begin,
             event_domain_shutdown_end,
@@ -205,6 +210,10 @@ namespace casual
             gateway_inbound_connect, 
 
             gateway_outbound_connect_done,
+
+            gateway_outbound_rediscover_request,
+            gateway_outbound_rediscover_reply, 
+
 
             gateway_domain_connect_request  = 7200,
             gateway_domain_connect_reply    = 7201,

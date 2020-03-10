@@ -109,34 +109,30 @@ namespace casual
                using input_type = typename TestFixture::input_type;
                using output_type = typename TestFixture::output_type;
 
-               message::service::Advertise serverConnect;
+               message::service::Advertise advertise;
 
                const auto ipc = strong::ipc::id{ uuid::make()};
 
-               serverConnect.process.ipc = ipc;
+               advertise.process.ipc = ipc;
 
-               traits::iterable::value_t< decltype( serverConnect.services)> service;
-
-               //message::Service service;
+               traits::iterable::value_t< decltype( advertise.services.add)> service;
 
                service.name = "service1";
-               serverConnect.services.push_back( service);
+               advertise.services.add.push_back( service);
 
                service.name = "service2";
-               serverConnect.services.push_back( service);
+               advertise.services.add.push_back( service);
 
                service.name = "service3";
-               serverConnect.services.push_back( service);
+               advertise.services.add.push_back( service);
 
 
-               auto complete = serialize::native::complete( serverConnect, output_type{});
-
+               auto complete = serialize::native::complete( advertise, output_type{});
                message::service::Advertise result;
-
                serialize::native::complete( complete, result, input_type{});
 
                EXPECT_TRUE( result.process.ipc == ipc) << result.process.ipc;
-               EXPECT_TRUE( result.services.size() == 3) << result.services.size();
+               EXPECT_TRUE( result.services.add.size() == 3) << result.services.add.size();
 
             }
 
@@ -148,26 +144,26 @@ namespace casual
                using input_type = typename TestFixture::input_type;
                using output_type = typename TestFixture::output_type;
 
-               message::service::Advertise serverConnect;
+               message::service::Advertise advertise;
 
                const auto ipc = strong::ipc::id{ uuid::make()};
 
-               serverConnect.process.ipc = ipc;
+               advertise.process.ipc = ipc;
 
 
-               traits::iterable::value_t< decltype( serverConnect.services)> service;
+               traits::iterable::value_t< decltype( advertise.services.add)> service;
 
                service.name = "service1";
-               serverConnect.services.resize( 10000, service);
+               advertise.services.add.resize( 10000, service);
 
-               auto complete = serialize::native::complete( serverConnect, output_type{});
+               auto complete = serialize::native::complete( advertise, output_type{});
 
                message::service::Advertise result;
 
                serialize::native::complete( complete, result, input_type{});
 
                EXPECT_TRUE( result.process.ipc == ipc) << result.process.ipc;
-               EXPECT_TRUE( result.services.size() == 10000) << result.services.size();
+               EXPECT_TRUE( result.services.add.size() == 10000) << result.services.add.size();
 
             }
 

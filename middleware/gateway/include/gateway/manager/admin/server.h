@@ -8,9 +8,6 @@
 #pragma once
 
 
-
-#include "gateway/manager/admin/vo.h"
-
 #include "common/server/argument.h"
 
 namespace casual
@@ -28,7 +25,8 @@ namespace casual
             {
                namespace name
                {
-                  constexpr auto state() { return ".casual/gateway/state";}
+                  constexpr auto state = ".casual/gateway/state";
+                  constexpr auto rediscover = ".casual/gateway/rediscover";
                } // name
             } // service
 

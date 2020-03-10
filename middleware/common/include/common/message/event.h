@@ -55,6 +55,54 @@ namespace casual
 
             } // subscription
 
+            namespace general
+            {
+               template< Type type>
+               struct basic_task : basic_event< type>
+               {
+                  using basic_event< type>::basic_event;
+
+                  enum class State : short
+                  {
+                     started,
+                     success,
+                     warning,
+                     error,
+                  };
+
+                  State state = State::success;
+                  std::string description;
+
+                  bool done() const { return state != State::started;}
+
+                  CASUAL_CONST_CORRECT_SERIALIZE({
+                     basic_event< type>::serialize( archive);
+                     CASUAL_SERIALIZE( state);
+                     CASUAL_SERIALIZE( description);
+                  })
+
+                  inline friend std::ostream& operator << ( std::ostream& out, State state)
+                  {
+                     switch( state)
+                     {
+                        case State::started: return out << "started";
+                        case State::success: return out << "success";
+                        case State::warning: return out << "warning";
+                        case State::error: return out << "error";
+                     }
+                     return out << "<unknown>";
+                  }
+               };
+
+               using Task = basic_task< Type::event_general_task>;
+
+               namespace sub
+               {
+                  using Task = general::basic_task< Type::event_general_sub_task>;                  
+               } // sub
+
+            } // general
+
             namespace domain
             {
                namespace task
@@ -313,6 +361,12 @@ namespace casual
                };
         
             } // service
+
+            namespace terminal
+            {
+               std::ostream& print( std::ostream& out, const general::Task& event);
+               std::ostream& print( std::ostream& out, const general::sub::Task& event);
+            } // terminal
             
             } // inline v1
          } // event
@@ -321,6 +375,12 @@ namespace casual
          {
             namespace event
             {
+               template< typename Message>
+               constexpr bool message()
+               {
+                  return Message::type() > Type::EVENT_BASE && Message::type() < Type::EVENT_BASE_END; 
+               }
+
                template< typename M>
                constexpr bool message( M&& message)
                {

@@ -201,7 +201,7 @@ namespace casual
                      // highest possible order
                      message.order = std::numeric_limits< std::decay_t< decltype( message.order)>>::max();
 
-                     algorithm::transform( state.lookup, message.services, []( auto& l){
+                     algorithm::transform( state.lookup, message.services.add, []( auto& l){
                         message::service::concurrent::advertise::Service service;
                         service.category = "http";
                         service.name = l.first;

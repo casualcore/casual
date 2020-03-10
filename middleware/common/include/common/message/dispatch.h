@@ -224,10 +224,10 @@ namespace casual
                   while( ! done())
                   {
                      while( handler( device.next( types, typename device_type::non_blocking_policy{})))
-                        ; // no op
-
-                     if( done())
-                        return;
+                     {
+                        if( done())
+                           return;
+                     }
 
                      // we block
                      handler( device.next( types, typename device_type::blocking_policy{}));

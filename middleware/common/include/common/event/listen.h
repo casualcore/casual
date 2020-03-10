@@ -12,6 +12,7 @@
 
 #include "common/communication/ipc.h"
 #include "common/execute.h"
+#include "common/functional.h"
 
 
 namespace casual
@@ -30,7 +31,8 @@ namespace casual
             handler_type subscribe( handler_type&& handler);
 
             void listen( device_type& device, handler_type&& handler);
-            void listen( device_type& device, std::function< void()> empty, handler_type&& handler);
+            void listen( device_type& device, function< void()> empty, handler_type&& handler);
+            void listen( device_type& device, function< void()> once, function< bool()> done, handler_type&& handler);
 
          } // detail
 
@@ -70,20 +72,20 @@ namespace casual
          namespace idle
          {
             template< typename... Callback>
-            void listen( device_type& device, std::function< void()> empty, Callback&&... callbacks)
+            void listen( device_type& device, function< void()> empty, Callback&&... callbacks)
             {
                detail::listen( device, empty, device.handler( std::forward< Callback>( callbacks)...));
             }
 
             template< typename Device, typename... Callback>
-            auto listen( Device& device, std::function< void()> empty, Callback&&... callbacks) 
+            auto listen( Device& device, function< void()> empty, Callback&&... callbacks) 
                ->  decltype( detail::listen( device.device(), empty, device.handler( std::forward< Callback>( callbacks)...), device.error_handler()))
             {
                detail::listen( device.device(), empty, device.handler( std::forward< Callback>( callbacks)...), device.error_handler());
             }
 
             template< typename... Callback>
-            void listen( std::function< void()> empty, Callback&&... callbacks)
+            void listen( function< void()> empty, Callback&&... callbacks)
             {
                listen( communication::ipc::inbound::device(), std::move( empty), std::forward< Callback>( callbacks)...);
             }
@@ -96,7 +98,7 @@ namespace casual
                namespace detail
                {
                   void listen( device_type& device, handler_type&& handler);
-                  void conditional( device_type& device, std::function< bool()> done, handler_type&& handler);
+                  void conditional( device_type& device, function< bool()> done, handler_type&& handler);
                } // detail
 
                template< typename... Callback>
@@ -107,7 +109,7 @@ namespace casual
 
                //! blocks until `done` is true
                template< typename... Callback>
-               void conditional( std::function< bool()> done, Callback&&... callbacks)
+               void conditional( function< bool()> done, Callback&&... callbacks)
                {
                   detail::conditional( communication::ipc::inbound::device(), std::move( done), { std::forward< Callback>( callbacks)...});
                }
@@ -116,11 +118,12 @@ namespace casual
 
          namespace conditional
          {
-            //! register and listen to events until `done` returns true
+
+            //! register and calls `once` before start listening to events,  until `done` returns true
             template< typename... Callback>
-            void listen( std::function< bool()> done, Callback&&... callbacks)
+            void listen( function< void()> once, function< bool()> done, Callback&&... callbacks)
             {
-               detail::listen( communication::ipc::inbound::device(), std::move( done), std::forward< Callback>( callbacks)...);
+               detail::listen( communication::ipc::inbound::device(), std::move( once), std::move( done), { std::forward< Callback>( callbacks)...});
             }
 
          } // conditional

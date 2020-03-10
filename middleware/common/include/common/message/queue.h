@@ -246,10 +246,7 @@ namespace casual
                   };
 
                } // forget
-
-
             } // dequeue
-
 
             struct Queue
             {
@@ -368,9 +365,7 @@ namespace casual
 
                namespace queues
                {
-
                   using Request = common::message::basic_request< Type::queue_queues_information_request>;
-
                   using Reply = basic_information< Type::queue_queues_information_reply>;
 
                } // queues
@@ -515,8 +510,8 @@ namespace casual
                   {
                      Queue() = default;
 
-                     Queue( std::string name, size_type retries) : name{ std::move( name)}, retries{ retries} {}
-                     Queue( std::string name) : name{ std::move( name)} {}
+                     inline Queue( std::string name, size_type retries) : name{ std::move( name)}, retries{ retries} {}
+                     inline Queue( std::string name) : name{ std::move( name)} {}
 
                      std::string name;
                      size_type retries = 0;
@@ -527,7 +522,6 @@ namespace casual
                         CASUAL_SERIALIZE( retries);
                      })
                   };
-                  static_assert( traits::is_movable< Queue>::value, "not movable");
                } // advertise
                
                using base_advertise = basic_request< Type::queue_advertise>;
@@ -535,37 +529,32 @@ namespace casual
                {
                   using base_advertise::base_advertise;
 
-                  enum class Directive : short
-                  {
-                     add,
-                     remove,
-                     replace
-                  };
-
-                  inline friend std::ostream& operator << ( std::ostream& out, Directive value)
-                  {
-                     switch( value)
-                     {
-                        case Directive::add: return out << "add";
-                        case Directive::remove: return out << "remove";
-                        case Directive::replace: return out << "replace";
-                     } 
-                     return out << "unknown";
-                  }
-
                   platform::size::type order = 0;
-                  std::vector< advertise::Queue> queues;
-                  Directive directive = Directive::add;
+
+                  struct
+                  {
+                     std::vector< advertise::Queue> add;
+                     std::vector< std::string> remove;
+
+                     CASUAL_CONST_CORRECT_SERIALIZE(
+                     {
+                        CASUAL_SERIALIZE( add);
+                        CASUAL_SERIALIZE( remove);
+                     })
+                  } queues;
+
+                  //! indicate to remove all current advertised queues, and replace with content in this message
+                  bool reset = false;
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
                   {
                      base_advertise::serialize( archive);
-                     CASUAL_SERIALIZE( directive);
                      CASUAL_SERIALIZE( order);
                      CASUAL_SERIALIZE( queues);
+                     CASUAL_SERIALIZE( reset);
                   })
                };
-               static_assert( traits::is_movable< Advertise>::value, "not movable");
+
             } // concurrent
 
             struct Affected

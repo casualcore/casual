@@ -4,11 +4,9 @@
 //! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-
-#include <gtest/gtest.h>
 #include "common/unittest.h"
 
-#include "gateway/manager/admin/vo.h"
+#include "gateway/manager/admin/model.h"
 #include "gateway/manager/admin/server.h"
 
 
@@ -76,12 +74,12 @@ domain:
             namespace call
             {
 
-               manager::admin::vo::State state()
+               manager::admin::model::State state()
                {
                   serviceframework::service::protocol::binary::Call call;
-                  auto reply = call( manager::admin::service::name::state());
+                  auto reply = call( manager::admin::service::name::state);
 
-                  manager::admin::vo::State result;
+                  manager::admin::model::State result;
                   reply >> CASUAL_NAMED_VALUE( result);
 
                   return result;
@@ -92,7 +90,7 @@ domain:
                {
                   namespace ready
                   {
-                     manager::admin::vo::State state()
+                     manager::admin::model::State state()
                      {
                         auto state = local::call::state();
 
@@ -103,8 +101,8 @@ domain:
                            if( state.connections.empty())
                               return false;
 
-                           return algorithm::all_of( state.connections, []( const manager::admin::vo::Connection& c){
-                              return c.runlevel >= manager::admin::vo::Connection::Runlevel::online &&
+                           return algorithm::all_of( state.connections, []( const manager::admin::model::Connection& c){
+                              return c.runlevel >= manager::admin::model::Connection::Runlevel::online &&
                                  c.process == communication::instance::ping( c.process.ipc);
                            });
                         };
@@ -146,8 +144,8 @@ domain:
          auto state = local::call::wait::ready::state();
 
          EXPECT_TRUE( state.connections.size() == 2);
-         EXPECT_TRUE( algorithm::any_of( state.connections, []( const manager::admin::vo::Connection& c){
-            return c.bound == manager::admin::vo::Connection::Bound::out;
+         EXPECT_TRUE( algorithm::any_of( state.connections, []( const manager::admin::model::Connection& c){
+            return c.bound == manager::admin::model::Connection::Bound::out;
          }));
       }
 
@@ -324,7 +322,7 @@ domain:
          // Gateway is connected to it self. Hence we can send a request to the outbound, and it
          // will send it to the corresponding inbound, and back in the current (mockup) domain
 
-         ASSERT_TRUE( state.connections.at( 0).bound == manager::admin::vo::Connection::Bound::out);
+         ASSERT_TRUE( state.connections.at( 0).bound == manager::admin::model::Connection::Bound::out);
          auto outbound =  state.connections.at( 0).process;
 
          const auto payload = unittest::random::binary( 1000);

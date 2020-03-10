@@ -18,6 +18,19 @@ namespace casual
    {
       namespace event
       {
+         namespace detail
+         {
+            void send( communication::message::Complete&& complete)
+            {
+               Trace trace{ "common::domain::event::detail::send"};
+
+               // We block all signals but SIG_INT
+               signal::thread::scope::Mask block{ signal::set::filled( code::signal::interrupt)};
+
+               communication::ipc::blocking::put( communication::instance::outbound::domain::manager::device(), complete);
+            }
+         } // detail
+
 
          namespace error
          {
