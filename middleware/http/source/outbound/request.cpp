@@ -246,6 +246,14 @@ namespace casual
                
                curl::easy::set::option( easy, CURLOPT_URL, node.url.data());
                curl::easy::set::option( easy, CURLOPT_FOLLOWLOCATION, 1L);
+
+                // connection stuff
+               {
+                  // TODO performance: there probably exists a better way than to reconnect,
+                  //  but in "some" network stacks request gets lost, and no _failure_ is detected. 
+                  curl::easy::set::option( easy, CURLOPT_FRESH_CONNECT, 1L);
+               }
+
                
                // always POST? probably...
                curl::easy::set::option( easy, CURLOPT_POST, 1L);
