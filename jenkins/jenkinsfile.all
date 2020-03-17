@@ -9,7 +9,7 @@
 //
 def retrieve_major_minor()
 {
-   def version_finder = env.BRANCH_NAME =~ /\s+\/([0-9\.]+)\/?\s*/
+   def version_finder = env.BRANCH_NAME =~ /\S+?\/([0-9\.]+)\/?\S*/
    if ( version_finder.size() == 1 )
    {
       return version_finder[0][1]
