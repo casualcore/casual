@@ -5,9 +5,17 @@
 //
 
 //
-// Current version
+// Extract current version
 //
-env.CASUAL_VERSION="1.2.0"
+def retrieve_major_minor()
+{
+   def version_finder = env.BRANCH_NAME =~ /\s+\/([0-9\.]+)\/?\s*/
+   if ( version_finder.size() == 1 )
+   {
+      return version_finder[0][1]
+   }
+   throw new Exception(env.BRANCH_NAME + " not supported format for pipeline builds")
+}
 
 def isMaster()
 {
@@ -16,12 +24,17 @@ def isMaster()
 
 def isDevelop()
 {
-   return env.BRANCH_NAME == "develop"
+   return ( env.BRANCH_NAME.startsWith("feature/") && env.BRANCH_NAME.endsWith("/dev") )
 }
 
 def isRelease()
 {
    return env.BRANCH_NAME.startsWith("release/")
+}
+
+def isFeature()
+{
+   return env.BRANCH_NAME.startsWith("release/") && !env.BRANCH_NAME.endsWith("/dev")
 }
 
 def isPublishable()
@@ -33,28 +46,59 @@ def isPublishable()
    return false
 }
 
+def normalizeBranchName( string)
+{
+   return string.replaceAll("feature/","").replaceAll("/","_").replaceAll("-", "_") 
+}
+
 def rpmRelease()
 {
-   if (isDevelop())
-      return "beta." + env.BUILD_NUMBER
-   if ( isRelease())
-      return env.BUILD_NUMBER
-   return "alpha." + env.BUILD_NUMBER
+   return env.CASUAL_RELEASE
 }
 
 def selectExtendedVersion()
 {
    if (isDevelop())
-      return "-beta." + env.BUILD_NUMBER
+      return "-" + env.CASUAL_RELEASE
    if ( isRelease())
       return ""
-   return "-alpha." + env.BUILD_NUMBER
+   return "-" + env.CASUAL_RELEASE
 }
 
 def totalVersion()
 {
     return env.CASUAL_VERSION + selectExtendedVersion()
 }
+
+def setCurrentVersionAndRelease()
+{
+   if ( isRelease())
+   {
+      // 1.2.3
+      env.CASUAL_VERSION = retrieve_major_minor().concat('.').concat(env.BUILD_NUMBER)
+      env.CASUAL_RELEASE = "1"
+   }
+   else if (isDevelop())
+   {
+      // 1.2-beta.buildnumber
+      env.CASUAL_VERSION = retrieve_major_minor()
+      env.CASUAL_RELEASE = "beta." + env.BUILD_NUMBER
+   }
+   else if (isFeature())
+   {
+      // 1.2-beta.buildnumber
+      env.CASUAL_VERSION = retrieve_major_minor()
+      env.CASUAL_RELEASE = "alpha." + normalizeBranchName(env.BRANCH_NAME) + "." + env.BUILD_NUMBER
+   }
+   else
+   {
+      throw new Exception( "Branch name " + env.BRANCH_NAME + " not supported in builds")
+   }
+}
+
+setCurrentVersionAndRelease()
+
+
 
 def common_backend_builder = '''
 umask 000
