@@ -351,6 +351,22 @@ namespace casual
          {
             manager::admin::model::State result;
 
+            auto transform_runlevel = []( auto runlevel)
+            {
+               using Result = manager::admin::model::state::Runlevel;
+               switch( runlevel)
+               {
+                  using Source = decltype( runlevel);
+                  case Source::startup: return Result::startup;
+                  case Source::running: return Result::running;
+                  case Source::shutdown: return Result::shutdown;
+                  case Source::error: return Result::error;
+               }
+               return Result::error;
+            };
+
+            result.runlevel = transform_runlevel( state.runlevel());
+
             result.version = local::model::version();
             result.identity = common::domain::identity();
 

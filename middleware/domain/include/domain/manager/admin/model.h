@@ -196,8 +196,20 @@ namespace casual
                      )
                   };
 
+                  namespace state
+                  {
+                     enum class Runlevel : int
+                     {
+                        startup = 0,
+                        running = 1,
+                        shutdown = 2,
+                        error = 3,
+                     };
+                  } // state
+
                   struct State
                   {
+                     state::Runlevel runlevel = state::Runlevel::startup;
                      model::Version version; 
                      common::domain::Identity identity;
                      std::vector< model::Group> groups;
@@ -229,6 +241,7 @@ namespace casual
 
                      CASUAL_CONST_CORRECT_SERIALIZE(
                      {
+                        CASUAL_SERIALIZE( runlevel);
                         CASUAL_SERIALIZE( version);
                         CASUAL_SERIALIZE( identity);
                         CASUAL_SERIALIZE( groups);
