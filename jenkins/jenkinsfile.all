@@ -34,7 +34,7 @@ def isRelease()
 
 def isFeature()
 {
-   return env.BRANCH_NAME.startsWith("release/") && !env.BRANCH_NAME.endsWith("/dev")
+   return env.BRANCH_NAME.startsWith("feature/") && !env.BRANCH_NAME.endsWith("/dev")
 }
 
 def isPublishable()
