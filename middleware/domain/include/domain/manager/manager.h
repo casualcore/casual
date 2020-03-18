@@ -19,20 +19,14 @@ namespace casual
          {
             std::vector< std::string> configurationfiles;
 
-            std::vector< std::string> events;
-
             bool bare = false;
             bool persist = false;
 
-            inline void event( const std::string& id) 
+            struct
             {
-               m_event = common::strong::ipc::id{ common::Uuid{ id}};
-            }
-            auto event() const { return m_event;};
-
-
-         private:
-            common::strong::ipc::id m_event;
+               common::strong::ipc::id ipc;
+               common::Uuid id;
+            } event;
          };
 
 

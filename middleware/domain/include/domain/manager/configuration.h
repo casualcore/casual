@@ -31,8 +31,8 @@ namespace casual
             //auto replace( casual::configuration::domain::Manager configuration);
 
             //! if element(s) _keys_ is found, there will be an update, otherwise the element(s) will be added
-            //! @return Tasks that fullfills the 'put'
-            std::vector< admin::model::Task> put( State& state, casual::configuration::domain::Manager configuration);
+            //! @return id's of tasks that fullfills the 'put'
+            std::vector< common::Uuid> put( State& state, casual::configuration::domain::Manager configuration);
 
          } // configuration
       } // manager

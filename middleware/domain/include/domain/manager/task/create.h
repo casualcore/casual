@@ -20,38 +20,20 @@ namespace casual
          {
             namespace create
             {
-               namespace restart
-               {
-                  manager::Task server( State& state, state::Server::id_type id);
-                  manager::Task executable( State& state, state::Executable::id_type id);
-               } // restart
-
                namespace scale
                {
-                  manager::Task server( const State& state, state::Server::id_type id);
-                  manager::Task executable( const State& state, state::Executable::id_type id);
+                  manager::Task boot( std::vector< state::dependency::Group> groups, common::Uuid correlation);
+                  manager::Task shutdown( std::vector< state::dependency::Group> groups);
 
-                  std::vector< manager::Task> dependency( const State& state, std::vector< state::dependency::Group> groups);
+                  manager::Task aliases( std::string description, std::vector< state::dependency::Group> groups);
+                  manager::Task aliases( std::vector< state::dependency::Group> groups);
+                  
                } // scale
 
-
-               //! groups tasks into a sequential task with the most restrictive Completion of all tasks 
-               manager::Task group( std::string description, std::vector< manager::Task>&& tasks);
-;
-
-               namespace done
-               {  
-                  // sentinel when the boot (all batches) is done
-                  manager::Task boot();
-
-                  // sentinel when the shutdown (all batches) is done
-                  manager::Task shutdown();
-                  
-               } // done
-
-
-               //! "trigger" to shutdown the domain
-               manager::Task shutdown();
+               namespace restart
+               {
+                  manager::Task aliases( std::vector< state::dependency::Group> groups);
+               } // restart
 
             } // create
          } // task

@@ -41,12 +41,9 @@ namespace casual
                // We block all signals but SIG_INT
                signal::thread::scope::Mask block{ signal::set::filled( code::signal::interrupt)};
 
-               message::event::domain::Error error;
+               message::event::Error error{ process::handle()};
                error.message = std::move( message);
                error.severity = severity;
-               error.executable = process::basename();
-               error.pid = process::id();
-               error.process = process::handle();
 
                communication::ipc::blocking::send( communication::instance::outbound::domain::manager::device(), error);
             }

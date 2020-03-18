@@ -29,207 +29,337 @@ namespace casual
                {
                   namespace
                   {
-                     namespace detail
-                     {
-                        template< typename C> 
-                        void back( C& container, task::id::type) {}
-
-                        template< typename C, typename T, typename... Ts> 
-                        void back( C& container, task::id::type id, T&& t, Ts&&... ts)
-                        {
-                           container.emplace_back( id, std::forward< T>( t)); 
-                           back( container, id, std::forward< Ts>( ts)...);
-                        }
-                     } // detail
-
                      template< typename... Ts>
-                     auto callbacks( task::id::type id, Ts&&... ts)
+                     auto callbacks( Ts&&... ts)
                      {
-                        std::vector< manager::task::event::Callback> result;
-                        detail::back( result, id, std::forward< Ts>( ts)...);
-                        return result;
+                        return algorithm::container::emplace::initialize< std::vector< manager::task::event::Callback>>( std::forward< Ts>( ts)...);
                      }
                   } // <unnamed>
                } // local
                namespace restart
                {
-                  manager::Task server( State& state, state::Server::id_type id)
-                  {
-                     Trace trace{ "domain::manager::task::create::restart::server"};
-                     auto& server = state.entity( id);
+                 namespace local
+                 {
+                    namespace
+                    {
+                       namespace progress
+                       {
+                          namespace transform
+                          {
+                             template< typename E>
+                             auto entity( State& state)
+                             {
+                                 return [&state]( auto id)
+                                 {
+                                    auto& entity = state.entity( id);
+                                    
+                                    E result;
+                                    result.id = id;
+                                    result.restart = std::exchange( entity.restart, true);
 
-                     log::line( verbose::log, "server: ", server);
+                                    log::line( verbose::log, "entity: ", entity);
 
-                     // we rely on the restart functionality, but we need to reset to the 
-                     // origin when done
-                     const auto restart = std::exchange( server.restart, true);
+                                    result.handles = algorithm::transform_if( 
+                                       entity.instances, 
+                                       []( auto& i){ return i.handle;},
+                                       []( auto& i){ return i.state == decltype( i.state)::running;});
 
-                     auto handles = algorithm::transform_if( 
-                        server.instances, 
-                        []( auto& i){ return i.handle;},
-                        []( auto& i){ return i.state == state::Server::state_type::running;});
+                                    return result;
+                                 };
 
-                     auto task = [ server_id = id, restart, handles = std::move( handles)]( State& state, manager::task::id::type id) mutable 
-                        -> std::vector< manager::task::event::Callback>
-                     {
-                        Trace trace{ "domain::manager::handle::restart::local::task::server Task"};
-                        log::line( verbose::log, "task: ", id, "handles: ", handles, ", server-id: ", server_id, ", restart: ", restart);
+                             }
+                          } // transform
 
-                        //auto& server = state.entity( server_id);
-                        //algorithm::trim( handles, std::get< 0>( algorithm::intersection( handles, server.instances)));
+                          namespace restore
+                          {
+                             auto restart( State& state)
+                             {
+                                return [&state]( auto& current)
+                                {
+                                   auto& entity = state.entity( current.id);
+                                   entity.restart = current.restart;
+                                };
+                             }
+                          } // restore
+                          
+                       } // progress
 
-                        if( handles.empty())
-                           return {};
-
-                        // shutdown the last one, we do this in reverse order.
-                        handle::scale::shutdown( state, { handles.back()});
-
-                        // create the callback
-                        return local::callbacks( id,
-                           [ &handles]( const common::message::event::process::Exit& message)
+                       struct Progress
+                       {
+                           Progress( std::vector< state::dependency::Group> groups) : groups{ std::move( groups)} 
                            {
-                              Trace trace{ "domain::manager::handle::restart::local::task::server process::Exit"};
-                              log::line( verbose::log, "message: ", message);
+                              algorithm::reverse( this->groups);
+                           }
 
-                              // we 'tag' the ipc to _empty_ so we can correlate when we get the server connect.
-                              // note: even if the calback below is not the one who has triggered the shutdown,
-                              //  we still handle the events, and it will work.
-                              if( auto found = algorithm::find( handles, message.state.pid))
-                                 found->ipc = strong::ipc::id{};
-
-                              log::line( verbose::log, "handles: ", handles);
-
-                           },
-                           [ task_id = id, server_id, restart, &state, &handles]( const common::message::event::domain::server::Connect& message)
+                           //! @returns true if we're 'done'
+                           bool next( State& state, const manager::task::Context& context)
                            {
-                              Trace trace{ "domain::manager::handle::restart::local::task::server server::Connect"};
-                              log::line( verbose::log, "message: ", message);
+                              Trace trace{ "domain::manager::task::create::restart::aliases::local::Progreass::next"};
 
-                              auto& server = state.entity( server_id);
+                              while( ! groups.empty() && current.empty())
+                              {
+                                 auto group = std::move( groups.back());
+                                 groups.pop_back();
+                                 current = Current{ state, std::move( group)};
+                              }
+                                 
+                              if( done())
+                                 return true;
 
-                              if( ! algorithm::find( server.instances, message.process.pid))
-                                 return;
-
-                              // a server instance that we're interseted in has connected, remove the tagged ones (one)
-                              // and scale "down" another one, if any.
-
-                              auto has_tag = []( auto& handle){ return handle.ipc.empty();};
+                              current.start( state);
                               
-                              algorithm::trim( handles, algorithm::remove_if( handles, has_tag));
+                              return false;
+                           }
 
-                              if( handles.empty())
-                              {
-                                 // reset the restart
-                                 state.entity( server_id).restart = restart;
-                                 manager::task::done( state, task_id);
-                              }
-                              else 
-                                 handle::scale::shutdown( state, { handles.back()});
-                           });
-                     };
+                           bool done() const { return groups.empty() && current.empty();}
 
-                     // this task is concurrent-abortable
-                     return manager::Task{ string::compose( "restart server: ", server.alias), std::move( task), 
-                        {
-                           Task::Property::Execution::concurrent,
-                           Task::Property::Completion::abortable
-                        }};
-                  }
-
-                  manager::Task executable( State& state, state::Executable::id_type id)
-                  {
-                     Trace trace{ "domain::manager::task::create::restart::executable"};
-
-                     auto& executable = state.entity( id);
-                     log::line( verbose::log, "executable: ", executable);
-
-                     // we rely on the restart functionality, but we need to reset to the 
-                     // origin when done
-                     const auto restart = std::exchange( executable.restart, true);
-
-                     auto pids = algorithm::transform_if( 
-                        executable.instances, 
-                        []( auto& i){ return i.handle;},
-                        []( auto& i){ return i.state == state::Server::state_type::running;});
-
-                     auto task = [executable_id = id, restart = restart, pids = std::move( pids)]( State& state, manager::task::id::type id) mutable
-                         -> std::vector< manager::task::event::Callback>
-                     {
-                        Trace trace{ "domain::manager::task::create::restart::executable start"};
-                        log::line( verbose::log, "task: ", id, ", handles: ", pids, ", executable-id: ", executable_id, ", restart: ", restart);
-
-                        auto& executable = state.entity( executable_id);
-                        algorithm::trim( pids, std::get< 0>( algorithm::intersection( pids, executable.instances)));
-
-                        if( pids.empty())
-                           return {};
-
-                        // start the termination (back to front).
-                        common::process::terminate( pids.back());
-
-                        // create the callback
-                        return local::callbacks( id,
-                           [ restart, task_id = id, executable_id, &state, &pids]( const common::message::event::process::Exit& message)
+                           
+                           bool operator() ( State& state, const manager::task::Context& context, const common::message::event::process::Exit& message)
                            {
-                              Trace trace{ "domain::manager::task::create::restart::executable process::Exit"};
+                              Trace trace{ "domain::manager::task::create::restart::aliases::local::Progreass::operator() process::Exit"};
                               log::line( verbose::log, "message: ", message);
 
-                              if( auto found = algorithm::find( pids, message.state.pid))
-                              {
-                                 log::line( verbose::log, "found: ", *found);
-                                 pids.erase( std::begin( found));
+                              current.handle( state, message);
+                              log::line( verbose::log, "progress: ", *this);
+                              
+                              if( current.empty())
+                                 return next( state, context);
+                              
+                              return done();
+                           }
 
-                                 // terminate the next one.
-                                 common::process::terminate( pids.back());
+                           bool operator() ( State& state, const manager::task::Context& context, const common::message::domain::process::connect::Request& message)
+                           {
+                              Trace trace{ "domain::manager::task::create::restart::aliases::local::Progreass::operator() process::connect::Request"};
+                              log::line( verbose::log, "message: ", message);
+                              
+                              current.handle( state, message);
+                              log::line( verbose::log, "progress: ", *this);
+
+                              if( current.empty())
+                                 return next( state, context);
+                              
+                              return done();
+                           }
+
+                           struct Current
+                           {
+                              struct Server
+                              {
+                                 state::Server::id_type id;
+                                 bool restart = false;
+                                 std::vector< common::process::Handle> handles;
+
+                                 void terminate( State& state)
+                                 {
+                                    handle::scale::shutdown( state, { handles.back()});
+                                 }
+
+                                 void handle( State& state, const common::message::event::process::Exit& message)
+                                 {
+                                    Trace trace{ "domain::manager::task::create::restart::aliases::local::Progreass::Current::Server::handle process::Exit"};
+
+                                    log::line( verbose::log, "TODO remove - state: ", state);
+
+                                    // we 'tag' the ipc to _empty_ so we can correlate when we get the server connect.
+                                    // note: even if this task is not the one who has triggered the shutdown,
+                                    //  we still handle the events, and it will work.
+                                    if( auto found = algorithm::find( handles, message.state.pid))
+                                       found->ipc = strong::ipc::id{};
+                                 }
+
+                                 void handle( State& state, const common::message::domain::process::connect::Request& message)
+                                 {
+                                    Trace trace{ "domain::manager::task::create::restart::aliases::local::Progreass::Current::Server::handle process::connect::Request"};
+
+                                    auto& server = state.entity( id);
+
+                                    // we're only interested in instances of this server
+                                    if( ! algorithm::find( server.instances, message.process.pid))
+                                       return;
+
+                                    // a server instance that we're interseted in has connected, remove the tagged ones (one)
+                                    // and scale "down" another one, if any.
+
+                                    auto has_tag = []( auto& handle){ return handle.ipc.empty();};
+                                    
+                                    algorithm::trim( handles, algorithm::remove_if( handles, has_tag));
+
+                                    if( ! handles.empty())
+                                       terminate( state);
+                                 }
+
+                                 CASUAL_LOG_SERIALIZE (
+                                    CASUAL_SERIALIZE( id);
+                                    CASUAL_SERIALIZE( restart);
+                                    CASUAL_SERIALIZE( handles);
+                                 )
+                              };
+
+                              struct Executable
+                              {
+                                 state::Executable::id_type id;
+                                 bool restart = false;
+                                 std::vector< strong::process::id> handles;
+
+                                 void terminate()
+                                 {
+                                    // start the termination (back to front).
+                                    common::process::terminate( handles.back());
+                                 }
+
+                                 void handle( const common::message::event::process::Exit& message)
+                                 {
+                                    Trace trace{ "domain::manager::task::create::restart::aliases::local::Progreass::Current::Executable::handle process::Exit"};
+
+                                    if( auto found = algorithm::find( handles, message.state.pid))
+                                    {
+                                       log::line( verbose::log, "found: ", *found);
+                                       handles.erase( std::begin( found));
+
+                                       if( ! handles.empty())
+                                          terminate();
+                                    }
+                                 }
+
+                                 CASUAL_LOG_SERIALIZE (
+                                    CASUAL_SERIALIZE( id);
+                                    CASUAL_SERIALIZE( restart);
+                                    CASUAL_SERIALIZE( handles);
+                                 )
+                              };
+
+
+                              Current( State& state, state::dependency::Group&& group)
+                              {
+                                 algorithm::transform( group.servers, servers, local::progress::transform::entity< Server>( state));
+                                 algorithm::transform( group.executables, executables, local::progress::transform::entity< Executable>( state));
+
+                                 clean( state);
                               }
 
-                              // are we done?
-                              if( pids.empty())
+                              void start( State& state)
                               {
-                                 // reset the restart
-                                 state.entity( executable_id).restart = restart;
-                                 manager::task::done( state, task_id);
+                                 algorithm::for_each( servers, [&state]( auto& entity){ entity.terminate( state);});
+                                 algorithm::for_each( executables, []( auto& entity){ entity.terminate();});
                               }
-                           });
-                     };
 
-                     // this task is concurrent-abortable
-                     return manager::Task{ string::compose( "restart executable: ", executable.alias), std::move( task),
+                              void handle( State& state, const common::message::event::process::Exit& message)
+                              {
+                                 algorithm::for_each( servers, [&state, &message]( auto& entity){ entity.handle( state, message);});
+                                 algorithm::for_each( executables, [&message]( auto& entity){ entity.handle( message);});
+
+                                 clean( state);
+                              }
+                              
+                              void handle( State& state, const common::message::domain::process::connect::Request& message)
+                              {
+                                 algorithm::for_each( servers, [&state, &message]( auto& entity){ entity.handle( state, message);});
+
+                                 clean( state);
+                              }
+
+                              void clean( State& state)
+                              {
+                                 auto clean = [&state]( auto& entities)
+                                 {
+                                    auto is_active = []( auto& entity){ return ! entity.handles.empty();};
+
+                                    auto split = algorithm::partition( entities, is_active);
+                                    algorithm::for_each( std::get< 1>( split), local::progress::restore::restart( state));
+                                    algorithm::trim( entities, std::get< 0>( split));
+                                 };
+
+                                 clean( servers);
+                                 clean( executables);
+                              }
+
+                              Current() = default;
+
+                              std::vector< Server> servers;
+                              std::vector< Executable> executables;
+
+                              inline bool empty() const { return servers.empty() && executables.empty();}
+
+                              CASUAL_LOG_SERIALIZE (
+                                 CASUAL_SERIALIZE( servers);
+                                 CASUAL_SERIALIZE( executables);
+                              )
+
+                           };
+
+                           std::vector< state::dependency::Group> groups;
+                           Current current;
+
+                           CASUAL_LOG_SERIALIZE({
+                              CASUAL_SERIALIZE( groups);
+                              CASUAL_SERIALIZE( current);
+                           })
+
+                       };
+
+                       auto task( std::vector< state::dependency::Group> groups)
+                       {
+                          Trace trace{ "domain::manager::task::create::restart::aliases::local::task create"};
+
+                           return [ progress = Progress{ std::move( groups)}]( State& state, const manager::task::Context& context) mutable 
+                              -> std::vector< manager::task::event::Callback>
+                           {
+                              Trace trace{ "domain::manager::task::create::restart::aliases::local::task start"};
+                              log::line( verbose::log, "progress", progress);
+
+                              // We start the progress, we could be 'done' directly...
+                              if( progress.next( state, context))
+                                 return {};
+
+                              auto wrapper = [&progress, &state, &context]( auto& message)
+                              {
+                                 return progress( state, context, message);
+                              };
+
+                              return create::local::callbacks( 
+                                 [ wrapper]( const common::message::event::process::Exit& message)
+                                 {
+                                    return wrapper( message);
+                                 },
+                                 [ wrapper]( const common::message::domain::process::connect::Request& message)
+                                 {
+                                    return wrapper( message);
+                                 }
+                              );
+                           };
+
+                       }
+                    } // <unnamed>
+                 } // local
+
+                  manager::Task aliases( std::vector< state::dependency::Group> groups)
+                  {
+                     Trace trace{ "domain::manager::task::create::restart::aliases"};
+
+                     return manager::Task{ "restart aliases", local::task( std::move( groups)),
                         {
                            Task::Property::Execution::concurrent,
                            Task::Property::Completion::abortable
                         }};
                   }
-               } // restart
+       
 
+               } // restart
 
                namespace scale
                {
                   namespace local
                   {
-                     namespace
+                     namespace 
                      {
-                        template< typename ID>
-                        auto task( ID id)
+                        namespace group
                         {
-                           return [entity_id = id]( State& state, manager::task::id::type id) mutable 
-                              -> std::vector< manager::task::event::Callback>
+                           auto done( State& state, const state::dependency::Group& group)
                            {
-                              // start
+                              auto is_done = [&state]( auto id)
                               {
-                                 Trace trace{ "domain::manager::task::create::scale::local::task start"};
-
-                                 auto& entity = state.entity( entity_id);
-                                 log::line( verbose::log, "entity: ", entity);
-
-                                 // scale it
-                                 handle::scale::instances( state, entity);
-                              };
-
-                              // done when no instances are either scaling out or in
-                              auto is_done = [entity_id]( State& state)
-                              {
-                                 auto& entity = state.entity( entity_id);
+                                 auto& entity = state.entity( id);
 
                                  return algorithm::none_of( entity.instances, []( auto& i)
                                  {
@@ -238,237 +368,182 @@ namespace casual
                                  });
                               };
 
-                              
-                              // we could be done directly
-                              if( is_done( state))
-                              {
-                                 manager::task::done( state, id);
-                                 return {};
-                              }
-
-                              auto check_done = [id, is_done, &state]()
-                              {
-                                 if( is_done( state))
-                                    manager::task::done( state, id);
-                              };
-
-                              
-                              return create::local::callbacks( id,
-                                 [ check_done]( const common::message::event::process::Exit& message)
-                                 {
-                                    log::line( verbose::log, "process exit: ", message);
-                                    check_done();
-                                 },
-                                 [ check_done]( const common::message::event::process::Spawn& message)
-                                 {
-                                    log::line( verbose::log, "process spawn: ", message);
-                                    check_done();
-                                 },
-                                 [ check_done]( const message::event::domain::server::Connect& message)
-                                 {
-                                    log::line( verbose::log, "server connect: ", message);
-                                    check_done();
-                                 },
-                                 [ check_done]( const message::event::Idle& message)
-                                 {
-                                    log::line( verbose::log, "idle: ", message);
-                                    check_done();
-                                 }
-                              );
+                              return algorithm::all_of( group.servers, is_done) && algorithm::all_of( group.executables, is_done);
                            };
 
-                        }
+                           auto scale( State& state, const state::dependency::Group& group)
+                           {
+                              auto scale_entity = [&state]( auto id)
+                              {
+                                 Trace trace{ "domain::manager::task::create::local::scale::group::scale"};
+
+                                 auto& entity = state.entity( id);
+                                 log::line( verbose::log, "entity: ", entity);
+
+                                 // scale it
+                                 handle::scale::instances( state, entity);
+                              };
+
+                              algorithm::for_each( group.servers, scale_entity);
+                              algorithm::for_each( group.executables, scale_entity);
+                           }
+
+                           //! `done_callback` will be called when the task is done
+                           template< typename Done> 
+                           auto task( std::vector< state::dependency::Group> groups, Done done_callback)
+                           {
+                              Trace trace{ "domain::manager::task::create::local::scale::group::task create"};
+                              log::line( verbose::log, "groups", groups);
+
+                              return [done_callback = std::move( done_callback), groups = std::move( groups)]( State& state, const manager::task::Context& context) mutable 
+                                 -> std::vector< manager::task::event::Callback>
+                              {
+                                 Trace trace{ "domain::manager::task::create::local::scale::group::task start"};
+
+                                 // we remove all 'groups' that are done.
+                                 algorithm::trim( groups, algorithm::remove_if( groups, [&state]( auto& group){ return group::done( state, group);}));
+
+                                 // we could be done directly
+                                 if( groups.empty())
+                                    return {};
+
+                                 // we take state and groups by reference since we know that the task
+                                 // will outlive the callbacks
+                                 auto progress = [context, &state, &groups, &done_callback]()
+                                 {
+                                    // returns true if groups are done
+                                    auto consume = [&state, &context]( auto& groups)
+                                    {
+                                       auto split = algorithm::divide_if( groups, [&state]( auto& group){ return ! group::done( state, group);});
+
+                                       // TODO C++17
+                                       auto done = std::get< 0>( split);
+                                       auto remain = std::get< 1>( split);
+
+                                       // send sub-events, if any
+                                       algorithm::for_each( done, [&]( auto& group)
+                                       {
+                                          manager::task::event::dispatch( state, [&]()
+                                          {
+                                             common::message::event::sub::Task event{ common::process::handle()};
+                                             event.correlation = context.id;
+                                             event.description = group.description;
+                                             event.state = decltype( event.state)::done;
+                                             return event;
+                                          });
+                                       });
+                                       algorithm::trim( groups, remain);
+                                       return ! done.empty() && ! groups.empty();
+                                    };
+
+                                    while( consume( groups))
+                                    {
+                                       // we've made progress, done's are removed, we scale next
+                                       group::scale( state, groups.front());
+                                    }
+                                    
+                                    // if groups are empty, we're 'done'
+                                    if( ! groups.empty())
+                                       return false;
+                                    
+                                    done_callback( state);   
+                                    return true;                   
+                                 };
+
+                                 // we scale the first group (the back)
+                                 group::scale( state, groups.front());
+
+                                 // check the progress.
+                                 if( progress())
+                                    return {};
+
+                                 return create::local::callbacks( 
+                                    [ progress]( const common::message::event::process::Exit& message)
+                                    {
+                                       log::line( verbose::log, "process exit: ", message);
+                                       return progress();
+                                    },
+                                    [ progress]( const common::message::event::process::Spawn& message)
+                                    {
+                                       log::line( verbose::log, "process spawn: ", message);
+                                       return progress();
+                                    },
+                                    [ progress]( const common::message::domain::process::connect::Request& message)
+                                    {
+                                       log::line( verbose::log, "server connect: ", message);
+                                       return progress();
+                                    },
+                                    [ progress]( const common::message::event::Idle& message)
+                                    {
+                                       log::line( verbose::log, "idle: ", message);
+                                       return progress();
+                                    }
+                                 );
+
+                              };
+                           }
+
+                           auto task( std::vector< state::dependency::Group> groups)
+                           {
+                              return task( std::move( groups), []( auto& state){});
+                           }
+                           
+                        } // group  
                      } // <unnamed>
                   } // local
-
-                  manager::Task server( const State& state, state::Server::id_type id)
+     
+                  manager::Task boot( std::vector< state::dependency::Group> groups, common::Uuid correlation)
                   {
-                     Trace trace{ "domain::manager::task::create::scale::server"};
-                  
-                     // this task is concurrent-abortable
-                     return manager::Task{ string::compose( "scale server: ", state.entity( id).alias), local::task( id),
+                     Trace trace{ "domain::manager::task::create::scale::boot"};
+
+                     if( ! correlation)
+                        correlation = uuid::make();
+                     
+                     // make sure we sett runlevel when we're done.
+                     auto done_callback = []( State& state)
                      {
-                        Task::Property::Execution::concurrent,
-                        Task::Property::Completion::abortable
-                     }};
-                  }
-
-                  manager::Task executable( const State& state, state::Executable::id_type id)
-                  {
-                     Trace trace{ "domain::manager::task::create::scale::executable"};
-
-                     // this task is concurrent-abortable
-                     return manager::Task{ string::compose( "scale executable: ", state.entity( id).alias), local::task( id),
-                     {
-                        Task::Property::Execution::concurrent,
-                        Task::Property::Completion::abortable
-                     }};
-                  }
-
-                  std::vector< manager::Task> dependency( const State& state, std::vector< state::dependency::Group> groups)
-                  {
-                     Trace trace{ "domain::manager::task::create::dependency::scale"};
-
-                     auto transform_group = [&state]( auto& group)
-                     {
-                        auto result = algorithm::transform( group.servers, [&state]( auto id)
-                        {
-                           return task::create::scale::server( state, id);
-                        });
-
-                        algorithm::transform( group.executables, result, [&state]( auto id)
-                        {
-                           return task::create::scale::executable( state, id);
-                        });
-
-                        return task::create::group( std::move( group.description), std::move( result));
+                        state.runlevel( decltype( state.runlevel())::running);
                      };
 
-                     return algorithm::transform( groups, transform_group);
+                     auto description = string::compose( "boot domain ", common::domain::identity().name);
 
-                  }
-
-               } // scale
-
-               manager::Task group( std::string description, std::vector< manager::Task>&& tasks)
-               {
-                  Trace trace{ "domain::manager::task::create::group"};
-                  log::line( verbose::log, "description: ", description, ", tasks: ", tasks);
-
-                  auto restricted_completion = []( auto completion, auto& task)
-                  {
-                     return std::min( completion, task.property().completion);
-                  };
-               
-                  auto completion = algorithm::accumulate( tasks, Task::Property::Completion::abortable, restricted_completion);
-
-                  auto task = [ tasks = std::move( tasks)]( State& state, manager::task::id::type id) mutable 
-                     -> std::vector< manager::task::event::Callback>
-                  {
-                     auto result = local::callbacks( id,
-                        [&tasks, &state, id]( const common::message::event::domain::task::End& message)
-                        {
-                           Trace trace{ "domain::manager::task::create::group callback task::End"};
-                           log::line( verbose::log, "message: ", message);
-
-                           algorithm::trim( tasks, algorithm::remove( tasks, message.id));
-                           log::line( verbose::log, "tasks: ", tasks);
-
-                           if( tasks.empty())
-                              manager::task::done( state, id);
-                          
-                        }
-                     );
-
-                     auto append_callbacks = [&result, &state]( auto& task)
-                     {
-                        auto callbacks = task( state);
-                        algorithm::move( callbacks, std::back_inserter( result));
-                     };
-
-                     algorithm::for_each( tasks, append_callbacks);
-
-                     return result;
-                  };
-
-                  // create the group of tasks with sequential execution and the most restricted 
-                  // completion
-                  return manager::Task{ std::move( description), std::move( task),
-                  {
-                     Task::Property::Execution::sequential,
-                     completion
-                  }};
-
-
-               }
-
-               namespace done
-               {                    
-                  manager::Task boot()
-                  {
-                     Trace trace{ "domain::manager::task::create::done::boot"};
-
-                     auto task = []( State& state, manager::task::id::type id) 
-                        -> std::vector< manager::task::event::Callback>
-                     {
-                        Trace trace{ "domain::manager::task::create::done::boot task invoked"};
-
-                        state.runlevel( State::Runlevel::running);
-
-                        manager::task::done( state, id);
-
-                        // we might have listeners to this event
-                        task::event::dispatch( state, [&]()
-                        {
-                           message::event::domain::boot::End event;
-                           event.domain = common::domain::identity();
-                           event.process = common::process::handle();
-                           return event;
-                        });
-
-                        return {};
-
-                     };
-                     return manager::Task{ "boot done", std::move( task),                        
-                     {
-                        Task::Property::Execution::sequential,
-                        Task::Property::Completion::removable
-                     }};
-                  }
-
-                  manager::Task shutdown()
-                  {
-                     Trace trace{ "domain::manager::task::create::done::shutdown"};
-
-                     auto task = []( State& state, manager::task::id::type id) -> std::vector< manager::task::event::Callback>
-                     {
-                        Trace trace{ "domain::manager::task::create::done::shutdown task invoked"};
-
-                        state.runlevel( State::Runlevel::shutdown);
-
-                        manager::task::done( state, id);
-
-                        // we might have listeners to this event
-                        task::event::dispatch( state, [&]()
-                        {
-                           message::event::domain::shutdown::End event;
-                           event.domain = common::domain::identity();
-                           event.process = common::process::handle();
-                           return event;
-                        });
-
-                        return {};
-
-                     };
-                     return manager::Task{ "shutdown done", std::move( task),                        
-                        {
-                           Task::Property::Execution::sequential,
-                           Task::Property::Completion::mandatory
-                        }};
-                  }
-                  
-               } // done
-
-               manager::Task shutdown()
-               {
-                  Trace trace{ "domain::manager::task::create::shutdown"};
-
-                  auto task = []( State& state, manager::task::id::type id) -> std::vector< manager::task::event::Callback>
-                  {
-                     Trace trace{ "domain::manager::task::create::shutdown task invoked"};
-
-                     handle::shutdown( state);
-                     manager::task::done( state, id);
-
-                     return {};
-                  };
-
-                  return manager::Task{ "shutdown trigger", std::move( task),
+                     return manager::Task{ correlation, std::move( description), local::group::task( std::move( groups), std::move( done_callback)),
                      {
                         Task::Property::Execution::sequential,
                         Task::Property::Completion::mandatory
                      }};
-               }
+
+                  }
+
+                  manager::Task shutdown( std::vector< state::dependency::Group> groups)
+                  {
+                     Trace trace{ "domain::manager::task::create::scale::shutdown"};
+
+                     return manager::Task{ "shutdown domain", local::group::task( std::move( groups)),
+                     {
+                        Task::Property::Execution::sequential,
+                        Task::Property::Completion::mandatory
+                     }};
+
+                  }
+
+                  manager::Task aliases( std::string description, std::vector< state::dependency::Group> groups)
+                  {
+                     Trace trace{ "domain::manager::task::create::scale::aliases"};
+                     log::line( verbose::log, "description: ", description);
+
+                     return manager::Task{ std::move( description), local::group::task( std::move( groups)),
+                     {
+                        Task::Property::Execution::concurrent,
+                        Task::Property::Completion::abortable
+                     }};
+                  }
+         
+                  manager::Task aliases( std::vector< state::dependency::Group> groups)
+                  {
+                     return aliases( "scale aliases", std::move( groups));
+                  }
+               } // scale
 
             } // create
          } // task

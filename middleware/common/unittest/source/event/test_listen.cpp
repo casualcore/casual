@@ -17,7 +17,7 @@ namespace casual
 {
    namespace common
    {
-      TEST( common_event, empty_dispatch__expect_no_registration)
+      TEST( common_event, empty_dispatch__empty_condition__expect_no_registration)
       {
          unittest::Trace trace;
 
@@ -27,7 +27,7 @@ namespace casual
          }
 
          EXPECT_THROW({
-            event::listen();
+            event::listen( event::condition::compose());
          }, exception::casual::Shutdown);
       }
 
@@ -35,30 +35,31 @@ namespace casual
       {
          unittest::Trace trace;
 
-         {
-            // send the event, premature...
-            message::event::process::Exit event;
-            event.state.pid = strong::process::id{ 42};
-            event.state.reason = process::lifetime::Exit::Reason::core;
+         bool done = false;
 
-            unittest::eventually::send( communication::ipc::inbound::ipc(), event);
+         auto condition = event::condition::compose( 
+            event::condition::prelude( []()
+            {
+               // send the event, premature...
+               message::event::process::Exit event;
+               event.state.pid = strong::process::id{ 42};
+               event.state.reason = process::lifetime::Exit::Reason::core;
 
-         }
+               unittest::eventually::send( communication::ipc::inbound::ipc(), event);
+            }),
+            event::condition::done( [&done](){ return done;})
+         );
 
-         // Make sure we get a shutdown
-         {
-            unittest::eventually::send( communication::ipc::inbound::ipc(), message::shutdown::Request{});
-         }
+         EXPECT_NO_THROW({
+            event::only::unsubscribe::listen( condition, 
+            [&done]( message::event::process::Exit& m)
+            {
+               done = true;
+               EXPECT_TRUE( m.state.pid == strong::process::id{ 42});
+               EXPECT_TRUE( m.state.reason == process::lifetime::Exit::Reason::core);
+            });
+         });
 
-         // listen to the event
-         {
-            EXPECT_THROW({
-               event::no::subscription::listen( communication::ipc::inbound::device(), []( message::event::process::Exit& m){
-                  EXPECT_TRUE( m.state.pid == strong::process::id{ 42});
-                  EXPECT_TRUE( m.state.reason == process::lifetime::Exit::Reason::core);
-               });
-            }, exception::casual::Shutdown);
-         }
       }
 
    } // common

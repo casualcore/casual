@@ -121,12 +121,12 @@ namespace casual
                {
                   Handler handler{ database};
 
-                  common::event::idle::listen(
-                     [&]()
+                  common::event::listen(
+                     common::event::condition::compose( common::event::condition::idle( [&handler]()
                      {
-                        // the queue is empty
+                        // inbound is idle, 
                         handler.idle();
-                     },
+                     })),
                      [&]( common::message::event::service::Calls& event)
                      {
                         handler.log( event);

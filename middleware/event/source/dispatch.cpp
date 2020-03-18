@@ -30,9 +30,11 @@ namespace casual
             void start() 
             {
                if( empty)
-                  common::event::detail::listen( communication::ipc::inbound::device(), std::move( empty), std::move( handler));
+                  common::event::listen( 
+                     common::event::condition::compose( common::event::condition::idle( std::move( empty))), 
+                     std::move( handler));
                else 
-                  common::event::detail::listen( communication::ipc::inbound::device(), std::move( handler));
+                  common::event::listen( common::event::condition::compose(), std::move( handler));
             }
 
             template< typename T> 

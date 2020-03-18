@@ -198,19 +198,6 @@ namespace casual
                   std::vector< Uuid> rediscoveries;
                };
 
-               namespace inbound
-               {
-                  template< typename Message>
-                  auto message()
-                  {
-                     Trace trace{ "gateway::outbound::local::inbound::message"};
-
-                     return common::message::dispatch::reply::pump< Message>(
-                        common::message::handle::defaults( common::communication::ipc::inbound::device()),
-                        common::communication::ipc::inbound::device());
-                  }
-               } // inbound
-
 
                auto connect( communication::tcp::Address address)
                {
@@ -256,14 +243,16 @@ namespace casual
                      common::message::handle::defaults( communication::ipc::inbound::device()), 
                      []( const message::outbound::connect::Done&) {} // no-op 
                      );
+
+                  namespace dispatch = common::message::dispatch;
+
+                  auto condition = dispatch::condition::compose( 
+                     dispatch::condition::done( [&socket](){ return socket ? true : false; }));
                   
-                  common::message::dispatch::conditional::pump( 
+                  dispatch::pump(
+                     condition,
                      handler,
-                     communication::ipc::inbound::device(),
-                     [&socket]()
-                     {
-                        return socket ? true : false;
-                     });
+                     communication::ipc::inbound::device());
 
                   return socket;
                }

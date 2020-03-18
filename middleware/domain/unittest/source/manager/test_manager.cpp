@@ -205,7 +205,7 @@ domain:
 
                   auto scale( const std::vector< admin::model::scale::Alias>& aliases)
                   {
-                     return unittest::call< std::vector< strong::task::id>>( admin::service::name::scale::instances, aliases);
+                     return unittest::call< std::vector< common::Uuid>>( admin::service::name::scale::instances, aliases);
                   }
 
                   auto scale( const std::string& alias, platform::size::type instances)
@@ -215,7 +215,7 @@ domain:
 
                   auto restart( const std::vector< admin::model::restart::Alias>& aliases)
                   {
-                     return unittest::call< std::vector< strong::task::id>>( admin::service::name::restart::instances, aliases);
+                     return unittest::call< std::vector< common::Uuid>>( admin::service::name::restart::instances, aliases);
                   }
 
                   auto restart( std::vector< std::string> aliases)
@@ -752,18 +752,20 @@ domain:
 
             auto now = platform::time::clock::type::now();
 
-            // register for events
-            auto unregister = common::event::scope::subscribe( { message::Type::event_domain_task_end});
+            decltype( local::call::restart( { ""})) result;
 
-            auto result = local::call::restart( { "sleep"});
-            
-            // listen for events
-            common::event::no::subscription::conditional( 
-               [ &result] () { return result.empty();}, // will end if true
-               [ &result]( const message::event::domain::task::End& task)
+            auto condition = event::condition::compose( 
+               event::condition::prelude( [&result](){ result = local::call::restart( { "sleep"});}), 
+               event::condition::done( [&result](){ return result.empty();})
+            );
+
+            // start and listen for events
+            event::listen( condition, 
+               [ &result]( const message::event::Task& task)
                {
                   // remove correlated task
-                  algorithm::trim( result, algorithm::remove( result, task.id));
+                  if( task.done())
+                     algorithm::trim( result, algorithm::remove( result, task.correlation));
                }
             );
 
@@ -795,18 +797,20 @@ domain:
 
             auto now = platform::time::clock::type::now();
 
-            // register for events
-            auto unregister = common::event::scope::subscribe( common::process::handle(), { message::Type::event_domain_task_end});
+            decltype( local::call::restart( { ""})) result;
 
-            auto result = local::call::restart( { "simple-server"});
-            
-            // listen for events
-            common::event::no::subscription::conditional( 
-               [ &result] () { return result.empty();}, // will end if true
-               [ &result]( const message::event::domain::task::End& task)
+            auto condition = event::condition::compose( 
+               event::condition::prelude( [&result](){ result = local::call::restart( { "simple-server"});}), 
+               event::condition::done( [&result](){ return result.empty();})
+            );
+
+            // start and listen for events
+            common::event::listen( condition, 
+               [ &result]( const message::event::Task& task)
                {
                   // remove correlated task
-                  algorithm::trim( result, algorithm::remove( result, task.id));
+                  if( task.done())
+                     algorithm::trim( result, algorithm::remove( result, task.correlation));
                }
             );
 

@@ -16,6 +16,7 @@
 #include "common/message/event.h"
 #include "common/communication/instance.h"
 
+
 namespace casual
 {
    namespace event
@@ -158,7 +159,7 @@ domain:
          },
          []( model::service::Call&& call)
          {
-            ASSERT_TRUE( call.metrics.size() == 1);
+            ASSERT_TRUE( call.metrics.size() == 1) << CASUAL_NAMED_VALUE( call.metrics.size());
             EXPECT_TRUE( call.metrics.at( 0).process.pid == common::process::id().value());
             EXPECT_TRUE( call.metrics.at( 0).pending == platform::time::unit::zero());
             EXPECT_TRUE( call.metrics.at( 0).service.name == "foo");

@@ -84,8 +84,7 @@ namespace casual
                      // Start the message-pump
                      common::message::dispatch::pump(
                         handler,
-                        common::communication::ipc::inbound::device(),
-                        common::communication::ipc::policy::Blocking{});
+                        common::communication::ipc::inbound::device());
 
                   }
 

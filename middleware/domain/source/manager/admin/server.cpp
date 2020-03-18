@@ -7,7 +7,6 @@
 #include "domain/manager/admin/server.h"
 #include "domain/manager/admin/model.h"
 #include "domain/manager/handle.h"
-#include "domain/manager/persistent.h"
 #include "domain/manager/configuration.h"
 #include "domain/transform.h"
 
@@ -166,17 +165,6 @@ namespace casual
 
                      namespace configuration
                      {
-                        auto persist( const manager::State& state)
-                        {
-                           return [&state]( common::service::invoke::Parameter&& parameter)
-                           {
-                              return serviceframework::service::user( 
-                                 serviceframework::service::protocol::deduce( std::move( parameter)),
-                                 []( auto& state){ return persistent::state::save( state);},
-                                 state);
-                           };
-                        }
-
                         auto get( const manager::State& state)
                         {
                            return [&state]( common::service::invoke::Parameter&& parameter)
@@ -228,11 +216,6 @@ namespace casual
                      },
                      { service::name::shutdown,
                            local::service::shutdown( state),
-                           common::service::transaction::Type::none,
-                           common::service::category::admin()
-                     },
-                     { service::name::configuration::persist,
-                           local::service::configuration::persist( state),
                            common::service::transaction::Type::none,
                            common::service::category::admin()
                      },

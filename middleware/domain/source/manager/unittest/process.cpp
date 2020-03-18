@@ -5,6 +5,7 @@
 //!
 
 #include "domain/manager/unittest/process.h"
+#include "domain/manager/task.h"
 
 #include "common/environment.h"
 #include "common/communication/ipc.h"
@@ -41,11 +42,12 @@ namespace casual
                         });
                      }
 
-                     auto arguments( const std::vector< file::scoped::Path>& files)
+                     auto arguments( const std::vector< file::scoped::Path>& files, const common::Uuid& id)
                      {
                         std::vector< std::string> result{ 
                            "--bare", "true",
                            "--event-ipc", common::string::compose( common::communication::ipc::inbound::ipc()),
+                           "--event-id", common::string::compose( id),
                            "--configuration-files"
                         };
                         algorithm::append( files, result);
@@ -69,18 +71,50 @@ namespace casual
             {
                Implementation( const std::vector< std::string>& configuration, std::function< void( const std::string&)> callback = nullptr)
                   : environment( std::move( callback)),
-                  files( local::configuration::files( configuration)),
-                  process{ common::environment::directory::casual() + "/bin/casual-domain-manager", local::configuration::arguments( files)}
+                  files( local::configuration::files( configuration))
                {
                   log::Trace trace{ "domain::manager::unittest::Process::Implementation", verbose::log};
 
-                  // Make sure we unregister the event subscription
-                  auto unsubscribe = common::execute::scope( [](){
-                     common::event::unsubscribe( common::process::handle(), { common::message::Type::event_domain_error});
-                  });
+                  auto tasks = std::vector< common::Uuid>{ uuid::make()};
 
-                  // Wait for the domain to boot
-                  process.handle( process::wait());
+                  auto condition = event::condition::compose( 
+                     event::condition::prelude( [&]()
+                     {
+                        // spawn the domain-manager
+                        process = common::Process{ 
+                           common::environment::directory::casual() + "/bin/casual-domain-manager", 
+                           local::configuration::arguments( files, tasks.front())};
+                     }),
+                     event::condition::done( [&tasks]()
+                     {
+                        // we're done waiting when we got the ipc of domain-manager
+                        return tasks.empty();
+                     })
+                  );
+
+                  // let's boot and listen to events
+                  event::only::unsubscribe::listen( condition,
+                     [&]( const manager::task::message::domain::Information& event)
+                     {
+                        log::line( log::debug, "event: ", event);
+                        common::domain::identity( event.domain);
+                        process.handle( event.process);
+                     },
+                     [&tasks]( const message::event::Task& event)
+                     {
+                        log::line( log::debug, "event: ", event);
+
+                        if( event.done())
+                           algorithm::trim( tasks, algorithm::remove( tasks, event.correlation));
+                     },
+                     []( const message::event::Error& event)
+                     {
+                        log::line( log::debug, "event: ", event);
+
+                        if( event.severity == decltype( event.severity)::fatal)
+                           throw exception::casual::Shutdown{ string::compose( "fatal error: ", event)};
+                     }
+                  );
 
                   log::line( verbose::log, "domain-manager booted: ", process);
                   
@@ -167,59 +201,6 @@ domain:
             {
                return common::stream::write( out, *value.m_implementation);
             }
-             
-
-            namespace process
-            {  
-               common::process::Handle wait( common::communication::ipc::inbound::Device& device)
-               {
-                  common::Trace trace{ "domain::manager::unittest::process::wait"};
-
-                  auto handler = device.handler(
-                     []( const message::event::domain::boot::Begin& event)
-                     {
-                        log::line( log::debug, "event: ", event);
-                        common::domain::identity( event.domain);
-                     },
-                     []( const message::event::domain::boot::End& event)
-                     {
-                        log::line( log::debug, "event: ", event);
-                        throw event.process;
-                     },
-                     []( const message::event::domain::Error& error)
-                     {
-                        if( error.severity == message::event::domain::Error::Severity::fatal)
-                        {
-                           throw exception::casual::Shutdown{ string::compose( "fatal error: ", error)};
-                        }
-                     },
-                     common::message::handle::discard< common::message::event::domain::Group>(),
-                     common::message::handle::discard< common::message::event::domain::shutdown::Begin>(),
-                     common::message::handle::discard< common::message::event::domain::shutdown::End>(),
-                     common::message::handle::discard< common::message::event::domain::server::Connect>(),
-                     common::message::handle::discard< common::message::event::domain::task::Begin>(),
-                     common::message::handle::discard< common::message::event::domain::task::End>(),
-                     common::message::handle::discard< common::message::event::process::Spawn>(),
-                     common::message::handle::discard< common::message::event::process::Exit>()
-                  );
-
-                  try
-                  {
-                     message::dispatch::blocking::pump( handler, device);
-                  }
-                  catch( const common::process::Handle& process)
-                  {
-                     log::line( verbose::log, "domain manager booted: ", process);
-                     return process;
-                  }
-                  return {};
-               }
-
-               common::process::Handle wait()
-               {
-                  return wait( communication::ipc::inbound::device());
-               }
-            } // process
 
          } // unittest
       } // manager

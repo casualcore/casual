@@ -280,14 +280,28 @@ namespace casual
 
          } // state
 
-         std::vector< state::dependency::Group> State::bootorder()
+         std::ostream& operator << ( std::ostream& out, State::Runlevel value)
+         {
+            switch( value)
+            {
+               using Enum = State::Runlevel;
+               case Enum::error: return out << "error";
+               case Enum::running: return out << "running";
+               case Enum::shutdown: return out << "shutdown";
+               case Enum::startup: return out << "startup";
+            }
+            return out << "<unknown>";
+
+         }
+
+         std::vector< state::dependency::Group> State::bootorder() const
          {
             Trace trace{ "domain::manager::State::bootorder"};
 
             return state::create::boot::order( *this);
          }
 
-         std::vector< state::dependency::Group> State::shutdownorder()
+         std::vector< state::dependency::Group> State::shutdownorder() const
          {
             Trace trace{ "domain::manager::State::shutdownorder"};
 
