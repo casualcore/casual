@@ -74,7 +74,7 @@ def setCurrentVersionAndRelease()
 {
    if ( isRelease())
    {
-      // 1.2.3
+      // 1.2.buildnumber
       env.CASUAL_VERSION = retrieve_major_minor().concat('.').concat(env.BUILD_NUMBER)
       env.CASUAL_RELEASE = "1"
    }
@@ -95,10 +95,6 @@ def setCurrentVersionAndRelease()
       throw new Exception( "Branch name " + env.BRANCH_NAME + " not supported in builds")
    }
 }
-
-setCurrentVersionAndRelease()
-
-
 
 def common_backend_builder = '''
 umask 000
@@ -243,13 +239,15 @@ def build( name, image, content)
 
 try
 {
-   echo totalVersion()
    if (isMaster())
    {
       currentBuild.result = 'SUCCESS'
       return
    }
    slackSend color: "good", message: "Build started: ${env.JOB_NAME} - ${env.BUILD_NUMBER} (<${env.JOB_URL}|Open>)"
+
+   setCurrentVersionAndRelease()
+   echo totalVersion()
 
    parallel(
    
