@@ -96,6 +96,27 @@ def setCurrentVersionAndRelease()
    }
 }
 
+try
+{
+   if (isMaster())
+   {
+      currentBuild.result = 'SUCCESS'
+      return
+   }
+
+   currentBuild.result = 'SUCCESS'
+   slackSend color: "good", message: "Build started: ${env.JOB_NAME} - ${env.BUILD_NUMBER} (<${env.JOB_URL}|Open>)"
+
+   // need to be called before defines later in script
+   setCurrentVersionAndRelease()
+}
+catch (Exception e)
+{
+   slackSend color: "danger", message: "Build failed: ${env.JOB_NAME} - ${env.BUILD_NUMBER} (<${env.JOB_URL}|Open>)"
+   currentBuild.result = 'FAILURE'
+   return
+}
+
 def common_backend_builder = '''
 umask 000
 mkdir -p /git/casual/dumps
@@ -239,14 +260,6 @@ def build( name, image, content)
 
 try
 {
-   if (isMaster())
-   {
-      currentBuild.result = 'SUCCESS'
-      return
-   }
-   slackSend color: "good", message: "Build started: ${env.JOB_NAME} - ${env.BUILD_NUMBER} (<${env.JOB_URL}|Open>)"
-
-   setCurrentVersionAndRelease()
    echo totalVersion()
 
    parallel(
