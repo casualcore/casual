@@ -205,6 +205,18 @@ namespace casual
                         shutdown = 2,
                         error = 3,
                      };
+                     inline std::ostream& operator << ( std::ostream& out, Runlevel runlevel)
+                     {
+                        switch( runlevel)
+                        {
+                           case Runlevel::startup: return out << "startup";
+                           case Runlevel::running: return out << "running";
+                           case Runlevel::shutdown: return out << "shutdown";
+                           case Runlevel::error: return out << "error";
+                        }
+                        assert( ! "invalid runlevel");
+
+                     }
                   } // state
 
                   struct State

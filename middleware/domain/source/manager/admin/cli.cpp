@@ -918,6 +918,53 @@ note: not all options has legend, use 'auto complete' to find out which legends 
             {
                return m_implementation->options();
             }
+
+            std::vector< std::tuple< std::string, std::string>> cli::information() &
+            {
+               auto state = local::call::state();
+
+               auto instances_count = []( auto& range, auto predicate)
+               {
+                  return algorithm::accumulate( range, 0l, [&predicate]( auto count, auto& entity) 
+                  {
+                     return count + algorithm::count_if( entity.instances, predicate);
+                  });
+               };
+
+               auto all = []( auto& instance){ return true;};
+               auto running = []( auto& instance){ return instance.state == decltype( instance.state)::running;};
+               auto scale_out = []( auto& instance){ return instance.state == decltype( instance.state)::scale_out;};
+               auto scale_in = []( auto& instance){ return instance.state == decltype( instance.state)::scale_in;};
+               
+               auto restarts = []( auto& range)
+               {
+                  return algorithm::accumulate( range, 0l, []( auto count, auto& entity) 
+                  {
+                     return count + entity.restarts;
+                  });
+               };
+
+               return {
+                  { "version.casual", state.version.casual},
+                  { "version.compiler", state.version.compiler},
+                  { "domain.identity.name", state.identity.name},
+                  { "domain.identity.id", string::compose( state.identity.id)},
+                  { "domain.runlevel", string::compose( state.runlevel)},
+                  { "domain.groups.count", string::compose( state.groups.size())},
+                  { "domain.server.count", string::compose( state.servers.size())},
+                  { "domain.server.instances.configured", string::compose( instances_count( state.servers, all))},
+                  { "domain.server.instances.running", string::compose( instances_count( state.servers, running))},
+                  { "domain.server.instances.scale.out", string::compose( instances_count( state.servers, scale_out))},
+                  { "domain.server.instances.scale.in", string::compose( instances_count( state.servers, scale_in))},
+                  { "domain.server.restarts", string::compose( restarts( state.servers))},
+
+                  { "domain.executable.instances.configured",string::compose( instances_count( state.executables, all))},
+                  { "domain.executable.instances.running",string::compose( instances_count( state.executables, running))},
+                  { "domain.executable.instances.scale.out", string::compose( instances_count( state.executables, scale_out))},
+                  { "domain.executable.instances.scale.in", string::compose( instances_count( state.executables, scale_in))},
+                  { "domain.executable.restarts", string::compose( restarts( state.executables))},
+               };
+            }
             
          } // admin 
       } // manager

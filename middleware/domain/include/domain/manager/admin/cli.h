@@ -25,6 +25,8 @@ namespace casual
 
                common::argument::Group options() &;
 
+               std::vector< std::tuple< std::string, std::string>> information() &;
+
             private:
                struct Implementation;
                common::move::basic_pimpl< Implementation> m_implementation;
