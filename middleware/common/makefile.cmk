@@ -218,6 +218,7 @@ unittest_objectfiles = [
 
     Compile( 'unittest/source/test_environment.cpp'),
     Compile( 'unittest/source/environment/test_variable.cpp'),
+    Compile( 'unittest/source/environment/test_string.cpp'),
     
     Compile( 'unittest/source/network/test_byteorder.cpp'),
     

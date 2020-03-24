@@ -37,7 +37,7 @@ namespace casual
                constexpr reference operator * () noexcept { return std::get< 0>( m_ranges);}
                constexpr iterator& operator ++ () noexcept
                {
-                  m_ranges = next( *m_next, std::get< 1>( m_ranges));
+                  m_ranges = iterator::next( *m_next, std::get< 1>( m_ranges));
                   return *this;
                }
 
@@ -54,16 +54,12 @@ namespace casual
 
                static tuple_type next( next_type& next, value_type range)
                {
-                  auto result = next( std::move( range));
-                  if( std::get< 0>( result).empty())
-                     std::swap( std::get< 0>( result), std::get< 1>( result));
-
-                  return result;
+                  return next( std::move( range));
                }
 
                bool empty() const noexcept
                {
-                  return std::get< 0>( m_ranges).empty();
+                  return std::get< 0>( m_ranges).empty() && std::get< 1>( m_ranges).empty();
                }
 
                common::optional< next_type> m_next;
