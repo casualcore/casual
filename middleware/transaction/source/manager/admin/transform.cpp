@@ -142,36 +142,44 @@ namespace casual
 
                } // resource
 
-               namespace pending
+
+               namespace local
                {
-                  struct Request
+                  namespace
                   {
-                     admin::model::pending::Request operator () ( const state::pending::Request& value) const
+                     namespace pending
                      {
-                        admin::model::pending::Request result;
+                        auto request()
+                        {
+                           return []( auto& value)
+                           {
+                              admin::model::pending::Request result;
 
-                        result.resource = value.resource;
-                        result.correlation = value.message.correlation;
-                        result.type = common::message::convert::type( value.message.type);
+                              result.resource = value.resource;
+                              result.correlation = value.message.correlation;
+                              result.type = common::message::convert::type( value.message.type);
 
-                        return result;
-                     }
-                  };
+                              return result;
+                           };
+                        }
 
-                  struct Reply
-                  {
-                     admin::model::pending::Reply operator () ( const common::message::pending::Message& value) const
-                     {
-                        admin::model::pending::Reply result;
+                        auto reply()
+                        {
+                           return []( auto& value)
+                           {
+                              admin::model::pending::Reply result;
 
-                        result.destinations = value.destinations;
-                        result.type = common::message::convert::type( value.complete.type);
-                        result.correlation = value.complete.correlation;
+                              result.destinations = value.destinations;
+                              result.type = common::message::convert::type( value.complete.type);
+                              result.correlation = value.complete.correlation;
 
-                        return result;
-                     }
-                  };
-               } // pending
+                              return result;
+                           };
+                        }
+                     } // pending
+                     
+                  } // <unnamed>
+               } // local
 
 
                admin::model::Log log( const manager::Log::Stats& log)
@@ -192,8 +200,8 @@ namespace casual
                   common::algorithm::transform( state.resources, result.resources, transform::resource::Proxy{});
                   common::algorithm::transform( state.transactions, result.transactions, transform::Transaction{});
 
-                  common::algorithm::transform( state.pending.requests, result.pending.requests, transform::pending::Request{});
-                  common::algorithm::transform( state.persistent.replies, result.persistent.replies, transform::pending::Reply{});
+                  common::algorithm::transform( state.pending.requests, result.pending.requests, local::pending::request());
+                  common::algorithm::transform( state.persistent.replies, result.pending.persistent.replies, local::pending::reply());
 
                   result.log = transform::log( state.persistent.log.stats());
 

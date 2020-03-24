@@ -107,7 +107,7 @@ namespace casual
          {
             std::ostringstream out;
             stream::write( out, std::forward< Parts>( parts)...);
-            return out.str();
+            return std::move( out).str();
          }
       } // string
 

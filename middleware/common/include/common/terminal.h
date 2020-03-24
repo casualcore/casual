@@ -164,9 +164,7 @@ namespace casual
                void calculate_width( R&& range, const std::ostream& out)
                {
                   for( auto& column : m_columns)
-                  {
                      column.calculate_width( range, out);
-                  }
                }
 
                void print_headers( std::ostream& out)
@@ -443,6 +441,31 @@ namespace casual
             } // custom
 
          } // format
+
+         namespace formatter
+         {
+            namespace key
+            {
+               //! returns a formatter for `std::tuple< std::string, std::string>`, with column-names
+               //! 'key' and 'value'. 
+               inline auto value()
+               {
+                  // TODO maintainence: we use this in cli::information, but should it be declared here? If so,
+                  // should other "general" formatters be here too? 
+                  // The whole 'terminal' stuff is not that good to begin with, make this dission if and when we
+                  // rewrite the 'terminal' stuff.
+                  auto get_first = []( auto& pair) -> const std::string& { return std::get< 0>( pair);};
+                  auto get_second = []( auto& pair) -> const std::string& { return std::get< 1>( pair);};
+
+                  return terminal::format::formatter< std::tuple< std::string, std::string>>::construct(
+                     terminal::format::column( "key", get_first, terminal::color::yellow, terminal::format::Align::left),
+                     terminal::format::column( "value", get_second, terminal::color::no_color, terminal::format::Align::left)
+                  );
+               }
+            } // key
+
+         } // formatter
+
       } // terminal
    } // common
 } // casual

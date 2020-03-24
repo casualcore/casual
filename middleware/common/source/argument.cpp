@@ -85,8 +85,12 @@ namespace casual
                         }
                         m_out << '\n';
                         
+
+                        auto splittet = string::split( option.description, '\n');
+                        log::line( log::debug, "option.description", splittet);
+                        
                         algorithm::for_each( string::split( option.description, '\n'), [&]( auto& row){
-                           this->indent( 6)  << row << "\n";
+                           indent( 6)  << row << "\n";
                         });
 
                         m_out << '\n';
@@ -212,7 +216,6 @@ namespace casual
                   void invoke( range_type arguments, std::vector< detail::Representation> options, const std::string& description)
                   {
                      Trace trace{ "common::argument::local::help::invoke"};
-                     
                      log::line( log::debug, "options", options);
 
                      std::cout << std::setw( 0);
@@ -337,18 +340,13 @@ namespace casual
                   {
                      auto mapped = std::get< 1>( map_invoked( invoked, range::make( options)));
 
-                     auto unconsumed = algorithm::remove_if( mapped, []( auto& map){
-                        if( map.invoked && map.invoked.invoked >= map.option.cardinality.max())
-                        {
-                           return true;
-                        }
-                        return false;
+                     auto unconsumed = algorithm::remove_if( mapped, []( auto& map)
+                     {
+                        return map.invoked && map.invoked.invoked >= map.option.cardinality.max();
                      });
 
                      for( auto& available : unconsumed)
-                     {
                         std::cout << available.option.key << '\n';
-                     }
                   }
 
                   void print_suggestion( const detail::Invoked& value)
