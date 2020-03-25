@@ -24,6 +24,7 @@ namespace casual
                ~cli();
 
                common::argument::Group options() &;
+               std::vector< std::tuple< std::string, std::string>> information() &;
 
             private:
                struct Implementation;

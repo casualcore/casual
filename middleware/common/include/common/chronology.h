@@ -34,16 +34,19 @@ namespace casual
                struct string;
 
                template<>
-               struct string<  std::chrono::nanoseconds> { constexpr static auto value = "ns";};
+               struct string< std::chrono::nanoseconds> { constexpr static auto value = "ns";};
 
                template<>
-               struct string<  std::chrono::microseconds> { constexpr static auto value = "us";};
+               struct string< std::chrono::microseconds> { constexpr static auto value = "us";};
 
                template<>
-               struct string<  std::chrono::milliseconds> { constexpr static auto value = "ms";};
+               struct string< std::chrono::milliseconds> { constexpr static auto value = "ms";};
 
                template<>
-               struct string<  std::chrono::seconds> { constexpr static auto value = "s";};
+               struct string< std::chrono::seconds> { constexpr static auto value = "s";};
+
+               template<>
+               struct string< std::chrono::duration< double>> { constexpr static auto value = "s";};
 
             }
 

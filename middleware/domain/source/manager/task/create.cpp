@@ -13,6 +13,7 @@
 #include "common/algorithm/compare.h"
 #include "common/log/stream.h"
 
+
 namespace casual
 {
    using namespace common;
@@ -446,7 +447,7 @@ namespace casual
                                     if( ! groups.empty())
                                        return false;
                                     
-                                    done_callback( state);   
+                                    done_callback( state);
                                     return true;                   
                                  };
 

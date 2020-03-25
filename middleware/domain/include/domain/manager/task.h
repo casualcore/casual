@@ -248,6 +248,8 @@ namespace casual
                inline bool empty() const { return m_running.empty() && m_pending.empty();}
 
                //! dispatch event to event callbacks
+               //! @attention this can/should only be called from within a message
+               //! handler, to mitigate possible recursive callback invocations. 
                template< typename E>
                void event( State& state, const E& event)
                {

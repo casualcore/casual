@@ -21,6 +21,7 @@ namespace casual
 
          namespace ipc
          {
+
             common::communication::ipc::inbound::Device& device();
 
             namespace pending

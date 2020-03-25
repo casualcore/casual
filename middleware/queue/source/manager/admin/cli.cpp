@@ -32,156 +32,157 @@ namespace casual
 
    namespace queue
    {
-      namespace normalize
-      {
-         std::string timestamp( const platform::time::point::type& time)
-         {
-            if( time != platform::time::point::limit::zero())
-            {
-               return chronology::local( time);
-            }
-            return "-";;
-         }
-
-      } // normalize
-
-      namespace call
-      {
-         manager::admin::model::State state()
-         {
-            serviceframework::service::protocol::binary::Call call;
-            auto reply = call( manager::admin::service::name::state);
-
-            manager::admin::model::State result;
-            reply >> CASUAL_NAMED_VALUE( result);
-
-            return result;
-         }
-
-         std::vector< manager::admin::model::Message> messages( const std::string& queue)
-         {
-            serviceframework::service::protocol::binary::Call call;
-            call << CASUAL_NAMED_VALUE( queue);
-            auto reply = call( manager::admin::service::name::messages::list);
-
-            std::vector< manager::admin::model::Message> result;
-            reply >> CASUAL_NAMED_VALUE( result);
-
-            return result;
-         }
-
-      } // call
-
-
-      namespace format
-      {
-         auto messages()
-         {
-            auto format_state = []( const manager::admin::model::Message& v)
-            {
-               using Enum = decltype( v.state);
-               switch( v.state)
-               {
-                  case Enum::enqueued: return 'E';
-                  case Enum::committed: return 'C';
-                  case Enum::dequeued: return 'D';
-               }
-               return '?';
-            };
-
-            auto format_trid = []( const manager::admin::model::Message& v) { return transcode::hex::encode( v.trid);};
-            auto format_type = []( const manager::admin::model::Message& v) { return v.type;};
-            auto format_timestamp = []( const manager::admin::model::Message& v) { return normalize::timestamp( v.timestamp);};
-            auto format_available = []( const manager::admin::model::Message& v) { return normalize::timestamp( v.available);};
-
-            return terminal::format::formatter< manager::admin::model::Message>::construct(
-               terminal::format::column( "id", std::mem_fn( &manager::admin::model::Message::id), terminal::color::yellow),
-               terminal::format::column( "S", format_state, terminal::color::no_color),
-               terminal::format::column( "size", std::mem_fn( &manager::admin::model::Message::size), terminal::color::cyan, terminal::format::Align::right),
-               terminal::format::column( "trid", format_trid, terminal::color::blue, terminal::format::Align::right),
-               terminal::format::column( "rd", std::mem_fn( &manager::admin::model::Message::redelivered), terminal::color::no_color, terminal::format::Align::right),
-               terminal::format::column( "type", format_type, terminal::color::no_color),
-               terminal::format::column( "reply", std::mem_fn( &manager::admin::model::Message::reply), terminal::color::no_color),
-               terminal::format::column( "available", format_available, terminal::color::blue, terminal::format::Align::right),
-               terminal::format::column( "timestamp", format_timestamp, terminal::color::blue, terminal::format::Align::right)
-            );
-         }
-
-         auto groups()
-         {
-            auto format_pid = []( const manager::admin::model::Group& g) { return g.process.pid;};
-            auto format_ipc = []( const manager::admin::model::Group& g) { return g.process.ipc;};
-
-            return terminal::format::formatter< manager::admin::model::Group>::construct(
-               terminal::format::column( "name", std::mem_fn( &manager::admin::model::Group::name), terminal::color::yellow),
-               terminal::format::column( "pid", format_pid, terminal::color::grey, terminal::format::Align::right),
-               terminal::format::column( "ipc", format_ipc, terminal::color::grey, terminal::format::Align::right),
-               terminal::format::column( "queuebase", std::mem_fn( &manager::admin::model::Group::queuebase))
-            );
-         }
-
-         auto affected()
-         {
-            auto format_name = []( const queue::restore::Affected& a) { return a.queue;};
-
-            return terminal::format::formatter< queue::restore::Affected>::construct(
-               terminal::format::column( "name", format_name, terminal::color::yellow, terminal::format::Align::right),
-               terminal::format::column( "count", std::mem_fn( &queue::restore::Affected::count), terminal::color::green)
-            );
-         }
-
-
-         auto queues( const manager::admin::model::State& state)
-         {
-            using q_type = manager::admin::model::Queue;
-
-            auto format_retry_delay = []( const q_type& q)
-            {
-               using second_t = std::chrono::duration< double>;
-               return std::chrono::duration_cast< second_t>( q.retry.delay).count();
-            };
-            
-            auto format_group = [&]( const q_type& q){
-               return algorithm::find_if( state.groups, [&]( const manager::admin::model::Group& g){ return q.group == g.process.pid;}).at( 0).name;
-            };
-
-            return terminal::format::formatter< manager::admin::model::Queue>::construct(
-               terminal::format::column( "name", std::mem_fn( &q_type::name), terminal::color::yellow),
-               terminal::format::column( "count", []( const auto& q){ return q.count;}, terminal::color::green, terminal::format::Align::right),
-               terminal::format::column( "size", []( const auto& q){ return q.size;}, common::terminal::color::cyan, terminal::format::Align::right),
-               terminal::format::column( "avg", []( const auto& q){ return q.count == 0 ? 0 : q.size / q.count;}, common::terminal::color::cyan, terminal::format::Align::right),
-               terminal::format::column( "uc", []( const auto& q){ return q.uncommitted;}, common::terminal::color::grey, terminal::format::Align::right),
-               terminal::format::column( "rc", []( const auto& q){ return q.retry.count;}, common::terminal::color::blue, terminal::format::Align::right),
-               terminal::format::column( "rd", format_retry_delay, common::terminal::color::blue, terminal::format::Align::right),
-               terminal::format::column( "group", format_group),
-               terminal::format::column( "updated", []( const q_type& q){ return normalize::timestamp( q.timestamp);}, common::terminal::color::blue)
-            );
-         }
-
-         namespace remote
-         {
-            auto queues( const manager::admin::model::State& state)
-            {
-               auto format_pid = [&]( const auto& q){
-                  return q.pid;
-               };
-   
-   
-               return terminal::format::formatter< manager::admin::model::remote::Queue>::construct(
-                  terminal::format::column( "name", std::mem_fn( &manager::admin::model::remote::Queue::name), terminal::color::yellow),
-                  terminal::format::column( "pid", format_pid, common::terminal::color::blue)
-               );
-            }
-            
-         } // remote
-
-      } // format
-
 
       namespace local
       {
          namespace
          {
+            namespace normalize
+            {
+               std::string timestamp( const platform::time::point::type& time)
+               {
+                  if( time != platform::time::point::limit::zero())
+                  {
+                     return chronology::local( time);
+                  }
+                  return "-";;
+               }
+
+            } // normalize
+
+            namespace call
+            {
+               manager::admin::model::State state()
+               {
+                  serviceframework::service::protocol::binary::Call call;
+                  auto reply = call( manager::admin::service::name::state);
+
+                  manager::admin::model::State result;
+                  reply >> CASUAL_NAMED_VALUE( result);
+
+                  return result;
+               }
+
+               std::vector< manager::admin::model::Message> messages( const std::string& queue)
+               {
+                  serviceframework::service::protocol::binary::Call call;
+                  call << CASUAL_NAMED_VALUE( queue);
+                  auto reply = call( manager::admin::service::name::messages::list);
+
+                  std::vector< manager::admin::model::Message> result;
+                  reply >> CASUAL_NAMED_VALUE( result);
+
+                  return result;
+               }
+
+            } // call
+
+
+            namespace format
+            {
+               auto messages()
+               {
+                  auto format_state = []( const manager::admin::model::Message& v)
+                  {
+                     using Enum = decltype( v.state);
+                     switch( v.state)
+                     {
+                        case Enum::enqueued: return 'E';
+                        case Enum::committed: return 'C';
+                        case Enum::dequeued: return 'D';
+                     }
+                     return '?';
+                  };
+
+                  auto format_trid = []( const manager::admin::model::Message& v) { return transcode::hex::encode( v.trid);};
+                  auto format_type = []( const manager::admin::model::Message& v) { return v.type;};
+                  auto format_timestamp = []( const manager::admin::model::Message& v) { return normalize::timestamp( v.timestamp);};
+                  auto format_available = []( const manager::admin::model::Message& v) { return normalize::timestamp( v.available);};
+
+                  return terminal::format::formatter< manager::admin::model::Message>::construct(
+                     terminal::format::column( "id", std::mem_fn( &manager::admin::model::Message::id), terminal::color::yellow),
+                     terminal::format::column( "S", format_state, terminal::color::no_color),
+                     terminal::format::column( "size", std::mem_fn( &manager::admin::model::Message::size), terminal::color::cyan, terminal::format::Align::right),
+                     terminal::format::column( "trid", format_trid, terminal::color::blue, terminal::format::Align::right),
+                     terminal::format::column( "rd", std::mem_fn( &manager::admin::model::Message::redelivered), terminal::color::no_color, terminal::format::Align::right),
+                     terminal::format::column( "type", format_type, terminal::color::no_color),
+                     terminal::format::column( "reply", std::mem_fn( &manager::admin::model::Message::reply), terminal::color::no_color),
+                     terminal::format::column( "available", format_available, terminal::color::blue, terminal::format::Align::right),
+                     terminal::format::column( "timestamp", format_timestamp, terminal::color::blue, terminal::format::Align::right)
+                  );
+               }
+
+               auto groups()
+               {
+                  auto format_pid = []( const manager::admin::model::Group& g) { return g.process.pid;};
+                  auto format_ipc = []( const manager::admin::model::Group& g) { return g.process.ipc;};
+
+                  return terminal::format::formatter< manager::admin::model::Group>::construct(
+                     terminal::format::column( "name", std::mem_fn( &manager::admin::model::Group::name), terminal::color::yellow),
+                     terminal::format::column( "pid", format_pid, terminal::color::grey, terminal::format::Align::right),
+                     terminal::format::column( "ipc", format_ipc, terminal::color::grey, terminal::format::Align::right),
+                     terminal::format::column( "queuebase", std::mem_fn( &manager::admin::model::Group::queuebase))
+                  );
+               }
+
+               auto affected()
+               {
+                  auto format_name = []( const queue::restore::Affected& a) { return a.queue;};
+
+                  return terminal::format::formatter< queue::restore::Affected>::construct(
+                     terminal::format::column( "name", format_name, terminal::color::yellow, terminal::format::Align::right),
+                     terminal::format::column( "count", std::mem_fn( &queue::restore::Affected::count), terminal::color::green)
+                  );
+               }
+
+
+               auto queues( const manager::admin::model::State& state)
+               {
+                  using q_type = manager::admin::model::Queue;
+
+                  auto format_retry_delay = []( const q_type& q)
+                  {
+                     using second_t = std::chrono::duration< double>;
+                     return std::chrono::duration_cast< second_t>( q.retry.delay).count();
+                  };
+                  
+                  auto format_group = [&]( const q_type& q){
+                     return algorithm::find_if( state.groups, [&]( const manager::admin::model::Group& g){ return q.group == g.process.pid;}).at( 0).name;
+                  };
+
+                  return terminal::format::formatter< manager::admin::model::Queue>::construct(
+                     terminal::format::column( "name", std::mem_fn( &q_type::name), terminal::color::yellow),
+                     terminal::format::column( "count", []( const auto& q){ return q.count;}, terminal::color::green, terminal::format::Align::right),
+                     terminal::format::column( "size", []( const auto& q){ return q.size;}, common::terminal::color::cyan, terminal::format::Align::right),
+                     terminal::format::column( "avg", []( const auto& q){ return q.count == 0 ? 0 : q.size / q.count;}, common::terminal::color::cyan, terminal::format::Align::right),
+                     terminal::format::column( "uc", []( const auto& q){ return q.uncommitted;}, common::terminal::color::grey, terminal::format::Align::right),
+                     terminal::format::column( "rc", []( const auto& q){ return q.retry.count;}, common::terminal::color::blue, terminal::format::Align::right),
+                     terminal::format::column( "rd", format_retry_delay, common::terminal::color::blue, terminal::format::Align::right),
+                     terminal::format::column( "group", format_group),
+                     terminal::format::column( "updated", []( const q_type& q){ return normalize::timestamp( q.timestamp);}, common::terminal::color::blue)
+                  );
+               }
+
+               namespace remote
+               {
+                  auto queues( const manager::admin::model::State& state)
+                  {
+                     auto format_pid = [&]( const auto& q){
+                        return q.pid;
+                     };
+         
+         
+                     return terminal::format::formatter< manager::admin::model::remote::Queue>::construct(
+                        terminal::format::column( "name", std::mem_fn( &manager::admin::model::remote::Queue::name), terminal::color::yellow),
+                        terminal::format::column( "pid", format_pid, common::terminal::color::blue)
+                     );
+                  }
+                  
+               } // remote
+
+            } // format
+
+
             namespace legend
             {
                namespace list
@@ -433,7 +434,7 @@ note: operation is atomic)";
                auto complete = []( auto& values, bool help) -> std::vector< std::string>
                { 
                   if( help) 
-                     return { "<queue>", "<id>"};//return { "<queue> <id>..."};
+                     return { "<queue>", "<id>"};
 
                   if( values.empty())
                      return local::queues();
@@ -524,16 +525,68 @@ casual queue --clear queue-a queue-b)";
 
             } // clear
             
-
-
-            void state( const common::optional< std::string>& format)
+            namespace state
             {
-               auto state = call::state();
+               void invoke( const common::optional< std::string>& format)
+               {
+                  auto state = call::state();
 
-               auto archive = common::serialize::create::writer::from( format.value());
-               archive << CASUAL_NAMED_VALUE( state);
-               archive.consume( std::cout);
-            }
+                  auto archive = common::serialize::create::writer::from( format.value_or( ""));
+                  archive << CASUAL_NAMED_VALUE( state);
+                  archive.consume( std::cout);
+               } 
+
+               auto complete = []( auto values, bool) -> std::vector< std::string>
+               {
+                  return { "json", "yaml", "xml", "ini"};
+               };
+               
+            } // state
+
+            namespace information
+            {
+               auto call() -> std::vector< std::tuple< std::string, std::string>> 
+               {
+                  auto state = local::call::state();
+
+                  auto accumulate = []( auto extract)
+                  {
+                     return [extract]( auto& queues)
+                     {
+                        decltype( extract( range::front( queues))) initial{};
+                        return algorithm::accumulate( queues, initial, [extract]( auto count, auto& queue){ return count + extract( queue);});
+                     };
+                  };
+
+                  auto message_count = []( auto& queue){ return queue.count;};
+                  auto message_size = []( auto& queue){ return queue.size;};
+
+                  auto split = algorithm::partition( state.queues, []( auto& queue){ return queue.type() == decltype( queue.type())::queue;});
+                  auto queues = std::get< 0>( split);
+                  auto errors = std::get< 1>( split);
+
+                  return {
+                     { "queue.manager.group.count", string::compose( state.groups.size())},
+                     { "queue.manager.queue.count", string::compose( queues.size())},
+                     { "queue.manager.queue.message.count", string::compose( accumulate( message_count)( queues))},
+                     { "queue.manager.queue.message.size", string::compose( accumulate( message_size)( queues))},
+                     { "queue.manager.error.queue.message.count", string::compose( accumulate( message_count)( errors))},
+                     { "queue.manager.error.queue.message.size", string::compose( accumulate( message_size)( errors))},
+                     { "queue.manager.remote.domain.count", string::compose( state.remote.domains.size())},
+                     { "queue.manager.remote.queue.count", string::compose( state.remote.queues.size())},
+                  };
+               } 
+               
+               void invoke()
+               {
+                  terminal::formatter::key::value().print( std::cout, call());
+               }
+
+               constexpr auto description = R"(collect aggregated information about queues in this domain)";
+
+            } // information
+
+
          } // <unnamed>
       } // local
 
@@ -545,9 +598,6 @@ casual queue --clear queue-a queue-b)";
             {
                common::argument::Group options()
                {
-                  auto complete_state = []( auto values, bool){
-                     return std::vector< std::string>{ "json", "yaml", "xml", "ini"};
-                  };
 
                   auto complete_queues = []( auto& values, bool help) -> std::vector< std::string>
                   { 
@@ -562,7 +612,7 @@ casual queue --clear queue-a queue-b)";
                      argument::Option( &local::list::remote::queues::invoke, { "-r", "--list-remote"}, local::list::remote::queues::description),
                      argument::Option( &local::list::groups::invoke, { "-g", "--list-groups"}, local::list::groups::description),
                      argument::Option( &local::list::messages::invoke, complete_queues, { "-m", "--list-messages"}, local::list::messages::description),
-                     argument::Option( local::restore::invoke, complete_queues, { "--restore"}, local::restore::description),
+                     argument::Option( &local::restore::invoke, complete_queues, { "--restore"}, local::restore::description),
                      argument::Option( &local::enqueue::invoke, complete_queues, { "-e", "--enqueue"}, local::enqueue::description),
                      argument::Option( &local::dequeue::invoke, complete_queues, { "-d", "--dequeue"}, local::dequeue::description),
                      argument::Option( &local::peek::invoke, local::peek::complete, { "-p", "--peek"}, local::peek::description),
@@ -570,7 +620,8 @@ casual queue --clear queue-a queue-b)";
                      argument::Option( argument::option::one::many( &local::clear::invoke), local::clear::complete, { "--clear"}, local::clear::description),
                      argument::Option( &local::messages::remove::invoke, local::messages::remove::complete, { "--remove-messages"}, local::messages::remove::description),
                      argument::Option( &local::legend::invoke, local::legend::complete, {"--legend"}, local::legend::description),
-                     argument::Option( &queue::local::state, complete_state, {"--state"}, "queue state"),
+                     argument::Option( &local::information::invoke, {"--information"}, local::information::description),
+                     argument::Option( &local::state::invoke, local::state::complete, {"--state"}, "queue state"),
                   };
                }
             };
@@ -581,6 +632,11 @@ casual queue --clear queue-a queue-b)";
             common::argument::Group cli::options() &
             {
                return m_implementation->options();
+            }
+
+            std::vector< std::tuple< std::string, std::string>> cli::information() &
+            {
+               return local::information::call();
             }
             
          } // admin

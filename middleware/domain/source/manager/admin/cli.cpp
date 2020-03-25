@@ -876,6 +876,62 @@ note: not all options has legend, use 'auto complete' to find out which legends 
 )";
                   } // legend
 
+                  namespace information
+                  {
+                     auto call() -> std::vector< std::tuple< std::string, std::string>>
+                     {
+                        auto state = local::call::state();
+
+                        auto instances_count = []( auto& range, auto predicate)
+                        {
+                           return algorithm::accumulate( range, 0l, [&predicate]( auto count, auto& entity) 
+                           {
+                              return count + algorithm::count_if( entity.instances, predicate);
+                           });
+                        };
+
+                        auto all = []( auto& instance){ return true;};
+                        auto running = []( auto& instance){ return instance.state == decltype( instance.state)::running;};
+                        auto scale_out = []( auto& instance){ return instance.state == decltype( instance.state)::scale_out;};
+                        auto scale_in = []( auto& instance){ return instance.state == decltype( instance.state)::scale_in;};
+                        
+                        auto restarts = []( auto& range)
+                        {
+                           return algorithm::accumulate( range, 0l, []( auto count, auto& entity) 
+                           {
+                              return count + entity.restarts;
+                           });
+                        };
+
+                        return {
+                           { "version.casual", state.version.casual},
+                           { "version.compiler", state.version.compiler},
+                           { "domain.identity.name", state.identity.name},
+                           { "domain.identity.id", string::compose( state.identity.id)},
+                           { "domain.manager.runlevel", string::compose( state.runlevel)},
+                           { "domain.manager.group.count", string::compose( state.groups.size())},
+                           { "domain.manager.server.count", string::compose( state.servers.size())},
+                           { "domain.manager.server.instances.configured", string::compose( instances_count( state.servers, all))},
+                           { "domain.manager.server.instances.running", string::compose( instances_count( state.servers, running))},
+                           { "domain.manager.server.instances.scale.out", string::compose( instances_count( state.servers, scale_out))},
+                           { "domain.manager.server.instances.scale.in", string::compose( instances_count( state.servers, scale_in))},
+                           { "domain.manager.server.restarts", string::compose( restarts( state.servers))},
+                           { "domain.manager.executable.instances.configured",string::compose( instances_count( state.executables, all))},
+                           { "domain.manager.executable.instances.running",string::compose( instances_count( state.executables, running))},
+                           { "domain.manager.executable.instances.scale.out", string::compose( instances_count( state.executables, scale_out))},
+                           { "domain.manager.executable.instances.scale.in", string::compose( instances_count( state.executables, scale_in))},
+                           { "domain.manager.executable.restarts", string::compose( restarts( state.executables))},
+                        };
+                     }
+
+                     void invoke()
+                     {
+                        terminal::formatter::key::value().print( std::cout, call());
+                     }
+
+                     constexpr auto description = R"(collect aggregated general information about this domain)";
+
+                  } // information
 
                } // action
 
@@ -906,7 +962,8 @@ note: not all options has legend, use 'auto complete' to find out which legends 
                      argument::Option( argument::option::one::many( &local::action::ping::invoke), local::action::ping::complete(), { "--ping"}, local::action::ping::description),
                      argument::Option( &local::action::global::state::invoke, local::action::global::state::complete(), { "--instance-global-state"}, local::action::global::state::description),
                      argument::Option( &local::action::legend::invoke, local::action::legend::complete(), { "--legend"}, local::action::legend::description),
-                     argument::Option( &local::action::state, state_format, { "--state"}, "domain state (as provided format)")
+                     argument::Option( &local::action::information::invoke, { "--information"}, local::action::information::description),
+                     argument::Option( &local::action::state, state_format, { "--state"}, "domain state (as provided format)"),
                   };
                }
             };
@@ -917,6 +974,11 @@ note: not all options has legend, use 'auto complete' to find out which legends 
             common::argument::Group cli::options() &
             {
                return m_implementation->options();
+            }
+
+            std::vector< std::tuple< std::string, std::string>> cli::information() &
+            {
+               return local::action::information::call();
             }
             
          } // admin 
