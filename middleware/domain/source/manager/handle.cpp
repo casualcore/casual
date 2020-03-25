@@ -27,8 +27,6 @@
 
 #include "common/communication/instance.h" 
 
-
-
 namespace casual
 {
    using namespace common;
@@ -100,8 +98,8 @@ namespace casual
                            ++range;
                         }
 
-                        // send event, if any
-                        manager::task::event::dispatch( state, [&]()
+                        // we push spawn 'event' and dispatch it to tasks and external listeners 
+                        // later on
                         {
                            common::message::event::process::Spawn message;
                            message.path = entity.path;
@@ -111,8 +109,8 @@ namespace casual
                            []( auto& instance){ return common::process::id( instance.handle);},
                            []( auto& instance){ return instance.state != decltype( instance.state)::error;});
 
-                           return message;
-                        });
+                           ipc::push( message);
+                        }
 
                         log::line( verbose::log, "entity: ", entity);
                      }
@@ -403,7 +401,7 @@ namespace casual
 
                      // We put a dead process event on our own ipc device, that
                      // will be handled later on.
-                     communication::ipc::inbound::device().push( common::message::event::process::Exit{ exit});
+                     ipc::push( common::message::event::process::Exit{ exit});
                   }
                } // process
             } // event
@@ -488,12 +486,30 @@ namespace casual
 
                      namespace process
                      {
+                        auto spawn( State& state)
+                        {
+                           return [&state]( const common::message::event::process::Spawn& message)
+                           {
+                              Trace trace{ "domain::manager::handle::event::process::spawn"};
+                              log::line( verbose::log, "message: ", message);
+
+                              // dispatch to tasks
+                              state.tasks.event( state, message);
+
+                              // Are there any listeners to this event?
+                              manager::task::event::dispatch( state, [&message]() -> decltype( message)
+                              {
+                                 return message;
+                              });
+                              
+                           };
+                        }
+
                         auto exit( State& state)
                         {
-                           return [&state]( common::message::event::process::Exit& message)
+                           return [&state]( const common::message::event::process::Exit& message)
                            {
-                              Trace trace{ "domain::manager::handle::event::process::Exit"};
-
+                              Trace trace{ "domain::manager::handle::event::process::exit"};
                               log::line( verbose::log, "message: ", message);
 
                               if( message.state.deceased())
@@ -510,6 +526,9 @@ namespace casual
 
                                  if( std::get< 0>( restarts)) handle::scale::instances( state, *std::get< 0>( restarts));
                                  if( std::get< 1>( restarts)) handle::scale::instances( state, *std::get< 1>( restarts));
+
+                                 // dispatch to tasks
+                                 state.tasks.event( state, message);
 
                                  // Are there any listeners to this event?
                                  manager::task::event::dispatch( state, [&message]() -> decltype( message)
@@ -552,7 +571,31 @@ namespace casual
                         };
                      }
 
-                  } // event
+                     auto task( State& state) 
+                     {
+                        return [&state]( common::message::event::Task& message)
+                        {
+                           Trace trace{ "domain::manager::handle::local::event::general::task"};
+                           log::line( verbose::log, "message: ", message);
+
+                           manager::task::event::dispatch( state, [&message](){ return message;});
+                        };
+                     }
+
+                     namespace sub
+                     {
+                        auto task( State& state) 
+                        {
+                           return [&state]( common::message::event::sub::Task& message)
+                           {
+                              Trace trace{ "domain::manager::handle::local::event::general::sub::task"};
+                              log::line( verbose::log, "message: ", message);
+
+                              manager::task::event::dispatch( state, [&message](){ return message;});
+                           };
+                        }
+                     } // task
+                   } // event
 
                   namespace process
                   {
@@ -820,34 +863,6 @@ namespace casual
                         };
                      }
                   } // configuration
-
-                  namespace event
-                  {
-                     auto task( State& state) 
-                     {
-                        return [&state]( common::message::event::Task& message)
-                        {
-                           Trace trace{ "domain::manager::handle::local::event::general::task"};
-                           log::line( verbose::log, "message: ", message);
-
-                           manager::task::event::dispatch( state, [&message](){ return message;});
-                        };
-                     }
-
-                     namespace sub
-                     {
-                        auto task( State& state) 
-                        {
-                           return [&state]( common::message::event::sub::Task& message)
-                           {
-                              Trace trace{ "domain::manager::handle::local::event::general::sub::task"};
-                              log::line( verbose::log, "message: ", message);
-
-                              manager::task::event::dispatch( state, [&message](){ return message;});
-                           };
-                        }
-                     } // task
-                   } // event
     
                   namespace server
                   {
@@ -899,6 +914,7 @@ namespace casual
                common::message::handle::defaults( ipc::device()),
                handle::local::shutdown( state),
                handle::local::scale::prepare::shutdown( state),
+               handle::local::event::process::spawn( state),
                handle::local::event::process::exit( state),
                handle::local::event::subscription::begin( state),
                handle::local::event::subscription::end( state),
