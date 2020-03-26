@@ -49,7 +49,8 @@ namespace casual
                   template< typename M>
                   void log( const std::string& category, M&& message)
                   {
-                     m_output << std::chrono::duration_cast< std::chrono::microseconds>( platform::time::clock::type::now().time_since_epoch()).count()
+                     //m_output << std::chrono::duration_cast< std::chrono::microseconds>( platform::time::clock::type::now().time_since_epoch()).count()
+                     m_output << platform::time::clock::type::now()
                         << '|' << common::domain::identity().name
                         << '|' << execution::id()
                         << '|' << process::id()

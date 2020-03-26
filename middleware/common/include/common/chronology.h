@@ -20,11 +20,12 @@ namespace casual
    {
       namespace chronology
       {
-         std::string local();
-         std::string local( const platform::time::point::type& time);
-         void local( std::ostream& out, const platform::time::point::type& time);
-         std::string universal();
-         std::string universal( const platform::time::point::type& time);
+         //! Format a timepoint to iso 8601 extended date time with UTC offset
+         //! TODO maintainence: _local_ is probably not accurate any more? perhaps _iso_?
+         //! @{
+         void local( std::ostream& out, platform::time::point::type time);
+         std::string local( platform::time::point::type time);
+         //! @}
 
          namespace unit
          {
