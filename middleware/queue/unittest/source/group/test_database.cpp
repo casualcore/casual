@@ -348,6 +348,48 @@ namespace casual
          EXPECT_TRUE( info.size == 0);
       }
 
+      TEST( casual_queue_group_database, enqueue_deque__info__expect_metric_to_reflect)
+      {
+         common::unittest::Trace trace;
+
+         auto path = local::file();
+         group::Database database( path, "test_group");
+         auto queue = database.create( group::Queue{ "enqueue_deque__info__expect_metric_to_reflect"});
+
+         auto origin = local::message( queue);
+         database.enqueue( origin);
+
+         auto fetched = database.dequeue( local::request( queue), platform::time::clock::type::now());
+         EXPECT_TRUE( fetched.message.size() == 1);
+
+         auto info = local::get_queue( database, queue.id).value();
+
+         EXPECT_TRUE( info.metric.enqueued  == 1) << CASUAL_NAMED_VALUE( info);
+         EXPECT_TRUE( info.metric.dequeued  == 1) << CASUAL_NAMED_VALUE( info);
+      }
+
+      TEST( casual_queue_group_database, enqueue_deque__metric_reset__info__expect_no_metric)
+      {
+         common::unittest::Trace trace;
+
+         auto path = local::file();
+         group::Database database( path, "test_group");
+         auto queue = database.create( group::Queue{ "enqueue_deque__info__expect_metric_to_reflect"});
+
+         auto origin = local::message( queue);
+         database.enqueue( origin);
+
+         auto fetched = database.dequeue( local::request( queue), platform::time::clock::type::now());
+         EXPECT_TRUE( fetched.message.size() == 1);
+
+         database.metric_reset( { queue.id });
+
+         auto info = local::get_queue( database, queue.id).value();
+
+         EXPECT_TRUE( info.metric.enqueued  == 0) << CASUAL_NAMED_VALUE( info);
+         EXPECT_TRUE( info.metric.dequeued  == 0) << CASUAL_NAMED_VALUE( info);
+      }
+
 
       TEST( casual_queue_group_database, dequeue_message__from_id)
       {
@@ -461,6 +503,11 @@ namespace casual
             EXPECT_TRUE( origin.message.available == fetched.message.at( 0).available);
             //EXPECT_TRUE( origin.message.timestamp <= fetched.timestamp) << "origin: " << origin.timestamp.time_since_epoch().count() << " fetched: " << fetched.timestamp.time_since_epoch().count();
          });
+
+         auto info = local::get_queue( database, queue.id).value();
+
+         EXPECT_TRUE( info.metric.enqueued  == 100) << CASUAL_NAMED_VALUE( info);
+         EXPECT_TRUE( info.metric.dequeued  == 100) << CASUAL_NAMED_VALUE( info);
 
       }
 
@@ -809,7 +856,7 @@ namespace casual
       }
       
 
-      TEST( casual_queue_group, expect_version_2_0)
+      TEST( casual_queue_group, expect_version_3_0)
       {
          common::unittest::Trace trace;
 
@@ -818,7 +865,7 @@ namespace casual
 
          auto version = database.version();
 
-         EXPECT_TRUE( version.major == 2);
+         EXPECT_TRUE( version.major == 3);
          EXPECT_TRUE( version.minor == 0);
       }
 

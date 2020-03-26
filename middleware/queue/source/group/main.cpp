@@ -6,7 +6,7 @@
 
 
 #include "queue/group/group.h"
-
+#include "queue/common/log.h"
 
 #include "common/argument.h"
 #include "common/process.h"
@@ -31,6 +31,8 @@ namespace casual
                      Option( std::tie( settings.queuebase), { "-qb", "--queuebase"}, "path to this queue server persistent storage"),
                      Option( std::tie( settings.name), { "-n", "--name"}, "group name")
                   }( argc, argv);
+
+                  common::log::line( verbose::log, "group settings: ", settings);
 
                   Server server( std::move( settings));
                   server.start();

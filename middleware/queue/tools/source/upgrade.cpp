@@ -43,6 +43,8 @@ namespace casual
                         sql::database::Version{ 2, 0},
                         []( sql::database::Connection& connection)
                         {
+                           Trace trace{ "queue::upgrade::local::global::tasks to version 2.0" };
+
                            // disable FK
                            connection.statement( "PRAGMA foreign_keys = OFF;");
 
@@ -121,7 +123,64 @@ INSERT INTO message
                            rollback.release();
                            connection.commit();
                         }
+                     },
+                     // from 2.0 to 3.0
+                     {
+                        sql::database::Version{ 3, 0},
+                        []( sql::database::Connection& connection)
+                        {
+                           Trace trace{ "queue::upgrade::local::global::tasks to version 3.0" };
+                           // disable FK
+                           connection.statement( "PRAGMA foreign_keys = OFF;");
+
+                           connection.exclusive_begin();
+
+                           auto rollback = common::execute::scope( [&connection](){ connection.rollback();});
+
+                           // drop all triggers (will be created on startup)
+                           connection.statement( group::database::schema::drop::triggers);
+
+                           // we need to upgrade queue
+                           {
+                              // first we rename the current to queue_v2
+                              connection.statement( "ALTER TABLE queue RENAME TO queue_v2;");
+
+                              // create the new table
+                              connection.statement( group::database::schema::table::queue);
+
+                              // migrate data
+                              // julianday('now') - 2440587.5) *86400.0 <- some magic that sqlite recommend for fraction of seconds
+                              connection.statement( R"(
+INSERT INTO queue 
+   SELECT
+      id,  
+      name,  
+      retry_count,  
+      retry_delay,
+      error,
+      count,  
+      size,  
+      uncommitted_count,
+      0, -- metric_dequeued    
+      0, -- metric_enqueued
+      timestamp, -- last
+      ( julianday('now') - 2440587.5) *86400 * 1000 * 1000   -- created
+   FROM
+      queue_v2
+;
+)");
+
+                               // drop the old table
+                              connection.statement( "DROP TABLE queue_v2;");
+                           }
+                           sql::database::version::set( connection, sql::database::Version{ 3, 0});
+
+                           // everythin went ok, we commit.
+                           rollback.release();
+                           connection.commit();
+                        }
                      }
+
                   };
                } // global
 

@@ -24,6 +24,11 @@ namespace casual
          {
             std::string queuebase;
             std::string name;
+            
+            CASUAL_LOG_SERIALIZE(
+               CASUAL_SERIALIZE( queuebase);
+               CASUAL_SERIALIZE( name);
+            )
          };
 
          struct Server

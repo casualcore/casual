@@ -109,6 +109,8 @@ namespace casual
             std::vector< common::message::queue::information::Queue> queues();
             //! information
             std::vector< common::message::queue::information::Message> messages( common::strong::queue::id id);
+
+            void metric_reset( const std::vector< common::strong::queue::id>& ids);
             
 
             //! @return the number of rows affected by the last statement.

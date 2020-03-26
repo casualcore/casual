@@ -196,6 +196,9 @@ namespace casual
             queue_clear_reply,
             queue_messages_remove_request,
             queue_messages_remove_reply,
+
+            queue_metric_reset_request = QUEUE_BASE + 700,
+            queue_metric_reset_reply,
             
             // gateway
             GATEWAY_BASE = 7000,

@@ -16,19 +16,22 @@ namespace casual
             {
                namespace table
                {
-                  inline namespace v2_0
+                  inline namespace v3_0
                   {
                      constexpr auto queue = R"( CREATE TABLE IF NOT EXISTS queue 
 (
-   id           INTEGER  PRIMARY KEY,
-   name         TEXT     UNIQUE,
-   retry_count  INTEGER  NOT NULL,
-   retry_delay  INTEGER  NOT NULL,
-   error        INTEGER  NOT NULL,
-   count        INTEGER  NOT NULL, -- number of (committed) messages
-   size         INTEGER  NOT NULL, -- total size of all (committed) messages
+   id                INTEGER  PRIMARY KEY,
+   name              TEXT     UNIQUE,
+   retry_count       INTEGER  NOT NULL,
+   retry_delay       INTEGER  NOT NULL,
+   error             INTEGER  NOT NULL,
+   count             INTEGER  NOT NULL, -- number of (committed) messages
+   size              INTEGER  NOT NULL, -- total size of all (committed) messages
    uncommitted_count INTEGER  NOT NULL, -- uncommitted messages
-   timestamp    INTEGER NOT NULL -- last update to the queue 
+   metric_dequeued   INTEGER  NOT NULL,
+   metric_enqueued   INTEGER  NOT NULL,
+   last              INTEGER NOT NULL, -- last update to the queue
+   created           INTEGER NOT NULL -- when the queue was created
 ); )";
 
 
@@ -66,20 +69,21 @@ CREATE INDEX IF NOT EXISTS i_gtrid_message  ON message ( gtrid);
                   } // inline v2_0
                } // table
 
-               inline namespace v2_0
+               inline namespace v3_0
                {
                   constexpr auto triggers = R"(
 CREATE TRIGGER IF NOT EXISTS insert_message INSERT ON message 
 BEGIN
    UPDATE queue SET
-      timestamp = new.timestamp,
+      last = new.timestamp,
       uncommitted_count = uncommitted_count + 1
    WHERE id = new.queue AND new.state = 1;
 
-UPDATE queue SET
-      timestamp = new.timestamp,
+   UPDATE queue SET
+      last = new.timestamp,
       count = count + 1,
-      size = size + length( new.payload)
+      size = size + length( new.payload),
+      metric_enqueued = metric_enqueued + 1
    WHERE id = new.queue AND new.state = 2;
 
 END;
@@ -88,8 +92,10 @@ CREATE TRIGGER IF NOT EXISTS update_message_state UPDATE OF state ON message
 BEGIN
    UPDATE queue SET
       count = count + 1,
+      metric_enqueued = metric_enqueued + 1,
       size = size + length( new.payload),
-      uncommitted_count = uncommitted_count - 1
+      uncommitted_count = uncommitted_count - 1,
+      last = new.timestamp
    WHERE id = new.queue AND old.state = 1 AND new.state = 2;
 END;
 
@@ -98,12 +104,16 @@ BEGIN
 
    UPDATE queue SET  -- 'queue move' update the new queue
       count = count + 1,
-      size = size + length( new.payload)
+      metric_enqueued = metric_enqueued + 1,
+      size = size + length( new.payload),
+      last = MAX( last, new.timestamp)
    WHERE id = new.queue AND new.queue != old.queue;
 
    UPDATE queue SET  -- 'queue move' update the old queue
       count = count - 1,
-      size = size - length( old.payload)
+      metric_dequeued = metric_dequeued + 1,
+      size = size - length( old.payload),
+      last = MAX( last, new.timestamp)
    WHERE id = old.queue AND old.queue != new.queue;
 
 END;
@@ -112,15 +122,27 @@ CREATE TRIGGER IF NOT EXISTS delete_message DELETE ON message
 BEGIN
    UPDATE queue SET 
       count = count - 1,
-      size = size - length( old.payload)
+      metric_dequeued = metric_dequeued + 1,
+      size = size - length( old.payload),
+      last = old.timestamp
    WHERE id = old.queue AND old.state IN ( 2, 3);
 
    UPDATE queue SET 
       uncommitted_count = uncommitted_count - 1
    WHERE id = old.queue AND old.state = 1;
+   
 END;
                
 )";
+                  namespace drop
+                  {
+                     constexpr auto triggers = R"(
+DROP TRIGGER IF EXISTS insert_message;
+DROP TRIGGER IF EXISTS update_message_state;
+DROP TRIGGER IF EXISTS update_message_queue;
+DROP TRIGGER IF EXISTS delete_message;
+)";
+                  } // drop
                   
                } // inline v2_0
 

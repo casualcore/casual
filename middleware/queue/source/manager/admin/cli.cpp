@@ -42,9 +42,8 @@ namespace casual
                std::string timestamp( const platform::time::point::type& time)
                {
                   if( time != platform::time::point::limit::zero())
-                  {
                      return chronology::local( time);
-                  }
+
                   return "-";;
                }
 
@@ -82,10 +81,10 @@ namespace casual
             {
                auto messages()
                {
-                  auto format_state = []( const manager::admin::model::Message& v)
+                  auto format_state = []( auto& message)
                   {
-                     using Enum = decltype( v.state);
-                     switch( v.state)
+                     using Enum = decltype( message.state);
+                     switch( message.state)
                      {
                         case Enum::enqueued: return 'E';
                         case Enum::committed: return 'C';
@@ -94,19 +93,19 @@ namespace casual
                      return '?';
                   };
 
-                  auto format_trid = []( const manager::admin::model::Message& v) { return transcode::hex::encode( v.trid);};
-                  auto format_type = []( const manager::admin::model::Message& v) { return v.type;};
-                  auto format_timestamp = []( const manager::admin::model::Message& v) { return normalize::timestamp( v.timestamp);};
-                  auto format_available = []( const manager::admin::model::Message& v) { return normalize::timestamp( v.available);};
+                  auto format_trid = []( auto& message) { return transcode::hex::encode( message.trid);};
+                  auto format_type = []( auto& message) { return message.type;};
+                  auto format_timestamp = []( auto& message) { return normalize::timestamp( message.timestamp);};
+                  auto format_available = []( auto& message) { return normalize::timestamp( message.available);};
 
                   return terminal::format::formatter< manager::admin::model::Message>::construct(
-                     terminal::format::column( "id", std::mem_fn( &manager::admin::model::Message::id), terminal::color::yellow),
+                     terminal::format::column( "id", []( auto& message) { return message.id;}, terminal::color::yellow),
                      terminal::format::column( "S", format_state, terminal::color::no_color),
-                     terminal::format::column( "size", std::mem_fn( &manager::admin::model::Message::size), terminal::color::cyan, terminal::format::Align::right),
+                     terminal::format::column( "size", []( auto& message) { return message.size;}, terminal::color::cyan, terminal::format::Align::right),
                      terminal::format::column( "trid", format_trid, terminal::color::blue, terminal::format::Align::right),
-                     terminal::format::column( "rd", std::mem_fn( &manager::admin::model::Message::redelivered), terminal::color::no_color, terminal::format::Align::right),
+                     terminal::format::column( "rd", []( auto& message) { return message.redelivered;}, terminal::color::no_color, terminal::format::Align::right),
                      terminal::format::column( "type", format_type, terminal::color::no_color),
-                     terminal::format::column( "reply", std::mem_fn( &manager::admin::model::Message::reply), terminal::color::no_color),
+                     terminal::format::column( "reply", []( auto& message) { return message.reply;}, terminal::color::no_color),
                      terminal::format::column( "available", format_available, terminal::color::blue, terminal::format::Align::right),
                      terminal::format::column( "timestamp", format_timestamp, terminal::color::blue, terminal::format::Align::right)
                   );
@@ -114,20 +113,20 @@ namespace casual
 
                auto groups()
                {
-                  auto format_pid = []( const manager::admin::model::Group& g) { return g.process.pid;};
-                  auto format_ipc = []( const manager::admin::model::Group& g) { return g.process.ipc;};
+                  auto format_pid = []( auto& group) { return group.process.pid;};
+                  auto format_ipc = []( auto& group) { return group.process.ipc;};
 
                   return terminal::format::formatter< manager::admin::model::Group>::construct(
-                     terminal::format::column( "name", std::mem_fn( &manager::admin::model::Group::name), terminal::color::yellow),
-                     terminal::format::column( "pid", format_pid, terminal::color::grey, terminal::format::Align::right),
-                     terminal::format::column( "ipc", format_ipc, terminal::color::grey, terminal::format::Align::right),
-                     terminal::format::column( "queuebase", std::mem_fn( &manager::admin::model::Group::queuebase))
+                     terminal::format::column( "name", []( auto& group){ return group.name;}, terminal::color::yellow),
+                     terminal::format::column( "pid", format_pid, terminal::color::white, terminal::format::Align::right),
+                     terminal::format::column( "ipc", format_ipc, terminal::color::no_color, terminal::format::Align::right),
+                     terminal::format::column( "queuebase", []( auto& group){ return group.queuebase;}, terminal::color::cyan)
                   );
                }
 
                auto affected()
                {
-                  auto format_name = []( const queue::restore::Affected& a) { return a.queue;};
+                  auto format_name = []( auto& value) { return value.queue;};
 
                   return terminal::format::formatter< queue::restore::Affected>::construct(
                      terminal::format::column( "name", format_name, terminal::color::yellow, terminal::format::Align::right),
@@ -138,28 +137,35 @@ namespace casual
 
                auto queues( const manager::admin::model::State& state)
                {
-                  using q_type = manager::admin::model::Queue;
+                  using second_t = std::chrono::duration< double>;
 
-                  auto format_retry_delay = []( const q_type& q)
+                  auto format_retry_delay = []( auto& queue)
                   {
-                     using second_t = std::chrono::duration< double>;
-                     return std::chrono::duration_cast< second_t>( q.retry.delay).count();
+                     return std::chrono::duration_cast< second_t>( queue.retry.delay).count();
                   };
                   
-                  auto format_group = [&]( const q_type& q){
-                     return algorithm::find_if( state.groups, [&]( const manager::admin::model::Group& g){ return q.group == g.process.pid;}).at( 0).name;
+                  auto format_group = [&]( auto& queue)
+                  {
+                     return algorithm::find_if( state.groups, [&]( auto& group){ return queue.group == group.process.pid;}).at( 0).name;
+                  };
+
+                  auto avg_size = []( auto& queue)
+                  {
+                     return queue.count == 0 ? 0 : queue.size / queue.count;
                   };
 
                   return terminal::format::formatter< manager::admin::model::Queue>::construct(
-                     terminal::format::column( "name", std::mem_fn( &q_type::name), terminal::color::yellow),
-                     terminal::format::column( "count", []( const auto& q){ return q.count;}, terminal::color::green, terminal::format::Align::right),
-                     terminal::format::column( "size", []( const auto& q){ return q.size;}, common::terminal::color::cyan, terminal::format::Align::right),
-                     terminal::format::column( "avg", []( const auto& q){ return q.count == 0 ? 0 : q.size / q.count;}, common::terminal::color::cyan, terminal::format::Align::right),
-                     terminal::format::column( "uc", []( const auto& q){ return q.uncommitted;}, common::terminal::color::grey, terminal::format::Align::right),
+                     terminal::format::column( "name", []( const auto& q){ return q.name;}, terminal::color::yellow),
+                     terminal::format::column( "group", format_group),
                      terminal::format::column( "rc", []( const auto& q){ return q.retry.count;}, common::terminal::color::blue, terminal::format::Align::right),
                      terminal::format::column( "rd", format_retry_delay, common::terminal::color::blue, terminal::format::Align::right),
-                     terminal::format::column( "group", format_group),
-                     terminal::format::column( "updated", []( const q_type& q){ return normalize::timestamp( q.timestamp);}, common::terminal::color::blue)
+                     terminal::format::column( "count", []( const auto& q){ return q.count;}, terminal::color::white, terminal::format::Align::right),
+                     terminal::format::column( "size", []( const auto& q){ return q.size;}, common::terminal::color::white, terminal::format::Align::right),
+                     terminal::format::column( "avg", avg_size, common::terminal::color::white, terminal::format::Align::right),
+                     terminal::format::column( "E", []( auto& q){ return q.metric.enqueued;}, common::terminal::color::cyan, terminal::format::Align::right),
+                     terminal::format::column( "D", []( auto& q){ return q.metric.dequeued;}, common::terminal::color::cyan, terminal::format::Align::right),
+                     terminal::format::column( "uc", []( const auto& q){ return q.uncommitted;}, common::terminal::color::magenta, terminal::format::Align::right),
+                     terminal::format::column( "last", []( auto& q){ return normalize::timestamp( q.last);}, common::terminal::color::blue)
                   );
                }
 
@@ -190,22 +196,28 @@ namespace casual
                   constexpr auto queues = R"(legend: list queues 
    name:
       name of the queue
+   group:
+      which group the queue is hosted on.
+   rc:
+      retry-count - the retry count of the queue. (error queues has 0 as retry count, hence has to be consumed to be removed)
+   rd:
+      retry-delay - the retry delay of the queue, if rolled backed available will be 'now + retry delay'.
    count:
       number of messages on the queue
    size:
       the current size of the queue, aggregated message sizies
    avg:
       avarage message size in the queue
+   E: 
+      enqueued - total number of successfully enqueued messages on the queue (committet), over time.
+      note: this also include moved and restored messages.
+   D: 
+      dequeued - total number of successfully dequeued messages on the queue (committet), over time. 
+      note: this also includes when a message is moved to an error queue if a retry-count is reached.   
    uc:
-      number of uncommit messages
-   rc:
-      the retry count of the queue. (error queues has 0 as retry count, hence has to be consumed to be removed)
-   rd:
-      the retry delay of the queue, if rolled backed available will be `now + retry delay`.
-   group:
-      which group the queue is hosted on.
-   updated:
-      the last time the queue was updated
+      number of currently uncommitted messages.
+   last:
+      the timetamp of the newest message on the queue, or has been on the queue if the queue is empty.
 )";
 
                constexpr auto messages =  R"(legend: list messages 
@@ -304,10 +316,9 @@ use auto-complete to help which options has legends
                   {
                      auto state = call::state();
 
-                     auto formatter = format::groups();
-
-                     formatter.print( std::cout, state.groups);
+                     format::groups().print( std::cout, state.groups);
                   }
+
                   constexpr auto description = R"(list information of all groups in current domain)";
                } // groups
 
@@ -524,6 +535,37 @@ casual queue --clear queue-a queue-b)";
                };
 
             } // clear
+
+            namespace metric
+            {
+               namespace reset
+               {
+                  void invoke( std::vector< std::string> queues)
+                  {
+                     serviceframework::service::protocol::binary::Call call;
+                     call << CASUAL_NAMED_VALUE( queues);
+                     auto reply = call( manager::admin::service::name::metric::reset);
+                  }
+
+                  constexpr auto description = R"(resets metrics for the provided queues
+
+if no queues are provided, metrics for all queues are reset.
+
+Example:
+casual queue --metric-reset queue-a queue-b)";
+
+
+               auto complete = []( auto& values, bool help) -> std::vector< std::string>
+               { 
+                  if( help) 
+                     return { "<queue>"};
+                     
+                  return local::queues();
+               };
+
+                  
+               } // reset
+            } // metric
             
             namespace state
             {
@@ -561,6 +603,9 @@ casual queue --clear queue-a queue-b)";
                   auto message_count = []( auto& queue){ return queue.count;};
                   auto message_size = []( auto& queue){ return queue.size;};
 
+                  auto metric_enqueued = []( auto& queue){ return queue.metric.enqueued;};
+                  auto metric_dequeued = []( auto& queue){ return queue.metric.dequeued;};
+
                   auto split = algorithm::partition( state.queues, []( auto& queue){ return queue.type() == decltype( queue.type())::queue;});
                   auto queues = std::get< 0>( split);
                   auto errors = std::get< 1>( split);
@@ -570,8 +615,12 @@ casual queue --clear queue-a queue-b)";
                      { "queue.manager.queue.count", string::compose( queues.size())},
                      { "queue.manager.queue.message.count", string::compose( accumulate( message_count)( queues))},
                      { "queue.manager.queue.message.size", string::compose( accumulate( message_size)( queues))},
+                     { "queue.manager.queue.metric.enqueued", string::compose( accumulate( metric_enqueued)( queues))},
+                     { "queue.manager.queue.metric.dequeued", string::compose( accumulate( metric_dequeued)( queues))},
                      { "queue.manager.error.queue.message.count", string::compose( accumulate( message_count)( errors))},
                      { "queue.manager.error.queue.message.size", string::compose( accumulate( message_size)( errors))},
+                     { "queue.manager.error.queue.metric.enqueued", string::compose( accumulate( metric_enqueued)( errors))},
+                     { "queue.manager.error.queue.metric.dequeued", string::compose( accumulate( metric_dequeued)( errors))},
                      { "queue.manager.remote.domain.count", string::compose( state.remote.domains.size())},
                      { "queue.manager.remote.queue.count", string::compose( state.remote.queues.size())},
                   };
@@ -619,6 +668,7 @@ casual queue --clear queue-a queue-b)";
                      argument::Option( &local::consume::invoke, complete_queues, { "--consume"}, local::consume::description),
                      argument::Option( argument::option::one::many( &local::clear::invoke), local::clear::complete, { "--clear"}, local::clear::description),
                      argument::Option( &local::messages::remove::invoke, local::messages::remove::complete, { "--remove-messages"}, local::messages::remove::description),
+                     argument::Option( &local::metric::reset::invoke, local::metric::reset::complete, { "--metric-reset"}, local::metric::reset::description),
                      argument::Option( &local::legend::invoke, local::legend::complete, {"--legend"}, local::legend::description),
                      argument::Option( &local::information::invoke, {"--information"}, local::information::description),
                      argument::Option( &local::state::invoke, local::state::complete, {"--state"}, "queue state"),
