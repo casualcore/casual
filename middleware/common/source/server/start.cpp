@@ -63,28 +63,37 @@ namespace casual
                   } // transform
 
                   template< typename S>
-                  void start( S&& services, std::vector< argument::transaction::Resource> resources, std::function<void()> initialize)
+                  void start( S&& services, std::vector< argument::transaction::Resource> resources, common::function<void()const> initialize)
                   {
                      Trace trace{ "common::server::start"};
 
-                     auto& inbound = common::communication::ipc::inbound::device();
+                     auto& inbound = communication::ipc::inbound::device();
 
                      auto handler = inbound.handler(
-                        common::message::handle::defaults( inbound),
+                        message::handle::defaults( inbound),
                         // will configure and advertise services
-                        common::server::handle::Call( local::transform::arguments( std::move( services), std::move( resources))),
-                        common::server::handle::Conversation{});
+                        server::handle::Call( local::transform::arguments( std::move( services), std::move( resources))),
+                        server::handle::Conversation{});
 
-                     if( initialize)
-                        initialize();
+                     auto prelude = message::dispatch::condition::prelude(
+                        [initialize = std::move( initialize)]()
+                        {
+                           Trace trace{ "common::server::start prelude"};
 
-                     // Connect to domain - send "ready"...
-                     common::communication::instance::connect();
+                           if( initialize)
+                              initialize();
+
+                           // Connect to domain - send "ready"...
+                           communication::instance::connect();
+                        }
+                     );
+
 
                      // Start the message-pump
-                     common::message::dispatch::pump(
+                     message::dispatch::pump(
+                        message::dispatch::condition::compose( std::move( prelude)),
                         handler,
-                        common::communication::ipc::inbound::device());
+                        communication::ipc::inbound::device());
 
                   }
 
@@ -104,7 +113,7 @@ namespace casual
             void start(
                   std::vector< argument::xatmi::Service> services,
                   std::vector< argument::transaction::Resource> resources,
-                  std::function<void()> initialize)
+                  common::function<void()const> initialize)
             {
                local::start( std::move( services), std::move( resources), std::move( initialize));
             }

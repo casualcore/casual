@@ -18,41 +18,27 @@ namespace casual
    {
       namespace manager
       {
-
-         int main( int argc, char **argv)
+         void main( int argc, char **argv)
          {
-
-            try
-            {
-               Settings settings;
-               {
-                  casual::common::argument::Parse parse{
-                     R"(
-Responsible for interdomain communications.
+            // to provide --help, only for consistency
+            casual::common::argument::Parse{
+               R"(Responsible for interdomain communications.
 )"
-                  };
-                  parse( argc, argv);
-               }
+            }( argc, argv);
 
-               Manager manager{ std::move( settings)};
-               manager.start();
-
-            }
-            catch( ...)
-            {
-               return casual::common::exception::handle();
-            }
-            return 0;
+            Manager{}.start();
          }
 
       } // manager
    } // gateway
-
 } // casual
 
 
 int main( int argc, char **argv)
 {
-   return casual::gateway::manager::main( argc, argv);
+   return casual::common::exception::guard( [=]()
+   {
+       casual::gateway::manager::main( argc, argv);
+   });
 }
 

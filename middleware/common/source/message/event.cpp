@@ -107,7 +107,10 @@ namespace casual
 
                std::ostream& print( std::ostream& out, const process::Exit& event)
                {  
-                  out << event::local::sub::indentation << common::terminal::color::blue << "process exist: ";
+                  out << event::local::sub::indentation << common::terminal::color::blue << "process exit: ";
+                  
+                  auto exit_color = []( auto status){ return status == 0 ? common::terminal::color::green : common::terminal::color::magenta;};
+
                   switch( event.state.reason)
                   {
                      using Enum = decltype( event.state.reason);
@@ -118,7 +121,7 @@ namespace casual
                      case Enum::exited:
                         out << common::terminal::color::green << event.state.reason << " "; 
                         out << common::terminal::color::white << event.state.pid;
-                        return out << " - status: " << common::terminal::color::blue << event.state.status << '\n';
+                        return out << " - status: " << exit_color( event.state.status) << event.state.status << '\n';
                      default: 
                         out << common::terminal::color::magenta << event.state.reason << " "; 
                         return out << common::terminal::color::white << event.state.pid << '\n';

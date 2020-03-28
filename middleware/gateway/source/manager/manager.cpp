@@ -33,7 +33,7 @@ namespace casual
          {
             namespace
             {
-               manager::State configure( manager::Settings settings)
+               manager::State configure()
                {
                   Trace trace{ "gateway::manager::local::connect"};
 
@@ -52,13 +52,6 @@ namespace casual
                         common::environment::variable::name::ipc::gateway::manager,
                         process::handle());
 
-
-                  if( ! settings.configuration.empty())
-                  {
-                     return gateway::transform::state(
-                           configuration::transform::configuration(
-                                 configuration::domain::get( { settings.configuration})));
-                  }
 
                   // Ask domain manager for configuration
                   common::message::domain::configuration::Request request;
@@ -110,8 +103,8 @@ namespace casual
       } // manager
 
 
-      Manager::Manager( manager::Settings settings)
-        : m_state{ manager::local::configure( std::move( settings))}
+      Manager::Manager()
+        : m_state{ manager::local::configure()}
       {
          Trace trace{ "gateway::Manager::Manager"};
       }

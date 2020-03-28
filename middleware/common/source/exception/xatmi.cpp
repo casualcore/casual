@@ -6,6 +6,7 @@
 
 
 #include "common/exception/xatmi.h"
+#include "common/exception/casual.h"
 #include "common/exception/handle.h"
 #include "common/log/category.h"
 
@@ -47,6 +48,10 @@ namespace casual
                {
                   local::log( exception);
                   return code::xatmi::argument;
+               }
+               catch( const common::exception::casual::Shutdown&)
+               {
+                  return code::xatmi::ok;
                }
                catch( ...)
                {

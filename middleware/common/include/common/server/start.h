@@ -12,11 +12,11 @@
 #include "common/service/type.h"
 #include "common/service/invoke.h"
 #include "common/executable/start.h"
+#include "common/functional.h"
 
 #include "casual/xa.h"
 #include "casual/xatmi/defines.h"
 
-#include <functional>
 #include <vector>
 #include <string>
 
@@ -74,14 +74,10 @@ namespace casual
 
             //! Start an XATMI server. Will call the callback @p initialize before "ready" is sent
             //! to casual, if provided.
-            //!
-            //! @param services
-            //! @param resources
-            //! @param connected
             void start(
                std::vector< argument::xatmi::Service> services,
                std::vector< argument::transaction::Resource> resources,
-               std::function<void()> initialize);
+               common::function<void()const> initialize);
 
          } // v1
       } // server
