@@ -87,7 +87,9 @@ domain:
          []( model::service::Call&& call)
          {
             ASSERT_TRUE( call.metrics.size() == 1);
-            EXPECT_TRUE( call.metrics.at( 0).service.name == ".casual/domain/state");
+            auto& metric = call.metrics.at( 0);
+            EXPECT_TRUE( metric.service.name == ".casual/domain/state");
+            EXPECT_TRUE( metric.service.type == decltype(  metric.service.type)::sequential);
             // we send shotdown to our self, to trigger "end"
             local::send::shutdown();
          });
@@ -145,6 +147,7 @@ domain:
                [](){ 
                   common::message::event::service::Metric metric;
                   metric.process = common::process::handle();
+                  metric.type = decltype( metric.type)::concurrent;
                   metric.end = platform::time::clock::type::now();
                   metric.start = metric.end - std::chrono::milliseconds{ 2};
                   metric.service = "foo";
@@ -160,9 +163,11 @@ domain:
          []( model::service::Call&& call)
          {
             ASSERT_TRUE( call.metrics.size() == 1) << CASUAL_NAMED_VALUE( call.metrics.size());
-            EXPECT_TRUE( call.metrics.at( 0).process.pid == common::process::id().value());
-            EXPECT_TRUE( call.metrics.at( 0).pending == platform::time::unit::zero());
-            EXPECT_TRUE( call.metrics.at( 0).service.name == "foo");
+            auto& metric = call.metrics.at( 0);
+            EXPECT_TRUE( metric.process.pid == common::process::id().value());
+            EXPECT_TRUE( metric.pending == platform::time::unit::zero());
+            EXPECT_TRUE( metric.service.name == "foo");
+            EXPECT_TRUE( metric.service.type == decltype( metric.service.type)::concurrent);
             // we send shotdown to our self, to trigger "end"
             local::send::shutdown();
          });

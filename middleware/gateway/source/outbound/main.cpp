@@ -503,6 +503,7 @@ namespace casual
                                        metric.execution = message.execution;
                                        metric.service = std::move( destination.service);
                                        metric.parent = std::move( destination.parent);
+                                       metric.type = decltype( metric.type)::concurrent;
                                        
                                        metric.trid = message.transaction.trid;
                                        metric.start = destination.start;

@@ -157,8 +157,16 @@ namespace casual
             {
                struct Metric 
                {
+                  enum class Type : long
+                  {
+                     sequential = 1,
+                     concurrent = 2,
+                  };
+
                   std::string service;
                   std::string parent;
+                  Type type = Type::sequential;
+                  
                   common::process::Handle process;
                   Uuid execution;
                   common::transaction::ID trid;
@@ -176,6 +184,7 @@ namespace casual
                   (
                      CASUAL_SERIALIZE( service);
                      CASUAL_SERIALIZE( parent);
+                     CASUAL_SERIALIZE( type);
                      CASUAL_SERIALIZE( process);
                      CASUAL_SERIALIZE( execution);
                      CASUAL_SERIALIZE( trid);

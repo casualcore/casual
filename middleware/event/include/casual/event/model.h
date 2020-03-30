@@ -16,66 +16,117 @@ namespace casual
    {
       namespace model
       {
-         inline namespace v1 {
-
-         namespace uuid
+         // deprecated. 
+         namespace v1 
          {
-            using type = platform::uuid::type;
-         } // uuid
-
-         namespace process
-         {
-            struct Handle 
+            namespace uuid
             {
-               uuid::type ipc{};
-               platform::process::native::type pid{};
-            };
-         } // process
+               using type = platform::uuid::type;
+            } // uuid
 
-         namespace transaction
-         {
-            struct ID
+            namespace process
             {
-               ::XID xid{};
-               process::Handle owner;
-            };
-         } // transaction
-
-         namespace service
-         {
-            struct Call
-            {
-               struct Metric
+               struct Handle 
                {
-                  struct
-                  {
-                     std::string name;
-                     std::string parent;
-                  } service;
-
-                  process::Handle process;
-                  uuid::type execution;
-                  
-                  //! @attention not yet assigned 
-                  struct 
-                  {
-                     transaction::ID id;
-                  } transaction;
-                  
-                  platform::time::point::type start{};
-                  platform::time::point::type end{};
-
-                  platform::time::unit pending{};
-
-                  // outcome of the service call
-                  int code{};
+                  uuid::type ipc{};
+                  platform::process::native::type pid{};
                };
+            } // process
 
-               std::vector< Metric> metrics;
-            };           
+            namespace transaction
+            {
+               struct ID
+               {
+                  ::XID xid{};
+                  process::Handle owner;
+               };
+            } // transaction
 
-         } // service 
+            namespace service
+            {
+               struct Call
+               {
+                  struct Metric
+                  {
+                     struct
+                     {
+                        std::string name;
+                        std::string parent;
+                     } service;
+
+                     process::Handle process;
+                     uuid::type execution;
+                     
+                     //! @attention not yet assigned 
+                     struct 
+                     {
+                        transaction::ID id;
+                     } transaction;
+                     
+                     platform::time::point::type start{};
+                     platform::time::point::type end{};
+
+                     platform::time::unit pending{};
+
+                     // outcome of the service call
+                     int code{};
+                  };
+
+                  std::vector< Metric> metrics;
+               };           
+
+            } // service 
          } // v1
+
+         inline namespace v2
+         {
+            namespace uuid = v1::uuid;
+            namespace process = v1::process;
+            namespace transaction = v1::transaction;
+            namespace service
+            {
+               struct Call
+               {
+                  struct Metric
+                  {
+                     
+                     struct
+                     {
+                        enum class Type : long
+                        {
+                           sequential = 1,
+                           // in practice an "outbound" service
+                           concurrent = 2,
+                        };
+
+                        std::string name;
+                        std::string parent;
+                        Type type = Type::sequential;
+                     } service;
+
+                     process::Handle process;
+                     uuid::type execution;
+                     
+                     //! @attention not yet assigned 
+                     struct 
+                     {
+                        transaction::ID id;
+                     } transaction;
+                     
+                     platform::time::point::type start{};
+                     platform::time::point::type end{};
+
+                     platform::time::unit pending{};
+
+                     // outcome of the service call
+                     int code{};
+                  };
+
+                  std::vector< Metric> metrics;
+               };           
+
+            } // service 
+         } // v2
       } // model
    } // event
 } // casual

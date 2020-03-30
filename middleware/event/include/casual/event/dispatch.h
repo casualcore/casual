@@ -54,6 +54,11 @@ namespace casual
                initialize( std::forward< Ts>( callbacks)...);
             }
 
+         private:
+
+            [[deprecated]] void add( std::function< void( const model::v1::service::Call&)> callback);
+            [[deprecated]] void add( std::function< void( model::v1::service::Call&&)> callback);
+
             struct Implementation;
             std::unique_ptr< Implementation> m_implementation;
          };

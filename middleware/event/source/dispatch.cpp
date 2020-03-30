@@ -22,6 +22,35 @@ namespace casual
       
       namespace detail
       {
+         namespace local
+         {
+            namespace
+            {
+               namespace transform
+               {
+                  template< typename R> 
+                  auto metric(common::message::event::service::Metric&& metric)
+                  {
+                     R result;
+                     metric.execution.copy( result.execution);
+                     result.service.name = std::move( metric.service);
+                     result.service.parent = std::move( metric.parent);
+                     result.process.pid = metric.process.pid.value();
+                     metric.process.ipc.value().copy( result.process.ipc);
+
+                     result.start = std::move( metric.start);
+                     result.end = std::move( metric.end);
+
+                     result.pending = std::move( metric.pending);
+
+                     result.code = common::cast::underlying( metric.code);
+
+                     return result;
+                  }
+               } // transform
+            } // <unnamed>
+         } // local
+
          struct Dispatch::Implementation 
          {
             using device_type = common::communication::ipc::inbound::Device;
@@ -38,7 +67,7 @@ namespace casual
             }
 
             template< typename T> 
-            void add_service( T&& callback)
+            void add_callback( T&& callback)
             {
                auto handle = [ callback = std::forward< T>( callback)]( common::message::event::service::Calls& message)
                {
@@ -47,24 +76,35 @@ namespace casual
                   
                   auto transform_metric = []( common::message::event::service::Metric& metric)
                   {
-                     model::service::Call::Metric result;
-                     metric.execution.copy( result.execution);
-                     result.service.name = std::move( metric.service);
-                     result.service.parent = std::move( metric.parent);
-                     result.process.pid = metric.process.pid.value();
-                     metric.process.ipc.value().copy( result.process.ipc);
-
-
-                     result.start = std::move( metric.start);
-                     result.end = std::move( metric.end);
-
-                     result.pending = std::move( metric.pending);
-
-                     result.code = common::cast::underlying( metric.code);
+                     auto result = local::transform::metric< model::service::Call::Metric>( std::move( metric));
+                     
+                     result.service.type = metric.type == decltype( metric.type)::concurrent ? 
+                        decltype( result.service.type)::concurrent : decltype( result.service.type)::sequential;
 
                      return result;
                   };
                   model::service::Call event;
+                  algorithm::transform( message.metrics, event.metrics, transform_metric);
+                  
+                  callback( std::move( event));
+               };
+
+               handler.insert( std::move( handle));
+            }
+
+            template< typename T> 
+            void add_deprecated( T&& callback)
+            {
+               auto handle = [ callback = std::forward< T>( callback)]( common::message::event::service::Calls& message)
+               {
+                  Trace trace{ "event::detail::Implementation::handle message::event::service::Calls"};
+                  log::line( verbose::log, "message: ", message);
+                  
+                  auto transform_metric = []( common::message::event::service::Metric& metric)
+                  {
+                     return local::transform::metric< model::v1::service::Call::Metric>( std::move( metric));
+                  };
+                  model::v1::service::Call event;
                   algorithm::transform( message.metrics, event.metrics, transform_metric);
                   
                   callback( std::move( event));
@@ -105,18 +145,30 @@ namespace casual
          
          void Dispatch::add( std::function< void( const model::service::Call&)> callback)
          {
-            m_implementation->add_service( std::move( callback));
+            m_implementation->add_callback( std::move( callback));
          }
 
          void Dispatch::add( std::function< void( model::service::Call&&)> callback)
          {
-            m_implementation->add_service( std::move( callback));
+            m_implementation->add_callback( std::move( callback));
          }
 
          void Dispatch::add( std::function< void()> empty)
          {
             m_implementation->empty = std::move( empty);
          }
+         
+         // deprecated
+         void Dispatch::add( std::function< void( const model::v1::service::Call&)> callback)
+         {
+            m_implementation->add_deprecated( std::move( callback));
+         }
+
+         // deprecated
+         void Dispatch::add( std::function< void( model::v1::service::Call&&)> callback)
+         {
+            m_implementation->add_deprecated( std::move( callback));
+         }         
 
       } // detail
 
