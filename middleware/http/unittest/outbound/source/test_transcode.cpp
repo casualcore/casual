@@ -49,9 +49,9 @@ namespace casual
 
             auto request= request::prepare( local::node(), std::move( call));
 
-            auto response = request::detail::receive::transcode::payload( std::move( request));
+            auto payload = request::receive::transcode::payload( std::move( request));
 
-            EXPECT_TRUE( response.state().payload.memory.empty());
+            EXPECT_TRUE( payload.memory.empty());
          }
 
          TEST( http_outbound_transcode, binary_buffer)
@@ -64,11 +64,11 @@ namespace casual
             call.buffer.type = common::buffer::type::binary();
             call.buffer.memory = payload;
 
-            auto request= request::prepare( local::node(), std::move( call));
+            auto request = request::prepare( local::node(), std::move( call));
 
-            auto response = request::detail::receive::transcode::payload( std::move( request));
+            auto buffer = request::receive::transcode::payload( std::move( request));
 
-            EXPECT_TRUE( response.state().payload.memory == payload);
+            EXPECT_TRUE( buffer.memory == payload);
          }
       } // outbound
    } // http

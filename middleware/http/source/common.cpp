@@ -230,6 +230,9 @@ namespace casual
                   {
                      // make sure we've got null termination on payload...
                      payload.memory.push_back( '\0');
+                     
+                     // TODO remove
+                     log::line( verbose::log, "payload.memory: ", payload.memory.data());
 
                      auto last = common::transcode::base64::decode( payload.memory, std::begin( payload.memory), std::end( payload.memory));
                      payload.memory.erase( last, std::end( payload.memory));
