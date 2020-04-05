@@ -378,6 +378,20 @@ namespace casual
          EXPECT_TRUE( v_bool == true);
       }
 
+      TEST( common_argument_parse, option_deprecated_keys)
+      {
+         unittest::Trace trace;
+
+         int value{};
+         argument::Parse parse{ "description", 
+            argument::Option{ std::tie( value), argument::option::keys( { "-a"}, { "--deprecated"}), "description"}};
+          
+         EXPECT_NO_THROW({
+            parse( { "--deprecated", "42"});
+         });
+         EXPECT_TRUE( value == 42);
+      }
+
       TEST( common_argument_option, lambda_tuple_string_tuple_int__string)
       {
          unittest::Trace trace;
@@ -477,8 +491,6 @@ namespace casual
       }
 
 
-
-/*
       TEST( common_argument_option, lambda_tuple_string_int__vector_with_tuple_string_int___expect_parse)
       {
          unittest::Trace trace;
@@ -494,7 +506,7 @@ namespace casual
             parse( { "-a", "string", "42"});
          });
       }
-      */
+
 
       TEST( common_argument_parse, optional_tuple_3___3_values__expect_parse)
       {
@@ -905,7 +917,9 @@ namespace casual
             });
          }, argument::exception::user::bash::Completion);
 
-         EXPECT_TRUE( out.str() == argument::reserved::name::suggestions::value() + local::newline() + "--alfa" + local::newline()) << " out.str(): " <<  out.str();
+         auto expected = argument::reserved::name::suggestions::value() + local::newline() + "--alfa" + local::newline();
+
+         EXPECT_TRUE( out.str() == expected) << "expected: " << expected << "\nout.str(): " <<  out.str();
       }
 
       TEST( common_argument_completion, nested_option__3_groups___expect_option_and_value_completion)

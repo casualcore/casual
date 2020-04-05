@@ -29,7 +29,7 @@ namespace casual
                   range_type find( range_type scope, const std::string& key)
                   {
                      auto found = algorithm::find_if( scope, [&]( auto& s){
-                        return ! algorithm::find( s.keys, key).empty();
+                        return s.keys == key;
                      });
 
                      if( ! found)
@@ -70,7 +70,7 @@ namespace casual
 
                      bool operator () ( const detail::Representation& option)
                      {
-                        indent() << string::join( option.keys, ", ") << "  " << option.cardinality;
+                        indent() << string::join( option.keys.active(), ", ") << "  " << option.cardinality;
 
                         {
                            auto information = option.invocable.complete( {}, true);
@@ -89,9 +89,17 @@ namespace casual
                         auto splittet = string::split( option.description, '\n');
                         log::line( log::debug, "option.description", splittet);
                         
-                        algorithm::for_each( string::split( option.description, '\n'), [&]( auto& row){
+                        algorithm::for_each( string::split( option.description, '\n'), [&]( auto& row)
+                        {
                            indent( 6)  << row << "\n";
                         });
+
+                        if( ! option.keys.deprecated().empty())
+                        {
+                           m_out << '\n';
+                           indent( 6) << "deprecated: " << option.keys.deprecated() << "\n";
+                        }
+
 
                         m_out << '\n';
                         
@@ -156,7 +164,7 @@ namespace casual
                         };
 
                         return terminal::format::formatter< detail::Representation>::construct(
-                           terminal::format::column( "OPTIONS", []( const auto& r){ return string::join( r.keys, ", ");}, terminal::color::yellow),
+                           terminal::format::column( "OPTIONS", []( const auto& r){ return string::join( r.keys.active(), ", ");}, terminal::color::yellow),
                            terminal::format::column( "c", print_option_cardinality, terminal::color::no_color),
                            terminal::format::column( "value", print_value, terminal::color::no_color),
                            terminal::format::column( "vc", print_value_cardinality, terminal::color::no_color, terminal::format::Align::right),
@@ -193,21 +201,19 @@ namespace casual
                      local::help::Dispatch dispatch( std::cout);
 
                      for( auto& argument : arguments)
-                     {
                         local::representation::dispatch( representation::find( options, argument), dispatch);
-                     }
-
                   }
 
-                  std::vector< std::string> keys() 
+                  namespace global
                   {
-                     return { reserved::name::help()};
-                  }
+                     const auto keys = option::keys( { reserved::name::help()}, {});
+                  } // global
+                        
 
                   detail::Representation representation()
                   { 
                      detail::Representation result( detail::invoke::create( []( const std::vector< std::string>&){}));
-                     result.keys = help::keys();
+                     result.keys = help::global::keys;
                      result.description = "use --help <option> to see further details\n\nYou can also use <program> <opt-A> --help to get detailed help on <opt-A>";
                      result.cardinality = argument::cardinality::zero_one();
                      return result;
@@ -257,33 +263,21 @@ namespace casual
 
                   struct Mapper
                   {
-                     Mapper( const detail::Representation& representation, const detail::Invoked& invoked)
-                        : option( representation), invoked( invoked) {}
-                     
                      Mapper( const detail::Representation& representation)
-                        : option( representation) {}
+                        : key{ representation.keys.canonical()}, cardinality{ representation.cardinality} {}
+                     
 
-                     struct Option
-                     {
-                        Option( const detail::Representation& r)
-                           : key( r.keys.back()), cardinality( r.cardinality) {}
+                     std::string key;
+                     Cardinality cardinality; 
+                     size_type invoked = 0;
 
-                        std::string key;
-                        Cardinality cardinality; 
-                     } option;
+                     friend bool operator == ( const Mapper& lhs, const std::string& rhs) { return lhs.key == rhs;}
 
-                     struct Invoked 
-                     {
-                        Invoked( const detail::Invoked& invoked)
-                           : invoked( invoked.invoked) {}
-                        
-                        Invoked() = default;
-
-                        explicit operator bool () const { return invoked >= 0;}
-
-                        size_type invoked = -1;
-                     } invoked;
-
+                     CASUAL_LOG_SERIALIZE(
+                        CASUAL_SERIALIZE( key);
+                        CASUAL_SERIALIZE( cardinality);
+                        CASUAL_SERIALIZE( invoked);
+                     )
                   };
 
                   std::tuple< invoked_range, std::vector< Mapper>> map_invoked( invoked_range invoked, representation::range_type options)
@@ -296,20 +290,27 @@ namespace casual
 
                      std::vector< Mapper> result;
 
+                     auto find_or_add = [&result]( auto& representation) -> Mapper&
+                     {
+                        if( auto found = algorithm::find( result, representation.keys.canonical()))
+                           return *found;
+
+                        result.emplace_back( representation);
+                        return range::back( result);
+                     };
+
                      auto unused = invoked;
 
                      while( invoked)
                      {
-                        log::line( verbose::log, "invoked: ", invoked);
-                        log::line( verbose::log, "options: ", options);
 
-                        auto found = algorithm::find_if( options, [&]( auto& option){
-                           return algorithm::find( option.keys, invoked.front().key);
-                        });
-
-                        if( found)
+                        if( auto found = algorithm::find( options, invoked.front().key))
                         {
-                           result.emplace_back( *found, *invoked);
+                           log::line( verbose::log, "found: ", *found);
+                           log::line( verbose::log, "invoked: ", *invoked);
+
+                           auto& mapper = find_or_add( *found);
+                           ++mapper.invoked;
 
                            // this invoked is consumed, we rotate it to the end.
                            invoked = std::get< 0>( algorithm::rotate( invoked, invoked + 1));
@@ -330,31 +331,34 @@ namespace casual
                         {
                            ++invoked;
                         }
-
                      }
+
                      algorithm::append( options, result);
                      return std::tuple< invoked_range, std::vector< Mapper>>{ range::make( std::begin( unused), std::end( invoked)), std::move( result)};
                   }
 
                   void parse_options( invoked_range invoked, std::vector< detail::Representation>&& options)
                   {
+                     Trace trace{ "common::argument::local::completion::parse_options"};
+
                      auto mapped = std::get< 1>( map_invoked( invoked, range::make( options)));
+                     log::line( verbose::log, "mapped: ", mapped);
 
                      auto unconsumed = algorithm::remove_if( mapped, []( auto& map)
                      {
-                        return map.invoked && map.invoked.invoked >= map.option.cardinality.max();
+                        return  map.invoked >= map.cardinality.max();
                      });
 
+                     log::line( verbose::log, "unconsumed: ", unconsumed);
+
                      for( auto& available : unconsumed)
-                        std::cout << available.option.key << '\n';
+                        std::cout << available.key << '\n';
                   }
 
                   void print_suggestion( const detail::Invoked& value)
                   {  
                      for( auto suggestion : value.invocable.complete( value.values, false))
-                     {
                         std::cout << suggestion << '\n';
-                     }
                   }
 
 
@@ -367,9 +371,12 @@ namespace casual
                      
                      std::vector< detail::Invoked> invoked;
 
-                     detail::traverse( holder, arguments, [&invoked]( auto& option, auto& key, range_type arguments){
+                     detail::traverse( holder, arguments, [&invoked]( auto& option, auto& key, range_type arguments)
+                     {
                         invoked.push_back( option.completion( key, arguments));
                      });
+
+                     log::line( verbose::log, "invoked: ", invoked);
 
                      // 
                      // We've got three states we could be in.
@@ -384,13 +391,13 @@ namespace casual
                      //   We only suggest other options
                      //
 
-                     if( ! invoked.empty() && ! value_completed( invoked.back()))
+                     if( ! invoked.empty() && ! value_completed( range::back( invoked)))
                      {
                         // 1
-                        print_suggestion( invoked.back());
+                        print_suggestion( range::back( invoked));
 
                         // 2
-                        if( value_optional( invoked.back()))
+                        if( value_optional( range::back( invoked)))
                            parse_options( range::make( invoked), holder.representation());
                      }
                      else 
@@ -418,6 +425,17 @@ namespace casual
 
          namespace detail
          {
+            namespace key
+            {
+               std::ostream& operator << ( std::ostream& out, const Names& value)
+               {
+                  return stream::write( out, "{ actvie: ", value.m_active,
+                     ", deprecated: ", value.m_deprecated,
+                     '}');
+               }
+              
+            } // key
+
             std::ostream& operator << ( std::ostream& out, const Representation& value)
             {
                return stream::write( out, "{ keys: ", value.keys, 
@@ -432,8 +450,15 @@ namespace casual
                return stream::write( out, "{ key: ", value.key, 
                   ", parent: ", value.parent, 
                   ", values: ", value.values, 
-                  ", cardinality: ", 
-                  value.invocable.cardinality(), '}');
+                  ", cardinality: ", value.invocable.cardinality(),
+                  '}');
+            }
+
+            std::ostream& operator << ( std::ostream& out, const basic_cardinality& value)
+            {
+               return out << "{ cardinality: " << value.m_cardinality
+                  << ", assigned: " << value.m_assigned
+                  << '}';
             }
 
             namespace validate
@@ -466,24 +491,19 @@ namespace casual
             void Default::overrides( range_type arguments, callback_type callback)
             {
                // help
+               if( auto found = algorithm::find_first_of( arguments, local::help::global::keys.active()))
                {
-                  auto found = algorithm::find_first_of( arguments, local::help::keys());
-                  if( found)
-                  {
-                     algorithm::rotate( arguments, found);
-                     local::help::invoke( ++arguments, callback().representation(), description);
-                  }
+                  algorithm::rotate( arguments, found);
+                  local::help::invoke( ++arguments, callback().representation(), description);
                }
                   
-               // bash-completion
+               // bash-completion                  
+               if( auto found = algorithm::find_first_of( arguments, local::completion::keys()))
                {
-                  auto found = algorithm::find_first_of( arguments, local::completion::keys());
-                  if( found)
-                  {
-                     algorithm::rotate( arguments, found);
-                     local::completion::invoke( ++arguments, callback());
-                  }
+                  algorithm::rotate( arguments, found);
+                  local::completion::invoke( ++arguments, callback());
                }
+
             }
          } // policy
          

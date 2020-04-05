@@ -521,7 +521,7 @@ namespace casual
 
                                  // We don't allow other domains to access or know about our
                                  // admin services.
-                                 if( service && service->information.category != common::service::category::admin())
+                                 if( service && service->information.category != common::service::category::admin)
                                  {
                                     if( ! service->instances.sequential.empty())
                                     {

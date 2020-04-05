@@ -160,8 +160,6 @@ namespace casual
                                  {
                                     Trace trace{ "domain::manager::task::create::restart::aliases::local::Progreass::Current::Server::handle process::Exit"};
 
-                                    log::line( verbose::log, "TODO remove - state: ", state);
-
                                     // we 'tag' the ipc to _empty_ so we can correlate when we get the server connect.
                                     // note: even if this task is not the one who has triggered the shutdown,
                                     //  we still handle the events, and it will work.

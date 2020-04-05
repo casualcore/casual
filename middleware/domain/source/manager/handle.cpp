@@ -366,20 +366,36 @@ namespace casual
 
             namespace restart
             {
-               std::vector< common::Uuid> instances( State& state, std::vector< std::string> aliases)
+               namespace local
                {
-                  Trace trace{ "domain::manager::handle::restart::instances"};
+                  namespace
+                  {
+                      // for now, only the domain-manager is unrestartable
+                     auto filter_unrestartable( State& state)
+                     {
+                        return [untouchables = state.untouchables()]( state::dependency::Group& group)
+                        {
+                           auto filter = []( auto& ids, auto& untouchables)
+                           {
+                              algorithm::trim( ids, algorithm::remove_if( ids, [&untouchables]( auto& id)
+                              { 
+                                 return ! algorithm::find( untouchables, id).empty();
+                              }));
+                           };
+
+                           filter( group.servers, std::get< 0>( untouchables));
+                           filter( group.executables, std::get< 1>( untouchables));
+                        };
+                     }
+                     
+                  } // <unnamed>
+               } // local
+               std::vector< common::Uuid> aliases( State& state, std::vector< std::string> aliases)
+               {
+                  Trace trace{ "domain::manager::handle::restart::aliases"};
                   log::line( verbose::log, "aliases: ", aliases);
 
                   auto runnables = state.runnables( std::move( aliases));
-
-                  auto unrestartable_server = []( auto server)
-                  {
-                     // for now, only the domain-manager is unrestartable
-                     return server.get().instances.size() == 1 && common::process::id( server.get().instances[ 0].handle) == common::process::id();
-                  };
-
-                  algorithm::trim( runnables.servers, algorithm::remove_if( runnables.servers, unrestartable_server));
 
                   auto transform_id = []( auto& entity){ return entity.get().id;};
 
@@ -387,7 +403,35 @@ namespace casual
                   algorithm::transform( runnables.servers, group.servers, transform_id);
                   algorithm::transform( runnables.executables, group.executables, transform_id);
 
+                  local::filter_unrestartable( state)( group);
+
                   return { state.tasks.add( manager::task::create::restart::aliases( { std::move( group)}))};
+               }
+
+               std::vector< common::Uuid> groups( State& state, std::vector< std::string> names)
+               {
+                  Trace trace{ "domain::manager::handle::restart::groups"};
+                  log::line( verbose::log, "names: ", names);
+
+                  auto groups = state.shutdownorder();
+
+                  auto filter_groups = []( auto groups, const std::vector< std::string>& names)
+                  {
+                     if( names.empty())
+                        return groups;
+
+                     auto has_name = []( auto& l, auto& r){ return l.description == r;};
+
+                     return std::get< 0>( algorithm::intersection( groups, names, has_name));
+                  };
+
+                  algorithm::trim( groups, filter_groups( range::make( groups), names));
+
+                  // filter
+                  algorithm::for_each( groups, local::filter_unrestartable( state));
+                  log::line( verbose::log, "groups: ", groups);
+
+                  return { state.tasks.add( manager::task::create::restart::aliases( std::move( groups)))};
                }
             } // restart
 

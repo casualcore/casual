@@ -63,7 +63,8 @@ namespace casual
          
             namespace restart
             {
-               std::vector< common::Uuid> instances( State& state, std::vector< std::string> aliases);
+               std::vector< common::Uuid> aliases( State& state, std::vector< std::string> aliases);
+               std::vector< common::Uuid> groups( State& state, std::vector< std::string> groups);
             } // restart
 
             namespace event

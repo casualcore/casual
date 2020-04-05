@@ -30,12 +30,16 @@ namespace casual
                   constexpr auto state = ".casual/domain/state";
                   namespace scale
                   {
-                     constexpr auto instances = ".casual/domain/scale/instances";
+                     constexpr auto aliases = ".casual/domain/scale/aliases";
+                     // [[deprecated]] constexpr auto instances = ".casual/domain/scale/instances";
                   } // scale
 
                   namespace restart
                   {
-                     constexpr auto instances = ".casual/domain/restart/instances";
+                     constexpr auto aliases = ".casual/domain/restart/aliases";
+                     constexpr auto groups = ".casual/domain/restart/groups";
+
+                     // [[deprecated]] constexpr auto instances = ".casual/domain/restart/instances";
                   } // restart
 
                   constexpr auto shutdown = ".casual/domain/shutdown";

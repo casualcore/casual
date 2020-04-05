@@ -478,8 +478,10 @@ namespace casual
 
                   void services( std::ostream& out, admin::model::State& state, Service type)
                   {
-                     auto split = algorithm::partition( state.services, []( const admin::model::Service& s){
-                           return s.category != common::service::category::admin();});
+                     auto split = algorithm::partition( state.services, []( const admin::model::Service& s)
+                     {
+                        return ! algorithm::compare::any( s.category, common::service::category::admin, common::service::category::deprecated);
+                     });
 
                      auto services = type == Service::user ? std::get< 0>( split) : std::get< 1>( split);
 

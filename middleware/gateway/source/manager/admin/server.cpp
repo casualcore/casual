@@ -63,12 +63,12 @@ namespace casual
                      { service::name::state,
                         local::service::state( state),
                         common::service::transaction::Type::none,
-                        common::service::category::admin()
+                        common::service::category::admin
                      },
                      { service::name::rediscover,
                         local::service::rediscover( state),
                         common::service::transaction::Type::none,
-                        common::service::category::admin()
+                        common::service::category::admin
                      }
                }};
             }

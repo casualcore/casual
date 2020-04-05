@@ -288,8 +288,16 @@ namespace casual
                      {
                         std::string name;
 
-                        CASUAL_CONST_CORRECT_SERIALIZE
-                        (
+                        CASUAL_CONST_CORRECT_SERIALIZE(
+                           CASUAL_SERIALIZE( name);
+                        )
+                     };
+
+                     struct Group
+                     {
+                        std::string name;
+
+                        CASUAL_CONST_CORRECT_SERIALIZE(
                            CASUAL_SERIALIZE( name);
                         )
                      };

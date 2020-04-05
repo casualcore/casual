@@ -31,13 +31,21 @@ namespace casual
                {
                   namespace restart
                   {
+                     auto transform_name = []( auto& value)
+                     {
+                        return value.name;
+                     };
+
                      auto aliases( manager::State& state, std::vector< model::restart::Alias> aliases)
                      {
                         Trace trace{ "domain::manager::admin::local::restart::instances"};
+                        return handle::restart::aliases( state, algorithm::transform( aliases, transform_name));                       
+                     }
 
-                        auto transform_alias = []( auto& alias){ return std::move( alias.name);};
-
-                        return handle::restart::instances( state, algorithm::transform( aliases, transform_alias));                       
+                     auto groups( manager::State& state, std::vector< model::restart::Group> groups)
+                     {
+                        Trace trace{ "domain::manager::admin::local::restart::instances"};
+                        return handle::restart::groups( state, algorithm::transform( groups, transform_name));                       
                      }
                   } // restart
 
@@ -107,31 +115,53 @@ namespace casual
                         };
                      }
 
-                     auto scale( manager::State& state)
+                     namespace scale
                      {
-                        return [&state]( common::service::invoke::Parameter&& parameter)
+                        auto aliases( manager::State& state)
                         {
-                           auto protocol = serviceframework::service::protocol::deduce( std::move( parameter));
+                           return [&state]( common::service::invoke::Parameter&& parameter)
+                           {
+                              auto protocol = serviceframework::service::protocol::deduce( std::move( parameter));
 
-                           std::vector< model::scale::Alias> aliases;
-                           protocol >> CASUAL_NAMED_VALUE( aliases);
+                              std::vector< model::scale::Alias> aliases;
+                              protocol >> CASUAL_NAMED_VALUE( aliases);
 
-                           return serviceframework::service::user( std::move( protocol), &handle::scale::aliases, state, std::move( aliases));
-                        };
-                     }
+                              return serviceframework::service::user( std::move( protocol), &handle::scale::aliases, state, std::move( aliases));
+                           };
+                        }     
+                     } // scale
 
-                     auto restart( manager::State& state)
+
+                     namespace restart
                      {
-                        return [&state]( common::service::invoke::Parameter&& parameter)
+                        auto aliases( manager::State& state)
                         {
-                           auto protocol = serviceframework::service::protocol::deduce( std::move( parameter));
-                           
-                           std::vector< model::restart::Alias> aliases;
-                           protocol >> CASUAL_NAMED_VALUE( aliases);
+                           return [&state]( common::service::invoke::Parameter&& parameter)
+                           {
+                              auto protocol = serviceframework::service::protocol::deduce( std::move( parameter));
+                              
+                              std::vector< model::restart::Alias> aliases;
+                              protocol >> CASUAL_NAMED_VALUE( aliases);
 
-                           return serviceframework::service::user( std::move( protocol), &restart::aliases, state, std::move( aliases));
-                        };
-                     }
+                              return serviceframework::service::user( std::move( protocol), &local::restart::aliases, state, std::move( aliases));
+                           };
+                        }
+
+                        auto groups( manager::State& state)
+                        {
+                           return [&state]( common::service::invoke::Parameter&& parameter)
+                           {
+                              auto protocol = serviceframework::service::protocol::deduce( std::move( parameter));
+                              
+                              std::vector< model::restart::Group> groups;
+                              protocol >> CASUAL_NAMED_VALUE( groups);
+
+                              return serviceframework::service::user( std::move( protocol), &local::restart::groups, state, std::move( groups));
+                           };
+                        }
+                     } // restart
+
+
 
                      auto shutdown( manager::State& state)
                      {
@@ -202,38 +232,54 @@ namespace casual
                      { service::name::state,
                         local::service::state( state),
                         common::service::transaction::Type::none,
-                        common::service::category::admin()
+                        common::service::category::admin
                      },
-                     { service::name::scale::instances,
-                           local::service::scale( state),
+                     { service::name::scale::aliases,
+                           local::service::scale::aliases( state),
                            common::service::transaction::Type::none,
-                           common::service::category::admin()
+                           common::service::category::admin
                      },
-                     { service::name::restart::instances,
-                           local::service::restart( state),
+                     { service::name::restart::aliases,
+                           local::service::restart::aliases( state),
                            common::service::transaction::Type::none,
-                           common::service::category::admin()
+                           common::service::category::admin
+                     },
+                     { service::name::restart::groups,
+                           local::service::restart::groups( state),
+                           common::service::transaction::Type::none,
+                           common::service::category::admin
                      },
                      { service::name::shutdown,
                            local::service::shutdown( state),
                            common::service::transaction::Type::none,
-                           common::service::category::admin()
+                           common::service::category::admin
                      },
                      { service::name::configuration::get,
                            local::service::configuration::get( state),
                            common::service::transaction::Type::none,
-                           common::service::category::admin()
+                           common::service::category::admin
                      },
                      { service::name::configuration::put,
                            local::service::configuration::put( state),
                            common::service::transaction::Type::none,
-                           common::service::category::admin()
+                           common::service::category::admin
                      },
                      { service::name::environment::set,
                            local::service::environment::set( state),
                            common::service::transaction::Type::none,
-                           common::service::category::admin()
-                     }
+                           common::service::category::admin
+                     },
+                     // deprecated
+                     { ".casual/domain/scale/instances",
+                           local::service::scale::aliases( state),
+                           common::service::transaction::Type::none,
+                           common::service::category::deprecated
+                     },
+                     { ".casual/domain/restart/instances",
+                           local::service::restart::aliases( state),
+                           common::service::transaction::Type::none,
+                           common::service::category::deprecated
+                     },
                }};
             }
          } // admin

@@ -92,7 +92,7 @@ namespace casual
                         serviceframework::service::protocol::binary::Call call;
                         call << CASUAL_NAMED_VALUE( aliases);
 
-                        auto reply = call( admin::service::name::scale::instances);
+                        auto reply = call( admin::service::name::scale::aliases);
 
                         std::vector< Uuid> result;
                         reply >> CASUAL_NAMED_VALUE( result);
@@ -103,12 +103,25 @@ namespace casual
 
                   namespace restart
                   {
-                     auto instances( const std::vector< admin::model::restart::Alias>& aliases)
+                     auto aliases( const std::vector< admin::model::restart::Alias>& aliases)
                      {
                         serviceframework::service::protocol::binary::Call call;
                         call << CASUAL_NAMED_VALUE( aliases);
 
-                        auto reply = call( admin::service::name::restart::instances);
+                        auto reply = call( admin::service::name::restart::aliases);
+
+                        std::vector< Uuid> result;
+                        reply >> CASUAL_NAMED_VALUE( result);
+
+                        return result;
+                     }
+
+                     auto groups( const std::vector< admin::model::restart::Group>& groups)
+                     {
+                        serviceframework::service::protocol::binary::Call call;
+                        call << CASUAL_NAMED_VALUE( groups);
+
+                        auto reply = call( admin::service::name::restart::groups);
 
                         std::vector< Uuid> result;
                         reply >> CASUAL_NAMED_VALUE( result);
@@ -308,6 +321,16 @@ namespace casual
                      return aliases;
                   };
 
+                  auto fetch_groups()
+                  {
+                     auto state = call::state();
+                     
+                     return common::algorithm::transform( state.groups, []( auto& group)
+                     { 
+                        return std::move( group.name);
+                     });
+                  };
+
                   namespace list
                   {
                      namespace process
@@ -477,42 +500,42 @@ namespace casual
                      } // instances
                   } // list
 
-                  namespace alias
+                  namespace detail
                   {
-                     namespace detail
+                     // generalization of the event handling 
+                     auto invoke = []( auto&& invocable, auto&& argument)
                      {
-                        // generalization of the event handling 
-                        auto invoke = []( auto&& invocable, auto&& argument)
+                        // if no-block we don't mess with events
+                        if( ! terminal::output::directive().block())
                         {
-                           // if no-block we don't mess with events
-                           if( ! terminal::output::directive().block())
+                           invocable( argument);
+                           return;
+                        }
+
+                        decltype( invocable( argument)) tasks;
+
+                        auto condition = common::event::condition::compose(
+                           common::event::condition::prelude( [&]()
                            {
-                              invocable( argument);
-                              return;
-                           }
+                              tasks = invocable( argument);
+                           }),
+                           common::event::condition::done( [&tasks]()
+                           { 
+                              return tasks.empty();
+                           })
+                        );
 
-                           decltype( invocable( argument)) tasks;
+                        // listen for events
+                        common::event::listen( 
+                           condition,
+                           local::event::handler( tasks));
+                     };
+                     
+                  } // detail 
 
-                           auto condition = common::event::condition::compose(
-                              common::event::condition::prelude( [&]()
-                              {
-                                 tasks = invocable( argument);
-                              }),
-                              common::event::condition::done( [&tasks]()
-                              { 
-                                 return tasks.empty();
-                              })
-                           );
-
-                           // listen for events
-                           common::event::listen( 
-                              condition,
-                              local::event::handler( tasks));
-                        };
-                        
-                     } // detail 
-
-                     namespace scale
+                  namespace scale
+                  {
+                     namespace aliases
                      {
                         void invoke( const std::vector< std::tuple< std::string, int>>& values)
                         {   
@@ -529,7 +552,7 @@ namespace casual
                         auto completion = []( auto values, bool help) -> std::vector< std::string>
                         {
                            if( help)
-                              return { "<alias> <#>"};
+                              return { "<alias>", "<#>"};
                            
                            if( values.size() % 2 == 0)
                               return fetch_aliases();
@@ -537,20 +560,23 @@ namespace casual
                               return { "<value>"};
                         };
 
-                     } // scale
+                        constexpr auto description = R"(scale instances for the provided aliases
+)";
+                     } // aliases
 
+                  } // scale
 
-                     namespace restart
+                  namespace restart
+                  {
+                     namespace aliases
                      {
                         void invoke( std::vector< std::string> values)
                         {
                            auto transform = []( auto& value){
-                              //admin::model::restart::Alias result;
-                              //result.name = std::move( value);
                               return admin::model::restart::Alias{ std::move( value)};
                            };
 
-                           detail::invoke( call::restart::instances, common::algorithm::transform( values, transform));
+                           detail::invoke( call::restart::aliases, common::algorithm::transform( values, transform));
                         }
 
                         auto completion = []( auto values, bool help) -> std::vector< std::string>
@@ -560,8 +586,40 @@ namespace casual
                            
                            return fetch_aliases();
                         };
+
+                        constexpr auto description = R"(restart instances for the given aliases
+
+note: some aliases are unrestartable
+)";
                      } // restart
-                  } // alias
+                     
+                     namespace groups
+                     {
+                        void invoke( std::vector< std::string> values)
+                        {
+                           auto transform = []( auto& value){
+                              return admin::model::restart::Group{ std::move( value)};
+                           };
+
+                           detail::invoke( call::restart::groups, common::algorithm::transform( values, transform));
+                        }
+
+                        auto completion = []( auto values, bool help) -> std::vector< std::string>
+                        {
+                           if( help)
+                              return { "<alias>"};
+                           
+                           return fetch_groups();
+                        };
+
+                        constexpr auto description = R"(restart all instances for aliases that are members of the provided groups
+
+if no groups are provided, all groups are restated.
+
+note: some aliases are unrestartable
+)";
+                     } // restart
+                  } // restart
 
 
                   namespace environment
@@ -580,7 +638,7 @@ namespace casual
                         auto complete = []( auto values, bool help) -> std::vector< std::string>
                         {
                            if( help)
-                              return { "<variable> <value> [<alias>].*"};
+                              return { "<variable>", "<value>", "[<alias>*]"};
 
                            auto list_environment = []()
                            {
@@ -950,8 +1008,15 @@ note: not all options has legend, use 'auto complete' to find out which legends 
                   return argument::Group{ [](){}, { "domain"}, "local casual domain related administration",
                      argument::Option( &local::action::list::servers::invoke, { "-ls", "--list-servers"}, local::action::list::servers::description),
                      argument::Option( &local::action::list::executables::invoke, { "-le", "--list-executables"}, local::action::list::executables::description),
-                     argument::Option( argument::option::one::many( &local::action::alias::scale::invoke), local::action::alias::scale::completion, { "-si", "--scale-instances"}, "<alias> <#> scale executable instances"),
-                     argument::Option( argument::option::one::many( &local::action::alias::restart::invoke), local::action::alias::restart::completion, { "-ri", "--restart-instances"}, "<alias> restart instances for the given aliases"),
+                     argument::Option( argument::option::one::many( &local::action::scale::aliases::invoke), 
+                        local::action::scale::aliases::completion, 
+                        argument::option::keys( { "-sa", "--scale-aliases"}, { "-si", "--scale-instances"}), local::action::scale::aliases::description),
+                     argument::Option( argument::option::one::many( &local::action::restart::aliases::invoke), 
+                        local::action::restart::aliases::completion, 
+                        argument::option::keys( { "-ra", "--restart-aliases"}, { "-ri", "--restart-instances"}), local::action::restart::aliases::description),
+                     argument::Option( &local::action::restart::groups::invoke, 
+                        local::action::restart::groups::completion, 
+                        { "-rg", "--restart-groups"}, local::action::restart::groups::description),
                      argument::Option( &local::action::list::instances::server::invoke, { "-lis", "--list-instances-server"}, local::action::list::instances::server::description),
                      argument::Option( &local::action::list::instances::executable::invoke, { "-lie", "--list-instances-executable"}, local::action::list::instances::executable::description),
                      argument::Option( &local::action::shutdown::invoke, { "-s", "--shutdown"}, local::action::shutdown::descripton),

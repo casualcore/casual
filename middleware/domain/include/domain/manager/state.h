@@ -406,6 +406,7 @@ namespace casual
             state::Server* server( common::strong::process::id pid) noexcept;
             const state::Server* server( common::strong::process::id pid) const noexcept;
             state::Executable* executable( common::strong::process::id pid) noexcept;
+            const state::Executable* executable( common::strong::process::id pid) const noexcept;
 
 
             state::Server& entity( state::Server::id_type id);
@@ -428,6 +429,9 @@ namespace casual
             common::process::Handle grandchild( common::strong::process::id pid) const noexcept;
 
             common::process::Handle singleton( const common::Uuid& id) const noexcept;
+
+            //! @return all 'running' id:s of 'aliases' that are untouchable, ie. internal casual stuff.
+            std::tuple< std::vector< state::Server::id_type>, std::vector< state::Executable::id_type>> untouchables() const noexcept;
 
             //! Extract all resources (names) configured to a specific process (server)
             //!

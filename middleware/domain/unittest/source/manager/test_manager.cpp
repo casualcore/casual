@@ -205,7 +205,7 @@ domain:
 
                   auto scale( const std::vector< admin::model::scale::Alias>& aliases)
                   {
-                     return unittest::call< std::vector< common::Uuid>>( admin::service::name::scale::instances, aliases);
+                     return unittest::call< std::vector< common::Uuid>>( admin::service::name::scale::aliases, aliases);
                   }
 
                   auto scale( const std::string& alias, platform::size::type instances)
@@ -213,21 +213,33 @@ domain:
                      return scale( { { alias, instances}});
                   }
 
-                  auto restart( const std::vector< admin::model::restart::Alias>& aliases)
+                  namespace restart
                   {
-                     return unittest::call< std::vector< common::Uuid>>( admin::service::name::restart::instances, aliases);
-                  }
-
-                  auto restart( std::vector< std::string> aliases)
-                  {
-                     auto transform = []( auto& a) 
+                     auto aliases( const std::vector< admin::model::restart::Alias>& aliases)
                      {
-                        admin::model::restart::Alias result;
-                        result.name = std::move( a);
-                        return result;
-                     };
-                     return restart( algorithm::transform( aliases, transform));
-                  }
+                        return unittest::call< std::vector< common::Uuid>>( admin::service::name::restart::aliases, aliases);
+                     }
+
+                     auto aliases( std::vector< std::string> aliases)
+                     {
+                        auto transform = []( auto& a) 
+                        {
+                           return admin::model::restart::Alias{ std::move( a)};
+                        };
+                        return restart::aliases( algorithm::transform( aliases, transform));
+                     }
+
+                     auto groups( std::vector< std::string> groups)
+                     {
+                        auto transform = []( auto& name) 
+                        {
+                           return admin::model::restart::Group{ std::move( name)};
+                        };
+
+                        return unittest::call< std::vector< common::Uuid>>( admin::service::name::restart::groups, algorithm::transform( groups, transform));
+                     }
+                  } // restart
+
 
                } // call
 
@@ -752,10 +764,10 @@ domain:
 
             auto now = platform::time::clock::type::now();
 
-            decltype( local::call::restart( { ""})) result;
+            decltype( local::call::restart::aliases( { ""})) result;
 
             auto condition = event::condition::compose( 
-               event::condition::prelude( [&result](){ result = local::call::restart( { "sleep"});}), 
+               event::condition::prelude( [&result](){ result = local::call::restart::aliases( { "sleep"});}), 
                event::condition::done( [&result](){ return result.empty();})
             );
 
@@ -797,10 +809,10 @@ domain:
 
             auto now = platform::time::clock::type::now();
 
-            decltype( local::call::restart( { ""})) result;
+            decltype( local::call::restart::aliases( { ""})) result;
 
             auto condition = event::condition::compose( 
-               event::condition::prelude( [&result](){ result = local::call::restart( { "simple-server"});}), 
+               event::condition::prelude( [&result](){ result = local::call::restart::aliases( { "simple-server"});}), 
                event::condition::done( [&result](){ return result.empty();})
             );
 
@@ -821,6 +833,275 @@ domain:
             ASSERT_TRUE( found.size() == 1) << CASUAL_NAMED_VALUE( found);
             // all instances should have a spawnpoint later than before the restart
             EXPECT_TRUE( algorithm::all_of( found->instances, local::predicate::spawnpont( now))) << CASUAL_NAMED_VALUE( found) << "\n" << CASUAL_NAMED_VALUE( now);
+         }
+
+
+         TEST( domain_manager, restart_group_A__expect_restartded_others_untouched)
+         {
+            common::unittest::Trace trace;
+
+            constexpr auto configuration = R"(
+domain:
+  name: restart_groups
+
+  groups:
+    - name: A
+    - name: B
+      dependencies: [ A]
+    - name: C
+      dependencies: [ B]
+
+  servers:
+    - path: ./bin/test-simple-server
+      alias: simple-server
+      instances: 2
+      memberships: [ A]
+
+  executables:
+    - alias: sleep
+      path: sleep
+      arguments: [60]
+      instances: 2
+      memberships: [ B]
+
+)";
+
+            unittest::Process manager{ { configuration}};
+
+            auto now = platform::time::clock::type::now();
+
+            decltype( local::call::restart::groups( { ""})) result;
+
+            auto condition = event::condition::compose( 
+               event::condition::prelude( [&result](){ result = local::call::restart::groups( { "A"});}), 
+               event::condition::done( [&result](){ return result.empty();})
+            );
+
+            // start and listen for events
+            common::event::listen( condition, 
+               [ &result]( const message::event::Task& task)
+               {
+                  // remove correlated task
+                  if( task.done())
+                     algorithm::trim( result, algorithm::remove( result, task.correlation));
+               }
+            );
+
+            auto state = local::call::state();
+
+            auto found = local::find::alias( state.servers, "simple-server");
+
+            ASSERT_TRUE( found.size() == 1) << CASUAL_NAMED_VALUE( found);
+            // all instances should have a spawnpoint later than before the restart
+            EXPECT_TRUE( algorithm::all_of( found->instances, local::predicate::spawnpont( now))) << CASUAL_NAMED_VALUE( found) << "\n" << CASUAL_NAMED_VALUE( now);
+
+            // other instances should be untouched
+            {
+               auto found = local::find::alias( state.executables, "sleep");
+               ASSERT_TRUE( found);
+               EXPECT_TRUE( algorithm::none_of( found->instances, local::predicate::spawnpont( now)));
+            }
+         }
+
+         TEST( domain_manager, restart_group_B__expect_restartded_others_untouched)
+         {
+            common::unittest::Trace trace;
+
+            constexpr auto configuration = R"(
+domain:
+  name: restart_groups
+
+  groups:
+    - name: A
+    - name: B
+      dependencies: [ A]
+    - name: C
+      dependencies: [ B]
+
+  servers:
+    - path: ./bin/test-simple-server
+      alias: simple-server
+      instances: 2
+      memberships: [ A]
+
+  executables:
+    - alias: sleep
+      path: sleep
+      arguments: [60]
+      instances: 2
+      memberships: [ B]
+
+)";
+
+            unittest::Process manager{ { configuration}};
+
+            auto now = platform::time::clock::type::now();
+
+            decltype( local::call::restart::groups( { ""})) result;
+
+            auto condition = event::condition::compose( 
+               event::condition::prelude( [&result](){ result = local::call::restart::groups( { "B"});}), 
+               event::condition::done( [&result](){ return result.empty();})
+            );
+
+            // start and listen for events
+            common::event::listen( condition, 
+               [ &result]( const message::event::Task& task)
+               {
+                  // remove correlated task
+                  if( task.done())
+                     algorithm::trim( result, algorithm::remove( result, task.correlation));
+               }
+            );
+
+            auto state = local::call::state();
+
+            // all instances should have a spawnpoint later than before the restart
+            {
+               auto found = local::find::alias( state.executables, "sleep");
+               ASSERT_TRUE( found);
+               EXPECT_TRUE( algorithm::all_of( found->instances, local::predicate::spawnpont( now)));
+            }
+
+            // other instances should be untouched
+            {
+               auto found = local::find::alias( state.servers, "simple-server");
+               ASSERT_TRUE( found);
+               EXPECT_TRUE( algorithm::none_of( found->instances, local::predicate::spawnpont( now)));
+            }
+         }
+
+
+         TEST( domain_manager, restart_group_A_B___expect_all_restartded)
+         {
+            common::unittest::Trace trace;
+
+            constexpr auto configuration = R"(
+domain:
+  name: restart_groups
+
+  groups:
+    - name: A
+    - name: B
+      dependencies: [ A]
+    - name: C
+      dependencies: [ B]
+
+  servers:
+    - path: ./bin/test-simple-server
+      alias: simple-server
+      instances: 2
+      memberships: [ A]
+
+  executables:
+    - alias: sleep
+      path: sleep
+      arguments: [60]
+      instances: 2
+      memberships: [ B]
+
+)";
+
+            unittest::Process manager{ { configuration}};
+
+            auto now = platform::time::clock::type::now();
+
+            decltype( local::call::restart::groups( { ""})) result;
+
+            auto condition = event::condition::compose( 
+               event::condition::prelude( [&result](){ result = local::call::restart::groups( { "A", "B"});}), 
+               event::condition::done( [&result](){ return result.empty();})
+            );
+
+            // start and listen for events
+            common::event::listen( condition, 
+               [ &result]( const message::event::Task& task)
+               {
+                  // remove correlated task
+                  if( task.done())
+                     algorithm::trim( result, algorithm::remove( result, task.correlation));
+               }
+            );
+
+            auto state = local::call::state();
+
+            // all instances should have a spawnpoint later than before the restart
+            {
+               auto found = local::find::alias( state.executables, "sleep");
+               ASSERT_TRUE( found);
+               EXPECT_TRUE( algorithm::all_of( found->instances, local::predicate::spawnpont( now)));
+            }
+            {
+               auto found = local::find::alias( state.servers, "simple-server");
+               ASSERT_TRUE( found);
+               EXPECT_TRUE( algorithm::all_of( found->instances, local::predicate::spawnpont( now)));
+            }
+         }
+
+         TEST( domain_manager, restart_no_group___expect_all_restartded)
+         {
+            common::unittest::Trace trace;
+
+            constexpr auto configuration = R"(
+domain:
+  name: restart_groups
+
+  groups:
+    - name: A
+    - name: B
+      dependencies: [ A]
+    - name: C
+      dependencies: [ B]
+
+  servers:
+    - path: ./bin/test-simple-server
+      alias: simple-server
+      instances: 2
+      memberships: [ A]
+
+  executables:
+    - alias: sleep
+      path: sleep
+      arguments: [60]
+      instances: 2
+      memberships: [ B]
+
+)";
+
+            unittest::Process manager{ { configuration}};
+
+            auto now = platform::time::clock::type::now();
+
+            decltype( local::call::restart::groups( { ""})) result;
+
+            auto condition = event::condition::compose( 
+               event::condition::prelude( [&result](){ result = local::call::restart::groups( {});}), 
+               event::condition::done( [&result](){ return result.empty();})
+            );
+
+            // start and listen for events
+            common::event::listen( condition, 
+               [ &result]( const message::event::Task& task)
+               {
+                  // remove correlated task
+                  if( task.done())
+                     algorithm::trim( result, algorithm::remove( result, task.correlation));
+               }
+            );
+
+            auto state = local::call::state();
+
+            // all instances should have a spawnpoint later than before the restart
+            {
+               auto found = local::find::alias( state.executables, "sleep");
+               ASSERT_TRUE( found);
+               EXPECT_TRUE( algorithm::all_of( found->instances, local::predicate::spawnpont( now)));
+            }
+            {
+               auto found = local::find::alias( state.servers, "simple-server");
+               ASSERT_TRUE( found);
+               EXPECT_TRUE( algorithm::all_of( found->instances, local::predicate::spawnpont( now)));
+            }
          }
 
       } // manager
