@@ -487,9 +487,23 @@ namespace casual
                                  Trace trace{ "gateway::outbound::local::handle::external::service::call::reply"};
                                  log::line( verbose::log, "message: ", message);
 
+                                 
+                                 auto no_entry_unadvertise = []( auto& reply, auto& destination)
+                                 {
+                                    if( reply.code.result != decltype( reply.code.result)::no_entry)
+                                       return; // no-op
+                                    
+                                    common::message::service::Advertise message{ common::process::handle()};
+                                    message.services.remove.push_back( destination.service);
+                                    blocking::send( common::communication::instance::outbound::service::manager::device(), message);
+                                 };
+
                                  try
                                  {
                                     auto destination = state.service.route.get( message.correlation);
+
+                                    // we unadvertise the service if we get no_entry.
+                                    no_entry_unadvertise( message, destination);
 
                                     // get the original "un-branched" trid
                                     external::origin::transaction( state, message);
