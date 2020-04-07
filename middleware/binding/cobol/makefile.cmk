@@ -14,7 +14,6 @@ LibraryPaths([
 
 
 install_lib = []
-install_include = []
 
 objectfiles = [
     Compile( 'source/tx.cpp'),
@@ -33,8 +32,17 @@ lib_xatmi_so = LinkLibrary( binary_name,
 install_lib.append( lib_xatmi_so)
 
 lib_xatmi_a = LinkArchive( binary_name, objectfiles)
-
 install_lib.append( lib_xatmi_a)
 
+# install the copy files
+install_copy = [ 
+   'copy/TPSTATUS.cpy',
+   'copy/TPSVCDEF.cpy',
+   'copy/TPSVCRET.cpy',
+   'copy/TPTYPE.cpy',
+   'copy/TXINFDEF.cpy',
+   'copy/TXSTATUS.cpy'
+]
 
+Install( install_copy, '$(CASUAL_HOME)/binding/cobol/copy')
 Install( install_lib, '$(CASUAL_HOME)/lib')
