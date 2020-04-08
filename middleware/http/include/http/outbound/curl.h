@@ -97,6 +97,11 @@ namespace casual
                type::error::buffer& buffer();
             } // error
 
+            namespace response
+            {
+               long code( const type::easy& easy);
+            } // response
+
             void check( type::code::multi code);
             void check( type::code::easy code);
 

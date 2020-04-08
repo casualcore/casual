@@ -10,14 +10,12 @@
 
 #include "gateway/manager/state.h"
 
-#include "gateway/manager/admin/vo.h"
+#include "gateway/manager/admin/model.h"
 #include "common/message/domain.h"
 
 
 namespace casual
 {
-
-
    namespace gateway
    {
       namespace transform
@@ -25,14 +23,9 @@ namespace casual
 
          manager::State state( const common::message::domain::configuration::Domain& configuration);
 
-         manager::admin::vo::State state( const manager::State& state);
-
+         manager::admin::model::State state( const manager::State& state);
 
       } // transform
-
    } // gateway
-
-
 } // casual
-
 

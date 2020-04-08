@@ -295,8 +295,8 @@ namespace casual
                      auto transform_task = []( auto& task)
                      {
                         manager::admin::model::Task result;
-                        result.id = task.id();
-                        result.description = task.description();
+                        result.id = task.context().id;
+                        result.description = task.context().descripton;
                         return result;
                      };
 
@@ -350,6 +350,22 @@ namespace casual
          manager::admin::model::State state( const manager::State& state)
          {
             manager::admin::model::State result;
+
+            auto transform_runlevel = []( auto runlevel)
+            {
+               using Result = manager::admin::model::state::Runlevel;
+               switch( runlevel)
+               {
+                  using Source = decltype( runlevel);
+                  case Source::startup: return Result::startup;
+                  case Source::running: return Result::running;
+                  case Source::shutdown: return Result::shutdown;
+                  case Source::error: return Result::error;
+               }
+               return Result::error;
+            };
+
+            result.runlevel = transform_runlevel( state.runlevel());
 
             result.version = local::model::version();
             result.identity = common::domain::identity();

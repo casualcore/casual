@@ -101,19 +101,19 @@ namespace casual
             event_subscription_end,
             event_idle,
 
-            EVENT_DOMAIN_BASE = 4100,
-            event_domain_boot_begin = EVENT_DOMAIN_BASE,
-            event_domain_boot_end,
-            event_domain_shutdown_begin,
-            event_domain_shutdown_end,
-            event_domain_error,
-            event_domain_server_connect,
-            event_domain_group,
 
-            event_domain_process_spawn,
-            event_domain_process_exit,
-            event_domain_task_begin,
-            event_domain_task_end,
+            EVENT_DOMAIN_BASE = 4100,
+            
+            event_task = EVENT_DOMAIN_BASE,
+            event_sub_task,
+            event_error,
+
+            event_process_spawn,
+            event_process_exit,
+
+            // internal domain events
+            event_domain_information,
+
             EVENT_DOMAIN_BASE_END,
 
             EVENT_SERVICE_BASE = 4200,
@@ -196,6 +196,9 @@ namespace casual
             queue_clear_reply,
             queue_messages_remove_request,
             queue_messages_remove_reply,
+
+            queue_metric_reset_request = QUEUE_BASE + 700,
+            queue_metric_reset_reply,
             
             // gateway
             GATEWAY_BASE = 7000,
@@ -205,6 +208,10 @@ namespace casual
             gateway_inbound_connect, 
 
             gateway_outbound_connect_done,
+
+            gateway_outbound_rediscover_request,
+            gateway_outbound_rediscover_reply, 
+
 
             gateway_domain_connect_request  = 7200,
             gateway_domain_connect_reply    = 7201,

@@ -194,21 +194,9 @@ namespace casual
                      transaction_branch_type m_branches;
                   } branch;
 
-
+                  //! correlations of all pending rediscoveries. 
+                  std::vector< Uuid> rediscoveries;
                };
-
-               namespace inbound
-               {
-                  template< typename Message>
-                  auto message()
-                  {
-                     Trace trace{ "gateway::outbound::local::inbound::message"};
-
-                     return common::message::dispatch::reply::pump< Message>(
-                        common::message::handle::defaults( common::communication::ipc::inbound::device()),
-                        common::communication::ipc::inbound::device());
-                  }
-               } // inbound
 
 
                auto connect( communication::tcp::Address address)
@@ -255,14 +243,16 @@ namespace casual
                      common::message::handle::defaults( communication::ipc::inbound::device()), 
                      []( const message::outbound::connect::Done&) {} // no-op 
                      );
+
+                  namespace dispatch = common::message::dispatch;
+
+                  auto condition = dispatch::condition::compose( 
+                     dispatch::condition::done( [&socket](){ return socket ? true : false; }));
                   
-                  common::message::dispatch::conditional::pump( 
+                  dispatch::pump(
+                     condition,
                      handler,
-                     communication::ipc::inbound::device(),
-                     [&socket]()
-                     {
-                        return socket ? true : false;
-                     });
+                     communication::ipc::inbound::device());
 
                   return socket;
                }
@@ -275,7 +265,7 @@ namespace casual
                   // 'connect' to our local domain
                   common::communication::instance::connect();
 
-                  // connect to the other domain, this will try unitl succes or "shutdown"
+                  // connect to the other domain, this will try until success or "shutdown"
                   communication::tcp::inbound::Device inbound{ connect( std::move( settings.address))};
 
                   // send connect request
@@ -298,14 +288,93 @@ namespace casual
 
                namespace handle
                {
-                  namespace state
+                  namespace advertise
                   {
-                     struct Base
+                     namespace detail
                      {
-                        Base( State& state) : state( state) {}
-                        State& state;
-                     };
-                  } // state
+                        template< typename C>
+                        void services( State& state, const Uuid& execution, C&& complement)
+                        {
+                           common::message::service::concurrent::Advertise advertise;
+                           advertise.execution = execution;
+                           advertise.process = common::process::handle();
+                           advertise.order = state.order;
+
+                           complement( advertise);
+
+                           blocking::send( 
+                              common::communication::instance::outbound::service::manager::device(), 
+                              advertise);
+                        }
+
+                        template< typename C>
+                        void queues( State& state, const Uuid& execution, C&& complement)
+                        {
+                           common::message::queue::concurrent::Advertise advertise;
+                           advertise.execution = execution;
+                           advertise.process = common::process::handle();
+                           advertise.order = state.order;
+                           complement( advertise);
+
+                           blocking::optional::send( 
+                              common::communication::instance::outbound::queue::manager::optional::device(),
+                              advertise);
+                        }
+                     } // detail
+
+                     template< typename S = std::vector< common::message::service::concurrent::advertise::Service>>
+                     void services( State& state, const Uuid& execution, S&& services)
+                     {
+                        detail::services( state, execution, [&services]( auto& message)
+                        {
+                           message.services.add = std::forward< S>( services);
+
+                           // add one hop, since we now it has passed a domain boundary
+                           for( auto& service : message.services.add) 
+                              ++service.hops;
+                        });
+                     }
+
+
+                     template< typename Q = std::vector< common::message::queue::concurrent::advertise::Queue>>
+                     void queues( State& state, const Uuid& execution, Q&& queues)
+                     {
+                        detail::queues( state, execution, [&queues]( auto& message)
+                        {
+                           message.queues.add = std::forward< Q>( queues);
+                        });
+                     }
+
+                     namespace reset
+                     {
+                        template< typename S = std::vector< common::message::service::concurrent::advertise::Service>>
+                        void services( State& state, const Uuid& execution, S&& services)
+                        {
+                           detail::services( state, execution, [&services]( auto& message)
+                           {
+                              message.reset = true;
+                              message.services.add = std::forward< S>( services);
+
+                              // add one hop, since we now it has passed a domain boundary
+                              for( auto& service : message.services.add) 
+                                 ++service.hops;
+                           });
+                        }
+
+
+                        template< typename Q = std::vector< common::message::queue::concurrent::advertise::Queue>>
+                        void queues( State& state, const Uuid& execution, Q&& queues)
+                        {
+                           detail::queues( state, execution, [&queues]( auto& message)
+                           {
+                              message.reset = true;
+                              message.queues.add = std::forward< Q>( queues);
+                           });
+                        }
+                        
+                     } // reset
+
+                  } // advertise
 
 
                   namespace external
@@ -324,7 +393,6 @@ namespace casual
                         }
 
                      } // branch
-
 
                      namespace connect
                      {
@@ -368,53 +436,74 @@ namespace casual
                         }
                      } // connect
 
-                     template< typename M>
-                     struct basic_reply : state::Base
+                     namespace basic
                      {
-                        using message_type = M;
-                        using state::Base::Base;
-
-                        void operator() ( message_type& message) const
+                        namespace detail
                         {
-                           log::line( verbose::log, "message: ", message);
-
-                           try
-                           {
-                              auto destination = state.route.get( message.correlation);
-                              set_process( message);
-
-                              blocking::optional::send( destination.destination.ipc, message);
+                           // sets process if message has a process attribute
+                           template< typename M>
+                           auto process( M& message, traits::priority::tag< 1>) -> decltype( message.process = common::process::handle(), void())
+                           { 
+                              message.process = common::process::handle();
                            }
-                           catch( const common::exception::system::invalid::Argument&)
+
+                           template< typename M>
+                           void process( M& message, traits::priority::tag< 0>) {}
+                        } // detail
+
+                        template< typename Message>
+                        auto reply( State& state)
+                        {
+                           return [&state]( Message& message)
                            {
-                              log::line( log::category::error, "failed to correlate [", message.correlation, "] reply with a destination - action: ignore");
-                           }
+                              Trace trace{ "gateway::outbound::local::handle::external::basic_reply"};
+                              log::line( verbose::log, "message: ", message);
+
+                              try
+                              {
+                                 auto destination = state.route.get( message.correlation);
+                                 detail::process( message, traits::priority::tag< 1>{});
+
+                                 blocking::optional::send( destination.destination.ipc, message);
+                              }
+                              catch( const common::exception::system::invalid::Argument&)
+                              {
+                                 log::line( log::category::error, "failed to correlate [", message.correlation, "] reply with a destination - action: ignore");
+                              }
+                           };
                         }
+                     } // basic
 
-                     private:
-                        // todo: why can't we set source process for queue-messages? 
-                        void set_process( common::message::queue::enqueue::Reply& message) const { }
-                        void set_process( common::message::queue::dequeue::Reply& message) const { }
 
-                        template< typename T>
-                        void set_process( T& message) const { message.process = common::process::handle();}
-                     };
 
                      namespace service
                      {
                         namespace call
                         {
-                           struct Reply : state::Base
+                           auto reply( State& state)
                            {
-                              using state::Base::Base;
-
-                              void operator() ( common::message::service::call::Reply& message)
+                              return [&state]( common::message::service::call::Reply& message)
                               {
+                                 Trace trace{ "gateway::outbound::local::handle::external::service::call::reply"};
                                  log::line( verbose::log, "message: ", message);
+
+                                 
+                                 auto no_entry_unadvertise = []( auto& reply, auto& destination)
+                                 {
+                                    if( reply.code.result != decltype( reply.code.result)::no_entry)
+                                       return; // no-op
+                                    
+                                    common::message::service::Advertise message{ common::process::handle()};
+                                    message.services.remove.push_back( destination.service);
+                                    blocking::send( common::communication::instance::outbound::service::manager::device(), message);
+                                 };
 
                                  try
                                  {
                                     auto destination = state.service.route.get( message.correlation);
+
+                                    // we unadvertise the service if we get no_entry.
+                                    no_entry_unadvertise( message, destination);
 
                                     // get the original "un-branched" trid
                                     external::origin::transaction( state, message);
@@ -428,6 +517,7 @@ namespace casual
                                        metric.execution = message.execution;
                                        metric.service = std::move( destination.service);
                                        metric.parent = std::move( destination.parent);
+                                       metric.type = decltype( metric.type)::concurrent;
                                        
                                        metric.trid = message.transaction.trid;
                                        metric.start = destination.start;
@@ -453,8 +543,8 @@ namespace casual
                                     blocking::send( common::communication::instance::outbound::service::manager::device(), state.metric);
                                     state.metric.metrics.clear();
                                  }
-                              }
-                           };
+                              };
+                           }
 
                         } // call
 
@@ -464,12 +554,12 @@ namespace casual
                      {
                         namespace enqueue
                         {
-                           using Reply = basic_reply< common::message::queue::enqueue::Reply>;
+                           auto reply = basic::reply< common::message::queue::enqueue::Reply>;
                         } // enqueue
 
                         namespace dequeue
                         {
-                           using Reply = basic_reply< common::message::queue::dequeue::Reply>;
+                           auto reply = basic::reply< common::message::queue::dequeue::Reply>;
                         } // dequeue
                      } // queue
 
@@ -479,15 +569,15 @@ namespace casual
                         {
                            namespace prepare
                            {
-                              using Reply = basic_reply< common::message::transaction::resource::prepare::Reply>;
+                              auto reply = basic::reply< common::message::transaction::resource::prepare::Reply>;
                            } // prepare
                            namespace commit
                            {
-                              using Reply = basic_reply< common::message::transaction::resource::commit::Reply>;
+                              auto reply = basic::reply< common::message::transaction::resource::commit::Reply>;
                            } // commit
                            namespace rollback
                            {
-                              using Reply = basic_reply< common::message::transaction::resource::rollback::Reply>;
+                              auto reply = basic::reply< common::message::transaction::resource::rollback::Reply>;
                            } // commit
                         } // resource
                      } // transaction
@@ -496,51 +586,41 @@ namespace casual
                      {
                         namespace discover
                         {
-                           struct Reply : state::Base 
+                           auto reply( State& state)
                            {
-                              using state::Base::Base;
-
-                              void operator () ( common::message::gateway::domain::discover::Reply& message) const
+                              return [&state]( common::message::gateway::domain::discover::Reply& message)
                               {
                                  Trace trace{ "gateway::outbound::handle::domain::discover::Reply"};
-
                                  log::line( verbose::log, "message: ", message);
 
                                  auto destination = state.route.get( message.correlation);
+
+                                 if( auto found = algorithm::find( state.rediscoveries, message.correlation))
+                                 {
+                                    Trace trace{ "gateway::outbound::handle::domain::discover::Reply rediscover"};
+
+                                    state.rediscoveries.erase( std::begin( found));
+
+                                    handle::advertise::reset::services( state, message.execution, message.services);
+                                    handle::advertise::reset::queues( state, message.execution, message.queues);
+
+                                    auto reply = message::outbound::rediscover::Reply{ common::process::handle()};
+                                    reply.correlation = message.correlation;
+                                    reply.execution = message.execution;
+                                    blocking::optional::send( destination.destination.ipc, reply);
+
+                                    return;
+                                 }
 
                                  // advertise
                                  {
                                     Trace trace{ "gateway::outbound::handle::domain::discover::Reply advertise"};
 
                                     if( ! message.services.empty())
-                                    {
-                                       common::message::service::concurrent::Advertise advertise;
-                                       advertise.execution = message.execution;
-                                       advertise.process = common::process::handle();
-                                       advertise.order = state.order;
-                                       advertise.services = message.services;
-
-                                       // add one hop, since we now it has passed a domain boundary
-                                       for( auto& service : advertise.services) { ++service.hops;}
-
-
-                                       blocking::send( 
-                                          common::communication::instance::outbound::service::manager::device(), 
-                                          advertise);
-                                    }
+                                       handle::advertise::services( state, message.execution, message.services);
 
                                     if( ! message.queues.empty())
-                                    {
-                                       common::message::queue::concurrent::Advertise advertise;
-                                       advertise.execution = message.execution;
-                                       advertise.process = common::process::handle();
-                                       advertise.order = state.order;
-                                       advertise.queues = message.queues;
-
-                                       blocking::optional::send( 
-                                          common::communication::instance::outbound::queue::manager::optional::device(),
-                                          advertise);
-                                    }
+                                       handle::advertise::queues( state, message.execution, message.queues);
                                  }
 
                                  // route only if we're not the caller (we use this in the configuration step)
@@ -552,9 +632,8 @@ namespace casual
 
                                     blocking::optional::send( destination.destination.ipc, message);
                                  }
-                              }
-
-                           };
+                              };
+                           }
                         } // discover
                      } // domain
 
@@ -567,19 +646,19 @@ namespace casual
                            connect::reply( state),
                            
                            // service
-                           service::call::Reply{ state},
+                           service::call::reply( state),
 
                            // queue
-                           queue::enqueue::Reply{ state},
-                           queue::dequeue::Reply{ state},
+                           queue::enqueue::reply( state),
+                           queue::dequeue::reply( state),
 
                            // transaction
-                           transaction::resource::prepare::Reply{ state},
-                           transaction::resource::commit::Reply{ state},
-                           transaction::resource::rollback::Reply{ state},
+                           transaction::resource::prepare::reply( state),
+                           transaction::resource::commit::reply( state),
+                           transaction::resource::rollback::reply( state),
 
                            // discover
-                           domain::discover::Reply{ state}
+                           domain::discover::reply( state)
                         );
                      }
 
@@ -613,19 +692,13 @@ namespace casual
 
                            log::line( verbose::log, "external trid: ", message.trid);
                         }
-
                      } // branch
-                     
 
-                     template< typename M>
-                     struct basic_request : state::Base
+                     namespace basic
                      {
-                        using state::Base::Base;
-                        using message_type = M;
-
-                        void operator() ( message_type& message)
+                        auto send = []( State& state, auto& message)
                         {
-                           Trace trace{ "gateway::outbound::local::handle::internal::basic_request"};
+                           Trace trace{ "gateway::outbound::local::handle::internal::basic::send"};
 
                            // add route so we know where to send it when the reply arrives
                            state.route.add( message);
@@ -633,23 +706,30 @@ namespace casual
                            log::line( verbose::log, "message: ", message);
 
                            state.external.send( message);
+                        };
+                        
+                        template< typename Message>
+                        auto request( State& state)
+                        {
+                           return [&state]( Message& message)
+                           {
+                              basic::send( state, message);
+                           };
                         }
-                     };
+                     } // basic
+
+
 
                      namespace service
                      {
                         namespace call
                         {
-                           struct Request : state::Base
+                           auto request( State& state)
                            {
-                              using state::Base::Base;
-
-                              void operator() ( common::message::service::call::callee::Request& message)
+                              return [&state]( common::message::service::call::callee::Request& message)
                               {
                                  Trace trace{ "gateway::outbound::local::handle::internal::service::call::Request"};
-
                                  log::line( verbose::log, "message: ", message);
-
 
                                  auto now = platform::time::clock::type::now();
 
@@ -674,8 +754,8 @@ namespace casual
                                     );
                                  }
                                  state.external.send( message);
-                              }
-                           };
+                              };
+                           }
 
                         } // call
 
@@ -683,12 +763,9 @@ namespace casual
                         {
                            namespace connect
                            {
-                              struct Request : state::Base
+                              auto request( State& state)
                               {
-                                 using message_type = common::message::conversation::connect::callee::Request;
-                                 using state::Base::Base;
-
-                                 void operator() ( message_type& message)
+                                 return [&state]( common::message::conversation::connect::callee::Request& message)
                                  {
                                     Trace trace{ "gateway::outbound::local::handle::internal::service::conversation::connect::Request"};
 
@@ -705,8 +782,8 @@ namespace casual
 
                                     state.route.add( message);
                                     state.external.send( message);
-                                 }
-                              };
+                                 };
+                              }
 
                            } // connect
 
@@ -717,77 +794,113 @@ namespace casual
                      {
                         namespace discover
                         {
-                           using Request = basic_request< common::message::gateway::domain::discover::Request>;
+                           auto request = basic::request< common::message::gateway::domain::discover::Request>;
                         } // discover
+
+                        namespace rediscover
+                        {
+                           auto request( State& state)
+                           {
+                              return [&state]( message::outbound::rediscover::Request& message)
+                              {
+                                 Trace trace{ "gateway::outbound::local::handle::internal::domain::rediscover::request"};
+                                 log::line( verbose::log, "message: ", message);
+
+                                 if( message.services.empty() && message.queues.empty())
+                                 {
+                                    // noting to discover, we reset all our services and queues,
+                                    handle::advertise::reset::services( state, message.execution, {});
+                                    handle::advertise::reset::queues( state, message.execution, {});
+
+                                    // and send the reply directly                                    
+                                    blocking::optional::send( message.process.ipc, common::message::reverse::type( message, common::process::handle()));
+
+                                    return;
+                                 }
+
+                                 // We need to (re)discover the other side...
+                                 // we use the general _route_ to keep track of destination when we get the reply
+                                 common::message::gateway::domain::discover::Request request{ message.process};
+                                 request.correlation = message.correlation;
+                                 request.domain = common::domain::identity();
+                                 request.services = std::move( message.services);
+                                 request.queues = std::move( message.queues);
+
+                                 basic::send( state, request);
+                                 
+                                 state.rediscoveries.push_back( message.correlation);
+                              };
+                           }
+                        } // rediscover
                      } // domain
+
                      namespace transaction
                      {
                         namespace resource
-                        {                           
-                           template< typename M>
-                           struct basic_request : internal::basic_request< M>
+                        {    
+                           namespace basic
                            {
-                              using internal::basic_request< M>::basic_request;
-                              using message_type = M;
-
-                              void operator() ( message_type& message)
+                              template< typename Message>
+                              auto request( State& state)
                               {
-                                 Trace trace{ "gateway::outbound::local::handle::internal::transaction::resource::basic_request"};
+                                 return [&state]( Message& message)
+                                 {
+                                    Trace trace{ "gateway::outbound::local::handle::internal::transaction::resource::basic::request"};
 
-                                 // remove the trid correlation, since we're in the commit/rollback dance
-                                 this->state.branch.remove( message.trid);
+                                    // remove the trid correlation, since we're in the commit/rollback dance
+                                    state.branch.remove( message.trid);
 
-                                 internal::basic_request< M>::operator() ( message);
+                                    internal::basic::send( state, message);
+                                 };
                               }
-                           };
+                           } // basic                       
+
 
                            namespace prepare
                            {
-                              using Request = basic_request< common::message::transaction::resource::prepare::Request>;
+                              auto request = basic::request< common::message::transaction::resource::prepare::Request>;
                            } // prepare
                            namespace commit
                            {
-                              using Request = basic_request< common::message::transaction::resource::commit::Request>;
+                              auto request = basic::request< common::message::transaction::resource::commit::Request>;
                            } // commit
                            namespace rollback
                            {
-                              using Request = basic_request< common::message::transaction::resource::rollback::Request>;
+                              auto request = basic::request< common::message::transaction::resource::rollback::Request>;
                            } // commit
                         } // resource
                      } // transaction
 
                      namespace queue
                      {
-                        template< typename M>
-                        struct basic_request : internal::basic_request< M>
+                        namespace basic
                         {
-                           using message_type = M;
-                           using base_type = internal::basic_request< M>;
-
-                           using base_type::base_type;
-
-                           void operator() ( message_type& message)
+                           template< typename Message>
+                           auto request( State& state)
                            {
-                              Trace trace{ "gateway::outbound::local::handle::internal::queue::basic_request"};
-                              log::line( verbose::log, "message: ", message);
+                              return [&state]( Message& message)
+                              {
+                                 Trace trace{ "gateway::outbound::local::handle::internal::queue::basic::request"};
+                                 log::line( verbose::log, "message: ", message);
 
-                              // we don't bother with branching on casual-queue, since it does not bother.
+                                 // we don't bother with branching on casual-queue, since it does not mather.
 
-                              // potentially notify TM that this "resource" is involved in the transaction
-                              blocking::transaction::involved( message);
-                              
-                              base_type::operator()( message);
-                           }
-                        };
+                                 // potentially notify TM that this "resource" is involved in the transaction
+                                 blocking::transaction::involved( message);
+                                 
+                                 internal::basic::send( state, message);
+                              };
+                           }  
+                        } // basic
 
                         namespace enqueue
                         {
-                           using Request = basic_request< common::message::queue::enqueue::Request>;
+                           auto request = basic::request< common::message::queue::enqueue::Request>;
                         } // enqueue
 
                         namespace dequeue
                         {
-                           using Request = basic_request< common::message::queue::dequeue::Request>;
+                           auto request = basic::request< common::message::queue::dequeue::Request>;
                         } // dequeue
                      } // queue
 
@@ -802,19 +915,18 @@ namespace casual
 
                               if( ! message.services.empty() || ! message.queues.empty())
                               {
-                                 common::message::gateway::domain::discover::Request request;
+                                 // We make sure we get the reply (hence not forwarding to some other process)
+                                 common::message::gateway::domain::discover::Request request{ common::process::handle()};
 
                                  // make sure we have a correlation id.
                                  request.correlation = common::uuid::make();
 
-                                 // We make sure we get the reply (hence not forwarding to some other process)
-                                 request.process = common::process::handle();
                                  request.domain = common::domain::identity();
                                  request.services = message.services;
                                  request.queues = message.queues;
 
                                  // Use regular handler to manage the "routing"
-                                 handle::internal::domain::discover::Request{ state}( request);
+                                 handle::internal::domain::discover::request( state)( request);
                               }
                            };
 
@@ -831,20 +943,21 @@ namespace casual
                            configuration::reply( state),
 
                            // service
-                           service::call::Request{ state},
-                           service::conversation::connect::Request{ state},
+                           service::call::request( state),
+                           service::conversation::connect::request( state),
                            
                            // queue
-                           queue::dequeue::Request{ state},
-                           queue::enqueue::Request{ state},
+                           queue::dequeue::request( state),
+                           queue::enqueue::request( state),
 
                            // transaction
-                           transaction::resource::prepare::Request{ state},
-                           transaction::resource::commit::Request{ state},
-                           transaction::resource::rollback::Request{ state},
+                           transaction::resource::prepare::request( state),
+                           transaction::resource::commit::request( state),
+                           transaction::resource::rollback::request( state),
 
                            // discover
-                           domain::discover::Request{ state}
+                           domain::discover::request( state),
+                           domain::rediscover::request( state)
                         );
                      }
 

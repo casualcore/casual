@@ -16,39 +16,23 @@ namespace casual
    {
       namespace unittest
       {
-         namespace local
-         {
-            namespace
-            {
-               void call( 
-                  const process::Handle& handle, 
-                  std::vector< message::service::advertise::Service> services,
-                  message::service::Advertise::Directive directive = message::service::Advertise::Directive::add)
-               {
-                   message::service::Advertise message;
-                   message.process = handle;
-                   message.services = std::move( services);
-                   message.directive = directive;
-
-                   communication::ipc::blocking::send( communication::instance::outbound::service::manager::device(), message);
-               }
-
-            } // <unnamed>
-         } // local
          void advertise( std::vector< std::string> services)
          {
-            local::call( process::handle(), algorithm::transform( services, []( auto& s)
+            message::service::Advertise message{ process::handle()};
+            message.services.add = algorithm::transform( services, []( auto& service)
             {
-               return message::service::advertise::Service{ std::move( s)};
-            }));
+               return message::service::advertise::Service{ std::move( service)};
+            });
+
+            communication::ipc::blocking::send( communication::instance::outbound::service::manager::device(), message);
          }
 
          void unadvertise( std::vector< std::string> services)
          {
-            local::call( process::handle(), algorithm::transform( services, []( auto& s)
-            {
-               return message::service::advertise::Service{ std::move( s)};
-            }), message::service::Advertise::Directive::remove);
+            message::service::Advertise message{ process::handle()};
+            message.services.remove = std::move( services);
+            communication::ipc::blocking::send( communication::instance::outbound::service::manager::device(), message);
+
          }
       } // unittest
    } // common

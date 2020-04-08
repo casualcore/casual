@@ -42,10 +42,16 @@ namespace casual
 
                std::string queuebase;
 
-               bool connected = false;
+               inline bool connected() const { return process.ipc && process.pid;}
 
                friend bool operator == ( const Group& lhs, common::strong::process::id pid);
 
+               CASUAL_LOG_SERIALIZE({
+                  CASUAL_NAMED_VALUE( name);
+                  CASUAL_NAMED_VALUE( process);
+                  CASUAL_NAMED_VALUE( queuebase);
+                  CASUAL_NAMED_VALUE_NAME( connected(), "connected");
+               })
             };
 
             //! Represent a remote gateway that exports 0..* queues
@@ -58,6 +64,11 @@ namespace casual
                size_type order = 0;
 
                friend bool operator == ( const Remote& lhs, const common::process::Handle& rhs);
+
+               CASUAL_LOG_SERIALIZE({
+                  CASUAL_NAMED_VALUE( process);
+                  CASUAL_NAMED_VALUE( order);
+               })
 
             };
 

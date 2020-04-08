@@ -10,7 +10,6 @@
 #include "domain/manager/admin/server.h"
 #include "domain/manager/task/create.h"
 #include "domain/manager/task/event.h"
-#include "domain/manager/persistent.h"
 #include "domain/common.h"
 #include "domain/transform.h"
 #include "domain/pending/message/environment.h"
@@ -27,8 +26,6 @@
 #include "common/instance.h"
 
 #include "common/communication/instance.h" 
-
-
 
 namespace casual
 {
@@ -79,7 +76,6 @@ namespace casual
                         
                         while( range)
                         {
-   
                            instance.index = std::distance( std::begin( entity.instances), std::begin( range));
 
                            try 
@@ -92,9 +88,9 @@ namespace casual
 
                               manager::task::event::dispatch( state, [&]()
                               {
-                                 common::message::event::domain::Error message;
+                                 common::message::event::Error message{ common::process::handle()};
                                  message.severity = decltype( message.severity)::error;
-                                 message.message = string::compose( "failed to spawn '", entity.path, "' - ", exception);
+                                 message.message = string::compose( exception);
                                  return message;
                               });
                            }
@@ -102,8 +98,8 @@ namespace casual
                            ++range;
                         }
 
-                        // send event, if any
-                        manager::task::event::dispatch( state, [&]()
+                        // we push spawn 'event' and dispatch it to tasks and external listeners 
+                        // later on
                         {
                            common::message::event::process::Spawn message;
                            message.path = entity.path;
@@ -113,8 +109,8 @@ namespace casual
                            []( auto& instance){ return common::process::id( instance.handle);},
                            []( auto& instance){ return instance.state != decltype( instance.state)::error;});
 
-                           return message;
-                        });
+                           ipc::push( message);
+                        }
 
                         log::line( verbose::log, "entity: ", entity);
                      }
@@ -241,39 +237,27 @@ namespace casual
             } // mandatory
 
 
-            void boot( State& state)
+            void boot( State& state, common::Uuid correlation)
             {
                Trace trace{ "domain::manager::handle::boot"};
-
-               manager::task::event::dispatch( state, [&]()
+                                                
+               // send domain-information if _event-listeners_ wants it.
+               manager::task::event::dispatch( state, [&correlation]()
                {
-                  common::message::event::domain::boot::Begin event;
+                  task::message::domain::Information event{ common::process::handle()};
+                  event.correlation = correlation;
                   event.domain = common::domain::identity();
                   return event;
                });
 
-               state.tasks.add( state, manager::task::create::scale::dependency( state, state.bootorder()));
-
-               // add a "sentinel" to fire an event when the boot is done
-               state.tasks.add( state, manager::task::create::done::boot());
+               state.tasks.add( manager::task::create::scale::boot( state.bootorder(), correlation));
             }
 
-            void shutdown( State& state)
+            std::vector< common::Uuid> shutdown( State& state)
             {
                Trace trace{ "domain::manager::handle::shutdown"};
 
                state.runlevel( State::Runlevel::shutdown);
-
-               // TODO: collect state from sub-managers...
-               if( state.persist)
-                  persistent::state::save( state);
-
-               manager::task::event::dispatch( state, [&]()
-               {
-                  common::message::event::domain::shutdown::Begin event;
-                  event.domain = common::domain::identity();
-                  return event;
-               });
 
                // abort all abortble running or pending task
                state.tasks.abort( state);
@@ -288,34 +272,8 @@ namespace casual
                // Make sure we exclude our self so we don't try to shutdown
                algorithm::for_each_if( state.servers, prepare_shutdown, [&state]( auto& entity){ return entity.id != state.manager_id;});
 
-               state.tasks.add( state, manager::task::create::scale::dependency( state, state.shutdownorder()));
-
-               // add a "sentinel" to fire an event when the shutdown is done
-               state.tasks.add( state, manager::task::create::done::shutdown());
+               return { state.tasks.add( manager::task::create::scale::shutdown( state.shutdownorder()))};
             }
-
-
-            Base::Base( State& state) : m_state{ state} {}
-
-            State& Base::state()
-            {
-               return m_state.get();
-            }
-
-            const State& Base::state() const
-            {
-               return m_state.get();
-            }
-
-
-            void Shutdown::operator () ( common::message::shutdown::Request& message)
-            {
-               Trace trace{ "domain::manager::handle::Shutdown"};
-               log::line( verbose::log, "message: ", message);
-
-               state().tasks.add( state(), manager::task::create::shutdown());
-            }
-
 
 
             namespace scale
@@ -365,7 +323,7 @@ namespace casual
                   local::scale::out( state, executable);
                }
 
-               std::vector< common::strong::task::id> aliases( State& state, std::vector< admin::model::scale::Alias> aliases)
+               std::vector< common::Uuid> aliases( State& state, std::vector< admin::model::scale::Alias> aliases)
                {
                   Trace trace{ "domain::manager::handle::scale::aliases"};
                   log::line( verbose::log, "aliases: ", aliases);
@@ -394,104 +352,91 @@ namespace casual
                      algorithm::for_each( runnables.executables, scale_runnable);
                   }
 
-                  auto add_task = [&state]( auto callable)
-                  {
-                     return [&state, callable]( auto entity)
-                     {
-                        return state.tasks.add( state, callable( state, entity.get().id));
-                     };
-                  };
+                  auto transform_id = []( auto& entity){ return entity.get().id;};
 
-                  auto result = algorithm::transform( runnables.servers, add_task( &manager::task::create::scale::server));
-                  algorithm::transform( runnables.executables, result, add_task( &manager::task::create::scale::executable));
+                  state::dependency::Group group;
+                  algorithm::transform( runnables.servers, group.servers, transform_id);
+                  algorithm::transform( runnables.executables, group.executables, transform_id);
 
-                  return result;
+                  return { state.tasks.add( manager::task::create::scale::aliases( { std::move( group)}))};
                }
 
-               namespace prepare
-               {
-                  void Shutdown::operator () ( common::message::domain::process::prepare::shutdown::Reply& message)
-                  {
-                     Trace trace{ "domain::manager::handle::scale::prepare::shutdown::Reply"};
-                     log::line( verbose::log, "message: ", message);
 
-                     algorithm::for_each( message.processes, [&]( auto& process)
-                     {
-                        if( process)
-                        {
-                           common::message::shutdown::Request shutdown{ common::process::handle()};
-
-                           // Just to make each shutdown easy to follow in log.
-                           shutdown.execution = uuid::make();
-
-                           manager::ipc::send( state(), process, shutdown);
-                        }
-                        else
-                           common::process::terminate( process.pid);
-                     });
-                  }
-               } // prepare
             } // scale
 
             namespace restart
             {
-               std::vector< common::strong::task::id> instances( State& state, std::vector< std::string> aliases)
+               namespace local
                {
-                  Trace trace{ "domain::manager::handle::restart::instances"};
+                  namespace
+                  {
+                      // for now, only the domain-manager is unrestartable
+                     auto filter_unrestartable( State& state)
+                     {
+                        return [untouchables = state.untouchables()]( state::dependency::Group& group)
+                        {
+                           auto filter = []( auto& ids, auto& untouchables)
+                           {
+                              algorithm::trim( ids, algorithm::remove_if( ids, [&untouchables]( auto& id)
+                              { 
+                                 return ! algorithm::find( untouchables, id).empty();
+                              }));
+                           };
+
+                           filter( group.servers, std::get< 0>( untouchables));
+                           filter( group.executables, std::get< 1>( untouchables));
+                        };
+                     }
+                     
+                  } // <unnamed>
+               } // local
+               std::vector< common::Uuid> aliases( State& state, std::vector< std::string> aliases)
+               {
+                  Trace trace{ "domain::manager::handle::restart::aliases"};
                   log::line( verbose::log, "aliases: ", aliases);
 
                   auto runnables = state.runnables( std::move( aliases));
 
-                  auto add_task = [&state]( auto callable)
+                  auto transform_id = []( auto& entity){ return entity.get().id;};
+
+                  state::dependency::Group group;
+                  algorithm::transform( runnables.servers, group.servers, transform_id);
+                  algorithm::transform( runnables.executables, group.executables, transform_id);
+
+                  local::filter_unrestartable( state)( group);
+
+                  return { state.tasks.add( manager::task::create::restart::aliases( { std::move( group)}))};
+               }
+
+               std::vector< common::Uuid> groups( State& state, std::vector< std::string> names)
+               {
+                  Trace trace{ "domain::manager::handle::restart::groups"};
+                  log::line( verbose::log, "names: ", names);
+
+                  auto groups = state.shutdownorder();
+
+                  auto filter_groups = []( auto groups, const std::vector< std::string>& names)
                   {
-                     return [&state, callable]( auto entity)
-                     {
-                        return state.tasks.add( state, callable( state, entity.get().id));
-                     };
+                     if( names.empty())
+                        return groups;
+
+                     auto has_name = []( auto& l, auto& r){ return l.description == r;};
+
+                     return std::get< 0>( algorithm::intersection( groups, names, has_name));
                   };
 
-                  auto unrestartable_server = []( auto server)
-                  {
-                     // for now, only the domain-manager is unrestartable
-                     return server.get().instances.size() == 1 && common::process::id( server.get().instances[ 0].handle) == common::process::id();
-                  };
+                  algorithm::trim( groups, filter_groups( range::make( groups), names));
 
-                  algorithm::trim( runnables.servers, algorithm::remove_if( runnables.servers, unrestartable_server));
+                  // filter
+                  algorithm::for_each( groups, local::filter_unrestartable( state));
+                  log::line( verbose::log, "groups: ", groups);
 
-                  auto result = algorithm::transform( runnables.servers, add_task( &manager::task::create::restart::server));
-                  algorithm::transform( runnables.executables, result, add_task( &manager::task::create::restart::executable));
-
-                  return result;
-
+                  return { state.tasks.add( manager::task::create::restart::aliases( std::move( groups)))};
                }
             } // restart
 
             namespace event
             {
-               namespace subscription
-               {
-                  void Begin::operator () ( const common::message::event::subscription::Begin& message)
-                  {
-                     Trace trace{ "domain::manager::handle::event::subscription::Begin"};
-                     common::log::line( verbose::log, "message: ", message);
-
-                     state().event.subscription( message);
-
-                     common::log::line( log, "event: ", state().event);
-                  }
-
-                  void End::operator () ( const common::message::event::subscription::End& message)
-                  {
-                     Trace trace{ "domain::manager::handle::event::subscription::End"};
-                     common::log::line( verbose::log, "message: ", message);
-
-                     state().event.subscription( message);
- 
-                     common::log::line( log, "event: ", state().event);
-                  }
-
-               } // subscription
-
                namespace process
                {
                   void exit( const common::process::lifetime::Exit& exit)
@@ -500,339 +445,469 @@ namespace casual
 
                      // We put a dead process event on our own ipc device, that
                      // will be handled later on.
-                     communication::ipc::inbound::device().push( common::message::event::process::Exit{ exit});
-                  }
-
-                  void Exit::operator () ( common::message::event::process::Exit& message)
-                  {
-                     Trace trace{ "domain::manager::handle::event::process::Exit"};
-
-                     log::line( verbose::log, "message: ", message);
-
-                     if( message.state.deceased())
-                     {
-                        // We don't want to handle any signals in this task
-                        signal::thread::scope::Block block;
-
-                        if( message.state.reason == common::process::lifetime::Exit::Reason::core)
-                           log::line( log::category::error, "process cored: ", message.state);
-                        else
-                           log::line( log::category::information, "process exited: ", message.state);
-
-                        auto restarts = state().remove( message.state.pid);
-
-                        if( std::get< 0>( restarts)) scale::instances( state(), *std::get< 0>( restarts));
-                        if( std::get< 1>( restarts)) scale::instances( state(), *std::get< 1>( restarts));
-
-                        // Are there any listeners to this event?
-                        manager::task::event::dispatch( state(), [&message]() -> decltype( message)
-                        {
-                           return message;
-                        });
-
-                        // check if the process is our own pending-send
-                        // should not be possible unless some "human" kills the process
-                        if( message.state.pid == state().process.pending.handle())
-                        {
-                           log::line( log::category::error, "pending send exited: ", message.state);
-                           state().process.pending = handle::start::pending::message();
-                        }
-                     }
+                     ipc::push( common::message::event::process::Exit{ exit});
                   }
                } // process
-
-               void Error::operator () ( common::message::event::domain::Error& message)
-               {
-                  Trace trace{ "domain::manager::handle::event::Error"};
-
-                  log::line( verbose::log, "message: ", message);
-
-                  manager::task::event::dispatch( state(), [&message]()
-                  {
-                     return message;
-                  });
-
-                  if( message.severity == decltype( message.severity)::fatal && state().runlevel() == State::Runlevel::startup)
-                  {
-                     // We're in a 'fatal' state, and the only thing we can do is to shutdown
-                     state().runlevel( State::Runlevel::error);
-                     handle::shutdown( state());
-                  }
-
-               }
-
             } // event
-
-
-            namespace process
-            {
-               namespace local
-               {
-                  namespace
-                  {
-                     namespace lookup
-                     {
-                        common::process::Handle pid( const State& state, strong::process::id pid)
-                        {
-                           auto server = state.server( pid);
-                           
-                           if( server)
-                              return server->instance( pid)->handle;
-                           else
-                              return state.grandchild( pid);
-                        }
-                     } // lookup
-                     struct Lookup : Base
-                     {
-                        using Base::Base;
-
-                        bool operator () ( const common::message::domain::process::lookup::Request& message)
-                        {
-                           Trace trace{ "domain::manager::handle::process::local::Lookup"};
-
-                           log::line( verbose::log, "message: ", message);
-
-                           using Directive = common::message::domain::process::lookup::Request::Directive;
-
-                           auto reply = common::message::reverse::type( message);
-                           reply.identification = message.identification;
-
-                           if( message.identification)
-                           {
-                              auto found = algorithm::find( state().singletons, message.identification);
-
-                              if( found)
-                              {
-                                 reply.process = found->second;
-                                 manager::ipc::send( state(), message.process, reply);
-                              }
-                              else if( message.directive == Directive::direct)
-                              {
-                                 manager::ipc::send( state(), message.process, reply);
-                              }
-                              else
-                              {
-                                 return false;
-                              }
-                           }
-                           else if( message.pid)
-                           {
-                              reply.process = local::lookup::pid( state(), message.pid);
-
-                              if( reply.process)
-                                 manager::ipc::send( state(), message.process, reply);
-                              else if( message.directive == Directive::direct)
-                                 manager::ipc::send( state(), message.process, reply);
-                              else
-                                 return false;
-                           }
-                           else
-                           {
-                              // invalid
-                              log::line( log::category::error, "invalid lookup request");
-                           }
-                           return true;
-                        }
-                     };
-
-                     namespace singleton
-                     {
-                        void service( State& state, const common::process::Handle& process)
-                        {
-                           Trace trace{ "domain::manager::handle::local::singleton::service"};
-                           
-                           auto transform_service = []( const auto& s)
-                           {
-                              common::message::service::advertise::Service result;
-                              result.name = s.name;
-                              result.category = s.category;
-                              result.transaction = s.transaction;
-                              return result;
-                           };
-
-                           common::message::service::Advertise message;
-                           message.process = common::process::handle();
-                           message.services = algorithm::transform( manager::admin::services( state).services, transform_service);
-                              
-                           manager::ipc::send( state, process, message);
-
-                           // so new spawned processes get it easier
-                           environment::variable::process::set( 
-                              environment::variable::name::ipc::service::manager, process);
-                        }
-
-                        void tm( State& state, const common::process::Handle& process)
-                        {
-                           Trace trace{ "domain::manager::handle::local::singleton::tm"};
-
-                           // so new spawned processes get it easier
-                           environment::variable::process::set( 
-                              environment::variable::name::ipc::transaction::manager, process);
-                        }
-
-                        void queue( State& state, const common::process::Handle& process)
-                        {
-                           Trace trace{ "domain::manager::handle::local::singleton::queue"};
-
-                           // so new spawned processes get it easier
-                           environment::variable::process::set(
-                                 environment::variable::name::ipc::queue::manager, process);
-                        }
-
-                        void connect( State& state, const common::message::domain::process::connect::Request& message)
-                        {
-                           Trace trace{ "domain::manager::handle::local::singleton::connect"};
-
-                           static const std::map< Uuid, std::function< void(State&, const common::process::Handle&)>> tasks{
-                              { common::communication::instance::identity::service::manager, &service},
-                              { common::communication::instance::identity::transaction::manager, &tm},
-                              { common::communication::instance::identity::queue::manager, &queue}
-                           };
-
-                           auto found = algorithm::find( tasks, message.identification);
-
-                           if( found)
-                              found->second( state, message.process);
-                        }
-
-                     } // singleton
-                  } // <unnamed>
-               } // local
-
-               void Connect::operator () ( common::message::domain::process::connect::Request& message)
-               {
-                  Trace trace{ "domain::manager::handle::process::Connect"};
-
-                  common::log::line( verbose::log, "message: ", message);
-
-                  auto reply = common::message::reverse::type( message);
-
-                  auto send_reply = common::execute::scope( [&](){
-                     manager::ipc::send( state(), message.process, reply);
-                  });
-
-                  if( message.identification)
-                  {
-                     auto found = algorithm::find( state().singletons, message.identification);
-
-                     if( found)
-                     {
-                        // A "singleton" is trying to connect, while we already have one connected
-
-                        log::line( log::category::error, "only one instance is allowed for ", message.identification);
-
-
-                        reply.directive = decltype( reply)::Directive::singleton;
-
-                        // Adjust configured instances to correspond to reality...
-                        {
-                           auto server = state().server( message.process.pid);
-
-                           if( server)
-                           {
-                              server->remove( message.process.pid);
-                              server->scale( 1);
-                           }
-
-                           auto executable = state().executable( message.process.pid);
-
-                           if( executable)
-                           {
-                              executable->remove( message.process.pid);
-                              executable->scale( 1);
-                           }
-                        }
-
-                        manager::task::event::dispatch( state(), [&message]()
-                        {
-                           common::message::event::domain::Error event;
-                           event.severity = decltype( event.severity)::warning;
-                           event.message = string::compose( "server connect - only one instance is allowed for ", message.identification);
-                           return event;
-                        });
-                        return;
-                     }
-
-                     state().singletons[ message.identification] = message.process;
-
-                     local::singleton::connect( state(), message);
-                  }
-
-                  reply.directive = decltype( reply)::Directive::start;
-
-                  auto server = state().server( message.process.pid);
-
-                  if( server)
-                  {
-                     server->connect( message.process);
-                     log::line( log, "added process: ", message.process, " to ", *server);
-                  }
-                  else 
-                  {
-                     // we assume it's a grandchild
-                     state().grandchildren.push_back( message.process);
-                  }
-
-                  auto& pending = state().pending.lookup;
-
-                  algorithm::trim( pending, algorithm::remove_if( pending, local::Lookup{ state()}));
-
-                  manager::task::event::dispatch( state(), [&message]()
-                  {
-                     common::message::event::domain::server::Connect event;
-                     event.process = message.process;
-                     event.identification = message.identification;
-                     return event;
-                  });
-
-               }
-
-               void Lookup::operator () ( const common::message::domain::process::lookup::Request& message)
-               {
-                  Trace trace{ "domain::manager::handle::process::Lookup"};
-
-                  if( ! local::Lookup{ state()}( message))
-                     state().pending.lookup.push_back( message);
-               }
-
-            } // process
-
-            namespace configuration
-            {
-               void Domain::operator () ( const common::message::domain::configuration::Request& message)
-               {
-                  Trace trace{ "domain::manager::handle::configuration::Domain"};
-
-                  common::log::line( verbose::log, "message: ", message);
-
-                  auto reply = common::message::reverse::type( message);
-                  reply.domain = state().configuration;
-
-                  manager::ipc::send( state(), message.process, reply);
-               }
-
-               void Server::operator () ( const common::message::domain::configuration::server::Request& message)
-               {
-                  Trace trace{ "domain::manager::handle::configuration::Server"};
-                  common::log::line( verbose::log, "message: ", message);
-
-                  auto reply = common::message::reverse::type( message);
-
-                  reply.resources = state().resources( message.process.pid);
-
-                  auto server = state().server( message.process.pid);
-
-                  if( server)
-                     reply.restrictions = server->restrictions;
-
-                  manager::ipc::send( state(), message.process, reply);
-               }
-            } // configuration
 
             namespace local
             {
                namespace
                {
+                  auto shutdown( State& state)
+                  {
+                     return [&state]( common::message::shutdown::Request& message)
+                     {
+                        Trace trace{ "domain::manager::handle::Shutdown"};
+                        log::line( verbose::log, "message: ", message);
+
+                        handle::shutdown( state);
+                     };
+                  }
+
+                  namespace scale
+                  {
+                     namespace prepare
+                     {
+                        auto shutdown( State& state)
+                        {
+                           return [&state]( common::message::domain::process::prepare::shutdown::Reply& message)
+                           {
+                              Trace trace{ "domain::manager::handle::scale::prepare::shutdown::Reply"};
+                              log::line( verbose::log, "message: ", message);
+
+                              algorithm::for_each( message.processes, [&]( auto& process)
+                              {
+                                 if( process)
+                                 {
+                                    common::message::shutdown::Request shutdown{ common::process::handle()};
+
+                                    // Just to make each shutdown easy to follow in log.
+                                    shutdown.execution = uuid::make();
+
+                                    manager::ipc::send( state, process, shutdown);
+                                 }
+                                 else
+                                    common::process::terminate( process.pid);
+                              });
+                           };
+                        }
+                     } // prepare
+                  } // scale
+
+                  namespace event
+                  {
+                     namespace subscription
+                     {
+                        auto begin( State& state)
+                        {
+                     
+                           return [&state]( const common::message::event::subscription::Begin& message)
+                           {
+                              Trace trace{ "domain::manager::handle::event::subscription::Begin"};
+                              common::log::line( verbose::log, "message: ", message);
+
+                              state.event.subscription( message);
+
+                              common::log::line( log, "event: ", state.event);
+                           };
+                        }
+
+                        auto end( State& state)
+                        {
+                           return [&state]( const common::message::event::subscription::End& message)
+                           {
+                              Trace trace{ "domain::manager::handle::event::subscription::End"};
+                              common::log::line( verbose::log, "message: ", message);
+
+                              state.event.subscription( message);
+         
+                              common::log::line( log, "event: ", state.event);
+                           };
+                        }
+
+                     } // subscription
+
+                     namespace process
+                     {
+                        auto spawn( State& state)
+                        {
+                           return [&state]( const common::message::event::process::Spawn& message)
+                           {
+                              Trace trace{ "domain::manager::handle::event::process::spawn"};
+                              log::line( verbose::log, "message: ", message);
+
+                              // dispatch to tasks
+                              state.tasks.event( state, message);
+
+                              // Are there any listeners to this event?
+                              manager::task::event::dispatch( state, [&message]() -> decltype( message)
+                              {
+                                 return message;
+                              });
+                              
+                           };
+                        }
+
+                        auto exit( State& state)
+                        {
+                           return [&state]( const common::message::event::process::Exit& message)
+                           {
+                              Trace trace{ "domain::manager::handle::event::process::exit"};
+                              log::line( verbose::log, "message: ", message);
+
+                              if( message.state.deceased())
+                              {
+                                 // We don't want to handle any signals in this task
+                                 signal::thread::scope::Block block;
+
+                                 if( message.state.reason == common::process::lifetime::Exit::Reason::core)
+                                    log::line( log::category::error, "process cored: ", message.state);
+                                 else
+                                    log::line( log::category::information, "process exited: ", message.state);
+
+                                 auto restarts = state.remove( message.state.pid);
+
+                                 if( std::get< 0>( restarts)) handle::scale::instances( state, *std::get< 0>( restarts));
+                                 if( std::get< 1>( restarts)) handle::scale::instances( state, *std::get< 1>( restarts));
+
+                                 // dispatch to tasks
+                                 state.tasks.event( state, message);
+
+                                 // Are there any listeners to this event?
+                                 manager::task::event::dispatch( state, [&message]() -> decltype( message)
+                                 {
+                                    return message;
+                                 });
+
+                                 // check if the process is our own pending-send
+                                 // should not be possible unless some "human" kills the process
+                                 if( message.state.pid == state.process.pending.handle())
+                                 {
+                                    log::line( log::category::error, "pending send exited: ", message.state);
+                                    state.process.pending = handle::start::pending::message();
+                                 }
+                              }
+                           };
+                        }
+                     } // process
+
+                     auto error( State& state)
+                     {
+                        return [&state]( common::message::event::Error& message)
+                        {
+                           Trace trace{ "domain::manager::handle::event::Error"};
+
+                           log::line( verbose::log, "message: ", message);
+
+                           manager::task::event::dispatch( state, [&message]()
+                           {
+                              return message;
+                           });
+
+                           if( message.severity == decltype( message.severity)::fatal && state.runlevel() == State::Runlevel::startup)
+                           {
+                              // We're in a 'fatal' state, and the only thing we can do is to shutdown
+                              state.runlevel( State::Runlevel::error);
+                              handle::shutdown( state);
+                           }
+
+                        };
+                     }
+
+                     auto task( State& state) 
+                     {
+                        return [&state]( common::message::event::Task& message)
+                        {
+                           Trace trace{ "domain::manager::handle::local::event::general::task"};
+                           log::line( verbose::log, "message: ", message);
+
+                           manager::task::event::dispatch( state, [&message](){ return message;});
+                        };
+                     }
+
+                     namespace sub
+                     {
+                        auto task( State& state) 
+                        {
+                           return [&state]( common::message::event::sub::Task& message)
+                           {
+                              Trace trace{ "domain::manager::handle::local::event::general::sub::task"};
+                              log::line( verbose::log, "message: ", message);
+
+                              manager::task::event::dispatch( state, [&message](){ return message;});
+                           };
+                        }
+                     } // task
+                   } // event
+
+                  namespace process
+                  {
+                     namespace detail
+                     {
+                        namespace lookup
+                        {
+                           common::process::Handle pid( const State& state, strong::process::id pid)
+                           {
+                              auto server = state.server( pid);
+                              
+                              if( server)
+                                 return server->instance( pid)->handle;
+                              else
+                                 return state.grandchild( pid);
+                           }
+
+                           auto request( State& state)
+                           {
+                              return [&state]( const common::message::domain::process::lookup::Request& message)
+                              {
+                                 Trace trace{ "domain::manager::handle::process::local::Lookup"};
+
+                                 log::line( verbose::log, "message: ", message);
+
+                                 using Directive = common::message::domain::process::lookup::Request::Directive;
+
+                                 auto reply = common::message::reverse::type( message);
+                                 reply.identification = message.identification;
+
+                                 if( message.identification)
+                                 {
+                                    auto found = algorithm::find( state.singletons, message.identification);
+
+                                    if( found)
+                                    {
+                                       reply.process = found->second;
+                                       manager::ipc::send( state, message.process, reply);
+                                    }
+                                    else if( message.directive == Directive::direct)
+                                    {
+                                       manager::ipc::send( state, message.process, reply);
+                                    }
+                                    else
+                                    {
+                                       return false;
+                                    }
+                                 }
+                                 else if( message.pid)
+                                 {
+                                    reply.process = detail::lookup::pid( state, message.pid);
+
+                                    if( reply.process)
+                                       manager::ipc::send( state, message.process, reply);
+                                    else if( message.directive == Directive::direct)
+                                       manager::ipc::send( state, message.process, reply);
+                                    else
+                                       return false;
+                                 }
+                                 else
+                                 {
+                                    // invalid
+                                    log::line( log::category::error, "invalid lookup request");
+                                 }
+                                 return true;
+                              };
+                           }
+                        } // lookup
+
+
+                        namespace singleton
+                        {
+                           void service( State& state, const common::process::Handle& process)
+                           {
+                              Trace trace{ "domain::manager::handle::local::singleton::service"};
+                              
+                              auto transform_service = []( const auto& s)
+                              {
+                                 common::message::service::advertise::Service result;
+                                 result.name = s.name;
+                                 result.category = s.category;
+                                 result.transaction = s.transaction;
+                                 return result;
+                              };
+
+                              common::message::service::Advertise message{ common::process::handle()};
+                              message.services.add = algorithm::transform( manager::admin::services( state).services, transform_service);
+                                 
+                              manager::ipc::send( state, process, message);
+
+                              // so new spawned processes get it easier
+                              environment::variable::process::set( 
+                                 environment::variable::name::ipc::service::manager, process);
+                           }
+
+                           void tm( State& state, const common::process::Handle& process)
+                           {
+                              Trace trace{ "domain::manager::handle::local::singleton::tm"};
+
+                              // so new spawned processes get it easier
+                              environment::variable::process::set( 
+                                 environment::variable::name::ipc::transaction::manager, process);
+                           }
+
+                           void queue( State& state, const common::process::Handle& process)
+                           {
+                              Trace trace{ "domain::manager::handle::local::singleton::queue"};
+
+                              // so new spawned processes get it easier
+                              environment::variable::process::set(
+                                    environment::variable::name::ipc::queue::manager, process);
+                           }
+
+                           void connect( State& state, const common::message::domain::process::connect::Request& message)
+                           {
+                              Trace trace{ "domain::manager::handle::local::singleton::connect"};
+
+                              static const std::map< Uuid, std::function< void(State&, const common::process::Handle&)>> tasks{
+                                 { common::communication::instance::identity::service::manager, &service},
+                                 { common::communication::instance::identity::transaction::manager, &tm},
+                                 { common::communication::instance::identity::queue::manager, &queue}
+                              };
+
+                              auto found = algorithm::find( tasks, message.identification);
+
+                              if( found)
+                                 found->second( state, message.process);
+                           }
+
+                        } // singleton
+
+                     } // detail
+
+                     auto connect( State& state)
+                     {
+                        return [&state]( const common::message::domain::process::connect::Request& message)
+                        {
+                           Trace trace{ "domain::manager::handle::process::Connect"};
+
+                           common::log::line( verbose::log, "message: ", message);
+
+                           auto reply = common::message::reverse::type( message);
+
+                           auto send_reply = common::execute::scope( [&](){
+                              manager::ipc::send( state, message.process, reply);
+                           });
+
+                           if( message.identification)
+                           {
+                              auto found = algorithm::find( state.singletons, message.identification);
+
+                              if( found)
+                              {
+                                 // A "singleton" is trying to connect, while we already have one connected
+
+                                 log::line( log::category::error, "only one instance is allowed for ", message.identification);
+
+
+                                 reply.directive = decltype( reply)::Directive::singleton;
+
+                                 // Adjust configured instances to correspond to reality...
+                                 {
+                                    auto server = state.server( message.process.pid);
+
+                                    if( server)
+                                    {
+                                       server->remove( message.process.pid);
+                                       server->scale( 1);
+                                    }
+
+                                    auto executable = state.executable( message.process.pid);
+
+                                    if( executable)
+                                    {
+                                       executable->remove( message.process.pid);
+                                       executable->scale( 1);
+                                    }
+                                 }
+
+                                 manager::task::event::dispatch( state, [&message]()
+                                 {
+                                    common::message::event::Error event;
+                                    event.severity = decltype( event.severity)::warning;
+                                    event.message = string::compose( "server connect - only one instance is allowed for ", message.identification);
+                                    return event;
+                                 });
+                                 return;
+                              }
+
+                              state.singletons[ message.identification] = message.process;
+
+                              detail::singleton::connect( state, message);
+                           }
+
+                           reply.directive = decltype( reply)::Directive::start;
+
+                           auto server = state.server( message.process.pid);
+
+                           if( server)
+                           {
+                              server->connect( message.process);
+                              log::line( log, "added process: ", message.process, " to ", *server);
+                           }
+                           else 
+                           {
+                              // we assume it's a grandchild
+                              state.grandchildren.push_back( message.process);
+                           }
+
+                           auto& pending = state.pending.lookup;
+
+                           algorithm::trim( pending, algorithm::remove_if( pending, detail::lookup::request( state)));
+
+                           // tasks might be interested in server-connect
+                           state.tasks.event( state, message);
+                        };
+                     }
+
+                     auto lookup( State& state)
+                     {
+                        return [&state]( const common::message::domain::process::lookup::Request& message)
+                        {
+                           Trace trace{ "domain::manager::handle::process::Lookup"};
+
+                           if( ! detail::lookup::request( state)( message))
+                              state.pending.lookup.push_back( message);
+                        };
+                     }
+
+                  } // process
+
+                  namespace configuration
+                  {
+                     auto domain( State& state)
+                     {
+                        return [&state]( const common::message::domain::configuration::Request& message)
+                        {
+                           Trace trace{ "domain::manager::handle::configuration::Domain"};
+                           common::log::line( verbose::log, "message: ", message);
+
+                           auto reply = common::message::reverse::type( message);
+                           reply.domain = state.configuration;
+
+                           manager::ipc::send( state, message.process, reply);
+                        };
+                     }
+
+                     auto server( State& state)
+                     {
+                        return [&state]( const common::message::domain::configuration::server::Request& message)
+                        {
+                           Trace trace{ "domain::manager::handle::configuration::Server"};
+                           common::log::line( verbose::log, "message: ", message);
+
+                           auto reply = common::message::reverse::type( message);
+
+                           reply.resources = state.resources( message.process.pid);
+
+                           auto server = state.server( message.process.pid);
+
+                           if( server)
+                              reply.restrictions = server->restrictions;
+
+                           manager::ipc::send( state, message.process, reply);
+                        };
+                     }
+                  } // configuration
+    
                   namespace server
                   {
                      using base_type = common::server::handle::policy::call::Admin;
@@ -871,24 +946,6 @@ namespace casual
                      using Handle = common::server::handle::basic_call< Policy>;
                   } // server
 
-                  namespace task
-                  {
-                     namespace event
-                     {
-                        auto done( State& state) 
-                        {
-                           return [&state]( common::message::event::domain::task::End& message)
-                           {
-                              Trace trace{ "domain::manager::handle::local::task::event::done"};
-                              log::line( verbose::log, "message: ", message);
-
-                              state.tasks.event( message);
-                           };
-                        }
-                     } // event
-                  } // task
-    
-
                } // <unnamed>
             } // local
          } // handle
@@ -899,17 +956,19 @@ namespace casual
 
             return {
                common::message::handle::defaults( ipc::device()),
-               manager::handle::Shutdown{ state},
-               manager::handle::scale::prepare::Shutdown{ state},
-               manager::handle::event::process::Exit{ state},
-               manager::handle::event::subscription::Begin{ state},
-               manager::handle::event::subscription::End{ state},
-               manager::handle::event::Error{ state},
-               manager::handle::local::task::event::done( state),
-               manager::handle::process::Connect{ state},
-               manager::handle::process::Lookup{ state},
-               manager::handle::configuration::Domain{ state},
-               manager::handle::configuration::Server{ state},
+               handle::local::shutdown( state),
+               handle::local::scale::prepare::shutdown( state),
+               handle::local::event::process::spawn( state),
+               handle::local::event::process::exit( state),
+               handle::local::event::subscription::begin( state),
+               handle::local::event::subscription::end( state),
+               handle::local::event::error( state),
+               handle::local::event::task( state),
+               handle::local::event::sub::task( state),
+               handle::local::process::connect( state),
+               handle::local::process::lookup( state),
+               handle::local::configuration::domain( state),
+               handle::local::configuration::server( state),
                handle::local::server::Handle{
                   manager::admin::services( state),
                   state}

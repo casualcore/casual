@@ -130,7 +130,6 @@ namespace casual
             };
          };
 
-
          //! Specialization for error code
          template< typename C> 
          struct has_formatter< C, std::enable_if_t< 

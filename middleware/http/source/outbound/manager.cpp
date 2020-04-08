@@ -70,32 +70,34 @@ namespace casual
                   } // ipc
                   namespace handle
                   {
-                     struct Base 
-                     {
-                        Base( State& state) : state( state) {}
-
-                        State& state;
-                     };
-
                      namespace service
                      {
                         namespace call
                         {
-                           struct Request : Base
+                           auto request( State& state)
                            {
-                              using Base::Base;
-
-                              void operator() ( message::service::call::callee::Request& message)
+                              return [&state]( message::service::call::callee::Request& message)
                               {
                                  Trace trace{ "http::outbound::manager::local::handle::service::call::Request"};
-
                                  log::line( verbose::log, "message: ", message);
+
+                                 auto send_error_reply = [&state]( auto& message, auto code)
+                                 {
+                                    Trace trace{ "http::request::local::handle::service::call::Request::send_error_reply"};
+                                    log::line( log::category::verbose::error, code, " - message: ", message);
+
+                                    auto reply = message::reverse::type( message);
+                                    reply.code.result = code;
+
+                                    if( ! message.flags.exist( message::service::call::request::Flag::no_reply))
+                                       local::ipc::optional::send( state, message.process, std::move( reply));
+                                 };
 
                                  auto found = algorithm::find( state.lookup, message.service.name);
 
                                  if( ! found)
                                  {
-                                    log::line( log::category::error, code::xatmi::no_entry, " - http-outbound servcice not configured: ",  message.service.name);
+                                    log::line( log::category::error, code::xatmi::no_entry, " - http-outbound service not configured: ",  message.service.name);
                                     send_error_reply( message, code::xatmi::no_entry);
                                     return;
                                  }
@@ -113,60 +115,52 @@ namespace casual
                                        return;
                                     }
                                     else
-                                    {
                                        log::line( log, "transaction discarded for '", message.service.name, "'");
-                                    }
                                  }
 
                                  // prepare and add the curl call
                                  state.pending.requests.add( request::prepare( node, std::move( message)));
-                              }
-
-                           private:
-
-                              void send_error_reply( message::service::call::callee::Request& message, common::code::xatmi code)
-                              {
-                                 Trace trace{ "http::request::local::handle::service::call::Request::send_error_reply"};
-
-                                 log::line( log::category::verbose::error, code, " - message: ", message);
-
-                                 auto reply = message::reverse::type( message);
-                                 reply.code.result = code;
-
-                                 if( ! message.flags.exist( message::service::call::request::Flag::no_reply))
-                                 {
-                                    local::ipc::optional::send( state, message.process, std::move( reply));
-                                 }
-                              }
-                           };
+                              };
+                           }
                         } // call
                      } // service
 
-                     struct Reply : Base 
+                     auto reply( State& state)
                      {
-                        using Base::Base;
-
-                        void operator () ( state::pending::Request&& request, curl::type::code::easy curl_code)
+                        return [&state]( state::pending::Request&& request, curl::type::code::easy curl_code)
                         {
                            Trace trace{ "http::outbound::manager::local::handle::Reply"};
 
                            log::line( verbose::log, "request: ", request);
                            log::line( verbose::log, "curl_code: ", curl_code);
-
-                           auto code = request::code::transform( request, curl_code);
-
-                           log::line( verbose::log, "code: ", code);
                            
+                           message::service::call::Reply message;
+                           message.correlation = request.state().correlation;
+                           message.execution = request.state().execution;
+                           message.code = request::code::transform( request, curl_code);
+
+                           log::line( verbose::log, "code: ", message.code);
+
                            // take care of metrics
-                           state.metric.add( request, code);
+                           state.metric.add( request, message.code);
 
                            auto destination = request.state().destination;
 
-                           message::service::call::Reply message;
-                           message.buffer = std::move( request.state().payload);
-                           message.correlation = request.state().correlation;
-                           message.execution = request.state().execution;
-                           message.code = code;
+                           // we're done with the request.
+
+                           // there is only a payload if the call was 'successful'...
+                           if( algorithm::compare::any( message.code.result, code::xatmi::ok, code::xatmi::service_fail))
+                           {
+                              try
+                              {
+                                 message.buffer = request::receive::transcode::payload( std::move( request));
+                              }
+                              catch( const std::exception& exception)
+                              {
+                                 log::line( log::category::verbose::error, "failed to transcode payload: ", exception);
+                                 message.code.result = common::code::xatmi::protocol; 
+                              }
+                           }
 
                            manager::local::ipc::optional::send( state, destination, message);
 
@@ -176,8 +170,8 @@ namespace casual
                               communication::ipc::blocking::send( common::communication::instance::outbound::service::manager::device(), state.metric.message());
                               state.metric.clear();
                            }
-                        }
-                     };
+                        };
+                     }
                   } // handle
 
                   namespace inbound
@@ -187,7 +181,7 @@ namespace casual
                         auto& device = communication::ipc::inbound::device();
                         return device.handler(
                            message::handle::defaults( device),
-                           handle::service::call::Request{ state});
+                           handle::service::call::request( state));
                      }
                   } // inbound
 
@@ -201,7 +195,7 @@ namespace casual
                      // highest possible order
                      message.order = std::numeric_limits< std::decay_t< decltype( message.order)>>::max();
 
-                     algorithm::transform( state.lookup, message.services, []( auto& l){
+                     algorithm::transform( state.lookup, message.services.add, []( auto& l){
                         message::service::concurrent::advertise::Service service;
                         service.category = "http";
                         service.name = l.first;
@@ -239,7 +233,8 @@ namespace casual
                log::line( log::category::information, "pending.requests.size: ", m_state.pending.requests.size(), 
                   ", pending.requests.capacity: ", m_state.pending.requests.capacity());
 
-               auto send_error_reply = []( const state::pending::Request& pending){
+               auto send_error_reply = []( const auto& pending)
+               {
                   message::service::call::Reply message;
                   message.correlation = pending.state().correlation;
                   message.execution = pending.state().execution;
@@ -270,7 +265,7 @@ namespace casual
                dispatch( ipc.next( policy));
             };
 
-            auto outbound = manager::local::handle::Reply( m_state);
+            auto outbound = manager::local::handle::reply( m_state);
 
             while( true)
             {

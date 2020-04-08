@@ -44,6 +44,12 @@ namespace casual
                })
             };
 
+            enum class Type : short
+            {
+               sequential = 1,
+               concurrent = 2,
+            };
+
             struct Base
             {
                Base() = default;
@@ -59,12 +65,14 @@ namespace casual
                std::string name;
                std::string category;
                common::service::transaction::Type transaction = common::service::transaction::Type::automatic;
+               service::Type type = service::Type::sequential;
 
                CASUAL_CONST_CORRECT_SERIALIZE(
                {
                   CASUAL_SERIALIZE( name);
                   CASUAL_SERIALIZE( category);
                   CASUAL_SERIALIZE( transaction);
+                  CASUAL_SERIALIZE( type);
                })
             };
          } // service
@@ -87,15 +95,7 @@ namespace casual
             namespace call
             {
                //! Represent service information in a 'call context'
-               struct Service : message::Service
-               {
-                  using message::Service::Service;
-
-                  CASUAL_CONST_CORRECT_SERIALIZE(
-                  {
-                     message::Service::serialize( archive);
-                  })
-               };
+               using Service = message::Service;
             } // call
 
             struct Transaction
@@ -139,34 +139,30 @@ namespace casual
 
             } // advertise
 
-            using base_advertise = basic_request< Type::service_advertise>;
+            using base_advertise = basic_request< message::Type::service_advertise>;
             struct Advertise : base_advertise
             {
                using base_advertise::base_advertise;
 
-               enum class Directive : short
+               struct
                {
-                  add,
-                  remove
-               };
+                  std::vector< advertise::Service> add;
+                  std::vector< std::string> remove;
 
-               inline friend std::ostream& operator << ( std::ostream& out, Advertise::Directive value)
-               {
-                  switch( value)
+                  CASUAL_CONST_CORRECT_SERIALIZE(
                   {
-                     case Advertise::Directive::add: return out << "add";
-                     case Advertise::Directive::remove: return out << "remove";
-                  }
-                  return out << "unknown";
-               }
+                     CASUAL_SERIALIZE( add);
+                     CASUAL_SERIALIZE( remove);
+                  })
+               } services;
 
-               Directive directive = Directive::add;
-               std::vector< advertise::Service> services;
+
+               //! @return true ii the intention is to remove all advertised services for the server
+               inline bool clear() const { return services.add.empty() && services.remove.empty();}
 
                CASUAL_CONST_CORRECT_SERIALIZE(
                {
                   base_advertise::serialize( archive);
-                  CASUAL_SERIALIZE( directive);
                   CASUAL_SERIALIZE( services);
                })
             };
@@ -196,38 +192,34 @@ namespace casual
 
                } // advertise
 
-               using basic_advertise = basic_request< Type::service_concurrent_advertise>;
+               using basic_advertise = basic_request< message::Type::service_concurrent_advertise>;
                struct Advertise : basic_advertise
                {
                   using basic_advertise::basic_advertise;
 
-                  enum class Directive : short
-                  {
-                     add,
-                     remove
-                  };
-
-                  inline friend std::ostream& operator << ( std::ostream& out, Advertise::Directive value)
-                  {
-                     switch( value)
-                     {
-                        case Advertise::Directive::add: return out << "add";
-                        case Advertise::Directive::remove: return out << "remove";
-                     }
-                     return out << "unknown";
-                  }
-
-                  Directive directive = Directive::add;
                   platform::size::type order = 0;
-                  std::vector< advertise::Service> services;
+
+                  struct
+                  {
+                     std::vector< advertise::Service> add;
+                     std::vector< std::string> remove;
+
+                     CASUAL_CONST_CORRECT_SERIALIZE(
+                     {
+                        CASUAL_SERIALIZE( add);
+                        CASUAL_SERIALIZE( remove);
+                     })
+                  } services;
+
+                  //! indicate to remove all current advertised services, and replace with content in this message
+                  bool reset = false;
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
                   {
                      basic_advertise::serialize( archive);
-                     CASUAL_SERIALIZE( directive);
-                     CASUAL_SERIALIZE( process);
                      CASUAL_SERIALIZE( order);
                      CASUAL_SERIALIZE( services);
+                     CASUAL_SERIALIZE( reset);
                   })
                };
               
@@ -237,7 +229,7 @@ namespace casual
             namespace lookup
             {
                //! Represent "service-name-lookup" request.
-               using base_request = basic_request< Type::service_name_lookup_request>; 
+               using base_request = basic_request< message::Type::service_name_lookup_request>; 
                struct Request : base_request
                {
                   using base_request::base_request;
@@ -274,7 +266,7 @@ namespace casual
                };
 
                //! Represent "service-name-lookup" response.
-               using base_reply = basic_reply< Type::service_name_lookup_reply>; 
+               using base_reply = basic_reply< message::Type::service_name_lookup_reply>; 
                struct Reply : base_reply
                {
                   using base_reply::base_reply;
@@ -317,7 +309,7 @@ namespace casual
 
                namespace discard
                {
-                  using base_request = basic_request< Type::service_name_lookup_discard_request>;
+                  using base_request = basic_request< message::Type::service_name_lookup_discard_request>;
                   struct Request : base_request
                   {
                      using base_request::base_request;
@@ -331,7 +323,7 @@ namespace casual
                      })
                   };
 
-                  using base_reply = basic_message< Type::service_name_lookup_discard_reply>;
+                  using base_reply = basic_message< message::Type::service_name_lookup_discard_reply>;
                   struct Reply : base_reply
                   {
                      enum class State : short
@@ -404,7 +396,7 @@ namespace casual
                   })
                };
 
-               using base_request = type_wrapper< common_request, Type::service_call>;
+               using base_request = type_wrapper< common_request, message::Type::service_call>;
                struct basic_request : base_request
                {
                   request::Flags flags;
@@ -430,7 +422,7 @@ namespace casual
 
 
                //! Represent service reply.
-               using base_reply = basic_message< Type::service_reply>;
+               using base_reply = basic_message< message::Type::service_reply>;
                struct Reply : base_reply
                {
                   service::Code code;
@@ -448,7 +440,7 @@ namespace casual
 
                //! Represent the reply to the service-manager when a server is done handling
                //! a service-call and is ready for new calls
-               using base_ack = basic_message< Type::service_acknowledge>;
+               using base_ack = basic_message< message::Type::service_acknowledge>;
                struct ACK : base_ack
                {
                   event::service::Metric metric;

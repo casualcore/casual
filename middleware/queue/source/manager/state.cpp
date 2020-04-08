@@ -94,59 +94,43 @@ namespace casual
          {
             Trace trace{ "queue::broker::State::update"};
 
-            using directive_type = decltype(message.directive);
+            if( message.reset)
+               remove_queues( message.process.pid);
 
-            switch( message.directive)
+            // make sure we've got the instance
+            if( ! common::algorithm::find( remotes, message.process))
+               remotes.emplace_back( message.process);
+
+            auto add_queue = [&]( auto& queue)
             {
-               case directive_type::replace:
+               auto& instances = queues[ queue.name];
+
+               // outbound order is zero-based, we add 1 to distinguish local from remote
+               instances.emplace_back( message.process, common::strong::queue::id{}, message.order + 1);
+
+               // Make sure we prioritize local queue
+               common::algorithm::stable_sort( instances);
+            };
+
+            algorithm::for_each( message.queues.add, add_queue);
+
+
+            auto remove_queue = [&]( auto& name)
+            {
+               auto& instances = queues[ name];
+
+               common::algorithm::trim( instances, common::algorithm::remove_if( instances, [&]( auto& queue)
                {
-                  remove_queues( message.process.pid);
+                  return message.process.pid == queue.process.pid;
+               }));
 
-                  // We fall through and add the queues, if any.
-               }
-               // no break
-               case directive_type::add:
-               {
-                  if( ! message.queues.empty())
-                  {
-                     // We only add gateway and queues if there are any.
-                     if( ! common::algorithm::find( remotes, message.process))
-                     {
-                        remotes.emplace_back( message.process);
-                     }
+               if( instances.empty())
+                  queues.erase( name);
+            };
 
-                     for( const auto& queue : message.queues)
-                     {
-                        auto& instances = queues[ queue.name];
-
-                        // outbound order is zero-based, we add 1 to distinguish local from remote
-                        instances.emplace_back( message.process, common::strong::queue::id{}, message.order + 1);
-
-                        // Make sure we prioritize local queue
-                        common::algorithm::stable_sort( instances);
-                     }
-                  }
-                  break;
-               }
-               case directive_type::remove:
-               {
-                  for( const auto& queue : message.queues)
-                  {
-                     auto& instances = queues[ queue.name];
-
-                     common::algorithm::trim( instances, common::algorithm::remove_if( instances, [&]( const Queue& q){
-                           return message.process.pid == q.process.pid;
-                        }));
-
-                     if( instances.empty())
-                     {
-                        queues.erase( queue.name);
-                     }
-                  }
-                  break;
-               }
-            }
+            algorithm::for_each( message.queues.remove, remove_queue);
          }
+
          const common::message::domain::configuration::queue::Group* State::group_configuration( const std::string& name)
          {
             auto found = common::algorithm::find_if( configuration.groups, [&name]( auto& g){

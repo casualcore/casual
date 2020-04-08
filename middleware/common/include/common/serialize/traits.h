@@ -85,7 +85,7 @@ namespace casual
                namespace detail
                {
                   template< typename T, typename A>
-                  using serialize = decltype( std::declval< traits::remove_cvref_t< T>&>().serialize( std::declval< traits::remove_cvref_t< A>&>()));
+                  using serialize = decltype( std::declval< std::remove_reference_t< T>&>().serialize( std::declval< traits::remove_cvref_t< A>&>()));
                } // detail
 
                template< typename T, typename A>
@@ -96,7 +96,7 @@ namespace casual
                   namespace detail
                   {
                      template< typename T, typename A>
-                     using serialize = decltype( std::declval< traits::remove_cvref_t< T>&>().serialize( std::declval< traits::remove_cvref_t< A>&>(), ""));
+                     using serialize = decltype( std::declval< std::remove_reference_t< T>&>().serialize( std::declval< traits::remove_cvref_t< A>&>(), ""));
                   } // detail
 
                   template< typename T, typename A>

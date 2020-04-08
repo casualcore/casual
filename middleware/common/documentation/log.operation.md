@@ -51,7 +51,7 @@ Each row has the following parts, separated by the delimiter `|`
 
 part           |  description
 ---------------|------------------
-timestamp      | microseconds since epoc
+timestamp      | iso-8601 extended date-time with time offset from UTC - example: `2020-03-25T16:36:35.550566+0100`
 domain name    | name of the domain that wrote the line
 execution id   | uuid that correlates an execution path
 process id     | pid of the process that wrote the line

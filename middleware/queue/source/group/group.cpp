@@ -94,15 +94,16 @@ namespace casual
 
             auto handler = group::handler( m_state);
 
+            namespace dispatch = common::message::dispatch;
+            auto condition = dispatch::condition::compose(
+               dispatch::condition::idle( [&]()
+               {
+                  // make sure we persist when inbound is idle,
+                  handle::persist( m_state);
+               })
+            );
 
-            // make sure we persist when inbound
-            // is empty, 
-            auto empty_inbound = [&]()
-            {
-               handle::persist( m_state);
-            };
-
-            common::message::dispatch::empty::pump( handler, handle::ipc::device(), empty_inbound);
+            common::message::dispatch::pump( condition, handler, handle::ipc::device());
          }
 
       } // group

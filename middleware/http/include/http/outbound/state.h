@@ -85,7 +85,7 @@ namespace casual
 
                         CASUAL_LOG_SERIALIZE(
                         { 
-                           CASUAL_NAMED_VALUE( reply);
+                           CASUAL_SERIALIZE( reply);
                         })   
 
                      } header;
@@ -99,15 +99,15 @@ namespace casual
                      
                      CASUAL_LOG_SERIALIZE(
                      { 
-                        CASUAL_NAMED_VALUE( payload);
-                        CASUAL_NAMED_VALUE( offset);
-                        CASUAL_NAMED_VALUE( destination);
-                        CASUAL_NAMED_VALUE( correlation);
-                        CASUAL_NAMED_VALUE( execution);
-                        CASUAL_NAMED_VALUE( start);
-                        CASUAL_NAMED_VALUE( service);
-                        CASUAL_NAMED_VALUE( parent);
-                        CASUAL_NAMED_VALUE( header);
+                        CASUAL_SERIALIZE( payload);
+                        CASUAL_SERIALIZE( offset);
+                        CASUAL_SERIALIZE( destination);
+                        CASUAL_SERIALIZE( correlation);
+                        CASUAL_SERIALIZE( execution);
+                        CASUAL_SERIALIZE( start);
+                        CASUAL_SERIALIZE( service);
+                        CASUAL_SERIALIZE( parent);
+                        CASUAL_SERIALIZE( header);
                      })                     
                   };
 
@@ -122,8 +122,8 @@ namespace casual
 
                   CASUAL_LOG_SERIALIZE(
                   { 
-                     CASUAL_NAMED_VALUE_NAME( m_easy, "easy");
-                     CASUAL_NAMED_VALUE_NAME( state(), "state");
+                     CASUAL_SERIALIZE_NAME( m_easy, "easy");
+                     CASUAL_SERIALIZE_NAME( state(), "state");
                   })
 
                private:

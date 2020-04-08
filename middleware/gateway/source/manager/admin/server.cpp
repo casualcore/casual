@@ -7,7 +7,8 @@
 
 
 #include "gateway/manager/admin/server.h"
-#include "gateway/manager/admin/vo.h"
+#include "gateway/manager/admin/model.h"
+#include "gateway/manager/handle.h"
 #include "gateway/transform.h"
 
 
@@ -30,32 +31,44 @@ namespace casual
                {
                   namespace service
                   {
-
-                     common::service::invoke::Result state( common::service::invoke::Parameter&& parameter, manager::State& state)
+                     auto state( manager::State& state)
                      {
-                        auto protocol = serviceframework::service::protocol::deduce( std::move( parameter));
-
-                        manager::admin::vo::State (*function)( const manager::State& state) = &gateway::transform::state;
-
-                        auto result = serviceframework::service::user( protocol, function, state);
-
-                        protocol << CASUAL_NAMED_VALUE( result);
-                        return protocol.finalize();
+                        return [&state]( common::service::invoke::Parameter&& parameter)
+                        {
+                           return serviceframework::service::user( 
+                              std::move( parameter),
+                              [&state](){ return gateway::transform::state( state);});
+                        };
                      }
 
+                     auto rediscover( manager::State& state)
+                     {
+                        return [&state]( common::service::invoke::Parameter&& parameter)
+                        {
+                           return serviceframework::service::user( 
+                              std::move( parameter),
+                              [&state](){ return gateway::manager::handle::rediscover( state);});
 
+                        };
+                     }
                   }
+
+
                } // <unnamed>
             } // local
-
 
             common::server::Arguments services( manager::State& state)
             {
                return { {
-                     { service::name::state(),
-                        std::bind( &local::service::state, std::placeholders::_1, std::ref( state)),
+                     { service::name::state,
+                        local::service::state( state),
                         common::service::transaction::Type::none,
-                        common::service::category::admin()
+                        common::service::category::admin
+                     },
+                     { service::name::rediscover,
+                        local::service::rediscover( state),
+                        common::service::transaction::Type::none,
+                        common::service::category::admin
                      }
                }};
             }

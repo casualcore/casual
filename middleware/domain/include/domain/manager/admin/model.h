@@ -186,7 +186,7 @@ namespace casual
 
                   struct Task
                   {
-                     common::strong::task::id id;
+                     common::Uuid id;
                      std::string description;
 
                      CASUAL_CONST_CORRECT_SERIALIZE
@@ -196,8 +196,32 @@ namespace casual
                      )
                   };
 
+                  namespace state
+                  {
+                     enum class Runlevel : int
+                     {
+                        startup = 0,
+                        running = 1,
+                        shutdown = 2,
+                        error = 3,
+                     };
+                     inline std::ostream& operator << ( std::ostream& out, Runlevel runlevel)
+                     {
+                        switch( runlevel)
+                        {
+                           case Runlevel::startup: return out << "startup";
+                           case Runlevel::running: return out << "running";
+                           case Runlevel::shutdown: return out << "shutdown";
+                           case Runlevel::error: return out << "error";
+                        }
+                        assert( ! "invalid runlevel");
+
+                     }
+                  } // state
+
                   struct State
                   {
+                     state::Runlevel runlevel = state::Runlevel::startup;
                      model::Version version; 
                      common::domain::Identity identity;
                      std::vector< model::Group> groups;
@@ -229,6 +253,7 @@ namespace casual
 
                      CASUAL_CONST_CORRECT_SERIALIZE(
                      {
+                        CASUAL_SERIALIZE( runlevel);
                         CASUAL_SERIALIZE( version);
                         CASUAL_SERIALIZE( identity);
                         CASUAL_SERIALIZE( groups);
@@ -263,8 +288,16 @@ namespace casual
                      {
                         std::string name;
 
-                        CASUAL_CONST_CORRECT_SERIALIZE
-                        (
+                        CASUAL_CONST_CORRECT_SERIALIZE(
+                           CASUAL_SERIALIZE( name);
+                        )
+                     };
+
+                     struct Group
+                     {
+                        std::string name;
+
+                        CASUAL_CONST_CORRECT_SERIALIZE(
                            CASUAL_SERIALIZE( name);
                         )
                      };

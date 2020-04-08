@@ -69,7 +69,7 @@ namespace casual
 
             arguments.services.emplace_back( ".1",
                   std::bind( &local::service3, std::placeholders::_1, 10),
-                  common::service::transaction::Type::none, common::service::category::admin());
+                  common::service::transaction::Type::none, common::service::category::admin);
          });
       }
 
@@ -87,7 +87,7 @@ namespace casual
 
             arguments.services.emplace_back( ".1",
                         std::bind( &local::service4, std::placeholders::_1, std::ref( value)),
-                        common::service::transaction::Type::none, common::service::category::admin());
+                        common::service::transaction::Type::none, common::service::category::admin);
 
             arguments.services.back()( service::invoke::Parameter{ buffer::Payload{ ".binary/", 128}});
          });
@@ -107,7 +107,7 @@ namespace casual
                arguments.services = {
                      { ".1",
                            std::bind( &local::service4, std::placeholders::_1, std::ref( value)),
-                           common::service::transaction::Type::none, common::service::category::admin()}
+                           common::service::transaction::Type::none, common::service::category::admin}
                };
 
                arguments.services.back()( service::invoke::Parameter{});

@@ -64,24 +64,25 @@ namespace casual
 
          namespace outbound
          {
+            template< typename Base>
+            struct basic_configuration : Base
+            {
+               using Base::Base;
+
+               std::vector< std::string> services;
+               std::vector< std::string> queues;
+
+               CASUAL_CONST_CORRECT_SERIALIZE({
+                  Base::serialize( archive);
+                  CASUAL_SERIALIZE( services);
+                  CASUAL_SERIALIZE( queues);
+               })
+            };
+
             namespace configuration
             {
                using Request = common::message::basic_request< common::message::Type::gateway_outbound_configuration_request>;
-
-               using base_reply = common::message::basic_reply< common::message::Type::gateway_outbound_configuration_reply>;
-               struct Reply : base_reply
-               {
-                  using base_reply::base_reply;
-
-                  std::vector< std::string> services;
-                  std::vector< std::string> queues;
-
-                  CASUAL_CONST_CORRECT_SERIALIZE({
-                     base_reply::serialize( archive);
-                     CASUAL_SERIALIZE( services);
-                     CASUAL_SERIALIZE( queues);
-                  })
-               };
+               using Reply = basic_configuration< common::message::basic_reply< common::message::Type::gateway_outbound_configuration_reply>>;
 
             } // configuration
 
@@ -92,6 +93,12 @@ namespace casual
                using Done = common::message::basic_message< common::message::Type::gateway_outbound_connect_done>;
 
             } // connect
+
+            namespace rediscover
+            {
+               using Request = basic_configuration< common::message::basic_request< common::message::Type::gateway_outbound_rediscover_request>>;
+               using Reply = common::message::basic_reply< common::message::Type::gateway_outbound_rediscover_reply>;
+            } // rediscover
 
          } // outbound
 
@@ -124,6 +131,9 @@ namespace casual
          {
             template<>
             struct type_traits< casual::gateway::message::outbound::configuration::Request> : detail::type< casual::gateway::message::outbound::configuration::Reply> {};
+
+            template<>
+            struct type_traits< casual::gateway::message::outbound::rediscover::Request> : detail::type< casual::gateway::message::outbound::rediscover::Reply> {};
          } // reverse
       } // message
 

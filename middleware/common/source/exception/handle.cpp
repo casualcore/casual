@@ -48,6 +48,11 @@ namespace casual
                      throw;
                   }
                   // casual stuff
+                  catch( const exception::casual::Shutdown& exception)
+                  {
+                     local::log( exception, out);
+                     return 0;
+                  }
                   catch( const exception::casual::exception& exception)
                   {
                      return local::log( exception, out);

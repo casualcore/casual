@@ -200,166 +200,235 @@ namespace casual
                handlers_type m_handlers;
             };
 
-            template< typename Unmarshal, typename D, typename Policy>
-            void pump( basic_handler< Unmarshal>& handler, D& device, Policy&& policy)
+            namespace condition
             {
-               while( handler( device.next( policy)))
+               namespace detail
                {
-                  ;
-               }
-            }
-
-            namespace conditional
-            {
-               template< typename H, typename D, typename C>
-               void pump( 
-                  H&& handler, 
-                  D& device,
-                  C&& done)
-               {
-                  using device_type = std::decay_t< decltype( device)>;
-
-                  const auto types = handler.types();
-
-                  while( ! done())
+                  namespace tag
                   {
-                     while( handler( device.next( types, typename device_type::non_blocking_policy{})))
-                        ; // no op
+                     struct prelude{};
+                     struct idle{};
+                     struct done{};
+                     struct error{};
 
-                     if( done())
-                        return;
-
-                     // we block
-                     handler( device.next( types, typename device_type::blocking_policy{}));
-                  }   
-               }
-            } // conditional
-
-            namespace reply
-            {
-               template< typename Reply, typename H, typename D>
-               auto pump( H&& handler, D& device)
-               {
-                  Reply reply;
-
-                  conditional::pump( handler, device, [&reply]()
-                  {
-                     return ! reply.correlation.empty();
-                  });
-
-                  return reply;
-               }
-               
-            } // reply
-
-            
-            namespace empty
-            {
-               template< typename Unmarshal, typename D, typename EC>
-               void pump( 
-                  basic_handler< Unmarshal>& handler, 
-                  D& device, 
-                  EC&& empty_callback)
-               {
-                  using device_type = std::decay_t< decltype( device)>;
-
-                  while( true)
-                  {
-                     while( handler( device.next( typename device_type::non_blocking_policy{})))
-                        ; // no op
-
-                     // input is empty, we call the callback
-                     empty_callback();
-
-                     // we block
-                     handler( device.next( typename device_type::blocking_policy{}));
-                  }   
-               }
-
-               namespace conditional
-               {
-                  template< typename Unmarshal, typename D, typename EC, typename C>
-                  void pump( 
-                     basic_handler< Unmarshal>& handler, 
-                     D& device, 
-                     EC&& empty_callback,
-                     C&& done)
-                  {
-                     using device_type = std::decay_t< decltype( device)>;
-
-                     while( ! done())
+                     template< typename Tag>
+                     struct default_invoke
                      {
-                        while( handler( device.next( typename device_type::non_blocking_policy{})))
-                           ; // no op
+                        static constexpr void invoke() {};
+                     };
 
-                        // input is empty, we call the callback
-                        empty_callback();
+                     template<>
+                     struct default_invoke< tag::done>
+                     {
+                        static constexpr bool invoke() { return false;};
+                     };
 
-                        // we block
-                        handler( device.next( typename device_type::blocking_policy{}));
-                     }   
+                     template<>
+                     struct default_invoke< tag::error>
+                     {
+                        static void invoke() { throw;};
+                     };
+                  } // tag
+
+
+                  template< typename T, typename Tag>
+                  struct strong_t
+                  {
+                     strong_t( T value) : callable{ std::move( value)} {}
+
+                     auto operator() ( Tag tag) { return callable();}
+
+                     T callable;
+                  };
+                  
+                  template< typename Tag, typename T>
+                  auto make_strong( T&& callable) { return strong_t< std::decay_t< T>, Tag>{ std::forward< T>( callable)};}
+
+                  // TODO c++17 - we can use the _overloaded_ idiom
+                  template< typename... Ts>
+                  struct composition_t{};
+
+                  template< typename T, typename... Ts>
+                  struct composition_t< T, Ts...> : T, composition_t< Ts...>
+                  {
+                     using base_type = composition_t< Ts...>;
+                     composition_t( T head, Ts... tail) : T{ head}, base_type{ tail...} {}
+
+                     using T::operator();
+                     using base_type::operator();
+                  };
+
+                  template< typename T>
+                  struct composition_t< T> : T
+                  {
+                     composition_t( T head) : T{ head} {}
+                     using T::operator();
+                  };
+
+                  namespace dispatch
+                  {
+                     // default behaviour, if not provided
+                     template< typename Tag, typename T> 
+                     auto invoke( T& condition, traits::priority::tag< 0>) -> decltype( tag::default_invoke< Tag>::invoke())
+                     {
+                        return tag::default_invoke< Tag>::invoke();
+                     }
+
+                     // uses the user provided 'condition'
+                     template< typename Tag, typename T> 
+                     auto invoke( T& condition, traits::priority::tag< 1>) -> decltype( condition( Tag{}))
+                     {
+                        return condition( Tag{});
+                     }
+                  } // dispatch
+
+
+                  template< typename Tag, typename T> 
+                  auto invoke( T& condition) -> decltype( dispatch::invoke< Tag>( condition, traits::priority::tag< 1>{}))
+                  {
+                     return dispatch::invoke< Tag>( condition, traits::priority::tag< 1>{});
                   }
 
-                  template< typename Unmarshal, typename D, typename EC, typename C, typename EH>
-                  void pump( 
-                     basic_handler< Unmarshal>& handler, 
-                     D& device, 
-                     EC&& empty_callback,
-                     C&& done,
-                     EH&& error_handler)
+                  namespace pump
                   {
-                     using device_type = std::decay_t< decltype( device)>;
 
-                     while( ! done())
+                     //! used if there are no error condition provided
+                     template< typename C, typename H, typename D>
+                     void dispatch( C&& condition, H&& handler, D& device, traits::priority::tag< 0>)
                      {
-                        try 
-                        {   
-                           while( handler( device.next( typename device_type::non_blocking_policy{})))
-                              ; // no op
+                        using device_type = std::decay_t< decltype( device)>;
 
-                           // input is empty, we call the callback
-                           empty_callback();
+                        detail::invoke< detail::tag::prelude>( condition);
+
+                        while( ! detail::invoke< detail::tag::done>( condition))
+                        {
+                           while( handler( device, typename device_type::non_blocking_policy{}))
+                              if( detail::invoke< detail::tag::done>( condition))
+                                 return;
+
+                           // we're idle
+                           detail::invoke< detail::tag::idle>( condition);
+
+                           // we might be done after idle
+                           if( detail::invoke< detail::tag::done>( condition))
+                              return;
 
                            // we block
-                           handler( device.next( typename device_type::blocking_policy{}));
-                        }
-                        catch( ...)
-                        {
-                           error_handler();
-                        }
+                           handler( device, typename device_type::blocking_policy{});
+                        } 
                      }   
-                  }
-                  
-               } // conditional
-            } // empty
-            
 
-            namespace blocking
+                     //! used if there are an error condition provided
+                     template< typename C, typename H, typename D>
+                     auto dispatch( C&& condition, H&& handler, D& device, traits::priority::tag< 1>) 
+                        -> decltype( condition.invoke( tag::error{}))
+                     {
+                        using device_type = std::decay_t< decltype( device)>;
+
+                        detail::invoke< detail::tag::prelude>( condition);
+
+                        while( ! detail::invoke< detail::tag::done>( condition))
+                        {
+                           try 
+                           {   
+                              while( handler( device, typename device_type::non_blocking_policy{}))
+                                 if( detail::invoke< detail::tag::done>( condition))
+                                    return;
+
+                              // we're idle
+                              detail::invoke< detail::tag::idle>( condition);
+
+                              // we might be done after idle
+                              if( detail::invoke< detail::tag::done>( condition))
+                                 return;
+
+                              // we block
+                              handler( device, typename device_type::blocking_policy{});
+                           }
+                           catch( ...)
+                           {
+                              detail::invoke< detail::tag::error>( condition);
+                           }
+                        } 
+                     }
+                     namespace consume
+                     {
+                        template< typename H> 
+                        auto relaxed( H& handler)
+                        {
+                           return [&handler, types = handler.types()]( auto& device, auto policy)
+                           {
+                              return handler( device.next( types, policy));
+                           };
+                        }
+
+                        template< typename H> 
+                        auto strict( H& handler)
+                        {
+                           return [&handler]( auto& device, auto policy)
+                           {
+                              return handler( device.next( policy));
+                           };
+                        }
+                     } // consume
+                  } // pump
+
+               } // detail
+
+               //! provided `callable` will be invoked before the message pump starts
+               template< typename T>
+               auto prelude( T&& callable) { return detail::make_strong< detail::tag::prelude>( std::forward< T>( callable));}
+
+               //! provided `callable` will be invoked once every time the _inbound device_ is empty
+               template< typename T>
+               auto idle( T&& callable) { return detail::make_strong< detail::tag::idle>( std::forward< T>( callable));}
+
+               //! provided `callable` will be invoked and if the result is `true` the control is return to caller
+               template< typename T>
+               auto done( T&& callable) { return detail::make_strong< detail::tag::done>( std::forward< T>( callable));}
+
+               //! provided `callable` will be invoked if an exception is thrown, the `callable` needs to rethrow the
+               //! ongoing exception to do a _dispatch_
+               template< typename T>
+               auto error( T&& callable) { return detail::make_strong< detail::tag::error>( std::forward< T>( callable));}
+
+
+               template< typename... Ts> 
+               auto compose( Ts&&... ts) 
+               {
+                  return detail::composition_t< Ts...>{ std::forward< Ts>( ts)...};
+               };
+
+            } // condition
+
+            //! conditional pump. 
+            //! takes a composed condition via condition::compose( condition::(prelude|idle|done|error))
+            //! the provided 'callbacks' will be used during _message pump_
+            template< typename C, typename H, typename D>
+            void pump( C&& condition, H&& handler, D& device)
             {
-               template< typename Unmarshal, typename D>
-               void pump( basic_handler< Unmarshal>& handler, D& device)
-               {
-                  using device_type = std::decay_t< decltype( device)>;
+               auto consume = condition::detail::pump::consume::strict( handler);
+               condition::detail::pump::dispatch( std::forward< C>( condition), consume, device, traits::priority::tag< 1>{});
+            }
 
-                  while( true)
-                     handler( device.next( typename device_type::blocking_policy{}));
+            namespace relaxed
+            {
+               //! only consume messages that handler can handle, and leaves the rest for later consumption.
+               //! otherwise same as dispatch::pump
+               template< typename C, typename H, typename D>
+               void pump( C&& condition, H&& handler, D& device)
+               {
+                  auto consume = condition::detail::pump::consume::relaxed( handler);
+                  condition::detail::pump::dispatch( std::forward< C>( condition), consume, device, traits::priority::tag< 1>{});
                }
+            } // relaxed
 
-               namespace restriced
-               {
-                  // only consume messages that handler can handle
-                  template< typename Unmarshal, typename D>
-                  void pump( basic_handler< Unmarshal>& handler, D& device)
-                  {
-                     using device_type = std::decay_t< decltype( device)>;
-
-                     const auto types = handler.types();
-
-                     while( true)
-                        handler( device.next( types, typename device_type::blocking_policy{}));
-                  }
-               } // restriced
-            } // blocking
+            //! uses the default behaviour 
+            template< typename H, typename D>
+            void pump( H&& handler, D& device)
+            {
+               pump( condition::compose(), handler, device);
+            }
 
          } // dispatch
       } // message

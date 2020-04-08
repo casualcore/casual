@@ -200,7 +200,7 @@ namespace casual
 
             common::log::line( log, "start message pump");
 
-            common::message::dispatch::blocking::pump( 
+            common::message::dispatch::pump( 
                handler, 
                common::communication::ipc::inbound::device());
 

@@ -39,15 +39,11 @@ namespace casual
 
 int main( int argc, char **argv)
 {
-   try
+   return casual::common::exception::guard( [=]()
    {
       casual::http::outbound::main( argc, argv);
-   }
-   catch( ...)
-   {
-      return casual::common::exception::handle();
-   }
-   return 0;
+   });
+
 }
 
 

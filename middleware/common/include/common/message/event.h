@@ -55,176 +55,72 @@ namespace casual
 
             } // subscription
 
-            namespace domain
+            using base_error = basic_event< Type::event_error>;
+            struct Error : base_error
             {
-               namespace task
+               using base_error::base_error;
+               
+               enum class Severity : short
                {
-                  enum class State : short
-                  {
-                     ok,
-                     aborted,
-                     error
-                  };
-                  inline std::ostream& operator << ( std::ostream& out, State state)
-                  {
-                     switch( state)
-                     {
-                        case State::ok: return out << "ok";
-                        case State::aborted: return out << "aborted";
-                        case State::error: return out << "error";
-                     }
-                     return out << "<unknown>";
-                  }
-
-
-                  template< Type type> 
-                  struct basic_task : basic_event< type>
-                  {
-                     strong::task::id id;
-                     std::string description;
-
-                     CASUAL_CONST_CORRECT_SERIALIZE({
-                        basic_event< type>::serialize( archive);
-                        CASUAL_SERIALIZE( id);
-                        CASUAL_SERIALIZE( description);
-                     })
-                  };
-
-                  using Begin = basic_task< Type::event_domain_task_begin>;
-                  
-                  using base_end = basic_task< Type::event_domain_task_end>;
-                  struct End : base_end
-                  {
-                     State state = State::ok;
-
-                     CASUAL_CONST_CORRECT_SERIALIZE({
-                        base_end::serialize( archive);
-                        CASUAL_SERIALIZE( state);
-                     })
-                  };
-               } // task
-
-               namespace server
-               {
-                  using base_connect = basic_event< Type::event_domain_server_connect>;
-                  struct Connect : base_connect
-                  {
-                     Uuid identification;
-
-                     CASUAL_CONST_CORRECT_SERIALIZE(
-                        base_connect::serialize( archive);
-                        CASUAL_SERIALIZE( identification);
-                     )
-
-                  };                  
-
-               } // server
-
-               using base_error = basic_event< Type::event_domain_error>;
-               struct Error : base_error
-               {
-                  using base_error::base_error;
-                  
-                  enum class Severity : short
-                  {
-                     fatal, // shutting down
-                     error, // keep going
-                     warning
-                  };
-
-                  inline friend std::ostream& operator << ( std::ostream& out, Severity value)
-                  {
-                     switch( value)
-                     {
-                        case Severity::fatal: return out << "fatal";
-                        case Severity::error: return out << "error";
-                        case Severity::warning: return out << "warning";
-                     }
-                     return out << "unknown";
-                  }
-
-                  std::string message;
-                  std::string executable;
-                  strong::process::id pid;
-                  std::vector< std::string> details;
-
-                  Severity severity = Severity::error;
-
-                  CASUAL_CONST_CORRECT_SERIALIZE(
-                     base_error::serialize( archive);
-                     CASUAL_SERIALIZE( message);
-                     CASUAL_SERIALIZE( executable);
-                     CASUAL_SERIALIZE( pid);
-                     CASUAL_SERIALIZE( details);
-                     CASUAL_SERIALIZE( severity);
-                  )
+                  fatal, // shutting down
+                  error, // keep going
+                  warning
                };
 
-               using base_group = basic_event< Type::event_domain_group>;
-               struct Group : base_group
+               friend std::ostream& operator << ( std::ostream& out, Severity value);
+
+               std::string message;
+               Severity severity = Severity::error;
+
+               CASUAL_CONST_CORRECT_SERIALIZE(
+                  base_error::serialize( archive);
+                  CASUAL_SERIALIZE( message);
+                  CASUAL_SERIALIZE( severity);
+               )
+            };
+
+            namespace task
+            {
+               enum class State : short
                {
-                  enum class Context : int
-                  {
-                     boot_start,
-                     boot_end,
-                     shutdown_start,
-                     shutdown_end,
-                  };
-                  inline friend std::ostream& operator << ( std::ostream& out, Context value)
-                  {
-                     switch( value)
-                     {
-                        case Context::boot_start: return out << "boot.start";
-                        case Context::boot_end: return out << "boot.end";
-                        case Context::shutdown_start: return out << "shutdown.start";
-                        case Context::shutdown_end: return out << "shutdown.end";
-                     }
-                     assert( ! "not valid context");
-                  }
-
-                  platform::size::type id = 0;
-                  std::string name;
-                  Context context;
-
-                  CASUAL_CONST_CORRECT_SERIALIZE(
-                     base_group::serialize( archive);
-                     CASUAL_SERIALIZE( id);
-                     CASUAL_SERIALIZE( name);
-                     CASUAL_SERIALIZE( context);
-                  )
-
+                  started,
+                  done,
+                  aborted,
+                  warning,
+                  error,
                };
 
-               template< Type type>
-               struct basic_procedure : basic_event< type>
-               {
-                  common::domain::Identity domain;
+               std::ostream& operator << ( std::ostream& out, State state);
+            } // task
 
-                  CASUAL_CONST_CORRECT_SERIALIZE(
-                     basic_event< type>::serialize( archive);
-                     CASUAL_SERIALIZE( domain);
-                  )
-               };
+            template< Type type>
+            struct basic_task : basic_event< type>
+            {
+               using basic_event< type>::basic_event;
 
+               task::State state = task::State::done;
+               std::string description;
 
-               namespace boot
-               {
-                  struct Begin : basic_procedure< Type::event_domain_boot_begin>{};
-                  struct End : basic_procedure< Type::event_domain_boot_end>{};
-               } // boot
+               bool done() const { return state != task::State::started;}
 
-               namespace shutdown
-               {
-                  struct Begin : basic_procedure< Type::event_domain_shutdown_begin>{};
-                  struct End : basic_procedure< Type::event_domain_shutdown_end>{};
-               } // shutdown
+               CASUAL_CONST_CORRECT_SERIALIZE({
+                  basic_event< type>::serialize( archive);
+                  CASUAL_SERIALIZE( state);
+                  CASUAL_SERIALIZE( description);
+               })
+            };
 
-            } // domain
+            using Task = basic_task< Type::event_task>;
+
+            namespace sub
+            {
+               using Task = event::basic_task< Type::event_sub_task>;                  
+            } // sub
 
 
             namespace process
             {
-               using base_spawn = basic_event< Type::event_domain_process_spawn>;
+               using base_spawn = basic_event< Type::event_process_spawn>;
                struct Spawn : base_spawn
                {
                   using base_spawn::base_spawn;
@@ -241,7 +137,7 @@ namespace casual
                   )
                };
 
-               using base_exit = basic_event< Type::event_domain_process_exit>;
+               using base_exit = basic_event< Type::event_process_exit>;
                struct Exit : base_exit
                {
                   Exit() = default;
@@ -261,8 +157,16 @@ namespace casual
             {
                struct Metric 
                {
+                  enum class Type : long
+                  {
+                     sequential = 1,
+                     concurrent = 2,
+                  };
+
                   std::string service;
                   std::string parent;
+                  Type type = Type::sequential;
+                  
                   common::process::Handle process;
                   Uuid execution;
                   common::transaction::ID trid;
@@ -280,6 +184,7 @@ namespace casual
                   (
                      CASUAL_SERIALIZE( service);
                      CASUAL_SERIALIZE( parent);
+                     CASUAL_SERIALIZE( type);
                      CASUAL_SERIALIZE( process);
                      CASUAL_SERIALIZE( execution);
                      CASUAL_SERIALIZE( trid);
@@ -313,6 +218,16 @@ namespace casual
                };
         
             } // service
+
+            namespace terminal
+            {
+               std::ostream& print( std::ostream& out, const Error& event);
+               std::ostream& print( std::ostream& out, const process::Spawn& event);
+               std::ostream& print( std::ostream& out, const process::Exit& event);
+
+               std::ostream& print( std::ostream& out, const Task& event);
+               std::ostream& print( std::ostream& out, const sub::Task& event);
+            } // terminal
             
             } // inline v1
          } // event
@@ -321,6 +236,12 @@ namespace casual
          {
             namespace event
             {
+               template< typename Message>
+               constexpr bool message()
+               {
+                  return Message::type() > Type::EVENT_BASE && Message::type() < Type::EVENT_BASE_END; 
+               }
+
                template< typename M>
                constexpr bool message( M&& message)
                {

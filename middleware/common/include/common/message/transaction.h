@@ -26,35 +26,35 @@ namespace casual
          {
 
             template< message::Type type>
-            struct basic_transaction : basic_message< type>
+            struct basic_transaction : basic_request< type>
             {
-               using base_type = basic_transaction< type>;
+               using base_type = basic_request< type>;
+               using base_type::base_type;
 
-               common::process::Handle process;
                common::transaction::ID trid;
 
                CASUAL_CONST_CORRECT_SERIALIZE(
                {
-                  basic_message< type>::serialize( archive);
-                  CASUAL_SERIALIZE( process);
+                  base_type::serialize( archive);
                   CASUAL_SERIALIZE( trid);
                })
             };
 
             template< message::Type type>
-            struct basic_request : basic_transaction< type>
-            {
+            using basic_request = basic_transaction< type>;
 
-            };
 
             template< typename State, message::Type type>
             struct basic_reply : basic_transaction< type>
             {
+               using base_type = basic_transaction< type>;
+               using base_type::base_type;
+
                State state = State::ok;
 
                CASUAL_CONST_CORRECT_SERIALIZE(
                {
-                  basic_transaction< type>::serialize( archive);
+                  base_type::serialize( archive);
                   CASUAL_SERIALIZE( state);
                })
             };
@@ -220,6 +220,7 @@ namespace casual
                struct basic_reply : transaction::basic_reply< code::xa, type>
                {
                   using base_type = transaction::basic_reply< code::xa, type>;
+                  using base_type::base_type;
                   id::type resource;
                   Statistics statistics;
 

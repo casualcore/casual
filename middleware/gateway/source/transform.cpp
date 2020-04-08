@@ -62,18 +62,18 @@ namespace casual
                {
                   struct Connection
                   {
-                     manager::admin::vo::Connection operator() ( const manager::state::inbound::Connection& value) const
+                     manager::admin::model::Connection operator() ( const manager::state::inbound::Connection& value) const
                      {
                         auto result = transform( value);
-                        result.bound = manager::admin::vo::Connection::Bound::in;
+                        result.bound = manager::admin::model::Connection::Bound::in;
 
                         return result;
                      }
 
-                     manager::admin::vo::Connection operator() ( const manager::state::outbound::Connection& value) const
+                     manager::admin::model::Connection operator() ( const manager::state::outbound::Connection& value) const
                      {
                         auto result = transform( value);
-                        result.bound = manager::admin::vo::Connection::Bound::out;
+                        result.bound = manager::admin::model::Connection::Bound::out;
 
                         return result;
                      }
@@ -81,13 +81,13 @@ namespace casual
                   private:
 
                      template< typename T>
-                     manager::admin::vo::Connection transform( const T& value) const
+                     manager::admin::model::Connection transform( const T& value) const
                      {
-                        manager::admin::vo::Connection result;
+                        manager::admin::model::Connection result;
 
                         result.process = value.process;
                         result.remote = value.remote;
-                        result.runlevel = static_cast< manager::admin::vo::Connection::Runlevel>( value.runlevel);
+                        result.runlevel = static_cast< manager::admin::model::Connection::Runlevel>( value.runlevel);
                         result.address.local = value.address.local;
                         result.address.peer = value.address.peer;
 
@@ -124,11 +124,11 @@ namespace casual
             return state;
          }
 
-         manager::admin::vo::State state( const manager::State& state)
+         manager::admin::model::State state( const manager::State& state)
          {
             Trace trace{ "gateway::transform::state service"};
 
-            manager::admin::vo::State result;
+            manager::admin::model::State result;
 
 
             algorithm::transform( state.connections.outbound, result.connections, local::vo::Connection{});
@@ -137,7 +137,7 @@ namespace casual
 
             auto transform_listener = []( const manager::listen::Entry& entry)
             {
-               manager::admin::vo::Listener result;
+               manager::admin::model::Listener result;
                result.address.host = entry.address().host;
                result.address.port = entry.address().port;
                result.limit.size = entry.limit().size;

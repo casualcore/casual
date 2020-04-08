@@ -86,13 +86,11 @@ namespace casual
                      // used with common::message::Coordinate
                      struct Policy 
                      {
-                        Policy( const communication::Socket& external) : m_external( external) {}
-
                         using message_type = common::message::gateway::domain::discover::Reply;
 
-                        inline void accumulate( message_type& message, message_type& reply)
+                        inline void operator() ( message_type& message, message_type& reply)
                         {
-                           Trace trace{ "gateway::inbound::handle::domain::discover::coordinate::Policy::accumulate"};
+                           Trace trace{ "gateway::inbound::handle::domain::discover::coordinate::Policy"};
 
                            common::algorithm::append( reply.services, message.services);
                            common::algorithm::append( reply.queues, message.queues);
@@ -100,10 +98,18 @@ namespace casual
                            common::log::line( verbose::log, "message: ", message);
                            common::log::line( verbose::log, "reply: ", reply);
                         }
+                     };
 
-                        inline void send( common::strong::ipc::id queue, message_type& message)
+                     using Discover = common::message::Coordinate< Policy>;
+
+                     struct Send 
+                     {
+                        Send( const communication::Socket& external) : m_external( external) {}
+
+                        template< typename Message>
+                        inline void operator() ( common::strong::ipc::id queue, Message& message)
                         {
-                           Trace trace{ "gateway::inbound::handle::domain::discover::coordinate::Policy::send"};
+                           Trace trace{ "gateway::inbound::handle::domain::discover::coordinate::Send"};
 
                            // Set our domain-id to the reply so the outbound can deduce stuff
                            message.domain = common::domain::identity();
@@ -117,7 +123,6 @@ namespace casual
                         const communication::Socket& m_external;
                      };
 
-                     using Discover = common::message::Coordinate< Policy>;
 
                   } // coordinate
                } // discover
@@ -168,7 +173,14 @@ namespace casual
 
                   Buffer buffer;
                   communication::select::Directive directive;
-                  discover::coordinate::Discover coordinate;
+                  struct Coordinate
+                  {
+                     Coordinate( const communication::Socket& external) : send{ external} {}
+                     discover::coordinate::Discover discover;
+                     discover::coordinate::Send send;
+
+                  } coordinate;
+                  
 
                };
 
@@ -189,20 +201,15 @@ namespace casual
                   {
                      namespace call
                      {
-                        struct Request : state::Base
+                        auto request( State& state)
                         {
-                           using message_type = common::message::service::call::callee::Request;
-
-                           using state::Base::Base;
-
-
-                           void operator() ( message_type& message)
+                           return [&state]( common::message::service::call::callee::Request& message)
                            {
                               Trace trace{ "gateway::inbound::handle::external::call::Request"};
 
                               common::log::line( verbose::log, "message: ", message);
 
-                              // Change 'sender' so we (our main thread) get the reply
+                              // Change 'sender' so we get the reply
                               message.process = common::process::handle();
 
                               // Prepare lookup
@@ -215,12 +222,12 @@ namespace casual
                               }
 
                               // Add message to buffer
-                              m_state.add_message( std::move( message));
+                              state.add_message( std::move( message));
 
                               // Send lookup
                               blocking::send( common::communication::instance::outbound::service::manager::device(), request);
-                           }
-                        };
+                           };
+                        }
                      } // call
 
                      namespace queue
@@ -269,20 +276,16 @@ namespace casual
 
                         namespace enqueue
                         {
-                           struct Request : state::Base
+                           auto request( State& state)
                            {
-                              using message_type = common::message::queue::enqueue::Request;
-
-                              using state::Base::Base;
-
-                              void operator() ( message_type& message) const
+                              return [&state]( common::message::queue::enqueue::Request& message)
                               {
                                  Trace trace{ "gateway::inbound::handle::external::queue::enqueue::Request"};
 
                                  common::log::line( verbose::log, "message: ", message);
 
                                  // Send lookup
-                                 if( ! queue::lookup::send( m_state, message))
+                                 if( ! queue::lookup::send( state, message))
                                  {
                                     common::log::line( common::log::category::error, "failed to lookup queue - action: send error reply");
 
@@ -293,28 +296,24 @@ namespace casual
                                     // empty uuid represent error. TODO: is this enough?
                                     reply.id = common::uuid::empty();
 
-                                    m_state.external.send( reply);
+                                    state.external.send( reply);
                                  }
-                              }
-                           };
+                              };
+                           }
                         } // enqueue
 
                         namespace dequeue
                         {
-                           struct Request : state::Base
+                           auto request( State& state)
                            {
-                              using message_type = common::message::queue::dequeue::Request;
-
-                              using state::Base::Base;
-
-                              void operator() ( message_type& message) const
+                              return [&]( common::message::queue::dequeue::Request& message)
                               {
                                  Trace trace{ "gateway::inbound::handle::queue::dequeue::Request::operator()"};
 
                                  common::log::line( verbose::log, "message: ", message);
 
                                  // Send lookup
-                                 if( ! queue::lookup::send( m_state, message))
+                                 if( ! queue::lookup::send( state, message))
                                  {
                                     common::log::line( common::log::category::error, "failed to lookup queue - action: send error reply");
 
@@ -327,8 +326,8 @@ namespace casual
 
                                     blocking::send( common::communication::ipc::inbound::ipc(), reply);
                                  }
-                              }
-                           };
+                              };
+                           }
                         } // dequeue
                      } // queue
 
@@ -336,12 +335,9 @@ namespace casual
                      {
                         namespace discover
                         {
-                           struct Request : state::Base
+                           auto request( State& state)
                            {
-                              using state::Base::Base;
-
-
-                              void operator () ( common::message::gateway::domain::discover::Request& message) const
+                              return [&state]( common::message::gateway::domain::discover::Request& message)
                               {
                                  Trace trace{ "gateway::inbound::handle::external::connection::discover::Request"};
 
@@ -370,10 +366,9 @@ namespace casual
                                     pids.push_back( queue_manager.connector().process().pid);
                                  }
 
-                                 m_state.coordinate.add( message.correlation, {}, std::move( pids));
-                              }
-                           };
-                           
+                                 state.coordinate.discover.add( message.correlation, {}, state.coordinate.send, std::move( pids));
+                              };
+                           }
                         } // discover
                      } // domain
 
@@ -382,30 +377,28 @@ namespace casual
                      {
                         namespace resource
                         {
-                           template< typename M>
-                           struct basic_request
+                           template< typename Message>
+                           auto basic_request()
                            {
-                              using message_type = M;
-
-                              void operator() ( message_type& message)
+                              return []( Message& message)
                               {
                                  // Set 'sender' so we get the reply
                                  message.process = common::process::handle();
                                  blocking::send( common::communication::instance::outbound::transaction::manager::device(), message);
-                              }
-                           };
+                              };
+                           }
 
                            namespace prepare
                            {
-                              using Request = basic_request< common::message::transaction::resource::prepare::Request>;
+                              auto request = basic_request< common::message::transaction::resource::prepare::Request>;
                            } // prepare
                            namespace commit
                            {
-                              using Request = basic_request< common::message::transaction::resource::commit::Request>;
+                              auto request = basic_request< common::message::transaction::resource::commit::Request>;
                            } // commit
                            namespace rollback
                            {
-                              using Request = basic_request< common::message::transaction::resource::rollback::Request>;
+                              auto request = basic_request< common::message::transaction::resource::rollback::Request>;
                            } // commit
                         } // resource
                      } // transaction
@@ -415,19 +408,19 @@ namespace casual
                         return state.external.inbound.handler(
                               
                            // service call
-                           call::Request{ state},
+                           call::request( state),
 
                            // queue
-                           queue::enqueue::Request{ state},
-                           queue::dequeue::Request{ state},
+                           queue::enqueue::request( state),
+                           queue::dequeue::request( state),
 
                            // domain discover
-                           domain::discover::Request{ state},
+                           domain::discover::request( state),
 
                            // transaction
-                           transaction::resource::prepare::Request{},
-                           transaction::resource::commit::Request{},
-                           transaction::resource::rollback::Request{}
+                           transaction::resource::prepare::request(),
+                           transaction::resource::commit::request(),
+                           transaction::resource::rollback::request()
                         );
                      }
 
@@ -451,41 +444,43 @@ namespace casual
 
                   namespace internal
                   {
-                     template< typename M>
-                     struct basic_forward : state::Base
+                     template< typename Message>
+                     auto basic_forward( State& state)
                      {
-                        using state::Base::Base;
-
-                        using message_type = M;
-
-                        void operator() ( message_type& message)
+                        return [&state]( Message& message)
                         {
-                           Trace trace{ "gateway::inbound::handle::basic_forward::operator()"};
+                           Trace trace{ "gateway::inbound::local::handle::basic_forward"};
                            common::log::line( verbose::log, "forward message: ", message);
 
-                           m_state.external.send( message);
-                        }
-                     };
+                           state.external.send( message);
+                        };
+                     }
 
                      namespace call
                      {
                         namespace lookup
                         {
-                           struct Reply : state::Base
+                           auto reply( State& state)
                            {
-                              using message_type = common::message::service::lookup::Reply;
-
-                              using state::Base::Base;
-
-                              void operator() ( message_type& message)
+                              return [&state]( common::message::service::lookup::Reply& message)
                               {
+                                 Trace trace{ "gateway::inbound::local::handle::internal::call::lookup::reply"};
                                  common::log::line( verbose::log, "message: ", message);
 
-                                 auto request = m_state.get_complete( message.correlation);
+                                 auto send_error_reply = [&state, &message]( auto code)
+                                 {
+                                    common::message::service::call::Reply reply;
+                                    reply.correlation = message.correlation;
+                                    reply.code.result = code;
+                                    state.external.send( reply);
+                                 };
+
+                                 auto request = state.get_complete( message.correlation);
 
                                  switch( message.state)
                                  {
-                                    case message_type::State::idle:
+                                    using Enum = decltype( message.state);
+                                    case Enum::idle:
                                     {
                                        try
                                        {
@@ -494,38 +489,30 @@ namespace casual
                                        }
                                        catch( const common::exception::system::communication::Unavailable&)
                                        {
-                                          log::line( common::log::category::error, "server: ", message.process, " has been terminated during interdomain call - action: reply with TPESVCERR");
-                                          send_error_reply( message);
+                                          log::line( common::log::category::error, "server: ", message.process, " has been terminated during interdomain call - action: reply with: ", common::code::xatmi::service_error);
+                                          send_error_reply( common::code::xatmi::service_error);
                                        }
                                        break;
                                     }
-                                    case message_type::State::absent:
+                                    case Enum::absent:
                                     {
-                                       log::line( common::log::category::error, "service: ", message.service, " is not handled by this domain (any more) - action: reply with TPESVCERR");
-                                       send_error_reply( message);
+                                       log::line( common::log::category::error, "service: ", message.service, " is not handled by this domain (any more) - action: reply with: ", common::code::xatmi::no_entry);
+                                       send_error_reply( common::code::xatmi::no_entry);
                                        break;
                                     }
                                     default:
                                     {
-                                       log::line( common::log::category::error, "unexpected state on lookup reply: ", message, " - action: drop message");
+                                       log::line( common::log::category::error, "unexpected state on lookup reply: ", message, " - action: reply with: ", common::code::xatmi::service_error);
+                                       send_error_reply( common::code::xatmi::service_error);
                                        break;
                                     }
                                  }
-                              }
-
-                           private:
-                              void send_error_reply( message_type& message)
-                              {
-                                 common::message::service::call::Reply reply;
-                                 reply.correlation = message.correlation;
-                                 reply.code.result = common::code::xatmi::service_error;
-                                 m_state.external.send( reply);
-                              }
-                           };
+                              };  
+                           }
 
                         } // lookup
 
-                        using Reply = basic_forward< common::message::service::call::Reply>;
+                        auto reply = basic_forward< common::message::service::call::Reply>;
 
                      } // call
 
@@ -533,70 +520,59 @@ namespace casual
                      {
                         namespace lookup
                         {
-                           struct Reply : state::Base
+                           auto reply( State& state)
                            {
-                              using state::Base::Base;
-
-                              void operator() ( common::message::queue::lookup::Reply& message) const
+                              return [&state]( common::message::queue::lookup::Reply& message)
                               {
-                                 Trace trace{ "gateway::inbound::handle::internal::queue::lookup::Reply"};
+                                 Trace trace{ "gateway::inbound::local::handle::internal::queue::lookup::reply"};
                                  common::log::line( verbose::log, "message: ", message);
 
-                                 auto request = m_state.get_complete( message.correlation);
+
+                                 auto request = state.get_complete( message.correlation);
 
                                  if( message.process)
                                  {
                                     common::communication::ipc::outbound::Device ipc{ message.process.ipc};
                                     ipc.put( request, common::communication::ipc::policy::Blocking{});
+                                    return;
                                  }
-                                 else
+
+                                 // queue not available - send error reply
+                    
+                                 auto send_error = [&state, &message]( auto&& reply)
                                  {
-                                    send_error_reply( message, request.type);
-                                 }
-                              }
+                                    reply.correlation = message.correlation;
+                                    state.external.send( reply);
+                                 };
 
-                           private:
-
-                              template< typename R>
-                              void send_error_reply( common::message::queue::lookup::Reply& message) const
-                              {
-                                 R reply;
-                                 reply.correlation = message.correlation;
-                                 m_state.external.send( reply);
-                              }
-
-                              void send_error_reply( common::message::queue::lookup::Reply& message, common::message::Type type) const
-                              {
-                                 switch( type)
+                                 switch( request.type)
                                  {
-                                    case common::message::Type::queue_dequeue_request:
+                                    using Enum = decltype( request.type);
+                                    case Enum::queue_dequeue_request:
                                     {
-                                       send_error_reply< common::message::queue::dequeue::Reply>( message);
+                                       send_error( common::message::queue::dequeue::Reply{});
                                        break;
                                     }
-                                    case common::message::Type::queue_enqueue_request:
+                                    case Enum::queue_enqueue_request:
                                     {
-                                       send_error_reply< common::message::queue::enqueue::Reply>( message);
+                                       send_error( common::message::queue::enqueue::Reply{});
                                        break;
                                     }
                                     default:
-                                    {
                                        common::log::line( common::log::category::error, "unexpected message type for queue request: ", message, " - action: drop message");
-                                    }
                                  }
-                              }
-
-                           };
+                              };
+                           }
                         } // lookup
 
                         namespace dequeue
                         {
-                           using Reply = basic_forward< common::message::queue::dequeue::Reply>;
+                           auto reply = basic_forward< common::message::queue::dequeue::Reply>;
                         } // dequeue
 
                         namespace enqueue
                         {
-                           using Reply = basic_forward< common::message::queue::enqueue::Reply>;
+                           auto reply = basic_forward< common::message::queue::enqueue::Reply>;
                         } // enqueue
                      } // queue
 
@@ -604,21 +580,18 @@ namespace casual
                      {
                         namespace discover
                         {
-                           struct Reply : state::Base
+                           auto reply( State& state)
                            {
-                              using state::Base::Base;
-                              using message_type = common::message::gateway::domain::discover::Reply;
-
-                              void operator() ( message_type& message)
+                              return [&state]( common::message::gateway::domain::discover::Reply& message)
                               {
                                  Trace trace{ "gateway::inbound::handle::internal::domain::discover::Reply"};
                                  common::log::line( verbose::log, "message: ", message);
 
                                  // Might send the accumulated message if all requested has replied.
                                  // (via the Policy)
-                                 m_state.coordinate.accumulate( message);
-                              }
-                           };
+                                 state.coordinate.discover.accumulate( message, state.coordinate.send);
+                              };
+                           }
 
                         } // discover
                      } // domain
@@ -630,15 +603,15 @@ namespace casual
                         {
                            namespace prepare
                            {
-                              using Reply = basic_forward< common::message::transaction::resource::prepare::Reply>;
+                              auto reply = basic_forward< common::message::transaction::resource::prepare::Reply>;
                            } // prepare
                            namespace commit
                            {
-                              using Reply = basic_forward< common::message::transaction::resource::commit::Reply>;
+                              auto reply = basic_forward< common::message::transaction::resource::commit::Reply>;
                            } // commit
                            namespace rollback
                            {
-                              using Reply = basic_forward< common::message::transaction::resource::rollback::Reply>;
+                              auto reply = basic_forward< common::message::transaction::resource::rollback::Reply>;
                            } // commit
                         } // resource
                      } // transaction
@@ -651,21 +624,21 @@ namespace casual
                            common::message::handle::defaults( device),
 
                            // service call
-                           call::lookup::Reply{ state},
-                           call::Reply( state),
+                           call::lookup::reply( state),
+                           call::reply( state),
 
                            // queue
-                           queue::lookup::Reply{ state},
-                           queue::dequeue::Reply( state),
-                           queue::enqueue::Reply( state),
+                           queue::lookup::reply( state),
+                           queue::dequeue::reply( state),
+                           queue::enqueue::reply( state),
 
                            // transaction
-                           transaction::resource::prepare::Reply( state),
-                           transaction::resource::commit::Reply( state),
-                           transaction::resource::rollback::Reply( state),
+                           transaction::resource::prepare::reply( state),
+                           transaction::resource::commit::reply( state),
+                           transaction::resource::rollback::reply( state),
 
                            // domain discovery
-                           domain::discover::Reply{ state}
+                           domain::discover::reply( state)
                         );
                      }
                      namespace create
@@ -716,9 +689,7 @@ namespace casual
                      );
 
                      while( ! request.correlation)
-                     {
                         handler( state.external.inbound.next( state.external.inbound.policy_blocking()));
-                     }
                   }
 
                   using version_type = common::message::gateway::domain::protocol::Version;

@@ -114,18 +114,16 @@ namespace casual
                message::service::Advertise message;
                message.process = process::handle();
 
-               auto found = algorithm::find_if( m_state.physical_services, [&]( const Service& s){
-                  return s == prospect;
-               });
+               auto is_prospect = [&prospect]( auto& service) { return service == prospect;};
 
-               if( found)
+               if( auto found = algorithm::find_if( m_state.physical_services, is_prospect))
                {
                   m_state.services.emplace( prospect.name, *found);
-                  message.services.emplace_back( prospect.name, found->category, found->transaction);
+                  message.services.add.emplace_back( prospect.name, found->category, found->transaction);
                }
                else
                {
-                  message.services.emplace_back( prospect.name, prospect.category, prospect.transaction);
+                  message.services.add.emplace_back( prospect.name, prospect.category, prospect.transaction);
 
                   m_state.physical_services.push_back( prospect);
                   m_state.services.emplace( prospect.name, m_state.physical_services.back());
@@ -139,14 +137,12 @@ namespace casual
             Trace log{ "server::Context::unadvertise"};
 
             if( m_state.services.erase( service) != 1)
-            {
                throw common::exception::xatmi::service::no::Entry( "service name: " + service);
-            }
+
 
             message::service::Advertise message;
-            message.directive = message::service::Advertise::Directive::remove;
             message.process = process::handle();
-            message.services.emplace_back( service);
+            message.services.remove.emplace_back( service);
 
             communication::ipc::blocking::send( communication::instance::outbound::service::manager::device(), message);
          }

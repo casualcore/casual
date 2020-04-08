@@ -76,7 +76,8 @@ namespace casual
                         code == CURLINFO_HTTP_CONNECTCODE || 
                         code == CURLINFO_NUM_CONNECTS ||
                         code == CURLINFO_PRIMARY_PORT ||
-                        code == CURLINFO_LOCAL_PORT>> 
+                        code == CURLINFO_LOCAL_PORT ||
+                        code == CURLINFO_RESPONSE_CODE>> 
                      {
                         using type = long;
                      };
@@ -108,25 +109,33 @@ namespace casual
 
             namespace type
             {
-               std::ostream& operator << ( std::ostream& out, const easy& value)
+               std::ostream& operator << ( std::ostream& out, const easy& easy)
                {
-                  return out << "{ HTTP_CONNECTCODE: " << local::get::option< CURLINFO_HTTP_CONNECTCODE>( value)
-                     << ", NUM_CONNECTS: " << local::get::option< CURLINFO_NUM_CONNECTS>( value)
-                     << ", EFFECTIVE_URL: " << local::get::option< CURLINFO_EFFECTIVE_URL>( value) 
-                     << ", PRIMARY_IP: " << local::get::option< CURLINFO_PRIMARY_IP>( value) 
-                     << ", PRIMARY_PORT: " << local::get::option< CURLINFO_PRIMARY_PORT>( value) 
-                     << ", LOCAL_IP: " << local::get::option< CURLINFO_LOCAL_IP>( value) 
-                     << ", LOCAL_PORT: " << local::get::option< CURLINFO_LOCAL_PORT>( value) 
+                  return out << "{ HTTP_CONNECTCODE: " << local::get::option< CURLINFO_HTTP_CONNECTCODE>( easy)
+                     << ", NUM_CONNECTS: " << local::get::option< CURLINFO_NUM_CONNECTS>( easy)
+                     << ", EFFECTIVE_URL: " << local::get::option< CURLINFO_EFFECTIVE_URL>( easy)
+                     << ", RESPONSE_CODE: " << local::get::option< CURLINFO_RESPONSE_CODE>( easy)
+                     << ", PRIMARY_IP: " << local::get::option< CURLINFO_PRIMARY_IP>( easy) 
+                     << ", PRIMARY_PORT: " << local::get::option< CURLINFO_PRIMARY_PORT>( easy) 
+                     << ", LOCAL_IP: " << local::get::option< CURLINFO_LOCAL_IP>( easy)
+                     << ", LOCAL_PORT: " << local::get::option< CURLINFO_LOCAL_PORT>( easy) 
                      << '}';
                }
             } // type
-
-
 
             namespace error
             {
                type::error::buffer& buffer() { return local::global::error;}
             } // error
+
+
+            namespace response
+            {
+               long code( const type::easy& easy)
+               {
+                  return local::get::option< CURLINFO_RESPONSE_CODE>( easy);
+               }
+            } // response
 
             void check( type::code::multi value)
             {

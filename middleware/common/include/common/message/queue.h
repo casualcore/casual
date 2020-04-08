@@ -246,10 +246,7 @@ namespace casual
                   };
 
                } // forget
-
-
             } // dequeue
-
 
             struct Queue
             {
@@ -313,7 +310,22 @@ namespace casual
                   size_type count = 0;
                   size_type size = 0;
                   size_type uncommitted = 0;
-                  platform::time::point::type timestamp;
+
+                  struct
+                  {
+                     size_type dequeued{};
+                     size_type enqueued{};
+
+                     CASUAL_CONST_CORRECT_SERIALIZE(
+                     {
+                        CASUAL_SERIALIZE( dequeued);
+                        CASUAL_SERIALIZE( enqueued);
+                     })
+
+                  } metric;
+
+                  platform::time::point::type last;
+                  platform::time::point::type created;
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
                   {
@@ -321,7 +333,9 @@ namespace casual
                      CASUAL_SERIALIZE( count);
                      CASUAL_SERIALIZE( size);
                      CASUAL_SERIALIZE( uncommitted);
-                     CASUAL_SERIALIZE( timestamp);
+                     CASUAL_SERIALIZE( metric);
+                     CASUAL_SERIALIZE( last);
+                     CASUAL_SERIALIZE( created);
                   })
                };
 
@@ -368,9 +382,7 @@ namespace casual
 
                namespace queues
                {
-
                   using Request = common::message::basic_request< Type::queue_queues_information_request>;
-
                   using Reply = basic_information< Type::queue_queues_information_reply>;
 
                } // queues
@@ -515,8 +527,8 @@ namespace casual
                   {
                      Queue() = default;
 
-                     Queue( std::string name, size_type retries) : name{ std::move( name)}, retries{ retries} {}
-                     Queue( std::string name) : name{ std::move( name)} {}
+                     inline Queue( std::string name, size_type retries) : name{ std::move( name)}, retries{ retries} {}
+                     inline Queue( std::string name) : name{ std::move( name)} {}
 
                      std::string name;
                      size_type retries = 0;
@@ -527,7 +539,6 @@ namespace casual
                         CASUAL_SERIALIZE( retries);
                      })
                   };
-                  static_assert( traits::is_movable< Queue>::value, "not movable");
                } // advertise
                
                using base_advertise = basic_request< Type::queue_advertise>;
@@ -535,37 +546,32 @@ namespace casual
                {
                   using base_advertise::base_advertise;
 
-                  enum class Directive : short
-                  {
-                     add,
-                     remove,
-                     replace
-                  };
-
-                  inline friend std::ostream& operator << ( std::ostream& out, Directive value)
-                  {
-                     switch( value)
-                     {
-                        case Directive::add: return out << "add";
-                        case Directive::remove: return out << "remove";
-                        case Directive::replace: return out << "replace";
-                     } 
-                     return out << "unknown";
-                  }
-
                   platform::size::type order = 0;
-                  std::vector< advertise::Queue> queues;
-                  Directive directive = Directive::add;
+
+                  struct
+                  {
+                     std::vector< advertise::Queue> add;
+                     std::vector< std::string> remove;
+
+                     CASUAL_CONST_CORRECT_SERIALIZE(
+                     {
+                        CASUAL_SERIALIZE( add);
+                        CASUAL_SERIALIZE( remove);
+                     })
+                  } queues;
+
+                  //! indicate to remove all current advertised queues, and replace with content in this message
+                  bool reset = false;
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
                   {
                      base_advertise::serialize( archive);
-                     CASUAL_SERIALIZE( directive);
                      CASUAL_SERIALIZE( order);
                      CASUAL_SERIALIZE( queues);
+                     CASUAL_SERIALIZE( reset);
                   })
                };
-               static_assert( traits::is_movable< Advertise>::value, "not movable");
+
             } // concurrent
 
             struct Affected
@@ -680,14 +686,39 @@ namespace casual
                   };
                   
                } // remove
+
+
+
             } // messages
+
+            namespace metric
+            {
+               namespace reset
+               {
+                  using base_request = common::message::basic_request< Type::queue_metric_reset_request>;
+                  struct Request : base_request
+                  {
+                     using base_request::base_request;
+
+                     std::vector< strong::queue::id> queues;
+                     
+                     CASUAL_CONST_CORRECT_SERIALIZE(
+                     {
+                        base_request::serialize( archive);
+                        CASUAL_SERIALIZE( queues);
+                     })
+                  };
+
+                  using Reply = common::message::basic_reply< Type::queue_metric_reset_reply>;
+                  
+               } // reset
+               
+            } // metric
+
          } // queue
 
          namespace reverse
          {
-
-
-
             template<>
             struct type_traits< queue::enqueue::Request> : detail::type< queue::enqueue::Reply> {};
             template<>
@@ -716,22 +747,20 @@ namespace casual
             struct type_traits< queue::messages::remove::Request> : detail::type< queue::messages::remove::Reply> {};
 
             template<>
-            struct type_traits< queue::information::messages::Request> : detail::type< queue::information::messages::Reply> {};
+            struct type_traits< queue::information::queues::Request> : detail::type< queue::information::queues::Reply> {};
 
+            template<>
+            struct type_traits< queue::information::messages::Request> : detail::type< queue::information::messages::Reply> {};
 
 
             template<>
             struct type_traits< queue::connect::Request> : detail::type< queue::connect::Reply> {};
             
+            template<>
+            struct type_traits< queue::metric::reset::Request> : detail::type< queue::metric::reset::Reply> {};
 
          } // reverse
 
-
       } // message
    } // common
-
-
-
 } // casual
-
-

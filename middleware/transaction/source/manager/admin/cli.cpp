@@ -261,79 +261,102 @@ namespace casual
 
                   namespace dispatch
                   {
-                     void list_transactions()
+                     namespace list
                      {
-                        auto state = call::state();
-
-                        auto formatter = format::transaction();
-
-                        formatter.print( std::cout, state.transactions);
-                     }
-
-                     void list_pending()
-                     {
-                        auto state = call::state();
-
-                        auto debug = common::serialize::log::writer();
-
-                        debug << CASUAL_NAMED_VALUE( state.pending.requests);
-                        debug << CASUAL_NAMED_VALUE( state.persistent.requests);
-                        debug << CASUAL_NAMED_VALUE( state.persistent.replies);
-                        debug << CASUAL_NAMED_VALUE( state.log);
-
-                        debug.consume( std::cout);
-
-                     }
-
-                     void list_resources()
-                     {
-                        auto state = call::state();
-
-                        auto formatter = format::resource_proxy();
-
-                        formatter.print( std::cout, algorithm::sort( state.resources));
-                     }
-
-                     namespace transform
-                     {
-                        std::vector< admin::model::resource::Instance> instances( std::vector< admin::model::resource::Proxy> resources)
+                        namespace transaction
                         {
-                           std::vector< admin::model::resource::Instance> result;
-
-                           for( auto& resource : resources)
+                           void invoke()
                            {
-                              algorithm::move( resource.instances, result);
+                              auto state = call::state();
+                              format::transaction().print( std::cout, state.transactions);
                            }
-                           return result;
-                        }
 
-                     } // transform
- 
-                     void list_instances()
+                           constexpr auto description = R"(list current transactions)";
+
+                        } // transaction
+
+                        namespace resources
+                        {
+                           void invoke()
+                           {
+                              auto state = call::state();
+                              format::resource_proxy().print( std::cout, algorithm::sort( state.resources));
+                           }
+
+                           constexpr auto description = R"(list all resources)";
+                        } // resources
+                        
+                        namespace instances
+                        {
+                           void invoke()
+                           {
+                              auto transform = []( auto&& resources)
+                              {
+                                 using instances_t = std::vector< admin::model::resource::Instance>;
+
+                                 return algorithm::accumulate( resources, instances_t{}, []( auto instances, auto& resource)
+                                 {
+                                    return algorithm::append( resource.instances, std::move( instances));
+                                 });
+                              };
+
+                              auto instances = transform( call::state().resources);
+                              format::resource_instance().print( std::cout, algorithm::sort( instances));
+                           }
+
+                           constexpr auto description = R"(list resource instances)";
+                        } // instances
+                        
+                        namespace pending
+                        {
+                           void invoke()
+                           {
+                              auto state = call::state();
+
+                              auto debug = common::serialize::log::writer();
+
+                              debug << CASUAL_NAMED_VALUE( state.pending);
+                              debug << CASUAL_NAMED_VALUE( state.log);
+
+                              debug.consume( std::cout);
+                           }
+
+                           constexpr auto description = R"(list pending tasks)";
+                           
+                        } // pending
+                     } // list
+
+                     namespace scale
                      {
-                        auto instances = transform::instances( call::state().resources);
+                        namespace instances
+                        {
+                           void invoke( std::vector< std::tuple< std::string, int>> values)
+                           {
+                              auto resources = call::scale::instances( common::algorithm::transform( values, []( auto& value){
+                                 admin::model::scale::Instances instance;
+                                 instance.name = std::get< 0>( value);
+                                 instance.instances = std::get< 1>( value);
+                                 return instance;
+                              }));
 
-                        auto formatter = format::resource_instance();
+                              format::resource_proxy().print( std::cout, algorithm::sort( resources));
+                           }
 
-                        formatter.print( std::cout, algorithm::sort( instances));
-                     }
+                           constexpr auto description = R"(scale resource proxy instances)";
 
-                     using scale_instances_value = std::tuple< std::string, int>;
-                     void scale_instances( scale_instances_value value, std::vector< scale_instances_value> values)
-                     {
-                        values.insert( std::begin( values), std::move( value));
+                           auto complete = []( auto values, bool help) -> std::vector< std::string>
+                           {
+                              if( help)
+                                 return { "rm-id", "# instances"};
 
-                        auto resources = call::scale::instances( common::algorithm::transform( values, []( auto& value){
-                           admin::model::scale::Instances instance;
-                           instance.name = std::get< 0>( value);
-                           instance.instances = std::get< 1>( value);
-                           return instance;
-                        }));
+                              if( values.size() % 2 == 0)
+                                 return algorithm::transform( call::state().resources, []( auto& r){ return r.name;});
+         
+                              return { common::argument::reserved::name::suggestions::value()}; 
+                           };
+                        } // instances
+                     } // scale
 
-                        auto formatter = format::resource_proxy();
-
-                        formatter.print( std::cout, algorithm::sort( resources));
-                     }
 
                      void state( const common::optional< std::string>& format)
                      {
@@ -342,6 +365,87 @@ namespace casual
                         archive << CASUAL_NAMED_VALUE( state);
                         archive.consume( std::cout);
                      }
+
+                     namespace information
+                     {
+                        auto call() -> std::vector< std::tuple< std::string, std::string>> 
+                        {
+                           auto state = local::call::state();
+
+                           auto accumulate = []( auto extract)
+                           {
+                              return [extract]( auto& queues)
+                              {
+                                 decltype( extract( range::front( queues))) initial{};
+                                 return algorithm::accumulate( queues, initial, [extract]( auto count, auto& queue){ return count + extract( queue);});
+                              };
+                           };
+
+                           auto instance_count = [accumulate,&state]()
+                           {
+                              return accumulate( []( auto& resource){ return resource.instances.size();})( state.resources);
+                           };
+
+                           using second_t = std::chrono::duration< double>;
+
+                           auto metric_resource_count = [accumulate]( auto& resources)
+                           {
+                              return accumulate( []( auto& resource){ return resource.metrics.resource.count;})( resources);
+                           };
+
+                           auto metric_resource_total = [accumulate]( auto& resources) -> second_t
+                           {
+                              return accumulate( []( auto& resource){ return resource.metrics.resource.total;})( resources);
+                           };
+
+                           auto metric_roundtrip_count = [accumulate]( auto& resources)
+                           {
+                              return accumulate( []( auto& resource){ return resource.metrics.roundtrip.count;})( resources);
+                           };
+
+                           auto metric_roundtrip_total = [accumulate]( auto& resources) -> second_t
+                           {
+                              return accumulate( []( auto& resource){ return resource.metrics.roundtrip.total;})( resources);
+                           };
+
+
+                           auto average = [=]( auto total, auto count) -> second_t
+                           {
+                              if( count == 0)
+                                 return {};
+
+                              return std::chrono::duration_cast< second_t>( total / count);
+                           };
+                           
+                           return {
+                              { "transaction.manager.resource.count", string::compose( state.resources.size())},
+                              { "transaction.manager.resource.instance.count", string::compose( instance_count())},
+                              { "transaction.manager.resource.metrics.resource.count", string::compose( metric_resource_count( state.resources))},
+                              { "transaction.manager.resource.metrics.resource.total", string::compose( metric_resource_total( state.resources))},
+                              { "transaction.manager.resource.metrics.resource.avarage", 
+                                 string::compose( average( metric_resource_total( state.resources), metric_resource_count( state.resources)))},
+                              { "transaction.manager.resource.metrics.roundtrip.count", string::compose( metric_roundtrip_count( state.resources))},
+                              { "transaction.manager.resource.metrics.roundtrip.total", string::compose( metric_roundtrip_total( state.resources))},
+                              { "transaction.manager.resource.metrics.roundtrip.avarage", 
+                                 string::compose( average( metric_roundtrip_total( state.resources), metric_roundtrip_count( state.resources)))},
+
+                              { "transaction.manager.log.writes", string::compose( state.log.writes)},
+                              { "transaction.manager.log.update.prepare", string::compose( state.log.update.prepare)},
+                              { "transaction.manager.log.update.remove", string::compose( state.log.update.remove)},
+
+                              
+
+                           };
+                        } 
+                        
+                        void invoke()
+                        {
+                           terminal::formatter::key::value().print( std::cout, call());
+                        }
+
+                        constexpr auto description = R"(collect aggregated information about transactions in this domain)";
+
+                     } // information
 
                   } // dispatch
 
@@ -352,16 +456,7 @@ namespace casual
                         return std::vector< std::string>{ "json", "yaml", "xml", "ini"};
                      };
 
-                     auto scale_instances = []( auto values, bool help) -> std::vector< std::string>
-                     {
-                        if( help)
-                           return { "rm-id", "# instances"};
 
-                        if( values.size() % 2 == 0)
-                           return algorithm::transform( call::state().resources, []( auto& r){ return r.name;});
-    
-                        return std::vector< std::string>{ common::argument::reserved::name::suggestions::value()}; 
-                     };
                   } // complete
 
                } // <unnamed>
@@ -369,15 +464,20 @@ namespace casual
 
             struct cli::Implementation
             {
-               common::argument::Group options()
+               argument::Group options()
                {
-                  return common::argument::Group{ [](){}, { "transaction"}, "transaction related administration",
-                     common::argument::Option( &local::dispatch::list_transactions, { "-lt", "--list-transactions" }, "list current transactions"),
-                     common::argument::Option( &local::dispatch::list_resources, { "-lr", "--list-resources" }, "list all resources"),
-                     common::argument::Option( &local::dispatch::list_instances, { "-li", "--list-instances" }, "list resource instances"),
-                     common::argument::Option( &local::dispatch::scale_instances, local::complete::scale_instances, { "-si", "--scale-instances" }, "scale resource proxy instances"),
-                     common::argument::Option( &local::dispatch::list_pending, { "-lp", "--list-pending" }, "list pending tasks"),
-                     common::argument::Option( &local::dispatch::state, local::complete::state, { "--state" }, "view current state in optional format")
+                  return argument::Group{ [](){}, { "transaction"}, "transaction related administration",
+                     argument::Option( &local::dispatch::list::transaction::invoke, { "-lt", "--list-transactions" }, local::dispatch::list::transaction::description),
+                     argument::Option( &local::dispatch::list::resources::invoke, { "-lr", "--list-resources" }, local::dispatch::list::resources::description),
+                     argument::Option( &local::dispatch::list::instances::invoke, { "-li", "--list-instances" }, local::dispatch::list::instances::description),
+                     argument::Option( 
+                        argument::option::one::many( &local::dispatch::scale::instances::invoke), 
+                        local::dispatch::scale::instances::complete, 
+                        { "-si", "--scale-instances" }, 
+                        local::dispatch::scale::instances::description),
+                     argument::Option( &local::dispatch::list::pending::invoke, { "-lp", "--list-pending" }, local::dispatch::list::pending::description),
+                     argument::Option( &local::dispatch::information::invoke, { "--information" }, local::dispatch::information::description),
+                     argument::Option( &local::dispatch::state, local::complete::state, { "--state" }, "view current state in optional format")
                   };
                }
             };
@@ -388,6 +488,11 @@ namespace casual
             common::argument::Group cli::options() &
             {
                return m_implementation->options();
+            }
+
+            std::vector< std::tuple< std::string, std::string>> cli::information() &
+            {
+               return local::dispatch::information::call();
             }
 
          } // admin

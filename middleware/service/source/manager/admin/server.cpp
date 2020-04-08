@@ -67,12 +67,12 @@ namespace casual
                      { service::name::state(),
                         std::bind( &local::state, std::placeholders::_1, std::ref( state)),
                         common::service::transaction::Type::none,
-                        common::service::category::admin()
+                        common::service::category::admin
                      },
                      { service::name::metric::reset(),
                         std::bind( &local::metric::reset, std::placeholders::_1, std::ref( state)),
                         common::service::transaction::Type::none,
-                        common::service::category::admin()
+                        common::service::category::admin
                      }
                }};
             }

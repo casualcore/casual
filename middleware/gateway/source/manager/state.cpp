@@ -73,20 +73,108 @@ namespace casual
             {
                namespace outbound
                {
-                  void Policy::accumulate( message_type& message, common::message::gateway::domain::discover::Reply& reply)
+                  void Policy::operator() ( message_type& message, common::message::gateway::domain::discover::Reply& reply)
                   {
-                     Trace trace{ "manager::state::coordinate::outbound::Policy accumulate"};
+                     Trace trace{ "manager::state::coordinate::outbound::Policy"};
 
                      message.replies.push_back( std::move( reply));
                   }
 
-                  void Policy::send( common::strong::ipc::id queue, message_type& message)
-                  {
-                     Trace trace{ "manager::state::coordinate::outbound::Policy send"};
 
-                     // TODO maintainence: state should not communicate with anything, just hold state.
-                     communication::ipc::blocking::send( queue, message);
-                  }
+                  namespace rediscover
+                  {
+                     namespace local
+                     {
+                        namespace
+                        {
+                           auto request = []( auto& outbound, auto& correlation)
+                           {
+                              message::outbound::rediscover::Request message{ common::process::handle()};
+                              message.correlation = correlation;
+                              message.services = outbound.services;
+                              message.queues = outbound.queues;
+
+                              return Tasks::Result::Request{ outbound.process, std::move( message)};
+                           };
+                        } // <unnamed>
+                     } // local
+
+                     Tasks::Result Tasks::add( State& state, std::string description)
+                     {
+                        Trace trace{ "manager::state::coordinate::outbound::rediscover::Tasks::add"};
+
+                        auto correlation = uuid::make();
+
+                        auto running_outbounds = algorithm::sort( algorithm::filter( state.connections.outbound, []( auto& outbound){ return outbound.running();}));
+
+                        if( ! running_outbounds)
+                           return { correlation, {}, std::move( description)};
+
+                        Task task{
+                           correlation,
+                           algorithm::transform( running_outbounds, []( auto& outbound){ return outbound.process.pid;}),
+                           description
+                        };
+
+                        m_tasks.push_back( std::move( task));
+
+                        // we start with the last one (highest order).
+                        auto& outbound = range::back( running_outbounds);
+
+                        return { correlation, local::request( outbound, correlation), std::move( description)};
+                     }
+
+                     Tasks::Result Tasks::reply( State& state, const message::outbound::rediscover::Reply& message)
+                     {
+                        Trace trace{ "manager::state::coordinate::outbound::rediscover::Tasks::reply"};
+
+                        auto task = algorithm::find( m_tasks, message.correlation);
+
+                        if( ! task)
+                        {
+                           log::line( log::category::error, "failed to correlate rediscover reply - action: discard");
+                           return {};
+                        }
+
+                        if( algorithm::trim( task->outbounds, algorithm::remove( task->outbounds, message.process.pid)).empty())
+                        {
+                           // we're done, no more outbounds to rediscover, we remove the task
+                           Tasks::Result result{ task->correlation, {}, std::move( task->description)};
+                           m_tasks.erase( std::begin( task));
+                           return result;
+                        }
+
+                        auto outbound = algorithm::find( state.connections.outbound, task->outbounds.back());
+
+                        if( ! outbound)
+                        {
+                           log::line( log::category::error, "failed to find outbound - action: discard");
+                           return { task->correlation, {}, task->description};
+                        }
+
+                        return { task->correlation, local::request( *outbound, task->correlation), task->description};
+                     }
+
+                     std::vector< Tasks::Task> Tasks::remove( common::strong::process::id pid)
+                     {
+                        auto remove_pid = [&]( auto& task)
+                        {
+                           algorithm::trim( task.outbounds, algorithm::remove( task.outbounds, pid));
+                        };
+
+                        algorithm::for_each( m_tasks, remove_pid);
+
+                        auto split = algorithm::partition( m_tasks, []( auto& task){ return ! task.outbounds.empty();});
+
+                        auto result = range::to_vector( std::get< 1>( split));
+
+                        algorithm::trim( m_tasks, std::get< 0>( split));
+
+                        return result;
+                     }
+
+                  } // rediscover
+
                } // outbound
 
             } // coordinate
@@ -140,9 +228,12 @@ namespace casual
             return {};
          }
 
-         void State::Discover::remove( common::strong::process::id pid)
+         const state::outbound::Connection* State::outbound( common::strong::process::id pid)
          {
-            outbound.remove( pid);
+            if( auto found = algorithm::find( connections.outbound, pid))
+               return &range::front( found);
+
+            return nullptr;
          }
 
          std::ostream& operator << ( std::ostream& out, const State::Runlevel& value)

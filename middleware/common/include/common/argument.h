@@ -69,8 +69,43 @@ namespace casual
 
             } // validate
 
+            namespace key
+            {
+               struct Names
+               {
+                  Names() = default;
+                  inline Names( std::vector< std::string> active, std::vector< std::string> deprecated)
+                     : m_active( std::move( active)), m_deprecated( std::move( deprecated)) 
+                  {
+                     if( empty())
+                        throw exception::invalid::Argument{ "at least one option 'key' has to be provided"};
+                  }
 
+                  inline bool operator == ( const std::string& key) const noexcept
+                  { 
+                     return algorithm::find( m_active, key) || algorithm::find( m_deprecated, key);
+                  }
 
+                  inline auto& active() const noexcept { return m_active;}
+                  inline auto& deprecated() const noexcept { return m_deprecated;}
+
+                  inline const std::string& canonical() const 
+                  {
+                     if( ! m_active.empty())
+                        return m_active.back();
+                     return range::back( m_deprecated);
+                  }
+
+                  inline bool empty() const noexcept { return m_active.empty() && m_deprecated.empty();}
+
+                  friend std::ostream& operator << ( std::ostream& out, const Names& value);
+
+               private:
+                  std::vector< std::string> m_active;
+                  std::vector< std::string> m_deprecated;
+               };
+               
+            } // key
 
             struct Invoke
             {
@@ -125,7 +160,8 @@ namespace casual
             struct Representation
             {  
                Representation( Invoke invocable) : invocable( std::move( invocable)) {}
-               std::vector< std::string> keys;
+
+               key::Names keys;
                std::string description;
                
                Cardinality cardinality;
@@ -133,6 +169,12 @@ namespace casual
                Invoke invocable;
 
                std::vector< Representation> nested;
+
+               template< typename K>
+               inline auto operator == ( K&& key ) -> decltype( key::Names{} == key) 
+               {
+                  return keys == key;
+               }
 
                friend std::ostream& operator << ( std::ostream& out, const Representation& value);
             };
@@ -144,7 +186,6 @@ namespace casual
                std::string key;
                std::string parent;
                range_type values;
-               size_type invoked;
                
                friend std::ostream& operator << ( std::ostream& out, const Invoked& value);
             };
@@ -181,7 +222,7 @@ namespace casual
                inline detail::Invoked completion( const std::string& key, range_type values) { return m_handler->completion( key, values);}
 
 
-               inline const std::vector< std::string>& keys() const { return m_handler->keys();} 
+               inline const key::Names& keys() const { return m_handler->keys();} 
                inline const std::string& description() const { return m_handler->description();}
                
                inline Representation representation() const { return m_handler->representation();}
@@ -199,7 +240,7 @@ namespace casual
                   virtual void invoke() = 0;
                   virtual detail::Invoked completion( const std::string& key, range_type values) = 0;
 
-                  virtual const std::vector< std::string>& keys() const  = 0;
+                  virtual const key::Names& keys() const  = 0;
                   virtual const std::string& description() const = 0;
 
                   virtual Representation representation() const = 0;
@@ -220,7 +261,7 @@ namespace casual
                   void invoke() override { m_handler.invoke();}
                   detail::Invoked completion( const std::string& key, range_type values) override { return m_handler.completion( key, values);}
 
-                  inline const std::vector< std::string>& keys() const override { return m_handler.keys();} 
+                  inline const key::Names& keys() const override { return m_handler.keys();} 
                   inline const std::string& description() const override { return m_handler.description();} 
 
                   inline Representation representation() const override { return m_handler.representation();}
@@ -242,8 +283,7 @@ namespace casual
                   template< typename T>
                   static auto selective_validate( T& handler) -> 
                      std::enable_if_t< ! common::traits::detect::is_detected< has_validate, T>::value>
-                  {
-                  }
+                  { }
 
                   H m_handler;
                };
@@ -627,23 +667,25 @@ namespace casual
 
             struct basic_keys
             {
-               basic_keys( std::vector< std::string> keys, std::string description) 
-                  : m_keys( std::move( keys)), m_description( std::move( description)) 
+
+               basic_keys( key::Names names, std::string description) 
+                  : m_names( std::move( names)), m_description( std::move( description)) 
+               {}
+
+               basic_keys( std::vector< std::string> names, std::string description) 
+                  : basic_keys{ key::Names{ std::move( names), {}}, std::move( description)}
+               {}
+
+               inline bool has( const std::string& key) const noexcept
                {
-                  if( m_keys.empty())
-                     throw exception::invalid::Argument{ "at least one option 'key' has to be provided"};
+                  return m_names == key;
                }
 
-               inline bool has( const std::string& key) const
-               {
-                  return ! algorithm::find( keys(), key).empty();
-               }
-
-               inline const std::vector< std::string>& keys() const { return m_keys;} 
-               inline const std::string& description() const { return m_description;} 
+               inline const auto& keys() const noexcept { return m_names;} 
+               inline const std::string& description() const noexcept { return m_description;} 
          
             private:
-               std::vector< std::string> m_keys;
+               key::Names m_names;
                std::string m_description;
             };
 
@@ -665,9 +707,8 @@ namespace casual
                template< size_type min, size_type max>
                auto create( cardinality::range< min, max> cardinality) const
                {
-                  auto result = *this;
+                  basic_cardinality result;
                   result.m_cardinality = cardinality;
-                  result.m_assigned = 0;
                   return result;
                }
 
@@ -675,6 +716,10 @@ namespace casual
                { 
                   validate::cardinality( key, m_cardinality, m_assigned);
                }
+
+               inline auto assigned() const { return m_assigned;}
+
+               friend std::ostream& operator << ( std::ostream& out, const basic_cardinality& value);
 
             private:
                Cardinality m_cardinality;
@@ -704,10 +749,18 @@ namespace casual
 
          } // detail
          
+         namespace option
+         {
+            inline auto keys( std::vector< std::string> active, std::vector< std::string> deprecated)
+            {
+               return detail::key::Names{ std::move( active), std::move( deprecated)};
+            }
+         } // option
 
          struct Option : detail::basic_keys
          {
             using base_type = detail::basic_keys;
+
             
             template< typename I>
             Option( I&& invocable, std::vector< std::string> keys, std::string description)
@@ -720,6 +773,19 @@ namespace casual
                : base_type( std::move( keys), std::move( description)),
                m_invocable( detail::invoke::create( std::forward< I>( invocable), std::forward< C>( completer))) 
             {}
+
+            template< typename I>
+            Option( I&& invocable, detail::key::Names keys, std::string description)
+               : base_type( std::move( keys), std::move( description)),
+               m_invocable( detail::invoke::create( std::forward< I>( invocable))) 
+            {}
+
+            template< typename I, typename C>
+            Option( I&& invocable, C&& completer, detail::key::Names keys, std::string description)
+               : base_type( std::move( keys), std::move( description)),
+               m_invocable( detail::invoke::create( std::forward< I>( invocable), std::forward< C>( completer))) 
+            {}
+
 
             inline bool next( const std::string& key) const { return has( key);}
 
@@ -748,7 +814,7 @@ namespace casual
                return detail::Holder::construct( *this, std::move( rhs));
             }
 
-            detail::Invoked completion( const std::string& key, range_type values)
+            detail::Invoked completion( const std::string& key, range_type values) const
             {
                detail::Invoked result{ m_invocable};
                result.values = values;
@@ -767,7 +833,7 @@ namespace casual
 
             inline void validate() const 
             { 
-               m_cardinality.validate( keys().back());
+               m_cardinality.validate( keys().canonical());
             }
 
          private:
@@ -816,9 +882,7 @@ namespace casual
                   m_invoke_content = true;
                }
                else 
-               {
                   m_content.assign( key, values);
-               }
             }
 
             inline void invoke()
@@ -844,7 +908,7 @@ namespace casual
                else 
                {
                   auto result =  m_content.completion( key, values);
-                  result.parent = common::coalesce( result.parent, detail::basic_keys::keys().back());
+                  result.parent = common::coalesce( result.parent, detail::basic_keys::keys().canonical());
                   return result;
                }
             }
@@ -872,7 +936,7 @@ namespace casual
 
             inline void validate() const 
             { 
-               m_cardinality.validate( keys().at( 0));
+               m_cardinality.validate( keys().canonical());
             }
 
          private:

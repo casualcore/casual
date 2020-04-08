@@ -81,7 +81,7 @@ namespace casual
             {
                common::message::service::Advertise message;
                message.process = common::process::handle();
-               message.services.emplace_back( "service1");
+               message.services.add.emplace_back( "service1");
                state.update( message);
             }
 
@@ -110,7 +110,7 @@ namespace casual
             {
                common::message::service::Advertise message;
                message.process = common::process::handle();
-               message.services.emplace_back( "service1");
+               message.services.add.emplace_back( "service1");
                state.update( message);
             }
 
@@ -118,8 +118,7 @@ namespace casual
             {
                common::message::service::Advertise message;
                message.process = common::process::handle();
-               message.services.emplace_back( "service1");
-               message.directive = decltype( message.directive)::remove;
+               message.services.remove.emplace_back( "service1");
                state.update( message);
             }
 
@@ -152,10 +151,10 @@ namespace casual
 
                message.process = common::process::handle();
                {
-                  message.services = { { "s0"}, { "s1"}, { "s2"}, { "s3"}, { "s4"}, { "s5"}, { "s6"}, { "s7"}, { "s8"}, { "s9"}};
+                  message.services.add = { { "s0"}, { "s1"}, { "s2"}, { "s3"}, { "s4"}, { "s5"}, { "s6"}, { "s7"}, { "s8"}, { "s9"}};
                   std::random_device device;
                   std::mt19937 generator(device());
-                  std::shuffle( std::begin( message.services), std::end( message.services), generator);
+                  std::shuffle( std::begin( message.services.add), std::end( message.services.add), generator);
                }
 
                state.update( message);
@@ -164,7 +163,7 @@ namespace casual
             {
                auto& instance = state.sequential( common::process::id());
 
-               for( auto& s : message.services)
+               for( auto& s : message.services.add)
                {
                   ASSERT_TRUE( instance.service( s.name));
                }
@@ -185,10 +184,10 @@ namespace casual
 
                message.process = common::process::handle();
                {
-                  message.services = { { "s0"}, { "s1"}, { "s2"}, { "s3"}, { "s4"}, { "s5"}, { "s6"}, { "s7"}, { "s8"}, { "s9"}};
+                  message.services.add = { { "s0"}, { "s1"}, { "s2"}, { "s3"}, { "s4"}, { "s5"}, { "s6"}, { "s7"}, { "s8"}, { "s9"}};
                   std::random_device device;
                   std::mt19937 generator(device());
-                  std::shuffle( std::begin( message.services), std::end( message.services), generator);
+                  std::shuffle( std::begin( message.services.add), std::end( message.services.add), generator);
                }
 
                state.update( message);
@@ -198,8 +197,7 @@ namespace casual
             {
                common::message::service::Advertise message;
                message.process = common::process::handle();
-               message.services = { { "s4"}, { "s7"}};
-               message.directive = decltype( message.directive)::remove;
+               message.services.remove = { { "s4"}, { "s7"}};
                state.update( message);
             }
             {

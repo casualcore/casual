@@ -1,8 +1,5 @@
 # casual
 
-*Disclaimer: First of all, this is the first time any of us has published an open source product. So, we don't really have any
-experience how this stuff works*
-
 ## products
 
 casual has a few 'products' that could be split into separate repos in the future, but for now
