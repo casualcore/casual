@@ -248,13 +248,20 @@ namespace casual
                   template< typename P>
                   auto process()
                   {
-                     auto format_configured_instances = []( const P& e){
-                        return e.instances.size();
+                     auto format_configured_instances = []( const P& e)
+                     {
+                        return algorithm::count_if( e.instances, []( auto& i)
+                        {
+                           using State = decltype( i.state);
+                           return algorithm::compare::any( i.state, State::running, State::spawned, State::scale_out);
+                        });
                      };
 
-                     auto format_running_instances = []( const P& e){
-                        return common::algorithm::count_if( e.instances, []( auto& i){
-                              return i.state == admin::model::instance::State::running;
+                     auto format_running_instances = []( const P& e)
+                     {
+                        return common::algorithm::count_if( e.instances, []( auto& i)
+                        {
+                           return i.state == decltype( i.state)::running;
                         });
                      };
 
