@@ -5,11 +5,12 @@
 //!
 
 
+
 #include "queue/manager/manager.h"
 #include "queue/manager/admin/server.h"
 #include "queue/manager/handle.h"
-
 #include "queue/common/log.h"
+#include "queue/common/ipc/message.h"
 
 
 #include "common/message/dispatch.h"
@@ -22,8 +23,7 @@
 
 #include "common/communication/instance.h"
 
-#include "configuration/message/transform.h"
-#include "configuration/queue.h"
+#include "domain/configuration/fetch.h"
 
 #include <fstream>
 
@@ -53,13 +53,9 @@ namespace casual
                         casual::common::environment::directory::casual() + "/bin");
 
                      // We ask the domain manager for configuration
-                     result.configuration = common::communication::ipc::call(
-                        common::communication::instance::outbound::domain::manager::device(), 
-                        common::message::domain::configuration::Request{ common::process::handle()}).domain.queue;
+                     result.model = casual::domain::configuration::fetch().queue;
 
-                     common::environment::normalize( result.configuration);
-
-                     log::line( verbose::log, "configuration: ", result.configuration);
+                     log::line( verbose::log, "configuration: ", result.model);
 
                      return result;
                   }
@@ -69,7 +65,7 @@ namespace casual
                {
                   auto group( const std::string& path)
                   {
-                     return [&path]( const common::message::domain::configuration::queue::Group& group)
+                     return [&path]( const auto& group)
                      {
                         Trace trace( "queue::manager::local::spawn::group");
 
@@ -96,7 +92,7 @@ namespace casual
                   {
                      Trace trace( "queue::manager::local::spawn::forwards");
 
-                     if( ! state.configuration.forward.services.empty() || ! state.configuration.forward.queues.empty())
+                     if( ! state.model.forward.services.empty() || ! state.model.forward.queues.empty())
                      {
                         try
                         {
@@ -141,7 +137,7 @@ namespace casual
                   //! @}
                   
 
-                  casual::common::algorithm::transform( state.configuration.groups, state.groups, local::spawn::group( state.executable.path));
+                  casual::common::algorithm::transform( state.model.groups, state.groups, local::spawn::group( state.executable.path));
 
                   // only keep spawned groups
                   common::algorithm::trim( state.groups, common::algorithm::filter( state.groups, valid_pid));

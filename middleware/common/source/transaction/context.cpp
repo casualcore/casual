@@ -12,6 +12,7 @@
 #include "common/environment.h"
 #include "common/environment/normalize.h"
 #include "common/process.h"
+#include "common/instance.h"
 #include "common/log.h"
 #include "common/algorithm.h"
 #include "common/code/raise.h"
@@ -19,9 +20,7 @@
 #include "common/code/xa.h"
 #include "common/code/casual.h"
 #include "common/code/convert.h"
-#include "common/exception/handle.h"
-
-#include "common/message/domain.h"
+#include "common/message/transaction.h"
 #include "common/event/send.h"
 
 // std
@@ -46,7 +45,12 @@ namespace casual
             return singleton;
          }
 
-         Context::Context() = default;
+         Context::Context()
+         {
+            // initialize the views
+            std::tie( m_resources.dynamic, m_resources.fixed) =
+               algorithm::partition( m_resources.all, []( auto& r){ return r.dynamic();});
+         }
 
          Context::~Context()
          {
@@ -87,19 +91,16 @@ namespace casual
             {
                namespace resource
                {
-                  message::transaction::resource::lookup::Reply configuration( std::vector< std::string> names)
+                  auto configuration( std::vector< std::string> names)
                   {
                      Trace trace{ "transaction::local::resource::configuration"};
 
-                     message::transaction::resource::lookup::Request request;
-                     request.process = process::handle();
+                     message::transaction::configuration::alias::Request request{ process::handle()};
+                     request.alias = instance::alias();
                      request.resources = std::move( names);
 
-                     auto reply = communication::ipc::call( communication::instance::outbound::transaction::manager::device(), request);
-
-                     common::environment::normalize( reply);
-
-                     return reply;
+                     return common::environment::normalize( 
+                        communication::ipc::call( communication::instance::outbound::transaction::manager::device(), request)).resources;
                   }
 
                } // resource
@@ -107,68 +108,52 @@ namespace casual
             } // <unnamed>
          } // local
 
-         void Context::configure( std::vector< resource::Link> resources, std::vector< std::string> names)
+         void Context::configure( std::vector< resource::Link> resources)
          {
             Trace trace{ "transaction::Context::configure"};
 
-            if( ! resources.empty())
+            if( resources.empty())
+               return;
+
+            // there are different semantics if the resource has a specific name
+            // if so, we strictly correlate to that name, if not we go with the more general key
+
+            auto [ named, unnamed] = common::algorithm::stable_partition( resources, []( auto& r){ return ! r.name.empty();});
+
+            auto names = algorithm::transform( named, 
+               []( auto& resource){ return resource.name;});
+
+            auto configuration = local::resource::configuration( std::move( names));
+
+            auto transform_resource = [&configuration]( auto&& predicate)
             {
-               // there are different semantics if the resource has a specific name
-               // if so, we strictly correlate to that name, if not we go with the more general key
+               return [&configuration, predicate = std::move( predicate)]( auto& resource)
+               {  
+                  auto is_configuration = [&]( auto& configuration){ return predicate( resource, configuration);};
 
-               auto splitted = common::algorithm::stable_partition( resources, []( auto& r){ return ! r.name.empty();});
-
-               auto named = std::get< 0>( splitted);
-               auto unnamed = std::get< 1>( splitted);
-
-               common::algorithm::for_each( named, [&names]( auto& r){ common::algorithm::push_back_unique( r.name, names);});
-               
-               auto configuration = local::resource::configuration( std::move( names)).resources;
-
-               // take care of named, if any
-               {
-                  auto transform_named = [&configuration]( auto& resource)
+                  if( auto found = algorithm::find_if( configuration, is_configuration))
                   {
-                     auto found = algorithm::find_if( configuration, [&resource]( auto& c){ return c.name == resource.name;});
-
-                     if( ! found)
-                        common::event::error::raise( code::casual::invalid_configuration, "missing configuration for linked named RM: ", resource.name, " - check domain configuration");
-
                      return Resource{
                         resource,
                         found->id,
                         found->openinfo,
-                        found->closeinfo,
-                     };
-                  };
-
-                  algorithm::transform( named, m_resources.all, transform_named);
-               }
-
-               // take care of unnamed, if any
-               for( auto& resource : unnamed)
-               {
-                  // It could be several RM-configuration for one linked RM.
-
-                  auto partition = algorithm::filter( configuration, [&]( auto& rm){ return resource.key == rm.key;});
-
-                  if( ! partition)
-                     common::event::error::raise( code::casual::invalid_configuration, "missing configuration for linked RM: ", resource.key, " - check domain configuration");
-
-                  for( auto& rm : partition)
-                  {
-                     m_resources.all.emplace_back(
-                        resource,
-                        rm.id,
-                        std::move( rm.openinfo),
-                        std::move( rm.closeinfo));
+                        found->closeinfo};
                   }
+
+                  event::error::raise( code::casual::invalid_configuration, "missing configuration for linked named RM: ", resource, " - check domain configuration");
                };
-            }
+            };
+               
+            // take care of named resources
+            algorithm::transform( named, m_resources.all, transform_resource( []( auto& l, auto& r){ return l.name == r.name;}));
+            
+            // take care of unnamed resources
+            algorithm::transform( unnamed, m_resources.all, transform_resource( []( auto& l, auto& r){ return l.key == r.key;}));
+
 
             // create the views
             std::tie( m_resources.dynamic, m_resources.fixed) =
-                  algorithm::partition( m_resources.all, []( auto& r){ return r.dynamic();});
+               algorithm::partition( m_resources.all, []( auto& r){ return r.dynamic();});
 
             log::line( log::category::transaction, "static resources: ", m_resources.fixed);
             log::line( log::category::transaction, "dynamic resources: ", m_resources.dynamic);

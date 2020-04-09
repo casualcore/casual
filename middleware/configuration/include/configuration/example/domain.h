@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include "configuration/domain.h"
+#include "configuration/user.h"
 
 namespace casual
 {
@@ -14,8 +14,8 @@ namespace casual
    {
       namespace example
       {
-         configuration::domain::Manager domain();
-         configuration::queue::Manager queue();
+         configuration::user::Domain domain();
+         configuration::user::queue::Manager queue();
 
       } // example
 

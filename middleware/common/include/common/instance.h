@@ -41,6 +41,9 @@ namespace casual
          //! by the parent.
          const std::optional< Information>& information();
 
+         //! @return the alias of the instance, if not present, basename is returned.
+         std::string alias();
+
       } // instance
    } // common
 } // casual

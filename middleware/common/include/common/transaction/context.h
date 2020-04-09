@@ -100,7 +100,7 @@ namespace casual
             //! @return true if @p correlation is associated with an active transaction
             bool associated( const Uuid& correlation);
 
-            void configure( std::vector< resource::Link> resources, std::vector< std::string> names);
+            void configure( std::vector< resource::Link> resources);
 
             //! @return true if there are pending transactions that is owned by this
             //! process

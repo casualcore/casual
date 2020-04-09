@@ -7,11 +7,12 @@
 
 #pragma once
 
-
 #include "queue/manager/admin/model.h"
 #include "queue/api/message.h"
+#include "queue/common/ipc/message.h"
 
 #include "common/message/queue.h"
+
 
 
 namespace casual
@@ -51,16 +52,18 @@ namespace casual
 
          std::vector< manager::admin::model::Message> messages( const common::message::queue::information::messages::Reply& reply);
 
-         manager::admin::model::Forward forward( std::vector< common::message::queue::forward::state::Reply> values);
+         namespace forward
+         {
+            configuration::model::queue::Forward configuration( std::vector< ipc::message::forward::state::Reply> values);
+            manager::admin::model::Forward state( std::vector< ipc::message::forward::state::Reply> values);
+         } // forward
 
-         //! We know we just have one instance of the forward for now...
-         common::message::queue::forward::configuration::Reply forward( manager::admin::model::Forward model);
-
+         
 
 
 
       } // transform
-   } // qeue
+   } // queue
 } // casual
 
 

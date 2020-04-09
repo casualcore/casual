@@ -184,6 +184,59 @@ namespace casual
             }
          } // from
 
+         namespace to
+         {
+            namespace local
+            {
+               namespace
+               {
+                  template< typename D, typename T> 
+                  bool stream( std::ostream& out, std::chrono::nanoseconds duration, T unit, bool delimiter)
+                  {
+                     auto value = std::chrono::duration_cast< D>( duration % unit);
+                     if( value == T::zero())
+                        return delimiter;
+                     
+                     if( delimiter)
+                        common::stream::write( out, " + ", value);
+                     else 
+                        common::stream::write( out, value);
+
+                     return true;
+                  };
+               } // <unnamed>
+            } // local
+            std::string string( std::chrono::nanoseconds duration)
+            {
+               if( duration == platform::time::unit::zero())
+                  return {};
+
+               std::ostringstream out;
+
+               // initialize with hours
+               auto delimiter = [&]()
+               {
+                  auto value = std::chrono::duration_cast< std::chrono::hours>( duration);
+
+                  if( value == std::chrono::hours::zero())
+                     return false;
+
+                  common::stream::write( out, value);
+                  return true;
+               }();
+
+               delimiter = local::stream< std::chrono::minutes>( out, duration, std::chrono::hours{ 1}, delimiter);
+               delimiter = local::stream< std::chrono::seconds>( out, duration, std::chrono::minutes{ 1}, delimiter);
+               delimiter = local::stream< std::chrono::milliseconds>( out, duration, std::chrono::seconds{ 1}, delimiter);
+               delimiter = local::stream< std::chrono::microseconds>( out, duration, std::chrono::milliseconds{ 1}, delimiter);
+               delimiter = local::stream< std::chrono::nanoseconds>( out, duration, std::chrono::microseconds{ 1}, delimiter);
+
+               
+               return std::move( out).str();
+            }
+
+         } // from
+
       } // chronology
    } // utility
 } // casual

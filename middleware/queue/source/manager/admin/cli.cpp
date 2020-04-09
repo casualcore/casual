@@ -219,12 +219,7 @@ namespace casual
 
                   auto column_source = []()
                   {
-                     return terminal::format::column( "source", []( auto& forward){ return forward.source.name;}, terminal::color::white);
-                  };
-
-                  auto column_target_name = []()
-                  {
-                     return terminal::format::column( "target", []( auto& forward){ return forward.target.name;}, terminal::color::white);
+                     return terminal::format::column( "source", []( auto& forward){ return forward.source;}, terminal::color::white);
                   };
 
                   auto column_commit = []()
@@ -255,12 +250,17 @@ namespace casual
 
                   auto services()
                   {
+                     auto column_target = []()
+                     {
+                        return terminal::format::column( "target", []( auto& forward){ return forward.target.service;}, terminal::color::white);
+                     };
+
                      auto column_reply_name = []()
                      {
                         return terminal::format::column( "reply", []( auto& forward)
                         { 
                            if( forward.reply)
-                              return forward.reply.value().name;
+                              return forward.reply.value().queue;
                            
                            return std::string{ "-"};
                         }, terminal::color::cyan);
@@ -280,7 +280,7 @@ namespace casual
                      return terminal::format::formatter< manager::admin::model::Forward::Service>::construct(
                         column_alias(),
                         column_source(),
-                        column_target_name(),
+                        column_target(),
                         column_reply_name(),
                         column_reply_delay(),
                         column_configure_instances(),
@@ -293,6 +293,11 @@ namespace casual
    
                   auto queues()
                   {
+                     auto column_target = []()
+                     {
+                        return terminal::format::column( "target", []( auto& forward){ return forward.target.queue;}, terminal::color::white);
+                     };
+
                      auto column_target_delay = []()
                      {
                         return terminal::format::column( "delay", []( auto& forward)
@@ -304,7 +309,7 @@ namespace casual
                      return terminal::format::formatter< manager::admin::model::Forward::Queue>::construct(
                         column_alias(),
                         column_source(),
-                        column_target_name(),
+                        column_target(),
                         column_target_delay(),
                         column_configure_instances(),
                         column_running_instances(),

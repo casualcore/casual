@@ -15,11 +15,7 @@
 #include "common/message/handle.h"
 #include "common/log.h"
 #include "common/chronology.h"
-
 #include "common/communication/instance.h"
-
-#include "configuration/domain.h"
-#include "configuration/file.h"
 
 #include <tx.h>
 

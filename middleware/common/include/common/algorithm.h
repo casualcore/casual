@@ -4,10 +4,7 @@
 //! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-
 #pragma once
-
-
 
 #include "common/range.h"
 #include "common/traits.h"
@@ -60,7 +57,7 @@ namespace casual
             { return value.empty();}
 
             template< typename T>
-            auto empty( T&& value, traits::priority::tag< 1>) -> decltype( ! value.has_value()) 
+            auto empty( T&& value, traits::priority::tag< 0>) -> decltype( ! value.has_value()) 
             { return ! value.has_value();}
 
             template< typename T>
@@ -548,7 +545,7 @@ namespace casual
          }
 
 
-         template< typename R, typename T>
+         template< typename R, typename T = traits::iterable::value_t< R>>
          decltype( auto) accumulate( R&& range, T&& value)
          {
             return std::accumulate( std::begin( range), std::end( range), std::forward< T>( value));

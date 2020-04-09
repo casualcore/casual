@@ -18,31 +18,25 @@ namespace casual
       {
          namespace detail
          {
-            template< typename T> 
-            using member_tie = decltype( std::declval< const T&>().tie());
-
-            template< typename T> 
-            using has_member_tie = traits::detect::is_detected< member_tie, T>;
-            
-
             template< typename T>
-            constexpr auto get_tie( const T& value, std::enable_if_t< has_member_tie< T>::value>* = 0) 
-            {
-               return value.tie();
-            }
-
-            template< typename T> 
-            using free_tie = decltype( tie( std::declval< const T&>()));
-
-            template< typename T> 
-            using has_free_tie = traits::detect::is_detected< free_tie, T>;
-
-            template< typename T>
-            constexpr auto get_tie( const T& value, std::enable_if_t< has_free_tie< T>::value && ! has_member_tie< T>::value>* = 0)  
+            constexpr auto get_tie( const T& value, traits::priority::tag< 0>)
+               -> decltype( tie( value))
             {
                return tie( value);
             }
 
+            template< typename T>
+            constexpr auto get_tie( const T& value, traits::priority::tag< 1>)
+               -> decltype( value.tie())
+            {
+               return value.tie();
+            }
+
+            template< typename T>
+            constexpr auto get_tie( const T& value) -> decltype( get_tie( value, traits::priority::tag< 1>{}))
+            {
+               return get_tie( value, traits::priority::tag< 1>{});
+            }
 
          } // detail
 

@@ -95,7 +95,7 @@ LinkUnittest( 'bin/test-casual-event',
         'casual-common',
         'casual-unittest',
         'casual-domain-api',
-        'casual-domain-pending-message',
+        'casual-domain-utility',
         'casual-domain-unittest',
    ])	
 

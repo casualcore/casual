@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include "common/serialize/macro.h"
+
 #include <string>
 #include <xa.h>
 
@@ -25,6 +27,12 @@ namespace casual
                std::string key;
                std::string name;
                xa_switch_t* xa = nullptr;
+
+               CASUAL_LOG_SERIALIZE(
+                  CASUAL_SERIALIZE( key);
+                  CASUAL_SERIALIZE( name);
+                  CASUAL_SERIALIZE( xa);
+               )
             };
          } // resource
       } // transaction

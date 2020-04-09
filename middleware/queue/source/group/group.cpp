@@ -4,10 +4,11 @@
 //! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-
 #include "queue/group/group.h"
 #include "queue/group/handle.h"
 #include "queue/common/log.h"
+#include "queue/common/ipc/message.h"
+
 
 #include "common/message/dispatch.h"
 #include "common/message/handle.h"
@@ -41,7 +42,7 @@ namespace casual
             // Talk to queue-manager to get configuration
             auto reply = communication::ipc::call(  
                common::communication::instance::outbound::queue::manager::device(),
-               common::message::queue::group::connect::Request{ process::handle()});
+               ipc::message::group::connect::Request{ process::handle()});
 
             auto existing = m_state.queuebase.queues();
             log::line( verbose::log, "existing: ", existing);

@@ -9,9 +9,8 @@
 
 
 #include "common/server/service.h"
-
 #include "common/transaction/context.h"
-
+#include "common/serialize/macro.h"
 
 #include <vector>
 
@@ -35,6 +34,11 @@ namespace casual
 
             std::vector< Service> services;
             std::vector< transaction::resource::Link> resources;
+
+            CASUAL_LOG_SERIALIZE(
+               CASUAL_SERIALIZE( services);
+               CASUAL_SERIALIZE( resources);
+            )
          };
 
       } // server

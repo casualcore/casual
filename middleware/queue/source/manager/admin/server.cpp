@@ -46,13 +46,13 @@ namespace casual
                      auto forward_futures = algorithm::transform( state.forwards, [&]( auto& forward)
                      {
                         return communication::device::async::call( forward.ipc, 
-                           common::message::queue::forward::state::Request{ process::handle()});
+                           ipc::message::forward::state::Request{ process::handle()});
                      });
 
                      result.groups = transform::groups( state);
                      result.remote = transform::remote( state);
                      result.queues = transform::queues( algorithm::transform( queue_futures, future_get));
-                     result.forward = transform::forward( algorithm::transform( forward_futures, future_get));
+                     result.forward = transform::forward::state( algorithm::transform( forward_futures, future_get));
 
                      return result;
                   }
@@ -243,28 +243,29 @@ namespace casual
                            auto forward_futures = algorithm::transform( state.forwards, [&]( auto& forward)
                            {
                               return communication::device::async::call( forward.ipc, 
-                                 common::message::queue::forward::state::Request{ process::handle()});
+                                 ipc::message::forward::state::Request{ process::handle()});
                            });
 
                            auto future_get = []( auto& future){ return future.get( ipc::device());};
 
-                           auto model = transform::forward( algorithm::transform( forward_futures, future_get));
+                           ipc::message::forward::configuration::Reply message;
+                           message.model.forward = transform::forward::configuration( algorithm::transform( forward_futures, future_get));
 
                            auto update_alias = [&aliases]( auto& forward)
                            {
                               if( auto found = algorithm::find( aliases, forward.alias))
-                                 forward.instances.configured = found->instances;
+                                 forward.instances = found->instances;
                            };
 
-                           algorithm::for_each( model.services, update_alias);
-                           algorithm::for_each( model.queues, update_alias);
+                           algorithm::for_each( message.model.forward.services, update_alias);
+                           algorithm::for_each( message.model.forward.queues, update_alias);
 
-                           auto configuration = transform::forward( std::move( model));
+                           
 
                            // we know there's 0..1 forward processes...
-                           algorithm::for_each( state.forwards, [&configuration]( auto& process)
+                           algorithm::for_each( state.forwards, [&message]( auto& process)
                            {
-                              communication::device::blocking::optional::send( process.ipc, configuration);
+                              communication::device::blocking::optional::send( process.ipc, message);
                            });
 
                         }

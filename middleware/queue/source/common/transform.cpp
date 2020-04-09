@@ -175,135 +175,90 @@ namespace casual
             return common::algorithm::transform( reply.messages, Message{});
          }
 
-         manager::admin::model::Forward forward( std::vector< common::message::queue::forward::state::Reply> values)
+         namespace forward
          {
-            manager::admin::model::Forward result;
-
-            auto add_reply = [&result]( auto& reply)
+            configuration::model::queue::Forward configuration( std::vector< ipc::message::forward::state::Reply> values)
             {
-               auto is_alias = []( auto& alias)
+               configuration::model::queue::Forward result;
+
+               auto add_reply = [&result]( auto& reply)
                {
-                  return [&alias]( auto& value){ return value.alias == alias;};
-               };
-
-               auto assign_common = []( auto& source, auto& target)
-               {
-                  target.alias = std::move( source.alias);
-                  target.source.name = std::move( source.source.name);
-                  target.target.name = std::move( source.target.name);
-                  target.instances.configured = source.instances.configured;
-                  target.instances.running = source.instances.running;
-                  target.metric.commit.count = source.metric.commit.count;
-                  target.metric.commit.last = source.metric.commit.last;
-                  target.metric.rollback.count = source.metric.rollback.count;
-                  target.metric.rollback.last = source.metric.rollback.last;
-                  target.note = std::move( source.note);
-               };
-
-               auto update_common = []( auto& source, auto& target)
-               {
-                  target.instances.configured += source.instances.configured;
-                  target.instances.running += source.instances.running;
-
-                  target.metric.commit.count += source.metric.commit.count;
-                  target.metric.commit.last = std::max( target.metric.commit.last, source.metric.commit.last);
-                  target.metric.rollback.count += source.metric.rollback.count;
-                  target.metric.rollback.last = std::max( target.metric.rollback.last, source.metric.rollback.last);
-               };
-
-               auto add_service = [&]( auto& service)
-               {
-                  auto& services = result.services;
-
-                  if( auto found = algorithm::find_if( services, is_alias( service.alias)))
+                  algorithm::transform( reply.services, std::back_inserter( result.services), []( auto& service)
                   {
-                     update_common( service, *found);
-                  }
-                  else
+                     configuration::model::queue::forward::Service result;
+                     result.alias = std::move( service.alias);
+                     result.instances = service.instances.configured;
+                     result.note = std::move( service.note);
+                     if( service.reply)
+                     {
+                        configuration::model::queue::forward::Service::Reply reply;
+                        reply.queue = service.reply.value().queue;
+                        reply.delay = service.reply.value().delay;
+                        result.reply = std::move( reply);
+                     }
+                     
+                     return result;
+                  });
+               };
+
+               algorithm::for_each( values, add_reply);
+
+               return result;
+            }
+
+         
+            manager::admin::model::Forward state( std::vector< ipc::message::forward::state::Reply> values)
+            {
+               manager::admin::model::Forward result;
+
+               auto add_reply = [&result]( auto& reply)
+               {
+                  auto assign_common = []( auto& source, auto& target)
                   {
-                     manager::admin::model::Forward::Service model;
-                     assign_common( service, model);
+                     target.alias = std::move( source.alias);
+                     target.source = std::move( source.source);
+                     target.instances.configured = source.instances.configured;
+                     target.instances.running = source.instances.running;
+                     target.metric.commit.count = source.metric.commit.count;
+                     target.metric.commit.last = source.metric.commit.last;
+                     target.metric.rollback.count = source.metric.rollback.count;
+                     target.metric.rollback.last = source.metric.rollback.last;
+                     target.note = std::move( source.note);
+                  };
+
+                  algorithm::transform( reply.services, std::back_inserter( result.services), [&assign_common]( auto& service)
+                  {
+                     manager::admin::model::Forward::Service result;
+                     assign_common( service, result);
+                     result.target.service = service.target.service;
 
                      if( service.reply)
                      {
                         manager::admin::model::Forward::Service::Reply reply;
-                        reply.name = service.reply.value().name;
+                        reply.queue = service.reply.value().queue;
                         reply.delay = service.reply.value().delay;
-                        model.reply = std::move( reply);
+                        result.reply = std::move( reply);
                      }
+                     
+                     return result;
+                  });
 
-                     services.push_back( std::move( model));
-                  }
+                  algorithm::transform( reply.queues, std::back_inserter( result.queues), [&assign_common]( auto& queue)
+                  {
+                     manager::admin::model::Forward::Queue result;
+                     assign_common( queue, result);
+                     result.target.queue = queue.target.queue;
+                     result.target.delay = queue.target.delay;
+                     return result;
+                  });
                };
 
-               auto add_queue = [&]( auto& queue)
-               {
-                  auto& queues = result.queues;
+               algorithm::for_each( values, add_reply);
 
-                  if( auto found = algorithm::find_if( queues, is_alias( queue.alias)))
-                  {
-                     update_common( queue, *found);
-                  }
-                  else
-                  {
-                     manager::admin::model::Forward::Queue model;
-                     assign_common( queue, model);
-                     model.target.delay = queue.target.delay;
-
-                     queues.push_back( std::move( model));
-                  }
-               };
-
-               algorithm::for_each( reply.services, add_service);
-               algorithm::for_each( reply.queues, add_queue);
-
-
-            };
-
-            algorithm::for_each( values, add_reply);
-
-            return result;
-         }
-
-         common::message::queue::forward::configuration::Reply forward( manager::admin::model::Forward model)
-         {
-            common::message::queue::forward::configuration::Reply result;
-
-            auto assign_common = []( auto& source, auto& target)
-            {
-               target.alias = std::move( source.alias);
-               target.source.name = std::move( source.source.name);
-               target.target.name = std::move( source.target.name);
-               target.instances = source.instances.configured;
-               target.note = std::move( source.note);
-            };
-
-            result.services = algorithm::transform( model.services, [&]( auto& forward)
-            {
-               common::message::queue::forward::configuration::Reply::Service result;
-               assign_common( forward, result);
-               if( forward.reply)
-               {
-                  common::message::queue::forward::configuration::Reply::Service::Reply reply;
-                  reply.name = std::move( forward.reply.value().name);
-                  reply.delay = forward.reply.value().delay;
-                  result.reply = std::move( reply);
-               }
-               
                return result;
-            });
+            }
+         } // forward
 
-            result.queues = algorithm::transform( model.queues, [&]( auto& forward)
-            {
-               common::message::queue::forward::configuration::Reply::Queue result;
-               assign_common( forward, result);
-               result.target.delay = forward.target.delay;
-               return result;
-            });
-
-
-            return result;
-         }
       } // transform
    } // queue
 } // casual

@@ -122,18 +122,6 @@ namespace casual
             algorithm::for_each( message.queues.remove, remove_queue);
          }
 
-         const common::message::domain::configuration::queue::Group* State::group_configuration( const std::string& name)
-         {
-            auto found = common::algorithm::find_if( configuration.groups, [&name]( auto& g){
-               return g.name == name;
-            });
-
-            if( found)
-               return found.data();
-
-            return nullptr;
-         }
-
       } // manager
    } // queue
 } // casual

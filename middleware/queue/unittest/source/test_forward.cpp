@@ -102,62 +102,54 @@ domain:
       forward:
          services:
             - alias: foo
-              source: 
-                  name: a1
+              source: a1
               target: 
-                  name: queue/unittest/service
+                  service: queue/unittest/service
               instances: 4
               reply:
-                  name: b1
+                  queue: b1
             - alias: bar
-              source: 
-                  name: a2
+              source: a2
               target: 
-                  name: queue/unittest/service
+                  service: queue/unittest/service
               instances: 4
               reply:
-                  name: b2
-            - source: 
-                  name: a3
+                  queue: b2
+            - source: a3
               target: 
-                  name: queue/unittest/service
+                  service: queue/unittest/service
               instances: 4
               reply:
-                  name: b3
+                  queue: b3
 
-            - source: 
-                name: x1
+            - source: x1
               target: 
-                 name: queue/unittest/service
+                 service: queue/unittest/service
               instances: 4
               reply:
-                  name: b1
+                  queue: b1
 
          queues:
-            - source: 
-                  name: a4
+            - source: a4
               target:
-                  name: b4
+                  queue: b4
                   delay: 10ms
               instances: 2 
               
               # a forward 'chain' from c1 -> c4 
-            - source: 
-                  name: c1
+            - source: c1
               target:
-                  name: c2
+                  queue: c2
               instances: 1
 
-            - source: 
-                  name: c2
+            - source: c2
               target:
-                  name: c3
+                  queue: c3
               instances: 1
 
-            - source: 
-                  name: c3
+            - source: c3
               target:
-                  name: c4
+                  queue: c4
               instances: 1
 )";
             };
@@ -448,26 +440,22 @@ domain:
 
       forward:
          services:
-            - source: 
-                  name: a1
+            - source: a1
               target: 
-                  name: queue/unittest/service
+                  service: queue/unittest/service
               reply:
-                  name: b1
+                  queue: b1
          queues:
             # circle...
-            - source: 
-                  name: b1
+            - source: b1
               target:
-                  name: b2
-            - source: 
-                  name: b2
+                  queue: b2
+            - source: b2
               target:
-                  name: b3
-            - source: 
-                  name: b3
+                  queue: b3
+            - source: b3
               target:
-                  name: b1
+                  queue: b1
 )";
 
          local::Domain domain{ configuration};

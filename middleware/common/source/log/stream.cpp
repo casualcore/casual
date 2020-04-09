@@ -89,14 +89,7 @@ namespace casual
                   }
 
                   std::ofstream m_output;
-                  std::string m_alias = []()
-                  {
-                     auto& information = instance::information();
-                     if( information)
-                        return information.value().alias;
-
-                     return process::basename();
-                  }();
+                  std::string m_alias = instance::alias();
                };
 
                namespace user

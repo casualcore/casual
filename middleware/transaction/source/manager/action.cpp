@@ -22,11 +22,10 @@
 #include "common/code/casual.h"
 
 #include "domain/pending/message/send.h"
+#include "domain/configuration/fetch.h"
 
 
-#include "serviceframework/log.h"
 
-// std
 #include <string>
 
 namespace casual
@@ -43,62 +42,10 @@ namespace casual
             {
                Trace trace{ "transaction::manager::action::state"};
 
-               State state{ common::environment::string( std::move( settings.log))};
-
-               // fetch configuration from domain-manager
-               auto configuration = environment::normalize( communication::ipc::call( 
-                  communication::instance::outbound::domain::manager::device(),
-                  common::message::domain::configuration::Request{ process::handle()}));
-                  
-               {
-                  Trace trace{ "transaction manager xa-switch configuration"};
-
-                  auto resources = configuration::resource::property::get();
-
-                  for( auto& resource : resources)
-                  {
-                     auto result = state.resource_properties.emplace( resource.key, std::move( resource));
-                     if( ! result.second)
-                        code::raise::error( code::casual::invalid_configuration, "multiple keys in resource config: " + result.first->first);
-                  }
-               }
-
-               // configure resources
-               {
-                  Trace trace{ "transaction manager resource configuration"};
-
-                  auto transform_resource = []( const auto& r)
-                  {
-                     state::resource::Proxy proxy{ state::resource::Proxy::generate_id{}};
-
-                     proxy.name = common::coalesce( r.name, common::string::compose( ".rm.", r.key, '.', proxy.id.value()));
-                     proxy.concurency = r.instances;
-                     proxy.key = r.key;
-                     proxy.openinfo = r.openinfo;
-                     proxy.closeinfo = r.closeinfo;
-                     proxy.note = r.note;
-
-                     return proxy;
-                  };
-
-                  auto validate = [&state]( const auto& r) 
-                  {
-                     if( ! common::algorithm::find( state.resource_properties, r.key))
-                     {
-                        common::event::error::send( code::casual::internal_correlation, "failed to correlate resource key '" + r.key + "' - action: skip resource");
-                        return false;
-                     }
-                     return true;
-                  };
-
-                  common::algorithm::transform_if(
-                     configuration.domain.transaction.resources,
-                     state.resources,
-                     transform_resource,
-                     validate);
-               }
-
-               return state;
+               return State{ 
+                  std::move( settings), 
+                  casual::domain::configuration::fetch(),
+                  configuration::resource::property::get()};
             }
 
 
@@ -116,7 +63,7 @@ namespace casual
                   {
                      while( count-- > 0)
                      {
-                        auto& info = m_state.resource_properties.at( proxy.key);
+                        auto& info = m_state.resource.properties.at( proxy.key);
 
                         state::resource::Proxy::Instance instance;
                         instance.id = proxy.id;

@@ -73,7 +73,7 @@ namespace casual
                   server::context().configure( arguments);
 
                   // Connect to casual
-                  m_policy.configure( arguments);
+                  m_policy.configure( std::move( arguments));
                }
 
 

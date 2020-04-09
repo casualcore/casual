@@ -7,13 +7,12 @@
 
 #pragma once
 
-
-
 #include "common/communication/ipc.h"
 #include "common/message/queue.h"
 #include "common/message/gateway.h"
-#include "common/message/domain.h"
 #include "common/domain.h"
+
+#include "configuration/model.h"
 
 #include <string>
 #include <vector>
@@ -131,8 +130,8 @@ namespace casual
 
             void update( common::message::queue::concurrent::Advertise& message);
 
-            const common::message::domain::configuration::queue::Group* group_configuration( const std::string& name);
-            common::message::domain::configuration::queue::Manager configuration;
+            //const common::message::configuration::queue::model::Group* group_configuration( const std::string& name);
+            casual::configuration::model::queue::Model model;
 
          };
 

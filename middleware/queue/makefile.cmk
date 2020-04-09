@@ -69,7 +69,7 @@ queue_group = LinkExecutable( 'bin/casual-queue-group',
     [
      group_archive,
      common,
-     'casual-domain-pending-message',
+     'casual-domain-utility',
      'casual-common',
      'sqlite3',
      ])
@@ -96,7 +96,7 @@ queue_manager = LinkExecutable( 'bin/casual-queue-manager',
      manager_archive,
      common,
      'casual-common', 
-     'casual-configuration', 
+     'casual-domain-utility',
      'casual-serviceframework', 
      ])
 

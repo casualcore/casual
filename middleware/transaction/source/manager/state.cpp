@@ -10,11 +10,10 @@
 #include "transaction/manager/state.h"
 #include "transaction/common.h"
 
-#include "configuration/domain.h"
-
 
 #include "common/algorithm.h"
 #include "common/environment.h"
+#include "common/environment/string.h"
 #include "common/event/send.h"
 
 #include "common/code/raise.h"
@@ -29,10 +28,6 @@ namespace casual
    {
       namespace manager
       {
-
-         Settings::Settings() :
-            log{ environment::directory::domain() + "/transaction/log.db"}
-         {}
 
          namespace state
          {
@@ -307,8 +302,130 @@ namespace casual
             return Resource::convert( algorithm::accumulate( branches, Resource::Result::xa_RDONLY, severe_branch_results));
          }
 
+         namespace local
+         {
+            namespace
+            {
+               auto initialize_log = []( auto&& settings, auto&& configuration)
+               {
+                  return common::environment::string( common::coalesce( 
+                     std::move( settings), 
+                     std::move( configuration), 
+                     environment::directory::domain() + "/transaction/log.db"));
 
-         State::State( std::string database) : persistent( std::move( database)) {}
+               };
+
+               namespace configure
+               {
+                  auto properties = []( auto&& properties)
+                  {
+                     Trace trace{ "transaction::manager::state::local::configure::properties"};
+                     std::map< std::string, configuration::resource::Property> result;
+               
+                     for( auto& property : properties)
+                     {
+                        auto emplaced = result.emplace( property.key, std::move( property));
+                        if( ! emplaced.second)
+                           common::code::raise::error( common::code::casual::invalid_configuration, "multiple keys in resource config: ", emplaced.first->first);
+                     }
+
+                     return result;
+                  };
+
+                  auto resources = []( auto&& resources, const auto& properties)
+                  {
+                     Trace trace{ "transaction::manager::state::local::configure::resources"};
+
+                     auto transform_resource = []( const auto& r)
+                     {
+                        state::resource::Proxy proxy{ state::resource::Proxy::generate_id{}};
+
+                        proxy.name = common::coalesce( r.name, common::string::compose( ".rm.", r.key, '.', proxy.id.value()));
+                        proxy.concurency = r.instances;
+                        proxy.key = r.key;
+                        proxy.openinfo = r.openinfo;
+                        proxy.closeinfo = r.closeinfo;
+                        proxy.note = r.note;
+
+                        return proxy;
+                     };
+
+                     auto validate = [&]( const auto& r) 
+                     {
+                        if( common::algorithm::find( properties, r.key))
+                           return true;
+                        
+                        common::event::error::send( code::casual::invalid_argument, "failed to correlate resource key '", r.key, "' - action: skip resource");
+                        return false;   
+                     };
+
+                     std::vector< state::resource::Proxy> result;
+
+                     common::algorithm::transform_if(
+                        resources,
+                        result,
+                        transform_resource,
+                        validate);
+
+                     return result;
+                  };
+
+                  auto alias( const State& state, const configuration::Model& model)
+                  {
+                     Trace trace{ "transaction::manager::state::local::configure::alias"};
+
+                     std::map< std::string, std::vector< state::resource::id::type>> result;
+
+                     auto add_resources = [&]( auto& server)
+                     {
+                        std::vector< state::resource::id::type> ids;
+
+                        auto transform_rm = [&state]( auto& name)
+                        {
+                           return state.get_resource( name).id;
+                        };
+                        
+                        ids = algorithm::transform( server.resources, transform_rm);
+
+                        // find group resources
+
+                        auto add_group_resource = [&]( auto& group)
+                        {
+                           if( auto found = algorithm::find( model.domain.groups, group))
+                              algorithm::transform( found->resources, ids, transform_rm);
+                        };
+
+                        algorithm::for_each( server.memberships, add_group_resource);
+
+                        if( ! ids.empty())
+                           result[ server.alias] = std::move( ids);
+
+                     };
+
+                     algorithm::for_each( model.domain.servers, add_resources);
+
+                     return result;
+                  }
+
+               } // configure
+            } // <unnamed>
+         } // local
+
+
+         State::State( 
+            manager::Settings settings, 
+            configuration::Model configuration,
+            std::vector< configuration::resource::Property> properties) 
+            : persistent( local::initialize_log( settings.log, configuration.transaction.log))
+         {
+            Trace trace{ "transaction::manager::State::State"};
+
+            resource.properties = local::configure::properties( std::move( properties));
+
+            resources = local::configure::resources( configuration.transaction.resources, resource.properties);
+
+            m_alias.configuration = local::configure::alias( *this, configuration);
+         }
 
 
          bool State::outstanding() const
@@ -394,6 +511,14 @@ namespace casual
             code::raise::error( code::casual::invalid_argument, "failed to find resource - name: ", name);
          }
 
+         const state::resource::Proxy& State::get_resource( const std::string& name) const
+         {
+            if( auto found = common::algorithm::find_if( resources, [&name]( auto& r){ return r.name == name;}))
+               return *found;
+
+            code::raise::error( code::casual::invalid_argument, "failed to find resource - name: ", name);
+         }
+
          state::resource::Proxy::Instance& State::get_instance( state::resource::id::type rm, common::strong::process::id pid)
          {
             auto& resource = get_resource( rm);
@@ -421,12 +546,55 @@ namespace casual
 
          const state::resource::external::Proxy& State::get_external( state::resource::id::type rm) const
          {
-            auto has_id = [rm]( auto& proxy){ return proxy.id == rm;};
-            
-            if( auto found = common::algorithm::find_if( externals, has_id))
+            if( auto found = common::algorithm::find( externals, rm))
                return *found;
 
             code::raise::error( code::casual::invalid_argument, "failed to find external resource proxy: ", rm);
+         }
+
+         common::message::transaction::configuration::alias::Reply State::configuration(
+            const common::message::transaction::configuration::alias::Request& request)
+         {
+            auto reply = common::message::reverse::type( request);
+
+            auto transform_resource = []( auto& resource)
+            {
+               common::message::transaction::configuration::Resource result;
+
+               result.id = resource.id;
+               result.key = resource.key;
+               result.name = resource.name;
+               result.openinfo = resource.openinfo;
+               result.closeinfo = resource.closeinfo;
+
+               return result;
+            };
+
+            // first we get the 'named' resources, if any.
+            algorithm::for_each( resources, [&]( auto& resource)
+            {
+               if( common::algorithm::find( request.resources, resource.name))
+                  reply.resources.push_back( transform_resource( resource));
+            });
+
+            // get the implicit resource configuration, based on alias
+            if( auto found = algorithm::find( m_alias.configuration, request.alias))
+            {
+               const auto& rms = found->second;
+
+               algorithm::transform( rms, reply.resources, [&]( auto rm)
+               {
+                  return transform_resource( get_resource( rm));
+               });
+            }
+
+            auto id_less = []( auto& l, auto& r){ return l.id < r.id;};
+            auto id_equal = []( auto& l, auto& r){ return l.id == r.id;};
+
+            // make sure we only reply with unique rm:S
+            algorithm::trim( reply.resources, algorithm::unique( algorithm::sort( reply.resources, id_less), id_equal));
+
+            return reply;
          }
          
       } // manager

@@ -50,6 +50,12 @@ namespace casual
                struct string< std::chrono::seconds> { constexpr static auto value = "s";};
 
                template<>
+               struct string< std::chrono::minutes> { constexpr static auto value = "min";};
+
+               template<>
+               struct string< std::chrono::hours> { constexpr static auto value = "h";};
+
+               template<>
                struct string< std::chrono::duration< double>> { constexpr static auto value = "s";};
 
             }
@@ -62,6 +68,17 @@ namespace casual
          namespace from
          {
             platform::time::unit string( const std::string& value);
+         } // from
+
+         namespace to
+         {
+            std::string string( std::chrono::nanoseconds duration);
+
+            template< typename R, typename P>
+            auto string( std::chrono::duration< R, P> duration) 
+            { 
+               return to::string( std::chrono::duration_cast< std::chrono::nanoseconds>( duration));
+            }
          } // from
 
 

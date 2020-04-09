@@ -26,6 +26,7 @@ namespace casual
          {
             namespace model
             {
+               inline namespace v1 {
                
                using size_type = platform::size::type;
 
@@ -191,30 +192,21 @@ namespace casual
                      )
                   };
 
-                  struct Source
-                  {
-                     std::string name;
-                     
-                     CASUAL_CONST_CORRECT_SERIALIZE(
-                        CASUAL_SERIALIZE( name);
-                     )
-                  };
-
                   struct Queue
                   {
                      struct Target
                      {
-                        std::string name;
+                        std::string queue;
                         platform::time::unit delay{};
 
                         CASUAL_CONST_CORRECT_SERIALIZE(
-                           CASUAL_SERIALIZE( name);
+                           CASUAL_SERIALIZE( queue);
                            CASUAL_SERIALIZE( delay);
                         )
                      };
 
                      std::string alias;
-                     Source source;
+                     std::string source;
                      Target target;
                      Instances instances;
                      Metric metric;
@@ -232,11 +224,19 @@ namespace casual
 
                   struct Service
                   {
-                     using Target = Source;
+                     struct Target
+                     {
+                        std::string service;
+
+                        CASUAL_CONST_CORRECT_SERIALIZE(
+                           CASUAL_SERIALIZE( service);
+                        )
+                     };
+
                      using Reply = Queue::Target;
                      
                      std::string alias;
-                     Source source;
+                     std::string source;
                      Target target;
                      Instances instances;
                      std::optional< Reply> reply;
@@ -376,6 +376,8 @@ namespace casual
                   };
 
                } // scale
+
+               } // inline v1
 
             } // model
          } // admin

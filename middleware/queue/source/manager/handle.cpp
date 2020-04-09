@@ -4,10 +4,10 @@
 //! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-
 #include "queue/manager/handle.h"
-#include "queue/common/log.h"
 #include "queue/manager/admin/server.h"
+#include "queue/common/log.h"
+#include "queue/common/ipc/message.h"
 
 #include "common/process.h"
 #include "common/server/lifetime.h"
@@ -213,7 +213,7 @@ namespace casual
                   {
                      auto request( State& state)
                      {
-                        return [&state]( common::message::queue::group::connect::Request& message)
+                        return [&state]( queue::ipc::message::group::connect::Request& message)
                         {
                            Trace trace{ "queue::manager::handle::local::connect::request"};
                            log::line( verbose::log, "message: ", message);
@@ -232,15 +232,12 @@ namespace casual
                            auto reply = common::message::reverse::type( message);
                            reply.name = group.name;
 
-                           auto configuration = state.group_configuration( group.name);
-
-                           if( configuration)
+                           if( auto configuration = algorithm::find( state.model.groups, group.name))
                            {
-                              common::log::line( verbose::log, "configuration->queues: ", configuration->queues);
-                              
                               common::algorithm::transform( configuration->queues, reply.queues, []( auto& value)
                               {
-                                 common::message::queue::Queue result;
+                                 using Queue = traits::iterable::value_t< decltype( reply.queues)>;
+                                 Queue result;
                                  result.name = value.name;
                                  result.retry.count = value.retry.count;
                                  result.retry.delay = value.retry.delay;
@@ -249,7 +246,7 @@ namespace casual
                            }
                            else
                               common::log::line( common::log::category::error, "failed to correlate configuration for group - ", group.name);
-                           
+
                            communication::device::blocking::send( message.process.ipc, reply);
                         
                         };
@@ -292,58 +289,21 @@ namespace casual
                      {
                         auto request( State& state)
                         {
-                           return [&state]( const common::message::queue::forward::configuration::Request& message)
+                           return [&state]( const ipc::message::forward::configuration::Request& message)
                            {
                               Trace trace{ "queue::manager::handle::local::forward::connect"};
                               log::line( verbose::log, "message: ", message);
 
-                              auto found = algorithm::find( state.forwards, message.process.pid);
-
-                              if( ! found)
+                              if( auto found = algorithm::find( state.forwards, message.process.pid))
                               {
-                                 log::line( log::category::error, "failed to correlate forward connect ", message.process, " - action: discard");
-                                 return;
+                                 found->ipc = message.process.ipc;
+
+                                 auto reply = common::message::reverse::type( message);
+                                 reply.model = state.model;
+                                 communication::device::blocking::send( message.process.ipc, reply);
                               }
-
-                              found->ipc = message.process.ipc;
-
-                              // forward connect, send configuration
-
-                              common::message::queue::forward::configuration::Reply configuration;
-
-                              configuration.services = algorithm::transform( state.configuration.forward.services, []( auto& service)
-                              {
-                                 common::message::queue::forward::configuration::Reply::Service result;
-                                 result.alias = service.alias;
-                                 result.source.name = service.source.name;
-                                 result.target.name = service.target.name;
-                                 
-                                 if( service.reply)
-                                 {
-                                    common::message::queue::forward::configuration::Reply::Service::Reply reply;
-                                    reply.name = service.reply.value().name;
-                                    reply.delay = service.reply.value().delay;
-                                    result.reply = std::move( reply);
-                                 }
-
-                                 result.instances = service.instances;
-                                 result.note = service.note;
-                                 return result;
-                              });
-
-                              configuration.queues = algorithm::transform( state.configuration.forward.queues, []( auto& queue)
-                              {
-                                 common::message::queue::forward::configuration::Reply::Queue result;
-                                 result.alias = queue.alias;
-                                 result.source.name = queue.source.name;
-                                 result.target.name = queue.target.name;
-                                 result.target.delay = queue.target.delay;
-                                 result.instances = queue.instances;
-                                 result.note = queue.note;
-                                 return result;
-                              });
-
-                              communication::device::blocking::send( message.process.ipc, configuration);
+                              else
+                                 log::line( log::category::error, "failed to correlate forward connect ", message.process, " - action: discard");
                            };
                         }
                      } // configuration

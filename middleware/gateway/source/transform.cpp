@@ -25,29 +25,25 @@ namespace casual
          {
             namespace
             {
-
-               struct Connection
+               auto connection()
                {
-
-                  manager::state::outbound::Connection operator () ( const common::message::domain::configuration::gateway::Connection& connection) const
+                  return []( auto&& connection)
                   {
                      manager::state::outbound::Connection result;
 
                      result.address.peer = connection.address;
-                     result.restart = connection.restart;
+                     result.restart = connection.lifetime.restart;
                      result.services = std::move( connection.services);
                      result.queues = std::move( connection.queues);
 
                      environment::normalize( result);
-
                      return result;
-                  }
-               };
+                  };
+               }
 
-               struct Listener
+               auto listener()
                {
-
-                  manager::listen::Entry operator () ( const common::message::domain::configuration::gateway::Listener& value) const
+                  return []( auto&& value) -> manager::listen::Entry
                   {
                      manager::listen::Limit limit;
                      {
@@ -56,9 +52,10 @@ namespace casual
                      }
 
                      return { value.address, limit};
-                  }
+                  };
 
-               };
+               }
+
 
                namespace vo
                {
@@ -101,34 +98,22 @@ namespace casual
             } // <unnamed>
          } // local
 
-         manager::State state( const common::message::domain::configuration::Domain& configuration)
+         manager::State state( configuration::model::gateway::Model configuration)
          {
             Trace trace{ "gateway::transform::state"};
 
             manager::State state;
 
-            for( auto& listener : configuration.gateway.listeners)
-            {
-               try 
-               {
-                  state.add( local::Listener{}( listener));
-               }
-               catch( ...)
-               {
-                  event::error::send( exception::code(), "failed to add listener: ", listener);
-               }
-            }
+            for( auto& listener : configuration.listeners)
+               state.add( local::listener()( std::move( listener)));
 
-            algorithm::transform( configuration.gateway.connections, state.connections.outbound, local::Connection{});
+            state.connections.outbound = algorithm::transform( configuration.connections, local::connection());
 
             // Define the order, hence the priority
+            algorithm::for_each( state.connections.outbound, [order = platform::size::type{ 0}]( auto& outbound) mutable
             {
-               std::size_t order = 0;
-               for( auto& connection : state.connections.outbound)
-               {
-                  connection.order = ++order;
-               }
-            }
+               outbound.order = ++order;
+            });
 
             log::line( verbose::log, "state: ", state);
 

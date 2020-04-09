@@ -15,8 +15,7 @@
 #include "domain/pending/message/environment.h"
 #include "domain/pending/message/message.h"
 
-#include "configuration/gateway.h"
-
+#include "configuration/message.h"
 
 #include "common/message/handle.h"
 #include "common/server/handle/call.h"
@@ -802,9 +801,7 @@ namespace casual
 
                            if( message.identification)
                            {
-                              auto found = algorithm::find( state.singletons, message.identification);
-
-                              if( found)
+                              if( auto found = algorithm::find( state.singletons, message.identification))
                               {
                                  // A "singleton" is trying to connect, while we already have one connected
 
@@ -886,39 +883,19 @@ namespace casual
 
                   namespace configuration
                   {
-                     auto domain( State& state)
+                     auto request( State& state)
                      {
-                        return [&state]( const common::message::domain::configuration::Request& message)
+                        return [&state]( const casual::configuration::message::Request& message)
                         {
-                           Trace trace{ "domain::manager::handle::configuration::Domain"};
+                           Trace trace{ "domain::manager::handle::configuration::request"};
                            common::log::line( verbose::log, "message: ", message);
 
-                           auto reply = common::message::reverse::type( message);
-                           reply.domain = state.configuration;
-
+                           auto reply = common::message::reverse::type( message, common::process::handle());
+                           reply.model = state.configuration;
                            manager::ipc::send( state, message.process, reply);
                         };
                      }
 
-                     auto server( State& state)
-                     {
-                        return [&state]( const common::message::domain::configuration::server::Request& message)
-                        {
-                           Trace trace{ "domain::manager::handle::configuration::Server"};
-                           common::log::line( verbose::log, "message: ", message);
-
-                           auto reply = common::message::reverse::type( message);
-
-                           reply.resources = state.resources( message.process.pid);
-
-                           auto server = state.server( message.process.pid);
-
-                           if( server)
-                              reply.restrictions = server->restrictions;
-
-                           manager::ipc::send( state, message.process, reply);
-                        };
-                     }
                   } // configuration
     
                   namespace server
@@ -931,7 +908,7 @@ namespace casual
                         Policy( manager::State& state)
                            :  m_state( state) {}
 
-                        void configure( common::server::Arguments& arguments)
+                        void configure( common::server::Arguments&& arguments)
                         {
                            // no-op, we'll advertise our services when the broker comes online.
                         }
@@ -980,8 +957,7 @@ namespace casual
                handle::local::event::sub::task( state),
                handle::local::process::connect( state),
                handle::local::process::lookup( state),
-               handle::local::configuration::domain( state),
-               handle::local::configuration::server( state),
+               handle::local::configuration::request( state),
                handle::local::server::Handle{
                   manager::admin::services( state),
                   state}

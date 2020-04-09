@@ -873,32 +873,6 @@ namespace casual
 
             namespace resource
             {
-               void Lookup::operator () ( common::message::transaction::resource::lookup::Request& message)
-               {
-                  Trace trace{ "transaction::handle::resource::Lookup"};
-                  common::log::line( verbose::log, "message: ", message);
-
-                  auto reply = common::message::reverse::type( message);
-
-
-                  for( auto& proxy : m_state.resources)
-                  {
-                     if( common::algorithm::find( message.resources, proxy.name))
-                     {
-                        common::message::transaction::resource::Resource resource;
-
-                        resource.id = proxy.id;
-                        resource.key = proxy.key;
-                        resource.name = proxy.name;
-                        resource.openinfo = proxy.openinfo;
-                        resource.closeinfo = proxy.closeinfo;
-
-                        reply.resources.push_back( std::move( resource));
-                     }
-                  }
-
-                  common::communication::device::blocking::optional::send( message.process.ipc, reply);
-               }
 
                void Involved::operator () ( common::message::transaction::resource::involved::Request& message)
                {
@@ -1620,6 +1594,26 @@ namespace casual
                      }
 
                   } // resource
+
+                  namespace configuration
+                  {
+                     namespace alias
+                     {
+                        auto request( State& state)
+                        {
+                           return [&state]( const common::message::transaction::configuration::alias::Request& message)
+                           {
+                              Trace trace{ "transaction::handle::configuration::alias::request"};
+                              common::log::line( verbose::log, "message: ", message);
+
+                              auto reply = state.configuration( message);
+                              common::log::line( verbose::log, "reply: ", reply);
+
+                              common::communication::device::blocking::optional::send( message.process.ipc, reply);
+                           };
+                        }
+                     } // alias
+                  } // configuration
                } // <unnamed>
             } // local
 
@@ -1645,7 +1639,7 @@ namespace casual
                   handle::Commit{ state},
                   handle::Rollback{ state},
                   handle::resource::Involved{ state},
-                  handle::resource::Lookup{ state},
+                  local::configuration::alias::request( state),
                   local::resource::configuration::request( state),
                   local::resource::ready( state),
                   handle::resource::reply::Prepare{ state},

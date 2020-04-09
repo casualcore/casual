@@ -25,11 +25,12 @@ namespace casual
             {
                auto state()
                {
-                  return manager::State{ common::message::domain::configuration::service::Manager{}};
+                  return manager::State{ configuration::Model{}};
                }
                
             } // <unnamed>
          } // local
+         
          TEST( service_manager_state, admin_services)
          {
             common::unittest::Trace trace;

@@ -10,7 +10,7 @@
 #include "domain/manager/admin/server.h"
 #include "domain/common.h"
 
-#include "configuration/domain.h"
+#include "configuration/model.h"
 
 #include "common/event/listen.h"
 #include "common/message/handle.h"
@@ -201,13 +201,13 @@ namespace casual
                         }();
                         
 
-                        casual::configuration::domain::Manager result;
+                        casual::configuration::user::Domain result;
                         reply >> CASUAL_NAMED_VALUE( result);
                         common::log::line( casual::domain::log, "result: ", result);
                         return result;
                      }
 
-                     auto put( const casual::configuration::domain::Manager& domain)
+                     auto put( const casual::configuration::user::Domain& domain)
                      {
                         auto reply = [&]()
                         {
@@ -632,7 +632,7 @@ note: some aliases are unrestartable
                         void call( const std::string& name, const std::string& value, std::vector< std::string> aliases)
                         {
                            admin::model::set::Environment environment;
-                           environment.variables.variables.push_back( casual::configuration::environment::Variable{ name, value});
+                           environment.variables.variables.push_back( casual::configuration::user::environment::Variable{ name, value});
                            environment.aliases = std::move( aliases);
 
                            call::environment::set( environment);
@@ -766,7 +766,7 @@ for all servers and executables
                      {
                         void invoke( const std::string& format)
                         {
-                           casual::configuration::domain::Manager domain;
+                           casual::configuration::user::Domain domain;
                            auto archive = common::serialize::create::reader::consumed::from( format, std::cin);
                            archive >> CASUAL_NAMED_VALUE( domain);
 

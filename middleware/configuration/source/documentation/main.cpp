@@ -5,7 +5,7 @@
 //!
 
 
-#include "configuration/domain.h"
+#include "configuration/user.h"
 #include "configuration/example/domain.h"
 
 #include "configuration/example/build/server.h"

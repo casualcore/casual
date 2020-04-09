@@ -55,7 +55,7 @@ target = LinkExecutable( 'bin/casual-gateway-manager',
         common_archive,
         'casual-serviceframework', 
         'casual-common', 
-        'casual-configuration', 
+        'casual-domain-utility',
     ])
 
 install_bin.append( target)

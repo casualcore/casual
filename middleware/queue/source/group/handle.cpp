@@ -7,6 +7,7 @@
 
 #include "queue/group/handle.h"
 #include "queue/common/log.h"
+#include "queue/common/ipc/message.h"
 
 #include "common/message/handle.h"
 #include "common/event/listen.h"

@@ -86,7 +86,7 @@ domain:
             local::Clear clear;
 
             auto domain = local::domain( local::configuration);
-            transaction::context().configure( { local::link()}, {});
+            transaction::context().configure( { local::link()});
 
             EXPECT_TRUE( local::id() == strong::resource::id{ 1}) << "local::id(): " << local::id(); 
          }
@@ -97,7 +97,7 @@ domain:
             local::Clear clear;
 
             auto domain = local::domain( local::configuration);
-            transaction::context().configure( { local::link()}, {});
+            transaction::context().configure( { local::link()});
 
             EXPECT_TRUE( tx_begin() == TX_OK);
             // no rm involvement
@@ -116,7 +116,7 @@ domain:
             local::Clear clear;
 
             auto domain = local::domain( local::configuration);
-            transaction::context().configure( { local::link()}, {});
+            transaction::context().configure( { local::link()});
 
             auto id = local::id();
 

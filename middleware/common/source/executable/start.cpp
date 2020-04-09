@@ -29,7 +29,7 @@ namespace casual
                   code::raise::error( code::casual::invalid_semantics, "casual resource executable has to be built with named resources");
 
                // configure resources
-               transaction::context().configure( std::move( resources), {});
+               transaction::context().configure( std::move( resources));
 
                return user_main();
             }

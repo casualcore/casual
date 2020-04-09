@@ -13,7 +13,6 @@
 
 #include "casual/platform.h"
 #include "common/message/transaction.h"
-#include "common/message/domain.h"
 #include "common/message/pending.h"
 #include "common/algorithm.h"
 #include "common/metric.h"
@@ -22,6 +21,7 @@
 #include "common/serialize/native/complete.h"
 
 #include "configuration/resource/property.h"
+#include "configuration/model.h"
 
 #include <map>
 #include <deque>
@@ -41,8 +41,6 @@ namespace casual
          //! argument settings
          struct Settings
          {
-            Settings();
-
             std::string log;
          };
 
@@ -177,6 +175,7 @@ namespace casual
                      // Metrics metrics;
 
                      friend bool operator == ( const Proxy& lhs, const common::process::Handle& rhs);
+                     inline friend bool operator == ( const Proxy& lhs, id::type rhs) { return lhs.id == rhs;}
                   };
 
                   namespace proxy
@@ -424,7 +423,9 @@ namespace casual
 
          struct State
          {
-            State( std::string database);
+            State( manager::Settings settings, 
+               configuration::Model configuration,
+               std::vector< configuration::resource::Property> properties);
 
             State( State&&) = default;
             State& operator = ( State&&) = default;
@@ -453,8 +454,11 @@ namespace casual
 
             } pending;
 
-            
-            std::map< std::string, configuration::resource::Property> resource_properties;
+            struct
+            {
+               std::map< std::string, configuration::resource::Property> properties;
+            } resource;
+
 
             //! @return true if there are pending stuff to do. We can't block
             //! if we got stuff to do...
@@ -472,6 +476,7 @@ namespace casual
 
             state::resource::Proxy& get_resource( state::resource::id::type rm);
             state::resource::Proxy& get_resource( const std::string& name);
+            const state::resource::Proxy& get_resource( const std::string& name) const;
             state::resource::Proxy* find_resource( const std::string& name);
             state::resource::Proxy::Instance& get_instance( state::resource::id::type rm, common::strong::process::id pid);
 
@@ -482,6 +487,17 @@ namespace casual
             instance_range idle_instance( state::resource::id::type rm);
 
             const state::resource::external::Proxy& get_external( state::resource::id::type rm) const;
+
+            common::message::transaction::configuration::alias::Reply configuration(
+               const common::message::transaction::configuration::alias::Request& request);
+
+         private:
+
+            struct
+            {
+               std::map< std::string, std::vector< state::resource::id::type>> configuration;
+            } m_alias;
+            
          };
 
          namespace state
@@ -522,12 +538,7 @@ namespace casual
 
             };
 
-            void configure( State& state, const common::message::domain::configuration::Reply& configuration);
-
-
-
          } // state
-
 
       } // manager
    } // transaction

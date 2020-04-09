@@ -20,7 +20,7 @@
 
 #include "common/event/dispatch.h"
 
-#include "configuration/environment.h"
+#include "configuration/model.h"
 
 #include "common/serialize/macro.h"
 
@@ -63,6 +63,8 @@ namespace casual
                std::string note;
 
                std::vector< id_type> dependencies;
+               
+               //! only to help with TM configuration.
                std::vector< std::string> resources;
 
 
@@ -86,7 +88,6 @@ namespace casual
                   CASUAL_SERIALIZE( name);
                   CASUAL_SERIALIZE( note);
                   CASUAL_SERIALIZE( dependencies);
-                  CASUAL_SERIALIZE( resources);
                )
             };
 
@@ -242,12 +243,6 @@ namespace casual
 
                std::vector< instance_type> instances;
 
-               //! Resources bound explicitly to this executable (if it's a server)
-               std::vector< std::string> resources;
-
-               //! If it's a server, the service restrictions. What will, at most, be advertised.
-               std::vector< std::string> restrictions;
-
                instances_range spawnable();
                const_instances_range spawnable() const;
                const_instances_range shutdownable() const;
@@ -265,8 +260,6 @@ namespace casual
 
                CASUAL_LOG_SERIALIZE({
                   Process::serialize( archive);;
-                  CASUAL_SERIALIZE( resources);
-                  CASUAL_SERIALIZE( restrictions);
                   CASUAL_SERIALIZE( instances);
                })
             };
@@ -370,13 +363,9 @@ namespace casual
                common::message::event::Error
             > event;
 
-      
-
-            //! global/default environment variables
-            casual::configuration::Environment environment;
 
             //! this domain's original configuration.
-            common::message::domain::configuration::Domain configuration;
+            casual::configuration::Model configuration;
 
             //! Runlevel can only "go forward"
             //! @{
@@ -433,11 +422,6 @@ namespace casual
             //! @return all 'running' id:s of 'aliases' that are untouchable, ie. internal casual stuff.
             std::tuple< std::vector< state::Server::id_type>, std::vector< state::Executable::id_type>> untouchables() const noexcept;
 
-            //! Extract all resources (names) configured to a specific process (server)
-            //!
-            //! @param pid process id
-            //! @return resource names
-            std::vector< std::string> resources( common::strong::process::id pid);
 
             CASUAL_LOG_SERIALIZE
             (
@@ -447,7 +431,6 @@ namespace casual
                CASUAL_SERIALIZE( servers);
                CASUAL_SERIALIZE( executables);
                CASUAL_SERIALIZE( group_id);
-               CASUAL_SERIALIZE( environment);
                CASUAL_SERIALIZE( configuration);
             )
 

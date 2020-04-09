@@ -35,6 +35,7 @@ common_archive = LinkArchive( 'bin/casual-domain-common',
 
 manager_archive = LinkArchive( 'bin/casual-domain-manager', 
  [
+    Compile( 'source/transform.cpp'),
     Compile( 'source/manager/ipc.cpp'),
     Compile( 'source/manager/task.cpp'),
     Compile( 'source/manager/task/create.cpp'),
@@ -43,14 +44,14 @@ manager_archive = LinkArchive( 'bin/casual-domain-manager',
     Compile( 'source/manager/handle.cpp'),
     Compile( 'source/manager/admin/server.cpp'),
     Compile( 'source/manager/configuration.cpp'),
-    Compile( 'source/transform.cpp'),
     Compile( 'source/manager/manager.cpp'),
 ])
 
-
-pending_library = LinkLibrary( 'bin/casual-domain-pending-message',
+# utility for other 'managers'
+pending_library = LinkLibrary( 'bin/casual-domain-utility',
     [
         Compile( 'source/pending/message/send.cpp'),
+        Compile( 'source/configuration/fetch.cpp'),
     ],
     [
         common_archive,

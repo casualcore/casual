@@ -10,6 +10,8 @@
 #include "domain/manager/configuration.h"
 #include "domain/transform.h"
 
+#include "configuration/model.h"
+#include "configuration/model/transform.h"
 
 #include "serviceframework/service/protocol.h"
 
@@ -53,7 +55,8 @@ namespace casual
                   {
                      auto environment( manager::State& state, const model::set::Environment& environment)
                      {
-                        const auto variables = transform::environment::variables( environment.variables);
+                        const auto variables = casual::configuration::user::environment::transform( 
+                           casual::configuration::user::environment::fetch( environment.variables));
 
                         auto update_environment = [&variables]( auto& entity)
                         {
@@ -199,10 +202,15 @@ namespace casual
                         {
                            return [&state]( common::service::invoke::Parameter&& parameter)
                            {
+                              auto get_configuration = [&state]()
+                              {
+                                 return casual::configuration::model::transform( 
+                                    casual::domain::manager::configuration::get( state));
+                              };
+
                               return serviceframework::service::user( 
                                  serviceframework::service::protocol::deduce( std::move( parameter)),
-                                 []( auto& state){ return casual::domain::manager::configuration::get( state);},
-                                 state);
+                                 get_configuration);
                            };
                         }
 
@@ -212,12 +220,18 @@ namespace casual
                            {
                               auto protocol = serviceframework::service::protocol::deduce( std::move( parameter));
 
-                              casual::configuration::domain::Manager domain;
-                              protocol >> CASUAL_NAMED_VALUE( domain);
+                              auto model = [&]()
+                              {
+                                 casual::configuration::user::Domain domain;
+                                 protocol >> CASUAL_NAMED_VALUE( domain);
+
+                                 return casual::configuration::model::transform( std::move( domain));
+                              }();
+
 
                               return serviceframework::service::user( 
                                  std::move( protocol),
-                                 [&](){ return casual::domain::manager::configuration::put( state, std::move( domain));});
+                                 [&](){ return casual::domain::manager::configuration::put( state, std::move( model));});
                            };
                         }
                      } // configuration

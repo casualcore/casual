@@ -556,25 +556,10 @@ namespace casual
          }
 
 
-         std::vector< std::string> State::resources( common::strong::process::id pid)
-         {
-            auto process = server( pid);
-
-            if( ! process)
-               return {};
-
-            auto resources = process->resources;
-
-            for( auto& id : process->memberships)
-               common::algorithm::append(  State::group( id).resources, resources);
-
-            return range::to_vector( algorithm::unique( algorithm::sort( resources)));
-         }
-
-
          std::vector< common::environment::Variable> State::variables( const std::vector< common::environment::Variable>& variables)
          {
-            auto result = casual::configuration::environment::transform( casual::configuration::environment::fetch( environment));
+            //auto result = casual::configuration::environment::transform( casual::configuration::environment::fetch( environment));
+            auto result = configuration.domain.environment.variables;
             algorithm::append( variables, result);
             return result;
          }

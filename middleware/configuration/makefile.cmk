@@ -23,22 +23,17 @@ intall_libs = []
 lib_configuration = LinkLibrary( 'bin/casual-configuration',
     [
         Compile( 'source/common.cpp'),
-        Compile( 'source/file.cpp'),
-        Compile( 'source/environment.cpp'),
-        Compile( 'source/domain.cpp'),
-        Compile( 'source/queue.cpp'),
-        Compile( 'source/gateway.cpp'),
-        Compile( 'source/executable.cpp'),
-        Compile( 'source/service.cpp'),
-        Compile( 'source/group.cpp'),
-        Compile( 'source/transaction.cpp'),
+        Compile( 'source/user.cpp'),
+        Compile( 'source/user/file.cpp'),
+        Compile( 'source/user/load.cpp'),
+        Compile( 'source/user/environment.cpp'),
+        Compile( 'source/model/transform.cpp'),
+        Compile( 'source/model/load.cpp'),
         
         Compile( 'source/build/server.cpp'),
         Compile( 'source/build/executable.cpp'),
         
         Compile( 'source/resource/property.cpp'),
-        
-        Compile( 'source/message/transform.cpp'),
     ],
     ['casual-common',
     'casual-serviceframework'])
@@ -58,18 +53,13 @@ example_archive = LinkArchive( 'bin/casual-configuration-example',
 # Unittest
 LinkUnittest( 'bin/test-casual-configuration',
    [
-        Compile( 'unittest/source/test_domain.cpp'),
-        Compile( 'unittest/source/test_queue.cpp'),
-        Compile( 'unittest/source/test_gateway.cpp'),
-        Compile( 'unittest/source/test_message.cpp'),
+        Compile( 'unittest/source/test_model.cpp'),
         Compile( 'unittest/source/test_environment.cpp'),
-        Compile( 'unittest/source/test_transaction.cpp'),
-
         
         Compile( 'unittest/source/resource/test_property.cpp'),
         Compile( 'unittest/source/build/test_server.cpp'),
+        Compile( 'unittest/source/user/test_accumulate.cpp'),
 
-        Compile( 'unittest/source/domain/test_accumulate.cpp'),
    ],
    [ 
        example_archive, 

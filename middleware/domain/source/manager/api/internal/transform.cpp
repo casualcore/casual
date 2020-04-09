@@ -32,7 +32,6 @@ namespace casual
                         result.name = std::move( group.name);
                         result.note = std::move( group.note);
                         result.dependencies = std::move( group.dependencies);
-                        result.resources = std::move( group.resources);
                         return result;
                      };
 

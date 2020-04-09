@@ -6,6 +6,7 @@
 
 #include "queue/common/log.h"
 #include "queue/common/ipc.h"
+#include "queue/common/ipc/message.h"
 #include "queue/forward/state.h"
 #include "queue/forward/handle.h"
 
@@ -30,7 +31,7 @@ namespace casual
 
                   communication::device::blocking::send( 
                      ipc::queue::manager(),
-                     message::queue::forward::configuration::Request{ process::handle()});
+                     ipc::message::forward::configuration::Request{ process::handle()});
                }
 
                auto condition( State& state)

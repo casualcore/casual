@@ -55,34 +55,6 @@ namespace casual
                void exit( const common::process::lifetime::Exit& exit);   
             } // process
 
-         
-            //! service-manager needs to have it's own policy for callee::handle::basic_call, since
-            //! we can't communicate with blocking to the same device (with read, who is
-            //! going to write? with write, what if the device is full?)
-            struct Policy
-            {
-               Policy( manager::State& state) : m_state( state) {}
-
-               void configure( common::server::Arguments&);
-               void reply( common::strong::ipc::id id, common::message::service::call::Reply& message);
-               void ack( const common::message::service::call::ACK& ack);
-
-               void transaction(
-                     const common::transaction::ID& trid,
-                     const common::server::Service& service,
-                     const platform::time::unit& timeout,
-                     const platform::time::point::type& now);
-
-               common::message::service::Transaction transaction( bool commit);
-               void forward( common::service::invoke::Forward&& forward, const common::message::service::call::callee::Request& message);
-               void statistics( common::strong::ipc::id, common::message::event::service::Call&);
-
-            private:
-               manager::State& m_state;
-            };
-
-            using Call = common::server::handle::basic_call< manager::handle::Policy>;
-
             using dispatch_type = decltype( common::message::dispatch::handler( ipc::device()));
 
          } // handle

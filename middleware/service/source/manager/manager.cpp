@@ -25,10 +25,9 @@
 
 #include "common/communication/instance.h"
 
-#include "serviceframework/log.h"
+#include "domain/configuration/fetch.h"
 
 
-// std
 #include <fstream>
 #include <algorithm>
 #include <iostream>
@@ -56,14 +55,6 @@ namespace casual
                   }
                } // forward
 
-               auto domain()
-               {
-                  Trace trace{ "service::local::configure::domain"};
-
-                  return communication::ipc::call( 
-                     communication::instance::outbound::domain::manager::device(), 
-                     common::message::domain::configuration::Request{ process::handle()}).domain.service;
-               }
 
                auto state( manager::Settings settings)
                {
@@ -75,7 +66,7 @@ namespace casual
                      common::process::handle());
 
                   // Get configuration from domain-manager
-                  manager::State state{ domain()};
+                  manager::State state{ casual::domain::configuration::fetch()};
 
                   // Start forward
                   {

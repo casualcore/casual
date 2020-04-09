@@ -12,11 +12,6 @@
 #include "common/service/lookup.h"
 #include "common/communication/instance.h"
 
-#include "common/message/domain.h"
-
-#include "common/code/raise.h"
-#include "common/code/xatmi.h"
-
 #include "common/log.h"
 #include "common/execute.h"
 
@@ -52,35 +47,18 @@ namespace casual
                         }
                      }
 
-                     namespace configure
+                     void advertise( std::vector< server::Service> services)
                      {
-                        void services(
-                           std::vector< server::Service> services,
-                           std::vector< std::string> restrictions)
+                        local::advertise( algorithm::transform( services, []( auto& service)
                         {
-                           Trace trace{ "common::server::local::configure::services"};
+                           message::service::advertise::Service result;
+                           result.name = service.name;
+                           result.category = service.category;
+                           result.transaction = service.transaction;
 
-                           // if this server has restrictions, we intersect.
-                           if( ! restrictions.empty())
-                              algorithm::trim( services, std::get< 0>( algorithm::intersection( services, restrictions)));
-                           
-                           // transform the non-routes directly (the complement of the intersection)
-                           auto advertise = algorithm::transform( services, []( auto& service)
-                           {
-                              return message::service::advertise::Service{ service.name, service.category, service.transaction};
-                           });
-                           
-                           local::advertise( std::move( advertise));
-                        }
+                           return result;
+                        }));
 
-                     } // configure
-
-                     message::domain::configuration::server::Reply configuration()
-                     {
-                        message::domain::configuration::server::Request request;
-                        request.process = process::handle();
-
-                        return communication::ipc::call( communication::instance::outbound::domain::manager::device(), request);
                      }
 
                   } // <unnamed>
@@ -89,26 +67,23 @@ namespace casual
                namespace call
                {
 
-                  void Default::configure( server::Arguments& arguments)
+                  void Default::configure( server::Arguments&& arguments)
                   {
                      Trace trace{ "server::handle::policy::Default::configure"};
+                     log::line( verbose::log, "arguments: ", arguments);
 
                      // Connection to the domain has been done before...
 
-                     // Ask domain-manager for our configuration
-                     auto configuration = policy::local::configuration();
-
                      // configure resources, if any.
-                     transaction::Context::instance().configure( arguments.resources, std::move( configuration.resources));
+                     transaction::Context::instance().configure( arguments.resources);
 
                      // Let the service-manager know about our services...
-                     policy::local::configure::services( arguments.services, std::move( configuration.restrictions));
+                     policy::local::advertise( std::move( arguments.services));
                   }
 
                   void Default::reply( strong::ipc::id id, message::service::call::Reply& message)
                   {
                      Trace trace{ "server::handle::policy::Default::reply"};
-
                      log::line( log::debug, "reply: ", message);
 
                      communication::device::blocking::send( id, message);
@@ -266,14 +241,14 @@ namespace casual
                   }
 
 
-                  void Admin::configure( server::Arguments& arguments)
+                  void Admin::configure( server::Arguments&& arguments)
                   {
                      // Connection to the domain has been done before...
 
                      if( ! arguments.resources.empty())
                         code::raise::error( code::casual::invalid_semantics, "can't build and link an administration server with resources");
 
-                     policy::local::configure::services( arguments.services, {});
+                     policy::local::advertise( std::move( arguments.services));
 
                   }
 

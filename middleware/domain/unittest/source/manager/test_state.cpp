@@ -109,7 +109,7 @@ domain:
 
 )" );
 
-            EXPECT_TRUE( state.variables( state.executables.at( 0)).size() == 2) << CASUAL_NAMED_VALUE( state.environment);
+            EXPECT_TRUE( state.variables( state.executables.at( 0)).size() == 2) << CASUAL_NAMED_VALUE( state);
          }
 
          TEST( domain_state_environemnt, default_2___explict_2___expect_4_variables)

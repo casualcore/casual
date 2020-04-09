@@ -11,7 +11,7 @@
 #include "domain/manager/admin/model.h"
 #include "domain/manager/state.h"
 
-#include "configuration/domain.h"
+#include "configuration/model.h"
 
 namespace casual
 {
@@ -20,15 +20,13 @@ namespace casual
       namespace transform
       {
          manager::admin::model::State state( const manager::State& state);
-         manager::State state( casual::configuration::domain::Manager domain);
 
-         namespace environment
-         {
-            std::vector< common::environment::Variable> variables( const casual::configuration::Environment& environment);
-         } // environment
+         manager::State model( configuration::Model domain);
+         configuration::Model model( const manager::State& state);
 
-         std::vector< manager::state::Executable> executables( const std::vector< casual::configuration::Executable>& values, const std::vector< manager::state::Group>& groups);
-         std::vector< manager::state::Server> executables( const std::vector< casual::configuration::Server>& values, const std::vector< manager::state::Group>& groups);
+
+         std::vector< manager::state::Executable> alias( const std::vector< configuration::model::domain::Executable>& values, const std::vector< manager::state::Group>& groups);
+         std::vector< manager::state::Server> alias( const std::vector< configuration::model::domain::Server>& values, const std::vector< manager::state::Group>& groups);
 
       } // transform
    } // domain

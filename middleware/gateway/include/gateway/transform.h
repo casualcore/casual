@@ -11,7 +11,7 @@
 #include "gateway/manager/state.h"
 
 #include "gateway/manager/admin/model.h"
-#include "common/message/domain.h"
+#include "configuration/model.h"
 
 
 namespace casual
@@ -21,7 +21,7 @@ namespace casual
       namespace transform
       {
 
-         manager::State state( const common::message::domain::configuration::Domain& configuration);
+         manager::State state( configuration::model::gateway::Model configuration);
 
          manager::admin::model::State state( const manager::State& state);
 

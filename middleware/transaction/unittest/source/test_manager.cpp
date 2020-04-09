@@ -309,7 +309,7 @@ resources:
       }
 
 
-      TEST( transaction_manager, resource_lookup_request)
+      TEST( transaction_manager, configuration_resource_alias_request)
       {
          common::unittest::Trace trace;
 
@@ -348,8 +348,7 @@ domain:
 
          local::Domain domain( std::move( configuration));
 
-         common::message::transaction::resource::lookup::Request request;
-         request.process = common::process::handle();
+         common::message::transaction::configuration::alias::Request request{ common::process::handle()};
          request.resources = { "rm2"};
 
          auto reply = common::communication::ipc::call( common::communication::instance::outbound::transaction::manager::device(), request);
@@ -1545,6 +1544,28 @@ domain:
          }
       }
 
+      TEST( transaction_manager, 1_local_RM_xa_start__error___begin____expect_TX_ERROR__no_started_transaction)
+      {
+         common::unittest::Trace trace;
+
+         // we set unittest environment variable to set "error"
+         common::environment::variable::set( "CASUAL_UNITTEST_OPEN_INFO_RM1", 
+            "--start " + std::to_string( XAER_RMFAIL));
+
+         local::Domain domain;
+
+         // configure the local rm - will get XAER_RMFAIL on xa_start
+         common::transaction::context().configure( { { "rm-mockup", "rm1", &casual_mockup_xa_switch_static}});
+
+         EXPECT_TRUE( local::begin() == common::code::tx::error);
+
+         EXPECT_TRUE( ! common::transaction::context().current()) << CASUAL_NAMED_VALUE( common::transaction::context().current());
+
+         // unittest only...
+         common::transaction::context().clear();
+      }
+
+/* TODO rewrite!
 
       TEST( transaction_manager, one_local_resource__configure)
       {
@@ -1576,26 +1597,9 @@ domain:
          });
       }
 
-      TEST( transaction_manager, 1_local_RM_xa_start__error___begin____expect_TX_ERROR__no_started_transaction)
-      {
-         common::unittest::Trace trace;
+      */
 
-         // we set unittest environment variable to set "error"
-         common::environment::variable::set( "CASUAL_UNITTEST_OPEN_INFO_RM1", 
-            "--start " + std::to_string( XAER_RMFAIL));
 
-         local::Domain domain;
-
-         // configure the local rm - will get XAER_RMFAIL on xa_start
-         common::transaction::context().configure( { { "rm-mockup", "rm1", &casual_mockup_xa_switch_static}}, {});
-
-         EXPECT_TRUE( local::begin() == common::code::tx::error);
-
-         EXPECT_TRUE( ! common::transaction::context().current()) << CASUAL_NAMED_VALUE( common::transaction::context().current());
-
-         // unittest only...
-         common::transaction::context().clear();
-      }
    
    } // transaction
 

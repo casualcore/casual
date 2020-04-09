@@ -32,35 +32,6 @@ namespace casual
          {
             namespace
             {
-               namespace detail
-               {
-                  template< typename V>
-                  auto value( V&& value, traits::priority::tag< 1>)
-                     -> decltype( value->second)&
-                  {
-                     return value->second;
-                  }
-
-                  template< typename V>
-                  auto value( V&& value, traits::priority::tag< 0>)
-                     -> decltype( *value)&
-                  {
-                     return *value;
-                  }
-               } // detail
-
-
-               template< typename C, typename ID>
-               auto get( C& container, ID&& id) 
-                  -> decltype( detail::value( common::algorithm::find( container, id), traits::priority::tag< 1>{}))
-               {
-                  if( auto found = common::algorithm::find( container, id))
-                     return detail::value( found, traits::priority::tag< 1>{});
-
-                  code::raise::generic( code::casual::domain_instance_unavailable, verbose::log, "missing id: ", id);
-               }
-
-
                namespace equal
                {
                   auto service( const std::string& name)
@@ -79,7 +50,6 @@ namespace casual
 
          namespace state
          {
-
             namespace instance
             {
                void Sequential::reserve(
@@ -176,7 +146,10 @@ namespace casual
 
                state::instance::Sequential& Advertised::sequential( common::strong::process::id instance)
                {
-                  return local::get( instances.sequential, instance);
+                  if( auto found = algorithm::find( instances.sequential, instance))
+                     return *found;
+
+                  code::raise::generic( code::casual::domain_instance_unavailable, verbose::log, "missing id: ", instance);
                }
 
             } // service
@@ -188,7 +161,6 @@ namespace casual
                pending += metric.pending;
                last = metric.end;
             }
-
 
             void Service::add( state::instance::Sequential& instance)
             {
@@ -235,8 +207,8 @@ namespace casual
             }
          } // state
 
-         State::State( common::message::domain::configuration::service::Manager configuration)
-            : default_timeout{ configuration.default_timeout}
+         State::State( configuration::Model configuration)
+            : default_timeout{ configuration.service.timeout}
          {
             Trace trace{ "service::manager::State::State"};
 
@@ -259,7 +231,7 @@ namespace casual
                }
             };
 
-            algorithm::for_each( configuration.services, add_service);
+            algorithm::for_each( configuration.service.services, add_service);
          }
 
          state::Service* State::service( const std::string& name)

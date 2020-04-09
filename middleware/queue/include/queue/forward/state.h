@@ -49,14 +49,14 @@ namespace casual
                struct Source
                {
                   common::strong::queue::id id;
-                  std::string name;
+                  std::string queue;
                   common::process::Handle process;
 
                   explicit operator bool () const { return id && process;}
 
                   CASUAL_LOG_SERIALIZE(
                      CASUAL_SERIALIZE( id);
-                     CASUAL_SERIALIZE( name);
+                     CASUAL_SERIALIZE( queue);
                      CASUAL_SERIALIZE( process);
                   )
                };
@@ -125,10 +125,10 @@ namespace casual
                {
                   struct Target
                   {
-                     std::string name;
+                     std::string service;
                      
                      CASUAL_LOG_SERIALIZE(
-                        CASUAL_SERIALIZE( name);
+                        CASUAL_SERIALIZE( service);
                      )
                   };
 

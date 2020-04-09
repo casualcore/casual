@@ -7,7 +7,6 @@
 
 #pragma once
 
-
 #include "common/message/type.h"
 
 #include "common/strong/id.h"
@@ -167,6 +166,61 @@ namespace casual
                static_assert( traits::is_movable< Reply>::value, "not movable");
             } // rollback
 
+            namespace configuration
+            {
+               struct Resource
+               {
+                  strong::resource::id id;
+                  std::string name;
+                  std::string key;
+                  std::string openinfo;
+                  std::string closeinfo;
+
+                  CASUAL_CONST_CORRECT_SERIALIZE(
+                     CASUAL_SERIALIZE( id);
+                     CASUAL_SERIALIZE( name);
+                     CASUAL_SERIALIZE( key);
+                     CASUAL_SERIALIZE( openinfo);
+                     CASUAL_SERIALIZE( closeinfo);
+                  )
+               };
+
+               namespace alias
+               {
+                  using base_request = basic_request< Type::transaction_configuration_alias_request>;
+                  struct Request : base_request
+                  {
+                     using base_request::base_request;
+                     
+                     std::string alias;
+                     //! named resources
+                     std::vector< std::string> resources;
+
+                     CASUAL_CONST_CORRECT_SERIALIZE
+                     (
+                        base_request::serialize( archive);
+                        CASUAL_SERIALIZE( alias);
+                        CASUAL_SERIALIZE( resources);
+                     )                     
+                  };
+
+                  using base_reply = basic_message< Type::transaction_configuration_alias_reply>;
+                  struct Reply : base_reply
+                  {
+                     using base_reply::base_reply;
+
+                     std::vector< Resource> resources;
+
+                     CASUAL_CONST_CORRECT_SERIALIZE
+                     (
+                        base_reply::serialize( archive);
+                        CASUAL_SERIALIZE( resources);
+                     ) 
+                  };
+               } // alias
+               
+            } // configuration
+
 
             namespace resource
             {
@@ -174,55 +228,6 @@ namespace casual
                {
                   using type = strong::resource::id;
                } // id
-
-               struct Resource
-               {
-                  id::type id;
-                  std::string name;
-                  std::string key;
-
-                  std::string openinfo;
-                  std::string closeinfo;
-
-                  CASUAL_CONST_CORRECT_SERIALIZE(
-                  {
-                     CASUAL_SERIALIZE( id);
-                     CASUAL_SERIALIZE( name);
-                     CASUAL_SERIALIZE( key);
-                     CASUAL_SERIALIZE( openinfo);
-                     CASUAL_SERIALIZE( closeinfo);
-                  })
-               };
-
-               namespace lookup
-               {
-                  using base_request =  message::basic_request< Type::transaction_resource_lookup_request>;
-                  struct Request : base_request
-                  {
-                     std::vector< std::string> resources;
-
-                     CASUAL_CONST_CORRECT_SERIALIZE(
-                     {
-                        base_request::serialize( archive);
-                        CASUAL_SERIALIZE( resources);
-                     })
-                  };
-                  static_assert( traits::is_movable< Request>::value, "not movable");
-
-                  using base_reply = message::basic_reply< Type::transaction_resource_lookup_reply>;
-                  struct Reply : base_reply
-                  {
-                     std::vector< Resource> resources;
-
-                     CASUAL_CONST_CORRECT_SERIALIZE(
-                     {
-                        base_reply::serialize( archive);
-                        CASUAL_SERIALIZE( resources);
-                     })
-                  };
-                  static_assert( traits::is_movable< Reply>::value, "not movable");
-
-               } // lookup
 
                template< message::Type type>
                struct basic_reply : transaction::basic_reply< code::xa, type>
@@ -258,7 +263,7 @@ namespace casual
                   };
 
                   using base_reply = basic_message< Type::transaction_resource_involved_reply>;
-                  struct Reply : basic_message< Type::transaction_resource_involved_reply>
+                  struct Reply : base_reply
                   {
                      //! resources involved prior to the request
                      std::vector< strong::resource::id> involved;
@@ -308,7 +313,7 @@ namespace casual
                   {
                      using base_reply::base_reply;
 
-                     resource::Resource resource;
+                     transaction::configuration::Resource resource;
 
                      CASUAL_CONST_CORRECT_SERIALIZE(
                      {
@@ -365,10 +370,7 @@ namespace casual
                namespace external
                {
 
-                  struct Involved : basic_transaction< Type::transaction_external_resource_involved>
-                  {
-                  };
-                  static_assert( traits::is_movable< Involved>::value, "not movable");
+                  using Involved = basic_transaction< Type::transaction_external_resource_involved>;
 
                   namespace involved
                   {
@@ -398,10 +400,10 @@ namespace casual
             struct type_traits< transaction::rollback::Request> : detail::type< transaction::rollback::Reply> {};
 
             template<>
-            struct type_traits< transaction::resource::involved::Request> : detail::type< transaction::resource::involved::Reply> {};
+            struct type_traits< transaction::configuration::alias::Request> : detail::type< transaction::configuration::alias::Reply> {};
 
             template<>
-            struct type_traits< transaction::resource::lookup::Request> : detail::type< transaction::resource::lookup::Reply> {};
+            struct type_traits< transaction::resource::involved::Request> : detail::type< transaction::resource::involved::Reply> {};
 
             template<>
             struct type_traits< transaction::resource::prepare::Request> : detail::type< transaction::resource::prepare::Reply> {};
@@ -409,6 +411,8 @@ namespace casual
             struct type_traits< transaction::resource::commit::Request> : detail::type< transaction::resource::commit::Reply> {};
             template<>
             struct type_traits< transaction::resource::rollback::Request> : detail::type< transaction::resource::rollback::Reply> {};
+
+            
 
             template<>
             struct type_traits< transaction::resource::configuration::Request> : detail::type< transaction::resource::configuration::Reply> {};

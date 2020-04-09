@@ -71,7 +71,7 @@ namespace casual
             //! to possible listeners
             //! then: raise the code
             template< typename Code, typename... Ts>
-            auto raise( Code code, Ts&&... ts)
+            [[noreturn]] void raise( Code code, Ts&&... ts)
             {
                auto message = string::compose( std::forward< Ts>( ts)...);
                detail::send( code, Severity::error, message);

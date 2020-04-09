@@ -12,9 +12,7 @@
 #include "gateway/transform.h"
 #include "gateway/common.h"
 
-#include "configuration/domain.h"
-#include "configuration/message/transform.h"
-
+#include "domain/configuration/fetch.h"
 
 #include "common/environment.h"
 #include "common/exception/handle.h"
@@ -49,18 +47,11 @@ namespace casual
                   // Set environment variable to make it easier for connections to get in
                   // touch with us
                   common::environment::variable::process::set(
-                        common::environment::variable::name::ipc::gateway::manager,
-                        process::handle());
-
+                     common::environment::variable::name::ipc::gateway::manager,
+                     process::handle());
 
                   // Ask domain manager for configuration
-                  common::message::domain::configuration::Request request{ process::handle()};
-
-                  return gateway::transform::state(
-                     communication::ipc::call(
-                        communication::instance::outbound::domain::manager::device(),
-                        request).domain);
-
+                  return gateway::transform::state( casual::domain::configuration::fetch().gateway);
                }
 
                namespace dispatch

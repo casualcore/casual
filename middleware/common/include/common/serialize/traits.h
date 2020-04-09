@@ -140,6 +140,24 @@ namespace casual
                         || common::traits::has::any::base< common::traits::remove_cvref_t< T>, std::string, platform::binary::type>::value
                      >;
                   } // read
+
+                  namespace detail
+                  {
+                     template< typename A>
+                     constexpr auto input( A& archive, priority::tag< 0>) { return false;}
+
+                     template< typename A>
+                     constexpr auto input( A& archive, priority::tag< 1>) -> decltype( void( archive >> std::declval< long&>()), bool())
+                     {
+                        return true;
+                     }
+                  } // detail
+
+                  template< typename A>
+                  constexpr auto input( A& archive) -> decltype( detail::input( archive, priority::tag< 1>{}))
+                  {
+                     return detail::input( archive, priority::tag< 1>{});
+                  }
                } // archive
 
                namespace named

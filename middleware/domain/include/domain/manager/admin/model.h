@@ -10,7 +10,7 @@
 #include "common/serialize/macro.h"
 #include "casual/platform.h"
 
-#include "configuration/environment.h"
+#include "configuration/user/environment.h"
 
 #include "common/domain.h"
 
@@ -308,7 +308,7 @@ namespace casual
                   {
                      struct Environment
                      {
-                        casual::configuration::Environment variables;
+                        casual::configuration::user::Environment variables;
                         std::vector< std::string> aliases;
 
                         CASUAL_CONST_CORRECT_SERIALIZE

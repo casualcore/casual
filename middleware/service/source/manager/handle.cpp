@@ -20,6 +20,8 @@
 
 #include "common/communication/instance.h"
 
+#include "configuration/message.h"
+
 #include "domain/pending/message/send.h"
 
 // std
@@ -612,7 +614,7 @@ namespace casual
                   {
                      return [&state]( const common::message::service::call::ACK& message)
                      {
-                        Trace trace{ "service::manager::local::handle::ack"};
+                        Trace trace{ "service::manager::handle::local::ack"};
                         log::line( verbose::log, "message: ", message);
 
                         // This message can only come from a local instance
@@ -657,48 +659,91 @@ namespace casual
                         }
                      };
                   }
+
+
+                  namespace configuration
+                  {
+                     namespace update
+                     {
+                        auto request( State& state)
+                        {
+                           return []( casual::configuration::message::update::Request& message)
+                           {
+                              Trace trace{ "service::manager::handle::local::configuration::update::request"};
+                              log::line( verbose::log, "message: ", message);
+
+
+                              auto reply = message::reverse::type( message);
+                              eventually::send( message.process, reply);
+
+                           };
+                        }
+                     } // update
+
+                  } // configuration
+
+
+                  //! service-manager needs to have it's own policy for callee::handle::basic_call, since
+                  //! we can't communicate with blocking to the same queue (with read, who is
+                  //! going to write? with write, what if the queue is full?)
+                  struct Policy
+                  {
+
+                     Policy( manager::State& state) : m_state( &state) {}
+
+                     Policy( Policy&&) = default;
+                     Policy& operator = ( Policy&&) = default;
+
+                     void configure( common::server::Arguments&& arguments)
+                     {
+                        m_state->connect_manager( std::move( arguments.services));
+                     }
+
+                     void reply( common::strong::ipc::id id, common::message::service::call::Reply& message)
+                     {
+                        communication::device::blocking::send( id, message);
+                     }
+
+                     void ack( const common::message::service::call::ACK& ack)
+                     {
+                        local::ack( *m_state)( ack);
+                     }
+
+                     void transaction(
+                           const common::transaction::ID& trid,
+                           const common::server::Service& service,
+                           const platform::time::unit& timeout,
+                           const platform::time::point::type& now)
+                     {
+                        // service-manager doesn't bother with transactions...
+                     }
+
+                     common::message::service::Transaction transaction( bool commit)
+                     {
+                        // service-manager doesn't bother with transactions...
+                        return {};
+                     }
+
+                     void forward( common::service::invoke::Forward&& forward, const common::message::service::call::callee::Request& message)
+                     {
+                        assert( ! "can't forward within service-manager");
+                        std::terminate();
+                     }
+
+                     void statistics( common::strong::ipc::id, common::message::event::service::Call&)
+                     {
+                        // We don't collect statistics for the service-manager
+                     }
+
+                  private:
+                     manager::State* m_state;
+                  };
+
+                  using Call = common::server::handle::basic_call< Policy>;
+                  
                } // <unnamed>
             } // local
 
-            void Policy::configure( common::server::Arguments& arguments)
-            {
-               m_state.connect_manager( arguments.services);
-            }
-
-            void Policy::reply( common::strong::ipc::id id, common::message::service::call::Reply& message)
-            {
-               communication::device::blocking::send( id, message);
-            }
-
-            void Policy::ack( const common::message::service::call::ACK& ack)
-            {
-               local::ack( m_state)( ack);
-            }
-
-            void Policy::transaction(
-                  const common::transaction::ID& trid,
-                  const common::server::Service& service,
-                  const platform::time::unit& timeout,
-                  const platform::time::point::type& now)
-            {
-               // service-manager doesn't bother with transactions...
-            }
-
-            common::message::service::Transaction Policy::transaction( bool commit)
-            {
-               // service-manager doesn't bother with transactions...
-               return {};
-            }
-
-            void Policy::forward( common::service::invoke::Forward&& forward, const common::message::service::call::callee::Request& message)
-            {
-               code::raise::error( code::casual::invalid_semantics, "can't forward within service-manager");
-            }
-
-            void Policy::statistics( common::strong::ipc::id, common::message::event::service::Call&)
-            {
-               // We don't collect statistics for the service-manager
-            }
          } // handle
 
          handle::dispatch_type handler( State& state)
@@ -715,9 +760,10 @@ namespace casual
                handle::local::ack( state),
                handle::local::event::subscription::begin( state),
                handle::local::event::subscription::end( state),
-               handle::Call{ admin::services( state), state},
+               handle::local::Call{ admin::services( state), state},
                handle::local::domain::discover::request( state),
                handle::local::domain::discover::reply( state),
+               handle::local::configuration::update::request( state),
             };
          }
       } // manager

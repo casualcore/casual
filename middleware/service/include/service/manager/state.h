@@ -4,11 +4,8 @@
 //! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-
 #pragma once
 
-
-#include "common/message/domain.h"
 #include "common/message/gateway.h"
 #include "common/message/service.h"
 #include "common/message/pending.h"
@@ -17,6 +14,8 @@
 #include "common/server/service.h"
 #include "common/communication/ipc.h"
 #include "common/event/dispatch.h"
+
+#include "configuration/model.h"
 
 #include <vector>
 #include <string>
@@ -314,12 +313,9 @@ namespace casual
             };
          } // state
 
-
-
          struct State
          {
-
-            State( common::message::domain::configuration::service::Manager configuration);
+            State( configuration::Model model);
 
             State( State&&) = default;
             State& operator = (State&&) = default;

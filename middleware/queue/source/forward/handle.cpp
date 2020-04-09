@@ -7,9 +7,8 @@
 #include "queue/forward/state.h"
 #include "queue/common/log.h"
 #include "queue/common/ipc.h"
+#include "queue/common/ipc/message.h"
 
-
-#include "common/message/queue.h"
 #include "common/message/transaction.h"
 #include "common/message/dispatch.h"
 #include "common/message/handle.h"
@@ -43,17 +42,17 @@ namespace casual
                         {
                            state::forward::Service result;
                            result.alias = service.alias;
-                           result.source.name = service.source.name;
+                           result.source.queue = service.source;
                            
                            if( service.reply)
                            {
                               state::forward::Service::Reply reply;
-                              reply.name = service.reply.value().name;
+                              reply.queue = service.reply.value().queue;
                               reply.delay = service.reply.value().delay;
                               result.reply = std::move( reply);
                            }
                            
-                           result.target.name = service.target.name;
+                           result.target.service = service.target.service;
                            result.instances.configured = service.instances;
                            return result;
                         };
@@ -64,9 +63,9 @@ namespace casual
                         {
                            state::forward::Queue result;
                            result.alias = queue.alias;
-                           result.source.name = queue.source.name;
+                           result.source.queue = queue.source;
 
-                           result.target.name = queue.target.name;
+                           result.target.queue = queue.target.queue;
                            result.target.delay = queue.target.delay;
                            
                            result.instances.configured = queue.instances;
@@ -84,7 +83,7 @@ namespace casual
                      template< typename M>
                      auto assign( M&& message, state::forward::Service& forward)
                      {
-                        if( forward.source.name == message.name)
+                        if( forward.source.queue == message.name)
                         {
                            if( message.remote())
                               common::event::error::send( code::casual::invalid_configuration, "can't forward from a remote queue: ", message.name);
@@ -99,7 +98,7 @@ namespace casual
                         {
                            auto& reply = forward.reply.value();
 
-                           if( reply.name == message.name)
+                           if( reply.queue == message.name)
                            {
                               reply.id = message.queue;
                               reply.process = message.process;
@@ -112,7 +111,7 @@ namespace casual
                      template< typename M>
                      auto assign( M&& message, state::forward::Queue& forward)
                      {
-                        if( forward.source.name == message.name)
+                        if( forward.source.queue == message.name)
                         {
                            if( message.remote())
                               common::event::error::send( code::casual::invalid_configuration, "can't forward from a remote queue: ", message.name);
@@ -123,7 +122,7 @@ namespace casual
                            }
                         }
 
-                        if( forward.target.name == message.name)
+                        if( forward.target.queue == message.name)
                         {
                            forward.target.id = message.queue;
                            forward.target.process = message.process;
@@ -140,6 +139,8 @@ namespace casual
                            request.name = name;
                            request.context = decltype( request.context)::wait;
 
+                           common::log::line( verbose::log, "request: ", request);
+
                            state::pending::queue::Lookup pending;
                            pending.id = id;
                            pending.correlation = ipc::flush::send( ipc::queue::manager(), request);
@@ -148,17 +149,17 @@ namespace casual
 
                         void request( State& state, state::forward::Service& forward)
                         {
-                           state.pending.queue.lookups.push_back( detail::send_request( forward.id, forward.source.name));
+                           state.pending.queue.lookups.push_back( detail::send_request( forward.id, forward.source.queue));
 
                            if( forward.reply)
-                              state.pending.queue.lookups.push_back( detail::send_request( forward.id, forward.reply.value().name));
+                              state.pending.queue.lookups.push_back( detail::send_request( forward.id, forward.reply.value().queue));
                         }
 
 
                         void request( State& state, state::forward::Queue& forward)
                         {
-                           state.pending.queue.lookups.push_back( detail::send_request( forward.id, forward.source.name));
-                           state.pending.queue.lookups.push_back( detail::send_request( forward.id, forward.target.name));
+                           state.pending.queue.lookups.push_back( detail::send_request( forward.id, forward.source.queue));
+                           state.pending.queue.lookups.push_back( detail::send_request( forward.id, forward.target.queue));
                         }
 
                      } // detail
@@ -204,7 +205,7 @@ namespace casual
                            request.trid = common::transaction::id::create( common::process::handle());
                            request.correlation = common::uuid::make();
                            request.queue = forward.source.id;
-                           request.name = forward.source.name;
+                           request.name = forward.source.queue;
                            request.selector = forward.selector;
                            request.block = true;
 
@@ -282,6 +283,8 @@ namespace casual
 
                         // take care of pending lookups
                         {
+                           Trace trace{ "queue::forward::concurrent::service::local::comply::to::state send_discard_request"};
+
                            auto send_discard_request = []( auto& pending)
                            {
                               ipc::device().flush();
@@ -294,6 +297,8 @@ namespace casual
 
                         // take care of pending dequeues 
                         {
+                           Trace trace{ "queue::forward::concurrent::service::local::comply::to::state send_forget_request"};
+
                            auto send_forget_request = [&state]( auto& pending)
                            {
                               return state.forward_apply( pending.id, [&pending]( auto& forward)
@@ -319,6 +324,8 @@ namespace casual
 
                         // take care of pending service lookups
                         {
+                           Trace trace{ "queue::forward::concurrent::service::local::comply::to::state send_service_lookup_discard_request"};
+
                            auto send_service_lookup_discard_request = [&state]( auto& pending)
                            {
                               // we know that this pending is from a service-forward
@@ -326,7 +333,7 @@ namespace casual
 
                               message::service::lookup::discard::Request request{ process::handle()};
                               request.correlation = pending.correlation;
-                              request.requested = forward.target.name;
+                              request.requested = forward.target.service;
                               
                               // we assume service-manager are always 'online'...
                               ipc::flush::send( ipc::service::manager(), request);
@@ -367,7 +374,7 @@ namespace casual
                   {
                      auto reply( State& state)
                      {
-                        return [&state]( const common::message::queue::forward::configuration::Reply& message)
+                        return [&state]( const ipc::message::forward::configuration::Reply& message)
                         { 
                            Trace trace{ "queue::forward::concurrent::service::local::handle::configuration::reply"};
                            log::line( verbose::log, "message: ", message);
@@ -390,8 +397,8 @@ namespace casual
                               algorithm::for_each( source, handle_source);
                            };
 
-                           add_or_update( message.services, state.forward.services, transform::forward::service());
-                           add_or_update( message.queues, state.forward.queues, transform::forward::queue());
+                           add_or_update( message.model.forward.services, state.forward.services, transform::forward::service());
+                           add_or_update( message.model.forward.queues, state.forward.queues, transform::forward::queue());
 
                            comply::to::state( state);
                         };
@@ -473,7 +480,7 @@ namespace casual
                               // request service
                               message::service::lookup::Request request{ process::handle()};
                               request.correlation = pending.correlation;
-                              request.requested = forward->target.name;
+                              request.requested = forward->target.service;
                               // we'll wait 'forever'
                               request.context = decltype( request.context)::wait;
 
@@ -493,7 +500,7 @@ namespace casual
                               request.correlation = pending.correlation;
                               request.trid = pending.trid;
                               request.queue = forward->target.id;
-                              request.name = forward->target.name;
+                              request.name = forward->target.queue;
                               request.message = std::move( message.message.front());
 
                               // make sure we've got a new message-id
@@ -649,7 +656,7 @@ namespace casual
                                  request.correlation = call.correlation;
                                  request.trid = call.trid;
                                  request.queue = reply.id;
-                                 request.name = reply.name;
+                                 request.name = reply.queue;
                                  request.message.type = std::move( message.buffer.type);
                                  request.message.payload = std::move( message.buffer.memory);
 
@@ -753,7 +760,7 @@ namespace casual
                   {
                      auto request( State& state)
                      {
-                        return [&state]( const common::message::queue::forward::state::Request& message)
+                        return [&state]( const ipc::message::forward::state::Request& message)
                         { 
                            Trace trace{ "queue::forward::concurrent::service::local::handle::state::request"};
                            log::line( verbose::log, "message: ", message);
@@ -761,8 +768,7 @@ namespace casual
                            auto basic_assign = []( const auto& source, auto& target)
                            {
                               target.alias = source.alias;
-                              target.source.name = source.source.name;
-                              target.target.name = source.target.name;
+                              target.source = source.source.queue;
                               target.instances.configured = source.instances.configured;
                               target.instances.running = source.instances.running;
                               target.metric.commit.count = source.metric.commit.count;
@@ -774,13 +780,14 @@ namespace casual
 
                            auto transform_service = [basic_assign]( const auto& service)
                            {
-                              common::message::queue::forward::state::Reply::Service result;
+                              ipc::message::forward::state::Reply::Service result;
                               basic_assign( service, result);
+                              result.target.service = service.target.service;
 
                               if( service.reply)
                               {
-                                 common::message::queue::forward::state::Reply::Service::Reply reply;
-                                 reply.name = service.reply.value().name;
+                                 ipc::message::forward::state::Reply::Service::Reply reply;
+                                 reply.queue = service.reply.value().queue;
                                  reply.delay = service.reply.value().delay;
                                  result.reply = std::move( reply);
                               }
@@ -790,7 +797,7 @@ namespace casual
 
                            auto transform_queue = [basic_assign]( const auto& queue)
                            {
-                              common::message::queue::forward::state::Reply::Queue result;
+                              ipc::message::forward::state::Reply::Queue result;
                               basic_assign( queue, result);
 
                               result.target.delay = queue.target.delay;

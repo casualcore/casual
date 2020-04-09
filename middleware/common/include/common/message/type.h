@@ -139,6 +139,9 @@ namespace casual
             transaction_resource_proxy_configuration_reply,
             transaction_resource_proxy_ready,
 
+            transaction_configuration_alias_request = TRANSACTION_BASE + 40,
+            transaction_configuration_alias_reply,
+
             transaction_begin_request = TRANSACTION_BASE + 100,
             transaction_begin_reply,
             transaction_commit_request,
@@ -228,8 +231,17 @@ namespace casual
             gateway_domain_advertise,
             gateway_domain_id,
 
+            CONFIGURATION_BASE = 8000,
+            configuration_request = CONFIGURATION_BASE,
+            configuration_reply,
+            configuration_update_request,
+            configuration_update_reply,
+            configuration_put_request,
+            configuration_put_reply,
+
+
             // signals as messages, used to postpone and normalize handling of signals
-            SIGNAL_BASE = 8000,
+            SIGNAL_BASE = 9000,
             signal_timeout = SIGNAL_BASE,
             signal_hangup,
 

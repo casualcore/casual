@@ -21,7 +21,7 @@ namespace casual
    {
       namespace example
       {
-         domain::Manager domain()
+         user::Domain domain()
          {
             Trace trace{ "configuration::example::domain"};
 
@@ -30,9 +30,9 @@ domain:
   name: domain.A42
   default:
     environment:
-      files:
-        - /some/path/to/environment/file
-        - /some/other/file
+#      files:
+#        - /some/path/to/environment/file
+#        - /some/other/file
 
       variables:
         - key: SOME_VARIABLE
@@ -209,13 +209,13 @@ domain:
 
 )";
 
-            auto domain = create::model< configuration::domain::Manager>( yaml, "domain");
+            auto domain = create::model< configuration::user::Domain>( yaml, "domain");
             domain.queue = example::queue();
 
             return domain;
          }
 
-         configuration::queue::Manager queue()
+         configuration::user::queue::Manager queue()
          {
             Trace trace{ "configuration::example::queue"};
 
@@ -261,18 +261,17 @@ queue:
 
   forward:
      services:
-        - source: 
-            name: q_B1
+        - source: q_B1
           target: 
-            name: casual/example/echo
+            service: casual/example/echo
           instances: 4
           reply: 
-            name: q_A4
+            queue: q_A4
             delay: 10ms
 
 )";
 
-            return create::model< configuration::queue::Manager>( yaml, "queue");
+            return create::model< configuration::user::queue::Manager>( yaml, "queue");
          }
 
       } // example

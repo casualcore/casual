@@ -11,7 +11,7 @@
 #include "domain/manager/state.h"
 #include "domain/manager/admin/model.h"
 
-#include "configuration/domain.h"
+#include "configuration/model.h"
 
 namespace casual
 {
@@ -25,14 +25,14 @@ namespace casual
 
             State state( const Settings& settings);
 
-            //! extract and transforms the current state to a 'configuration view'
-            casual::configuration::domain::Manager get( const State& state);
+            //! extract and transforms the current state to a 'the configuration model'
+            casual::configuration::Model get( const State& state);
 
             //auto replace( casual::configuration::domain::Manager configuration);
 
             //! if element(s) _keys_ is found, there will be an update, otherwise the element(s) will be added
             //! @return id's of tasks that fullfills the 'put'
-            std::vector< common::Uuid> put( State& state, casual::configuration::domain::Manager configuration);
+            std::vector< common::Uuid> put( State& state, casual::configuration::Model model);
 
          } // configuration
       } // manager

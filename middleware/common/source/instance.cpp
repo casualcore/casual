@@ -66,6 +66,14 @@ namespace casual
             return singleton;
          }
 
+         std::string alias()
+         {
+            if( information())
+               return information().value().alias;
+
+            return process::basename();
+         }
+
       } // instance
    } // common
 } // casual

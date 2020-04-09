@@ -10,8 +10,8 @@
 #include "gateway/manager/state.h"
 #include "gateway/transform.h"
 
-#include "configuration/domain.h"
-#include "configuration/message/transform.h"
+#include "configuration/model.h"
+#include "configuration/model/load.h"
 
 namespace casual
 {
@@ -38,7 +38,7 @@ namespace casual
                {
                   auto path = unittest::file::temporary::content( ".yaml", configuration);
 
-                  return gateway::transform::state( configuration::transform::configuration( configuration::domain::get( { path})));
+                  return gateway::transform::state( configuration::model::load( { path}).gateway);
                }
 
                auto state()

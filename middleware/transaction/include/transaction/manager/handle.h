@@ -60,13 +60,6 @@ namespace casual
 
             namespace resource
             {
-               //! Sent by servers that using resources
-               struct Lookup : public state::Base
-               {
-                  using Base::Base;
-
-                  void operator () ( common::message::transaction::resource::lookup::Request& message);
-               };
 
                //! Sent by a server when resource(s) is involved
                struct Involved : public state::Base
@@ -185,11 +178,8 @@ namespace casual
                };
             }
 
-
-            //!
             //! This is used when this TM act as an resource to
             //! other TM:s, as in other domains.
-            //!
             namespace domain
             {
                enum class Directive : char
