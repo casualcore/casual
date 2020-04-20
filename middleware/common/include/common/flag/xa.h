@@ -18,9 +18,7 @@ namespace casual
       {
          namespace xa 
          {
-            //!
             //! Flag definition for the RM switch
-            //!
             namespace resource 
             {
                enum class Flag : long
