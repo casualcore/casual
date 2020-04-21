@@ -259,6 +259,11 @@ namespace casual
                   // TODO performance: there probably exists a better way than to reconnect,
                   //  but in "some" network stacks request gets lost, and no _failure_ is detected. 
                   curl::easy::set::option( easy, CURLOPT_FRESH_CONNECT, 1L);
+
+                  // we need to indicate that callee should "close" the connection.
+                  // one could think that curl would handle this by it self, since it "knows"
+                  // that we using "CURLOPT_FRESH_CONNECT", but no...
+                  request.state().header.request.add( "connection: close");
                }
 
                
