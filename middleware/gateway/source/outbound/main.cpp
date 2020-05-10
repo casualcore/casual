@@ -198,19 +198,6 @@ namespace casual
                   std::vector< Uuid> rediscoveries;
                };
 
-               namespace inbound
-               {
-                  template< typename Message>
-                  auto message()
-                  {
-                     Trace trace{ "gateway::outbound::local::inbound::message"};
-
-                     return common::message::dispatch::reply::pump< Message>(
-                        common::message::handle::defaults( common::communication::ipc::inbound::device()),
-                        common::communication::ipc::inbound::device());
-                  }
-               } // inbound
-
 
                auto connect( communication::tcp::Address address)
                {
@@ -256,14 +243,16 @@ namespace casual
                      common::message::handle::defaults( communication::ipc::inbound::device()), 
                      []( const message::outbound::connect::Done&) {} // no-op 
                      );
+
+                  namespace dispatch = common::message::dispatch;
+
+                  auto condition = dispatch::condition::compose( 
+                     dispatch::condition::done( [&socket](){ return socket ? true : false; }));
                   
-                  common::message::dispatch::conditional::pump( 
+                  dispatch::pump(
+                     condition,
                      handler,
-                     communication::ipc::inbound::device(),
-                     [&socket]()
-                     {
-                        return socket ? true : false;
-                     });
+                     communication::ipc::inbound::device());
 
                   return socket;
                }
@@ -498,9 +487,23 @@ namespace casual
                                  Trace trace{ "gateway::outbound::local::handle::external::service::call::reply"};
                                  log::line( verbose::log, "message: ", message);
 
+                                 
+                                 auto no_entry_unadvertise = []( auto& reply, auto& destination)
+                                 {
+                                    if( reply.code.result != decltype( reply.code.result)::no_entry)
+                                       return; // no-op
+                                    
+                                    common::message::service::Advertise message{ common::process::handle()};
+                                    message.services.remove.push_back( destination.service);
+                                    blocking::send( common::communication::instance::outbound::service::manager::device(), message);
+                                 };
+
                                  try
                                  {
                                     auto destination = state.service.route.get( message.correlation);
+
+                                    // we unadvertise the service if we get no_entry.
+                                    no_entry_unadvertise( message, destination);
 
                                     // get the original "un-branched" trid
                                     external::origin::transaction( state, message);
@@ -514,6 +517,7 @@ namespace casual
                                        metric.execution = message.execution;
                                        metric.service = std::move( destination.service);
                                        metric.parent = std::move( destination.parent);
+                                       metric.type = decltype( metric.type)::concurrent;
                                        
                                        metric.trid = message.transaction.trid;
                                        metric.start = destination.start;

@@ -39,33 +39,12 @@ namespace casual
                            return task.property().execution == Task::Property::Execution::sequential;
                         };
                      }
-
                   } // property
                } // <unnamed>
             } // local
 
-            void done( const State& state, task::id::type id, common::message::event::domain::task::State outcome)
-            {
-               Trace trace{ "domain::manager::task::done"};
-               log::line( verbose::log, "task id: ", id, " - outcome: ", outcome);
-
-               common::message::event::domain::task::End event;
-               {
-                  event.id = id;
-                  event.state = outcome;
-                  if( auto found = algorithm::find( state.tasks.running(), id))
-                     event.description = found->description();
-               }
-
-               if( state.event.active< common::message::event::domain::task::End>())
-                  manager::ipc::send( state, state.event( event));
-
-               // we're interested in this event our self, to remove the task
-               ipc::push( event);
-            }
-
             Running::Running( State& state, Task&& task) 
-               : Task{ std::move( task)}, m_callbacks{ Task::operator()( state)} 
+               : Task{ std::move( task)}, m_callbacks( Task::operator()( state))
             {
                Trace trace{ "domain::manager::task::Running::Running"};
 
@@ -133,14 +112,14 @@ namespace casual
                         Trace trace{ "domain::manager::task::local::send::abort"};
                         log::line( verbose::log, "tasks: ", tasks);
 
-                        if( ! state.event.active< common::message::event::domain::task::End>())
+                        if( ! state.event.active< common::message::event::Task>())
                            return;
 
                         auto send_task_end = [&state]( auto& task)
                         {
-                           common::message::event::domain::task::End event;
-                           event.id = task.id();
-                           event.description = task.description();
+                           common::message::event::Task event{ common::process::handle()};
+                           event.correlation = task.context().id;
+                           event.description = task.context().descripton;
                            event.state = decltype( event.state)::aborted;
                            manager::ipc::send( state, state.event( event));
                         };
@@ -148,24 +127,31 @@ namespace casual
                         algorithm::for_each( tasks, send_task_end);
                      }
 
+                     template< typename T> 
+                     void done( State& state, T& task)
+                     {
+                        Trace trace{ "domain::manager::task::local::send::done"};
+
+                        // send event to listeners, if any.
+                        using Task = common::message::event::Task;
+
+                        if( state.event.active< Task>())
+                        {
+                           Task event{ common::process::handle()};
+                           event.correlation = task.context().id;
+                           event.description = std::move( task.context().descripton);
+                           event.state = decltype( event.state)::done;
+
+                           manager::ipc::send( state, state.event( event));
+                        }
+
+                     }
+
                   } // send
                   
                } // <unnamed>
             } // local
 
-            void Running::operator() ( const common::message::event::domain::task::End& event)
-            {
-               Trace trace{ "domain::manager::task::Running::operator() Done"};
-               log::line( verbose::log, "event: ", event);
-
-               auto split = algorithm::stable_partition( m_callbacks, [id = event.id]( auto& t){ return t != id;});
-               log::line( verbose::log, "removed: ", std::get< 1>( split));
-
-               algorithm::trim( m_callbacks, std::get< 0>( split));
-
-               // ramaining callbacks could be interested
-               Running::dispatch( event);
-            }
 
             void Queue::idle( State& state)
             {
@@ -173,7 +159,7 @@ namespace casual
 
                // dispatch an 'idle-event'. Could be tasks that want to do stuff
                // when we're 'idle'
-               Queue::event( message::event::Idle{});
+               Queue::event( state, common::message::event::Idle{});
 
                if( m_pending.empty())
                   return;
@@ -186,38 +172,13 @@ namespace casual
                }
             }
 
-            task::id::type Queue::add( State& state, Task&& task)
+            task::id::type Queue::add( Task&& task)
             {
                Trace trace{ "domain::manager::task::Queue::add"};
                log::line( verbose::log, "task: ", task);
 
                m_pending.push_back( std::move( task));
-               return m_pending.back().id();
-            }
-
-            std::vector< task::id::type> Queue::add( State& state, std::vector< Task>&& tasks)
-            {
-               return algorithm::transform( tasks, [&]( auto& task)
-               {
-                  return add( state, std::move( task));
-               });
-            }
-
-            void Queue::event( const common::message::event::domain::task::End& event)
-            {
-               Trace trace{ "domain::manager::task::Queue::event Done"};
-               log::line( verbose::log, "event: ", event);
-
-               auto split = algorithm::stable_partition( m_running, [id = event.id]( auto& t){ return t != id;});
-               log::line( verbose::log, "done: ", std::get< 1>( split));
-
-               algorithm::trim( m_running, std::get< 0>( split));
-
-               // tasks could want this event also
-               common::algorithm::for_each( m_running, [&event]( auto& task)
-               {
-                  task( event);
-               });
+               return m_pending.back().context().id;
             }
 
 
@@ -251,27 +212,40 @@ namespace casual
                return ! algorithm::find( m_running, type).empty();
             }
 
-            task::id::type Queue::start( State& state, Task&& task)
+            void Queue::start( State& state, Task&& task)
             {
                Trace trace{ "domain::manager::task::Queue::start"};
                log::line( verbose::log, "task: ", task);
 
-               using Begin = common::message::event::domain::task::Begin;
-
-               if( state.event.active< Begin>())
+               using Task = common::message::event::Task;
+               
+               // send the 'start' event
+               if( state.event.active< Task>())
                {
-                  Begin event;
-                  event.id = task.id();
-                  event.description = task.description();
+                  Task event{ common::process::handle()};
+                  event.correlation = task.context().id;
+                  event.description = task.context().descripton;
+                  event.state = decltype( event.state)::started;
 
                   manager::ipc::send( state, state.event( event));
                }
 
                task::Running running{ state, std::move( task)};
                log::line( verbose::log, "running: ", running);
+               
+               // check if running can do progress, if not, it's 'done'
+               if( running.empty())
+                  local::send::done( state, running);
+               else
+                  m_running.push_back( std::move( running));
+            }
 
-               m_running.push_back( std::move( running));
-               return m_running.back().id();
+            void Queue::done( State& state, Task&& task)
+            {
+               Trace trace{ "domain::manager::task::Queue::done"};
+               log::line( verbose::log, "task: ", task);
+
+               local::send::done( state, task);
             }
 
          } // task

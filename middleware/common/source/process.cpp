@@ -421,11 +421,8 @@ namespace casual
             {
                lifetime::Exit wait( strong::process::id pid, int flags = WNOHANG)
                {
-                  // replace possible signal callbacks får child::terminate
-                  auto restore = signal::callback::scoped::replace< code::signal::child>( []()
-                  {
-                     log::line( verbose::log, "code::signal::child ignored");
-                  });
+                  // we block all signals but the _shutdown_
+                  signal::thread::scope::Mask block{ signal::set::filled( code::signal::terminate, code::signal::interrupt)};
 
                   lifetime::Exit exit;
 
@@ -582,18 +579,14 @@ namespace casual
             {
                Trace trace{ "process::lifetime::ended"};
 
-               // We'll only handle child signals.
-               signal::thread::scope::Mask block{ signal::set::filled( code::signal::child)};
-
                std::vector< lifetime::Exit> terminations;
 
                while( true)
                {
                   auto exit = local::wait( strong::process::id{ -1});
+
                   if( exit)
-                  {
                      terminations.push_back( exit);
-                  }
                   else
                   {
                      log::line( verbose::log, "terminations: ", terminations);

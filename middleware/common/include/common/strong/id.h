@@ -107,17 +107,6 @@ namespace casual
             
          } // queue
 
-         namespace task
-         {
-            namespace tag
-            {
-               struct type{};
-            } // tag
-   
-            using id = value::Optional< platform::size::type, 0l, tag::type>;
-         } // task
-
-
       } // strong 
    } // common
 } // casual

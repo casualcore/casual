@@ -216,7 +216,7 @@ namespace casual
 
                // main task
                {
-                  common::message::event::general::Task event{ common::process::handle()};
+                  common::message::event::Task event{ common::process::handle()};
                   event.correlation = result.correlation;
                   event.description = result.description;
                   event.state = decltype( event.state)::started;
@@ -226,7 +226,7 @@ namespace casual
                // sub task
                if( auto outbound = state.outbound( destination.pid))
                {
-                  common::message::event::general::sub::Task event{ common::process::handle()};
+                  common::message::event::sub::Task event{ common::process::handle()};
                   event.correlation = result.correlation;
                   event.description = "redescover " + outbound->remote.name;
                   event.state = decltype( event.state)::started;
@@ -313,7 +313,7 @@ namespace casual
                            algorithm::for_each( state.rediscover.tasks.remove( message.state.pid), []( auto&& task)
                            {
                               // we're done, and can send end event (if caller is listening)
-                              common::message::event::general::Task event{ common::process::handle()};
+                              common::message::event::Task event{ common::process::handle()};
                               event.correlation = task.correlation;
                               event.description = std::move( task.description);
                               event.state = decltype( event.state)::error;
@@ -386,10 +386,10 @@ namespace casual
                               // sub event
                               if( auto outbound = state.outbound( message.process.pid))
                               {
-                                 common::message::event::general::sub::Task event{ common::process::handle()};
+                                 common::message::event::sub::Task event{ common::process::handle()};
                                  event.correlation = result.correlation;
                                  event.description = "redescover " + outbound->remote.name;
-                                 event.state = decltype( event.state)::success;
+                                 event.state = decltype( event.state)::done;
                                  common::event::send( std::move( event));
                               }
 
@@ -400,7 +400,7 @@ namespace casual
 
                                  if( auto outbound = state.outbound( destination.pid))
                                  {
-                                    common::message::event::general::sub::Task event{ common::process::handle()};
+                                    common::message::event::sub::Task event{ common::process::handle()};
                                     event.correlation = result.correlation;
                                     event.description = "redescover " + outbound->remote.name;
                                     event.state = decltype( event.state)::started;
@@ -410,7 +410,7 @@ namespace casual
                               else
                               {
                                  // we're done, and can send end event (if caller is listening)
-                                 common::message::event::general::Task event{ common::process::handle()};
+                                 common::message::event::Task event{ common::process::handle()};
                                  event.correlation = result.correlation;
                                  event.description = std::move( result.description);
                                  common::event::send( std::move( event));

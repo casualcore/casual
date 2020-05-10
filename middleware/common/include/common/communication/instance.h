@@ -32,11 +32,6 @@ namespace casual
                   const Uuid cache{ "f17d010925644f728d432fa4a6cf5257"};
                } // forward
 
-               namespace traffic
-               {
-                  const Uuid manager{ "1aa1ce0e3e254a91b32e9d2ab22a8d31"};
-               } // traffic
-
                namespace gateway
                {
                   const Uuid manager{ "b9624e2f85404480913b06e8d503fce5"};

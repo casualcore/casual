@@ -37,6 +37,7 @@ namespace casual
                   return static_cast<  Resource::code>( code);
                }
 
+
             } // <unnamed>
          } // local
 
@@ -54,8 +55,10 @@ namespace casual
          {
             log::line( log::category::transaction, "start resource: ", m_id, " transaction: ", transaction, " flags: ", flags);
 
-            auto result = local::convert( m_xa->xa_start_entry( local::non_const_xid( transaction), m_id.value(), flags.underlaying()));
-
+            auto result = reopen_guard( [&]()
+            { 
+               return local::convert( m_xa->xa_start_entry( local::non_const_xid( transaction), m_id.value(), flags.underlaying()));
+            });
 
             if( result == code::duplicate_xid)
             {
@@ -68,9 +71,8 @@ namespace casual
             }
 
             if( result != code::ok)
-            {
                log::line( log::category::error, result, " failed to start resource - ", m_id, " - trid: ", transaction);
-            }
+
             return result;
          }
 
@@ -78,7 +80,10 @@ namespace casual
          {
             log::line( log::category::transaction, "end resource: ", m_id, " transaction: ", transaction, " flags: ", flags);
 
-            auto result = local::convert( m_xa->xa_end_entry( local::non_const_xid( transaction), m_id.value(), flags.underlaying()));
+            auto result = reopen_guard( [&]()
+            {
+               return local::convert( m_xa->xa_end_entry( local::non_const_xid( transaction), m_id.value(), flags.underlaying()));
+            });
 
             if( result != code::ok)
                log::line( log::category::error, result, " failed to end resource - ", m_id, " - trid: ", transaction);
@@ -109,15 +114,18 @@ namespace casual
             auto result = local::convert( m_xa->xa_close_entry( info.c_str(), m_id.value(), flags.underlaying()));
 
             if( result != code::ok)
-               log::line( log::category::error, result, " failed to close resource - ", m_id, " - openinfo: ", m_closeinfo);
+               log::line( log::category::error, result, " failed to close resource - ", m_id, " - closeinfo: ", m_closeinfo);
 
             return result;
          }
 
          Resource::code Resource::prepare( const transaction::ID& transaction, Flags flags)
          {
-            auto result = local::convert( m_xa->xa_prepare_entry( 
-               local::non_const_xid( transaction), m_id.value(), flags.underlaying()));
+            auto result = reopen_guard( [&]()
+            {
+               return local::convert( m_xa->xa_prepare_entry( 
+                  local::non_const_xid( transaction), m_id.value(), flags.underlaying()));
+            });
 
             if( result == common::code::xa::protocol)
             {
@@ -140,20 +148,53 @@ namespace casual
          {
             log::line( log::category::transaction, "commit resource: ", m_id, " flags: ", flags);
 
-            return local::convert( m_xa->xa_commit_entry( local::non_const_xid( transaction), m_id.value(), flags.underlaying()));
+            return reopen_guard( [&]()
+            {
+               return local::convert( m_xa->xa_commit_entry( local::non_const_xid( transaction), m_id.value(), flags.underlaying()));
+            });
          }
 
          Resource::code Resource::rollback( const transaction::ID& transaction, Flags flags)
          {
             log::line( log::category::transaction, "rollback resource: ", m_id, " flags: ", flags);
 
-            return local::convert( m_xa->xa_rollback_entry( local::non_const_xid( transaction), m_id.value(), flags.underlaying()));
+            return reopen_guard( [&]()
+            {
+               return local::convert( m_xa->xa_rollback_entry( local::non_const_xid( transaction), m_id.value(), flags.underlaying()));
+            });
          }
 
          bool Resource::dynamic() const
          {
             return static_cast< flag::xa::resource::Flags>( 
                m_xa->flags).exist( flag::xa::resource::Flag::dynamic);
+         }
+
+         Resource::code Resource::reopen()
+         {
+            log::line( log::category::transaction, "reopen resource: ", m_id);
+
+            // we don't care if close "fails".
+            close();
+            return open();
+         }
+
+         template< typename F>
+         Resource::code Resource::reopen_guard( F&& functor)
+         {
+            auto result = functor();
+
+            if( result != code::resource_fail)
+               return result;
+            
+            log::line( log::category::error, result, " failed to interact with resource ", m_id, " - action: try to reopen the resource");
+                        
+            // we try to reopen the resource, and apply the functor again
+
+            if( reopen() != code::ok)
+               return result;  // did not work, we return the original code
+
+            return functor();
          }
 
          bool Resource::prepared( const transaction::ID& transaction)

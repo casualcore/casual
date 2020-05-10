@@ -167,6 +167,19 @@ int casual_service_asynchronous_receive( int *const descriptor, char** odata, lo
       casual::common::buffer::pool::Holder::instance().deallocate( *odata);
       std::tie( *odata, *olen) = casual::common::buffer::pool::Holder::instance().insert( std::move( fail.result.buffer));      
    }
+   catch( const casual::common::exception::xatmi::exception& exception)
+   {
+      switch( exception.type())
+      {
+         // we "need" to treat no_entry as service_error to conform to xatmi-spec.
+         case casual::common::code::xatmi::no_entry:
+            casual::xatmi::internal::error::set( casual::common::code::xatmi::service_error);
+            break;
+         default:
+            casual::xatmi::internal::error::set( exception.type());
+            break;
+      }
+   }
    catch( ...)
    {
       casual::xatmi::internal::error::set( casual::common::exception::xatmi::handle());

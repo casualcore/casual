@@ -14,6 +14,7 @@
 
 #include "common/message/domain.h"
 #include "common/algorithm/compare.h"
+#include "common/communication/instance.h"
 
 namespace casual
 {
@@ -280,14 +281,28 @@ namespace casual
 
          } // state
 
-         std::vector< state::dependency::Group> State::bootorder()
+         std::ostream& operator << ( std::ostream& out, State::Runlevel value)
+         {
+            switch( value)
+            {
+               using Enum = State::Runlevel;
+               case Enum::error: return out << "error";
+               case Enum::running: return out << "running";
+               case Enum::shutdown: return out << "shutdown";
+               case Enum::startup: return out << "startup";
+            }
+            return out << "<unknown>";
+
+         }
+
+         std::vector< state::dependency::Group> State::bootorder() const
          {
             Trace trace{ "domain::manager::State::bootorder"};
 
             return state::create::boot::order( *this);
          }
 
-         std::vector< state::dependency::Group> State::shutdownorder()
+         std::vector< state::dependency::Group> State::shutdownorder() const
          {
             Trace trace{ "domain::manager::State::shutdownorder"};
 
@@ -367,6 +382,16 @@ namespace casual
                      return s.instance( pid) != nullptr;
                   }).data();
                }
+
+               template< typename E>
+               auto executable( E& executables, common::strong::process::id pid) noexcept
+               {
+                  return algorithm::find_if( executables, [=]( const auto& e){
+                     return ! algorithm::find( e.instances, pid).empty();
+                  }).data();
+               }
+
+               
             } // <unnamed>
          } // local
 
@@ -382,9 +407,12 @@ namespace casual
 
          state::Executable* State::executable( common::strong::process::id pid) noexcept
          {
-            return algorithm::find_if( executables, [=]( const auto& e){
-               return ! algorithm::find( e.instances, pid).empty();
-            }).data();
+            return local::executable( executables, pid);
+         }
+
+         const state::Executable* State::executable( common::strong::process::id pid) const noexcept
+         {
+            return local::executable( executables, pid);
          }
 
          state::Group& State::group( state::Group::id_type id)
@@ -463,11 +491,7 @@ namespace casual
 
          common::process::Handle State::grandchild( common::strong::process::id pid) const noexcept
          {
-            auto found = algorithm::find_if( grandchildren, [=]( auto& v){
-               return v.pid == pid;
-            });
-
-            if( found) 
+            if( auto found = algorithm::find( grandchildren, pid)) 
                return *found;
 
             return {};
@@ -477,10 +501,46 @@ namespace casual
          {
             auto found = algorithm::find( singletons, id);
             if( found)
-            {
                return found->second;
-            }
             return {};
+         }
+
+         std::tuple< std::vector< state::Server::id_type>, std::vector< state::Executable::id_type>> State::untouchables() const noexcept
+         {
+            std::vector< common::process::Handle> processes;
+
+            auto singleton_process = [&]( auto& uuid)
+            {
+               if( auto process = singleton( uuid))
+                  processes.push_back( std::move( process));
+            };
+
+            singleton_process( communication::instance::identity::transaction::manager);
+            singleton_process( communication::instance::identity::gateway::manager);
+            singleton_process( communication::instance::identity::queue::manager);
+            singleton_process( communication::instance::identity::service::manager);
+            singleton_process( communication::instance::identity::forward::cache);
+
+
+            std::tuple< std::vector< state::Server::id_type>, std::vector< state::Executable::id_type>> result;
+            
+            // add 'our' id.
+            std::get< 0>( result).push_back( manager_id);
+
+            auto update_result = [&]( auto& process)
+            {
+               if( auto entity = server( process.pid))
+               {
+                  std::get< 0>( result).push_back( entity->id);
+                  return;
+               }
+               if( auto entity = executable( process.pid))
+                  std::get< 1>( result).push_back( entity->id);
+            };
+
+            algorithm::for_each( processes, update_result);
+
+            return result;
          }
 
          bool State::execute()
@@ -492,9 +552,7 @@ namespace casual
          void State::runlevel( Runlevel runlevel) noexcept
          {
             if( runlevel > m_runlevel)
-            {
                m_runlevel = runlevel;
-            }
          }
 
 
@@ -503,18 +561,12 @@ namespace casual
             auto process = server( pid);
 
             if( ! process)
-            {
                return {};
-            }
 
             auto resources = process->resources;
 
             for( auto& id : process->memberships)
-            {
-               auto& group = State::group( id);
-
-               common::algorithm::append( group.resources, resources);
-            }
+               common::algorithm::append(  State::group( id).resources, resources);
 
             return range::to_vector( algorithm::unique( algorithm::sort( resources)));
          }

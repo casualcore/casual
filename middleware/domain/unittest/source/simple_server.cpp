@@ -51,7 +51,7 @@ namespace casual
                   std::move( handle_hangup)
             );
 
-            message::dispatch::blocking::pump( handler, ipc);
+            message::dispatch::pump( handler, ipc);
          }
 
       } // <unnamed>

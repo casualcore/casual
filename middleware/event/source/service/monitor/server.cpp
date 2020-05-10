@@ -122,7 +122,7 @@ namespace casual
                      ".casual/event/service/metrics",
                      &local::service::metrics,
                      common::service::transaction::Type::none,
-                     common::service::category::admin(),
+                     common::service::category::admin,
                   }
                });
 

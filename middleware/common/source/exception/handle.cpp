@@ -47,33 +47,34 @@ namespace casual
                   {
                      throw;
                   }
-                  //
                   // casual stuff
-                  //
+                  catch( const exception::casual::Shutdown& exception)
+                  {
+                     local::log( exception, out);
+                     return 0;
+                  }
                   catch( const exception::casual::exception& exception)
                   {
                      return local::log( exception, out);
                   }
 
-                  //
-                  // signal stuff
-                  //
+                  // signal stuff Terminate
+                  catch( const exception::signal::Terminate& exception)
+                  {
+                     log::line( log::category::information, exception.what());
+                  }
                   catch( const exception::signal::exception& exception)
                   {
                      return local::log( exception, out);
                   }
 
-                  //
                   // xatmi stuff
-                  //
                   catch( const exception::xatmi::exception& exception)
                   {
                      return local::log( exception, out);
                   }
 
-                  //
                   // tx stuff
-                  //
                   catch( const exception::tx::exception& exception)
                   {
                      return local::log( exception, out);

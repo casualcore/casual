@@ -123,7 +123,7 @@ namespace casual
 
          log::line( log, "start message pump");
 
-         auto empty_callback = [&]()
+         auto idle_callback = [&]()
          {
             // the input socket is empty, we can't know if there ever gonna be any more 
             // messages to read, we need to send metric, if any...
@@ -131,10 +131,10 @@ namespace casual
                manager::handle::metric::send( m_state);
          };
 
-         common::message::dispatch::empty::pump( 
+         common::message::dispatch::pump(
+            common::message::dispatch::condition::compose( common::message::dispatch::condition::idle( std::move( idle_callback))),
             handler, 
-            manager::ipc::device(), 
-            empty_callback);
+            manager::ipc::device());
       }
 
    } // service

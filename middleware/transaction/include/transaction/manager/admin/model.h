@@ -224,7 +224,7 @@ namespace casual
 
                struct Log
                {
-                  struct update_t
+                  struct
                   {
                      platform::size::type prepare = 0;
                      platform::size::type remove = 0;
@@ -248,19 +248,31 @@ namespace casual
 
                struct State
                {
-
                   std::vector< admin::model::resource::Proxy> resources;
                   std::vector< admin::model::Transaction> transactions;
 
-                  struct persistent_t
+                  struct
                   {
-                     std::vector< pending::Reply> replies;
-                     std::vector< pending::Request> requests;
-                  } persistent;
+                     struct
+                     {
+                        std::vector< pending::Reply> replies;
+                        std::vector< pending::Request> requests;
 
-                  struct pending_t
-                  {
+                        CASUAL_CONST_CORRECT_SERIALIZE(
+                        {
+                           CASUAL_SERIALIZE( replies);
+                           CASUAL_SERIALIZE( requests);
+                        })
+                     } persistent;
+
                      std::vector< pending::Request> requests;
+
+                     CASUAL_CONST_CORRECT_SERIALIZE(
+                     {
+                        CASUAL_SERIALIZE( persistent);
+                        CASUAL_SERIALIZE( requests);
+                     })
+
                   } pending;
 
                   Log log;
@@ -269,9 +281,7 @@ namespace casual
                   {
                      CASUAL_SERIALIZE( resources);
                      CASUAL_SERIALIZE( transactions);
-                     CASUAL_SERIALIZE( persistent.replies);
-                     CASUAL_SERIALIZE( persistent.requests);
-                     CASUAL_SERIALIZE( pending.requests);
+                     CASUAL_SERIALIZE( pending);
                      CASUAL_SERIALIZE( log);
                   })
                };

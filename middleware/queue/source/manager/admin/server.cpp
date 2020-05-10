@@ -36,30 +36,20 @@ namespace casual
 
                      auto get_queues = [](auto& state)
                      {
-                        auto send = [&]( const manager::State::Group& group)
+                        auto send = [&]( auto& group)
                         {
-                           common::message::queue::information::queues::Request request;
-                           request.process = common::process::handle();
-                           return communication::ipc::blocking::send( group.process.ipc, request);
+                           return communication::ipc::blocking::send( group.process.ipc, 
+                              common::message::queue::information::queues::Request{ process::handle()});
                         };
 
-                        std::vector< common::Uuid> correlations;
+                        auto receive = [&]( auto& correlation)
+                        {
+                           common::message::queue::information::queues::Reply reply;
+                           communication::ipc::blocking::receive( ipc::device(), reply, correlation);
+                           return reply;
+                        };
 
-                        common::algorithm::transform( state.groups, correlations, send);
-
-
-                        auto receive = [&]( const common::Uuid& correlation)
-                           {
-                              common::message::queue::information::queues::Reply reply;
-                              communication::ipc::blocking::receive( ipc::device(), reply, correlation);
-                              return reply;
-                           };
-
-                        std::vector< common::message::queue::information::queues::Reply> replies;
-
-                        common::algorithm::transform( correlations, replies, receive);
-
-                        return replies;
+                        return common::algorithm::transform( algorithm::transform( state.groups, send), receive);
                      };
 
                      result.queues = transform::queues( get_queues( state));
@@ -108,7 +98,21 @@ namespace casual
                   {
                      namespace local
                      {
-                        const manager::State::Queue* queue( manager::State& state, const std::string& name)
+                        struct Group 
+                        {
+                           struct Queue
+                           {
+                              std::string name;
+                              strong::queue::id id;
+                           };
+
+                           process::Handle process;
+                           std::vector< Queue> queues;
+
+                           friend bool operator == ( const Group& lhs, const process::Handle& rhs) { return lhs.process == rhs;}
+                        };
+
+                        const manager::State::Queue* queue( const manager::State& state, const std::string& name)
                         {
                            auto found = common::algorithm::find( state.queues, name);
 
@@ -116,6 +120,29 @@ namespace casual
                               return &found->second.front();
 
                            return nullptr;
+                        }
+
+                        std::vector< local::Group> queues( const manager::State& state, std::vector< std::string> names)
+                        {
+                           std::vector< local::Group> result;
+
+                           auto update_groups = [&]( auto& name)
+                           {
+                              if( auto queue = local::queue( state, name))
+                              {
+                                 if( auto found = algorithm::find( result, queue->process))
+                                    found->queues.push_back( Group::Queue{ name, queue->queue});
+                                 else
+                                    result.push_back( Group{ queue->process, { { name, queue->queue}}});
+                              }
+                           };
+
+                           if( names.empty())
+                              names = algorithm::transform( state.queues, []( auto& pair){ return std::get< 0>( pair);});
+
+                           algorithm::for_each( names, update_groups);
+
+                           return result;
                         }
                      } // local
                   } // detail
@@ -185,6 +212,26 @@ namespace casual
 
                      return algorithm::transform( real_queues, clear_queue);
                   }
+
+                  namespace metric
+                  {
+                     void reset( manager::State& state, std::vector< std::string> queues)
+                     {
+                        Trace trace{ "queue::manager::admin::local::metric::reset"};
+
+                        auto groups = detail::local::queues( state, std::move( queues));
+
+                        auto reset_queues = []( auto& group)
+                        {
+                           common::message::queue::metric::reset::Request request{ common::process::handle()};
+                           request.queues = algorithm::transform( group.queues, []( auto& queue){ return queue.id;});
+                           communication::ipc::call( group.process.ipc, request);
+                        };
+
+                        algorithm::for_each( groups, reset_queues);
+                     }
+                     
+                  } // metric
 
 
                   namespace service
@@ -261,6 +308,21 @@ namespace casual
                         };
                      }
 
+                     namespace metric
+                     {
+                        auto reset( manager::State& state)
+                        {
+                           return [&state]( common::service::invoke::Parameter&& parameter)
+                           {
+                              auto protocol = serviceframework::service::protocol::deduce( std::move( parameter));
+
+                              auto queues = protocol.extract< std::vector< std::string>>( "queues");
+
+                              return serviceframework::service::user( std::move( protocol), &local::metric::reset, state, std::move( queues));
+                           };
+                        }
+                     } // metric
+
                   } // service
                } // <unnamed>
             } // local
@@ -271,27 +333,32 @@ namespace casual
                      { service::name::state,
                         local::service::state( state),
                         common::service::transaction::Type::none,
-                        common::service::category::admin()
+                        common::service::category::admin
                      },
                      { service::name::messages::list,
                         local::service::messages::list( state),
                         common::service::transaction::Type::none,
-                        common::service::category::admin()
+                        common::service::category::admin
                      },
                      { service::name::messages::remove,
                         local::service::messages::remove( state),
                         common::service::transaction::Type::none,
-                        common::service::category::admin()
+                        common::service::category::admin
                      },
                      { service::name::restore,
                         local::service::restore( state),
                         common::service::transaction::Type::none,
-                        common::service::category::admin()
+                        common::service::category::admin
                      },
                      { service::name::clear,
                         local::service::clear( state),
                         common::service::transaction::Type::none,
-                        common::service::category::admin()
+                        common::service::category::admin
+                     },
+                     { service::name::metric::reset,
+                        local::service::metric::reset( state),
+                        common::service::transaction::Type::none,
+                        common::service::category::admin
                      },
 
                }};

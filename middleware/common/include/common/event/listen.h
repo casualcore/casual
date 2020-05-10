@@ -9,6 +9,7 @@
 
 
 #include "common/message/event.h"
+#include "common/message/handle.h"
 
 #include "common/communication/ipc.h"
 #include "common/execute.h"
@@ -24,109 +25,67 @@ namespace casual
 
          using device_type = common::communication::ipc::inbound::Device;
          using handler_type = device_type::handler_type;
-         using message_type = common::message::Type;
+
 
          namespace detail
          {
             handler_type subscribe( handler_type&& handler);
 
-            void listen( device_type& device, handler_type&& handler);
-            void listen( device_type& device, function< void()> empty, handler_type&& handler);
-            void listen( device_type& device, function< void()> once, function< bool()> done, handler_type&& handler);
-
          } // detail
 
-         void subscribe( const process::Handle& process, std::vector< message_type> types);
-         void unsubscribe( const process::Handle& process, std::vector< message_type> types);
+         void subscribe( const process::Handle& process, std::vector< message::Type> types);
+         void unsubscribe( const process::Handle& process, std::vector< message::Type> types);
 
          namespace scope
          {
-            inline auto subscribe( const process::Handle& process, std::vector< message_type> types)
+            inline auto unsubscribe( std::vector< message::Type> types)
             {
-               event::subscribe( process, types);
-               return common::execute::scope( [&process, types = std::move( types)](){ event::unsubscribe( process, types);});
+               return common::execute::scope( [types = std::move( types)](){ event::unsubscribe( process::handle(), std::move( types));});
             }
 
-            inline auto subscribe( std::vector< message_type> types) 
+            inline auto subscribe( const process::Handle& process, std::vector< message::Type> types)
+            {
+               event::subscribe( process, types);
+               return unsubscribe( std::move( types));
+            }
+
+            inline auto subscribe( std::vector< message::Type> types) 
             { 
                return subscribe( process::handle(), std::move( types));
             }
             
          } // scope
 
-         //! Register and start listening on events.
-         template< typename... Callback>
-         void listen( device_type& device, Callback&&... callbacks)
+         namespace only
          {
-            detail::listen( device, device.handler( std::forward< Callback>( callbacks)...));
-         }
-
-         //! Register and start listening on events on the default inbound queue.
-         template< typename... Callback>
-         void listen( Callback&&... callbacks)
-         {
-            listen( communication::ipc::inbound::device(), std::forward< Callback>( callbacks)...);
-         }
-
-
-         namespace idle
-         {
-            template< typename... Callback>
-            void listen( device_type& device, function< void()> empty, Callback&&... callbacks)
+            namespace unsubscribe
             {
-               detail::listen( device, empty, device.handler( std::forward< Callback>( callbacks)...));
-            }
-
-            template< typename Device, typename... Callback>
-            auto listen( Device& device, function< void()> empty, Callback&&... callbacks) 
-               ->  decltype( detail::listen( device.device(), empty, device.handler( std::forward< Callback>( callbacks)...), device.error_handler()))
-            {
-               detail::listen( device.device(), empty, device.handler( std::forward< Callback>( callbacks)...), device.error_handler());
-            }
-
-            template< typename... Callback>
-            void listen( function< void()> empty, Callback&&... callbacks)
-            {
-               listen( communication::ipc::inbound::device(), std::move( empty), std::forward< Callback>( callbacks)...);
-            }
-         } // idle
-
-         namespace no
-         {
-            namespace subscription
-            {
-               namespace detail
+               template< typename C, typename... Callback>
+               void listen( C&& condition, Callback&&... callbacks)
                {
-                  void listen( device_type& device, handler_type&& handler);
-                  void conditional( device_type& device, function< bool()> done, handler_type&& handler);
-               } // detail
-
-               template< typename... Callback>
-               void listen( device_type& device, Callback&&... callbacks)
-               {
-                  detail::listen( device, { std::forward< Callback>( callbacks)...});
-               }
-
-               //! blocks until `done` is true
-               template< typename... Callback>
-               void conditional( function< bool()> done, Callback&&... callbacks)
-               {
-                  detail::conditional( communication::ipc::inbound::device(), std::move( done), { std::forward< Callback>( callbacks)...});
+                  auto& device = communication::ipc::inbound::device();
+                  auto handler = handler_type{ std::forward< Callback>( callbacks)...} + common::message::handle::defaults( device);
+                  auto unsubscription = scope::unsubscribe( handler.types());
+                  common::message::dispatch::relaxed::pump( std::forward< C>( condition), handler, device);
                }
             } // subscription
          } // no
 
-         namespace conditional
+         namespace condition
          {
+            using namespace common::message::dispatch::condition;
 
-            //! register and calls `once` before start listening to events,  until `done` returns true
-            template< typename... Callback>
-            void listen( function< void()> once, function< bool()> done, Callback&&... callbacks)
-            {
-               detail::listen( communication::ipc::inbound::device(), std::move( once), std::move( done), { std::forward< Callback>( callbacks)...});
-            }
+         } // condition
 
-         } // conditional
+         template< typename C, typename... Callback>
+         void listen( C&& condition, Callback&&... callbacks)
+         {
+            auto& device = communication::ipc::inbound::device();
+            auto handler = handler_type{ std::forward< Callback>( callbacks)...};
+            auto subscription = scope::subscribe( handler.types());
+            handler += common::message::handle::defaults( device); 
+            common::message::dispatch::relaxed::pump( std::forward< C>( condition), handler, device);
+         }
 
 
          template< typename... Callback>

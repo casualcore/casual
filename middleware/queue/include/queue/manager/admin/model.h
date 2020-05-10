@@ -108,7 +108,22 @@ namespace casual
                   size_type count{};
                   size_type size{};
                   size_type uncommitted{};
-                  platform::time::point::type timestamp;
+
+                  struct
+                  {
+                     size_type dequeued{};
+                     size_type enqueued{};
+
+                     CASUAL_CONST_CORRECT_SERIALIZE(
+                     {
+                        CASUAL_SERIALIZE( dequeued);
+                        CASUAL_SERIALIZE( enqueued);
+                     })
+
+                  } metric;
+
+                  platform::time::point::type last;
+                  platform::time::point::type created;
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
                   {
@@ -120,7 +135,9 @@ namespace casual
                      CASUAL_SERIALIZE( count);
                      CASUAL_SERIALIZE( size);
                      CASUAL_SERIALIZE( uncommitted);
-                     CASUAL_SERIALIZE( timestamp);
+                     CASUAL_SERIALIZE( metric);
+                     CASUAL_SERIALIZE( last);
+                     CASUAL_SERIALIZE( created);
                   })
 
                   inline friend bool operator < ( const Queue& lhs, const Queue& rhs)

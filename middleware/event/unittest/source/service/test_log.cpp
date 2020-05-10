@@ -13,7 +13,9 @@
 
 #include "common/exception/casual.h"
 #include "common/communication/instance.h"
+#include "common/communication/select.h"
 #include "common/signal.h"
+#include "common/result.h"
 #include "common/environment.h"
 
 namespace casual
@@ -29,12 +31,19 @@ namespace casual
 domain:
    name: service-domain
 
+   groups:
+      - name: first
+      - name: second
+        dependencies: [ first]
+
    servers:
       - path: "${CASUAL_HOME}/bin/casual-service-manager"
+        memberships: [ first]
 
    executables:
       - path: "${PWD}/bin/casual-event-service-log"
         arguments: [ --file, "${SERVICE_LOG_FILE}"]
+        memberships: [ second]
         
 )";
 
@@ -47,32 +56,10 @@ domain:
                domain::manager::unittest::Process domain{ { local::configuration}};
             };
 
-
-            namespace produce
+            auto ping_handle = []( auto& handle)
             {
-               // produce metric and make sure it has reach service-log
-               // we use the fact that we know if we invoke the next part in the chain it's guaranteed that
-               // the previous message has been processed.
-               auto metric = []( auto& service_log)
-               {
-                  auto ping_handle = []( auto& handle)
-                  {
-                     return common::communication::instance::ping( handle.ipc) == handle;
-                  };
-
-                  // make sure we get som metrics 
-                  casual::domain::manager::api::state();
-
-                  // make sure domain manager has sent the metrics
-                  EXPECT_TRUE( ping_handle( common::communication::instance::outbound::domain::manager::device().connector().process()));
-
-                  // make sure service-manager has received and sent the metric to service-log
-                  EXPECT_TRUE( ping_handle( common::communication::instance::outbound::service::manager::device().connector().process()));
-
-                  // make sure service-log has received the metric from service-manager
-                  EXPECT_TRUE( ping_handle( service_log));
-               };
-            } // produce
+               return common::communication::instance::ping( handle.ipc) == handle;
+            };
 
             namespace file
             {
@@ -82,18 +69,13 @@ domain:
                   return file.peek() == std::ifstream::traits_type::eof();
                };
 
-               namespace has
+               namespace wait
                {
                   auto content = []( auto& path)
                   {
-                     int count = 0;
                      while( file::empty( path))
-                     {
-                        if( ++count > 10)
-                           return false;
-                        
-                        common::process::sleep( std::chrono::milliseconds{ 2});
-                     }
+                        common::process::sleep( std::chrono::milliseconds{ 4});
+
                      return true;
                   };
                } // has
@@ -124,22 +106,29 @@ domain:
          // we use the _singleton uuid_ that we know to address service-log.
          auto service_log_handle = common::communication::instance::fetch::handle( 0xc9d132c7249241c8b4085cc399b19714_uuid);
 
+         // we know that the service-log is pingable after it has set up the event registration
+         EXPECT_TRUE( local::ping_handle( service_log_handle));
+
          // produce metric to log-file
-         local::produce::metric( service_log_handle);
+         EXPECT_TRUE( casual::domain::manager::api::state().executables.at( 0).alias == "casual-event-service-log");
+
+         // we wait until we got something
+         EXPECT_TRUE( local::file::wait::content( log_file)) << local::file::string( log_file);
          
          // move the file
          auto rotated = common::unittest::file::temporary::name( ".log");
          common::file::move( log_file, rotated);
 
+         
          // send hangup to service-log, to open the (new) file again
          common::signal::send( service_log_handle.pid, common::code::signal::hangup);
+         EXPECT_TRUE( local::ping_handle( service_log_handle));
 
-         // produce metric to the new log-file (with same name)
-         local::produce::metric( service_log_handle);
+         // produce metric to log-file
+         casual::domain::manager::api::state();
 
-
-         EXPECT_TRUE( local::file::has::content( log_file)) << local::file::string( log_file);
-         EXPECT_TRUE( local::file::has::content( rotated)) << local::file::string( rotated);
+         // we wait until we got something, again to the same logfile-name
+         EXPECT_TRUE( local::file::wait::content( log_file)) << local::file::string( log_file);
       }
 
 
@@ -155,12 +144,18 @@ domain:
 domain:
    name: service-domain
 
+   groups:
+      - name: first
+      - name: second
+        dependencies: [ first]
    servers:
       - path: "${CASUAL_HOME}/bin/casual-service-manager"
+        memberships: [ first]
 
    executables:
       - path: "${PWD}/bin/casual-event-service-log"
         arguments: [ --file, "${SERVICE_LOG_FILE}", --discard, '^[.].*$']
+        memberships: [ second]
         
 )"};
 
@@ -168,7 +163,11 @@ domain:
          // we use the _singleton uuid_ that we know to address service-log.
          auto service_log_handle = common::communication::instance::fetch::handle( 0xc9d132c7249241c8b4085cc399b19714_uuid);
 
-         local::produce::metric( service_log_handle);
+         // we know that the service-log is pingable after it has set up the event registration
+         EXPECT_TRUE( local::ping_handle( service_log_handle));
+
+         // produce metric to log-file
+         casual::domain::manager::api::state();
 
          // the call should be discarded         
          EXPECT_TRUE( local::file::empty( log_file)) << local::file::string( log_file);
@@ -187,12 +186,18 @@ domain:
 domain:
    name: service-domain
 
+   groups:
+      - name: first
+      - name: second
+        dependencies: [ first]
    servers:
       - path: "${CASUAL_HOME}/bin/casual-service-manager"
+        memberships: [ first]
 
    executables:
       - path: "${PWD}/bin/casual-event-service-log"
         arguments: [ --file, "${SERVICE_LOG_FILE}", --filter, '^[.].*$']
+        memberships: [ second]
         
 )"};
 
@@ -200,10 +205,14 @@ domain:
          // we use the _singleton uuid_ that we know to address service-log.
          auto service_log_handle = common::communication::instance::fetch::handle( 0xc9d132c7249241c8b4085cc399b19714_uuid);
 
-         local::produce::metric( service_log_handle);
+         // we know that the service-log is pingable after it has set up the event registration
+         EXPECT_TRUE( local::ping_handle( service_log_handle));
+
+         // make sure we get som metrics 
+         casual::domain::manager::api::state();
 
          // the call should match the filter, hence logged        
-         EXPECT_TRUE( local::file::has::content( log_file)) << local::file::string( log_file);
+         EXPECT_TRUE( local::file::wait::content( log_file)) << local::file::string( log_file);
       }
 
 

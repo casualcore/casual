@@ -76,6 +76,12 @@ namespace casual
                   //! arguments: queue, id;
                   sql::database::Statement remove;
                } message;
+
+               struct
+               {
+                  //! arguments: (queue)id;
+                  sql::database::Statement reset;
+               } metric;
             };
 
             Statement statement( sql::database::Connection& connection);

@@ -47,11 +47,6 @@ namespace casual
                common::move::basic_pimpl< Implementation> m_implementation;
             };
 
-            namespace process
-            {
-               //! Waits for the domain manager to boot
-               common::process::Handle wait();
-            } // process
 
          } // unittest
       } // manager

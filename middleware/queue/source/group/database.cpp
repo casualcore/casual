@@ -116,7 +116,7 @@ namespace casual
                {
                   Trace trace{ "queue::group::database::local::check_version"};
 
-                  auto required = sql::database::Version{ 2, 0};
+                  auto required = sql::database::Version{ 3, 0};
 
                   auto version = sql::database::version::get( connection);
 
@@ -198,20 +198,23 @@ namespace casual
             Trace trace{ "queue::Database::create"};
 
             /*
-               id           INTEGER  PRIMARY KEY,
-               name         TEXT     UNIQUE,
-               retry_count  INTEGER  NOT NULL,
-               retry_delay  INTEGER  NOT NULL,
-               error        INTEGER  NOT NULL,
-               count        INTEGER  NOT NULL, -- number of (committed) messages
-               size         INTEGER  NOT NULL, -- total size of all (committed) messages
+               id                INTEGER  PRIMARY KEY,
+               name              TEXT     UNIQUE,
+               retry_count       INTEGER  NOT NULL,
+               retry_delay       INTEGER  NOT NULL,
+               error             INTEGER  NOT NULL,
+               count             INTEGER  NOT NULL, -- number of (committed) messages
+               size              INTEGER  NOT NULL, -- total size of all (committed) messages
                uncommitted_count INTEGER  NOT NULL, -- uncommitted messages
-               timestamp    INTEGER NOT NULL -- last update to the queue 
+               metric_dequeued   INTEGER  NOT NULL,
+               metric_enqueued   INTEGER  NOT NULL,
+               last              INTEGER NOT NULL, -- last update to the queue
+               created           INTEGER NOT NULL -- when the queue was created
              */
 
             auto now = platform::time::clock::type::now();
 
-            constexpr auto statement = "INSERT INTO queue VALUES ( NULL,?,?,?,?, 0, 0, 0, ?);";
+            constexpr auto statement = "INSERT INTO queue VALUES ( NULL,?,?,?,?, 0, 0, 0, 0, 0, 0, ?);";
 
             // Create corresponding error queue
             // Note that 'error-queues' has '0' as error, hence a rollbacked message will never be moved to another queue.
@@ -532,15 +535,18 @@ namespace casual
                common::message::queue::information::Queue queue;
 
                /*
-                  id           INTEGER  PRIMARY KEY,
-                  name         TEXT     UNIQUE,
-                  retry_count  INTEGER  NOT NULL,
-                  retry_delay  INTEGER  NOT NULL,
-                  error        INTEGER  NOT NULL,
-                  count        INTEGER  NOT NULL, -- number of (committed) messages
-                  size         INTEGER  NOT NULL, -- total size of all (committed) messages
+                  id                INTEGER  PRIMARY KEY,
+                  name              TEXT     UNIQUE,
+                  retry_count       INTEGER  NOT NULL,
+                  retry_delay       INTEGER  NOT NULL,
+                  error             INTEGER  NOT NULL,
+                  count             INTEGER  NOT NULL, -- number of (committed) messages
+                  size              INTEGER  NOT NULL, -- total size of all (committed) messages
                   uncommitted_count INTEGER  NOT NULL, -- uncommitted messages
-                  timestamp    INTEGER NOT NULL -- last update to the queue 
+                  metric_dequeued   INTEGER  NOT NULL,
+                  metric_enqueued   INTEGER  NOT NULL,
+                  last              INTEGER NOT NULL, -- last update to the queue
+                  created           INTEGER NOT NULL -- when the queue was created
                 */
                sql::database::row::get( row, 
                   queue.id.underlaying(),
@@ -551,7 +557,10 @@ namespace casual
                   queue.count,
                   queue.size,
                   queue.uncommitted,
-                  queue.timestamp 
+                  queue.metric.dequeued,
+                  queue.metric.enqueued,
+                  queue.last,
+                  queue.created 
                );
                return queue;
             });
@@ -567,6 +576,18 @@ namespace casual
                local::transform::row(row, message);
                return message;
             });
+         }
+
+         void Database::metric_reset( const std::vector< common::strong::queue::id>& ids)
+         {
+            Trace trace{ "queue::Database::metric_reset"};
+
+            auto reset = [&]( auto id)
+            {
+               m_statement.metric.reset.execute( id.value());
+            };
+
+            algorithm::for_each( ids, reset);
          }
 
 

@@ -28,71 +28,87 @@ namespace casual
          {
             namespace
             {
-               template<typename F>
-               void format( std::ostream& out, const platform::time::point::type& time, F function)
+               namespace detail
                {
-                  if( time == platform::time::point::limit::zero())
-                     return;
-
-                  // to_time_t does not exist as a static member in common::clock_type
-                  auto time_t = platform::time::clock::type::to_time_t( time);
-
-                  struct tm time_parts;
-
+                  namespace global
                   {
-                     // Until we get a thread safe localtime_r we lock
-                     std::unique_lock< std::mutex> lock{ environment::variable::mutex()};
-                     function( &time_t, &time_parts);
+                     struct local_time_t
+                     {
+                        local_time_t()
+                        {
+                           // initialize the TZ stuff...
+                           // To be conformant we "need to do this".
+                           ::tzset();
+                        }
+                        
+                        void operator()( const ::time_t& timer, ::tm& time)
+                        {
+                           ::localtime_r( &timer, &time);
+                        }
+                     };
+
+                     local_time_t local_time{};
+
+                  } // global
+                  
+                  auto format( std::ostream& out, const tm& time, std::chrono::microseconds fraction, traits::priority::tag< 1>) 
+                     -> decltype( void( time.tm_gmtoff))
+                  {
+                     // just to help when we go to hours and minutes.
+                     const auto offset = std::abs( time.tm_gmtoff);
+                     
+                     out << std::setfill( '0') <<
+                     std::setw( 4) << time.tm_year + 1900 << '-' <<
+                     std::setw( 2) << time.tm_mon + 1 << '-' <<
+                     std::setw( 2) << time.tm_mday << 'T' <<
+                     std::setw( 2) << time.tm_hour << ':' <<
+                     std::setw( 2) << time.tm_min << ':' <<
+                     std::setw( 2) << time.tm_sec << '.' <<
+                     std::setw( 6) << fraction.count() << 
+                     ( time.tm_gmtoff < 0 ? '-' : '+') << 
+                     // get the 'hour' part
+                     std::setw( 2) << offset / 3600 << ':' << 
+                     // get the 'minit' part
+                     std::setw( 2) << ( offset % 3600) / 60;
                   }
 
-                  const auto ms = std::chrono::duration_cast< std::chrono::milliseconds>( time.time_since_epoch());
+                  // implement an alternative implementation if tm does not have a tm_gmtoff on some platform.
+                  // we don't do it until we know there is one we _suport_
+                  // void format( std::ostream& out, const tm& time, std::chrono::microseconds fraction, traits::priority::tag< 0>)
+                  
+                  
+               } // detail
 
-                  out << std::setfill( '0') <<
-                     std::setw( 4) << time_parts.tm_year + 1900 << '-' <<
-                     std::setw( 2) << time_parts.tm_mon + 1 << '-' <<
-                     std::setw( 2) << time_parts.tm_mday << 'T' <<
-                     std::setw( 2) << time_parts.tm_hour << ':' <<
-                     std::setw( 2) << time_parts.tm_min << ':' <<
-                     std::setw( 2) << time_parts.tm_sec << '.' <<
-                     std::setw( 3) << ms.count() % 1000;
-               }
-
-               template<typename F>
-               std::string format( const platform::time::point::type& time, F function)
+               void format( std::ostream& out, platform::time::point::type timepoint)
                {
-                  std::ostringstream result;
-                  format( result, time, std::move( function));
+                  if( timepoint == platform::time::point::limit::zero())
+                     return;
 
-                  return std::move( result).str();
+                  auto timer = platform::time::clock::type::to_time_t( timepoint);
+
+                  ::tm time;
+                  detail::global::local_time( timer, time);
+
+                  const auto us = std::chrono::duration_cast< std::chrono::microseconds>( timepoint.time_since_epoch());
+
+                  detail::format( out, time, us % ( 1000 * 1000), traits::priority::tag< 1>{});
                }
 
             } // <unnamed>
          }
 
-         std::string local( const platform::time::point::type& time)
+         std::string local( platform::time::point::type timepoint)
          {
-            return internal::format( time, &::localtime_r);
+            std::ostringstream out;
+            local( out, timepoint);
+            return std::move( out).str();
          }
 
-         void local( std::ostream& out, const platform::time::point::type& time)
+         void local( std::ostream& out, platform::time::point::type timepoint)
          {
-            internal::format( out, time, &::localtime_r);
+            internal::format( out, timepoint);
          }
 
-         std::string local()
-         {
-            return local( platform::time::clock::type::now());
-         }
-
-         std::string universal()
-         {
-            return local( platform::time::clock::type::now());
-         }
-
-         std::string universal( const platform::time::point::type& time)
-         {
-            return internal::format( time, &gmtime_r);
-         }
 
          namespace from
          {

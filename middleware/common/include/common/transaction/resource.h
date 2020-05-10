@@ -59,6 +59,14 @@ namespace casual
             friend bool operator == ( strong::resource::id lhs, const Resource& rhs) { return lhs == rhs.m_id;}
 
          private:
+            //! tries to reopen the resource
+            code reopen();
+
+            //! if `functor` returns xa::resource_fail, reopen the resource, 
+            //! and apply the `functor` again
+            template< typename F>
+            code reopen_guard( F&& functor);
+
             bool prepared( const transaction::ID& transaction);
 
 

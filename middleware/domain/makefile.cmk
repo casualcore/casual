@@ -43,7 +43,6 @@ manager_archive = LinkArchive( 'bin/casual-domain-manager',
     Compile( 'source/manager/handle.cpp'),
     Compile( 'source/manager/admin/server.cpp'),
     Compile( 'source/manager/configuration.cpp'),
-    Compile( 'source/manager/persistent.cpp'),
     Compile( 'source/transform.cpp'),
     Compile( 'source/manager/manager.cpp'),
 ])
@@ -136,6 +135,7 @@ domain_unittest_library = LinkLibrary( 'bin/casual-domain-unittest',
         Compile( 'source/manager/unittest/process.cpp'),
     ],
     [
+        common_archive,
         'casual-common',
         'casual-unittest',
     ]

@@ -208,18 +208,19 @@ namespace casual
                
                decltype( call::rediscover()) tasks;
 
-               auto once = [&tasks]() { tasks = call::rediscover();};
-               auto done = [&tasks](){ return tasks.empty();};
+               auto condition = event::condition::compose( 
+                  event::condition::prelude( [&tasks]() { tasks = call::rediscover();}),
+                  event::condition::done( [&tasks](){ return tasks.empty();}));
                
-               event::conditional::listen( std::move( once), std::move( done), 
-                  [&tasks]( const common::message::event::general::Task& task)
+               event::listen( condition, 
+                  [&tasks]( const common::message::event::Task& task)
                   {
                      common::message::event::terminal::print( std::cout, task);
 
                      if( task.done())
                         algorithm::trim( tasks, algorithm::remove( tasks, task.correlation));
                   },
-                  []( const common::message::event::general::sub::Task& task)
+                  []( const common::message::event::sub::Task& task)
                   {
                      common::message::event::terminal::print( std::cout, task);
                   }

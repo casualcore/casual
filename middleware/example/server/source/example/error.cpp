@@ -145,7 +145,7 @@ namespace casual
                      handle::service::Conversation{},
                      message::handle::Shutdown{});
 
-                  message::dispatch::blocking::pump( handler, device);
+                  message::dispatch::pump( handler, device);
                }
 
                void main( int argc, char** argv)

@@ -58,9 +58,9 @@ namespace casual
 
       }
 
-      TEST( casual_common_message_dispatch, construct)
+      TEST( common_message_dispatch, construct)
       {
-         local::dispatch_type handler{ local::TestHandler()};
+         local::dispatch_type handler{ []( message::shutdown::Request&){}};
 
          EXPECT_TRUE( handler.size() == 1);
 
@@ -68,25 +68,17 @@ namespace casual
 
          ASSERT_TRUE( types.size() == 1);
          EXPECT_TRUE( types.at( 0) == message::shutdown::Request::type());
-
       }
 
-      /*
-       * Does not work. need to work on traits::function...
-      TEST( casual_common_message_dispatch, construct_with_member_function)
+      TEST( common_message_dispatch, condition)
       {
-         local::TestMember holder;
+         bool idle = false;
+         auto condition = message::dispatch::condition::compose( message::dispatch::condition::idle( [&idle](){ idle = true;}));
 
-         local::dispatch_type handler{ std::bind( &local::TestMember::handle, &holder, std::placeholders::_1)};
-
-         EXPECT_TRUE( handler.size() == 1);
-
-         auto types = handler.types();
-
-         ASSERT_TRUE( types.size() == 1);
-         EXPECT_TRUE( types.at( 0) == message::server::ping::Request::message_type);
+         message::dispatch::condition::detail::invoke< message::dispatch::condition::detail::tag::idle>( condition);
+         EXPECT_TRUE( idle);
       }
-      */
+
 
       // We have to be in the same ns as marshal::input so the friend-declaration
       // for input::Binary kicks in.
@@ -95,7 +87,7 @@ namespace casual
          namespace input
          {
 
-            TEST( casual_common_message_dispatch, dispatch__gives_correct_dispatch)
+            TEST( common_message_dispatch, dispatch__gives_correct_dispatch)
             {
                common::unittest::Trace trace;
 
@@ -107,7 +99,7 @@ namespace casual
                EXPECT_TRUE( handler( complete));
             }
 
-            TEST( casual_common_message_dispatch, dispatch__gives_no_found_handler)
+            TEST( common_message_dispatch, dispatch__gives_no_found_handler)
             {
                common::unittest::Trace trace;
 
@@ -127,7 +119,7 @@ namespace casual
       namespace message
       {
 
-         TEST( casual_common_message_reverse, transaction_resource_rollback_Request__gives__transaction_resource_rollback_Reply)
+         TEST( common_message_reverse, transaction_resource_rollback_Request__gives__transaction_resource_rollback_Reply)
          {
             common::unittest::Trace trace;
 

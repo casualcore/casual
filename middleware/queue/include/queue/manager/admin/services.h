@@ -31,6 +31,11 @@ namespace casual
                      constexpr auto remove = ".casual/queue/messages/remove";
                      
                   } // messages
+
+                  namespace metric
+                  {
+                     constexpr auto reset = ".casual/queue/metric/reset";
+                  } // metric
                   
                } // name
 

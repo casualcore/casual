@@ -80,8 +80,7 @@ namespace casual
 
                inline friend bool operator < ( const Group& l, const Group& r) { return l.id < r.id;}
 
-               //! For persistent state
-               CASUAL_CONST_CORRECT_SERIALIZE
+               CASUAL_LOG_SERIALIZE
                (
                   CASUAL_SERIALIZE( id);
                   CASUAL_SERIALIZE( name);
@@ -125,8 +124,7 @@ namespace casual
 
                inline friend bool operator < ( const Process& l, const Process& r) { return l.id < r.id;}
 
-               //! For persistent state
-               CASUAL_CONST_CORRECT_SERIALIZE
+               CASUAL_LOG_SERIALIZE
                (
                   CASUAL_SERIALIZE( id);
                   CASUAL_SERIALIZE( alias);
@@ -177,7 +175,7 @@ namespace casual
                friend bool operator == ( const Instance& lhs, common::strong::process::id pid) { return lhs.handle == pid;}
                friend bool operator == ( common::strong::process::id pid, const Instance& rhs) { return pid == rhs.handle;}
 
-               CASUAL_CONST_CORRECT_SERIALIZE({
+               CASUAL_LOG_SERIALIZE({
                   CASUAL_SERIALIZE( handle);
                   CASUAL_SERIALIZE( state);
                   CASUAL_SERIALIZE( spawnpoint);
@@ -215,7 +213,7 @@ namespace casual
                void scale( size_type instances);
                void remove( pid_type instance);
 
-               CASUAL_CONST_CORRECT_SERIALIZE({
+               CASUAL_LOG_SERIALIZE({
                   Process::serialize( archive);
                   CASUAL_SERIALIZE( instances);
                })
@@ -265,8 +263,7 @@ namespace casual
 
                friend bool operator == ( const Server& lhs, common::strong::process::id rhs);
 
-               //! For persistent state
-               CASUAL_CONST_CORRECT_SERIALIZE({
+               CASUAL_LOG_SERIALIZE({
                   Process::serialize( archive);;
                   CASUAL_SERIALIZE( resources);
                   CASUAL_SERIALIZE( restrictions);
@@ -309,6 +306,7 @@ namespace casual
                shutdown,
                error,
             };
+            friend std::ostream& operator << ( std::ostream& out, Runlevel value);
 
             std::vector< state::Server> servers;
             std::vector< state::Executable> executables;
@@ -352,8 +350,7 @@ namespace casual
 
                id_type gateway;
 
-               //! For persistent state
-               CASUAL_CONST_CORRECT_SERIALIZE
+               CASUAL_LOG_SERIALIZE
                (
                   CASUAL_SERIALIZE( master);
                   CASUAL_SERIALIZE( transaction);
@@ -365,19 +362,12 @@ namespace casual
             } group_id;
 
             common::event::dispatch::Collection<
+               task::message::domain::Information,
                common::message::event::process::Spawn,
                common::message::event::process::Exit,
-               common::message::event::general::Task,
-               common::message::event::general::sub::Task,
-               common::message::event::domain::task::Begin,
-               common::message::event::domain::task::End,
-               common::message::event::domain::boot::Begin,
-               common::message::event::domain::boot::End,
-               common::message::event::domain::shutdown::Begin,
-               common::message::event::domain::shutdown::End,
-               common::message::event::domain::Group,
-               common::message::event::domain::Error,
-               common::message::event::domain::server::Connect
+               common::message::event::Task,
+               common::message::event::sub::Task,
+               common::message::event::Error
             > event;
 
       
@@ -394,8 +384,8 @@ namespace casual
             void runlevel( Runlevel runlevel) noexcept;
             //! @}
 
-            std::vector< state::dependency::Group> bootorder();
-            std::vector< state::dependency::Group> shutdownorder();
+            std::vector< state::dependency::Group> bootorder() const;
+            std::vector< state::dependency::Group> shutdownorder() const;
 
             //! Cleans up an exit (server or executable).
             //!
@@ -416,6 +406,7 @@ namespace casual
             state::Server* server( common::strong::process::id pid) noexcept;
             const state::Server* server( common::strong::process::id pid) const noexcept;
             state::Executable* executable( common::strong::process::id pid) noexcept;
+            const state::Executable* executable( common::strong::process::id pid) const noexcept;
 
 
             state::Server& entity( state::Server::id_type id);
@@ -439,16 +430,18 @@ namespace casual
 
             common::process::Handle singleton( const common::Uuid& id) const noexcept;
 
+            //! @return all 'running' id:s of 'aliases' that are untouchable, ie. internal casual stuff.
+            std::tuple< std::vector< state::Server::id_type>, std::vector< state::Executable::id_type>> untouchables() const noexcept;
+
             //! Extract all resources (names) configured to a specific process (server)
             //!
             //! @param pid process id
             //! @return resource names
             std::vector< std::string> resources( common::strong::process::id pid);
 
-
-            //! For persistent state
-            CASUAL_CONST_CORRECT_SERIALIZE
+            CASUAL_LOG_SERIALIZE
             (
+               CASUAL_SERIALIZE_NAME( runlevel(), "runlevel");
                CASUAL_SERIALIZE( manager_id);
                CASUAL_SERIALIZE( groups);
                CASUAL_SERIALIZE( servers);
@@ -458,8 +451,7 @@ namespace casual
                CASUAL_SERIALIZE( configuration);
             )
 
-            bool mandatory_prepare = true;
-            bool persist = true;
+            bool bare = false;
 
          private:
             std::vector< common::environment::Variable> variables( const std::vector< common::environment::Variable>& variables);

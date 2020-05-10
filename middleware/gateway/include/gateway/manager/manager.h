@@ -12,19 +12,10 @@ namespace casual
 {
    namespace gateway
    {
-      namespace manager
-      {
-         struct Settings
-         {
-            std::string configuration;
-         };
-
-      } // manager
-
       class Manager
       {
       public:
-         Manager( manager::Settings settings);
+         Manager();
          ~Manager();
 
          void start();

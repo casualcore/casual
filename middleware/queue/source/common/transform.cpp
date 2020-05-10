@@ -62,7 +62,10 @@ namespace casual
             result.count = queue.count;
             result.size = queue.size;
             result.uncommitted = queue.uncommitted;
-            result.timestamp = queue.timestamp;
+            result.metric.enqueued = queue.metric.enqueued;
+            result.metric.dequeued = queue.metric.dequeued;
+            result.last = queue.last;
+            result.created = queue.created;
 
             return result;
          }

@@ -467,11 +467,11 @@ namespace casual
                                  Trace trace{ "gateway::inbound::local::handle::internal::call::lookup::reply"};
                                  common::log::line( verbose::log, "message: ", message);
 
-                                 auto send_error_reply = []( State& state, auto& message)
+                                 auto send_error_reply = [&state, &message]( auto code)
                                  {
                                     common::message::service::call::Reply reply;
                                     reply.correlation = message.correlation;
-                                    reply.code.result = common::code::xatmi::service_error;
+                                    reply.code.result = code;
                                     state.external.send( reply);
                                  };
 
@@ -489,20 +489,21 @@ namespace casual
                                        }
                                        catch( const common::exception::system::communication::Unavailable&)
                                        {
-                                          log::line( common::log::category::error, "server: ", message.process, " has been terminated during interdomain call - action: reply with TPESVCERR");
-                                          send_error_reply( state, message);
+                                          log::line( common::log::category::error, "server: ", message.process, " has been terminated during interdomain call - action: reply with: ", common::code::xatmi::service_error);
+                                          send_error_reply( common::code::xatmi::service_error);
                                        }
                                        break;
                                     }
                                     case Enum::absent:
                                     {
-                                       log::line( common::log::category::error, "service: ", message.service, " is not handled by this domain (any more) - action: reply with TPESVCERR");
-                                       send_error_reply( state, message);
+                                       log::line( common::log::category::error, "service: ", message.service, " is not handled by this domain (any more) - action: reply with: ", common::code::xatmi::no_entry);
+                                       send_error_reply( common::code::xatmi::no_entry);
                                        break;
                                     }
                                     default:
                                     {
-                                       log::line( common::log::category::error, "unexpected state on lookup reply: ", message, " - action: drop message");
+                                       log::line( common::log::category::error, "unexpected state on lookup reply: ", message, " - action: reply with: ", common::code::xatmi::service_error);
+                                       send_error_reply( common::code::xatmi::service_error);
                                        break;
                                     }
                                  }

@@ -176,48 +176,55 @@ namespace casual
                      auto verbose = common::environment::variable::get( "CASUAL_CURL_VERBOSE", 0) == 1;
                   } // log
                   
+                  namespace global
+                  {
+                     auto const loggable_content_type_regexp = std::regex{ R"(text\/.*)"};
+                  } // global
 
                } // <unnamed>
             } // local
 
-            namespace detail
+            namespace receive
             {
-               namespace receive
+               namespace transcode
                {
-                  namespace transcode
+                  common::buffer::Payload payload( state::pending::Request&& request)
                   {
-                     state::pending::Request payload( state::pending::Request&& request)
+                     Trace trace{ "http::outbound::request::detail::receive::transcode::payload"};
+                     log::line( verbose::log, "request from wire: ", request);
+
+                     // set buffer type
                      {
-                        Trace trace{ "http::outbound::request::detail::receive::transcode::payload"};
-                        log::line( verbose::log, "request from wire: ", request);
+                        auto content = request.state().header.reply.find( "content-type");
 
-                        // set buffer type
+                        if( content)
                         {
-                           auto content = request.state().header.reply.find( "content-type");
+                           auto type = protocol::convert::to::buffer( content.value());
 
-                           if( content)
+                           if( ! type.empty())
+                              request.state().payload.type = std::move( type);
+                           else
                            {
-                              auto type = protocol::convert::to::buffer( content.value());
+                              log::line( common::log::category::error, "failed to deduce buffer type for content-type: ", content.value());
 
-                              if( ! type.empty())
-                                 request.state().payload.type = std::move( type);
-                              else
-                                 log::line( common::log::category::error, "failed to deduce buffer type for content-type: ", content.value(), " - action: use same as call buffer");
+                              if( std::regex_match( content.value(), local::global::loggable_content_type_regexp))
+                                 log::line( common::log::category::verbose::error, "payload: ", view::String{ range::make( request.state().payload.memory)});
+
+                              return {};
                            }
                         }
-
-
-                        http::buffer::transcode::from::wire( request.state().payload);
-                   
-                        log::line( verbose::log, "request after transcoding: ", request);
-
-                        return std::move( request);
                      }
-                  } // transcode
-               } // receive
 
-            } // detail
+                     auto payload = std::move( request.state().payload);
 
+                     http::buffer::transcode::from::wire( payload);
+                     log::line( verbose::log, "payload: ", payload);
+
+                     return payload;
+                  }
+               } // transcode
+            } // receive
+            
 
             state::pending::Request prepare( const state::Node& node, common::message::service::call::callee::Request&& message)
             {
@@ -252,6 +259,11 @@ namespace casual
                   // TODO performance: there probably exists a better way than to reconnect,
                   //  but in "some" network stacks request gets lost, and no _failure_ is detected. 
                   curl::easy::set::option( easy, CURLOPT_FRESH_CONNECT, 1L);
+
+                  // we need to indicate that callee should "close" the connection.
+                  // one could think that curl would handle this by it self, since it "knows"
+                  // that we using "CURLOPT_FRESH_CONNECT", but no...
+                  request.state().header.request.add( "connection: close");
                }
 
                
@@ -292,13 +304,48 @@ namespace casual
 
             namespace code
             {
+               namespace local
+               {
+                  namespace
+                  {
+                     namespace xatmi
+                     {
+                        auto code = []( const auto& easy)
+                        {
+                           auto code = curl::response::code( easy);
+                           switch( code)
+                           {
+                              case 404:
+                              case 503: // ?
+                              case 501: // ?
+                                 return common::code::xatmi::no_entry;
+
+                              case 408:
+                              case 504: 
+                                 return common::code::xatmi::timeout;
+
+                              case 429:
+                                 return common::code::xatmi::limit;
+
+                              case 500:
+                                 return common::code::xatmi::system;
+                           };
+                           
+                           // if http says ok, and we didn't get casual headers -> protocol error
+                           if( code >= 200 && code < 300)
+                              return common::code::xatmi::protocol;
+
+                           return common::code::xatmi::system;
+                        };
+                     } // xatmi
+                  } // <unnamed>
+               } // local
                common::message::service::Code transform( const state::pending::Request& request, curl::type::code::easy code) noexcept
                {
                   Trace trace{ "http::outbound::request::code::transform"};
 
                   auto& header = request.state().header.reply;
-                  log::line( verbose::log, "header: ", header);
-
+                  
                   // check if we've got casual header codes, if so that is the "state", regardless of what curl thinks.
 
                   if( auto value = header.find( http::header::name::result::code))
@@ -313,10 +360,7 @@ namespace casual
                   }
                   else if( code == curl::type::code::easy::CURLE_OK)
                   {
-                     log::line( common::log::category::error, common::code::xatmi::protocol, " curl says OK, but no casual headers");
-                     log::line( common::log::category::verbose::error, CASUAL_NAMED_VALUE( request));
-
-                     return { common::code::xatmi::protocol, 0};
+                     return { local::xatmi::code( request.easy()), 0};
                   }
                   else
                   {

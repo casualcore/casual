@@ -22,8 +22,9 @@ namespace casual
       {
          namespace category
          {
-            constexpr auto none() { return "";}
-            constexpr auto admin() { return ".admin";}
+            constexpr auto none = "";
+            constexpr auto admin = ".admin";
+            constexpr auto deprecated = ".deprecated";
          } // category
 
          namespace transaction

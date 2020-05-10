@@ -32,7 +32,7 @@ namespace casual
 
          namespace error
          {
-            using Severity = message::event::domain::Error::Severity;
+            using Severity = message::event::Error::Severity;
 
             //! Sends an error event to the domain manager, that will forward the event
             //! to possible listeners

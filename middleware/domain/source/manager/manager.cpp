@@ -51,10 +51,10 @@ namespace casual
             // start casual-domain-pending-message
             m_state.process.pending = handle::start::pending::message();
 
-            if( m_state.mandatory_prepare)
+            if( ! m_state.bare)
                handle::mandatory::boot::prepare( m_state);
 
-            handle::boot( m_state);
+            handle::boot( m_state, settings.event.id);
          }
 
          Manager::~Manager()
@@ -69,22 +69,6 @@ namespace casual
             {
                namespace callback
                {
-                  auto idle( State& state)
-                  {
-                     return [&state]()
-                     {
-                        state.tasks.idle( state);
-                     };
-                  }
-
-                  auto done( State& state)
-                  {
-                     return [&state]()
-                     {
-                        return ! state.execute();
-                     };
-                  }
-
                   auto error( State& state)
                   {
                      return [&state]()
@@ -116,6 +100,16 @@ namespace casual
 
                } // callback
 
+               auto condition( State& state)
+               {
+                  namespace condition = message::dispatch::condition;
+                  return condition::compose(
+                     condition::idle( [&state]() { state.tasks.idle( state);}),
+                     condition::done( [&state]() { return ! state.execute();}),
+                     condition::error( callback::error( state))
+                  );
+               }
+
             } // <unnamed>
          } // local
 
@@ -125,12 +119,10 @@ namespace casual
 
             auto handler = manager::handler( m_state);
 
-            message::dispatch::empty::conditional::pump(
+            message::dispatch::pump(
+               local::condition( m_state),
                handler,
-               manager::ipc::device(),
-               local::callback::idle( m_state),
-               local::callback::done( m_state),
-               local::callback::error( m_state));
+               manager::ipc::device());
          }
 
       } // manager

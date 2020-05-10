@@ -60,10 +60,11 @@ namespace casual
                manager::action::resource::Instances( m_state));
 
             // Make sure we wait for the resources to get ready
-            common::message::dispatch::conditional::pump( 
+            namespace dispatch = common::message::dispatch;
+            dispatch::pump( 
+               dispatch::condition::compose( dispatch::condition::done( [&](){ return m_state.booted();})),
                manager::handle::startup::handlers( m_state),
-               manager::ipc::device(),
-               [&](){ return m_state.booted();});
+               manager::ipc::device());
          }
 
          log::line( log::category::information, "transaction-manager is on-line");
@@ -100,16 +101,18 @@ namespace casual
          // Connect to domain
          communication::instance::connect( communication::instance::identity::transaction::manager);
 
-         auto empty_callback = [&]()
+         auto idle_callback = [&]()
          {
-            // if input "queue" is empty, we persist and send persistent replies, if any.
+            // if input device is 'idle', we persist and send persistent replies, if any.
             manager::handle::persist::send( m_state);
          };
 
-         common::message::dispatch::empty::pump(
+         namespace dispatch = common::message::dispatch;
+
+         dispatch::pump(
+            dispatch::condition::compose( dispatch::condition::idle( std::move( idle_callback))),
             handler,
-            manager::ipc::device(),
-            empty_callback);
+            manager::ipc::device());
 
       }
 

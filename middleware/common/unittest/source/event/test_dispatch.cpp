@@ -18,7 +18,7 @@ namespace casual
          common::unittest::Trace trace;
 
          event::dispatch::Collection<
-            message::event::domain::Error,
+            message::event::Error,
             message::event::process::Spawn,
             message::event::process::Exit> collection;
 
@@ -30,7 +30,7 @@ namespace casual
          common::unittest::Trace trace;
 
          event::dispatch::Collection<
-            message::event::domain::Error,
+            message::event::Error,
             message::event::process::Spawn,
             message::event::process::Exit> collection;
 
@@ -47,19 +47,19 @@ namespace casual
          common::unittest::Trace trace;
 
          event::dispatch::Collection<
-            message::event::domain::Error,
+            message::event::Error,
             message::event::process::Spawn,
             message::event::process::Exit> collection;
 
          {
             message::event::subscription::Begin begin;
             begin.process = process::handle();
-            begin.types.push_back( message::event::domain::Error::type());
+            begin.types.push_back( message::event::Error::type());
 
             collection.subscription( begin);
          }
 
-         EXPECT_TRUE( collection.active< message::event::domain::Error>()) << CASUAL_NAMED_VALUE( collection);
+         EXPECT_TRUE( collection.active< message::event::Error>()) << CASUAL_NAMED_VALUE( collection);
          EXPECT_TRUE( ! collection.active< message::event::process::Spawn>());
          EXPECT_TRUE( ! collection.active< message::event::process::Exit>());
       }
@@ -69,7 +69,7 @@ namespace casual
          common::unittest::Trace trace;
 
          event::dispatch::Collection<
-            message::event::domain::Error,
+            message::event::Error,
             message::event::process::Spawn,
             message::event::process::Exit> collection;
 
@@ -77,14 +77,14 @@ namespace casual
             message::event::subscription::Begin begin;
             begin.process = process::handle();
             begin.types = {
-                  message::event::domain::Error::type(),
+                  message::event::Error::type(),
                   message::event::process::Exit::type(),
                   message::event::process::Spawn::type()};
 
             collection.subscription( begin);
          }
 
-         EXPECT_TRUE( collection.active< message::event::domain::Error>()) << CASUAL_NAMED_VALUE( collection);
+         EXPECT_TRUE( collection.active< message::event::Error>()) << CASUAL_NAMED_VALUE( collection);
          EXPECT_TRUE( collection.active< message::event::process::Spawn>());
          EXPECT_TRUE( collection.active< message::event::process::Exit>());
       }
@@ -94,14 +94,14 @@ namespace casual
          common::unittest::Trace trace;
 
          event::dispatch::Collection<
-            message::event::domain::Error,
+            message::event::Error,
             message::event::process::Spawn,
             message::event::process::Exit> collection;
 
          {
             message::event::subscription::Begin begin;
             begin.process = process::handle();
-            begin.types.push_back( message::event::domain::Error::type());
+            begin.types.push_back( message::event::Error::type());
 
             collection.subscription( begin);
          }
@@ -113,7 +113,7 @@ namespace casual
             collection.subscription( end);
          }
 
-         EXPECT_TRUE( ! collection.active< message::event::domain::Error>()) << CASUAL_NAMED_VALUE( collection) << " " << CASUAL_NAMED_VALUE( process::handle());
+         EXPECT_TRUE( ! collection.active< message::event::Error>()) << CASUAL_NAMED_VALUE( collection) << " " << CASUAL_NAMED_VALUE( process::handle());
          EXPECT_TRUE( ! collection.active< message::event::process::Spawn>());
          EXPECT_TRUE( ! collection.active< message::event::process::Exit>());
       }

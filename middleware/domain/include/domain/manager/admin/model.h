@@ -186,7 +186,7 @@ namespace casual
 
                   struct Task
                   {
-                     common::strong::task::id id;
+                     common::Uuid id;
                      std::string description;
 
                      CASUAL_CONST_CORRECT_SERIALIZE
@@ -205,6 +205,18 @@ namespace casual
                         shutdown = 2,
                         error = 3,
                      };
+                     inline std::ostream& operator << ( std::ostream& out, Runlevel runlevel)
+                     {
+                        switch( runlevel)
+                        {
+                           case Runlevel::startup: return out << "startup";
+                           case Runlevel::running: return out << "running";
+                           case Runlevel::shutdown: return out << "shutdown";
+                           case Runlevel::error: return out << "error";
+                        }
+                        assert( ! "invalid runlevel");
+
+                     }
                   } // state
 
                   struct State
@@ -276,8 +288,16 @@ namespace casual
                      {
                         std::string name;
 
-                        CASUAL_CONST_CORRECT_SERIALIZE
-                        (
+                        CASUAL_CONST_CORRECT_SERIALIZE(
+                           CASUAL_SERIALIZE( name);
+                        )
+                     };
+
+                     struct Group
+                     {
+                        std::string name;
+
+                        CASUAL_CONST_CORRECT_SERIALIZE(
                            CASUAL_SERIALIZE( name);
                         )
                      };

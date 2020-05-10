@@ -214,7 +214,7 @@ namespace casual
                      message::handle::Shutdown{}
                );
 
-               message::dispatch::blocking::pump( handler, communication::ipc::inbound::device());
+               message::dispatch::pump( handler, communication::ipc::inbound::device());
             }
             catch( const exception::casual::Shutdown&)
             {

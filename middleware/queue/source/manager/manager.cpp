@@ -108,16 +108,19 @@ namespace casual
                      return ! g.process.pid;
                   }));
 
-                  auto done = [&]()
-                  {
-                     return common::algorithm::all_of( state.groups, []( auto& group){ return group.connected();});
-                  };
+                  namespace dispatch = common::message::dispatch;
+
+                  auto condition = dispatch::condition::compose( 
+                     dispatch::condition::done( [&]()
+                     {
+                        // Make sure all groups are up and running before we continue
+                        return common::algorithm::all_of( state.groups, []( auto& group){ return group.connected();});
+                     })
+                  );
             
-                  // Make sure all groups are up and running before we continue
-                  common::message::dispatch::conditional::pump( 
+                  dispatch::pump( condition,
                      manager::startup::handlers( state),
-                     ipc::device(),
-                     done);
+                     ipc::device());
 
                }
 
@@ -187,7 +190,7 @@ namespace casual
 
          common::log::line( common::log::category::information, "casual-queue-manager is on-line");
          
-         message::dispatch::blocking::pump( handler, manager::ipc::device());
+         message::dispatch::pump( handler, manager::ipc::device());
       }
    } // queue
 

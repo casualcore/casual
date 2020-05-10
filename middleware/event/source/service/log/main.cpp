@@ -159,12 +159,12 @@ namespace casual
                         // make sure we reopen file on SIGHUP
                         common::signal::callback::registration< common::code::signal::hangup>( [&handler](){ handler.reopen();});
 
-                        common::event::idle::listen(
-                           [&handler]()
+                        common::event::listen(
+                           common::event::condition::compose( common::event::condition::idle( [&handler]()
                            {
-                              // the queue is empty
+                              // inbound is idle, 
                               handler.idle();
-                           },
+                           })),
                            [&handler]( common::message::event::service::Calls& event)
                            {
                               handler.log( event);
