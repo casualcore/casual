@@ -154,7 +154,8 @@ namespace casual
                      execute_reply.release();
                      execute_error_reply.release();
 
-                     
+                     // reply.code.result is used to set outcomme in the 'ack'. We might want a _forward_ code?
+                     reply.code.result = code::xatmi::ok;
 
                      return;
                   }

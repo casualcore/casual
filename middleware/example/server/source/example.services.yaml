@@ -33,6 +33,10 @@ server:
       function: casual_example_forward_echo
       transaction: auto
 
+    - name: casual/example/forward/join/echo
+      function: casual_example_forward_echo
+      transaction: join
+
     - name: casual/example/sink
       function: casual_example_sink
 
