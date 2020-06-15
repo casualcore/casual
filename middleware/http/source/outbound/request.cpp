@@ -243,6 +243,7 @@ namespace casual
                request.state().execution = message.execution;
                request.state().service = std::move( message.service.name);
                request.state().parent = std::move( message.parent);
+               request.state().trid = message.trid;
                request.state().start = now;
 
                auto& easy = request.easy();
@@ -302,7 +303,8 @@ namespace casual
             }
            
 
-            namespace code
+
+            namespace transform
             {
                namespace local
                {
@@ -340,9 +342,10 @@ namespace casual
                      } // xatmi
                   } // <unnamed>
                } // local
-               common::message::service::Code transform( const state::pending::Request& request, curl::type::code::easy code) noexcept
+
+               common::message::service::Code code( const state::pending::Request& request, curl::type::code::easy code) noexcept
                {
-                  Trace trace{ "http::outbound::request::code::transform"};
+                  Trace trace{ "http::outbound::request::transform::code"};
 
                   auto& header = request.state().header.reply;
                   
@@ -370,7 +373,30 @@ namespace casual
                      return { common::code::xatmi::service_error, 0};
                   }
                }
-            } // code
+
+               common::message::service::Transaction transaction( const state::pending::Request& request, common::message::service::Code code) noexcept
+               {
+                  Trace trace{ "http::outbound::request::transform::transaction"};
+
+                  if( ! request.state().trid)
+                     return {};
+
+                  auto resolve_state = []( auto code)
+                  {
+                     switch( code)
+                     {
+                        using result_enum = decltype( common::message::service::Transaction{}.state);
+                        using Enum = decltype( code);
+                        
+                        case Enum::ok: return result_enum::active;
+                        default: return result_enum::rollback;
+                     }
+                  };
+
+                  return { request.state().trid, resolve_state( code.result)};
+               }
+            } // transform
+
 
          } // request
       } // outbound

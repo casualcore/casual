@@ -143,9 +143,8 @@ namespace casual
                            message::service::call::Reply message;
                            message.correlation = request.state().correlation;
                            message.execution = request.state().execution;
-                           message.code = request::code::transform( request, curl_code);
-
-                           log::line( verbose::log, "code: ", message.code);
+                           message.code = request::transform::code( request, curl_code);
+                           message.transaction = request::transform::transaction( request, message.code);
 
                            // take care of metrics
                            state.metric.add( request, message.code);
@@ -167,6 +166,8 @@ namespace casual
                                  message.code.result = common::code::xatmi::protocol; 
                               }
                            }
+
+                           log::line( verbose::log, "message: ", message);
 
                            manager::local::ipc::optional::send( state, destination, message);
 

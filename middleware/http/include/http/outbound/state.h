@@ -65,6 +65,7 @@ namespace casual
                      platform::time::point::type start = platform::time::point::limit::zero();
                      std::string service;
                      std::string parent;
+                     common::transaction::ID trid;
 
                      struct Header
                      {
@@ -107,6 +108,7 @@ namespace casual
                         CASUAL_SERIALIZE( start);
                         CASUAL_SERIALIZE( service);
                         CASUAL_SERIALIZE( parent);
+                        CASUAL_SERIALIZE( trid);
                         CASUAL_SERIALIZE( header);
                      })                     
                   };
