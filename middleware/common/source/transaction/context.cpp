@@ -290,6 +290,8 @@ namespace casual
 
          void Context::update( message::service::call::Reply& reply)
          {
+            Trace trace{ "transaction::Context::update"};
+
             if( reply.transaction.trid)
             {
                auto found = algorithm::find( m_transactions, reply.transaction.trid);

@@ -132,11 +132,14 @@ namespace casual
 
                                  auto reply = message::reverse::type( message);
                                  reply.code.result = code;
+                                 if( message.trid)
+                                 {
+                                    reply.transaction.trid = message.trid;
+                                    reply.transaction.state = decltype( reply.transaction.state)::rollback;
+                                 }
 
                                  if( ! message.flags.exist( message::service::call::request::Flag::no_reply))
-                                 {
                                     local::ipc::optional::send( state, message.process, std::move( reply));
-                                 }
                               }
                            };
                         } // call

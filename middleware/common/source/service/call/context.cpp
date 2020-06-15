@@ -247,7 +247,6 @@ namespace casual
             reply::Result Context::reply( descriptor_type descriptor, reply::Flags flags)
             {
                Trace trace( "calling::Context::reply");
-
                log::line( log::debug, "descriptor: ", descriptor, " flags: ", flags);
 
                //
@@ -256,20 +255,21 @@ namespace casual
 
                auto start = platform::time::clock::type::now();
 
-               auto get_reply = [&](){
+               auto get_reply = [&]()
+               {
+                  Trace trace( "calling::Context::reply get_reply");
+
                   message::service::call::Reply reply;
 
                   if( flags.exist( reply::Flag::any))
                   {
                      // We fetch any
                      if( ! local::receive( reply, flags))
-                     {
                         throw common::exception::xatmi::no::Message();
-                     }
 
-                    return std::make_pair(
-                          std::move( reply),
-                          m_state.pending.get( reply.correlation).descriptor);
+                     return std::make_pair(
+                        std::move( reply),
+                        m_state.pending.get( reply.correlation).descriptor);
                   }
                   else
                   {
@@ -279,13 +279,11 @@ namespace casual
                      signal::timer::Deadline deadline{ pending.timeout.deadline(), start};
 
                      if( ! local::receive( reply, flags, pending.correlation))
-                     {
                         throw common::exception::xatmi::no::Message();
-                     }
 
                      return std::make_pair(
-                           std::move( reply),
-                           pending.descriptor);
+                        std::move( reply),
+                        pending.descriptor);
                   }
                };
 
@@ -294,6 +292,8 @@ namespace casual
 
                auto prepared = get_reply();
                auto& reply = std::get< 0>( prepared);
+               log::line( log::debug, "reply: ", reply);
+
                result.descriptor = std::get< 1>( prepared);
                result.user = reply.code.user;
                result.buffer = std::move( reply.buffer);

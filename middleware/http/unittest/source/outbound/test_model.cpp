@@ -10,7 +10,7 @@
 #include "http/outbound/configuration.h"
 
 #include "common/unittest/file.h"
-#include "serviceframework/log.h"
+
 
 namespace casual
 {
