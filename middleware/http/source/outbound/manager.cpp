@@ -156,8 +156,7 @@ namespace casual
                            log::line( verbose::log, "request: ", request);
                            log::line( verbose::log, "curl_code: ", curl_code);
 
-                           auto code = request::code::transform( request, curl_code);
-
+                           auto code = request::transform::code( request, curl_code);
                            log::line( verbose::log, "code: ", code);
                            
                            // take care of metrics
@@ -170,6 +169,7 @@ namespace casual
                            message.correlation = request.state().correlation;
                            message.execution = request.state().execution;
                            message.code = code;
+                           message.transaction = request::transform::transaction( request, code);
 
                            manager::local::ipc::optional::send( state, destination, message);
 

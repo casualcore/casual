@@ -29,11 +29,13 @@ namespace casual
             state::pending::Request prepare( const state::Node& node, common::message::service::call::callee::Request&& message);
 
 
-            namespace code
+            namespace transform
             {
-               common::message::service::Code transform( const state::pending::Request& request, curl::type::code::easy code) noexcept;
-            } // code
- 
+               common::message::service::Code code( const state::pending::Request& request, curl::type::code::easy code) noexcept;
+               common::message::service::Transaction transaction( const state::pending::Request& request, common::message::service::Code code) noexcept;
+            } // transform
+
+
             namespace detail
             {
 

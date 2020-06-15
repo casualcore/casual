@@ -42,8 +42,11 @@ namespace casual
 http:
   services:
     - name: do/not/discard/transaction
-      url: a/b.se
+      url: a.example/do/not/discard/transaction
       discard_transaction: false
+    - name: discard/transaction
+      url: a.example/discard/transaction
+      discard_transaction: true
 
 )");
                      common::environment::variable::set( "CASUAL_UNITTEST_HTTP_CONFIGURATION", result.path());
@@ -99,6 +102,24 @@ domain:
             long size = 128;
 
             EXPECT_TRUE( tpcall( "do/not/discard/transaction", buffer, size, &buffer, &size, 0) == -1);
+
+            EXPECT_TRUE( tx_commit() == TX_PROTOCOL_ERROR);
+            EXPECT_TRUE( tx_rollback() == TX_OK);
+
+            tpfree( buffer);
+         }
+
+         TEST( http_outbound, in_transaction_call_discard__expect_rollback)
+         {
+            common::unittest::Trace trace;
+            local::Domain domain;
+
+            ASSERT_TRUE( tx_begin() == TX_OK);
+
+            auto buffer = tpalloc( "X_OCTET", nullptr, 128);
+            long size = 128;
+
+            EXPECT_TRUE( tpcall( "discard/transaction", buffer, size, &buffer, &size, 0) == -1);
 
             EXPECT_TRUE( tx_commit() == TX_PROTOCOL_ERROR);
             EXPECT_TRUE( tx_rollback() == TX_OK);
