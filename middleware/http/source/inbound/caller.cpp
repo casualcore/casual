@@ -342,7 +342,7 @@ namespace casual
 
                   long receive( casual_http_buffer_type* transport)
                   {
-                     const http::Trace trace("casual::http::inbound::service::service::receive");
+                     const http::Trace trace("casual::http::inbound::service::local::receive");
                      const auto& protocol = transport->protocol;
                      const auto& descriptor = transport->descriptor;
                      const auto& service = transport->service;
@@ -355,19 +355,30 @@ namespace casual
 
                      try
                      {
-                        const http::Trace trace("casual::http::inbound::service::service::receive reply");
+                        const http::Trace trace("casual::http::inbound::local::service::receive reply");
 
                         // Handle reply
                         namespace call = common::service::call;
                         auto reply = call::context().reply( descriptor, call::reply::Flag::no_block);
 
-                        // possible transcode buffer to wire-encoding
-                        http::buffer::transcode::to::wire( reply.buffer);
+                        if( reply.buffer.null())
+                        {
+                           ::strncpy( transport->protocol, http::protocol::null, sizeof( transport->protocol));
+                           algorithm::copy( "NULL", reply.buffer.memory);
+                           log::line( verbose::log, "protocol: ", transport->protocol);
+                        }
+                        else 
+                        {
+                            // possible transcode buffer to wire-encoding
+                           http::buffer::transcode::to::wire( reply.buffer);
+                        }
+                           
                         transport->payload = buffer::copy( reply.buffer.memory);
 
                         // Handle reply headers
                         auto header = header::codes::add( cast::underlying( common::code::xatmi::ok), reply.user);
                         transport->header_out = header::copy( header);
+
 
                         return OK;
                      }
@@ -384,7 +395,7 @@ namespace casual
 
                   long cancel( casual_http_buffer_type* transport)
                   {
-                     const http::Trace trace("casual::http::inbound::service::service::cancel");
+                     const http::Trace trace("casual::http::inbound::local::service::cancel");
                      const auto& protocol = transport->protocol;
                      const auto& descriptor = transport->descriptor;
                      const auto& service = transport->service;

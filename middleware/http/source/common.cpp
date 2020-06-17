@@ -143,6 +143,7 @@ namespace casual
                      {
                         auto fielded() { return common::buffer::type::combine( CASUAL_FIELD, nullptr);}
                         auto string() { return common::buffer::type::combine( CASUAL_STRING, nullptr);}
+                        auto null() { return "NULL";}
                      } // type
                   } // buffer
 
@@ -161,6 +162,7 @@ namespace casual
                      { common::buffer::type::xml(), protocol::xml},
                      { local::buffer::type::fielded(), protocol::field},
                      { local::buffer::type::string(), protocol::string},
+                     { local::buffer::type::null(), protocol::null},
                   };
 
                   auto generic = []( auto& buffer)
@@ -183,6 +185,7 @@ namespace casual
                      { protocol::xml, common::buffer::type::xml()},
                      { protocol::field, local::buffer::type::fielded()},
                      { protocol::string, local::buffer::type::string()},
+                     { protocol::null, local::buffer::type::null()},
                   };
 
                   // tries to deduce the buffer type generic
@@ -218,6 +221,11 @@ namespace casual
                      // no-op
                   };
 
+                  auto transcode_clear = []( common::buffer::Payload& payload)
+                  {
+                     payload.memory.clear();
+                  };
+
                } // <unnamed>
             } // local
             namespace from
@@ -244,6 +252,7 @@ namespace casual
                      { common::buffer::type::x_octet(), decode_base64},
                      { protocol::convert::local::buffer::type::fielded(), decode_base64},
                      { protocol::convert::local::buffer::type::string(), decode_base64},
+                     { protocol::convert::local::buffer::type::null(), local::transcode_clear},
                   };
 
                   if( auto found = algorithm::find( mapping, buffer.type))
@@ -277,6 +286,7 @@ namespace casual
                      { common::buffer::type::x_octet(), encode_base64},
                      { protocol::convert::local::buffer::type::fielded(), encode_base64},
                      { protocol::convert::local::buffer::type::string(), encode_base64},
+                     { protocol::convert::local::buffer::type::null(), local::transcode_clear},
                   };
 
                   if( auto found = algorithm::find( mapping, buffer.type))

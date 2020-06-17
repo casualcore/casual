@@ -173,7 +173,11 @@ ngx_int_t xatmi_receive( ngx_http_xatmi_ctx_t* client_context, ngx_http_request_
 
    long result = casual_xatmi_receive( &transport);
 
-   if ( result == AGAIN) return NGX_AGAIN;
+   if( result == AGAIN) 
+      return NGX_AGAIN;
+
+   // copy the protocol back, to get possible changes from receive.
+   strcpy( (char*)client_context->protocol, transport.protocol);
 
    client_context->reply = copy_buffer( transport.payload, r);
    xatmi_tperrno = transport.code;

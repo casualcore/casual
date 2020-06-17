@@ -40,6 +40,7 @@ namespace casual
 
             } // <unnamed>
          } // local
+
          TEST( http_outbound_transcode, empty_buffer)
          {
             common::unittest::Trace trace;
@@ -47,10 +48,25 @@ namespace casual
             common::message::service::call::callee::Request call;
             call.buffer.type = common::buffer::type::binary();
 
-            auto request= request::prepare( local::node(), std::move( call));
+            auto request = request::prepare( local::node(), std::move( call));
 
             auto payload = request::receive::transcode::payload( std::move( request));
 
+            EXPECT_TRUE( payload.memory.empty());
+         }
+
+         TEST( http_outbound_transcode, null_buffer)
+         {
+            common::unittest::Trace trace;
+
+            common::message::service::call::callee::Request call;
+            call.buffer = common::buffer::Payload{ nullptr};
+
+            auto request = request::prepare( local::node(), std::move( call));
+
+            auto payload = request::receive::transcode::payload( std::move( request));
+
+            EXPECT_TRUE( payload.null());
             EXPECT_TRUE( payload.memory.empty());
          }
 

@@ -75,6 +75,7 @@ namespace casual
          constexpr auto xml = "application/xml";
          constexpr auto field = "application/casual-field";
          constexpr auto string = "application/casual-string";
+         constexpr auto null = "application/casual-null";
 
          namespace convert
          {
