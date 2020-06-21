@@ -374,9 +374,16 @@ note: operation is atomic)";
 
             namespace dequeue
             {
-               void invoke( const std::string& queue)
+               void invoke( const std::string& queue, const common::optional< Uuid>& id)
                {
-                  const auto message = queue::dequeue( queue);
+                  
+                  const auto message = [&]()
+                  { 
+                     if( id)
+                        return queue::dequeue( queue, queue::Selector{ {}, id.value()});
+                     else
+                        return queue::dequeue( queue);
+                  }();
 
                   if( ! message.empty())
                   {
@@ -386,14 +393,28 @@ note: operation is atomic)";
                         std::cout);
                   }
                   else
-                  {
                      throw Empty{ "queue is empty"};
-                  }
                }
+
+               auto completer = []( auto& values, bool help) -> std::vector< std::string>
+               { 
+                  if( help) 
+                     return { "<queue>", "<id>"};
+
+                  if( values.empty())
+                     return local::queues();
+
+                  // complete on id
+                  return algorithm::transform( 
+                     call::messages( range::front( values)),
+                     []( auto& message){ return uuid::string( message.id);});
+               };
+
                constexpr auto description = R"(dequeue buffer from a queue to stdout
 
 Example:
-casual queue --dequeue <queue-name> > somefile.bin
+casual queue --dequeue <queue> > somefile.bin
+casual queue --dequeue <queue> <id> > somefile.bin
 
 note: operation is atomic)";
 
@@ -663,7 +684,7 @@ casual queue --metric-reset queue-a queue-b)";
                      argument::Option( &local::list::messages::invoke, complete_queues, { "-m", "--list-messages"}, local::list::messages::description),
                      argument::Option( &local::restore::invoke, complete_queues, { "--restore"}, local::restore::description),
                      argument::Option( &local::enqueue::invoke, complete_queues, { "-e", "--enqueue"}, local::enqueue::description),
-                     argument::Option( &local::dequeue::invoke, complete_queues, { "-d", "--dequeue"}, local::dequeue::description),
+                     argument::Option( &local::dequeue::invoke, local::dequeue::completer, { "-d", "--dequeue"}, local::dequeue::description),
                      argument::Option( &local::peek::invoke, local::peek::complete, { "-p", "--peek"}, local::peek::description),
                      argument::Option( &local::consume::invoke, complete_queues, { "--consume"}, local::consume::description),
                      argument::Option( argument::option::one::many( &local::clear::invoke), local::clear::complete, { "--clear"}, local::clear::description),
