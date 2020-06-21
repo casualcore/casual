@@ -75,11 +75,14 @@ namespace casual
                         {
                            auto information = option.invocable.complete( {}, true);
 
-                           switch( information.size())
+                           if( ! information.empty())
                            {
-                              case 0: break;
-                              case 1: stream::write( m_out, "  (", information.front(), ") [", option.invocable.cardinality(), ']'); break;
-                              default: stream::write( m_out, "  (", information, ") [" , option.invocable.cardinality(), ']'); break;
+                              m_out << "  (";
+                              algorithm::for_each_interleave( information,
+                                 [&]( auto& value){ m_out << value;},
+                                 [&](){ m_out << ", ";});
+                              
+                              m_out << ") [" << option.invocable.cardinality() << ']';
                            }
 
                         }

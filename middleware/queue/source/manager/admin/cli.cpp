@@ -399,7 +399,7 @@ note: operation is atomic)";
                auto completer = []( auto& values, bool help) -> std::vector< std::string>
                { 
                   if( help) 
-                     return { "<queue>", "<id>"};
+                     return { "<queue>", "[<id>]"};
 
                   if( values.empty())
                      return local::queues();
@@ -601,7 +601,7 @@ casual queue --metric-reset queue-a queue-b)";
 
                auto complete = []( auto values, bool) -> std::vector< std::string>
                {
-                  return { "json", "yaml", "xml", "ini"};
+                  return { "json|yaml|xml|ini"};
                };
                
             } // state
