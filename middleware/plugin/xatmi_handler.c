@@ -184,6 +184,7 @@ ngx_int_t xatmi_receive( ngx_http_xatmi_ctx_t* client_context, ngx_http_request_
    client_context->code = transport.code;
    set_custom_header_in_headers_out( r, transport.header_out);
 
+   free( transport.header_out.data);
    free( transport.payload.data);
 
    return result == OK ? NGX_OK : NGX_ERROR;
