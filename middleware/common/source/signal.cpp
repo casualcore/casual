@@ -376,7 +376,9 @@ namespace casual
 
             platform::time::unit set( platform::time::unit offset)
             {
-               if( offset <= platform::time::unit::zero())
+               auto microseconds = std::chrono::duration_cast< std::chrono::microseconds>( offset);
+
+               if( microseconds <= std::chrono::microseconds::zero())
                {
                   if( offset == platform::time::unit::min())
                   {
@@ -385,18 +387,18 @@ namespace casual
                   }
 
                   // We send the signal directly
-                  log::line( log::debug, "timer - offset is less than zero: ", offset.count(), " - send alarm directly");
+                  log::line( log::debug, "timer - offset is less than zero: ", offset, " - send alarm directly");
                   signal::send( process::id(), code::signal::alarm);
                   return local::get();
                }
                else
                {
+                  
                   itimerval value;
                   value.it_interval.tv_sec = 0;
                   value.it_interval.tv_usec = 0;
-                  value.it_value.tv_sec = std::chrono::duration_cast< std::chrono::seconds>( offset).count();
-                  value.it_value.tv_usec = (
-                     std::chrono::duration_cast< std::chrono::microseconds>( offset) % std::chrono::seconds( 1)).count();
+                  value.it_value.tv_sec = std::chrono::duration_cast< std::chrono::seconds>( microseconds).count();
+                  value.it_value.tv_usec = ( microseconds % std::chrono::seconds{ 1}).count();
 
                   return local::set( value);
                }
