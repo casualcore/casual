@@ -15,6 +15,7 @@
 
 namespace casual
 {
+   using namespace common;
    namespace queue
    {
       namespace local
@@ -23,10 +24,8 @@ namespace casual
          {
             common::message::queue::lookup::Request request( const std::string& queue)
             {
-               common::message::queue::lookup::Request request;
-               request.process = common::process::handle();
+               common::message::queue::lookup::Request request{ common::process::handle()};
                request.name = queue;
-
                return request;
             }
          } // <unnamed>
@@ -34,7 +33,7 @@ namespace casual
 
       Lookup::Lookup( std::string queue)
          : m_name( std::move( queue)), m_correlation{
-            common::communication::ipc::blocking::send(
+            common::communication::device::blocking::send(
                   common::communication::instance::outbound::queue::manager::optional::device(),
                   local::request( m_name))}
       {
@@ -42,19 +41,18 @@ namespace casual
 
       common::message::queue::lookup::Reply Lookup::operator () () const
       {
+         message::queue::lookup::Reply reply;
 
-         common::message::queue::lookup::Reply reply;
+         auto& device = communication::ipc::inbound::device();
 
-         auto& device = common::communication::ipc::inbound::device();
-
-         auto handler = device.handler(
+         auto handler = common::message::dispatch::handler( device,
             common::message::handle::assign( reply),
             common::message::handle::Shutdown{});
 
+         auto condition = message::dispatch::condition::compose( 
+            message::dispatch::condition::done( [&]( ){ return ! reply.correlation.empty();}));
 
-         handler( device.select( device.policy_blocking(), [&]( auto& complete){
-            return complete.correlation == m_correlation || complete.type == common::message::shutdown::Request::type();
-         }));
+         message::dispatch::relaxed::pump( condition, handler, device);
 
          return reply;
       }

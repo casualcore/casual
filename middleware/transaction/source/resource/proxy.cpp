@@ -65,7 +65,7 @@ namespace casual
                         message::transaction::resource::Ready ready{ common::process::handle()};
                         ready.id = state.resource.id();
 
-                        communication::ipc::blocking::send(
+                        communication::device::blocking::send(
                            communication::instance::outbound::transaction::manager::device(), ready);
                      }
 
@@ -93,7 +93,7 @@ namespace casual
 
                            reply.statistics.end = platform::time::clock::type::now();
 
-                           communication::ipc::blocking::send(
+                           communication::device::blocking::send(
                               communication::instance::outbound::transaction::manager::device(), reply);
 
                         }
@@ -189,7 +189,7 @@ namespace casual
          {
             auto& device = common::communication::ipc::inbound::device();
             
-            auto handler = device.handler(
+            auto handler = common::message::dispatch::handler( device,
                common::message::handle::defaults( device),
                proxy::local::handle::Prepare{ m_state},
                proxy::local::handle::Commit{ m_state},

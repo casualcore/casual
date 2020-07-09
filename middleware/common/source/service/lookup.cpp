@@ -30,7 +30,7 @@ namespace casual
                request.process = process::handle();
                request.context = context;
 
-               m_correlation = communication::ipc::blocking::send( communication::instance::outbound::service::manager::device(), request);
+               m_correlation = communication::device::blocking::send( communication::instance::outbound::service::manager::device(), request);
             }
 
             Lookup::Lookup( std::string service) : Lookup( std::move( service), Context::regular) {}
@@ -122,7 +122,7 @@ namespace casual
             if( ! m_reply || ! uuid::empty( m_correlation))
             {
                Reply result;
-               communication::ipc::blocking::receive( communication::ipc::inbound::device(), result, m_correlation);
+               communication::device::blocking::receive( communication::ipc::inbound::device(), result, m_correlation);
                update( std::move( result));
             }
 
@@ -138,7 +138,7 @@ namespace casual
                   if( ! m_reply || ! uuid::empty( m_correlation))
                   {
                      detail::Lookup::Reply result;
-                     if( communication::ipc::non::blocking::receive( communication::ipc::inbound::device(), result, m_correlation))
+                     if( communication::device::non::blocking::receive( communication::ipc::inbound::device(), result, m_correlation))
                      {
                         update( std::move( result));
                      }

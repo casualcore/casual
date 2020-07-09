@@ -10,6 +10,7 @@
 #include "common/functional.h"
 #include "common/algorithm.h"
 #include "common/communication/log.h"
+#include "common/message/dispatch.h"
 
 
 #include <vector>
@@ -54,6 +55,11 @@ namespace casual
 
             namespace dispatch
             {
+               namespace condition
+               {
+                  using namespace common::message::dispatch::condition;
+               } // condition
+
                namespace detail
                {
                   template< typename C> 
@@ -76,13 +82,13 @@ namespace casual
                   namespace descriptor
                   {
                      template< typename H, typename F> 
-                     auto dispatch( H& handler, F&& functor, traits::priority::tag< 0>) -> decltype( handler.descriptor(), void())
+                     auto dispatch( H& handler, F&& functor, traits::priority::tag< 0>) -> decltype( void( handler.descriptor()))
                      {
                         functor( handler, handler.descriptor());
                      }
                      
                      template< typename H, typename F> 
-                     auto dispatch( H& handler, F&& functor, traits::priority::tag< 1>) -> decltype( handler.descriptors(), void())
+                     auto dispatch( H& handler, F&& functor, traits::priority::tag< 1>) -> decltype( void( handler.descriptors()))
                      {
                         for( auto descriptor : handler.descriptors())
                            functor( handler, descriptor);
@@ -164,6 +170,73 @@ namespace casual
                      void error();
                   } // handle
 
+                  namespace pump
+                  {
+                     //! used if there are no error condition provided
+                     template< typename C, typename... Ts>
+                     void dispatch( C&& condition, const Directive& directive, traits::priority::tag< 0>, Ts&&... handlers)
+                     {
+                        condition::detail::invoke< condition::detail::tag::prelude>( condition);
+
+                        while( ! condition::detail::invoke< condition::detail::tag::done>( condition))
+                        {
+                           // make sure we try to consume from the handlers before
+                           // we might block forever. Handlers could have cached messages
+                           // that wont be triggered via multiplexing on file descriptors
+                           while( detail::consume::dispatch( handlers...))
+                              if( condition::detail::invoke< condition::detail::tag::done>( condition))
+                                 return;
+
+                           // we're idle
+                           condition::detail::invoke< condition::detail::tag::idle>( condition);
+
+                           // we might be done after idle
+                           if( condition::detail::invoke< condition::detail::tag::done>( condition))
+                              return;
+
+                           // we block
+                           auto result = detail::select( directive);
+                              detail::dispatch( result, handlers...);
+                        }
+                     }   
+
+                     //! used if there are an error condition provided
+                     template< typename C, typename... Ts>
+                     auto dispatch( C&& condition, const Directive& directive, traits::priority::tag< 1>, Ts&&... handlers) 
+                        -> decltype( condition.invoke( condition::detail::tag::error{}))
+                     {
+                       condition::detail::invoke< condition::detail::tag::prelude>( condition);
+
+                        while( ! condition::detail::invoke< condition::detail::tag::done>( condition))
+                        {
+                           try 
+                           {   
+                              // make sure we try to consume from the handlers before
+                              // we might block forever. Handlers could have cached messages
+                              // that wont be triggered via multiplexing on file descriptors
+                              while( detail::consume::dispatch( handlers...))
+                                 if( condition::detail::invoke< condition::detail::tag::done>( condition))
+                                    return;
+
+                              // we're idle
+                              condition::detail::invoke< condition::detail::tag::idle>( condition);
+
+                              // we might be done after idle
+                              if( condition::detail::invoke< condition::detail::tag::done>( condition))
+                                 return;
+
+                              // we block
+                              auto result = detail::select( directive);
+                                 detail::dispatch( result, handlers...);
+                           }
+                           catch( ...)
+                           {
+                              condition::detail::invoke< condition::detail::tag::error>( condition);
+                           }
+                        } 
+                     }
+                  } // pump
+
                } // detail
 
                namespace create
@@ -175,59 +248,20 @@ namespace casual
                   }
                } // create
 
+
+
+               template< typename C, typename... Ts>  
+               void pump( C&& condition, const Directive& directive, Ts&&... handlers)
+               {
+                  detail::pump::dispatch( std::forward< C>( condition), directive, traits::priority::tag< 1>{}, std::forward< Ts>( handlers)...);
+               }
+
                template< typename... Ts>  
                void pump( const Directive& directive, Ts&&... handlers)
                {
-                  while( true)
-                  {
-                     try
-                     {
-                        // make sure we try to consume from the handlers before
-                        // we might block forever. Handlers could have cached messages
-                        // that wont be triggered via multiplexing on file descriptors
-                        while( detail::consume::dispatch( handlers...))
-                           ; // no-op.
-
-                        auto result = detail::select( directive);
-                        detail::dispatch( result, handlers...);
-                     }
-                     catch( ...)
-                     {
-                        detail::handle::error();
-                     }
-                  }
+                  detail::pump::dispatch( condition::compose(), directive, traits::priority::tag< 1>{}, std::forward< Ts>( handlers)...);
                }
 
-               namespace conditional
-               {
-                  //! same as dispatch::pump, but calls `done` to ask caller if we're done or not
-                  template< typename... Ts>  
-                  void pump( const Directive& directive, const std::function< bool()>& done, Ts&&... handlers)
-                  {
-                     while( true)
-                     {
-                        try
-                        {
-                           // make sure we try to consume from the handlers before
-                           // we might block forever. Handlers could have cached messages
-                           // that wont be triggered via multiplexing on file descriptors
-                           while( detail::consume::dispatch( handlers...))
-                              ; // no-op.
-
-                           if( done())
-                              return;
-
-                           auto result = detail::select( directive);
-                           detail::dispatch( result, handlers...);
-                        }
-                        catch( ...)
-                        {
-                           detail::handle::error();
-                        }
-                     }
-                  }
-                  
-               } // conditional
             } // dispatch
 
             namespace block

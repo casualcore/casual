@@ -131,7 +131,16 @@ namespace casual
                } // network
             } // binary
 
-            
+            namespace create
+            {
+              
+               template<>
+               struct reverse< binary::network::create::Writer> { using type = binary::network::create::Reader;};
+
+               template<>
+               struct reverse< binary::network::create::Reader> { using type = binary::network::create::Writer;};
+
+            } // create
 
          } // native
          namespace traits

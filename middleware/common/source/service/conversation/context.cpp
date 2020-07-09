@@ -160,7 +160,7 @@ namespace casual
                      {
                         message::conversation::Disconnect disconnect;
 
-                        if( communication::ipc::non::blocking::receive(
+                        if( communication::device::non::blocking::receive(
                               communication::ipc::inbound::device(),
                               disconnect,
                               descriptor.correlation))
@@ -177,7 +177,7 @@ namespace casual
                      void send( M&& message)
                      {
                         auto node = message.route.next();
-                        communication::ipc::blocking::send( node.address, message);
+                        communication::device::blocking::send( node.address, message);
                      }
                   } // route
 
@@ -251,7 +251,7 @@ namespace casual
                   ack.metric.start = start;
                   ack.metric.end = platform::time::clock::type::now();
 
-                  communication::ipc::blocking::send( communication::instance::outbound::service::manager::device(), ack);
+                  communication::device::blocking::send( communication::instance::outbound::service::manager::device(), ack);
                });
 
                if( target.busy())
@@ -325,7 +325,7 @@ namespace casual
 
                if( flags.exist( receive::Flag::no_block))
                {
-                  if( ! communication::ipc::non::blocking::receive( 
+                  if( ! communication::device::non::blocking::receive( 
                      communication::ipc::inbound::device(), 
                      message, 
                      descriptor.correlation))
@@ -335,7 +335,7 @@ namespace casual
                }
                else
                {
-                  communication::ipc::blocking::receive( 
+                  communication::device::blocking::receive( 
                      communication::ipc::inbound::device(), 
                      message, 
                      descriptor.correlation);

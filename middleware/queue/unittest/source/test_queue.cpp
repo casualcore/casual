@@ -198,14 +198,14 @@ domain:
             request.process = common::process::handle();
             request.name = "queueA1";
 
-            common::communication::ipc::blocking::send( 
+            common::communication::device::blocking::send( 
                common::communication::instance::outbound::queue::manager::device(), 
                request);
          }
 
          {
             common::message::queue::lookup::Reply reply;
-            common::communication::ipc::blocking::receive( common::communication::ipc::inbound::device(), reply);
+            common::communication::device::blocking::receive( common::communication::ipc::inbound::device(), reply);
 
             EXPECT_TRUE( reply.queue) << CASUAL_NAMED_VALUE( reply);
          }
@@ -223,14 +223,14 @@ domain:
             request.process = common::process::handle();
             request.name = "non-existence";
 
-            common::communication::ipc::blocking::send( 
+            common::communication::device::blocking::send( 
                common::communication::instance::outbound::queue::manager::device(), 
                request);
          }
 
          {
             common::message::queue::lookup::Reply reply;
-            common::communication::ipc::blocking::receive( common::communication::ipc::inbound::device(), reply);
+            common::communication::device::blocking::receive( common::communication::ipc::inbound::device(), reply);
 
             EXPECT_FALSE( reply.queue) << CASUAL_NAMED_VALUE( reply);
          }
@@ -389,7 +389,7 @@ domain:
 
             remote.queues.add.emplace_back( "remote-queue");
 
-            common::communication::ipc::blocking::send( 
+            common::communication::device::blocking::send( 
                common::communication::instance::outbound::queue::manager::device(), remote);
          }
 
@@ -517,7 +517,7 @@ domain:
                   auto destination = lookup();
                   message.queue = destination.queue;
 
-                  common::communication::ipc::blocking::send( destination.process.ipc, message);
+                  common::communication::device::blocking::send( destination.process.ipc, message);
                }
             } // blocking
          } // <unnamed>
@@ -560,7 +560,7 @@ domain:
 
          auto dequeue = []( auto& ipc){
             common::message::queue::dequeue::Reply message;
-            ipc.receive( message, ipc.policy_blocking());
+            common::communication::device::blocking::receive( ipc, message);
             return message;
          };
 

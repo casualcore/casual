@@ -33,7 +33,7 @@ namespace casual
                   {
                      try
                      {
-                        return ! communication::ipc::non::blocking::send( handle.ipc, message::shutdown::Request{}).empty();
+                        return ! communication::device::non::blocking::send( handle.ipc, message::shutdown::Request{}).empty();
                      }
                      catch( const exception::system::communication::Unavailable&)
                      {

@@ -78,6 +78,7 @@ casual_common_objectfiles = [
     Compile( 'source/communication/instance.cpp'),
     Compile( 'source/communication/select.cpp'),
     Compile( 'source/communication/device.cpp'),
+    Compile( 'source/communication/stream.cpp'),
     
     Compile( 'source/communication/message.cpp'),
     Compile( 'source/communication/log.cpp'),
@@ -230,7 +231,7 @@ unittest_objectfiles = [
     
     Compile( 'unittest/source/communication/test_tcp.cpp'),
     Compile( 'unittest/source/communication/test_ipc.cpp'),
-    
+    Compile( 'unittest/source/communication/test_stream.cpp'),
 
     Compile( 'unittest/source/message/test_dispatch.cpp'),
     Compile( 'unittest/source/message/test_coordinate.cpp'),

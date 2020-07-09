@@ -153,7 +153,7 @@ namespace casual
 
                auto& ipc = communication::ipc::inbound::device();
 
-               auto handler = ipc.handler(
+               auto handler = common::message::dispatch::handler( ipc,
                   common::message::handle::defaults( ipc),
                   handle::request( state));
 
@@ -162,7 +162,7 @@ namespace casual
                   // Set timeout, if any
                   signal::timer::set( state.timeout());
 
-                  handler( communication::ipc::blocking::next( ipc));
+                  handler( communication::device::blocking::next( ipc));
                }
             }
          } // message

@@ -41,7 +41,7 @@ namespace casual
                   {
                      try
                      {
-                        if( ! communication::ipc::non::blocking::send( process.ipc, message))
+                        if( ! communication::device::non::blocking::send( process.ipc, message))
                         {
                            log::line( log, "could not send message ", message.type(), " to process: ", process, " - action: eventually send");
 
@@ -180,7 +180,7 @@ namespace casual
                         request.requested = message.service.name;
                         request.process = process::handle();
 
-                        communication::ipc::blocking::send( communication::instance::outbound::service::manager::device(), request);
+                        communication::device::blocking::send( communication::instance::outbound::service::manager::device(), request);
                      }
 
                      m_state.requested[ message.service.name].push_back( std::move( message));
@@ -208,10 +208,10 @@ namespace casual
 
             try
             {
-               auto handler = communication::ipc::inbound::device().handler(
-                     handle::service::name::Lookup{ m_state},
-                     handle::service::Call{ m_state},
-                     message::handle::Shutdown{}
+               auto handler = message::dispatch::handler( communication::ipc::inbound::device(),
+                  handle::service::name::Lookup{ m_state},
+                  handle::service::Call{ m_state},
+                  message::handle::Shutdown{}
                );
 
                message::dispatch::pump( handler, communication::ipc::inbound::device());

@@ -67,6 +67,8 @@ namespace casual
 
                struct Request : base_request
                {
+                  using base_request::base_request;
+
                   std::vector< strong::resource::id> involved;
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
@@ -113,9 +115,10 @@ namespace casual
             namespace rollback
             {
                using base_request = basic_request< Type::transaction_Rollback_request>;
-
                struct Request : base_request
                {
+                  using base_request::base_request;
+                  
                   std::vector< strong::resource::id> involved;
 
                   CASUAL_CONST_CORRECT_SERIALIZE(

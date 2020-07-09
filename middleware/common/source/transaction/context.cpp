@@ -647,7 +647,7 @@ namespace casual
                         else
                         {
                            // Wait for the commit
-                           communication::ipc::blocking::receive( communication::ipc::inbound::device(), reply, reply.correlation);
+                           communication::device::blocking::receive( communication::ipc::inbound::device(), reply, reply.correlation);
 
                            log::line( log::category::transaction, "commit reply: ", reply.state);
                         }

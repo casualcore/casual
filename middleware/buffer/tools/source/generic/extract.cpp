@@ -4,10 +4,14 @@
 //! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
+#include "casual/buffer/admin/cli.h"
+
+
 #include "common/exception/handle.h"
 #include "casual/platform.h"
 #include "common/argument.h"
-#include "common/buffer/type.h"
+#include "common/terminal.h"
+
 
 namespace casual
 {
@@ -23,29 +27,21 @@ namespace casual
             {
                namespace
                {
-                  void extract( bool print_type)
-                  {
-                     auto dispatch = [print_type]( auto&& payload)
-                     {
-                        if( print_type)
-                           std::cerr << payload.type << '\n';
-
-                        std::cout.write( payload.memory.data(), payload.memory.size());
-                        std::cout.flush();                        
-                     };
-                     
-                     common::buffer::payload::binary::stream( std::cin, dispatch); 
-                  }
-
                   void main( int argc, char** argv)
                   {
                      bool print_type = false;
 
-                     argument::Parse{ R"(Read the buffers from stdin and extract the payload and streams it to stdout)",
+                     constexpr auto information = R"([deprecated] use `casual buffer --extract` instead)";
+
+                     argument::Parse{ information,
                         argument::Option{ argument::option::toggle( print_type), { "--print-type"}, "prints the type of the buffer(s) to stderr"}
                      }( argc, argv);
+
+                     terminal::output::directive().verbose( print_type);
+
+                     std::cerr << information << '\n';
                      
-                     extract( print_type);
+                     casual::buffer::admin::cli::detail::extract();
                   }
                   
                } // <unnamed>

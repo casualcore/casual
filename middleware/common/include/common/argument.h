@@ -738,7 +738,8 @@ namespace casual
                   if( ! holder.has( key))
                      exception::correlation( key);
 
-                  auto found = algorithm::find_if( arguments, [&]( auto& k){
+                  auto found = algorithm::find_if( arguments, [&]( auto& k)
+                  {
                      return holder.next( k);
                   });
 
@@ -746,7 +747,7 @@ namespace casual
                   arguments = found;
                }
             }
-
+            
          } // detail
          
          namespace option
@@ -786,7 +787,6 @@ namespace casual
                m_invocable( detail::invoke::create( std::forward< I>( invocable), std::forward< C>( completer))) 
             {}
 
-
             inline bool next( const std::string& key) const { return has( key);}
 
             inline void assign( const std::string& key, range_type values) 
@@ -803,7 +803,7 @@ namespace casual
             template< size_type min, size_type max>
             auto operator () ( cardinality::range< min, max> cardinality) const 
             { 
-               static_assert( min + max != 0, "cardinality of [0..0] does not make sense");
+               static_assert( min != 0 || max != 0, "cardinality of [0..0] does not make sense");
                auto result = *this;
                result.m_cardinality = m_cardinality.create( cardinality);
                return result;

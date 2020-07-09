@@ -11,13 +11,13 @@
 
 #include "common/communication/message.h"
 
-#include "common/message/dispatch.h"
 #include "common/serialize/native/binary.h"
 #include "common/serialize/native/complete.h"
 #include "common/signal.h"
 #include "common/exception/signal.h"
 #include "common/exception/system.h"
 #include "common/predicate.h"
+#include "common/traits.h"
 
 #include "common/log.h"
 
@@ -35,32 +35,59 @@ namespace casual
             {
                void error();
             } // handle
-         } // device
 
-         namespace inbound
-         {
-            using cache_type = std::vector< message::Complete>;
-            using cache_range_type =  range::type_t< cache_type>;
+            template< typename D>
+            struct customization_point;
+
+            namespace policy
+            {
+               template< typename D>
+               auto blocking( D&& device) -> decltype( typename std::decay_t< D>::connector_type::blocking_policy{})
+               {
+                  return typename std::decay_t< D>::connector_type::blocking_policy{};
+               }
+
+               template< typename D>
+               auto blocking( D&& device) -> decltype( typename customization_point< std::decay_t< D>>::blocking_policy{})
+               {
+                  return typename customization_point< std::decay_t< D>>::blocking_policy{};
+               }
+
+               namespace non
+               {
+                  template< typename D>
+                  auto blocking( D&& device) -> decltype( typename std::decay_t< D>::connector_type::non_blocking_policy{})
+                  {
+                     return typename std::decay_t< D>::connector_type::non_blocking_policy{};
+                  }
+
+                  template< typename D>
+                  auto blocking( D&& device) -> decltype( typename customization_point< std::decay_t< D>>::non_blocking_policy{})
+                  {
+                     return typename customization_point< std::decay_t< D>>::non_blocking_policy{};
+                  }
+               } // non
+               
+            } // policy
+
+
+
+            namespace inbound
+            {
+               using cache_type = std::vector< message::Complete>;
+               using cache_range_type = range::type_t< cache_type>;
+            }
 
             template< typename Connector, typename Deserialize = serialize::native::binary::create::Reader>
-            struct Device
+            struct Inbound
             {
-
                using connector_type = Connector;
-               using complete_type = message::Complete;
-               using message_type = typename complete_type::message_type_type;
-
-               using blocking_policy = typename connector_type::blocking_policy;
-               using non_blocking_policy = typename connector_type::non_blocking_policy;
-
                using deserialize_type = Deserialize;
 
-               using handler_type = common::message::dispatch::basic_handler< deserialize_type>;
-
                template< typename... Args>
-               Device( Args&&... args) : m_connector{ std::forward< Args>( args)...} {}
+               Inbound( Args&&... args) : m_connector{ std::forward< Args>( args)...} {}
 
-               ~Device()
+               ~Inbound()
                {
                   if( ! m_cache.empty() && log::category::warning)
                   {
@@ -74,31 +101,19 @@ namespace casual
                   }
                }
 
-
-               Device( Device&&) = default;
-               Device& operator = ( Device&&) = default;
-
-               constexpr blocking_policy policy_blocking() const { return blocking_policy{};}
-               constexpr non_blocking_policy policy_non_blocking() const { return non_blocking_policy{};}
-
-               //! Creates a corresponding message-dispatch-handler to this
-               //! inbound device
-               template< typename... Args>
-               static handler_type handler( Args&&... args)
-               {
-                  return { std::forward< Args>( args)...};
-               }
+               Inbound( Inbound&&) = default;
+               Inbound& operator = ( Inbound&&) = default;
 
                //! Tries to find the first logic complete message
                //!
                //! @return a logical complete message if there is one,
                //!         otherwise the message has absent_message as type
                template< typename P>
-               complete_type next( P&& policy)
+               message::Complete next( P&& policy)
                {
                   return select(
-                        std::forward< P>( policy),
-                        []( auto& m){ return true;});
+                     []( auto& m){ return true;},
+                     std::forward< P>( policy));
                }
 
                //! Tries to find the first logic complete message with a specific type
@@ -106,11 +121,11 @@ namespace casual
                //! @return a logical complete message if there is one,
                //!         otherwise the message has absent_message as type
                template< typename P>
-               complete_type next( message_type type, P&& policy)
+               message::Complete next( common::message::Type type, P&& policy)
                {
                   return select(
-                        std::forward< P>( policy),
-                        [=]( const complete_type& m){ return m.type == type;});
+                     [=]( const message::Complete& m){ return m.type == type;},
+                     std::forward< P>( policy));
                }
 
                //! Tries to find the first logic complete message with any of the types in @p types
@@ -121,11 +136,11 @@ namespace casual
                template< typename R, typename P>
                auto next( R&& types, P&& policy) 
                   // `types` is a temple to enable other forms of containers than std::vector
-                  -> std::enable_if_t< traits::concrete::is_same< decltype( *std::begin( types)), message_type>::value, complete_type>
+                  -> std::enable_if_t< traits::concrete::is_same< decltype( *std::begin( types)), common::message::Type>::value, message::Complete>
                {
                   return select(
-                        std::forward< P>( policy),
-                        [&]( const complete_type& m){ return ! common::algorithm::find( types, m.type).empty();});
+                     [&]( const message::Complete& m){ return ! common::algorithm::find( types, m.type).empty();},
+                     std::forward< P>( policy));
                }
 
                //! Tries to find the logic complete message with correlation @p correlation
@@ -133,11 +148,11 @@ namespace casual
                //! @return a logical complete message if there is one,
                //!         otherwise the message has absent_message as type
                template< typename P>
-               complete_type next( const Uuid& correlation, P&& policy)
+               message::Complete next( const Uuid& correlation, P&& policy)
                {
                   return select(
-                        std::forward< P>( policy),
-                        [&]( const complete_type& m){ return m.correlation == correlation;});
+                     [&]( const message::Complete& m){ return m.correlation == correlation;},
+                     std::forward< P>( policy));
                }
 
                //! Tries to find a logic complete message a specific type and correlation
@@ -145,19 +160,19 @@ namespace casual
                //! @return a logical complete message if there is one,
                //!         otherwise the message has absent_message as type
                template< typename P>
-               complete_type next( message_type type, const Uuid& correlation, P&& policy)
+               message::Complete next( common::message::Type type, const Uuid& correlation, P&& policy)
                {
                   return select(
-                        std::forward< P>( policy),
-                        [&]( const complete_type& m){ return m.type == type && m.correlation == correlation;});
+                     [&]( const message::Complete& m){ return m.type == type && m.correlation == correlation;},
+                     std::forward< P>( policy));
                }
 
                //! Tries to find a logic complete message that fulfills the predicate
                //!
                //! @return a logical complete message if there is one,
                //!         otherwise the message has absent_message as type
-               template< typename Policy, typename Predicate>
-               complete_type select( Policy&& policy, Predicate&& predicate)
+               template< typename Predicate, typename Policy>
+               message::Complete select( Predicate&& predicate, Policy&& policy)
                {
                   auto found = find(
                         std::forward< Policy>( policy),
@@ -238,19 +253,13 @@ namespace casual
                template< typename M>
                Uuid push( M&& message)
                {
-                  return put( serialize::native::complete( std::forward< M>( message), serialize::native::create::reverse_t< deserialize_type>{}));
+                  return put( serialize::native::complete( std::forward< M>( message), serialize::native::create::reverse_t< Deserialize>{}));
                }
 
-               //! flushes the messages on the device into cache. (ie, make the device writable if it was full)
+               //! flushes the messages on the device into cache. (ie, make the device writable if it was full), if implemented.
                void flush()
                {
-                  // We don't want to handle any signals while we're flushing
-                  signal::thread::scope::Block block;
-
-                  auto count = platform::batch::flush;
-
-                  while( next( message_type::flush_ipc, non_blocking_policy{}) && --count > 0)
-                     ; // no op
+                  flush( *this, traits::priority::tag< 1>{});
                }
 
                //! Clear and discard all messages in cache and on the device.
@@ -260,8 +269,8 @@ namespace casual
                   std::exchange( m_cache, {});
                }
 
-               connector_type& connector() { return m_connector;}
-               const connector_type& connector() const { return m_connector;}
+               Connector& connector() { return m_connector;}
+               const Connector& connector() const { return m_connector;}
 
 
                CASUAL_LOG_SERIALIZE(
@@ -273,12 +282,30 @@ namespace casual
 
             private:
 
+               template< typename D>
+               static void flush( D& device, traits::priority::tag< 0>)
+               {
+                  // no-op - can't flush if we haven't got non-blocking
+               }
+
+               template< typename D>
+               static auto flush( D& device, traits::priority::tag< 1>) -> decltype( policy::non::blocking(device), void())
+               {
+                  // We don't want to handle any signals while we're flushing
+                  signal::thread::scope::Block block;
+
+                  auto count = platform::batch::flush;
+
+                  while( device.next( common::message::Type::flush_ipc, policy::non::blocking( device)) && --count > 0)
+                     ; // no op
+               }
+
                template< typename C, typename M>
                bool deserialize( C&& complete, M& message)
                {
                   if( complete)
                   {
-                     serialize::native::complete( complete, message, deserialize_type{});
+                     serialize::native::complete( complete, message, Deserialize{});
                      return true;
                   }
                   return false;
@@ -286,7 +313,7 @@ namespace casual
 
 
                template< typename Policy, typename Predicate>
-               cache_range_type find( Policy&& policy, Predicate&& predicate)
+               inbound::cache_range_type find( Policy&& policy, Predicate&& predicate)
                {
                   while( true)
                   {
@@ -312,7 +339,6 @@ namespace casual
                   }
                }
 
-
                bool discard( const communication::message::Complete& complete)
                {
                   auto found = algorithm::find( m_discarded, complete.correlation);
@@ -325,35 +351,38 @@ namespace casual
                   return false;
                }
 
-               cache_type m_cache;
+               inbound::cache_type m_cache;
                std::vector< Uuid> m_discarded;
-               connector_type m_connector;
+               Connector m_connector;
             };
 
-         } // inbound
-
-         namespace outbound
-         {
-            //! Doesn't do much. More for symmetry with inbound
-            template< typename Connector, typename Serialize = serialize::native::binary::create::Writer>
-            struct Device
+            template< typename Connector>
+            struct base_connector
             {
                using connector_type = Connector;
 
-               using blocking_policy = typename connector_type::blocking_policy;
-               using non_blocking_policy = typename connector_type::non_blocking_policy;
+               template< typename... Args>
+               base_connector( Args&&... args) : m_connector{ std::forward< Args>( args)...} {}
 
+               Connector& connector() { return m_connector;}
+               const Connector& connector() const { return m_connector;}
+
+               CASUAL_LOG_SERIALIZE(
+               {
+                  CASUAL_SERIALIZE_NAME( m_connector, "connector");
+               })
+
+            private:
+               Connector m_connector;
+            };
+
+            //! Doesn't do much. More for symmetry with inbound
+            template< typename Connector, typename Serialize = serialize::native::binary::create::Writer, typename Base = device::base_connector< Connector>>
+            struct Outbound : Base
+            {
                using serialize_type = Serialize;
 
-               template< typename... Args>
-               Device( Args&&... args) : m_connector{ std::forward< Args>( args)...} {}
-
-               constexpr blocking_policy policy_blocking() const { return blocking_policy{};}
-               constexpr non_blocking_policy policy_non_blocking() const { return non_blocking_policy{};}
-
-               connector_type& connector() { return m_connector;}
-               const connector_type& connector() const { return m_connector;}
-
+               using Base::Base;
 
                template< typename Policy>
                Uuid put( const message::Complete& complete, Policy&& policy)
@@ -371,7 +400,7 @@ namespace casual
                   if( ! message.execution)
                      message.execution = execution::id();
 
-                  auto writer = serialize_type{}();
+                  auto writer = Serialize{}();
                   writer << message;
 
                   message::Complete complete{
@@ -384,24 +413,20 @@ namespace casual
                      complete);
                }
 
-               template< typename M>
-               Uuid blocking_send( M&& message)
-               {
-                  return send( message, blocking_policy{});
-               }
-
-               template< typename M>
-               Uuid non_blocking_send( M&& message)
-               {
-                  return send( message, non_blocking_policy{});
-               }
-
-               CASUAL_LOG_SERIALIZE(
-               {
-                  CASUAL_SERIALIZE_NAME( m_connector, "connector");
-               })
-
             private:
+
+               template< typename C>
+               static void reconnect( C& connector, traits::priority::tag< 0>)
+               {
+                  // rethrow the exception::system::communication::Unavailable 
+                  throw;
+               }
+               template< typename C>
+               static auto reconnect( C& connector, traits::priority::tag< 1>)
+                  -> decltype( void( connector.reconnect()), void())
+               {
+                  connector.reconnect();
+               }
 
                template< typename Policy>
                Uuid apply( Policy&& policy, const message::Complete& complete)
@@ -411,12 +436,12 @@ namespace casual
                      try
                      {
                         // Delegate the invocation to the policy
-                        return policy.send( m_connector, complete);
+                        return policy.send( Base::connector(), complete);
                      }
                      catch( const exception::system::communication::Unavailable&)
                      {
-                        // Let connector take a crack at resolving this problem...
-                        m_connector.reconnect();
+                        // Let connector take a crack at resolving this problem, if implemented...
+                        reconnect( Base::connector(), traits::priority::tag< 1>{});
                      }
                      catch( ...)
                      {
@@ -424,12 +449,166 @@ namespace casual
                      }
                   }
                }
-               connector_type m_connector;
             };
 
-         } // outbound
+            //! duplex device - inbound and outbound
+            template< typename Connector, typename Serialize = serialize::native::binary::create::Writer>
+            struct Duplex : device::Outbound< Connector, Serialize, device::Inbound< Connector, common::serialize::native::create::reverse_t< Serialize>>>
+            {
+               using base_type = device::Outbound< Connector, Serialize, device::Inbound< Connector, common::serialize::native::create::reverse_t< Serialize>>>;
+               using base_type::base_type;
+            };
+
+
+            template< typename D, typename... Ts>
+            auto receive( D& device, Ts&&... ts)
+               -> decltype( device.receive( std::forward< Ts>( ts)...))
+            {
+               return device.receive( std::forward< Ts>( ts)...);
+            }
+
+            template< typename D, typename... Ts>
+            auto next( D& device, Ts&&... ts) 
+               -> decltype( device.next( std::forward< Ts>( ts)...))
+            {
+               return device.next( std::forward< Ts>( ts)...);
+            }
+
+            template< typename D, typename... Ts>
+            auto select( D& device, Ts&&... ts) 
+               -> decltype( device.select( std::forward< Ts>( ts)...))
+            {
+               return device.select( std::forward< Ts>( ts)...);
+            }
+
+            template< typename D, typename... Ts>
+            auto send( D&& device, Ts&&... ts) 
+               -> decltype( device.send( std::forward< Ts>( ts)...))
+            {
+               return device.send( std::forward< Ts>( ts)...);
+            }
+
+            template< typename D, typename... Ts>
+            auto put( D&& device, Ts&&... ts) 
+               -> decltype( device.put( std::forward< Ts>( ts)...))
+            {
+               return device.put( std::forward< Ts>( ts)...);
+            }
+
+            //! To enable specific devices to customize calls
+            //! @{ 
+            template< typename D, typename... Ts>
+            auto send( D&& device, Ts&&... ts) 
+               -> decltype( customization_point< std::decay_t< D>>::send( std::forward< D>( device), std::forward< Ts>( ts)...))
+            {
+               return customization_point< std::decay_t< D>>::send( std::forward< D>( device), std::forward< Ts>( ts)...);
+            }
+
+            template< typename D, typename... Ts>
+            auto put( D&& device, Ts&&... ts) 
+               -> decltype( customization_point< std::decay_t< D>>::put( std::forward< D>( device), std::forward< Ts>( ts)...))
+            {
+               return customization_point< std::decay_t< D>>::put( std::forward< D>( device), std::forward< Ts>( ts)...);
+            }
+            //! @}
+            
+            namespace blocking
+            {
+               template< typename D, typename... Ts>
+               auto receive( D& device, Ts&&... ts)
+                  -> decltype( device::receive( device, std::forward< Ts>( ts)... , policy::blocking( device)))
+               {
+                  return device::receive( device, std::forward< Ts>( ts)... , policy::blocking( device));
+               }
+
+               template< typename D, typename... Ts>
+               auto next( D& device, Ts&&... ts) 
+                  -> decltype( device::next( device, std::forward< Ts>( ts)..., policy::blocking( device)))
+               {
+                  return device::next( device, std::forward< Ts>( ts)..., policy::blocking( device));
+               }
+
+               template< typename D, typename... Ts>
+               auto select( D& device, Ts&&... ts) 
+                  -> decltype( device.select( std::forward< Ts>( ts)..., policy::blocking( device)))
+               {
+                  return device.select( std::forward< Ts>( ts)..., policy::blocking( device));
+               }
+
+               template< typename D, typename... Ts>
+               auto send( D&& device, Ts&&... ts) 
+                  -> decltype( device::send( std::forward< D>( device), std::forward< Ts>( ts)..., policy::blocking( device)))
+               {
+                  return device::send( std::forward< D>( device), std::forward< Ts>( ts)..., policy::blocking( device));
+               }
+
+               template< typename D, typename... Ts>
+               auto put( D&& device, Ts&&... ts) 
+                  -> decltype( device::put( std::forward< D>( device), std::forward< Ts>( ts)..., policy::blocking( device)))
+               {
+                  return device::put( std::forward< D>( device), std::forward< Ts>( ts)..., policy::blocking( device));
+               }
+
+               namespace optional
+               {
+                  //! blocked send of the message, if callee is unreachable (for example. the process has died)
+                  //! `false` is returned
+                  //! @returns true if sent, false if Unavailable
+                  template< typename... Ts>
+                  auto send( Ts&&... ts) -> decltype( void( blocking::send( std::forward< Ts>( ts)...)), bool())
+                  {
+                     try 
+                     {
+                        blocking::send( std::forward< Ts>( ts)...);
+                        return true;
+                     }
+                     catch( const exception::system::communication::Unavailable&)
+                     {
+                        log::line( log::debug, "failed to send message - action: ignore");
+                        return false;
+                     }
+                  }
+               } // optional
+            }
+
+            namespace non
+            {
+               namespace blocking
+               {
+                  template< typename D, typename... Ts>
+                  auto receive( D& device, Ts&&... ts)
+                     -> decltype( device::receive( device, std::forward< Ts>( ts)... , policy::non::blocking( device)))
+                  {
+                     return device::receive( device, std::forward< Ts>( ts)... , policy::non::blocking( device));
+                  }
+
+                  template< typename D, typename... Ts>
+                  auto next( D& device, Ts&&... ts) 
+                     -> decltype( device::next( device, std::forward< Ts>( ts)..., policy::non::blocking( device)))
+                  {
+                     return device::next( device, std::forward< Ts>( ts)..., policy::non::blocking( device));
+                  }
+
+                  template< typename D, typename... Ts>
+                  auto send( D&& device, Ts&&... ts) 
+                     -> decltype( device::send( std::forward< D>( device), std::forward< Ts>( ts)..., policy::non::blocking( device)))
+                  {
+                     return device::send( std::forward< D>( device), std::forward< Ts>( ts)..., policy::non::blocking( device));
+                  }
+
+                  template< typename D, typename... Ts>
+                  auto put( D&& device, Ts&&... ts) 
+                     -> decltype( device::put( std::forward< D>( device), std::forward< Ts>( ts)..., policy::non::blocking( device)))
+                  {
+                     return device::put( std::forward< D>( device), std::forward< Ts>( ts)..., policy::non::blocking( device));
+                  }
+
+               } // blocking
+            } // non         
+         } // device
       } // communication
    } // common
 } // casual
+
 
 

@@ -52,13 +52,13 @@ namespace casual
                      // Try to send it first with no blocking.
                      auto busy = common::algorithm::filter( groups, [&message]( auto& group)
                      {
-                        return ! communication::ipc::non::blocking::send( group.queue, message);
+                        return ! communication::device::non::blocking::send( group.queue, message);
                      });
 
                      // Block for the busy ones, if any
                      algorithm::for_each( busy, [&message]( auto& group)
                      {
-                        communication::ipc::blocking::send( group.queue, message);
+                        communication::device::blocking::send( group.queue, message);
                      });
                   }
                } // <unnamed>
@@ -128,12 +128,12 @@ namespace casual
                         common::log::line( verbose::log, "message: ", message);
 
                         auto reply = common::message::reverse::type( message);
-
+                        reply.name = message.name;
 
                         auto send_reply = common::execute::scope( [&]()
                         {
                            common::log::line( verbose::log, "reply.execution: ", reply.execution);
-                           communication::ipc::blocking::optional::send( message.process.ipc, reply);
+                           communication::device::blocking::optional::send( message.process.ipc, reply);
                         });
 
                         auto found = common::algorithm::find( state.queues, message.name);
@@ -162,7 +162,7 @@ namespace casual
                            request.process = common::process::handle();
                            request.queues.push_back(  message.name);
 
-                           if( communication::ipc::blocking::optional::send( 
+                           if( communication::device::blocking::optional::send( 
                               common::communication::instance::outbound::gateway::manager::optional::device(), std::move( request)))
                            {
                               state.pending.push_back( std::move( message));
@@ -226,7 +226,7 @@ namespace casual
                            else
                               common::log::line( common::log::category::error, "failed to correlate configuration for group - ", group.name);
                            
-                           communication::ipc::blocking::send( message.process.ipc, reply);
+                           communication::device::blocking::send( message.process.ipc, reply);
                         
                         };
                      }
@@ -325,7 +325,7 @@ namespace casual
 
                               common::log::line( verbose::log, "reply: ", reply);
 
-                              communication::ipc::blocking::send( message.process.ipc, reply);
+                              communication::device::blocking::send( message.process.ipc, reply);
                            };
                         }
 
@@ -347,6 +347,7 @@ namespace casual
                                  state.pending.erase( std::begin( found));
 
                                  auto reply = common::message::reverse::type( request);
+                                 reply.name = request.name;
 
                                  auto found_queue = common::algorithm::find( state.queues, request.name);
 
@@ -357,7 +358,7 @@ namespace casual
                                     reply.queue = queue.queue;
                                  }
 
-                                 communication::ipc::blocking::optional::send( request.process.ipc, reply);
+                                 communication::device::blocking::optional::send( request.process.ipc, reply);
                               }
                               else
                                  log::line( log, "no pending was found for discovery reply");
@@ -374,7 +375,7 @@ namespace casual
          {
             handle::dispatch_type handlers( State& state)
             {
-               return ipc::device().handler(
+               return common::message::dispatch::handler( ipc::device(),
                   common::message::handle::defaults( ipc::device()),
                   handle::local::connect::request( state),
                   handle::local::connect::information( state),
@@ -386,7 +387,7 @@ namespace casual
 
          handle::dispatch_type handlers( State& state)
          {
-            return ipc::device().handler(
+            return common::message::dispatch::handler( ipc::device(),
                common::message::handle::defaults( ipc::device()),
                common::event::listener( handle::local::process::exit( state)),
                handle::local::connect::information( state),

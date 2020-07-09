@@ -18,6 +18,7 @@
 #include "queue/manager/admin/cli.h"
 #include "transaction/manager/admin/cli.h"
 #include "gateway/manager/admin/cli.h"
+#include "casual/buffer/admin/cli.h"
 #include "tools/service/call/cli.h"
 #include "tools/service/describe/cli.h"
 
@@ -39,21 +40,22 @@ namespace casual
          {
             namespace information
             {
-               auto complete = []( auto values, bool help) -> std::vector< std::string>
-               {
-                  if( help)
-                     return { "<value>"};
-                  return { 
-                     "information-domain",
-                     "information-service",
-                     "information-queue",
-                     "information-transaction",
-                  };
-               };
                template< typename CLI>
-               auto invoker( CLI& cli)
+               auto option( CLI& cli)
                {
-                  return [&cli]( std::vector< std::string> managers)
+                  auto complete = []( auto values, bool help) -> std::vector< std::string>
+                  {
+                     if( help)
+                        return { "<value>"};
+                     return { 
+                        "information-domain",
+                        "information-service",
+                        "information-queue",
+                        "information-transaction",
+                     };
+                  };
+
+                  auto invoke = [&cli, complete]( std::vector< std::string> managers)
                   {
                      std::cout << "managers: " << managers << '\n';
 
@@ -95,8 +97,8 @@ namespace casual
                      terminal::formatter::key::value().print( std::cout, information);
 
                   };
-               }
-               constexpr auto description = R"(collect general aggregated information about the domain
+
+                  constexpr auto description = R"(collect general aggregated information about the domain
 If no directives are provided all the _running_ managers are asked to provide information.
 Otherwise, only the provided directives are used.
 
@@ -109,9 +111,15 @@ valid directives:
 * information-transaction
 
 )";
+
+                  return common::argument::Option{
+                     std::move( invoke),
+                     complete,
+                     { "--information"},
+                     description};
+               }
+
             } // information
-
-
          } // <unnamed>
       } // local
       void main( int argc, char **argv)
@@ -121,10 +129,11 @@ valid directives:
             domain::manager::admin::cli domain;
             service::manager::admin::cli service;
             queue::manager::admin::cli queue;
-            transaction::manager::admin::cli transaction;
+            transaction::manager::admin::CLI transaction;
             gateway::manager::admin::cli gateway;
             tools::service::call::cli service_call;
             tools::service::describe::cli describe;
+            casual::buffer::admin::CLI buffer;
          } cli;
 
 
@@ -140,7 +149,7 @@ casual --help <option> <option>
 
 Where <option> is one of the listed below
 )",
-            Option{ local::information::invoker( cli), local::information::complete, { "--information"}, local::information::description},
+            local::information::option( cli),
             cli.domain.options(),
             cli.service.options(),
             cli.queue.options(),
@@ -148,6 +157,7 @@ Where <option> is one of the listed below
             cli.gateway.options(),
             cli.service_call.options(),
             cli.describe.options(),
+            cli.buffer.options(),
             common::terminal::output::directive().options(),
          }( argc, argv);
 

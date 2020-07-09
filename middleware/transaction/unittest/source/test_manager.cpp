@@ -61,6 +61,11 @@ namespace casual
 domain:
    name: transaction-domain
 
+   groups:
+      - name: first
+      - name: second
+        dependencies: [ first]
+
    transaction:
       resources:
          - key: rm-mockup
@@ -74,8 +79,10 @@ domain:
 
    servers:
       - path: "${CASUAL_HOME}/bin/casual-service-manager"
+        memberships: [ first]
       - path: "./bin/casual-transaction-manager"
         arguments: [ --transaction-log, ":memory:"]
+        memberships: [ second]
          
 )";
                   std::string resource = R"(
@@ -144,7 +151,7 @@ resources:
                template< typename M>
                void tm( M&& message)
                {
-                  communication::ipc::blocking::send(
+                  communication::device::blocking::send(
                         common::communication::instance::outbound::transaction::manager::device(), message);
                }
             } // send
@@ -242,7 +249,12 @@ resources:
             result.domain = R"(
 domain:
    name: transaction-domain
-
+   
+   groups:
+      - name: first
+      - name: second
+        dependencies: [ first]
+   
    transaction:
       resources:
          - key: non-existent
@@ -251,8 +263,10 @@ domain:
 
    servers:
       - path: "${CASUAL_HOME}/bin/casual-service-manager"
+        memberships: [ first]
       - path: "./bin/casual-transaction-manager"
         arguments: [ --transaction-log, ":memory:"]
+        memberships: [ second]
          
 )";
             return result;
@@ -315,6 +329,11 @@ resources:
 domain:
    name: transaction-domain
 
+   groups:
+      - name: first
+      - name: second
+        dependencies: [ first]
+
    transaction:
       resources:
          - key: rm-mockup
@@ -327,8 +346,10 @@ domain:
 
    servers:
       - path: "${CASUAL_HOME}/bin/casual-service-manager"
+        memberships: [ first]
       - path: "./bin/casual-transaction-manager"
         arguments: [ --transaction-log, ":memory:"]
+        memberships: [ second]
          
 )";
             return result;
@@ -778,7 +799,7 @@ domain:
          {
             common::message::transaction::resource::commit::Reply message;
 
-            communication::ipc::blocking::receive( common::communication::ipc::inbound::device(), message);
+            communication::device::blocking::receive( common::communication::ipc::inbound::device(), message);
 
             EXPECT_TRUE( message.trid == trid) << "trid: " << trid << "\nmessage.trid: " << message.trid;
             EXPECT_TRUE( message.state == common::code::xa::read_only);
@@ -807,7 +828,7 @@ domain:
          {
             common::message::transaction::resource::prepare::Reply message;
 
-            communication::ipc::blocking::receive( common::communication::ipc::inbound::device(), message);
+            communication::device::blocking::receive( common::communication::ipc::inbound::device(), message);
 
             EXPECT_TRUE( message.trid == trid);
             EXPECT_TRUE( message.state == common::code::xa::read_only);
@@ -836,7 +857,7 @@ domain:
          {
             common::message::transaction::resource::rollback::Reply message;
 
-            communication::ipc::blocking::receive( common::communication::ipc::inbound::device(), message);
+            communication::device::blocking::receive( common::communication::ipc::inbound::device(), message);
 
             EXPECT_TRUE( message.trid == trid);
             // rollback has no optimization, just ok, or errors...
@@ -878,7 +899,7 @@ domain:
          {
             common::message::transaction::resource::rollback::Reply message;
 
-            communication::ipc::blocking::receive( common::communication::ipc::inbound::device(), message);
+            communication::device::blocking::receive( common::communication::ipc::inbound::device(), message);
 
             EXPECT_TRUE( message.trid == trid);
             EXPECT_TRUE( message.state == common::code::xa::ok) << "state: " << message.state;
@@ -916,7 +937,7 @@ domain:
          {
             common::message::transaction::resource::rollback::Reply message;
 
-            communication::ipc::blocking::receive( common::communication::ipc::inbound::device(), message);
+            communication::device::blocking::receive( common::communication::ipc::inbound::device(), message);
 
             EXPECT_TRUE( message.trid == trid);
             EXPECT_TRUE( message.state == common::code::xa::read_only) << "state: " << message.state;
@@ -954,7 +975,7 @@ domain:
          {
             common::message::transaction::resource::commit::Request message;
 
-            communication::ipc::blocking::receive( communication::ipc::inbound::device(), message);
+            communication::device::blocking::receive( communication::ipc::inbound::device(), message);
 
             EXPECT_TRUE( message.trid == trid);
             EXPECT_TRUE( message.flags == common::flag::xa::Flag::one_phase);
@@ -972,7 +993,7 @@ domain:
          {
             common::message::transaction::commit::Reply message;
 
-            communication::ipc::blocking::receive( communication::ipc::inbound::device(), message);
+            communication::device::blocking::receive( communication::ipc::inbound::device(), message);
 
             EXPECT_TRUE( message.trid == trid);
             EXPECT_TRUE( message.state == common::code::tx::ok);
@@ -1041,7 +1062,7 @@ domain:
 
                common::message::transaction::resource::prepare::Request message;
 
-               communication::ipc::blocking::receive( involved.inbound, message);
+               communication::device::blocking::receive( involved.inbound, message);
 
                EXPECT_TRUE( message.trid == trid);
                EXPECT_TRUE( message.flags == common::flag::xa::Flag::no_flags);
@@ -1062,7 +1083,7 @@ domain:
          {
             common::message::transaction::commit::Reply message;
 
-            communication::ipc::blocking::receive( communication::ipc::inbound::device(), message);
+            communication::device::blocking::receive( communication::ipc::inbound::device(), message);
 
             EXPECT_TRUE( message.trid == trid);
             EXPECT_TRUE( message.stage == common::message::transaction::commit::Reply::Stage::prepare);
@@ -1076,7 +1097,7 @@ domain:
 
                common::message::transaction::resource::commit::Request message;
 
-               communication::ipc::blocking::receive( involved.inbound, message);
+               communication::device::blocking::receive( involved.inbound, message);
 
                EXPECT_TRUE( message.trid == trid);
                EXPECT_TRUE( message.flags == common::flag::xa::Flag::no_flags);
@@ -1097,7 +1118,7 @@ domain:
          {
             common::message::transaction::commit::Reply message;
 
-            communication::ipc::blocking::receive( communication::ipc::inbound::device(), message);
+            communication::device::blocking::receive( communication::ipc::inbound::device(), message);
 
             EXPECT_TRUE( message.trid == trid);
             EXPECT_TRUE( message.stage == common::message::transaction::commit::Reply::Stage::commit);
@@ -1144,7 +1165,7 @@ domain:
 
                common::message::transaction::resource::prepare::Request message;
 
-               communication::ipc::blocking::receive( involved.inbound, message);
+               communication::device::blocking::receive( involved.inbound, message);
 
                EXPECT_TRUE( message.trid == trid);
                EXPECT_TRUE( message.flags == common::flag::xa::Flag::no_flags);
@@ -1165,7 +1186,7 @@ domain:
          {
             common::message::transaction::commit::Reply message;
 
-            communication::ipc::blocking::receive( communication::ipc::inbound::device(), message);
+            communication::device::blocking::receive( communication::ipc::inbound::device(), message);
 
             EXPECT_TRUE( message.trid == trid) << CASUAL_NAMED_VALUE( message);
             EXPECT_TRUE( message.state == common::code::tx::ok) << CASUAL_NAMED_VALUE( message.state);
@@ -1213,7 +1234,7 @@ domain:
             {
                common::message::transaction::resource::prepare::Request message;
 
-               communication::ipc::blocking::receive( involved.inbound, message);
+               communication::device::blocking::receive( involved.inbound, message);
 
                EXPECT_TRUE( message.trid == trid);
                EXPECT_TRUE( message.flags == common::flag::xa::Flag::no_flags);
@@ -1236,7 +1257,7 @@ domain:
             {
                common::message::transaction::resource::commit::Request message;
 
-               communication::ipc::blocking::receive( involved.inbound, message);
+               communication::device::blocking::receive( involved.inbound, message);
 
                EXPECT_TRUE( message.trid == trid);
                EXPECT_TRUE( message.flags == common::flag::xa::Flag::no_flags);
@@ -1257,7 +1278,7 @@ domain:
          {
             common::message::transaction::resource::commit::Reply message;
 
-            communication::ipc::blocking::receive( communication::ipc::inbound::device(), message);
+            communication::device::blocking::receive( communication::ipc::inbound::device(), message);
 
             EXPECT_TRUE( message.trid == trid) << CASUAL_NAMED_VALUE( message);
             EXPECT_TRUE( message.state == common::code::xa::ok) << CASUAL_NAMED_VALUE( message.state);
@@ -1304,7 +1325,7 @@ domain:
 
                common::message::transaction::resource::prepare::Request message;
 
-               communication::ipc::blocking::receive( involved.inbound, message);
+               communication::device::blocking::receive( involved.inbound, message);
 
                EXPECT_TRUE( message.trid == trid);
                EXPECT_TRUE( message.flags == common::flag::xa::Flag::no_flags);
@@ -1327,7 +1348,7 @@ domain:
 
                common::message::transaction::resource::rollback::Request message;
 
-               communication::ipc::blocking::receive( involved.inbound, message);
+               communication::device::blocking::receive( involved.inbound, message);
 
                EXPECT_TRUE( message.trid == trid);
                EXPECT_TRUE( message.flags == common::flag::xa::Flag::no_flags);
@@ -1348,7 +1369,7 @@ domain:
          {
             common::message::transaction::resource::commit::Reply message;
 
-            communication::ipc::blocking::receive( communication::ipc::inbound::device(), message);
+            communication::device::blocking::receive( communication::ipc::inbound::device(), message);
 
             EXPECT_TRUE( message.trid == trid) << CASUAL_NAMED_VALUE( message);
             EXPECT_TRUE( message.state == common::code::xa::rollback_other) << CASUAL_NAMED_VALUE( message.state);
@@ -1526,7 +1547,7 @@ domain:
          {
             common::message::transaction::resource::prepare::Reply message;
 
-            communication::ipc::blocking::receive( common::communication::ipc::inbound::device(), message);
+            communication::device::blocking::receive( common::communication::ipc::inbound::device(), message);
 
             EXPECT_TRUE( message.trid == trid);
             EXPECT_TRUE( message.state == common::code::xa::ok);

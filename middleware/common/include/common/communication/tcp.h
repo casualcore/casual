@@ -122,16 +122,7 @@ namespace casual
 
 
             // Forwards
-            namespace inbound
-            {
-               struct Connector;
-            } // inbound
-
-            namespace outbound
-            {
-               struct Connector;
-            } // inbound
-
+            struct Connector;
 
             namespace message
             {
@@ -159,14 +150,14 @@ namespace casual
 
             namespace policy
             {
-               using cache_type = communication::inbound::cache_type;
-               using cache_range_type =  communication::inbound::cache_range_type;
+               using cache_type = device::inbound::cache_type;
+               using cache_range_type =  device::inbound::cache_range_type;
 
 
                struct basic_blocking
                {
-                  cache_range_type receive( const inbound::Connector& tcp, cache_type& cache);
-                  Uuid send( const outbound::Connector& tcp, const communication::message::Complete& complete);
+                  cache_range_type receive( const Connector& tcp, cache_type& cache);
+                  Uuid send( const Connector& tcp, const communication::message::Complete& complete);
                };
 
                using Blocking = basic_blocking;
@@ -175,8 +166,8 @@ namespace casual
                {
                   struct basic_blocking
                   {
-                     cache_range_type receive( const inbound::Connector& tcp, cache_type& cache);
-                     Uuid send( const outbound::Connector& tcp, const communication::message::Complete& complete);
+                     cache_range_type receive( const Connector& tcp, cache_type& cache);
+                     Uuid send( const Connector& tcp, const communication::message::Complete& complete);
                   };
 
                   using Blocking = basic_blocking;
@@ -184,21 +175,21 @@ namespace casual
 
             } // policy
 
-            struct base_connector
+            struct Connector
             {
                using handle_type = Socket;
                using blocking_policy = policy::Blocking;
                using non_blocking_policy = policy::non::Blocking;
 
-               base_connector() noexcept;
-               base_connector( Socket&& socket) noexcept;
-               base_connector( const Socket& socket);
+               Connector() noexcept;
+               Connector( Socket&& socket) noexcept;
+               Connector( const Socket& socket);
 
-               base_connector( const base_connector&) = delete;
-               base_connector& operator = ( const base_connector&) = delete;
+               Connector( const Connector&) = delete;
+               Connector& operator = ( const Connector&) = delete;
 
-               base_connector( base_connector&&) = default;
-               base_connector& operator = ( base_connector&&) = default;
+               Connector( Connector&&) = default;
+               Connector& operator = ( Connector&&) = default;
 
                inline const handle_type& socket() const { return m_socket;};
                inline handle_type& socket() { return m_socket;};
@@ -214,43 +205,7 @@ namespace casual
                handle_type m_socket;
             };
 
-            namespace inbound
-            {
-               struct Connector : base_connector
-               {
-                  using base_connector::base_connector;
-               };
-
-               using Device = communication::inbound::Device< Connector, serialize::native::binary::network::create::Reader>;
-
-            } // inbound
-
-            namespace outbound
-            {
-               struct Connector : base_connector
-               {
-                  using base_connector::base_connector;
-
-                  inline void reconnect() const { throw; }
-               };
-
-               using Device = communication::outbound::Device< Connector,  serialize::native::binary::network::create::Writer>;
-
-               namespace blocking 
-               {
-                  template< typename M> 
-                  auto send( const Socket& socket, M&& message)
-                  {
-                     return native::send( socket, serialize::native::complete( std::forward< M>( message), serialize::native::binary::network::create::Writer{}), {});
-                  }
-               } // blocking 
-            } // outbound
-
-
-            namespace dispatch
-            {
-               using Handler =  typename inbound::Device::handler_type;
-            } // dispatch
+            using Duplex = communication::device::Duplex< Connector, serialize::native::binary::network::create::Writer>;
 
          } // tcp
       } // communication
@@ -264,10 +219,10 @@ namespace casual
                namespace network
                {
                   template<>
-                  struct normalizing< communication::tcp::inbound::Device>: std::true_type {};
+                  struct normalizing< communication::tcp::Duplex>: std::true_type {};
 
-                  template<>
-                  struct normalizing< communication::tcp::outbound::Device>: std::true_type {};
+                  //template<>
+                  //struct normalizing< communication::tcp::outbound::Device>: std::true_type {};
                } // network
             } // is 
          } // traits

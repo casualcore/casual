@@ -32,6 +32,25 @@ namespace casual
 
       } // has
 
+      namespace flag
+      {
+         namespace detail
+         {
+            template< typename F>
+            auto print( std::ostream& out, F flag, traits::priority::tag< 1>) 
+               -> decltype( out << static_cast< typename F::enum_type>( flag.underlaying()))
+            {
+               return out << static_cast< typename F::enum_type>( flag.underlaying());
+            }
+
+            template< typename F>
+            auto print( std::ostream& out, F flag, traits::priority::tag< 0>)  -> decltype( out)
+            {
+               return out << "0x" << std::hex << flag.underlaying() << std::dec;
+            }
+         } // detail
+      } // flag
+
 
 
       template< typename E>
@@ -97,7 +116,7 @@ namespace casual
 
          friend std::ostream& operator << ( std::ostream& out, Flags flags)
          {
-            return out << "0x" << std::hex << flags.m_flags << std::dec;
+            return flag::detail::print( out, flags, traits::priority::tag< 1>{});
          }
 
          CASUAL_FORWARD_SERIALIZE( m_flags)

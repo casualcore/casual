@@ -32,7 +32,7 @@ namespace casual
                      template< typename D, typename M>
                      void send( D&& device, M&& message)
                      {
-                        communication::ipc::blocking::send( std::forward< D>( device), std::forward< M>( message));
+                        communication::device::blocking::send( std::forward< D>( device), std::forward< M>( message));
                      }
 
                      namespace optional

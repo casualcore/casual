@@ -47,7 +47,8 @@ namespace casual
                         try
                         {
                            communication::ipc::outbound::Device device{ process.ipc};
-                           return static_cast< bool>( device.put( message.complete, communication::ipc::policy::non::Blocking{}));
+
+                           return ! communication::device::non::blocking::put( process.ipc, message.complete).empty();
                         }
                         catch( const exception::system::communication::Unavailable&)
                         {

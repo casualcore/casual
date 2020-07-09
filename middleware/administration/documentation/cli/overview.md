@@ -16,34 +16,92 @@ casual <category group> <group specific options>...
 `casual` aims to be as _unix friendly_ as possible.
 
 What do we mean with _unix friendly_? 
-* every output to stdout should be parsable line by line, hence no composite information
+* every human readable output to stdout should be parsable line by line, hence no composite information
 * users should be able to combine other _unix_ tools to achieve their goals (_grep, sort, cut, |, etc..._) 
 * `casual` cli commands should be as composable as possible
   * example: `casual queue --dequeue q1 | casual call service1 | casual queue --enqueue q2` 
+
+### casual-pipe
+
+To enable true transaction support in a cli context `casual` has its own 'internal' _pipeline-protocol_.
+
+This only applies for cli commands that consumes/invokes buffer/queues/services - hence, business execution.
+These cli commands are annotated with 'casual-pipe' in the help.
+
+The 'causal-pipe' has to be _terminated_ to be able to consume `stdout` with cli commands that is not part
+of 'casual-pipe'.
+
+If `casual` detects that `stdout` is tied to a _terminal_ `casual` will try to make it _human readable_
+
+#### example
+
+```shell
+host# echo "some paylaod" | casual buffer --compose "X_OCTET/" | casual buffer --duplicate 2 | casual buffer --extract
+```
+* creates an `X_OCTET/`  buffer with the payload 'some paylad' and send it downstream
+* duplicates this buffer twice and send it downstream
+* extract the payload of the buffer and sends it downstream, which is the terminal in this case.
+   * in ths case the payload is human readable.
+
+
+
+```shell
+host# casual transaction --compound \
+ | casual queue --consume b2 \
+ | casual call --service casual/example/echo \
+ | casual queue --enqueue a2 \
+ | casual transaction --commit
+```
+
+* starts a _transaction directive_ that will associate all actions with a new transaction, and sends this downstream
+   * starts wating on transactions to commit/rollback from downstream
+* consumes all messages on queue `b2`, each _dequeue_ in a separate transaction according to the _directive_
+   * each message (payload) will be associated with its transaction and sent downstream  
+* calls the service `casual/example/echo` with each payload and associated transaction
+   * the reply (payload) will have the original transaction associated with it, and sent downstream
+   * if the service fails (rollback) the individual transaction will be set to _abort only_
+* enqueue's each payload with associated transaction (which might be in _abort only_)
+   * the message id with associated transaction is sent downstream
+* commits all _commitable_ transactions (and rollback the _uncomittable_)
+   * sends notification for each transaction to the owner of the transaction (in this case `casual transaction --compound`)
+      * `casual transaction --compound` is the cli command that actually commits or rollback each transaction (in this example)
+   * terminates the transaction-directive by sending a _cli-transaction-termination-message_ to `casual transaction --compound`
+      * `casual transaction --compound` knows that it's work is done, and can exit. 
+   * the above is done with internal _ipc communication_ 
+   * sends message id's downstream, without the associated transaction (since it has been completed)
+   * in this case, `casual` detects that `stdout` is tied to a terminal and 'transform' the id's to human readable
+
+
+##### attention
+if transaction is used in cli it's paramount to terminate the transaction directive with `casual transaction --commit`
+or `casual transaction --rollback`.
+Otherwise the transaction(s) will never be committed/rolled back, and manually recovery is needed.
+The information/data will be safe and protected by the transaction semantics though, so no data will 
+be lost.
 
 ## help
 
 To get an overview help for what options is possible use:
 
-``` bash
+``` shell
 host$ casual --help
 ```
 
 To get detailed help for a specific category/option, use:
 
-``` bash
+``` shell
 host$ casual --help service
 ```
 
 It's possible to get detailed help for several categories/options at once 
 
-``` bash
+``` shell
 host$ casual --help service domain gateway
 ```
 
 To see all possible _help options_ use:
 
-``` bash
+``` shell
 host$ casual --help --help
 ```
 

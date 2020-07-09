@@ -81,18 +81,6 @@ namespace casual
 
          namespace payload
          {
-            namespace binary
-            {
-               //! stream in/out 
-               //! @{
-               void stream( const Payload& value, std::ostream& out);
-               Payload stream( std::istream& in);
-               //! @}
-
-               //! consumes 0..* payloads from `in` and call dispatch
-               void stream( std::istream& in, const std::function< void( Payload&&)>& dispatch);
-
-            } // binary
 
             struct Send
             {

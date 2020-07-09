@@ -43,7 +43,7 @@ namespace casual
 
                   auto handler( std::vector< Uuid>& tasks) 
                   {
-                     return communication::ipc::inbound::device().handler(
+                     return message::dispatch::handler( communication::ipc::inbound::device(),
                         []( message::event::process::Spawn& event)
                         {
                            message::event::terminal::print( std::cout, event);

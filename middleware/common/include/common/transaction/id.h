@@ -97,9 +97,6 @@ namespace casual
                return ! ( lhs == rhs);
             }
 
-            //template< typename T, typename A, typename E>
-            //friend struct serialize::customize::Value;
-
             CASUAL_CONST_CORRECT_SERIALIZE(
             {
                CASUAL_SERIALIZE_NAME( m_owner, "owner");

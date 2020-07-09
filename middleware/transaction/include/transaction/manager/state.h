@@ -17,14 +17,11 @@
 #include "common/message/pending.h"
 #include "common/algorithm.h"
 #include "common/metric.h"
+#include "common/functional.h"
 
 #include "common/serialize/native/complete.h"
 
-
-
 #include "configuration/resource/property.h"
-
-
 
 #include <map>
 #include <deque>
@@ -169,6 +166,9 @@ namespace casual
                      //! RM id
                      id::type id;
 
+                     // TODO maintainance: get metrics for "external" resources
+                     // Metrics metrics;
+
                      friend bool operator == ( const Proxy& lhs, const common::process::Handle& rhs);
                   };
 
@@ -206,9 +206,9 @@ namespace casual
             //! the transaction.
             struct Dispatch
             {
-               std::function< bool( State&, common::message::transaction::resource::prepare::Reply&, Transaction&)> prepare;
-               std::function< bool( State&, common::message::transaction::resource::commit::Reply&, Transaction&)> commit;
-               std::function< bool( State&, common::message::transaction::resource::rollback::Reply&, Transaction&)> rollback;
+               common::unique_function< bool( State&, common::message::transaction::resource::prepare::Reply&, Transaction&)> prepare;
+               common::unique_function< bool( State&, common::message::transaction::resource::commit::Reply&, Transaction&)> commit;
+               common::unique_function< bool( State&, common::message::transaction::resource::rollback::Reply&, Transaction&)> rollback;
 
                inline explicit operator bool () { return static_cast< bool>( prepare);}
             };
@@ -264,8 +264,6 @@ namespace casual
                   xa_OK,      //! Went as expected
                   xa_RDONLY,  //! Went "better" than expected
                };
-
-               friend std::ostream& operator << ( std::ostream& out, Result value) { return out << common::cast::underlying( value);}
 
                inline Resource( id_type id) : id( id) {}
 

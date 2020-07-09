@@ -402,7 +402,7 @@ domain:
                common::message::service::call::ACK message;
                message.metric.process = common::process::handle();
 
-               common::communication::ipc::blocking::send( 
+               common::communication::device::blocking::send( 
                   common::communication::instance::outbound::service::manager::device(),
                   message);
             }
@@ -469,7 +469,7 @@ domain:
             message.state.pid = common::process::id();
             message.state.reason = common::process::lifetime::Exit::Reason::core;
 
-            common::communication::ipc::blocking::send( 
+            common::communication::device::blocking::send( 
                common::communication::instance::outbound::service::manager::device(),
                message);
          }
@@ -478,7 +478,7 @@ domain:
             // we expect to get a service-call-error-reply
             common::message::service::call::Reply message;
             
-            common::communication::ipc::blocking::receive( 
+            common::communication::device::blocking::receive( 
                common::communication::ipc::inbound::device(),
                message);
             
@@ -520,14 +520,14 @@ domain:
             message.metric.end = end;
             message.metric.code = common::code::xatmi::service_fail;
 
-            common::communication::ipc::blocking::send( 
+            common::communication::device::blocking::send( 
                common::communication::instance::outbound::service::manager::device(),
                message);
          }
 
          // wait for event
          {
-            common::communication::ipc::blocking::receive( 
+            common::communication::device::blocking::receive( 
                common::communication::ipc::inbound::device(),
                event);
             

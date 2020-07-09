@@ -3,6 +3,7 @@ from casual.middleware.make.dsl import *
 Parallel( False)
 
 Build( 'common/makefile.cmk')
+Build( 'cli/makefile.cmk')
 Build( 'xatmi/makefile.cmk')
 Build( 'serviceframework/makefile.cmk')
 Build( 'buffer/makefile.cmk')

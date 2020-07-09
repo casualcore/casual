@@ -31,7 +31,7 @@ namespace casual
             {
                void send( const State& state, common::message::pending::Message&& pending)
                {
-                  communication::ipc::blocking::send( 
+                  communication::device::blocking::send( 
                      state.process.pending.handle().ipc,
                      casual::domain::pending::message::Request{ std::move( pending)});
                }

@@ -31,7 +31,7 @@ namespace casual
                         // We ignore signals
                         signal::thread::scope::Mask mask{ signal::set::filled( code::signal::terminate, code::signal::interrupt)};
 
-                        communication::ipc::blocking::send( destination.ipc, message);
+                        communication::device::blocking::send( destination.ipc, message);
                      }
                      catch( const common::exception::system::communication::Unavailable&)
                      {

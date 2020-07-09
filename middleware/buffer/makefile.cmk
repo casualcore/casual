@@ -3,6 +3,7 @@ from casual.middleware.make.dsl import *
 IncludePaths( [
    'include',
    '../common/include',
+   '../cli/include',
    '../xatmi/include',
    '$(CASUAL_OPTIONAL_INCLUDE_PATHS)',
    ])
@@ -11,6 +12,7 @@ IncludePaths( [
 LibraryPaths([
     'bin',
     '../common/bin',
+    '../cli/bin',
     '../xatmi/bin',
     '$(CASUAL_OPTIONAL_LIBRARY_PATHS)',
     ])
@@ -57,6 +59,21 @@ casual_field_make_header = LinkExecutable( 'bin/casual-buffer-field-make-header'
 install_bin.append( casual_field_make_header)
 
 
+# cli
+
+lib_cli = LinkLibrary( 'bin/casual-buffer-cli',
+    [ 
+        Compile( 'source/admin/cli.cpp')
+    ],
+    [
+        lib_buffer,
+        'casual-cli',
+        'casual-common'
+    ]
+)
+install_lib.append( lib_cli)
+
+
 # Unittest
 LinkUnittest( 'bin/test-buffer',
    [
@@ -97,11 +114,12 @@ lib_casual_buffer_sample = LinkLibrary( 'bin/casual-buffer-sample',
 
 binary = LinkExecutable( 'bin/casual-buffer-field-from-human', 
     [
-     Compile( 'tools/source/field/from_human.cpp'),
+        Compile( 'tools/source/field/from_human.cpp'),
     ], 
     [ 
-     'casual-common', 
-      lib_buffer
+        lib_cli,
+        lib_buffer,
+        'casual-common', 
     ])
     
 install_bin.append( binary)
@@ -109,21 +127,23 @@ install_bin.append( binary)
 
 binary = LinkExecutable( 'bin/casual-buffer-field-to-human', 
     [
-     Compile( 'tools/source/field/to_human.cpp'),
+        Compile( 'tools/source/field/to_human.cpp'),
     ], 
-    [ 
-     'casual-common', 
-      lib_buffer
+    [
+        lib_cli,
+        lib_buffer,
+        'casual-common'
     ])
     
 install_bin.append( binary)
 
 binary = LinkExecutable( 'bin/casual-buffer-duplicate', 
     [
-     Compile( 'tools/source/duplicate.cpp'),
+        Compile( 'tools/source/duplicate.cpp'),
     ], 
-    [ 
-     'casual-common', 
+    [
+        lib_cli, 
+        'casual-common', 
     ])
     
 install_bin.append( binary)
@@ -131,20 +151,22 @@ install_bin.append( binary)
 
 binary = LinkExecutable( 'bin/casual-buffer-generic-compose', 
     [
-     Compile( 'tools/source/generic/compose.cpp'),
+        Compile( 'tools/source/generic/compose.cpp'),
     ], 
-    [ 
-     'casual-common', 
+    [
+        lib_cli,
+        'casual-common', 
     ])
     
 install_bin.append( binary)
 
 binary = LinkExecutable( 'bin/casual-buffer-generic-extract', 
     [
-     Compile( 'tools/source/generic/extract.cpp'),
+        Compile( 'tools/source/generic/extract.cpp'),
     ], 
-    [ 
-     'casual-common', 
+    [
+        lib_cli, 
+        'casual-common', 
     ])
     
 install_bin.append( binary)
@@ -159,6 +181,7 @@ binary = LinkExecutable( 'bin/casual-buffer-field-serialize',
     ])
     
 install_bin.append( binary)
+
 
 # Install
 Install( install_lib, '$(CASUAL_HOME)/lib')

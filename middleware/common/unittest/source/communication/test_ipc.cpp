@@ -159,13 +159,13 @@ namespace casual
             auto send = []( strong::ipc::id id)
             {
                common::message::domain::process::lookup::Reply message;
-               return ipc::non::blocking::send( id, message);
+               return device::non::blocking::send( id, message);
             };
 
             auto correlation = send( destination.connector().handle().ipc());
 
             common::message::domain::process::lookup::Reply message;
-            EXPECT_TRUE( ( ipc::non::blocking::receive( destination, message, correlation)));
+            EXPECT_TRUE( ( device::non::blocking::receive( destination, message, correlation)));
          }
 
 
@@ -244,7 +244,7 @@ namespace casual
             unittest::eventually::send( ipc::inbound::ipc(), send_message);
 
             unittest::Message receive_message;
-            ipc::blocking::receive( ipc::inbound::device(), receive_message);
+            device::blocking::receive( ipc::inbound::device(), receive_message);
             EXPECT_TRUE( ( algorithm::equal( receive_message.payload, send_message.payload)));
          }
 
@@ -258,7 +258,7 @@ namespace casual
 
 
             unittest::Message receive_message;
-            ipc::blocking::receive( ipc::inbound::device(), receive_message);
+            device::blocking::receive( ipc::inbound::device(), receive_message);
             EXPECT_TRUE( receive_message.size() == 1103);
             EXPECT_TRUE( ( algorithm::equal( receive_message.payload, send_message.payload)));
 
@@ -285,7 +285,7 @@ namespace casual
             {
                unittest::Message receive_message;
 
-               ipc::blocking::receive( ipc::inbound::device(), receive_message, correlation);
+               device::blocking::receive( ipc::inbound::device(), receive_message, correlation);
 
                EXPECT_TRUE( receive_message.correlation == correlation);
                EXPECT_TRUE( ( algorithm::equal( receive_message.payload, send_message.payload)));
@@ -311,7 +311,7 @@ namespace casual
             const auto correlation = unittest::eventually::send( ipc::inbound::ipc(), message);
 
             common::message::service::call::Reply receive_message;
-            ipc::blocking::receive( ipc::inbound::device(), receive_message, correlation);
+            device::blocking::receive( ipc::inbound::device(), receive_message, correlation);
 
 
             EXPECT_TRUE( receive_message.correlation == correlation);
@@ -342,7 +342,7 @@ namespace casual
                {
                   for( ; message.index < count; ++message.index)
                   {
-                     ipc::blocking::send( destination, message);
+                     device::blocking::send( destination, message);
                   }
                };
 
@@ -355,7 +355,7 @@ namespace casual
                   local::Message message;
                   for( auto index = 0; index < count; ++index)
                   {
-                     ipc::blocking::receive( ipc::inbound::device(), message);
+                     device::blocking::receive( ipc::inbound::device(), message);
                      EXPECT_TRUE( message.index == index);
                      EXPECT_TRUE( message.payload == origin.payload) << "\n" << CASUAL_NAMED_VALUE( message) << "\n" << CASUAL_NAMED_VALUE( origin);
                   }

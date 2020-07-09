@@ -42,7 +42,7 @@ namespace casual
 
                log::line( verbose::log, "message: ", message);
 
-               communication::ipc::blocking::send( local::device(), caller::Request{ message});
+               communication::device::blocking::send( local::device(), caller::Request{ message});
             }   
          } // message
       } // pending

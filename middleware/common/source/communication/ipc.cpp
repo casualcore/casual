@@ -114,10 +114,16 @@ namespace casual
                      {
                         switch( code)
                         {
+#ifdef __APPLE__
                            case code::system::no_buffer_space:
                               // try again...
-                              std::this_thread::sleep_for( std::chrono::microseconds{ 10});
+                              
+                              // we flush our inbound to mitigate deadlocks...
+                              inbound::device().flush();
+                              std::this_thread::sleep_for( std::chrono::microseconds{ 100});
                               break;
+#endif
+                           
 
                            case code::system::no_such_file_or_directory:
                               throw exception::system::communication::unavailable::File{}; 
@@ -194,6 +200,7 @@ namespace casual
 
                         local::check_error();
                         log::line( verbose::log, "ipc ---> blocking send - error: ", error, ", destination: ", destination);
+
                      }
                   }
 

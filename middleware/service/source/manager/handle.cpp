@@ -56,7 +56,7 @@ namespace casual
                         try
                         {
                            log::line( verbose::log, "send message: ", message);
-                           communication::ipc::blocking::send( device, message);
+                           communication::device::blocking::send( device, message);
                            return true;
                         }
                         catch( const common::exception::system::communication::Unavailable&)
@@ -69,43 +69,23 @@ namespace casual
 
                   namespace eventually
                   {
-                     namespace detail
-                     {
-                        namespace get
-                        {
-                           template< typename D>
-                           using is_process =  std::is_same< traits::remove_cvref_t< D>, common::process::Handle>;
-
-                           template< typename D>
-                           std::enable_if_t< is_process< D>::value, const common::process::Handle&>
-                           process( D&& device) { return device;} 
-
-                           template< typename D> 
-                           std::enable_if_t< ! is_process< D>::value, const common::process::Handle&>
-                           process( D&& device) { return device.connector().process();}
-
-                           template< typename P, typename = std::enable_if_t< is_process< P>::value, strong::ipc::id>>
-                           decltype( auto) device( P&& process) { return process.ipc;}
-                           
-                           template< typename D, typename = std::enable_if_t< ! is_process< D>::value>>
-                           decltype( auto) process( D&& device) { return std::forward< D>( device);}
-
-                        } // get
-                     } // detail
-                     template< typename D, typename M>
-                     void send( D&& device, M&& message)
+                     template<  typename M>
+                     bool send( const common::process::Handle& destination, M&& message)
                      {
                         Trace trace{ "service::manager::handle::local::eventually::send"};
                         log::line( verbose::log, "message: ", message);
 
                         try
                         {
-                           if( ! communication::ipc::non::blocking::send( detail::get::device( device), message))
-                              casual::domain::pending::message::send( detail::get::process( device), std::forward< M>( message));
+                           if( ! communication::device::non::blocking::send( destination.ipc, message))
+                              casual::domain::pending::message::send( destination, std::forward< M>( message));
+
+                           return true;
                         }
                         catch( const common::exception::system::communication::Unavailable&)
                         {
-                           log::line( log, "destination unavailable - ", device);
+                           log::line( log, "destination unavailable - ", destination);
+                           return false;
                         }
 
                      }
@@ -338,7 +318,7 @@ namespace casual
                               request.services.push_back( name);
 
                               // If there is no gateway, this will throw
-                              communication::ipc::blocking::send( communication::instance::outbound::gateway::manager::optional::device(), request);
+                              communication::device::blocking::send( communication::instance::outbound::gateway::manager::optional::device(), request);
 
                               state.pending.requests.emplace_back( std::move( message), platform::time::clock::type::now());
 
@@ -543,7 +523,7 @@ namespace casual
 
                               algorithm::for_each( message.services, known_services);
 
-                              communication::ipc::blocking::send( message.process.ipc, reply);
+                              communication::device::blocking::send( message.process.ipc, reply);
                            };
                         }
 
@@ -578,7 +558,7 @@ namespace casual
                                     reply.service.name = pending.request.requested;
                                     reply.state = decltype( reply.state)::absent;
 
-                                    communication::ipc::blocking::send( pending.request.process.ipc, reply);
+                                    communication::device::blocking::send( pending.request.process.ipc, reply);
                                  }
                               }
                               else
@@ -659,7 +639,7 @@ namespace casual
 
             void Policy::reply( common::strong::ipc::id id, common::message::service::call::Reply& message)
             {
-               communication::ipc::blocking::send( id, message);
+               communication::device::blocking::send( id, message);
             }
 
             void Policy::ack( const common::message::service::call::ACK& ack)

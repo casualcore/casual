@@ -29,45 +29,53 @@ namespace casual
                {
                   struct State 
                   {
-                     auto timeout() const 
-                     {
-                        if( messages.empty())
-                           return platform::time::unit::min();
+                     bool done = false;
+                     std::vector< message::Request> messages;
 
-                        return std::chrono::duration_cast< platform::time::unit>( std::chrono::milliseconds{ 500});
+                     CASUAL_LOG_SERIALIZE(
+                        CASUAL_SERIALIZE( done);
+                        CASUAL_SERIALIZE( messages);
+                     )
+                  };
+
+                  namespace update
+                  {
+                     void timout( State& state)
+                     {
+                        if( state.messages.empty())
+                           signal::timer::unset();
+                        else if( signal::timer::get() == platform::time::unit::min())
+                           signal::timer::set( std::chrono::milliseconds{ 500});
                      }
 
-                     std::vector< message::Request> messages;
-                  };
+                  } // update
 
                   
                   namespace ipc
                   {
-                     bool send( message::Request& request)
+                     namespace messages
                      {
-                        return common::message::pending::non::blocking::send( request.message);
-                     }
-                  } // ipc
-                  
-                  namespace handle
-                  {
-                     auto request( State& state)
-                     {
-                        return [&state]( message::Request& message)
+                        void send( State& state)
                         {
-                           Trace trace{ "domain::pending::message::local::handle::Request"};
+                           Trace trace{ "domain::pending::message::local::ipc::messages::send"};
 
-                           log::line( verbose::log, "message: ", message);
-                           
                            // we block all signals during non-blocking-send
                            signal::thread::scope::Block block;
 
-                           // we try to send the message directly
-                           if( ! ipc::send( message))
-                              state.messages.push_back( std::move( message));
-                        };
-                     }
-                  } // handle
+                           auto send = []( message::Request& request)
+                           {
+                              return common::message::pending::non::blocking::send( request.message);
+                           };
+
+                           common::algorithm::trim( state.messages, common::algorithm::remove_if( state.messages, send));
+
+                           log::line( verbose::log, "state: ", state);
+
+                           update::timout( state);
+                        }     
+                     } // messages
+
+                  } // ipc
 
                   namespace callback
                   {
@@ -75,16 +83,49 @@ namespace casual
                      {
                         return [&state]()
                         {
-                           Trace trace{ "domain::pending::message::local::handle::timeout"};
-
-                           // we block all signals during non-blocking-send
-                           signal::thread::scope::Block block;
-
-                           common::algorithm::trim( state.messages, common::algorithm::filter( state.messages, &ipc::send));
-
+                           Trace trace{ "domain::pending::message::local::callback::timeout"};
+                           
+                           ipc::messages::send( state);
                         };
                      }
                   } // callback
+                  
+                  namespace handle
+                  {
+                     auto request( State& state)
+                     {
+                        return [&state]( message::Request& message)
+                        {
+                           Trace trace{ "domain::pending::message::local::handle::request"};
+                           log::line( verbose::log, "message: ", message);
+                           
+                           // we block all signals during non-blocking-send
+                           signal::thread::scope::Block block;
+
+                           // we add it, and try to send all messages
+                           state.messages.push_back( std::move( message));
+
+                           ipc::messages::send( state);
+                        };
+                     }
+
+                     auto shutdown( State& state)
+                     {
+                        return [&state]( const common::message::shutdown::Request&)
+                        {
+                           Trace trace{ "domain::pending::message::local::handle::shutdown"};
+
+                           state.done = true;
+
+                           // we try to send any pending that is left...
+                           ipc::messages::send( state);
+
+                           if( ! state.messages.empty())
+                              log::line( log::category::error, "pending messages not sent: ", state.messages);
+                        };
+                     }
+
+                  } // handle
 
                      
                   void start()
@@ -102,23 +143,25 @@ namespace casual
                      {
                         pending::message::Connect connect;
                         connect.process = common::process::handle();
-                        communication::ipc::blocking::send( communication::instance::outbound::domain::manager::device(), connect);
+                        communication::device::blocking::send( communication::instance::outbound::domain::manager::device(), connect);
                      }
                      
                      // Connect singleton to domain
                      communication::instance::connect( message::environment::identification);
 
-                     auto handler = ipc.handler(
+                     auto handler = common::message::dispatch::handler( ipc,
                         common::message::handle::defaults( ipc),
-                        handle::request( state));
+                        handle::request( state),
+                        handle::shutdown( state));
 
-                     while( true)
-                     {
-                        // Set timeout, if any
-                        signal::timer::set( state.timeout());
+                     auto condition = common::message::dispatch::condition::compose( 
+                        common::message::dispatch::condition::done( [&state](){ return state.done;})
+                     );
 
-                        handler( communication::ipc::blocking::next( ipc));
-                     }
+                     common::message::dispatch::pump(
+                        std::move( condition),
+                        handler,
+                        communication::ipc::inbound::device());
                   }
 
                } // <unnamed>

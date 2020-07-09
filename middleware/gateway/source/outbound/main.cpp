@@ -44,7 +44,7 @@ namespace casual
                   template< typename D, typename M>
                   void send( D&& device, M&& message)
                   {
-                     common::communication::ipc::blocking::send( std::forward< D>( device), std::forward< M>( message));
+                     common::communication::device::blocking::send( std::forward< D>( device), std::forward< M>( message));
                   }
 
 
@@ -89,8 +89,8 @@ namespace casual
                struct State 
                {
                   
-                  State( communication::tcp::inbound::Device&& inbound, size_type order)
-                     : external{ std::move( inbound)}, order( order)
+                  State( communication::tcp::Duplex&& device, size_type order)
+                     : external{ std::move( device)}, order( order)
                   {
                      metric.metrics.reserve( platform::batch::gateway::metrics);
                   }
@@ -105,13 +105,13 @@ namespace casual
 
                   struct 
                   {
-                     communication::tcp::inbound::Device inbound;
+                     communication::tcp::Duplex device;
 
                      template< typename M>
                      auto send( M&& message)
                      {
-                        return communication::tcp::outbound::blocking::send( 
-                           inbound.connector().socket(),
+                        return communication::device::blocking::send( 
+                           device,
                            std::forward< M>( message));
                      }
 
@@ -239,7 +239,7 @@ namespace casual
                   // set the first timeout
                   common::signal::timer::set( std::chrono::seconds{ 1});
 
-                  auto handler = communication::ipc::inbound::device().handler( 
+                  auto handler = common::message::dispatch::handler( communication::ipc::inbound::device(),
                      common::message::handle::defaults( communication::ipc::inbound::device()), 
                      []( const message::outbound::connect::Done&) {} // no-op 
                      );
@@ -266,7 +266,7 @@ namespace casual
                   common::communication::instance::connect();
 
                   // connect to the other domain, this will try until success or "shutdown"
-                  communication::tcp::inbound::Device inbound{ connect( std::move( settings.address))};
+                  communication::tcp::Duplex device{ connect( std::move( settings.address))};
 
                   // send connect request
                   {
@@ -278,12 +278,12 @@ namespace casual
                      
                      log::line( verbose::log, "request: ", request);
 
-                     communication::tcp::outbound::blocking::send( inbound.connector().socket(), request);
+                     communication::device::blocking::send( device, request);
                   }
 
                   // the reply will be handled in the main message pump
 
-                  return State{ std::move( inbound), settings.order};
+                  return State{ std::move( device), settings.order};
                }
 
                namespace handle
@@ -412,13 +412,13 @@ namespace casual
                                  connect.process = common::process::handle();
                                  connect.domain = message.domain;
                                  connect.version = message.version;
-                                 const auto& socket =  state.external.inbound.connector().socket();
+                                 const auto& socket =  state.external.device.connector().socket();
                                  connect.address.local = communication::tcp::socket::address::host( socket);
                                  connect.address.peer = communication::tcp::socket::address::peer( socket);
 
                                  log::line( verbose::log, "connect: ", connect);
 
-                                 common::communication::ipc::blocking::send(
+                                 common::communication::device::blocking::send(
                                     common::communication::instance::outbound::gateway::manager::device(),
                                     connect);
                               }
@@ -428,7 +428,7 @@ namespace casual
                                  message::outbound::configuration::Request request;
                                  request.process = common::process::handle();
 
-                                 common::communication::ipc::blocking::send(
+                                 common::communication::device::blocking::send(
                                     common::communication::instance::outbound::gateway::manager::device(),
                                     request);
                               }
@@ -641,7 +641,7 @@ namespace casual
 
                      auto handler( State& state)
                      {
-                        return state.external.inbound.handler(
+                        return common::message::dispatch::handler( state.external.device,
                            // the reply from the other side, will only be invoked once.
                            connect::reply( state),
                            
@@ -666,14 +666,14 @@ namespace casual
                      {
                         auto dispatch( State& state)
                         {
-                           const auto descriptor = state.external.inbound.connector().descriptor();
+                           const auto descriptor = state.external.device.connector().descriptor();
                            state.directive.read.add( descriptor);
 
                            return communication::select::dispatch::create::reader(
                               descriptor,
-                              [&device = state.external.inbound, handler = external::handler( state)]( auto active) mutable
+                              [&device = state.external.device, handler = external::handler( state)]( auto active) mutable
                               {
-                                 handler( device.next( device.policy_non_blocking()));
+                                 handler( communication::device::non::blocking::next( device));
                               }
                            );
 
@@ -936,7 +936,7 @@ namespace casual
                      auto handler( State& state)
                      {
                         auto& device = communication::ipc::inbound::device();
-                        return device.handler(
+                        return common::message::dispatch::handler( device, 
                            
                            common::message::handle::defaults( device),
 
@@ -963,7 +963,7 @@ namespace casual
 
                      namespace create
                      {
-                        using handler_type = typename communication::ipc::inbound::Device::handler_type;
+                        using handler_type = decltype( common::message::dispatch::handler( communication::ipc::inbound::device()));
                         struct Dispatch
                         {
                            Dispatch( State& state) : m_handler( internal::handler( state)) 
@@ -979,8 +979,7 @@ namespace casual
 
                            bool consume()
                            {
-                              auto& device = common::communication::ipc::inbound::device();  
-                              return m_handler( device.next( device.policy_non_blocking()));
+                              return m_handler( communication::device::non::blocking::next( common::communication::ipc::inbound::device()));
                            } 
                            handler_type m_handler;
                         };
@@ -1000,7 +999,7 @@ namespace casual
                   Trace trace{ "gateway::outbound::local::start"};
 
                   log::line( log::category::information, "outbound connected: ", 
-                     communication::tcp::socket::address::peer( state.external.inbound.connector().socket()));
+                     communication::tcp::socket::address::peer( state.external.device.connector().socket()));
                   
                   // we make sure to send error replies for any pending in-flight requests.
                   auto send_error_replies = execute::scope( [&state](){

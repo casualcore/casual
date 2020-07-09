@@ -24,7 +24,7 @@ namespace casual
       {
 
          using device_type = common::communication::ipc::inbound::Device;
-         using handler_type = device_type::handler_type;
+         using handler_type = decltype( message::dispatch::handler( std::declval< device_type&>()));
 
 
          namespace detail

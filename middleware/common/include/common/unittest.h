@@ -60,6 +60,11 @@ namespace casual
 
          namespace random
          {
+            namespace detail
+            {
+               long long integer();
+            } // detail
+
             unittest::Message message( size_type size);
 
             platform::binary::type binary( size_type size);
@@ -77,6 +82,20 @@ namespace casual
                }
                return std::forward< R>( range);
             }
+
+            template< typename Integer>
+            auto integer()
+            {
+               return static_cast< Integer>( detail::integer());
+            }
+
+            template< typename T> 
+            auto set( T& value) -> decltype( void( value = integer< T>()), void())
+            {
+               value = integer< T>();
+            }
+
+
          } // random
 
 

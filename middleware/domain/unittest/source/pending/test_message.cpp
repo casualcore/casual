@@ -51,7 +51,7 @@ namespace casual
 
                {
                   common::message::service::lookup::Request message;
-                  common::communication::ipc::blocking::receive( common::communication::ipc::inbound::device(), message);
+                  common::communication::device::blocking::receive( common::communication::ipc::inbound::device(), message);
 
                   EXPECT_TRUE( message.requested ==  "foo");
                }

@@ -514,12 +514,16 @@ domain:
 
             common::signal::send( instance.handle.pid, common::code::signal::hangup);
 
-            common::communication::instance::ping( instance.handle.ipc);
-
-            // check that the signal has been received
+            // check that the signal has been received.
+            // There are no guarantess when the signal is received, just that it will be
+            // eventually, so we need to loop...
+            while( true)
             {
                auto checker = local::get_variable_checker( instance.handle);
-               EXPECT_TRUE( checker( "CASUAL_SIMPLE_SERVER_HANGUP_SIGNAL", "true"));
+               if( checker( "CASUAL_SIMPLE_SERVER_HANGUP_SIGNAL", "true"))
+                  break;
+
+               process::sleep( std::chrono::milliseconds{ 1});
             }
 
             common::communication::instance::ping( instance.handle.ipc);
@@ -560,7 +564,7 @@ domain:
                message::event::process::Exit event;
                event.state.pid = common::process::id();
                event.state.reason = common::process::lifetime::Exit::Reason::exited;
-               communication::ipc::blocking::send( communication::instance::outbound::domain::manager::device(), event);
+               communication::device::blocking::send( communication::instance::outbound::domain::manager::device(), event);
             });
 
             auto tasks = local::call::scale( "test-simple-server", 1);
@@ -569,12 +573,12 @@ domain:
             // Consume the request and send reply.
             {
                message::domain::process::prepare::shutdown::Request request;
-               EXPECT_TRUE( communication::ipc::blocking::receive( communication::ipc::inbound::device(), request));
+               EXPECT_TRUE( communication::device::blocking::receive( communication::ipc::inbound::device(), request));
                EXPECT_TRUE( request.processes.size() == 1) << CASUAL_NAMED_VALUE( request);
 
                auto reply = message::reverse::type( request);
                reply.processes = std::move( request.processes);
-               communication::ipc::blocking::send( request.process.ipc, reply);
+               communication::device::blocking::send( request.process.ipc, reply);
             }
          }
 

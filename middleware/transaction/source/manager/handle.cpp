@@ -44,7 +44,7 @@ namespace casual
                   {
                      try
                      {
-                        if( ! common::communication::ipc::non::blocking::send( target.ipc, message))
+                        if( ! common::communication::device::non::blocking::send( target.ipc, message))
                         {
                            common::log::line( log, "failed to send reply directly to : ", target,  " - action: pend reply");
                            casual::domain::pending::message::send( target, message);
@@ -281,7 +281,7 @@ namespace casual
                         if( request)
                         {
                            // We got a pending request for this resource, let's oblige
-                           if( common::communication::ipc::non::blocking::put( instance.process.ipc, request->message))
+                           if( common::communication::device::non::blocking::put( instance.process.ipc, request->message))
                            {
                               instance.state( state::resource::Proxy::Instance::State::busy);
                               state.pending.requests.erase( std::begin( request));
@@ -836,7 +836,7 @@ namespace casual
                   // Check if it's a resource proxy instance
                   if( m_state.remove_instance( message.state.pid))
                   {
-                     common::communication::ipc::blocking::send( 
+                     common::communication::device::blocking::send( 
                         common::communication::instance::outbound::domain::manager::device(), message);
                      return;
                   }
@@ -891,7 +891,7 @@ namespace casual
                      }
                   }
 
-                  common::communication::ipc::blocking::optional::send( message.process.ipc, reply);
+                  common::communication::device::blocking::optional::send( message.process.ipc, reply);
                }
 
                void Involved::operator () ( common::message::transaction::resource::involved::Request& message)
@@ -904,7 +904,7 @@ namespace casual
                   // prepare and send the reply
                   auto reply = common::message::reverse::type( message);
                   reply.involved = branch.involved();
-                  common::communication::ipc::blocking::optional::send( message.process.ipc, reply);
+                  common::communication::device::blocking::optional::send( message.process.ipc, reply);
 
                   // partition what we don't got since before
                   auto involved = std::get< 1>( common::algorithm::intersection( message.involved, reply.involved));
@@ -1602,7 +1602,7 @@ namespace casual
                                  reply.resource.closeinfo = resource.closeinfo;
                               }
 
-                              common::communication::ipc::blocking::optional::send( message.process.ipc, reply);
+                              common::communication::device::blocking::optional::send( message.process.ipc, reply);
                            };
 
                         }
@@ -1629,7 +1629,7 @@ namespace casual
             {
                dispatch_type handlers( State& state)
                {
-                  return ipc::device().handler(
+                  return common::message::dispatch::handler( ipc::device(),
                      common::message::handle::defaults( ipc::device()),
                      manager::handle::process::Exit{ state},
                      local::resource::configuration::request( state),
@@ -1641,7 +1641,7 @@ namespace casual
 
             dispatch_type handlers( State& state)
             {
-               return ipc::device().handler(
+               return common::message::dispatch::handler( ipc::device(),
                   common::message::handle::defaults( ipc::device()),
                   common::event::listener( handle::process::Exit{ state}),
                   handle::Commit{ state},

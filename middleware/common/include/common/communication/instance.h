@@ -148,12 +148,12 @@ namespace casual
                   };
 
                   //! Will wait until the instance is online, could block for ever.
-                  using Device = communication::outbound::Device< basic_connector< fetch::Directive::wait>>;
+                  using Device = communication::device::Outbound< basic_connector< fetch::Directive::wait>>;
 
                   namespace optional
                   {
                      //! Will fail if the instance is offline.
-                     using Device = communication::outbound::Device< basic_connector< fetch::Directive::direct>>;
+                     using Device = communication::device::Outbound< basic_connector< fetch::Directive::direct>>;
                   } // optional
                } // detail
 
@@ -219,7 +219,7 @@ namespace casual
                         void reconnect();
                         void clear();
                      };
-                     using Device = communication::outbound::Device< Connector>;
+                     using Device = communication::device::Outbound< Connector>;
                      Device& device();
 
                      namespace optional
@@ -231,7 +231,7 @@ namespace casual
                            void clear();
                         };
 
-                        using Device = communication::outbound::Device< Connector>;
+                        using Device = communication::device::Outbound< Connector>;
                         Device& device();
                      } // optional
                   } // manager

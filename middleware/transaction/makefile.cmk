@@ -5,6 +5,7 @@ IncludePaths( ['include',
     '../xatmi/include',
     '../configuration/include',
     '../domain/include',
+    '../cli/include',
     '../serviceframework/include',
     '../../thirdparty/database/include',
     '$(CASUAL_OPTIONAL_INCLUDE_PATHS)',
@@ -15,22 +16,18 @@ LibraryPaths( ['bin',
     '../buffer/bin',
     '../configuration/bin',
     '../domain/bin',
+    '../cli/bin',
     '../serviceframework/bin',
     '../xatmi/bin',
     '$(CASUAL_OPTIONAL_LIBRARY_PATHS)',
      ])
-
-#    $(IBM_DB_LIB)
 
 
 install_lib = []
 install_bin = []
 install_headers = []
 
-#
 # Compile and link the transaction manager
-#
-
 manager_archive = LinkArchive( 'bin/manager-archive',
     [
         Compile( 'source/common.cpp'),
@@ -66,7 +63,9 @@ target = LinkLibrary( 'bin/casual-transaction-admin-cli',
         Compile( 'source/manager/admin/cli.cpp')
     ],
     [ 
-        manager_archive, 
+        manager_archive,
+        'casual-cli',
+        'casual-domain-pending-message',
         'casual-serviceframework', 
         'casual-common',
     ])
@@ -74,10 +73,8 @@ target = LinkLibrary( 'bin/casual-transaction-admin-cli',
 
 install_lib.append( target)
 
-#
-# Compile and link resource-proxy-server lib
-#
 
+# Compile and link resource-proxy-server lib
 target = LinkLibrary( 'bin/casual-resource-proxy-server',
    [
         Compile( 'source/resource/proxy/server.cpp'),
@@ -102,7 +99,6 @@ target = LinkExecutable( 'bin/rm-proxy-casual-mockup',
 install_bin.append( target)
 
 # unittest
- 
 test_transaction = LinkUnittest( 'bin/test-casual-transaction',
     [
         Compile( 'unittest/source/manager/test_state.cpp'),

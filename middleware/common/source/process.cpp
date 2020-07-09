@@ -536,7 +536,7 @@ namespace casual
             {
                message::shutdown::Request request;
                request.process = handle();
-               communication::ipc::blocking::send( process.ipc, request);
+               communication::device::blocking::send( process.ipc, request);
             }
             else if( process.pid)
                terminate( process.pid);

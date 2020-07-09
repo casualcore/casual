@@ -36,7 +36,7 @@ namespace casual
                      if( algorithm::find_if( types, []( message::Type type){
                         return type >= message::Type::EVENT_DOMAIN_BASE && type < message::Type::EVENT_DOMAIN_BASE_END;}))
                      {
-                        communication::ipc::blocking::optional::send(
+                        communication::device::blocking::optional::send(
                               communication::instance::outbound::domain::manager::optional::device(),
                               request);
                      }
@@ -50,7 +50,7 @@ namespace casual
                      if( algorithm::find_if( types, []( message::Type type){
                         return type >= message::Type::EVENT_SERVICE_BASE && type < message::Type::EVENT_SERVICE_BASE_END;}))
                      {
-                        communication::ipc::blocking::optional::send(
+                        communication::device::blocking::optional::send(
                               communication::instance::outbound::service::manager::device(),
                               request);
                      }

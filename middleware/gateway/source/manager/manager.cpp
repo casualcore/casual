@@ -66,7 +66,7 @@ namespace casual
 
                namespace dispatch
                {
-                  using handler_type = typename communication::ipc::inbound::Device::handler_type;
+                  using handler_type = handle::dispatch_type;
                   struct Inbound
                   {
                      Inbound( State& state) : m_handler( manager::handler( state)) 
@@ -83,7 +83,7 @@ namespace casual
 
                      bool consume()
                      {
-                        return m_handler( communication::ipc::non::blocking::next( ipc::device()));
+                        return m_handler( communication::device::non::blocking::next( ipc::device()));
                      } 
                      handler_type m_handler;
                   };

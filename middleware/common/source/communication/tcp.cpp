@@ -477,9 +477,7 @@ namespace casual
                            const auto bytes = local::send( descriptor, first, std::distance( first, last), flags);
 
                            if( bytes > std::distance( first, last))
-                           {
                               throw exception::system::communication::Protocol( "somehow more bytes was sent over the socket than requested");
-                           }
 
                            first += bytes;
                         }
@@ -496,9 +494,7 @@ namespace casual
                      }
 
                      // Now we can send the payload
-                     {
-                        local_send( socket.descriptor(), complete.payload.data(), complete.payload.data() + complete.payload.size(), flags);
-                     }
+                     local_send( socket.descriptor(), complete.payload.data(), complete.payload.data() + complete.payload.size(), flags);
 
                      log::line( log, "tcp send ---> socket: ", socket, ", complete: ", complete);
 
@@ -548,7 +544,7 @@ namespace casual
                {
                   namespace
                   {
-                     policy::cache_range_type receive( const inbound::Connector& tcp, policy::cache_type& cache, common::Flags< Flag> flags)
+                     policy::cache_range_type receive( const Connector& tcp, policy::cache_type& cache, common::Flags< Flag> flags)
                      {
                         auto message = native::receive( tcp.socket(), flags);
 
@@ -568,12 +564,12 @@ namespace casual
             namespace policy
             {
 
-               cache_range_type basic_blocking::receive( const inbound::Connector& tcp, cache_type& cache)
+               cache_range_type basic_blocking::receive( const Connector& tcp, cache_type& cache)
                {
                   return native::local::receive( tcp, cache, {});
                }
 
-               Uuid basic_blocking::send( const outbound::Connector& tcp, const communication::message::Complete& complete)
+               Uuid basic_blocking::send( const Connector& tcp, const communication::message::Complete& complete)
                {
                   return native::send( tcp.socket(), complete, {});
                }
@@ -581,12 +577,12 @@ namespace casual
 
                namespace non
                {
-                  cache_range_type basic_blocking::receive( const inbound::Connector& tcp, cache_type& cache)
+                  cache_range_type basic_blocking::receive( const Connector& tcp, cache_type& cache)
                   {
                      return native::local::receive( tcp, cache, native::Flag::non_blocking);
                   }
 
-                  Uuid basic_blocking::send( const outbound::Connector& tcp, const communication::message::Complete& complete)
+                  Uuid basic_blocking::send( const Connector& tcp, const communication::message::Complete& complete)
                   {
                      return native::send( tcp.socket(), complete, native::Flag::non_blocking);
                   }
@@ -595,16 +591,16 @@ namespace casual
 
             } // policy
 
-            base_connector::base_connector() noexcept = default;
+            Connector::Connector() noexcept = default;
 
-            base_connector::base_connector( Socket&& socket) noexcept
-                  : m_socket( std::move( socket))
+            Connector::Connector( Socket&& socket) noexcept
+               : m_socket( std::move( socket))
             {
 
             }
 
-            base_connector::base_connector( const Socket& socket)
-             : m_socket{ socket}
+            Connector::Connector( const Socket& socket)
+               : m_socket{ socket}
             {
 
             }

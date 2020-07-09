@@ -31,7 +31,7 @@ namespace casual
                common::communication::ipc::inbound::Device& device();
             }
 
-            using dispatch_type = common::communication::ipc::dispatch::Handler;
+            using dispatch_type = decltype( common::message::dispatch::handler( ipc::device()));
 
             void shutdown( State& state);
 

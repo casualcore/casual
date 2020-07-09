@@ -72,7 +72,7 @@ domain:
 
             {
                common::message::domain::process::lookup::Request message;
-               common::communication::ipc::blocking::receive( common::communication::ipc::inbound::device(), message);
+               common::communication::device::blocking::receive( common::communication::ipc::inbound::device(), message);
 
                EXPECT_TRUE( message.identification == id);
                EXPECT_TRUE( platform::time::clock::type::now() - start > std::chrono::milliseconds{ 10});
@@ -99,7 +99,7 @@ domain:
 
             {
                common::message::domain::process::lookup::Request message;
-               common::communication::ipc::blocking::receive( common::communication::ipc::inbound::device(), message);
+               common::communication::device::blocking::receive( common::communication::ipc::inbound::device(), message);
 
                EXPECT_TRUE( message.identification == id);
                EXPECT_TRUE( platform::time::clock::type::now() - start < std::chrono::milliseconds{ 100});

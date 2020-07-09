@@ -32,7 +32,7 @@ namespace casual
 
          {
             configuration::Reply reply;
-            common::communication::ipc::blocking::receive( common::communication::ipc::inbound::device(), reply);
+            common::communication::device::blocking::receive( common::communication::ipc::inbound::device(), reply);
 
             EXPECT_TRUE( reply.domain.name.empty());
          }
@@ -51,7 +51,7 @@ namespace casual
 
          {
             configuration::Reply reply;
-            common::communication::ipc::blocking::receive( common::communication::ipc::inbound::device(), reply);
+            common::communication::device::blocking::receive( common::communication::ipc::inbound::device(), reply);
 
             EXPECT_TRUE( reply.domain.name == "test-domain") << " reply.domain.name: " <<  reply.domain.name;
          }

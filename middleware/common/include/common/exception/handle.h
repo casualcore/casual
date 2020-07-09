@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include "common/traits.h"
 
 #include <iosfwd>
 
@@ -48,6 +49,47 @@ namespace casual
             {
                return exception::handle( out);
             }
+         }
+
+         namespace detail
+         {
+            template< typename F, typename B> 
+            auto guard( F&& callable, B&& fallback, traits::priority::tag< 1>) 
+               -> decltype( common::traits::convertable::type( callable(), std::forward< B>( fallback)))
+            {
+               try 
+               {
+                  return callable();
+               }
+               catch( ...)
+               {
+                  exception::handle();
+               }
+               return std::forward< B>( fallback);
+            }
+
+            template< typename F, typename B> 
+            auto guard( F&& callable, B&& fallback, traits::priority::tag< 0>) 
+               -> decltype( common::traits::convertable::type( callable(), fallback()))
+            {
+               try 
+               {
+                  return callable();
+               }
+               catch( ...)
+               {
+                  exception::handle();
+               }
+               return fallback();
+            }
+            
+         } // detail
+
+         template< typename F, typename B> 
+         auto guard( F&& callable, B&& fallback) 
+            -> decltype( detail::guard( std::forward< F>( callable), std::forward< B>( fallback), traits::priority::tag< 1>{}))
+         {
+            return detail::guard( std::forward< F>( callable), std::forward< B>( fallback), traits::priority::tag< 1>{});
          }
 
       } // exception

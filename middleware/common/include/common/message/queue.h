@@ -73,7 +73,7 @@ namespace casual
                using base_request = basic_request< Type::queue_lookup_request>;
                struct Request : base_request
                {
-                   using base_request::base_request;
+                  using base_request::base_request;
 
                   std::string name;
 
@@ -90,6 +90,7 @@ namespace casual
                   using base_reply::base_reply;
 
                   strong::queue::id queue;
+                  std::string name;
                   size_type order = 0;
 
                   explicit operator bool () const { return ! process.ipc.empty();}
@@ -97,6 +98,7 @@ namespace casual
                   CASUAL_CONST_CORRECT_SERIALIZE({
                      base_reply::serialize( archive);
                      CASUAL_SERIALIZE( queue);
+                     CASUAL_SERIALIZE( name);
                      CASUAL_SERIALIZE( order);
                   })
 
@@ -143,7 +145,6 @@ namespace casual
                      CASUAL_SERIALIZE( id);
                   })
                };
-               static_assert( traits::is_movable< Reply>::value, "not movable");
 
             } // enqueue
 
@@ -182,7 +183,6 @@ namespace casual
                      CASUAL_SERIALIZE( block);
                   })
                };
-               static_assert( traits::is_movable< Request>::value, "not movable");
 
                using base_reply = basic_message< Type::queue_dequeue_reply>;
                struct Reply : base_reply

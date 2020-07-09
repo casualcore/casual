@@ -45,7 +45,7 @@ namespace casual
 
                            signal::thread::scope::Mask block{ signal::set::filled( code::signal::terminate, code::signal::interrupt)};
 
-                           communication::ipc::blocking::send( communication::instance::outbound::service::manager::device(), advertise);
+                           communication::device::blocking::send( communication::instance::outbound::service::manager::device(), advertise);
                         }
                      }
 
@@ -108,7 +108,7 @@ namespace casual
 
                      log::line( log::debug, "reply: ", message);
 
-                     communication::ipc::blocking::send( id, message);
+                     communication::device::blocking::send( id, message);
                   }
 
                   void Default::reply( strong::ipc::id id, message::conversation::callee::Send& message)
@@ -118,7 +118,7 @@ namespace casual
                      log::line( log::debug, "reply: ", message);
 
                      auto node = message.route.next();
-                     communication::ipc::blocking::send( node.address, message);
+                     communication::device::blocking::send( node.address, message);
                   }
 
                   void Default::ack( const message::service::call::ACK& message)
@@ -127,7 +127,7 @@ namespace casual
 
                      log::line( verbose::log, "reply: ", message);
 
-                     communication::ipc::blocking::send( communication::instance::outbound::service::manager::device(), message);
+                     communication::device::blocking::send( communication::instance::outbound::service::manager::device(), message);
                   }
 
                   void Default::statistics( strong::ipc::id id,  message::event::service::Call& event)
@@ -138,7 +138,7 @@ namespace casual
 
                      try
                      {
-                        communication::ipc::blocking::send( id, event);
+                        communication::device::blocking::send( id, event);
                      }
                      catch( ...)
                      {
@@ -248,7 +248,7 @@ namespace casual
 
                            log::line( log::debug, "policy::Default::forward - request:", request);
 
-                           communication::ipc::blocking::send( target.process.ipc, request);
+                           communication::device::blocking::send( target.process.ipc, request);
                         }
 
                      } // <unnamed>
@@ -281,12 +281,12 @@ namespace casual
 
                   void Admin::reply( strong::ipc::id id, message::service::call::Reply& message)
                   {
-                     communication::ipc::blocking::send( id, message);
+                     communication::device::blocking::send( id, message);
                   }
 
                   void Admin::ack( const message::service::call::ACK& message)
                   {
-                     communication::ipc::blocking::send( communication::instance::outbound::service::manager::device(), message);
+                     communication::device::blocking::send( communication::instance::outbound::service::manager::device(), message);
                   }
 
                   void Admin::statistics( strong::ipc::id id, message::event::service::Call& event)

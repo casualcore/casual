@@ -24,14 +24,14 @@ namespace casual
                return message::service::advertise::Service{ std::move( service)};
             });
 
-            communication::ipc::blocking::send( communication::instance::outbound::service::manager::device(), message);
+            communication::device::blocking::send( communication::instance::outbound::service::manager::device(), message);
          }
 
          void unadvertise( std::vector< std::string> services)
          {
             message::service::Advertise message{ process::handle()};
             message.services.remove = std::move( services);
-            communication::ipc::blocking::send( communication::instance::outbound::service::manager::device(), message);
+            communication::device::blocking::send( communication::instance::outbound::service::manager::device(), message);
 
          }
       } // unittest

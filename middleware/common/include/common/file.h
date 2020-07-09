@@ -8,6 +8,7 @@
 #pragma once
 
 #include "common/move.h"
+#include "common/strong/id.h"
 
 #include <string>
 #include <regex>
@@ -19,6 +20,18 @@ namespace casual
    {
       namespace file
       {
+         namespace descriptor
+         {
+            namespace standard
+            {
+               //! @returns file descriptor for stdin
+               strong::file::descriptor::id in();
+               //! @returns file descriptor for stdout
+               strong::file::descriptor::id out();
+               
+            } // standard
+         } // descriptor
+
          class Input : public std::ifstream
          {
          public:

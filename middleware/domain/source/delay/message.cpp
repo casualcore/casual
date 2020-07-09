@@ -59,7 +59,7 @@ namespace casual
                   {
                      try
                      {
-                        communication::ipc::blocking::send( local::process::get().ipc, request);
+                        communication::device::blocking::send( local::process::get().ipc, request);
                         return;
                      }
                      catch( const exception::system::communication::Unavailable&)

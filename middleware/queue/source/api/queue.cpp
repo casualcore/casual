@@ -109,14 +109,14 @@ namespace casual
 
                      try
                      {
-                        common::communication::ipc::blocking::send( group.process.ipc, request);
+                        common::communication::device::blocking::send( group.process.ipc, request);
 
-                        auto handler = ipc.handler(
+                        auto handler = common::message::dispatch::handler( ipc,
                            []( common::message::queue::dequeue::forget::Request& request) {}, // no-op
                            []( common::message::queue::dequeue::forget::Reply& request) {} // no-op
                         );
 
-                        handler( common::communication::ipc::blocking::next( ipc, handler.types()));
+                        handler( common::communication::device::blocking::next( ipc, handler.types()));
                      }
                      catch( const common::exception::system::communication::Unavailable&)
                      {
@@ -140,7 +140,7 @@ namespace casual
 
                      common::log::line( verbose::log, "request: ", request);
 
-                     common::communication::ipc::blocking::send( group.process.ipc, request);
+                     common::communication::device::blocking::send( group.process.ipc, request);
                   };
 
                   std::vector< Message> result;
@@ -150,7 +150,7 @@ namespace casual
                   // no way of "interrupt" if it's a blocking request. We could rely only on terminate-signal
                   // (which we now also do) but it isn't really coherent with how casual otherwise works
 
-                  auto handler = ipc.handler(
+                  auto handler = common::message::dispatch::handler( ipc,
                      [&]( common::message::queue::dequeue::Reply& reply)
                      {
                         if( ! reply.message.empty() && transaction)
@@ -191,7 +191,7 @@ namespace casual
                      common::message::shutdown::Request::type());
 
                   // wait for the reply
-                  handler( common::communication::ipc::blocking::next( ipc, types));
+                  handler( common::communication::device::blocking::next( ipc, types));
 
                   // We don't need to send forget, since it went as it should.
                   forget_blocking.release();

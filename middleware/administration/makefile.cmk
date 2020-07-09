@@ -13,6 +13,7 @@ IncludePaths( [
     '../transaction/include',
     '../gateway/include',
     '../tools/include',
+    '../buffer/include',
     '$(CASUAL_OPTIONAL_INCLUDE_PATHS)',
 ])
 
@@ -27,8 +28,10 @@ LibraryPaths( [
     '../transaction/bin',
     '../gateway/bin',
     '../tools/bin',
+    '../buffer/bin',
     '../serviceframework/bin',
     '../xatmi/bin',
+    '../cli/bin',
     '$(CASUAL_OPTIONAL_LIBRARY_PATHS)',
 ])
 
@@ -47,7 +50,7 @@ target = LinkExecutable( 'bin/casual',
         'casual-transaction-admin-cli',
         'casual-gateway-admin-cli',
         'casual-tools-service-cli',
-
+        'casual-buffer-cli',
     ])
 
 install_exe.append( target)

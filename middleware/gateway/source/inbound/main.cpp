@@ -43,7 +43,7 @@ namespace casual
                   template< typename D, typename M>
                   void send( D&& device, M&& message)
                   {
-                     common::communication::ipc::blocking::send( std::forward< D>( device), std::forward< M>( message));
+                     common::communication::device::blocking::send( std::forward< D>( device), std::forward< M>( message));
                   }
 
 
@@ -102,9 +102,10 @@ namespace casual
 
                      using Discover = common::message::Coordinate< Policy>;
 
+
                      struct Send 
                      {
-                        Send( const communication::Socket& external) : m_external( external) {}
+                        Send( communication::tcp::Duplex& device) : m_device( device) {}
 
                         template< typename Message>
                         inline void operator() ( common::strong::ipc::id queue, Message& message)
@@ -117,10 +118,10 @@ namespace casual
 
                            common::log::line( verbose::log, "sending message: ", message);
 
-                           communication::tcp::outbound::blocking::send( m_external, message);
+                           communication::device::blocking::send( m_device, message);
                         }
                      private:
-                        const communication::Socket& m_external;
+                        communication::tcp::Duplex& m_device;
                      };
 
 
@@ -132,7 +133,7 @@ namespace casual
                   State( Settings settings)
                      : external{ communication::Socket{ settings.descriptor}},
                         buffer{ buffer::Limit( settings.limit.size, settings.limit.messages)},
-                        coordinate( external.inbound.connector().socket())
+                        coordinate( external.device)
                   {
                   }
 
@@ -142,7 +143,7 @@ namespace casual
                      buffer.add( common::serialize::native::complete( std::forward< M>( message)));
 
                      if( buffer.congested())
-                        directive.read.remove( external.inbound.connector().socket().descriptor());
+                        directive.read.remove( external.device.connector().socket().descriptor());
                   } 
 
                   auto get_complete( const common::Uuid& correlation)
@@ -150,7 +151,7 @@ namespace casual
                      auto complete = buffer.get( correlation);
                      
                      if( ! buffer.congested())
-                        directive.read.add( external.inbound.connector().socket().descriptor());
+                        directive.read.add( external.device.connector().socket().descriptor());
 
                      return complete;
                   }
@@ -159,13 +160,13 @@ namespace casual
 
                   struct 
                   {
-                     communication::tcp::inbound::Device inbound;
+                     communication::tcp::Duplex device;
 
                      template< typename M>
                      auto send( M&& message)
                      {
-                        return communication::tcp::outbound::blocking::send( 
-                           inbound.connector().socket(),
+                        return communication::device::blocking::send( 
+                           device,
                            std::forward< M>( message));
                      }
 
@@ -175,7 +176,7 @@ namespace casual
                   communication::select::Directive directive;
                   struct Coordinate
                   {
-                     Coordinate( const communication::Socket& external) : send{ external} {}
+                     Coordinate( communication::tcp::Duplex& device) : send{ device} {}
                      discover::coordinate::Discover discover;
                      discover::coordinate::Send send;
 
@@ -405,7 +406,7 @@ namespace casual
 
                      auto handler( State& state)
                      {
-                        return state.external.inbound.handler(
+                        return common::message::dispatch::handler( state.external.device,
                               
                            // service call
                            call::request( state),
@@ -428,14 +429,14 @@ namespace casual
                      {
                         auto dispatch( State& state)
                         {
-                           const auto descriptor = state.external.inbound.connector().descriptor();
+                           const auto descriptor = state.external.device.connector().descriptor();
                            state.directive.read.add( descriptor);
 
                            return communication::select::dispatch::create::reader(
                               descriptor,
-                              [&device = state.external.inbound, handler = external::handler( state)]( auto active) mutable
+                              [&device = state.external.device, handler = external::handler( state)]( auto active) mutable
                               {
-                                 handler( device.next( device.policy_non_blocking()));
+                                 handler( communication::device::non::blocking::next( device));
                               }
                            );
                         }
@@ -619,7 +620,7 @@ namespace casual
                      auto handler( State& state)
                      {
                         auto& device = common::communication::ipc::inbound::device();
-                        return device.handler(
+                        return common::message::dispatch::handler( device, 
    
                            common::message::handle::defaults( device),
 
@@ -643,7 +644,7 @@ namespace casual
                      }
                      namespace create
                      {
-                        using handler_type = typename communication::ipc::inbound::Device::handler_type;
+                        using handler_type = decltype( common::message::dispatch::handler( communication::ipc::inbound::device()));
                         struct Dispatch
                         {
                            Dispatch( State& state) : m_handler( internal::handler( state)) 
@@ -660,8 +661,7 @@ namespace casual
 
                            bool consume()
                            {
-                              auto& device = common::communication::ipc::inbound::device();  
-                              return m_handler( device.next( device.policy_non_blocking()));
+                              return m_handler( communication::device::non::blocking::next( common::communication::ipc::inbound::device()));
                            } 
                            handler_type m_handler;
                         };
@@ -684,12 +684,12 @@ namespace casual
                   {
                      Trace trace{ "gateway::inbound::local::connect remote domain connect"};
                
-                     auto handler = state.external.inbound.handler(
+                     auto handler = common::message::dispatch::handler( state.external.device,
                         common::message::handle::assign( request)
                      );
 
                      while( ! request.correlation)
-                        handler( state.external.inbound.next( state.external.inbound.policy_blocking()));
+                        handler( communication::device::blocking::next( state.external.device));
                   }
 
                   using version_type = common::message::gateway::domain::protocol::Version;
@@ -712,7 +712,7 @@ namespace casual
                      Trace trace{ "gateway::inbound::local::connect connect reply remote domain"};
 
                      // send reply to other domain
-                     communication::tcp::outbound::blocking::send( state.external.inbound.connector().socket(), reply);
+                     communication::device::blocking::send( state.external.device, reply);
 
                      if( reply.version == version_type::invalid)
                      {
@@ -728,11 +728,11 @@ namespace casual
 
                      connect.domain = request.domain;
                      connect.version = reply.version;
-                     const auto& socket = state.external.inbound.connector().socket();
+                     const auto& socket = state.external.device.connector().socket();
                      connect.address.local = communication::tcp::socket::address::host( socket);
                      connect.address.peer = communication::tcp::socket::address::peer( socket);
 
-                     common::communication::ipc::blocking::send( common::communication::instance::outbound::gateway::manager::device(), connect);
+                     common::communication::device::blocking::send( common::communication::instance::outbound::gateway::manager::device(), connect);
                   }  
                }
 
@@ -747,7 +747,7 @@ namespace casual
                   connect( state);
 
                   log::line( log::category::information, "inbound connected: ", 
-                     communication::tcp::socket::address::host( state.external.inbound.connector().socket()));
+                     communication::tcp::socket::address::host( state.external.device.connector().socket()));
 
                   // start the message dispatch
                   communication::select::dispatch::pump( 
@@ -760,14 +760,12 @@ namespace casual
                void main( int argc, char **argv)
                {
                   Settings settings;
-                  {
-                     argument::Parse parse{ "tcp inbound",
-                        argument::Option( std::tie( settings.descriptor.underlaying()), { "--descriptor"}, "socket descriptor"),
-                        argument::Option( std::tie( settings.limit.messages), { "--limit-messages"}, "# of concurrent messages"),
-                        argument::Option( std::tie( settings.limit.size), { "--limit-size"}, "max size of concurrent messages")
-                     };
-                     parse( argc, argv);
-                  }
+
+                  argument::Parse{ "tcp inbound",
+                     argument::Option( std::tie( settings.descriptor.underlaying()), { "--descriptor"}, "socket descriptor"),
+                     argument::Option( std::tie( settings.limit.messages), { "--limit-messages"}, "# of concurrent messages"),
+                     argument::Option( std::tie( settings.limit.size), { "--limit-size"}, "max size of concurrent messages")
+                  }( argc, argv);
 
                   start( State{ settings});
                }

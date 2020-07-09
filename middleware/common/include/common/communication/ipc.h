@@ -242,8 +242,8 @@ namespace casual
 
             namespace policy
             {
-               using cache_type = communication::inbound::cache_type;
-               using cache_range_type = communication::inbound::cache_range_type;
+               using cache_type = device::inbound::cache_type;
+               using cache_range_type = device::inbound::cache_range_type;
 
                namespace blocking
                {
@@ -326,9 +326,9 @@ namespace casual
                };
 
                template< typename S>
-               using basic_device = communication::inbound::Device< Connector, S>;
+               using basic_device = device::Inbound< Connector, S>;
 
-               using Device = communication::inbound::Device< Connector>;
+               using Device = device::Inbound< Connector>;
 
 
                Device& device();
@@ -365,162 +365,12 @@ namespace casual
                };
 
                template< typename S>
-               using basic_device = communication::outbound::Device< Connector, S>;
+               using basic_device = device::Outbound< Connector, S>;
 
-               using Device = communication::outbound::Device< Connector>;
+               using Device = device::Outbound< Connector>;
 
             } // outbound
 
-
-
-            template< typename D, typename M, typename P>
-            auto send( D& device, M&& message, P&& policy)
-             -> std::enable_if_t< ! std::is_same< std::decay_t< D>, strong::ipc::id>::value, Uuid>
-            {
-               return device.send( message, policy);
-            }
-
-            template< typename M, typename P>
-            Uuid send( strong::ipc::id ipc, M&& message, P&& policy)
-            {
-               return outbound::Device{ ipc}.send( message, policy);
-            }
-
-            template< typename D, typename M, typename P>
-            auto put( D&& device, M&& message, P&& policy) 
-               -> decltype( device.put( message, policy))
-            {
-               return device.put( message, policy);
-            }
-
-            template< typename M, typename P>
-            auto put( strong::ipc::id ipc, M&& message, P&& policy)
-            {
-               return put( outbound::Device{ ipc}, std::forward< M>( message), std::forward< P>( policy));
-            }
-
-            template< typename D, typename... Ts>
-            auto next( D& device, Ts&&... ts) 
-               -> decltype( device.next( std::forward< Ts>( ts)...))
-            {
-               return device.next( std::forward< Ts>( ts)...);
-            }
-
-            namespace blocking
-            {
-               template< typename S, typename M>
-               auto receive( inbound::basic_device< S>& device, M& message)
-               {
-                  return device.receive( message, policy::Blocking{});
-               }
-
-               template< typename S, typename M>
-               auto receive( inbound::basic_device< S>& device, M& message, const Uuid& correlation)
-               {
-                  return device.receive( message, correlation, policy::Blocking{});
-               }
-
-               template< typename D, typename... Ts>
-               auto next( D& device, Ts&&... ts) 
-                  -> decltype( device.next( std::forward< Ts>( ts)..., policy::Blocking{}))
-               {
-                  return device.next( std::forward< Ts>( ts)..., policy::Blocking{});
-               }
-
-               template< typename D, typename M>
-               auto send( D&& device, M&& message)
-               {
-                  return ipc::send( std::forward< D>( device), message, policy::Blocking{});
-               }
-
-               namespace optional
-               {
-                  //! blocked send of the message, if callee is unreachable (i.e. the process has died)
-                  //! `false` is returned
-                  //! @returns true if sent, false if Unavailable
-                  template< typename D, typename M>
-                  bool send( D&& device, M&& message)
-                  {
-                     try 
-                     {
-                        blocking::send( std::forward< D>( device), std::forward< M>( message));
-                        return true;
-                     }
-                     catch( const exception::system::communication::Unavailable&)
-                     {
-                        log::line( log, "failed to send message - target unavailable: ", device);
-                        log::line( verbose::log, "message: ", message);
-                        return false;
-                     }
-                  }
-               } // optional
-
-               template< typename D, typename M>
-               auto put( D&& device, M&& message)
-                  -> decltype( ipc::put( std::forward< D>( device), std::forward< M>( message), policy::Blocking{}))
-               {
-                  return ipc::put( std::forward< D>( device), std::forward< M>( message), policy::Blocking{});
-               }
-
-            } // blocking
-
-            namespace non
-            {
-               namespace blocking
-               {
-                  template< typename S, typename M>
-                  bool receive( inbound::basic_device< S>& device, M& message)
-                  {
-                     return device.receive( message, policy::non::Blocking{});
-                  }
-
-                  template< typename S, typename M>
-                  bool receive( inbound::basic_device< S>& device, M& message, const Uuid& correlation)
-                  {
-                     return device.receive( message, correlation, policy::non::Blocking{});
-                  }
-
-                  template< typename S>
-                  inline communication::message::Complete next( inbound::basic_device< S>& device)
-                  {
-                     return device.next( policy::non::Blocking{});
-                  }
-
-                  template< typename D, typename M>
-                  Uuid send( D&& device, M&& message)
-                  {
-                     return ipc::send( std::forward< D>( device), message, policy::non::Blocking{});
-                  }
-
-                  template< typename D, typename M>
-                  auto put( D&& device, M&& message)
-                     -> decltype( ipc::put( std::forward< D>( device), std::forward< M>( message), policy::non::Blocking{}))
-                  {
-                     return ipc::put( std::forward< D>( device), std::forward< M>( message), policy::non::Blocking{});
-                  }
-
-                  namespace optional
-                  {
-                     //! tries to send the message, if callee is unreachable (i.e. the process has died)
-                     //! the send is regarded as successfull
-                     //! @returns true if successfull
-                     template< typename D, typename M>
-                     bool send( D&& device, M&& message)
-                     {
-                        try 
-                        {
-                           if( ! ipc::send( std::forward< D>( device), message, policy::non::Blocking{}))
-                              return false;
-                        }
-                        catch( const exception::system::communication::Unavailable&)
-                        {
-                           /* no-op */
-                        }
-                        return true;
-                     }
-                  } // optional
-               } // blocking
-            } // non
 
             template< typename D, typename M, typename Device = inbound::Device>
             auto call(
@@ -528,10 +378,10 @@ namespace casual
                   M&& message,
                   Device& device = inbound::device())
             {
-               auto correlation = blocking::send( std::forward< D>( destination), message);
+               auto correlation = device::blocking::send( std::forward< D>( destination), message);
 
                auto reply = common::message::reverse::type( std::forward< M>( message));
-               blocking::receive( device, reply, correlation);
+               device::blocking::receive( device, reply, correlation);
                return reply;
             }
 
@@ -541,13 +391,30 @@ namespace casual
 
             bool exists( strong::ipc::id id);
 
-            namespace dispatch
-            {
-               using Handler =  typename inbound::Device::handler_type;
-            } // dispatch
-
-
          } // ipc
+
+         namespace device
+         {
+            template<>
+            struct customization_point< strong::ipc::id>
+            {
+               using non_blocking_policy = ipc::policy::non::Blocking;
+               using blocking_policy = ipc::policy::Blocking;
+
+               template< typename... Ts>
+               static auto send( strong::ipc::id ipc, Ts&&... ts) 
+               {
+                  return device::send( ipc::outbound::Device{ ipc}, std::forward< Ts>( ts)...);
+               }
+
+               template< typename... Ts>
+               static auto put( strong::ipc::id ipc, Ts&&... ts) 
+               {
+                  return device::put( ipc::outbound::Device{ ipc}, std::forward< Ts>( ts)...);
+               }
+            };
+         } // device
+
       } // communication
    } // common
 } // casual

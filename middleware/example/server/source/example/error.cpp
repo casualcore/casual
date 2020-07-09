@@ -75,10 +75,10 @@ namespace casual
                            reply.buffer = std::move( request.buffer);
                            reply.code = service::code::get( request.service.name);
 
-                           communication::ipc::blocking::send( request.process.ipc, reply);
+                           communication::device::blocking::send( request.process.ipc, reply);
                            
                            ack.metric.end = platform::time::clock::type::now();
-                           communication::ipc::blocking::send( communication::instance::outbound::service::manager::device(), ack);
+                           communication::device::blocking::send( communication::instance::outbound::service::manager::device(), ack);
                         }
                      };
 
@@ -95,7 +95,7 @@ namespace casual
                               //reply.code = service::code::get( request.service.name);
 
                               auto node = reply.route.next();
-                              communication::ipc::blocking::send( node.address, reply);
+                              communication::device::blocking::send( node.address, reply);
                            }
 
                            {
@@ -107,7 +107,7 @@ namespace casual
                            }
 
                            ack.metric.end = platform::time::clock::type::now();
-                           communication::ipc::blocking::send( communication::instance::outbound::service::manager::device(), ack);
+                           communication::device::blocking::send( communication::instance::outbound::service::manager::device(), ack);
                         }
                      };
 
@@ -125,7 +125,7 @@ namespace casual
                         message::service::Advertise message{ process::handle()};
                         message.services.add = algorithm::transform( code::mapping, transform_service);
 
-                        communication::ipc::blocking::send( communication::instance::outbound::service::manager::device(), message);
+                        communication::device::blocking::send( communication::instance::outbound::service::manager::device(), message);
                      }
                   } // service
                } // handle
@@ -139,7 +139,7 @@ namespace casual
 
                   auto& device = communication::ipc::inbound::device();
 
-                  auto handler = device.handler(
+                  auto handler = message::dispatch::handler( device,
                      message::handle::defaults( device),
                      handle::service::Call{},
                      handle::service::Conversation{},

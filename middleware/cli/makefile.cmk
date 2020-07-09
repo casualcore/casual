@@ -1,0 +1,49 @@
+from casual.middleware.make.dsl import *
+
+IncludePaths([
+   'include',
+   '../common/include',
+   '../xatmi/include',
+   '$(CASUAL_OPTIONAL_INCLUDE_PATHS)',
+   ])
+
+
+LibraryPaths([
+    'bin',
+    '../common/bin',
+    '$(CASUAL_OPTIONAL_LIBRARY_PATHS)',
+    ])
+
+intall_lib = []
+intall_bin = []
+
+
+
+lib_cli = LinkLibrary( 'bin/casual-cli',
+    [
+        Compile( 'source/pipe.cpp'),
+        Compile( 'source/common.cpp'),
+        Compile( 'source/message.cpp'),
+    ],
+    ['casual-common',
+    ])
+
+
+intall_lib.append( lib_cli)
+
+
+# Unittest
+#LinkUnittest( 'bin/test-casual-cli',
+#   [
+#   ],
+#   [ 
+#       lib_cli, 
+#       'casual-common', 
+#       'casual-unittest',
+#   ])  
+
+# Install
+Install( intall_lib, '$(CASUAL_HOME)/lib')
+Install( intall_bin, '$(CASUAL_HOME)/bin')
+
+

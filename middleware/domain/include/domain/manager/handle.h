@@ -26,7 +26,7 @@ namespace casual
       {
          namespace handle
          {
-            using dispatch_type = decltype( ipc::device().handler());
+            using dispatch_type = decltype( common::message::dispatch::handler( ipc::device()));   
 
             namespace mandatory
             {

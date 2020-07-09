@@ -34,6 +34,8 @@ namespace casual
 
          namespace handle
          {
+            using dispatch_type = decltype( common::message::dispatch::handler( ipc::device()));
+
             void shutdown( State& state);
 
             void boot( State& state);
@@ -61,7 +63,7 @@ namespace casual
             } // listen
          } // handle
 
-         common::communication::ipc::dispatch::Handler handler( State& state);
+         handle::dispatch_type handler( State& state);
 
       } // manager
    } // gateway

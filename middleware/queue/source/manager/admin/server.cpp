@@ -38,14 +38,14 @@ namespace casual
                      {
                         auto send = [&]( auto& group)
                         {
-                           return communication::ipc::blocking::send( group.process.ipc, 
+                           return communication::device::blocking::send( group.process.ipc, 
                               common::message::queue::information::queues::Request{ process::handle()});
                         };
 
                         auto receive = [&]( auto& correlation)
                         {
                            common::message::queue::information::queues::Reply reply;
-                           communication::ipc::blocking::receive( ipc::device(), reply, correlation);
+                           communication::device::blocking::receive( ipc::device(), reply, correlation);
                            return reply;
                         };
 

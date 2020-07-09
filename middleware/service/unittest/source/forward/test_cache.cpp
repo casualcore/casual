@@ -77,11 +77,11 @@ domain:
          }
 
          // Send it to our forward, which will forward it to our self
-         auto correlation = communication::ipc::blocking::send( forward.ipc, request);
+         auto correlation = communication::device::blocking::send( forward.ipc, request);
 
          {
             message::service::call::callee::Request forwarded;
-            communication::ipc::blocking::receive( communication::ipc::inbound::device(), forwarded);
+            communication::device::blocking::receive( communication::ipc::inbound::device(), forwarded);
 
             EXPECT_TRUE( forwarded.correlation == correlation);
             EXPECT_TRUE( forwarded.trid == request.trid);
@@ -109,12 +109,12 @@ domain:
 
 
          // Send it to our forward, that will fail to lookup service and reply with error
-         auto correlation = communication::ipc::blocking::send( forward.ipc, request);
+         auto correlation = communication::device::blocking::send( forward.ipc, request);
 
          {
             // Expect error reply to caller
             message::service::call::Reply reply;
-            communication::ipc::blocking::receive( communication::ipc::inbound::device(), reply);
+            communication::device::blocking::receive( communication::ipc::inbound::device(), reply);
 
             EXPECT_TRUE( reply.correlation == correlation);
             EXPECT_TRUE( reply.transaction.trid == request.trid);

@@ -42,25 +42,6 @@ namespace casual
             {
                namespace
                {
-                  /*
-                  namespace queue
-                  {
-                     struct Policy
-                     {
-                        void apply()
-                        {
-                           try
-                           {
-                              throw;
-                           }
-                           catch( const exception::signal::Timeout&)
-                           {
-                              throw exception::xatmi::Timeout{};
-                           }
-                        }
-                     };
-                  } // queue
-                  */
 
                   namespace validate
                   {
@@ -202,7 +183,7 @@ namespace casual
 
                   log::line( log::debug, "async - message: ", prepared.message);
 
-                  communication::ipc::blocking::send( target.process.ipc, prepared.message);
+                  communication::device::blocking::send( target.process.ipc, prepared.message);
                }
 
                unreserve.release();
@@ -228,14 +209,14 @@ namespace casual
                   {
                      if( flags.exist( reply::Flag::no_block))
                      {
-                        return communication::ipc::non::blocking::receive( 
+                        return communication::device::non::blocking::receive( 
                            communication::ipc::inbound::device(), 
                            reply, 
                            std::forward< Args>( args)...);
                      }
                      else
                      {
-                        return communication::ipc::blocking::receive( 
+                        return communication::device::blocking::receive( 
                            communication::ipc::inbound::device(), 
                            reply, 
                            std::forward< Args>( args)...);

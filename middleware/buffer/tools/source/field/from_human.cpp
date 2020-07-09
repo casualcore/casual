@@ -5,13 +5,13 @@
 //!
 
 
-#include "casual/buffer/field.h"
-#include "casual/buffer/internal/field.h"
+#include "casual/buffer/admin/cli.h"
 #include "casual/buffer/internal/common.h"
 
 #include "common/exception/handle.h"
 
 #include "common/argument.h"
+
 
 #include <iostream>
 
@@ -22,26 +22,15 @@ namespace casual
    {
       std::string format;
 
-      {
-         auto complete_format = []( auto values, bool) -> std::vector< std::string>
-         {
-            return { "json", "yaml", "xml", "ini"};
-         };
+      constexpr auto information = R"([deprecated] use `casual buffer --field-from-human` instead)";
 
-         common::argument::Parse{ R"(
+      common::argument::Parse{ information,
+         common::argument::Option( std::tie( format), buffer::admin::cli::detail::format::completion(), { "--format"}, "which format to expect on stdin"),
+      }( argc, argv);
 
-human readable --> casual-fielded-buffer
+      std::cerr << information << '\n';
 
-reads from stdin and assumes a human readable structure in the supplied format
-for a casual-fielded-buffer, and transform this to an actual casual-fielded-buffer,
-and prints this to stdout.)",
-            common::argument::Option( std::tie( format), complete_format, { "--format"}, "which format to expect on stdin"),
-         }( argc, argv);
-      }
-
-      common::buffer::payload::binary::stream( 
-         buffer::field::internal::payload::stream( std::cin, format), 
-         std::cout);
+      buffer::admin::cli::detail::field::from_human( std::move( format));
    }
 
 } // casual

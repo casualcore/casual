@@ -69,7 +69,7 @@ namespace casual
 
                      auto& inbound = communication::ipc::inbound::device();
 
-                     auto handler = inbound.handler(
+                     auto handler = message::dispatch::handler( inbound,
                         message::handle::defaults( inbound),
                         // will configure and advertise services
                         server::handle::Call( local::transform::arguments( std::move( services), std::move( resources))),

@@ -157,7 +157,7 @@ domain:
                   return metric;
                }()
             };
-            common::communication::ipc::blocking::send( 
+            common::communication::device::blocking::send( 
                common::communication::instance::outbound::service::manager::device(), message);            
          },
          []( model::service::Call&& call)

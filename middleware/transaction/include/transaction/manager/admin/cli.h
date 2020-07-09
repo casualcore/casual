@@ -19,10 +19,10 @@ namespace casual
       {
          namespace admin
          {
-            struct cli 
+            struct CLI 
             {
-               cli();
-               ~cli();
+               CLI();
+               ~CLI();
 
                common::argument::Group options() &;
                std::vector< std::tuple< std::string, std::string>> information() &;

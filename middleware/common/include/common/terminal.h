@@ -35,6 +35,8 @@ namespace casual
                inline auto header() const { return m_header;}
                inline auto precision() const { return m_precision;}
                inline auto block() const { return m_block;}
+               inline auto verbose() const { return m_verbose;}
+               inline void verbose( bool value) { m_verbose = value;}
 
                //! sets no color 
                void plain();
@@ -48,6 +50,7 @@ namespace casual
                bool m_porcelain;
                bool m_header;
                bool m_block;
+               bool m_verbose;
                std::streamsize m_precision;
 
                Directive();

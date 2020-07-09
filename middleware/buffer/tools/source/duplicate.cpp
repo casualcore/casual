@@ -4,10 +4,11 @@
 //! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
+#include "casual/buffer/admin/cli.h"
+
 #include "common/exception/handle.h"
-#include "casual/platform.h"
 #include "common/argument.h"
-#include "common/buffer/type.h"
+
 
 namespace casual
 {
@@ -21,30 +22,19 @@ namespace casual
          {
             namespace
             {
-               void duplicate( platform::size::type count)
-               {
-                  auto dispatch = [count]( auto&& payload)
-                  {
-                     for( platform::size::type copies = 0; copies < count; ++copies)
-                     {
-                        common::buffer::payload::binary::stream( payload, std::cout);
-                     }
-                  };
-                  common::buffer::payload::binary::stream( std::cin, dispatch); 
-               }
-
                void main( int argc, char** argv)
                {
                   platform::size::type count = 1;
 
-                  argument::Parse{ R"(duplicates buffers from stdin to stdout 
+                  constexpr auto information = R"([deprecated] use `casual buffer --duplicate` instead)";
 
-   `count` amount of times. 
-   )",
+                  argument::Parse{ information,
                      argument::Option{ std::tie( count), { "--count"}, "number of 'duplications', applied for each buffer"}
                   }( argc, argv);
+
+                  std::cerr << information << '\n';
                   
-                  duplicate( count);
+                  casual::buffer::admin::cli::detail::duplicate( count);
                } 
 
             } // <unnamed>

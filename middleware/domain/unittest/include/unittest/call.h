@@ -57,12 +57,12 @@ namespace casual
                   detail::serialize( archive, std::forward< Ts>( arguments)...);
                   archive.consume( request.buffer.memory);
 
-                  return common::communication::ipc::blocking::send( common::communication::instance::outbound::domain::manager::device(), request);
+                  return common::communication::device::blocking::send( common::communication::instance::outbound::domain::manager::device(), request);
                }();
 
 
                common::message::service::call::Reply reply;
-               common::communication::ipc::blocking::receive( common::communication::ipc::inbound::device(), reply, correlation);
+               common::communication::device::blocking::receive( common::communication::ipc::inbound::device(), reply, correlation);
                auto archive = common::serialize::binary::reader( reply.buffer.memory);
 
                R result;

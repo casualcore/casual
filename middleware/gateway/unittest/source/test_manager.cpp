@@ -158,14 +158,14 @@ domain:
                void echo() 
                {
                   common::message::service::call::callee::Request request;
-                  common::communication::ipc::blocking::receive( common::communication::ipc::inbound::device(), request);
+                  common::communication::device::blocking::receive( common::communication::ipc::inbound::device(), request);
                   
                   common::message::service::call::Reply reply;
                   reply.correlation = request.correlation;
                   reply.buffer = std::move( request.buffer);
                   reply.transaction.trid = std::move( request.trid);
 
-                  common::communication::ipc::blocking::send( request.process.ipc, reply);
+                  common::communication::device::blocking::send( request.process.ipc, reply);
                };
             } // service
          } // <unnamed>
@@ -199,14 +199,14 @@ domain:
                request.service.name = "remote1";
                request.buffer.memory = data;
                
-               common::communication::ipc::blocking::send( state.connections.at( 0).process.ipc, request);
+               common::communication::device::blocking::send( state.connections.at( 0).process.ipc, request);
             }
 
             // echo the call
             local::service::echo();
 
             common::message::service::call::Reply reply;
-            common::communication::ipc::blocking::receive( common::communication::ipc::inbound::device(), reply);
+            common::communication::device::blocking::receive( common::communication::ipc::inbound::device(), reply);
 
             EXPECT_TRUE( reply.buffer.memory ==  data);
          }
@@ -244,14 +244,14 @@ domain:
                request.trid = trid;
                request.buffer.memory = data;
                
-               common::communication::ipc::blocking::send( state.connections.at( 0).process.ipc, request);
+               common::communication::device::blocking::send( state.connections.at( 0).process.ipc, request);
             }
 
             // echo the call
             local::service::echo();
 
             common::message::service::call::Reply reply;
-            common::communication::ipc::blocking::receive( common::communication::ipc::inbound::device(), reply);
+            common::communication::device::blocking::receive( common::communication::ipc::inbound::device(), reply);
 
             EXPECT_TRUE( reply.buffer.memory == data);
             EXPECT_TRUE( reply.transaction.trid == trid)  << "reply.transaction.trid: " << reply.transaction.trid << "\ntrid: " << trid;
@@ -263,13 +263,13 @@ domain:
             request.trid = trid;
             request.process = common::process::handle();
             request.resource = common::strong::resource::id{ 42};
-            common::communication::ipc::blocking::send( state.connections.at( 0).process.ipc, request);
+            common::communication::device::blocking::send( state.connections.at( 0).process.ipc, request);
          }
 
          // get prepare reply
          {
             common::message::transaction::resource::prepare::Reply reply;
-            common::communication::ipc::blocking::receive( common::communication::ipc::inbound::device(), reply);
+            common::communication::device::blocking::receive( common::communication::ipc::inbound::device(), reply);
             EXPECT_TRUE( reply.trid == trid);
          }
       }

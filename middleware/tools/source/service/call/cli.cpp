@@ -11,12 +11,18 @@
 #include "common/argument.h"
 #include "common/optional.h"
 #include "common/service/call/context.h"
-#include "common/buffer/type.h"
 #include "common/exception/handle.h"
 #include "common/transaction/context.h"
 #include "common/execute.h"
+#include "common/terminal.h"
+#include "common/message/dispatch.h"
+#include "common/communication/select.h"
+#include "common/communication/ipc.h"
+#include "common/communication/instance.h"
 
+#include "casual/cli/pipe.h"
 
+#include "domain/pending/message/send.h"
 #include "service/manager/admin/api.h"
 
 
@@ -42,17 +48,71 @@ namespace casual
             {
                namespace
                {
-                  struct Settings 
+                  struct State
                   {
+                     enum class Flag : short
+                     {
+                        done = 0,
+                        pipe = 1,
+                        ipc = 2,
+                        multiplexing = pipe | ipc,
+                     };
+
+                     friend std::ostream& operator << ( std::ostream& out, Flag flag)
+                     {
+                        switch( flag)
+                        {
+                           case Flag::done: return out << "done";
+                           case Flag::pipe: return out << "pipe";
+                           case Flag::ipc: return out << "ipc";
+                           case Flag::multiplexing: return out << "multiplexing";
+                        }
+                        return out << "<unknown>";
+                     }
+
+
+                     struct Lookup
+                     {
+                        casual::cli::message::Payload payload;
+                        platform::size::type count{};
+
+                        inline friend bool operator == ( const Lookup& lhs, const Uuid& rhs) { return lhs.payload.correlation == rhs;}
+
+                        CASUAL_LOG_SERIALIZE(
+                           CASUAL_SERIALIZE( payload);
+                           CASUAL_SERIALIZE( count);
+                        )
+                     };
+
+                     Flags< Flag> machine = Flag::pipe;
+
+
+
+                     struct
+                     {
+                        std::vector< Uuid> calls;
+                        std::vector< Lookup> lookups;
+
+                        auto empty() const { return calls.empty() && lookups.empty();}
+
+                        CASUAL_LOG_SERIALIZE(
+                           CASUAL_SERIALIZE( calls);
+                           CASUAL_SERIALIZE( lookups);
+                        )
+
+                     } pending;
+
                      std::string service;
-                     bool transaction = false;
-                     bool asynchronous = false;
                      platform::size::type iterations = 1;
 
-                     bool stream() const { return iterations == 1 && ! asynchronous;}
+                     CASUAL_LOG_SERIALIZE(
+                        CASUAL_SERIALIZE( machine);
+                        CASUAL_SERIALIZE( pending);
+                        CASUAL_SERIALIZE( service);
+                        CASUAL_SERIALIZE( iterations);
+                     )
+
                   };
-
-
 
                   namespace service
                   {
@@ -67,137 +127,183 @@ namespace casual
                      }
                   }
 
-
-
-                  namespace dispatch
+                  namespace handle
                   {
-                     using invoke_type = std::function< void()>;
-                     
-                     namespace transaction
+                     auto pipe( State& state)
                      {
-                        auto scope = []( auto&& dispatch) -> invoke_type
+                        auto handle_lookup = [&state]( casual::cli::message::Payload& message)
                         {
-                           return [dispatch=std::move( dispatch)]()
+                           Trace trace{ "tools::service::call::local::handle::pipe::handle_lookup"};
+                           log::line( verbose::log, "state: ", state);
+
+                           if( state.iterations <= 0)
+                              return;
+
+                           // send request(s)
                            {
-                              common::transaction::context().begin();
-                              auto rollback = common::execute::scope( [](){ common::transaction::context().rollback();});
+                              common::message::service::lookup::Request request{ process::handle()};
+                              request.correlation = message.correlation;
+                              request.requested = state.service;
+                              // we will wait 'for ever'.
+                              request.context = decltype( request.context)::gateway;
 
-                              dispatch();
+                              algorithm::for_n( state.iterations, [&request](){
+                                 casual::domain::pending::message::eventually::send( 
+                                    communication::instance::outbound::service::manager::device(), 
+                                    request);
+                              });                              
+                           }
 
-                              common::transaction::context().commit();
-                              rollback.release();
-                           };
+                           state.pending.lookups.push_back( State::Lookup{ std::move( message), state.iterations});
+                           // add ipc to the state machine (might be set already)
+                           state.machine |= State::Flag::ipc;
+
+                           // TODO sequential calls...
+
+                           log::line( verbose::log, "state: ", state);
+
                         };
-                     } // transaction
 
-                     auto stream( const std::string& service) -> invoke_type
-                     {
-                        return [&service]()
-                        {
-                           auto call = [&service]( const common::buffer::Payload& payload)
+                        return common::message::dispatch::handler( communication::stream::inbound::Device{ std::cin},
+                           casual::cli::pipe::forward::handle::defaults(),
+                           std::move( handle_lookup),
+                           [&state]( const casual::cli::message::pipe::Done&)
                            {
-                              auto reply = common::service::call::context().sync( service, buffer::payload::Send{ payload}, {});
-                              // Print the result 
-                              buffer::payload::binary::stream( reply.buffer, std::cout);
-                           };
-
-                           buffer::payload::binary::stream( std::cin, call);
-                        };  
+                              // remove the pipe from the state-machine
+                              state.machine -= State::Flag::pipe;
+                           }
+                        );
                      }
 
-                     auto iterate = []( auto iterations, auto&& dispatch) -> invoke_type
+                     auto ipc( State& state)
                      {
-                        return [iterations,dispatch=std::move( dispatch)]() mutable
+                        auto lookup_reply = [&state]( common::message::service::lookup::Reply& message)
                         {
-                           while( iterations-- > 0)
-                              dispatch();
+                           Trace trace{ "tools::service::call::local::handle::ipc::lookup_reply"};
+                           log::line( verbose::log, "message: ", message);
+
+                           auto found = algorithm::find( state.pending.lookups, message.correlation);
+                           assert( found);
+
+                           auto& lookup = *found;
+
+                           // call
+                           {
+                              common::message::service::call::caller::Request request{ common::buffer::payload::Send{ lookup.payload.payload}};
+                              request.process = process::handle();
+                              request.service = std::move( message.service);
+                              request.pending = message.pending;
+
+                              using Type = common::service::transaction::Type;
+                              if( algorithm::compare::any( message.service.transaction, Type::automatic, Type::join, Type::branch))
+                                 request.trid = lookup.payload.transaction.trid;
+                              
+                              // we let 'communication' create a new correlation id
+                              state.pending.calls.push_back( casual::domain::pending::message::eventually::send( message.process, request));
+                           }
+
+                           if( --lookup.count == 0)
+                              state.pending.lookups.erase( std::begin( found));
+
+                           log::line( verbose::log, "state: ", state);
                         };
-                       
+
+                        auto call_reply = [&state]( common::message::service::call::Reply& message)
+                        {
+                           Trace trace{ "tools::service::call::local::handle::ipc::call_reply"};
+                           log::line( verbose::log, "message: ", message);
+
+                           algorithm::trim( state.pending.calls, algorithm::remove( state.pending.calls, message.correlation));
+
+                           casual::cli::message::Payload result{ process::handle()};
+                           result.payload = std::move( message.buffer);
+                           result.transaction.trid = message.transaction.trid;
+                           result.transaction.code = message.transaction.state == decltype( message.transaction.state)::active ? code::tx::ok : code::tx::rollback;
+
+                           casual::cli::pipe::forward::message( result);
+
+                           // if we got no pending, we remove our self
+                           if( state.pending.empty())
+                              state.machine -= State::Flag::ipc;
+
+                           log::line( verbose::log, "state: ", state);
+
+                        };
+
+
+                        return common::message::dispatch::handler( communication::ipc::inbound::device(),
+                           std::move( lookup_reply),
+                           std::move( call_reply)
+                        );
+                     }
+
+                  } // handle
+               
+                  void call( State& state)
+                  {
+                     Trace trace{ "tools::service::call::local::call"};
+                     log::line( verbose::log, "state: ", state);
+
+                     communication::stream::inbound::Device pipe{ std::cin};
+                     auto& ipc = communication::ipc::inbound::device();
+
+                     // will be 'done' if the state machine differs from origin
+                     auto state_machine_condition = [&state]( auto origin)
+                     {
+                        return common::message::dispatch::condition::compose( 
+                           common::message::dispatch::condition::done( [origin,&state]()
+                           {  
+                              return state.machine != origin;
+                           }));
                      };
 
-                     
-                     template< typename P>
-                     auto sequential( const std::string& service, const P& payloads) -> invoke_type
+                     // start the 'state machine'. The handlers, created above, will
+                     // change the 'state machine' as stuff happens. We check the 
+                     // the state changes in the 'condition-done' via state_machine_condition
+
+                     while( state.machine != State::Flag::done)
                      {
-                        return [&]()
+                        if( state.machine == State::Flag::pipe)
                         {
-                           common::algorithm::for_each( payloads, [&]( auto& payload)
-                           {
-                              auto reply = common::service::call::context().sync( service, buffer::payload::Send{ payload}, {});
-                              // Print the result 
-                              buffer::payload::binary::stream( reply.buffer, std::cout);
-                           });
-                        };
-                     }
-
-                     template< typename P>
-                     auto parallel( const std::string& service, const P& payloads) -> invoke_type
-                     {
-                        return [&]()
+                           // just listen to the pipe 
+                           common::message::dispatch::pump( 
+                              state_machine_condition( State::Flag::pipe), 
+                              handle::pipe( state), 
+                              pipe);
+                        }
+                        else if( state.machine == State::Flag::ipc)
                         {
-                           auto descriptors = common::algorithm::transform( payloads, [&]( auto& payload)
-                           {
-                              return common::service::call::context().async( service, buffer::payload::Send{ payload}, {});
-                           });
-
-                           common::algorithm::for_each( descriptors, []( auto& descriptor)
-                           {
-                              auto reply = common::service::call::context().reply( descriptor, {});
-                              // Print the result 
-                              buffer::payload::binary::stream( reply.buffer, std::cout);
-                           });
-                        };
-                     }
-
-                     auto construct( const Settings& settings, const std::vector< common::buffer::Payload>& payloads)
-                     {
-                        auto call = settings.asynchronous ? 
-                           dispatch::parallel( settings.service, payloads) 
-                           : dispatch::sequential( settings.service, payloads);
-
-                        if( settings.transaction)
-                           return dispatch::iterate( settings.iterations, dispatch::transaction::scope( std::move( call)));
-
-                        return dispatch::iterate( settings.iterations, std::move( call));
-                     }
-
-                  } // dispatch
-
-                  namespace payload
-                  {
-                     auto consume() 
-                     {
-                        std::vector< common::buffer::Payload> payloads;
-
-                        buffer::payload::binary::stream( std::cin, [&payloads]( auto&& payload)
+                           // just listen to ipc 
+                           common::message::dispatch::pump( 
+                              state_machine_condition( State::Flag::ipc), 
+                              handle::ipc( state), 
+                              ipc);
+                        }
+                        else if( state.machine == State::Flag::multiplexing)
                         {
-                           payloads.push_back( std::move( payload));
-                        });
+                           communication::select::Directive directive;
+                           auto create_select_handler = [&directive]( auto fd, auto&& handler, auto& device)
+                           {
+                              directive.read.add( fd);
+                              return communication::select::dispatch::create::reader( fd, [handler = std::move( handler), &device]( auto fd)
+                              {
+                                 handler( communication::device::blocking::next( device));
+                              });
+                           };
 
-                        return payloads;
+                           communication::select::dispatch::pump(
+                              state_machine_condition( State::Flag::multiplexing),
+                              directive,
+                              // the ipc handler
+                              create_select_handler( ipc.connector().descriptor(), handle::ipc( state), ipc),
+                              // the pipe handler
+                              create_select_handler( file::descriptor::standard::in(), handle::pipe( state), pipe)
+                           );
+                        }
                      }
-                  } // payload
 
-                  
-                  
-               
-                  void call( Settings settings)
-                  {
-                     if( settings.stream())
-                     {
-                        if( settings.transaction)
-                           dispatch::transaction::scope( dispatch::stream( settings.service))();
-                        else 
-                           dispatch::stream( settings.service)();  
-                     }
-                     else 
-                     {
-                        // we need to consume all payloads
-                        auto payloads = payload::consume();
-
-                        dispatch::construct( settings, payloads)();
-                        
-                     }
+                     // we're done
+                     casual::cli::pipe::done();
                   }
 
                   namespace complete
@@ -226,23 +332,40 @@ namespace casual
                {
                   auto invoked = [&]()
                   {
-                     local::call( m_settings);
+                     local::call( m_state);
+                  };
+
+                  constexpr auto transaction_information = R"([removed] use `casual transaction --begin` instead)";
+                  constexpr auto asynchronous_information = R"([removed] use `casual --block true|false call ...` instead)";
+
+                  auto deprecated = []( auto message)
+                  {
+                     return [message]( bool on)
+                     {
+                        if( on)
+                           std::cerr << message << '\n';
+                     };
                   };
 
                   return argument::Group{ invoked, [](){}, { "call"}, R"(generic service call
 
 Reads buffer(s) from stdin and call the provided service, prints the reply buffer(s) to stdout.
-Assumes that the input buffer to be in a conformant format, ie, created by casual or some other tool.
+Assumes that the input buffer to be in a conformant format, ie, created by casual.
 Error will be printed to stderr
+
+@note: part of casual-pipe
 )",
-                     argument::Option( std::tie( m_settings.service), local::complete::service, { "-s", "--service"}, "service to call")( argument::cardinality::one{}),
-                     argument::Option( std::tie( m_settings.iterations), { "--iterations"}, "number of iterations (default: 1)"),
-                     argument::Option( std::tie( m_settings.transaction), { "--transaction"}, "if every iteration should be in a transaction"),
-                     argument::Option( std::tie( m_settings.asynchronous), { "--asynchronous"}, "if 'buffer batch' should be called in parallel"),
+                     argument::Option( std::tie( m_state.service), local::complete::service, { "-s", "--service"}, "service to call")( argument::cardinality::one{}),
+
+                     argument::Option( std::tie( m_state.iterations), { "--iterations"}, "number of iterations (default: 1) - this could be helpful for testing load"),
+
+                     // deprecated
+                     argument::Option( deprecated( asynchronous_information), argument::option::keys( {}, { "--asynchronous"}), asynchronous_information),
+                     argument::Option( deprecated( transaction_information), argument::option::keys( {}, { "--transaction"}), transaction_information),
                   };
                }
 
-               local::Settings m_settings;
+               local::State m_state;
             };
 
             cli::cli() = default; 

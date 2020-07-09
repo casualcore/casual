@@ -11,6 +11,7 @@
 
 #include "queue/api/queue.h"
 #include "queue/common/transform.h"
+#include "queue/common/queue.h"
 
 #include "common/argument.h"
 #include "common/message/queue.h"
@@ -20,6 +21,12 @@
 #include "common/execute.h"
 #include "common/exception/handle.h"
 #include "common/serialize/create.h"
+#include "common/communication/ipc.h"
+#include "common/communication/instance.h"
+
+
+#include "casual/cli/pipe.h"
+#include "casual/cli/message.h"
 
 #include "serviceframework/service/protocol/call.h"
 #include "serviceframework/log.h"
@@ -37,6 +44,14 @@ namespace casual
       {
          namespace
          {
+            namespace global
+            {
+               struct
+               {
+                  transaction::ID trid;
+               } state;
+
+            } // global
             namespace normalize
             {
                std::string timestamp( const platform::time::point::type& time)
@@ -73,6 +88,17 @@ namespace casual
 
                   return result;
                }
+
+               /*
+               auto enqueue( const common::message::queue::lookup::Reply& lookup, cli::message::Payload&& payload)
+               {
+                  
+
+
+
+
+               }
+               */
 
             } // call
 
@@ -188,6 +214,27 @@ namespace casual
 
             } // format
 
+            auto queues() 
+            {
+               auto state = call::state();
+
+               return algorithm::transform( state.queues, []( auto& q)
+               {
+                  return std::move( q.name);
+               });
+            }
+
+            namespace complete
+            {
+               auto queues = []( auto& values, bool help) -> std::vector< std::string>
+               { 
+                  if( help) 
+                     return { "<queue>"};
+                     
+                  return local::queues();
+               };
+            } // complete
+
 
             namespace legend
             {
@@ -268,16 +315,6 @@ use auto-complete to help which options has legends
             } // legend 
 
 
-            auto queues() 
-            {
-               auto state = call::state();
-
-               return algorithm::transform( state.queues, []( auto& q)
-               {
-                  return std::move( q.name);
-               });
-            }
-
             namespace list
             {
                namespace queues
@@ -339,29 +376,66 @@ use auto-complete to help which options has legends
 
             namespace enqueue
             {
-               void invoke( const std::string& queue)
+               auto option()
                {
-                  auto dispatch = [&queue]( auto&& payload)
+                  auto invoke = []( std::string name)
                   {
-                     queue::Message message;
-                     std::swap( message.payload.data, payload.memory);
-                     std::swap( message.payload.type, payload.type);
+                     Trace trace{ "queue::local::enqueue::invoke"};
 
-                     auto id = queue::enqueue( queue, message);
-                     std::cout << id << '\n';
+                     auto destination = queue::Lookup{ name}();
+                     log::line( verbose::log, "queue: ", destination);
+                     
+                     communication::stream::inbound::Device in{ std::cin};
+
+                     cli::pipe::transaction::Association associate;
+
+                     auto enqueue = [&name, &destination, &associate]( cli::message::Payload& payload)
+                     {
+                        associate( payload);
+
+                        common::message::queue::enqueue::Request request{ process::handle()};
+                        request.trid = payload.transaction.trid;
+                        request.name = name;
+                        request.queue = destination.queue;
+                        std::swap( request.message.payload, payload.payload.memory);
+                        std::swap( request.message.type, payload.payload.type);
+
+                        cli::message::queue::message::ID id{ process::handle()};
+                        id.id = communication::ipc::call( destination.process.ipc, request).id;
+                        id.transaction = payload.transaction;
+                        cli::pipe::forward::message( id);
+                     };
+
+                     bool done = false;
+
+                     auto handler = common::message::dispatch::handler( in, 
+                        cli::pipe::forward::handle::defaults(),
+                        casual::cli::pipe::handle::done( done),
+                        cli::pipe::transaction::handle::directive( associate),
+                        std::move( enqueue)
+                     );
+
+                     // start the pump
+                     common::message::dispatch::pump( cli::pipe::condition::done( done), handler, in);
+
+                     cli::pipe::done();
                   };
 
-                  common::buffer::payload::binary::stream( std::cin, dispatch);
-               }
-
-               constexpr auto description = R"(enqueue buffer(s) to a queue from stdin
+                  return argument::Option{
+                     std::move( invoke),
+                     complete::queues,
+                     { "-e", "--enqueue"},
+                     R"(enqueue buffer(s) to a queue from stdin
 
 Assumes a conformant buffer(s)
 
 Example:
 cat somefile.bin | casual queue --enqueue <queue-name>
 
-note: operation is atomic)";
+@note: part of casual-pipe)"
+                  };
+
+               }
                
             } // enqueue
 
@@ -374,115 +448,218 @@ note: operation is atomic)";
 
             namespace dequeue
             {
-               void invoke( const std::string& queue, const common::optional< Uuid>& id)
+               auto forward = []( auto& destination, auto& associate, const common::optional< Uuid>& id)
                {
-                  
-                  const auto message = [&]()
-                  { 
-                     if( id)
-                        return queue::dequeue( queue, queue::Selector{ {}, id.value()});
-                     else
-                        return queue::dequeue( queue);
-                  }();
+                  // we 'start' a new execution 'context'
+                  common::execution::reset();
 
-                  if( ! message.empty())
+                  Trace trace{ "queue::local::dequeue::action"};
+                  log::line( verbose::log, "destination: ", destination);
+                  log::line( verbose::log, "associate: ", associate);
+
+                  common::message::queue::dequeue::Request request{ process::handle()};
+                  // associate the request to 'transaction', if no ongoing directive -> no-op
+                  associate( request);
+                  request.name = destination.name;
+                  request.queue = destination.queue;
+
+                  if( id)
+                     request.selector.id = id.value();
+
+                  auto reply = communication::ipc::call( destination.process.ipc, request);
+
+                  if( ! reply.message.empty())
                   {
-                     auto& payload = message.front().payload;
-                     common::buffer::payload::binary::stream( 
-                        common::buffer::Payload{ std::move( payload.type), std::move( payload.data)}, 
-                        std::cout);
+                     cli::message::Payload payload{ process::handle()};
+                     std::swap( reply.message.front().payload, payload.payload.memory);
+                     std::swap( reply.message.front().type, payload.payload.type);
+                     payload.transaction.trid = request.trid;
+                     cli::pipe::forward::message( payload);
+
+                     return true;
                   }
-                  else
-                     throw Empty{ "queue is empty"};
-               }
 
-               auto completer = []( auto& values, bool help) -> std::vector< std::string>
-               { 
-                  if( help) 
-                     return { "<queue>", "[<id>]"};
+                  // if associated with a transaction, send the transaction downstream, 
+                  // since associate has sent the association of the transaction upstream already
+                  if( request.trid)
+                  {
+                     cli::message::transaction::Propagate message{ process::handle()};
+                     message.transaction.trid = request.trid;
+                     cli::pipe::forward::message( message);
+                  }
 
-                  if( values.empty())
-                     return local::queues();
-
-                  // complete on id
-                  return algorithm::transform( 
-                     call::messages( range::front( values)),
-                     []( auto& message){ return uuid::string( message.id);});
+                  return false;
                };
 
-               constexpr auto description = R"(dequeue buffer from a queue to stdout
+               auto option()
+               {
+                  auto invoke = []( std::string queue, const common::optional< Uuid>& id)
+                  {
+                     Trace trace{ "queue::local::dequeue::invoke"};
+
+                     auto destination = queue::Lookup{ std::move( queue)}();
+                     
+                     communication::stream::inbound::Device in{ std::cin};
+                     cli::pipe::transaction::Association associate;
+
+                     // we need to consume to see if we've got an ongoing transaction
+
+                     bool done = false;
+
+                     auto handler = common::message::dispatch::handler( in, 
+                        cli::pipe::forward::handle::defaults(),
+                        cli::pipe::handle::done( done),
+                        cli::pipe::transaction::handle::directive( associate)
+                     );
+
+                     // consume the pipe
+                     common::message::dispatch::pump( cli::pipe::condition::done( done), handler, in);
+
+                     dequeue::forward( destination, associate, id);
+
+                     cli::pipe::done();
+                  };
+
+                  return argument::Option{
+                     std::move( invoke),
+                     complete::queues,
+                     { "-d", "--dequeue"},
+                     R"(dequeue buffer from a queue to stdout
 
 Example:
-casual queue --dequeue <queue> > somefile.bin
-casual queue --dequeue <queue> <id> > somefile.bin
+casual queue --dequeue <queue> | <some other part in casual-pipe> | ... | <casual-pipe termination>
+casual queue --dequeue <queue> <id> | <some other part in casual-pipe> | ... | <casual-pipe termination>
 
-note: operation is atomic)";
+@note: part of casual-pipe
+)"
 
+                  };
+               }
             } // dequeue
 
 
 
             namespace consume
             {
-               void invoke( const std::string& queue)
+               auto option()
                {
-                  auto message = queue::dequeue( queue);
-
-                  while( ! message.empty())
+                  auto invoke = []( std::string queue, common::optional< platform::size::type> count)
                   {
-                     auto& payload = message.front().payload;
-                     common::buffer::payload::binary::stream( 
-                        common::buffer::Payload{ std::move( payload.type), std::move( payload.data)}, 
-                        std::cout);
+                     Trace trace{ "queue::local::consume::invoke"};
+                     auto destination = queue::Lookup{ std::move( queue)}();
 
-                     message = queue::dequeue( queue);
-                  }
-               }
+                     communication::stream::inbound::Device in{ std::cin};
+                     cli::pipe::transaction::Association associate;
 
-               constexpr auto description = R"(consumes a queue to stdout, dequeues until the queue is empty
+                     // we need to consume to see if we've got a ongoing transaction
+
+                     bool done = false;
+
+                     auto handler = common::message::dispatch::handler( in, 
+                        cli::pipe::forward::handle::defaults(),
+                        cli::pipe::handle::done( done),
+                        cli::pipe::transaction::handle::directive( associate)
+                     );
+
+                     // consume the pipe
+                     common::message::dispatch::pump( cli::pipe::condition::done( done), handler, in);
+
+                     auto remaining = count.value_or( std::numeric_limits< platform::size::type>::max());
+
+                     while( remaining > 0 && dequeue::forward( destination, associate, {}))
+                        --remaining;
+
+                     cli::pipe::done();
+                  };
+
+                  return argument::Option{
+                     std::move( invoke),
+                     []( auto& values, bool help) -> std::vector< std::string>
+                     {
+                        if( help)
+                           return { "<queue>", "<count>"};
+                        
+                        if( values.empty())
+                           return local::queues();
+                        else 
+                           return { "<value>"};
+
+                     },
+                     { "--consume"},
+                      R"(consumes up to `count` messages from the provided `queue` and send it downstream
 
 Example:
-casual queue --consume <queue-name> > somefile.bin 
+casual queue --consume <queue-name> [<count>] | <some other part of casual-pipe> | ... | <casual-pipe-termination>
 
-note: operation is atomic)";
+@note: part of casual-pipe
+)"
+
+                  };
+               }
                
             } // consume
 
             namespace peek
             {
-               void invoke( const std::string& queue, const std::vector< queue::Message::id_type>& ids)
+               auto option()
                {
-                  auto messages = queue::peek::messages( queue, ids);
-
-                  algorithm::for_each( messages, []( auto& message)
+                  auto invoke = [](const std::string& queue, const std::vector< queue::Message::id_type>& ids)
                   {
-                     auto& payload = message.payload;
-                     common::buffer::payload::binary::stream( 
-                        common::buffer::Payload{ std::move( payload.type), std::move( payload.data)}, 
-                        std::cout);
-                  });
-               }
+                     // consume from casual-pipe
+                     communication::stream::inbound::Device in{ std::cin};
 
-               auto complete = []( auto& values, bool help) -> std::vector< std::string>
-               { 
-                  if( help) 
-                     return { "<queue>", "<id>"};
+                     // we need to consume to see if we've got a ongoing transaction
 
-                  if( values.empty())
-                     return local::queues();
+                     bool done = false;
 
-                  // complete on id
-                  return algorithm::transform( 
-                     call::messages( range::front( values)),
-                     []( auto& message){ return uuid::string( message.id);});
-               };
+                     auto handler = common::message::dispatch::handler( in, 
+                        cli::pipe::forward::handle::defaults(),
+                        cli::pipe::handle::done( done)
+                     );
 
-               constexpr auto description = R"(peeks messages from the give queue and streams them to stdout
+                     // consume the pipe
+                     common::message::dispatch::pump( cli::pipe::condition::done( done), handler, in);
+
+                     auto messages = queue::peek::messages( queue, ids);
+
+                     algorithm::for_each( messages, []( auto& message)
+                     {
+                        cli::message::Payload pipemessage;
+                        pipemessage.payload.type = std::move( message.payload.type);
+                        pipemessage.payload.memory = std::move( message.payload.data);
+
+                        cli::pipe::forward::message( pipemessage);
+                     });
+
+                     cli::pipe::done();
+                  };
+
+                  auto complete = []( auto& values, bool help) -> std::vector< std::string>
+                  { 
+                     if( help) 
+                        return { "<queue>", "<id>"};
+
+                     if( values.empty())
+                        return local::queues();
+
+                     // complete on id
+                     return algorithm::transform( 
+                        call::messages( range::front( values)),
+                        []( auto& message){ return uuid::string( message.id);});
+                  };
+
+                  return argument::Option{
+                     std::move( invoke),
+                     std::move( complete),
+                     { "-p", "--peek"},
+                     R"(peeks messages from the give queue and streams them to casual-pipe
 
 Example:
-casual queue --peek <queue-name> <id1> <id2> > somefile.bin 
+casual queue --peek <queue-name> <id1> <id2> | <some other part of casual-pipe> | ... | <casual-pipe-termination>
 
-note: operation is atomic)";
+@note: part of casual-pipe)"
+                  };
+               }
                
             } // consume
 
@@ -521,7 +698,6 @@ casual queue --restore <queue-name>)";
                   auto complete = []( auto& values, bool help) -> std::vector< std::string>
                   { 
                      if( help) 
-                        //return { "<queue>", "<message-id>[1..*]"};
                         return { "<queue>", "<id>"};
                      
                      if( values.empty())
@@ -669,24 +845,16 @@ casual queue --metric-reset queue-a queue-b)";
                common::argument::Group options()
                {
 
-                  auto complete_queues = []( auto& values, bool help) -> std::vector< std::string>
-                  { 
-                     if( help) 
-                        return { "<queue>"};
-                        
-                     return local::queues();
-                  };
-
                   return argument::Group{ [](){}, { "queue"}, "queue related administration",
                      argument::Option( &local::list::queues::invoke, { "-q", "--list-queues"}, local::list::queues::description),
                      argument::Option( &local::list::remote::queues::invoke, { "-r", "--list-remote"}, local::list::remote::queues::description),
                      argument::Option( &local::list::groups::invoke, { "-g", "--list-groups"}, local::list::groups::description),
-                     argument::Option( &local::list::messages::invoke, complete_queues, { "-m", "--list-messages"}, local::list::messages::description),
-                     argument::Option( &local::restore::invoke, complete_queues, { "--restore"}, local::restore::description),
-                     argument::Option( &local::enqueue::invoke, complete_queues, { "-e", "--enqueue"}, local::enqueue::description),
-                     argument::Option( &local::dequeue::invoke, local::dequeue::completer, { "-d", "--dequeue"}, local::dequeue::description),
-                     argument::Option( &local::peek::invoke, local::peek::complete, { "-p", "--peek"}, local::peek::description),
-                     argument::Option( &local::consume::invoke, complete_queues, { "--consume"}, local::consume::description),
+                     argument::Option( &local::list::messages::invoke, local::complete::queues, { "-m", "--list-messages"}, local::list::messages::description),
+                     argument::Option( &local::restore::invoke, local::complete::queues, { "--restore"}, local::restore::description),
+                     local::enqueue::option(),
+                     local::dequeue::option(),
+                     local::peek::option(),
+                     local::consume::option(),
                      argument::Option( argument::option::one::many( &local::clear::invoke), local::clear::complete, { "--clear"}, local::clear::description),
                      argument::Option( &local::messages::remove::invoke, local::messages::remove::complete, { "--remove-messages"}, local::messages::remove::description),
                      argument::Option( &local::metric::reset::invoke, local::metric::reset::complete, { "--metric-reset"}, local::metric::reset::description),

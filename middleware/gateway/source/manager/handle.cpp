@@ -50,7 +50,7 @@ namespace casual
                   {
                      auto send = []( auto& ipc, auto& message)
                      {
-                        return common::communication::ipc::blocking::optional::send( ipc, message);
+                        return common::communication::device::blocking::optional::send( ipc, message);
                      };
                   } // coordinate
 
@@ -212,7 +212,7 @@ namespace casual
 
                // send the first request
                auto& destination = result.request.value().destination;
-               communication::ipc::blocking::send( destination.ipc, result.request.value().message);
+               communication::device::blocking::send( destination.ipc, result.request.value().message);
 
                // main task
                {
@@ -279,7 +279,7 @@ namespace casual
                            Trace trace{ "gateway::manager::handle::local::process::exit"};
 
                            // Send the exit notification to domain.
-                           communication::ipc::blocking::send( communication::instance::outbound::domain::manager::device(), message);
+                           communication::device::blocking::send( communication::instance::outbound::domain::manager::device(), message);
 
                            if( auto inbound_found = algorithm::find( state.connections.inbound, message.state.pid))
                            {
@@ -347,7 +347,7 @@ namespace casual
                               auto send_request = [&]( const state::outbound::Connection& outbound)
                               {
                                  // We don't send to the same domain that is the requester.
-                                 if( outbound.remote != message.domain && communication::ipc::blocking::optional::send( outbound.process.ipc, message))
+                                 if( outbound.remote != message.domain && communication::device::blocking::optional::send( outbound.process.ipc, message))
                                     requested.push_back( outbound.process.pid);
                                  
                               };
@@ -396,7 +396,7 @@ namespace casual
                               if( result.request)
                               {
                                  auto& destination = result.request.value().destination;
-                                 communication::ipc::blocking::send( destination.ipc, result.request.value().message);
+                                 communication::device::blocking::send( destination.ipc, result.request.value().message);
 
                                  if( auto outbound = state.outbound( destination.pid))
                                  {
@@ -436,7 +436,7 @@ namespace casual
                               auto reply = common::message::reverse::type( message);
 
                               auto send_reply = common::execute::scope( [&](){
-                                 communication::ipc::blocking::optional::send( message.process.ipc, reply);
+                                 communication::device::blocking::optional::send( message.process.ipc, reply);
                               });
 
                               if( auto found = algorithm::find( state.connections.outbound, message.process.pid))
@@ -504,9 +504,9 @@ namespace casual
             } // local
          } // handle
 
-         common::communication::ipc::dispatch::Handler handler( State& state)
+         handle::dispatch_type handler( State& state)
          {
-            return ipc::device().handler(
+            return common::message::dispatch::handler( ipc::device(),
                common::message::handle::defaults( ipc::device()),
                handle::local::process::exit( state),
                handle::local::outbound::configuration::request( state),

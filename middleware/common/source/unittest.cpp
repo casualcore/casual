@@ -81,6 +81,15 @@ namespace casual
                } // <unnamed>
             } // local
 
+            namespace detail
+            {
+               long long integer()
+               {
+                  std::uniform_int_distribution< long long> distribution( std::numeric_limits< long long>::min(), std::numeric_limits< long long>::max());
+                  return distribution( local::engine());
+               }
+            } // detail
+
             platform::binary::type::value_type byte()
             {
                auto distribution = local::distribution();

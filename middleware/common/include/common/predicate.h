@@ -92,6 +92,11 @@ namespace casual
             return [functor]( auto&&... param){ return ! functor( param...);};
          }
 
+         inline auto boolean()
+         {
+            return []( auto&& value){ return static_cast< bool>( value);};
+         }
+
       } // predicate 
    } // common 
 } // casual 

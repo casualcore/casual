@@ -52,7 +52,7 @@ namespace casual
                            {
                               try
                               {  
-                                 if( ! communication::ipc::non::blocking::send(  destination.ipc, message))
+                                 if( ! communication::device::non::blocking::send(  destination.ipc, message))
                                     casual::domain::pending::message::send( destination, message);
                               }
                               catch( const common::exception::system::communication::Unavailable&)
@@ -81,7 +81,7 @@ namespace casual
                         {
                            if( ! algorithm::find( state.involved, message.trid))
                            {
-                              communication::ipc::blocking::optional::send( 
+                              communication::device::blocking::optional::send( 
                                  communication::instance::outbound::transaction::manager::device(),
                                  common::message::transaction::resource::external::involved::create( message));
                            }
@@ -148,7 +148,7 @@ namespace casual
                               auto reply = common::message::reverse::type( message, common::process::handle());
                               reply.queues = state.queuebase.queues();
 
-                              common::communication::ipc::blocking::send( message.process.ipc, reply);
+                              common::communication::device::blocking::send( message.process.ipc, reply);
                            };
                         }
                      } // queues
@@ -165,7 +165,7 @@ namespace casual
                               auto reply = common::message::reverse::type( message, common::process::handle());
                               reply.messages = state.queuebase.messages( message.qid);
 
-                              common::communication::ipc::blocking::send( message.process.ipc, reply);
+                              common::communication::device::blocking::send( message.process.ipc, reply);
                            };
                         }
                      } // messages
@@ -194,7 +194,7 @@ namespace casual
                                  // transaction messages of their own (since
                                  // we send 'involved' first).
                                  local::detail::transaction::involved( state, message);
-                                 communication::ipc::blocking::optional::send( message.process.ipc, reply);
+                                 communication::device::blocking::optional::send( message.process.ipc, reply);
                               }
                               else
                               {
@@ -230,7 +230,7 @@ namespace casual
                         // make sure we always send reply
                         auto send_reply = execute::scope( [&]()
                         {
-                           communication::ipc::blocking::optional::send( message.process.ipc, reply);
+                           communication::device::blocking::optional::send( message.process.ipc, reply);
                         });
 
                         if( ! reply.message.empty())
@@ -380,7 +380,7 @@ namespace casual
                               reply.trid = message.trid;
                               reply.state = common::code::xa::ok;
 
-                              communication::ipc::blocking::optional::send(
+                              communication::device::blocking::optional::send(
                                  common::communication::instance::outbound::transaction::manager::device(), reply);
                            };
                         }
@@ -435,7 +435,7 @@ namespace casual
                            auto reply = common::message::reverse::type( message);
 
                            auto send_reply = common::execute::scope( [&](){
-                              communication::ipc::blocking::optional::send( message.process.ipc, reply);
+                              communication::device::blocking::optional::send( message.process.ipc, reply);
                            });
 
                            reply.affected = common::algorithm::transform( message.queues, [&]( auto queue){

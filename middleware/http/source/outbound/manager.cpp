@@ -36,7 +36,7 @@ namespace casual
                      {
                         try
                         {
-                           return ! communication::ipc::non::blocking::send( process.ipc, message).empty();
+                           return ! communication::device::non::blocking::send( process.ipc, message).empty();
                         }
                         catch( const exception::system::communication::Unavailable&)
                         {
@@ -52,9 +52,9 @@ namespace casual
                         {
                            try
                            {
-                              communication::ipc::blocking::send( process.ipc, message);
+                              communication::device::blocking::send( process.ipc, message);
                               /*
-                              if( ! communication::ipc::non::blocking::send( process.ipc, message))
+                              if( ! communication::device::non::blocking::send( process.ipc, message))
                               {
                                  log::line( verbose::log, "failed to send message - type: ", common::message::type( message), " to: ", process, " - action: try later");
                                  state.pending.replies.emplace_back( std::move( message), process);
@@ -174,7 +174,7 @@ namespace casual
                            // do we send metrics to service-manager?
                            if( state.pending.requests.empty() || state.metric)
                            {
-                              communication::ipc::blocking::send( common::communication::instance::outbound::service::manager::device(), state.metric.message());
+                              communication::device::blocking::send( common::communication::instance::outbound::service::manager::device(), state.metric.message());
                               state.metric.clear();
                            }
                         };
@@ -186,7 +186,7 @@ namespace casual
                      auto handlers( State& state)
                      {
                         auto& device = communication::ipc::inbound::device();
-                        return device.handler(
+                        return message::dispatch::handler( device,
                            message::handle::defaults( device),
                            handle::service::call::request( state));
                      }
@@ -212,7 +212,7 @@ namespace casual
 
                      log::line( verbose::log, "advertise: ", message);
 
-                     communication::ipc::blocking::send( communication::instance::outbound::service::manager::device(), message);
+                     communication::device::blocking::send( communication::instance::outbound::service::manager::device(), message);
                   }
                   
                } // <unnamed>
@@ -284,7 +284,7 @@ namespace casual
                else
                {
                   // we've got no pending request, we only have to listen to inbound
-                  inbound( ipc.policy_blocking());
+                  inbound( communication::device::policy::blocking( ipc));
                } 
             }
          }

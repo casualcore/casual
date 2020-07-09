@@ -47,7 +47,7 @@ namespace casual
             template< typename Device> 
             auto defaults( Device&& device)
             {
-               return device.handler( 
+               return dispatch::handler( device, 
                   handle::Ping{},
                   handle::Shutdown{},
                   handle::global::State{});

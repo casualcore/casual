@@ -73,11 +73,6 @@ namespace casual
             template< typename String>
             std::string get( String&& name) { return detail::get( detail::get_name( name));}
 
-            //! @return value of environment variable with @p name or value of alternative if
-            //!   variable isn't found
-            template< typename String>
-            std::string get( String&& name, std::string alternative) { return detail::get( detail::get_name( name), std::move( alternative));}
-
 
             template< typename T, typename String>
             T get( String&& name)
@@ -92,15 +87,47 @@ namespace casual
                   throw exception::system::invalid::Argument{ string::compose( "failed to convert value of environment variable: ", name)};
                }
             }
-
-
-            template< typename String, typename T>
-            auto get( String&& name, T value) -> std::enable_if_t< std::is_integral< T>::value, T>
+            
+            namespace detail
             {
-               if( exists( name))
-                  return get< T>( name);
 
-               return value;
+               template< typename S, typename A>
+               auto alternative( S&& name, A&& alternative, traits::priority::tag< 2>)
+                  -> decltype( detail::get( detail::get_name( name), std::move( alternative)))
+               {
+                  return detail::get( detail::get_name( name), std::move( alternative));
+               }
+
+               // callable alternative
+               template< typename S, typename A>
+               auto alternative( S&& name, A&& alternative, traits::priority::tag< 1>)
+                  -> decltype( common::from_string< decltype( alternative())>( std::string{}))
+               {
+                  if( variable::exists( name))
+                     return common::from_string< decltype( alternative())>( variable::get( name));
+
+                  return alternative();
+               }
+
+               template< typename S, typename A>
+               auto alternative( S&& name, A&& alternative, traits::priority::tag< 0>)
+                  -> decltype( common::from_string< A>( std::string{}))
+               {
+                  if( variable::exists( name))
+                     return common::from_string< A>( variable::get( name));
+
+                  return alternative;
+               }
+
+            } // detail
+
+            //! @return value of environment variable with @p name or `alternative` if
+            //!   variable isn't found
+            template< typename String, typename A>
+            auto get( String&& name, A&& alternative) 
+               -> decltype( detail::alternative( std::forward< String>( name), std::forward< A>( alternative), traits::priority::tag< 2>{}))
+            {
+               return detail::alternative( std::forward< String>( name), std::forward< A>( alternative), traits::priority::tag< 2>{});
             }
 
 
@@ -211,6 +238,7 @@ namespace casual
                   constexpr auto header = "CASUAL_TERMINAL_HEADER";
                   constexpr auto porcelain = "CASUAL_TERMINAL_PORCELAIN";
                   constexpr auto block = "CASUAL_TERMINAL_BLOCK";
+                  constexpr auto verbose = "CASUAL_TERMINAL_VERBOSE";
                } // log
 
             } // name

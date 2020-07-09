@@ -16,10 +16,6 @@
 #include "common/event/send.h"
 
 
-// temp
-#include "common/chronology.h"
-
-
 #include <chrono>
 
 namespace casual
@@ -298,8 +294,6 @@ namespace casual
          {
             Trace trace{ "queue::Database::enqueue"};
 
-            common::log::line( verbose::log, "message: ", message);
-
             auto reply = common::message::reverse::type( message);
 
             // We create a unique id if none is provided.
@@ -332,8 +326,6 @@ namespace casual
             const platform::time::point::type& now)
          {
             Trace trace{ "queue::Database::dequeue"};
-
-            common::log::line( verbose::log, "message: ", message);
 
             common::message::queue::dequeue::Reply reply;
 
@@ -376,8 +368,6 @@ namespace casual
          {
             Trace trace{ "queue::Database::peek information"};
 
-            common::log::line( verbose::log, "message: ", request);
-
             auto reply = common::message::reverse::type( request);
 
             auto get_query = [&](){
@@ -401,8 +391,6 @@ namespace casual
          common::message::queue::peek::messages::Reply Database::peek( const common::message::queue::peek::messages::Request& request)
          {
             Trace trace{ "queue::Database::peek messages"};
-
-            log::line( verbose::log, "message: ", request);
 
             auto reply = common::message::reverse::type( request);
 

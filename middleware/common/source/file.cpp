@@ -30,6 +30,23 @@ namespace casual
    {
       namespace file
       {
+         namespace descriptor
+         {
+            namespace standard
+            {
+               strong::file::descriptor::id in()
+               {
+                  return strong::file::descriptor::id{ ::fileno( ::stdin)};
+               }
+
+               strong::file::descriptor::id out()
+               {
+                  return strong::file::descriptor::id{ ::fileno( ::stdout)};
+               }
+               
+            } // standard
+         } // descriptor
+
    
          Input::Input( std::string path) : std::ifstream( path), m_path( std::move( path)) 
          {

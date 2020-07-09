@@ -31,7 +31,7 @@ namespace casual
 
          namespace handle
          {
-            using dispatch_type = common::communication::ipc::dispatch::Handler;
+            using dispatch_type = decltype( common::message::dispatch::handler( ipc::device()));
 
             namespace process
             {

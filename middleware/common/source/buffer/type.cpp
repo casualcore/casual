@@ -94,116 +94,14 @@ namespace casual
                << '}';
          }
 
-
          namespace payload
          {
-            namespace binary
-            {
-               void stream( const Payload& value, std::ostream& out)
-               {
-                  Trace trace{ "common::buffer::payload::binary::stream ostream"};
-
-                  log::line( log::category::buffer, "payload: ", value);
-
-                  common::serialize::native::binary::network::Writer archive;
-                  archive << value;
-                  auto binary = archive.consume();
-                  
-                  out.write( binary.data(), binary.size());
-                  out.flush();
-               }
-
-               namespace local
-               {
-                  namespace
-                  {
-                     //! consumes only enough from `in` to fill the payload
-                     auto read_payload = []( std::istream& in)
-                     {
-                        Payload payload;
-
-                        if( in.peek() == std::istream::traits_type::eof())
-                           return payload;
-
-                        auto fill_for = [&in]( platform::binary::type& binary, auto count)
-                        {
-                           while( in.peek() != std::istream::traits_type::eof() && --count >= 0)
-                              binary.push_back( in.get());
-
-                           if( count > 0)
-                              throw exception::system::invalid::Argument{ "not valid buffers on input stream"};
-                        };
-
-                        platform::binary::type binary;
-                        
-                        {
-                           platform::size::type size{};
-
-                           auto count = network::byteorder::bytes< platform::size::type>();
-                           
-                           // consume the size of the string, payload type.
-                           fill_for( binary, count);
-                           {
-                              common::serialize::native::binary::network::Reader archive{ binary};
-                              archive >> size;
-                           }
-
-                           // consume the "payload" of the string, payload type.
-                           fill_for( binary, size);
-
-                           // figure out the size of the buffer
-                           {
-                              auto offset = count + size;
-                              platform::size::type memory_size{};
-
-                              fill_for( binary, network::byteorder::bytes< platform::size::type>());
-                              
-                              common::serialize::native::binary::network::Reader archive{ binary, offset};
-                              archive >> memory_size;
-
-                              // consume the full buffer
-                              fill_for( binary, memory_size);
-                           }
-                        }
-                        
-                        // now we got the full payload, serialize it
-                        common::serialize::native::binary::network::Reader archive{ binary};
-                        archive >> payload;
-
-                        return payload;
-                     };
-                  } // <unnamed>
-               } // local
-
-               Payload stream( std::istream& in)
-               {
-                  Trace trace{ "common::buffer::payload::binary::stream istream"};
-
-                  auto result = local::read_payload( in);
-
-                  log::line( log::category::buffer, "payload: ", result);
-
-                  return result;
-               }
-
-               void stream( std::istream& in, const std::function< void( Payload&&)>& dispatch)
-               {
-                  Trace trace{ "common::buffer::payload::binary::stream input dispatch"};
-
-                  while( auto payload = local::read_payload( in))
-                     dispatch( std::move( payload));
-               }
-
-            } // binary
-
-
             std::ostream& operator << ( std::ostream& out, const Send& value)
             {
                return out << "{ payload: " << value.payload() 
                   << ", transport: " << value.transport()
                   <<'}';
             }
-
          }
 
          Buffer::Buffer( Payload payload) : payload( std::move( payload)) {}

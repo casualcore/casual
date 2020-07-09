@@ -66,7 +66,7 @@ namespace casual
             } // <unnamed>
          } // local
 
-         TEST( casual_common_communication_tcp, connect_to_non_existent_port__expect_connection_refused)
+         TEST( common_communication_tcp, connect_to_non_existent_port__expect_connection_refused)
          {   
             common::unittest::Trace trace;
 
@@ -75,7 +75,7 @@ namespace casual
             }, exception::system::communication::Refused);
          }
 
-         TEST( casual_common_communication_tcp, listener_port)
+         TEST( common_communication_tcp, listener_port)
          {
             common::unittest::Trace trace;
 
@@ -85,7 +85,7 @@ namespace casual
          }
 
 
-         TEST( casual_common_communication_tcp, listener_port__connect_to_port__expect_connection)
+         TEST( common_communication_tcp, listener_port__connect_to_port__expect_connection)
          {
             common::unittest::Trace trace;
 
@@ -99,7 +99,7 @@ namespace casual
          }
 
 
-         TEST( casual_common_communication_tcp, listener_port__connect_to_port_10_times__expect_connections)
+         TEST( common_communication_tcp, listener_port__connect_to_port_10_times__expect_connections)
          {
             common::unittest::Trace trace;
 
@@ -167,7 +167,7 @@ namespace casual
          } // local
 
 
-         TEST( casual_common_communication_tcp, echo_server_port__connect_to_port__expect_connection)
+         TEST( common_communication_tcp, echo_server_port__connect_to_port__expect_connection)
          {
             common::unittest::Trace trace;
 
@@ -200,7 +200,7 @@ namespace casual
             }
          }
 
-         TEST( casual_common_communication_tcp, echo_server_port__10_connect_to_port__expect_echo_from_10)
+         TEST( common_communication_tcp, echo_server_port__10_connect_to_port__expect_echo_from_10)
          {
             common::unittest::Trace trace;
 
@@ -240,7 +240,7 @@ namespace casual
             }
          }
 
-         TEST( casual_common_communication_tcp, echo_server_port__tcp_device_send_receive__expect_connection)
+         TEST( common_communication_tcp, echo_server_port__tcp_device_send_receive__expect_connection)
          {
             common::unittest::Trace trace;
 
@@ -248,7 +248,7 @@ namespace casual
 
             unittest::Thread server{ &local::echo::server, address};
 
-            tcp::outbound::Device outbund{ tcp::retry::connect( address, { { std::chrono::milliseconds{ 1}, 0}})};
+            tcp::Duplex outbound{ tcp::retry::connect( address, { { std::chrono::milliseconds{ 1}, 0}})};
 
 
             auto send = [&](){
@@ -256,7 +256,8 @@ namespace casual
                message.process = process::handle();
                message.requested = "testservice";
 
-               return outbund.blocking_send( message);
+               //return outbound.blocking_send( message);
+               return device::blocking::send( outbound, message);
             };
 
 
@@ -266,9 +267,9 @@ namespace casual
             // receive (the echo)
             {
                common::message::service::lookup::Request message;
-               tcp::inbound::Device tcp{ outbund.connector().socket()};
+               tcp::Duplex tcp{ outbound.connector().socket()};
 
-               tcp.receive( message, correlation, tcp::inbound::Device::blocking_policy{});
+               device::blocking::receive( tcp, message, correlation);
 
                EXPECT_TRUE( message.process == process::handle());
                EXPECT_TRUE( message.requested == "testservice");
@@ -276,7 +277,7 @@ namespace casual
          }
 
 
-         TEST( casual_common_communication_tcp, echo_server_port__tcp_device_send_receive__10k_payload)
+         TEST( common_communication_tcp, echo_server_port__tcp_device_send_receive__10k_payload)
          {
             common::unittest::Trace trace;
 
@@ -284,25 +285,23 @@ namespace casual
 
             unittest::Thread server{ &local::echo::server, address};
 
-            tcp::outbound::Device outbund{ tcp::retry::connect( address, { { std::chrono::milliseconds{ 1}, 0}})};
+            tcp::Duplex tcp{ tcp::retry::connect( address, { { std::chrono::milliseconds{ 1}, 0}})};
 
             auto send_message = unittest::random::message( 10 * 1024);
 
-            auto correlation = outbund.blocking_send( send_message);
+            auto correlation = device::blocking::send( tcp, send_message);
 
 
             // receive (the echo)
             {
                unittest::Message receive_message;
-               tcp::inbound::Device tcp{ outbund.connector().socket()};
-
-               tcp.receive( receive_message, correlation, tcp::inbound::Device::blocking_policy{});
+               device::blocking::receive( tcp, receive_message, correlation);
 
                EXPECT_TRUE( common::algorithm::equal( receive_message.payload, send_message.payload));
             }
          }
 
-         TEST( casual_common_communication_tcp, echo_server_port__tcp_device_send_receive_100k_payload)
+         TEST( common_communication_tcp, echo_server_port__tcp_device_send_receive_100k_payload)
          {
             common::unittest::Trace trace;
 
@@ -310,25 +309,23 @@ namespace casual
 
             unittest::Thread server{ &local::echo::server, address};
 
-            tcp::outbound::Device outbund{ tcp::retry::connect( address, { { std::chrono::milliseconds{ 1}, 0}})};
+            tcp::Duplex tcp{ tcp::retry::connect( address, { { std::chrono::milliseconds{ 1}, 0}})};
 
             auto send_message = unittest::random::message( 100 * 1024);
 
-            auto correlation = outbund.blocking_send( send_message);
+            auto correlation = device::blocking::send( tcp, send_message);
 
 
             // receive (the echo)
             {
                unittest::Message receive_message;
-               tcp::inbound::Device tcp{ outbund.connector().socket()};
-
-               tcp.receive( receive_message, correlation, tcp::inbound::Device::blocking_policy{});
+               device::blocking::receive( tcp, receive_message, correlation);
 
                EXPECT_TRUE( common::algorithm::equal( receive_message.payload, send_message.payload));
             }
          }
 
-         TEST( casual_common_communication_tcp, echo_server_port__tcp_device_send_receive__1M_paylad)
+         TEST( common_communication_tcp, echo_server_port__tcp_device_send_receive__1M_paylad)
          {
             common::unittest::Trace trace;
 
@@ -336,26 +333,24 @@ namespace casual
 
             unittest::Thread server{ &local::echo::server, address};
 
-            tcp::outbound::Device outbund{ tcp::retry::connect( address, { { std::chrono::milliseconds{ 1}, 0}})};
+            tcp::Duplex tcp{ tcp::retry::connect( address, { { std::chrono::milliseconds{ 1}, 0}})};
 
             auto send_message = unittest::random::message( 1024 * 1024);;
 
-            auto correlation = outbund.blocking_send( send_message);
+            auto correlation = device::blocking::send( tcp, send_message);
 
 
             // receive (the echo)
             {
                unittest::Message receive_message;
-               tcp::inbound::Device tcp{ outbund.connector().socket()};
-
-               tcp.receive( receive_message, correlation, tcp::inbound::Device::blocking_policy{});
+               device::blocking::receive( tcp, receive_message, correlation);
 
                EXPECT_TRUE( common::algorithm::equal( receive_message.payload, send_message.payload));
             }
          }
 
 
-         TEST( casual_common_communication_tcp, echo_server_port__tcp_device_send_receive__10M_payload)
+         TEST( common_communication_tcp, echo_server_port__tcp_device_send_receive__10M_payload)
          {
             common::unittest::Trace trace;
 
@@ -363,25 +358,18 @@ namespace casual
 
             unittest::Thread server{ &local::echo::server, address};
 
-            tcp::outbound::Device outbund{ tcp::retry::connect( address, { { std::chrono::milliseconds{ 1}, 0}})};
-
+            tcp::Duplex tcp{ tcp::retry::connect( address, { { std::chrono::milliseconds{ 1}, 0}})};
 
             auto send_message = unittest::random::message( 10 * 1024 * 1024);
             unittest::random::range( send_message.payload);
 
-            std::cerr << "sending outbund " << '\n';
-
-            auto correlation = outbund.blocking_send( send_message);
+            auto correlation = device::blocking::send( tcp, send_message);
 
 
             // receive (the echo)
             {
-               std::cerr << "receiving outbund " << '\n';
-
                unittest::Message receive_message;
-               tcp::inbound::Device tcp{ outbund.connector().socket()};
-
-               tcp.receive( receive_message, correlation, tcp::inbound::Device::blocking_policy{});
+               device::blocking::receive( tcp, receive_message, correlation);
 
                EXPECT_TRUE( common::algorithm::equal( receive_message.payload, send_message.payload));
             }

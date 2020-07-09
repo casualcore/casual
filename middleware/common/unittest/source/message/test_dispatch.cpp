@@ -32,15 +32,12 @@ namespace casual
       {
          namespace
          {
-            using dispatch_type = communication::ipc::dispatch::Handler;
+            using dispatch_type = decltype( message::dispatch::handler( communication::ipc::inbound::device()));
 
             struct TestHandler
             {
-               using message_type = message::shutdown::Request;
-
-               void operator () ( message_type message)
+               void operator () ( message::shutdown::Request message)
                {
-
                }
 
             };
@@ -49,11 +46,8 @@ namespace casual
             {
                void handle( message::server::ping::Request& message)
                {
-
                }
-
             };
-
          }
 
       }
@@ -93,7 +87,7 @@ namespace casual
 
                local::dispatch_type handler{ local::TestHandler()};
 
-               local::TestHandler::message_type message;
+               message::shutdown::Request message;
                auto complete = serialize::native::complete( message);
 
                EXPECT_TRUE( handler( complete));

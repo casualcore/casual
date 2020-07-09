@@ -1124,7 +1124,15 @@ namespace casual
             {
                auto pivot = std::upper_bound( std::begin( range), std::end( range), value);
                return std::make_tuple( range::make( std::begin( range), pivot), range::make( pivot, std::end( range)));
-            }            
+            }
+
+            //! @returns a tuple with [first, upper_bound) and [upper_bound, last)
+            template< typename R, typename T, typename C>
+            auto upper_bound( R&& range, T&& value, C compare)
+            {
+               auto pivot = std::upper_bound( std::begin( range), std::end( range), value, compare);
+               return std::make_tuple( range::make( std::begin( range), pivot), range::make( pivot, std::end( range)));
+            }         
 
             template< typename R, typename T, typename C>
             auto bound( R&& range, T&& value, C compare)

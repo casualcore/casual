@@ -37,7 +37,7 @@ namespace casual
                            event.message = exception.what();
                            event.severity = common::message::event::Error::Severity::fatal;
 
-                           common::communication::ipc::non::blocking::send( event_ipc, event);
+                           common::communication::device::non::blocking::send( event_ipc, event);
                         }
                         return casual::common::exception::handle();
                      }

@@ -125,7 +125,7 @@ namespace casual
             //! last resort, use stream operator
             template< typename R>
             auto string( view::String value, R& result, traits::priority::tag< 0>) 
-               -> decltype( std::declval< std::istream&>() >> result, void())
+               -> decltype( void( std::declval< std::istream&>() >> result))
             { 
                std::istringstream in{ value.value()};
                in >> result;
@@ -135,20 +135,21 @@ namespace casual
             auto string( view::String value, R& result, traits::priority::tag< 1>) 
                -> std::enable_if_t< std::is_integral< R>::value &&  std::is_signed< R>::value>
             { 
-               result = c_wrapper( value, &::strtol, 10);
+               result = c_wrapper( value, &std::strtol, 10);
             }
 
             template< typename R>
             auto string( view::String value, R& result, traits::priority::tag< 1>) 
                -> std::enable_if_t< std::is_integral< R>::value &&  ! std::is_signed< R>::value>
             { 
-               result = c_wrapper( value, &::strtoul, 10);
+               result = c_wrapper( value, &std::strtoul, 10);
             }
 
             template< typename R>
-            auto string( view::String value, R& result, traits::priority::tag< 1>) -> std::enable_if_t< std::is_floating_point< R>::value>
+            auto string( view::String value, R& result, traits::priority::tag< 1>) 
+               -> std::enable_if_t< std::is_floating_point< R>::value>
             { 
-               result = c_wrapper( value, &::strtod);
+               result = c_wrapper( value, &std::strtod);
             }
 
             template< typename R>
@@ -182,9 +183,9 @@ namespace casual
          struct from_string< std::string, void> 
          { 
             static const std::string& get( const std::string& value) { return value;} 
+            static std::string get( std::string&& value) { return value;} 
             static std::string get( view::String value) { return { std::begin( value), std::end( value)};} 
          };
-
 
 
 
@@ -192,17 +193,29 @@ namespace casual
          //inline std::string to_string( std::string value) { return value;}
          inline const std::string& to_string( const std::string& value) { return value;}
 
-         inline std::string to_string( const bool value) { std::ostringstream out; out << std::boolalpha << value; return out.str();}
+         inline std::string to_string( const bool value) 
+         {
+            std::ostringstream out; 
+            out << std::boolalpha << value; 
+            return std::move( out).str();
+         }
+
 
          template< typename T>
-         std::string to_string( const T& value) { std::ostringstream out; out << value; return out.str();}
+         std::string to_string( const T& value) 
+         { 
+            std::ostringstream out; 
+            out << value;
+            return std::move( out).str();
+         }
 
       } // detail
 
       template< typename R, typename T>
-      decltype( auto) from_string( T&& value)
+      auto from_string( T&& value) 
+         -> decltype( detail::from_string< std::decay_t< R>>::get( std::forward< T>( value)))
       {
-         return detail::from_string< std::decay_t< R>>::get( value);
+         return detail::from_string< std::decay_t< R>>::get( std::forward< T>( value));
       }
 
       template< typename T>

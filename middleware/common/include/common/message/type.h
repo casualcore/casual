@@ -224,7 +224,20 @@ namespace casual
             // signals as messages, used to postpone and normalize handling of signals
             SIGNAL_BASE = 8000,
             signal_timeout = SIGNAL_BASE,
-            signal_hangup, 
+            signal_hangup,
+
+            CLI_BASE = 10000,
+            cli_pipe_done = CLI_BASE,
+            cli_payload,
+            cli_queue_message_id,
+            
+            cli_pipe_error_fatal = CLI_BASE + 100,
+
+            cli_transaction_directive = CLI_BASE + 200,
+            cli_transaction_directive_terminated,
+            cli_transaction_associated,
+            cli_transaction_finalize,
+            cli_transaction_propagate,
 
             UNITTEST_BASE = 10000000, // avoid conflict with real messages
             unittest_message,

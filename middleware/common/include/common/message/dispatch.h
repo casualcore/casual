@@ -7,13 +7,12 @@
 
 #pragma once
 
-
 #include "common/execution.h"
 #include "common/communication/message.h"
 #include "common/traits.h"
 #include "common/serialize/native/complete.h"
+#include "common/communication/device.h"
 #include "common/log/stream.h"
-
 
 #include <map>
 #include <memory>
@@ -296,13 +295,11 @@ namespace casual
                      template< typename C, typename H, typename D>
                      void dispatch( C&& condition, H&& handler, D& device, traits::priority::tag< 0>)
                      {
-                        using device_type = std::decay_t< decltype( device)>;
-
                         detail::invoke< detail::tag::prelude>( condition);
 
                         while( ! detail::invoke< detail::tag::done>( condition))
                         {
-                           while( handler( device, typename device_type::non_blocking_policy{}))
+                           while( handler( device, communication::device::policy::non::blocking( device)))
                               if( detail::invoke< detail::tag::done>( condition))
                                  return;
 
@@ -314,7 +311,7 @@ namespace casual
                               return;
 
                            // we block
-                           handler( device, typename device_type::blocking_policy{});
+                           handler( device, communication::device::policy::blocking( device));
                         } 
                      }   
 
@@ -400,6 +397,15 @@ namespace casual
                };
 
             } // condition
+
+            //! Creates a corresponding message-dispatch-handler to this
+            //! inbound device
+            template< typename D, typename... Args>
+            static auto handler( D&& device, Args&&... args)
+            {
+               using handler_type = basic_handler< typename std::decay_t< D>::deserialize_type>;
+               return handler_type{ std::forward< Args>( args)...};
+            }
 
             //! conditional pump. 
             //! takes a composed condition via condition::compose( condition::(prelude|idle|done|error))

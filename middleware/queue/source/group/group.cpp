@@ -74,7 +74,7 @@ namespace casual
                information.name = m_state.name();
                information.queues = m_state.queuebase.queues();
 
-               communication::ipc::blocking::send( communication::instance::outbound::queue::manager::device(), information);
+               communication::device::blocking::send( communication::instance::outbound::queue::manager::device(), information);
             }
          }
 

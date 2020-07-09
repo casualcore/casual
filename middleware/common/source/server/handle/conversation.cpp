@@ -41,7 +41,7 @@ namespace casual
                   auto send_reply = execute::scope( [&]()
                   {
                      auto node = reply.route.next();
-                     communication::ipc::blocking::send( node.address, reply);
+                     communication::device::blocking::send( node.address, reply);
                   });
 
                   // Prepare the descriptor

@@ -12,13 +12,15 @@
 #include "common/message/transaction.h"
 #include "common/message/domain.h"
 #include "common/message/event.h"
+#include "common/message/dispatch.h"
 #include "common/log.h"
 #include "common/exception/tx.h"
 #include "common/process.h"
 #include "common/algorithm.h"
 #include "common/communication/ipc.h"
 
-// For handle call
+
+// for handle call
 #include "common/transaction/context.h"
 #include "common/server/context.h"
 
@@ -48,7 +50,7 @@ namespace casual
                void send( State& state);
             } // persist
 
-            using dispatch_type = common::communication::ipc::dispatch::Handler;
+            using dispatch_type = decltype( common::message::dispatch::handler( ipc::device()));
 
             namespace process
             {

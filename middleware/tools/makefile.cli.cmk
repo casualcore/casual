@@ -6,7 +6,9 @@ IncludePaths( ['include',
     '../xatmi/include',
     '../configuration/include',
     '../serviceframework/include',
+    '../domain/include',
     '../service/include',
+    '../cli/include',
     '$(CASUAL_OPTIONAL_INCLUDE_PATHS)',
     ])
 
@@ -16,7 +18,9 @@ LibraryPaths( ['bin',
     '../xatmi/bin',
     '../configuration/bin',
     '../serviceframework/bin',
+    '../domain/bin',
     '../service/bin',
+    '../cli/bin',
     '$(CASUAL_OPTIONAL_LIBRARY_PATHS)',
     ])
 
@@ -28,14 +32,16 @@ install_lib = []
 
 service_cli = LinkLibrary( 'bin/casual-tools-service-cli',
    [ 
-      Compile( 'source/service/describe/cli.cpp'),
-      Compile( 'source/service/call/cli.cpp')],
-   [ 
-    'casual-tools-common',
-    'casual-service-admin-api',
-    'casual-common', 
-    'casual-serviceframework',
-    'casual-xatmi',
+        Compile( 'source/service/describe/cli.cpp'),
+        Compile( 'source/service/call/cli.cpp')],
+   [
+        'casual-cli',
+        'casual-tools-common',
+        'casual-service-admin-api',
+        'casual-common', 
+        'casual-serviceframework',
+        'casual-domain-pending-message',
+        'casual-xatmi',
     ])
 
 install_lib.append( service_cli)

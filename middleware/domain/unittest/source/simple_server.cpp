@@ -46,7 +46,7 @@ namespace casual
 
             auto& ipc = communication::ipc::inbound::device();
 
-            auto handler = ipc.handler(
+            auto handler = message::dispatch::handler( ipc,
                   message::handle::defaults( ipc),
                   std::move( handle_hangup)
             );

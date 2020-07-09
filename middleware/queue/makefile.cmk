@@ -4,6 +4,7 @@ from casual.middleware.make.dsl import *
 IncludePaths( [ 
     'include',
     '../common/include',
+    '../cli/include',
     '../configuration/include',
     '../serviceframework/include', 
     '../xatmi/include',
@@ -20,6 +21,7 @@ LibraryPaths( [
     '../configuration/bin',
     '../serviceframework/bin',
     '../common/bin',
+    '../cli/bin',
     '../buffer/bin',
     '../domain/bin',
     '../xatmi/bin',
@@ -158,7 +160,7 @@ target = LinkLibrary( 'bin/casual-queue-admin-cli',
     [
         Compile( 'source/manager/admin/cli.cpp'),
      ], 
-   [common, queue_api, 'casual-common', 'casual-serviceframework'])
+   [common, queue_api, 'casual-cli', 'casual-common', 'casual-serviceframework'])
  
 install_lib.append( target)
 

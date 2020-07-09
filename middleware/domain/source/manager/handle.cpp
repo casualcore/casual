@@ -166,7 +166,7 @@ namespace casual
 
                      // wait for connect
                      casual::domain::pending::message::Connect connect;
-                     communication::ipc::blocking::receive( ipc::device(), connect);
+                     communication::device::blocking::receive( ipc::device(), connect);
 
                      process.handle( connect.process);
                      environment::variable::process::set( casual::domain::pending::message::environment::variable, process.handle());
@@ -295,7 +295,7 @@ namespace casual
 
                   try
                   {
-                     communication::ipc::blocking::send( service_manager.ipc, prepare);
+                     communication::device::blocking::send( service_manager.ipc, prepare);
                   }
                   catch( const exception::system::communication::Unavailable&)
                   {
@@ -931,7 +931,7 @@ namespace casual
                            try
                            {
                               auto service_manager = m_state.singleton( common::communication::instance::identity::service::manager);
-                              communication::ipc::blocking::send( service_manager.ipc, message);
+                              communication::device::blocking::send( service_manager.ipc, message);
                            }
                            catch( const exception::system::communication::Unavailable&)
                            {

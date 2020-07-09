@@ -90,7 +90,7 @@ namespace casual
 
             using Call = common::server::handle::basic_call< manager::handle::Policy>;
 
-            using dispatch_type = decltype( ipc::device().handler());
+            using dispatch_type = decltype( common::message::dispatch::handler( ipc::device()));
 
          } // handle
          

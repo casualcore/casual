@@ -37,7 +37,7 @@ namespace casual
             {
                try
                {
-                  if( ! common::communication::ipc::non::blocking::send( process.ipc, message))
+                  if( ! common::communication::device::non::blocking::send( process.ipc, message))
                      ipc::pending::send( state, common::message::pending::Message{ std::forward< M>( message), process});
                }
                catch( const common::exception::system::communication::Unavailable&)
