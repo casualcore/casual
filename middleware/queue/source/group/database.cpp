@@ -12,8 +12,10 @@
 
 #include "common/algorithm.h"
 #include "common/execute.h"
-#include "common/exception/casual.h"
 #include "common/event/send.h"
+
+#include "common/code/raise.h"
+#include "common/code/casual.h"
 
 
 #include <chrono>
@@ -120,10 +122,10 @@ namespace casual
 
                   if( ( ! version && connection.table( "queue")) || ( version && version != required))
                   {
-                     const auto message = string::compose( "please remove or convert '", connection.file(), "' using casual-queue-upgrade");
-                     common::log::line( common::log::category::error, message, " - version: ", version);
-                     common::event::error::send( message, common::event::error::Severity::fatal);
-                     throw common::exception::casual::invalid::Version{ message};
+                     common::log::line( common::log::category::verbose::error, "version: ", version);
+
+                     common::event::error::raise(  code::casual::invalid_version, common::event::error::Severity::fatal,
+                        "please remove or convert '", connection.file(), "' using casual-queue-upgrade");
                   }
 
                   sql::database::version::set( connection, required);
@@ -284,8 +286,7 @@ namespace casual
             });
 
             if( ! result)
-               throw common::exception::system::invalid::Argument{ 
-                  common::string::compose( "requested queue is not hosted by this queue-group - name: ", name)};
+               code::raise::error( code::casual::invalid_argument, "requested queue is not hosted by this queue-group - name: ", name);
 
             return std::move( result.value());
          }

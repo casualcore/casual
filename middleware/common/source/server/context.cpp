@@ -14,6 +14,9 @@
 #include "common/buffer/pool.h"
 #include "common/process.h"
 
+#include "common/code/raise.h"
+#include "common/code/xatmi.h"
+
 #include "common/log.h"
 #include "common/log/category.h"
 #include "common/log.h"
@@ -100,14 +103,12 @@ namespace casual
                log::line( log::category::error, "service name '", service, "' truncated to '", prospect.name, "'");
             }
 
-            auto found = algorithm::find( m_state.services, prospect.name);
-
-            if( found)
+            if( auto found = algorithm::find( m_state.services, prospect.name))
             {
                // service name is already advertised
                // No error if it's the same function
                if( found->second != prospect)
-                  throw common::exception::xatmi::service::Advertised( "service name: " + prospect.name);
+                  code::raise::error( code::xatmi::service_advertised, "service is already advertised - ", prospect.name);
             }
             else
             {
@@ -137,8 +138,7 @@ namespace casual
             Trace log{ "server::Context::unadvertise"};
 
             if( m_state.services.erase( service) != 1)
-               throw common::exception::xatmi::service::no::Entry( "service name: " + service);
-
+               code::raise::generic( code::xatmi::no_entry, log::debug, "service is not currently advertised - ", service);
 
             message::service::Advertise message;
             message.process = process::handle();

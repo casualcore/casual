@@ -11,7 +11,6 @@
 
 #include "common/serialize/archive.h"
 #include "common/serialize/policy.h"
-#include "common/exception/system.h"
 
 #include "casual/platform.h"
 

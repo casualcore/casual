@@ -7,7 +7,7 @@
 #include "casual/buffer/field.h"
 #include "casual/buffer/internal/field/string.h"
 
-#include "common/exception/handle.h"
+#include "common/exception/guard.h"
 #include "common/serialize/macro.h"
 #include "common/serialize/create.h"
 #include "common/file.h"
@@ -205,7 +205,7 @@ namespace casual
 
 int main( int argc, char** argv)
 {
-   return casual::common::exception::guard( std::cerr, [&]()
+   return casual::common::exception::main::guard( std::cerr, [&]()
    {
       casual::buffer::field::serialize::local::main( argc, argv);
    });

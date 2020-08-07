@@ -43,7 +43,7 @@ int tpconnect( const char* svc, const char* idata, long ilen, long flags)
    }
    catch( ...)
    {
-      casual::xatmi::internal::error::set( casual::common::exception::xatmi::handle());
+      casual::xatmi::internal::error::set( casual::xatmi::internal::exception::code());
    }
 
    return -1;
@@ -78,7 +78,7 @@ namespace local
             }
             catch( ...)
             {
-               casual::xatmi::internal::error::set( casual::common::exception::xatmi::handle());
+               casual::xatmi::internal::error::set( casual::xatmi::internal::exception::code());
                return -1;
             }
             return 0;
@@ -132,9 +132,7 @@ int tprecv( int id, char ** odata, long *olen, long bitmask, long* event)
             flag);
 
       if( ( flag & Flag::no_change) && buffer.payload().type != result.buffer.type)
-      {
-         throw casual::common::exception::xatmi::buffer::type::Output{};
-      }
+         casual::common::code::raise::log( casual::common::code::xatmi::buffer_output);
 
       casual::common::buffer::pool::Holder::instance().deallocate( *odata);
       std::tie( *odata, *olen) = casual::common::buffer::pool::Holder::instance().insert( std::move( result.buffer));

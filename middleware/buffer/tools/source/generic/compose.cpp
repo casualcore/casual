@@ -4,7 +4,7 @@
 //! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-#include "common/exception/handle.h"
+#include "common/exception/guard.h"
 #include "common/argument.h"
 #include "casual/buffer/admin/cli.h"
 
@@ -49,7 +49,7 @@ namespace casual
 
 int main( int argc, char** argv)
 {
-   return casual::common::exception::guard( [&]()
+   return casual::common::exception::main::guard( [&]()
    {
       casual::buffer::tools::generic::local::main( argc, argv);
    });

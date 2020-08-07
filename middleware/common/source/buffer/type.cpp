@@ -6,9 +6,11 @@
 
 
 #include "common/buffer/type.h"
-#include "common/exception/xatmi.h"
 #include "common/serialize/native/network.h"
 #include "common/log.h"
+
+#include "common/code/raise.h"
+#include "common/code/xatmi.h"
 
 #include "casual/xatmi/extended.h"
 #include "casual/xatmi/defines.h"
@@ -58,9 +60,7 @@ namespace casual
           : type( std::move( type)), memory( size)
          {
             if( ! memory.data())
-            {
                memory.reserve( 1);
-            }
          }
 
 
@@ -116,11 +116,10 @@ namespace casual
          platform::binary::size::type Buffer::transport( platform::binary::size::type user_size) const
          {
             if( user_size > reserved())
-               throw exception::xatmi::invalid::Argument{ "user supplied size is larger than the buffer actual size"};
+               code::raise::error( code::xatmi::argument, "user supplied size is larger than the buffer actual size");
 
             return user_size;
          }
-
 
          platform::binary::size::type Buffer::reserved() const
          {

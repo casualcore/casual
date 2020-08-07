@@ -8,6 +8,9 @@
 
 #include "common/algorithm.h"
 
+#include "common/code/raise.h"
+#include "common/code/casual.h"
+
 namespace casual
 {
    namespace common
@@ -26,7 +29,7 @@ namespace casual
                      if( auto found = common::algorithm::find( map, key))
                         return found->second.create( std::forward< Ts>( ts)...);
                      else 
-                        throw exception::system::invalid::Argument{ common::string::compose( "failed to find archive creator for key: ", key)};
+                        code::raise::error( code::casual::invalid_argument, "failed to find archive creator for key: ", key);
                   }
 
                   template< typename Map, typename Creator>

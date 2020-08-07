@@ -7,7 +7,7 @@
 
 #include "common/unittest.h"
 #include "common/domain.h"
-#include "common/exception/system.h"
+#include "common/code/casual.h"
 
 
 namespace casual
@@ -20,7 +20,7 @@ namespace casual
          unittest::Trace trace;
 
          EXPECT_NO_THROW(
-               domain::singleton::create( process::handle(), domain::identity());
+            domain::singleton::create( process::handle(), domain::identity());
          );
       }
 
@@ -28,12 +28,12 @@ namespace casual
       {
          unittest::Trace trace;
 
-         EXPECT_THROW(
-               auto path = domain::singleton::create( process::handle(), domain::identity());
+         EXPECT_CODE(
+            auto path = domain::singleton::create( process::handle(), domain::identity());
 
-               domain::singleton::create( process::handle(), domain::identity());
+            domain::singleton::create( process::handle(), domain::identity());
 
-         , exception::system::invalid::Process);
+         , code::casual::domain_running);
       }
 
 

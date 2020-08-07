@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include "common/exception/xatmi.h"
+#include "common/code/xatmi.h"
 
 namespace casual
 {
@@ -16,11 +16,19 @@ namespace casual
       {
          void clear();
 
+         namespace exception
+         {
+            //! catches all exceptions and 'transform' to code::xatmi
+            common::code::xatmi code() noexcept;
+            common::code::xatmi code( std::error_code condition) noexcept;
+         } // exception
+
          namespace error
          {
             void clear();
             void set( common::code::xatmi value);
             common::code::xatmi get();
+
 
             template< typename T>
             int wrap( T&& task)
@@ -34,7 +42,7 @@ namespace casual
                }
                catch( ...)
                {
-                  error::set( casual::common::exception::xatmi::handle());
+                  error::set( internal::exception::code());
                }
                return -1;
             }

@@ -10,10 +10,13 @@
 #include "tools/build/transform.h"
 #include "tools/common.h"
 
-#include "common/exception/handle.h"
 #include "common/argument.h"
 #include "common/environment.h"
 #include "common/execute.h"
+
+#include "common/exception/guard.h"
+#include "common/code/raise.h"
+#include "common/code/casual.h"
 
 #include "configuration/resource/property.h"
 #include "configuration/build/executable.h"
@@ -59,12 +62,12 @@ namespace casual
 
                      friend void validate( const Settings& settings)
                      {
-                        auto throw_if_empty = []( const auto& value, auto error)
+                        auto raise_if_empty = []( const auto& value, auto error)
                         {
                            if( value.empty())
-                              throw common::exception::system::invalid::Argument{ error};
+                              code::raise::error( code::casual::invalid_argument, error);
                         };
-                        throw_if_empty( settings.executable.definition, "no definition file provided");
+                        raise_if_empty( settings.executable.definition, "no definition file provided");
                      }
                   };
 
@@ -190,7 +193,7 @@ namespace casual
 
 int main( int argc, char **argv)
 {
-   return casual::common::exception::guard( std::cerr, [=]()
+   return casual::common::exception::main::guard( std::cerr, [=]()
    {
       casual::tools::build::executable::local::main( argc, argv);
    });

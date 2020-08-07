@@ -10,8 +10,9 @@
 #include "common/message/handle.h"
 #include "common/message/signal.h"
 #include "common/exception/handle.h"
-#include "common/exception/signal.h"
 #include "common/environment.h"
+#include "common/signal.h"
+
 #include "common/signal.h"
 
 namespace casual
@@ -61,7 +62,7 @@ namespace casual
 
 int main(int argc, char **argv)
 {
-   return casual::common::exception::guard( [&]()
+   return casual::common::exception::main::guard( [&]()
    {
       casual::local::main( argc, argv);
    });

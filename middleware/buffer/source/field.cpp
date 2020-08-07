@@ -10,8 +10,10 @@
 #include "casual/buffer/internal/common.h"
 #include "casual/buffer/internal/field/string.h"
 
+#include "common/code/raise.h"
+#include "common/code/xatmi.h"
+
 #include "common/environment.h"
-#include "common/exception/xatmi.h"
 #include "common/exception/handle.h"
 #include "common/network/byteorder.h"
 #include "common/buffer/pool.h"
@@ -98,7 +100,7 @@ namespace casual
                   }
 
                   if( cursor > end)
-                     throw common::exception::xatmi::invalid::Argument{"Buffer is comprised"};
+                     code::raise::error( code::xatmi::argument, "buffer is comprised");
                }
 
                void shrink()
@@ -239,13 +241,15 @@ namespace casual
                   {
                      return CASUAL_FIELD_OUT_OF_MEMORY;
                   }
-                  catch( const common::exception::xatmi::invalid::Argument&)
-                  {
-                     return CASUAL_FIELD_INVALID_HANDLE;
-                  }
                   catch( ...)
                   {
-                     common::exception::handle();
+                     auto condition = common::exception::code();
+
+                     std::cerr << "condition: " << condition << '\n';
+                     
+                     if( condition == code::xatmi::argument)
+                        return CASUAL_FIELD_INVALID_HANDLE;
+
                      return CASUAL_FIELD_INTERNAL_FAILURE;
                   }
                }
@@ -872,12 +876,12 @@ int casual_field_explore_buffer( const char* buffer, long* const size, long* con
    long reserved{};
    long utilized{};
    if( const auto result = casual::buffer::field::explore::buffer( buffer, reserved, utilized))
-   {
       return result;
-   }
 
-   if( size) *size = reserved;
-   if( used) *used = utilized;
+   if( size) 
+      *size = reserved;
+   if( used) 
+      *used = utilized;
 
    return CASUAL_FIELD_SUCCESS;
 }
@@ -1390,7 +1394,7 @@ namespace casual
                   catch( ...)
                   {
                      // TODO: Handle this in an other way ?
-                     common::exception::handle();
+                     common::exception::sink::log();
                   }
 
                   return result;
@@ -1416,7 +1420,7 @@ namespace casual
                   catch( ...)
                   {
                      // TODO: Handle this in an other way ?
-                     common::exception::handle();
+                     common::exception::sink::log();
                   }
 
                   return result;
@@ -1691,7 +1695,7 @@ namespace casual
                }
                catch( ...)
                {
-                  common::exception::handle();
+                  common::exception::sink::log();
                }
                return nullptr;
             }

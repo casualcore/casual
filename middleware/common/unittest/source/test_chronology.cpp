@@ -8,7 +8,8 @@
 #include "common/unittest.h"
 
 #include "common/chronology.h"
-#include "common/exception/system.h"
+
+#include "common/code/casual.h"
 
 #include <regex>
 
@@ -22,7 +23,7 @@ namespace casual
          {
             unittest::Trace trace;
 
-            EXPECT_THROW( from::string( "42ps"), exception::system::invalid::Argument);
+            EXPECT_CODE( from::string( "42ps");, code::casual::invalid_argument);
          }
 
          TEST( common_chronology, from_string__ms)

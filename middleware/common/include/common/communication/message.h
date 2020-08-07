@@ -14,7 +14,8 @@
 #include "common/memory.h"
 #include "common/log/category.h"
 #include "common/network/byteorder.h"
-#include "common/exception/system.h"
+#include "common/code/raise.h"
+#include "common/code/casual.h"
 #include "common/string.h"
 
 
@@ -120,11 +121,7 @@ namespace casual
 
                   // Some sanity checks
                   if( Complete::size() < offset( chunk) + size)
-                  {
-                     throw exception::system::invalid::Argument{
-                        string::compose( "added chunk is out of bounds - size: ", payload.size())
-                     };
-                  }
+                     code::raise::error( code::casual::internal_out_of_bounds, "added chunk is out of bounds - size: ", payload.size());
 
                   auto destination = range::make( std::begin( payload) + offset( chunk), size);
 

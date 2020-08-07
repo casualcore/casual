@@ -58,14 +58,7 @@ namespace casual
                //! @return all message-types that this instance handles
                auto types() const
                {
-                  std::vector< message_type> result;
-
-                  for( auto& entry : m_handlers)
-                  {
-                     result.push_back( entry.first);
-                  }
-
-                  return result;
+                  return algorithm::transform( m_handlers, []( auto& entry){ return entry.first;});
                }
 
                //! Inserts handler, that is, adds new handlers
@@ -108,7 +101,7 @@ namespace casual
                      return true;
                   }
 
-                  log::line( log::category::error, "message_type: ", complete.type, " not recognized - action: discard");
+                  log::line( log::category::error, code::casual::internal_unexpected_value, " message type: ", complete.type, " not recognized - action: discard");
                   return false;
                }
 
@@ -295,6 +288,8 @@ namespace casual
                      template< typename C, typename H, typename D>
                      void dispatch( C&& condition, H&& handler, D& device, traits::priority::tag< 0>)
                      {
+                        Trace trace{ "common::message::dispatch::detail::pump::dispatch"};
+
                         detail::invoke< detail::tag::prelude>( condition);
 
                         while( ! detail::invoke< detail::tag::done>( condition))
@@ -318,9 +313,9 @@ namespace casual
                      //! used if there are an error condition provided
                      template< typename C, typename H, typename D>
                      auto dispatch( C&& condition, H&& handler, D& device, traits::priority::tag< 1>) 
-                        -> decltype( condition.invoke( tag::error{}))
+                        -> decltype( void( condition( tag::error{})))
                      {
-                        using device_type = std::decay_t< decltype( device)>;
+                        Trace trace{ "common::message::dispatch::detail::pump::dispatch error"};
 
                         detail::invoke< detail::tag::prelude>( condition);
 
@@ -328,7 +323,7 @@ namespace casual
                         {
                            try 
                            {   
-                              while( handler( device, typename device_type::non_blocking_policy{}))
+                              while( handler( device, communication::device::policy::non::blocking( device)))
                                  if( detail::invoke< detail::tag::done>( condition))
                                     return;
 
@@ -340,7 +335,7 @@ namespace casual
                                  return;
 
                               // we block
-                              handler( device, typename device_type::blocking_policy{});
+                              handler( device, communication::device::policy::blocking( device));
                            }
                            catch( ...)
                            {

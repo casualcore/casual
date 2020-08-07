@@ -96,6 +96,7 @@ casual_common_objectfiles = [
     Compile( 'source/log/category.cpp'),
     Compile( 'source/log.cpp'),
 
+    Compile( 'source/code/log.cpp'),
     Compile( 'source/code/xatmi.cpp'),
     Compile( 'source/code/tx.cpp'),
     Compile( 'source/code/xa.cpp'),
@@ -103,12 +104,9 @@ casual_common_objectfiles = [
     Compile( 'source/code/signal.cpp'),
     Compile( 'source/code/casual.cpp'),
     Compile( 'source/code/convert.cpp'),
+    Compile( 'source/code/serialize.cpp'),
     
-    Compile( 'source/exception/system.cpp'),
     Compile( 'source/exception/handle.cpp'),
-    Compile( 'source/exception/xa.cpp'),
-    Compile( 'source/exception/tx.cpp'),
-    Compile( 'source/exception/xatmi.cpp'),
 
     Compile( 'source/environment.cpp'),
     Compile( 'source/environment/string.cpp'),
@@ -117,8 +115,6 @@ casual_common_objectfiles = [
     Compile( 'source/file.cpp'),
     Compile( 'source/string.cpp'),
     Compile( 'source/signal.cpp'),
-    Compile( 'source/result.cpp'),
-    
     
     Compile( 'source/chronology.cpp'),
     Compile( 'source/process.cpp'),
@@ -133,6 +129,7 @@ casual_common_objectfiles = [
     
     Compile( 'source/argument.cpp'),
     Compile( 'source/argument/cardinality.cpp'),
+    
     Compile( 'source/terminal.cpp'),
 
     Compile( 'source/serialize/archive.cpp'),

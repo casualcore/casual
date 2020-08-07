@@ -10,7 +10,6 @@
 #include "common/environment.h"
 #include "casual/platform.h"
 #include "common/process.h"
-#include "common/exception/system.h"
 #include "common/chronology.h"
 #include "common/server/context.h"
 #include "common/transaction/context.h"
@@ -20,6 +19,9 @@
 #include "common/string.h"
 #include "common/domain.h"
 #include "common/instance.h"
+
+#include "common/code/raise.h"
+#include "common/code/casual.h"
 
 #include <fstream>
 #include <map>
@@ -49,7 +51,6 @@ namespace casual
                   template< typename M>
                   void log( const std::string& category, M&& message)
                   {
-                     //m_output << std::chrono::duration_cast< std::chrono::microseconds>( platform::time::clock::type::now().time_since_epoch()).count()
                      m_output << platform::time::clock::type::now()
                         << '|' << common::domain::identity().name
                         << '|' << execution::id()
@@ -82,7 +83,7 @@ namespace casual
                      std::ofstream file{ path, std::ios::app};
 
                      if( ! file)
-                        throw common::exception::system::invalid::Argument{ "failed to open log file: " + path};
+                        code::raise::error( code::casual::invalid_path, "failed to open log file: ", path);
 
                      return file;
                   }
@@ -238,12 +239,11 @@ namespace casual
 
             Stream& get( const std::string& category)
             {
-               auto holder = local::stream::find::holder( category);
-
-               if( holder)
+               if( auto holder = local::stream::find::holder( category))
                   return holder->stream;
 
-               throw exception::system::invalid::Argument{ "invalid log category: " + category};
+               static Stream inactive;
+               return inactive;
             }
 
 
@@ -290,6 +290,9 @@ namespace casual
          {
 
          }
+
+         Stream::Stream() : std::ostream{ nullptr} {}
+
 
       } // log
    } // common

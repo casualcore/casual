@@ -4,8 +4,8 @@
 
 #include "common/communication/socket.h"
 #include "common/communication/log.h"
-#include "common/exception/system.h"
-#include "common/exception/handle.h"
+
+#include "common/result.h"
 
 namespace casual
 {
@@ -17,18 +17,6 @@ namespace casual
          {
             namespace
             {
-               namespace check
-               {
-                  template< typename R>
-                  auto result( R&& result)
-                  {
-                     if( result == -1)
-                        exception::system::throw_from_errno();
-
-                     return result;
-                  }
-               } // check
-
                auto duplicate( const socket::descriptor_type descriptor)
                {
                   Trace trace( "common::communication::tcp::local::socket::duplicate");
@@ -36,7 +24,7 @@ namespace casual
                   // We block all signals while we're trying to duplicate the descriptor
                   //common::signal::thread::scope::Block block;
 
-                  const auto copy = socket::descriptor_type( check::result( ::dup( descriptor.value())));
+                  const auto copy = socket::descriptor_type( posix::result( ::dup( descriptor.value()), "duplicate socket"));
 
                   common::log::line( log, "descriptors - original: ", descriptor, " , copy:", copy);
 
@@ -52,18 +40,8 @@ namespace casual
          {
             if( *this)
             {
-               try
-               {  
-                  //local::socket::check::result( ::shutdown( m_descriptor, SHUT_RDWR));
-                  if( ::close( m_descriptor.value()) == -1)
-                     exception::system::throw_from_errno( "failed to close socket");
-
+               if( posix::log::result( ::close( m_descriptor.value()), "failed to close socket"))
                   common::log::line( log, "Socket::close - descriptor: ", m_descriptor);
-               }
-               catch( ...)
-               {
-                  exception::handle();
-               }
             }
          }
 
@@ -75,19 +53,19 @@ namespace casual
 
          void Socket::option( int level, int optname, const void *optval, size_type optlen)
          {
-            local::check::result( ::setsockopt( m_descriptor.value(), level, optname, optval, optlen));
+            posix::result( ::setsockopt( m_descriptor.value(), level, optname, optval, optlen), "setsockopt");
          }
 
          void Socket::set( socket::option::File option)
          {
             auto flags = ::fcntl( m_descriptor.value(), F_GETFL);
-            local::check::result(::fcntl( m_descriptor.value(), F_SETFL, flags | cast::underlying( option)));
+            posix::result( ::fcntl( m_descriptor.value(), F_SETFL, flags | cast::underlying( option)), "fcntl");
          }
 
          void Socket::unset( socket::option::File option)
          {
             auto flags = ::fcntl( m_descriptor.value(), F_GETFL);
-            local::check::result(::fcntl( m_descriptor.value(), F_SETFL, flags & ~cast::underlying( option)));
+            posix::result( ::fcntl( m_descriptor.value(), F_SETFL, flags & ~cast::underlying( option)), "fcntl");
          }
 
          Socket& Socket::operator = ( const Socket& other)
@@ -105,13 +83,13 @@ namespace casual
             return m_descriptor;
          }
 
-         std::error_code Socket::error() const
+         std::errc Socket::error() const
          {
             int optval{};
             socklen_t optlen = sizeof( optval);
-            local::check::result( ::getsockopt( m_descriptor.value(), SOL_SOCKET, SO_ERROR, &optval, &optlen));
+            posix::result( ::getsockopt( m_descriptor.value(), SOL_SOCKET, SO_ERROR, &optval, &optlen));
 
-            return std::make_error_code( std::errc( optval));
+            return std::errc( optval);
          }
 
          Socket::descriptor_type Socket::release() noexcept

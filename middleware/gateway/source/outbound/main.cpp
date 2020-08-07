@@ -10,8 +10,7 @@
 #include "gateway/common.h"
 
 #include "common/argument.h"
-#include "common/exception/handle.h"
-#include "common/exception/casual.h"
+#include "common/exception/guard.h"
 #include "common/communication/instance.h"
 #include "common/communication/tcp.h"
 #include "common/communication/select.h"
@@ -53,16 +52,7 @@ namespace casual
                      template< typename D, typename M>
                      bool send( D&& device, M&& message)
                      {
-                        try
-                        {
-                           blocking::send( std::forward< D>( device), std::forward< M>( message));
-                           return true;
-                        }
-                        catch( const common::exception::system::communication::Unavailable&)
-                        {
-                           log::line( log, "destination queue unavailable - device: ", device, ", message: ", message ," - action: discard");
-                           return false;
-                        }
+                        return common::communication::device::blocking::optional::send( std::forward< D>( device), std::forward< M>( message));
                      }
                   } // optional
                   namespace transaction
@@ -166,12 +156,10 @@ namespace casual
                      {
                         auto find_external = [&trid]( auto& m){ return m.external == trid;};
 
-                        auto found = algorithm::find_if( m_branches, find_external);
-
-                        if( found)
+                        if( auto found = algorithm::find_if( m_branches, find_external))
                            return found->internal;
 
-                        throw exception::system::invalid::Argument{ string::compose( "failed to correlate the branchad external trid: ", trid)};
+                        code::raise::log( code::casual::internal_correlation, "failed to correlate the branchad external trid: ", trid);
                      }                     
 
                      //! removes the correlation between external branched trid and the internal trid
@@ -179,9 +167,7 @@ namespace casual
                      {
                         auto find_external = [&external]( auto& m){ return m.external == external;};
 
-                        auto found = algorithm::find_if( m_branches, find_external);
-
-                        if( found)
+                        if( auto found = algorithm::find_if( m_branches, find_external))
                         {
                            log::line( verbose::log, "remove branch mapping: ", *found);
                            m_branches.erase( std::begin( found));
@@ -208,10 +194,15 @@ namespace casual
                      // we try to connect directly
                      return communication::tcp::connect( address);
                   }
-                  catch( const exception::system::communication::Refused&)
+                  catch( ...)
                   {
+                     auto condition = exception::code();
+                     if( condition != code::casual::communication_refused)
+                        throw condition;
+
                      // no-op
                   }
+
 
                   // no one is listening on the other side, yet... Let's start the
                   // retry dance...
@@ -228,8 +219,12 @@ namespace casual
 
                         communication::ipc::inbound::device().push( message::outbound::connect::Done{});
                      }
-                     catch( const exception::system::communication::Refused&)
+                     catch( ...)
                      {
+                        auto condition = exception::code();
+                        if( condition != code::casual::communication_refused)
+                           throw condition;
+                        
                         common::signal::timer::set( std::chrono::seconds{ 1});
                      }
                   };
@@ -404,7 +399,7 @@ namespace casual
                               log::line( verbose::log, "message: ", message);
                 
                               if( message.version != common::message::gateway::domain::protocol::Version::version_1)
-                                 throw common::exception::system::invalid::Argument{ "invalid protocol"};
+                                 code::raise::error( code::casual::invalid_version, "invalid protocol version: ", message.version);
 
                               // connect to gateway
                               {
@@ -459,17 +454,14 @@ namespace casual
                               Trace trace{ "gateway::outbound::local::handle::external::basic_reply"};
                               log::line( verbose::log, "message: ", message);
 
-                              try
+                              if( auto destination = state.route.get( message.correlation))
                               {
-                                 auto destination = state.route.get( message.correlation);
                                  detail::process( message, traits::priority::tag< 1>{});
 
                                  blocking::optional::send( destination.destination.ipc, message);
                               }
-                              catch( const common::exception::system::invalid::Argument&)
-                              {
-                                 log::line( log::category::error, "failed to correlate [", message.correlation, "] reply with a destination - action: ignore");
-                              }
+                              else
+                                 log::line( log::category::error, code::casual::internal_correlation, " failed to correlate [", message.correlation, "] reply with a destination - action: ignore");
                            };
                         }
                      } // basic
@@ -498,9 +490,8 @@ namespace casual
                                     blocking::send( common::communication::instance::outbound::service::manager::device(), message);
                                  };
 
-                                 try
+                                 if( auto destination = state.service.route.get( message.correlation))
                                  {
-                                    auto destination = state.service.route.get( message.correlation);
 
                                     // we unadvertise the service if we get no_entry.
                                     no_entry_unadvertise( message, destination);
@@ -530,9 +521,9 @@ namespace casual
 
                                     blocking::optional::send( destination.destination.ipc, message);
                                  }
-                                 catch( const common::exception::system::invalid::Argument&)
+                                 else
                                  {
-                                    log::line( log::category::error, "failed to correlate [", message.correlation, "] reply with a destination - action: ignore");
+                                    log::line( log::category::error, code::casual::internal_correlation, " failed to correlate [", message.correlation, "] reply with a destination - action: ignore");
                                     log::line( verbose::log, "state.service.route: ", state.service.route);
                                  }
 
@@ -1042,7 +1033,7 @@ namespace casual
 
 int main( int argc, char* argv[])
 {
-   return casual::common::exception::guard( [=]()
+   return casual::common::exception::main::guard( [=]()
    {
       casual::gateway::outbound::local::main( argc, argv);
    });

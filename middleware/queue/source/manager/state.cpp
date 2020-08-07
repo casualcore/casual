@@ -47,16 +47,9 @@ namespace casual
             return lhs.order < rhs.order;
          }
 
-         std::vector< common::strong::process::id> State::processes() const
+         std::vector< common::strong::process::id> State::processes() const noexcept
          {
-            std::vector< common::strong::process::id> result;
-
-            for( auto& group : groups)
-            {
-               result.push_back( group.process.pid);
-            }
-
-            return result;
+            return algorithm::transform( groups, []( auto& group){ return group.process.pid;});
          }
 
 

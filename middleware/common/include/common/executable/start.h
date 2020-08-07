@@ -7,8 +7,8 @@
 #pragma once
 
 #include "common/transaction/resource/link.h"
+#include "common/functional.h"
 
-#include <functional>
 #include <string>
 #include <vector>
 
@@ -30,7 +30,7 @@ namespace casual
                } // transaction
             } // argument
 
-            int start( std::vector< argument::transaction::Resource> resources, std::function< int()> user_main);
+            int start( std::vector< argument::transaction::Resource> resources, unique_function< int()> user_main);
 
          } // v1
       } // executable

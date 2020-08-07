@@ -49,7 +49,7 @@ namespace casual
 
 
             void set_commit_return( COMMIT_RETURN value);
-            COMMIT_RETURN get_commit_return();
+            COMMIT_RETURN get_commit_return() noexcept;
             
             void set_transaction_control( TRANSACTION_CONTROL control);
             void set_transaction_timeout( TRANSACTION_TIMEOUT timeout);

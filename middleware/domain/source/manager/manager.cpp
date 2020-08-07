@@ -14,7 +14,6 @@
 #include "common/environment.h"
 #include "common/uuid.h"
 #include "common/exception/handle.h"
-#include "common/exception/casual.h"
 
 
 #include <fstream>
@@ -73,27 +72,25 @@ namespace casual
                   {
                      return [&state]()
                      {
-                        try
-                        {
-                           throw;
-                        }
-                        catch( const exception::casual::Shutdown&)
+                        auto condition = exception::code();
+
+                        if( condition == code::casual::shutdown)
                         {
                            state.runlevel( State::Runlevel::shutdown);
                            handle::shutdown( state);
                         }
-                        catch( const exception::system::communication::Unavailable&)
+                        else if( state.runlevel() == State::Runlevel::error)
                         {
-                           exception::handle();
-                           state.runlevel( State::Runlevel::error);
-                           handle::shutdown( state);
+                           log::line( log::category::error, condition, " already in error state - fatal abort");
+                           log::line( log::category::verbose::error, "state: ", state);
                            throw;
                         }
-                        catch( ...)
+                        else 
                         {
-                           exception::handle();
+                           log::line( log::category::error, condition, " enter error state");
                            state.runlevel( State::Runlevel::error);
                            handle::shutdown( state);
+                           log::line( log::category::verbose::error, "state: ", state);
                         }
                      };
                   }

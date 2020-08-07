@@ -7,8 +7,13 @@
 
 #include "common/transcode.h"
 
-#include "common/exception/system.h"
+#include "common/code/raise.h"
+#include "common/code/casual.h"
 #include "common/code/system.h"
+#include "common/exception/handle.h"
+
+#include "common/result.h"
+
 
 
 #include <resolv.h>
@@ -51,9 +56,7 @@ namespace casual
                         target.bytes);
 
                   if( length < 0)
-                  {
-                     throw exception::system::invalid::Argument( "Base64-encode failed");
-                  }
+                     code::raise::log( code::casual::failed_transcoding, "base64 encode failed");
 
                   return length;
                }
@@ -67,9 +70,7 @@ namespace casual
                         std::distance( dest_first, dest_last));
 
                   if( length < 0)
-                  {
-                     throw exception::system::invalid::Argument( "Base64-decode failed");
-                  }
+                     code::raise::log( code::casual::failed_transcoding, "base64 decode failed");
 
                   return length;
                }
@@ -99,18 +100,12 @@ namespace casual
                      : m_descriptor( iconv_open( target.c_str(), source.c_str()))
                   {
                      if( m_descriptor == reinterpret_cast< iconv_t>( -1))
-                     {
-                        exception::system::throw_from_errno();
-                     }
-
+                        code::raise::log( code::casual::failed_transcoding, "iconv_open - errc: ", code::system::last::error());
                   }
 
                   ~converter()
                   {
-                     if( iconv_close( m_descriptor) == -1)
-                     {
-                        std::cerr << std::make_error_code( code::last::system::error()) << '\n';
-                     }
+                     posix::log::result( iconv_close( m_descriptor), "iconv_close");
                   }
 
                   std::string transcode( const std::string& value) const
@@ -130,13 +125,12 @@ namespace casual
 
                         if( conversions == std::numeric_limits< decltype( conversions)>::max())
                         {
-                           switch( code::last::system::error())
+                           switch( auto code = code::system::last::error())
                            {
-                              case code::system::argument_list_too_long: break;
+                              case std::errc::argument_list_too_long: break;
                               default:
-                                 exception::system::throw_from_errno();
+                                 code::raise::log( code::casual::failed_transcoding, "iconv - errc: ", code);
                            }
-                          
                         }
 
                         result.append( buffer, target);
@@ -157,9 +151,9 @@ namespace casual
                   std::string codeset;
                   std::string modifier;
                };
-            }
 
-         }
+            } // <unnamed>
+         } // local
 
          namespace utf8
          {
@@ -199,9 +193,12 @@ namespace casual
                {
                   local::converter{ codeset, cCurrent};
                }
-               catch( const exception::system::invalid::Argument&)
+               catch( ...)
                {
-                  return false;
+                  if( exception::code() == code::casual::failed_transcoding)
+                     return false;
+
+                  throw;
                }
 
                return true;

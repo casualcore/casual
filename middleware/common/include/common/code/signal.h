@@ -35,8 +35,8 @@ namespace casual
          };
 
 
-         std::error_code make_error_code( signal code);
-         common::log::Stream& stream( signal code);
+         std::error_code make_error_code( code::signal code);
+         const char* description( code::signal code);
 
 
       } // code

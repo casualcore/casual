@@ -8,14 +8,11 @@
 
 #include "common/exception/handle.h"
 
-#include "common/exception/xatmi.h"
-#include "common/exception/signal.h"
-#include "common/exception/casual.h"
-#include "common/exception/tx.h"
-
-#include "common/argument/exception.h"
+#include "common/code/log.h"
+#include "common/code/casual.h"
 
 #include "common/log/category.h"
+#include "common/log.h"
 
 
 namespace casual
@@ -29,109 +26,67 @@ namespace casual
          {
             namespace
             {
-               template< typename E>
-               int log( const E& exception, std::ostream* out)
-               {
-                  if( ! out)
-                     out = &code::stream( exception.type());
-
-                  log::line( *out, exception);
-
-                  return exception.code().value();
-               }
-
-
-               int handle( std::ostream* out = nullptr) noexcept
+              
+               std::error_code handle() noexcept
                {
                   try
                   {
                      throw;
                   }
-                  // casual stuff
-                  catch( const exception::casual::Shutdown& exception)
+                  catch( std::error_code code)
                   {
-                     local::log( exception, out);
-                     return 0;
+                     common::log::line( log::debug, "code: ", code);
+                     return code;
                   }
-                  catch( const exception::casual::exception& exception)
+                  catch( const std::system_error& exception)
                   {
-                     return local::log( exception, out);
+                     common::log::line( log::debug, "exception: ", exception);
+                     return exception.code();
                   }
-
-                  // signal stuff Terminate
-                  catch( const exception::signal::Terminate& exception)
-                  {
-                     log::line( log::category::information, exception.what());
-                  }
-                  catch( const exception::signal::exception& exception)
-                  {
-                     return local::log( exception, out);
-                  }
-
-                  // xatmi stuff
-                  catch( const exception::xatmi::exception& exception)
-                  {
-                     return local::log( exception, out);
-                  }
-
-                  // tx stuff
-                  catch( const exception::tx::exception& exception)
-                  {
-                     return local::log( exception, out);
-                  }
-
-                  catch( const argument::exception::user::Help& exception)
-                  {
-                     if( ! out)
-                        log::line( log::category::error, exception.what());
-                  }
-                  catch( const argument::exception::user::bash::Completion& exception)
-                  {
-                     if( ! out)
-                        log::line( log::category::error, exception.what());
-                  }
-
-                  catch( const exception::base& exception)
-                  {
-                     if( ! out)
-                        out = &log::category::error;
-
-                     log::line( *out, exception);
-                  }
-                  
                   catch( const std::exception& exception)
                   {
-                     if( ! out)
-                        out = &log::category::error;
-
-                     log::line( *out, exception.what());
+                     common::log::line( log::debug, code::casual::internal_unexpected_value, " exception: ", exception);
+                     return std::error_code{ code::casual::internal_unexpected_value};
                   }
                   catch( ...)
                   {
-                     if( ! out)
-                        out = &log::category::error;
-
-                     log::line( *out, "unexpected exception");
+                     common::log::line( log::debug, code::casual::internal_unexpected_value, " unknown exception");
+                     return std::error_code{ code::casual::internal_unexpected_value};
                   }
-
-                  return -1;
                }
             } // <unnamed>
          } // local
+         
 
-         int handle() noexcept
+         std::error_code code() noexcept
          {
             return local::handle();
          }
 
-         int handle( std::ostream& out) noexcept
+
+         namespace sink
          {
-             return local::handle( &out);
-         }
+            void log() noexcept
+            {
+               auto code = local::handle();
+               common::log::line( code::stream( code), code);
+            }
+
+            void error() noexcept
+            {
+               common::log::line( common::log::category::error, code);
+            }
+            
+            void silent() noexcept
+            {
+               common::log::line( common::log::debug, code);
+            }
+         } // sink
 
       } // exception
    } // common
 } // casual
+
 
 
 

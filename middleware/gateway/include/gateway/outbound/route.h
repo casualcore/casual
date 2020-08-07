@@ -10,8 +10,10 @@
 
 
 #include "common/message/type.h"
-#include "common/exception/system.h"
 #include "common/string.h"
+
+#include "common/code/raise.h"
+#include "common/code/casual.h"
 
 #include <vector>
 
@@ -44,19 +46,16 @@ namespace casual
 
                point_type get( const common::Uuid& correlation)
                {
-                  auto found = common::algorithm::find_if( m_points, [&]( const auto& p){
-                     return correlation == p.correlation;
-                  });
+                  auto has_correlation = [&correlation]( auto& point){ return point.correlation == correlation;};
 
-                  if( ! found)
+                  if( auto found = common::algorithm::find_if( m_points, has_correlation))
                   {
-                     common::log::line( verbose::log, "routing: ", *this);
-                     throw common::exception::system::invalid::Argument{ common::string::compose( "failed to find correlation: ", correlation)};
+                     auto result = std::move( *found);
+                     m_points.erase( std::begin( found));
+                     return result;
                   }
 
-                  auto result = std::move( *found);
-                  m_points.erase( std::begin( found));
-                  return result;
+                  return point_type{};
                }
 
                const container_type& points() const
@@ -77,12 +76,17 @@ namespace casual
 
             struct Point
             {
+               //! constructs an empty Point
+               Point() = default;
+
                inline Point( const common::Uuid& correlation, common::process::Handle destination, common::message::Type type)
                   : correlation( correlation), destination( destination), type( type) {}
 
                common::Uuid correlation;
                common::process::Handle destination;
                common::message::Type type;
+
+               inline explicit operator bool () const noexcept { return ! correlation.empty();}
                
                CASUAL_LOG_SERIALIZE(
                { 
@@ -97,8 +101,10 @@ namespace casual
             namespace service
             {
                struct Point
-               {
-                  
+               {  
+                  //! constructs an empty Point
+                  Point() = default;
+
                   inline Point( const common::Uuid& correlation,
                         common::process::Handle destination,
                         std::string service,
@@ -112,6 +118,8 @@ namespace casual
                   std::string service;
                   std::string parent;
                   platform::time::point::type start;
+
+                  inline explicit operator bool () const noexcept { return ! correlation.empty();}
 
                   CASUAL_LOG_SERIALIZE(
                   { 

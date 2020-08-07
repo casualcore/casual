@@ -6,6 +6,10 @@
 
 
 #include "common/code/xatmi.h"
+#include "common/code/category.h"
+#include "common/code/log.h"
+#include "common/code/serialize.h"
+
 #include "common/log/category.h"
 #include "common/log.h"
 
@@ -21,32 +25,6 @@ namespace casual
          {
             namespace
             {
-               const char* message( xatmi code)
-               {
-                  switch( code)
-                  {
-                     case xatmi::ok: return "";
-                     case xatmi::descriptor: return "TPEBADDESC: invalid descriptor was given";
-                     case xatmi::no_message: return "TPEBLOCK: no message ready to consume";
-                     case xatmi::argument: return "TPEINVAL: invalid arguments was given";
-                     case xatmi::limit: return "TPELIMIT: system limit was reached";
-                     case xatmi::no_entry: return "TPENOENT: failed to lookup service";
-                     case xatmi::os: return "TPEOS: operating system level error detected";
-                     case xatmi::protocol: return "TPEPROTO: routine was called in an improper context";
-                     case xatmi::service_error: return "TPESVCERR: system level service error";
-                     case xatmi::service_fail: return "TPESVCFAIL: application level service error";
-                     case xatmi::system: return "TPESYSTEM: system level error detected";
-                     case xatmi::timeout: return "TPETIME: timeout reach during execution";
-                     case xatmi::transaction: return "TPETRAN: transaction error detected";
-                     case xatmi::signal: return "TPGOTSIG: signal was caught during blocking execution";
-                     case xatmi::buffer_input: return "TPEITYPE: invalid input buffer type";
-                     case xatmi::buffer_output: return "TPEOTYPE: invalid output buffer type";
-                     case xatmi::event: return "TPEEVENT: conversation event was received";
-                     case xatmi::service_advertised: return "TPEMATCH: service is already advertised";
-                  }
-                   return "unknown";
-               }
-
                struct Category : std::error_category
                {
                   const char* name() const noexcept override
@@ -56,51 +34,43 @@ namespace casual
 
                   std::string message( int code) const override
                   {
-                     return local::message( static_cast< code::xatmi>( code));
+                     return code::description( static_cast< code::xatmi>( code));
+                  }
+
+                  bool equivalent( int code, const std::error_condition& condition) const noexcept override
+                  {
+                     if( ! is::category< code::log>( condition))
+                        return false;
+
+                     switch( static_cast< code::xatmi>( code))
+                     {
+                        // user
+                        case code::xatmi::signal:
+                        case code::xatmi::no_message:
+                        case code::xatmi::argument:
+                        case code::xatmi::descriptor:
+                        case code::xatmi::service_fail:
+                        case code::xatmi::no_entry:
+                        case code::xatmi::service_advertised:
+                        case code::xatmi::timeout:
+                        case code::xatmi::transaction:
+                        case code::xatmi::buffer_input:
+                        case code::xatmi::buffer_output: 
+                           return condition == code::log::user;
+
+                        // rest is error
+                        default:
+                           return condition == code::log::error;
+                     }
                   }
                };
 
-               const Category category{};
+               const auto& category = code::serialize::registration< Category>( 0x19f3bafea0c74ca1a4fd884009762ee2_uuid);
 
             } // <unnamed>
          } // local
 
-         std::error_code make_error_code( xatmi code)
-         {
-            return { static_cast< int>( code), local::category};
-         }
-
-         common::log::Stream& stream( code::xatmi code)
-         {
-            switch( code)
-            {
-               // information
-               case code::xatmi::signal:
-               case code::xatmi::limit: return common::log::category::information;
-
-               // debug
-               case code::xatmi::no_message:
-               case code::xatmi::argument:
-               case code::xatmi::descriptor:
-               case code::xatmi::service_fail:
-               case code::xatmi::no_entry:
-               case code::xatmi::service_advertised:
-               case code::xatmi::timeout:
-               case code::xatmi::transaction:
-               case code::xatmi::buffer_input:
-               case code::xatmi::buffer_output: return common::log::debug;
-
-               // rest is errors
-               default: return common::log::category::error;
-            }
-         }
-
-         const char* message( xatmi code) noexcept
-         {
-            return local::message( code);
-         }
-
-         const char* string( xatmi code) noexcept
+         const char* description( code::xatmi code) noexcept
          {
             switch( code)
             {
@@ -125,6 +95,13 @@ namespace casual
             }
             return "unknown";
          }
+
+         
+         std::error_code make_error_code( code::xatmi code) noexcept
+         {
+            return { cast::underlying( code), local::category};
+         }
+
 
       } // code
    } // common

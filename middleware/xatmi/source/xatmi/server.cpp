@@ -7,14 +7,16 @@
 
 #include "casual/xatmi/server.h"
 #include "casual/xatmi/internal/log.h"
+#include "casual/xatmi/internal/code.h"
 #include "casual/xatmi/internal/transform.h"
 
 
 #include "common/server/start.h"
 
+#include "common/code/raise.h"
+#include "common/code/xatmi.h"
 
 #include "common/functional.h"
-#include "common/exception/xatmi.h"
 #include "common/process.h"
 #include "common/event/send.h"
 #include "common/signal.h"
@@ -61,7 +63,7 @@ namespace casual
                template< typename A> 
                int start( const A& argument)
                {
-                  try
+                  return common::exception::main::guard( [&argument]()
                   {
                      casual::xatmi::Trace trace{ "casual::xatmi::server::local::start"};
 
@@ -75,24 +77,13 @@ namespace casual
                               if( argument.server_init)
                               {
                                  if( common::invoke( argument.server_init, argument.argc, argument.argv) == -1)
-                                 {
-                                    common::event::error::send( "server initialize failed - action: exit");
-                                    throw common::exception::xatmi::invalid::Argument{ "server initialize failed"};
-                                 }
+                                    common::event::error::raise( common::code::xatmi::argument, "server initialize failed - action: exit");
                               }
                      });
 
                      if( argument.server_done)
-                     {
                         common::invoke( argument.server_done);
-                     }
-
-                  }
-                  catch( ...)
-                  {
-                     return static_cast< int>( casual::common::exception::xatmi::handle());
-                  }
-                  return 0;
+                  });
                }
 
             } // <unnamed>

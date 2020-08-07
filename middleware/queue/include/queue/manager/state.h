@@ -100,7 +100,7 @@ namespace casual
             std::string group_executable;
 
 
-            std::vector< common::strong::process::id> processes() const;
+            std::vector< common::strong::process::id> processes() const noexcept;
 
             //! Removes all queues associated with the process
             //!

@@ -10,8 +10,8 @@
 #include "common/serialize/policy.h"
 #include "common/serialize/create.h"
 
-#include "common/exception/casual.h"
-//#include "common/serialize/log.h"
+#include "common/code/raise.h"
+#include "common/code/casual.h"
 
 #include "common/transcode.h"
 #include "common/buffer/type.h"
@@ -51,13 +51,11 @@ namespace casual
                            {
                               YAML::Parser parser( stream);
                               if( ! parser.GetNextDocument( document))
-                              {
-                                 throw exception::casual::invalid::Document{ "no document"};
-                              }
+                                 code::raise::error( code::casual::invalid_document, "no document");
                            }
                            catch( const YAML::ParserException& e)
                            {
-                              throw exception::casual::invalid::Document{ e.what()};
+                              code::raise::error( code::casual::invalid_document, e.what());
                            }
 
                            return document;
@@ -205,7 +203,7 @@ namespace casual
                            {
                               // If there are elements, it must be a sequence
                               if( node.Type() != YAML::NodeType::Sequence)
-                                 throw exception::casual::invalid::Node{ "expected sequence"};
+                                 code::raise::error( code::casual::invalid_document, "expected sequence");
 
                               // We stack'em in reverse order
                               for( auto index = size; index > 0; --index)
@@ -227,7 +225,7 @@ namespace casual
                               return false;
 
                            if( m_stack.back()->Type() != YAML::NodeType::Map)
-                              throw exception::casual::invalid::Node{ "expected map"};
+                              code::raise::error( code::casual::invalid_document, "expected map");
 
                            return true;
                         }
@@ -243,9 +241,7 @@ namespace casual
                            if( start( name))
                            {
                               if( m_stack.back()->Type() != YAML::NodeType::Null)
-                              {
                                  read( value);
-                              }
 
                               end( name);
                               return true;
@@ -292,7 +288,7 @@ namespace casual
                            }
                            catch( const YAML::InvalidScalar& e)
                            {
-                              throw exception::casual::invalid::Node{ e.what()};
+                              code::raise::error( code::casual::invalid_node, e.what());
                            }
                         }
 

@@ -52,15 +52,7 @@ namespace casual
                      template< typename D, typename M>
                      bool send( D&& device, M&& message)
                      {
-                        try
-                        {
-                           blocking::send( std::forward< D>( device), std::forward< M>( message));
-                           return true;
-                        }
-                        catch( const common::exception::system::communication::Unavailable&)
-                        {
-                           return false;
-                        }
+                        return common::communication::device::blocking::optional::send( std::forward< D>( device), std::forward< M>( message));
                      }
                   } // optional
                } // blocking
@@ -244,11 +236,10 @@ namespace casual
                               message.process = common::process::handle();
 
                               // Prepare queue lookup
-                              common::message::queue::lookup::Request request;
+                              common::message::queue::lookup::Request request{ common::process::handle()};
                               {
                                  request.correlation = message.correlation;
                                  request.name = message.name;
-                                 request.process = common::process::handle();
                               }
 
                               // Add message to buffer
@@ -266,9 +257,12 @@ namespace casual
                                  // We could send the lookup, so we won't remove the message from the buffer
                                  remove.release();
                               }
-                              catch( const common::exception::system::communication::Unavailable&)
+                              catch( ...)
                               {
-                                 return false;
+                                 if( exception::code() == code::casual::communication_unavailable)
+                                    return false;
+
+                                 throw;
                               }
 
                               return true;
@@ -361,11 +355,8 @@ namespace casual
 
                                  auto& queue_manager = common::communication::instance::outbound::queue::manager::optional::device();
 
-                                 if( ! message.queues.empty() &&
-                                       blocking::optional::send( queue_manager, message))
-                                 {
+                                 if( ! message.queues.empty() && blocking::optional::send( queue_manager, message))
                                     pids.push_back( queue_manager.connector().process().pid);
-                                 }
 
                                  state.coordinate.discover.add( message.correlation, {}, state.coordinate.send, std::move( pids));
                               };
@@ -483,27 +474,22 @@ namespace casual
                                     using Enum = decltype( message.state);
                                     case Enum::idle:
                                     {
-                                       try
+                                       if( ! communication::device::blocking::optional::put( message.process.ipc, request))
                                        {
-                                          common::communication::ipc::outbound::Device ipc{ message.process.ipc};
-                                          ipc.put( request, common::communication::ipc::policy::Blocking{});
-                                       }
-                                       catch( const common::exception::system::communication::Unavailable&)
-                                       {
-                                          log::line( common::log::category::error, "server: ", message.process, " has been terminated during interdomain call - action: reply with: ", common::code::xatmi::service_error);
+                                          log::line( common::log::category::error, common::code::xatmi::service_error, " server: ", message.process, " has been terminated during interdomain call - action: reply with: ", common::code::xatmi::service_error);
                                           send_error_reply( common::code::xatmi::service_error);
                                        }
                                        break;
                                     }
                                     case Enum::absent:
                                     {
-                                       log::line( common::log::category::error, "service: ", message.service, " is not handled by this domain (any more) - action: reply with: ", common::code::xatmi::no_entry);
+                                       log::line( common::log::category::error, common::code::xatmi::no_entry, " service: ", message.service, " is not handled by this domain (any more) - action: reply with: ", common::code::xatmi::no_entry);
                                        send_error_reply( common::code::xatmi::no_entry);
                                        break;
                                     }
                                     default:
                                     {
-                                       log::line( common::log::category::error, "unexpected state on lookup reply: ", message, " - action: reply with: ", common::code::xatmi::service_error);
+                                       log::line( common::log::category::error, common::code::xatmi::service_error, " unexpected state on lookup reply: ", message, " - action: reply with: ", common::code::xatmi::service_error);
                                        send_error_reply( common::code::xatmi::service_error);
                                        break;
                                     }
@@ -715,9 +701,7 @@ namespace casual
                      communication::device::blocking::send( state.external.device, reply);
 
                      if( reply.version == version_type::invalid)
-                     {
-                        throw common::exception::system::invalid::Argument{ common::string::compose( "no compatable protocol in connect: ", common::range::make( request.versions))};
-                     }
+                        code::raise::error( code::casual::invalid_version, " no compatable protocol in connect: ", common::range::make( request.versions));
                   }
 
                   // make sure gateway know we're connected
@@ -780,7 +764,7 @@ namespace casual
 
 int main( int argc, char **argv)
 {
-   return casual::common::exception::guard( [=]()
+   return casual::common::exception::main::guard( [=]()
    {
       casual::gateway::inbound::local::main( argc, argv);
    });

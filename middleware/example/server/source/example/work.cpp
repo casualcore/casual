@@ -10,7 +10,7 @@
 #include "common/algorithm.h"
 #include "common/process.h"
 #include "common/log/category.h"
-#include "common/exception/handle.h"
+#include "common/exception/guard.h"
 #include "common/argument.h"
 #include "common/environment/string.h"
 #include "common/chronology.h"
@@ -44,7 +44,7 @@ namespace casual
             
             int tpsvrinit( int argc, char* argv[])
             {
-               return common::exception::guard( [&]()
+               return common::exception::main::guard( [&]()
                {
                   auto arguments = common::range::make( argv + 1, argc - 1);
                   common::log::line( common::log::category::information, "example server started with arguments: ", arguments);

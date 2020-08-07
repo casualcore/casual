@@ -14,11 +14,12 @@
 #include "common/process.h"
 #include "common/log.h"
 #include "common/algorithm.h"
-#include "common/exception/xatmi.h"
-#include "common/exception/tx.h"
-#include "common/exception/xa.h"
-#include "common/exception/system.h"
+#include "common/code/raise.h"
+#include "common/code/tx.h"
+#include "common/code/xa.h"
+#include "common/code/casual.h"
 #include "common/code/convert.h"
+#include "common/exception/handle.h"
 
 #include "common/message/domain.h"
 #include "common/event/send.h"
@@ -98,6 +99,7 @@ namespace casual
                   }
 
                } // resource
+
             } // <unnamed>
          } // local
 
@@ -126,12 +128,7 @@ namespace casual
                      auto found = algorithm::find_if( configuration, [&resource]( auto& c){ return c.name == resource.name;});
 
                      if( ! found)
-                     {
-                        auto message = "missing configuration for linked named RM: " + resource.name + " - check domain configuration";
-                        common::event::error::send( message);
-
-                        throw exception::system::invalid::Argument( message);
-                     }
+                        common::event::error::raise( code::casual::invalid_configuration, "missing configuration for linked named RM: ", resource.name, " - check domain configuration");
 
                      return Resource{
                         resource,
@@ -152,12 +149,7 @@ namespace casual
                   auto partition = algorithm::filter( configuration, [&]( auto& rm){ return resource.key == rm.key;});
 
                   if( ! partition)
-                  {
-                     auto message = "missing configuration for linked RM: " + resource.key + " - check domain configuration";
-                     common::event::error::send( message);
-
-                     throw exception::system::invalid::Argument( message);
-                  }
+                     common::event::error::raise( code::casual::invalid_configuration, "missing configuration for linked RM: ", resource.key, " - check domain configuration");
 
                   for( auto& rm : partition)
                   {
@@ -214,8 +206,8 @@ namespace casual
                   {
                      Transaction transaction{ common::transaction::id::create( process::handle())};
                      transaction.state = Transaction::State::active;
-                     transaction.timout.start = start;
-                     transaction.timout.timeout = std::chrono::seconds{ timeout};
+                     transaction.timeout.start = start;
+                     transaction.timeout.timeout = std::chrono::seconds{ timeout};
 
                      return transaction;
                   }
@@ -243,6 +235,12 @@ namespace casual
                      return std::move( reply.involved);
                   }
                } // resource
+
+               auto raise_if_not_ok = []( auto code, auto&& context)
+               {
+                  if( code != decltype( code)::ok)
+                     code::raise::error( code, context);
+               };
 
             } // <unnamed>
          } // local
@@ -297,7 +295,7 @@ namespace casual
                auto found = algorithm::find( m_transactions, reply.transaction.trid);
 
                if( ! found)
-                  throw exception::xatmi::System{ string::compose( "failed to find transaction: ", reply.transaction)};
+                  code::raise::error( code::xatmi::system, "failed to find transaction: ", reply.transaction);
 
                auto& transaction = *found;
 
@@ -367,9 +365,8 @@ namespace casual
                }
                catch( ...)
                {
-                  exception::tx::handle();
-                  log::line( log::category::transaction, "failed to rollback transaction: ", transaction.trid);
                   result.state = message::service::Transaction::State::error;
+                  exception::handle( log::category::error, "failed to rollback transaction: ", transaction.trid);
                }
             };
 
@@ -383,9 +380,8 @@ namespace casual
                   }
                   catch( ...)
                   {
-                     exception::tx::handle();
-                     log::line( log::category::transaction, "failed to commit transaction: ", transaction.trid);
                      result.state = message::service::Transaction::State::error;
+                     exception::handle( log::category::error, "failed to commit transaction: ", transaction.trid);
                   } 
                }
                else
@@ -472,7 +468,7 @@ namespace casual
 
             // Verify that rmid is known and is dynamic
             if( ! common::algorithm::find( m_resources.dynamic, rmid))
-               throw exception::ax::exception{ code::ax::argument, string::compose( "resource id: ", rmid)};
+               code::raise::error( code::ax::argument, "resource id: ", rmid);
             
             auto& transaction = current();
 
@@ -480,7 +476,7 @@ namespace casual
             // We'll interpret this as the transaction has been suspended, and
             // then resumed.
             if( ! transaction.associate_dynamic( rmid))
-               throw exception::ax::exception{ code::ax::resume};
+               code::raise::error( code::ax::resume, "resource id: ", rmid);
 
             // Let the resource know the xid (if any)
             *xid = transaction.trid.xid;
@@ -514,7 +510,7 @@ namespace casual
             // RM:s can only unregister if we're outside global
             // transactions, and the rm is registered before
             if( transaction.trid || ! transaction.disassociate_dynamic( rmid))
-               throw exception::ax::exception{ code::ax::protocol};
+               code::raise::error( code::ax::protocol, "resource id: ", rmid);
          }
 
 
@@ -527,14 +523,14 @@ namespace casual
             if( transaction.trid)
             {
                if( m_control != Control::stacked)
-                  throw exception::tx::Protocol{ string::compose( "begin - already in transaction mode - ", transaction)};
+                  code::raise::log( code::tx::protocol, "begin - already in transaction mode - ", transaction);
 
                // Tell the RM:s to suspend
                resources_end( transaction, flag::xa::Flag::suspend);
 
             }
             else if( ! transaction.dynamic().empty())
-               throw exception::tx::Outside{ "begin - dynamic resources not done with work outside global transaction"};
+               code::raise::error( code::tx::outside,  "begin - dynamic resources not done with work outside global transaction");
 
             auto trans = local::start::transaction( platform::time::clock::type::now(), m_timeout);
 
@@ -553,27 +549,27 @@ namespace casual
             // XA spec: if one, or more of resources opens ok, then it's not an error...
             //   seams really strange not to notify user that some of the resources has
             //   failed to open...
-            algorithm::for_each( m_resources.all, []( auto& r){
-               auto result = r.open();
-               if( result != code::xa::ok)
-               {
-                  common::event::error::send( string::compose( "failed to open resource: ", r.key(), " - error: ", std::error_code( result)));
-               }
+
+            auto results = algorithm::transform( m_resources.all, []( auto& resource)
+            {
+               return resource.open();
             });
+
+            if( ! algorithm::all_of( results, []( auto r){ return r == code::xa::ok;}))
+               log::line( log::category::error, code::xa::resource_error, "failed to open one or more resource");
          }
 
          void Context::close()
          {
             Trace trace{ "transaction::Context::close"};
 
-            auto results = algorithm::transform( m_resources.all, []( auto& r){
-               return r.close();
+            auto results = algorithm::transform( m_resources.all, []( auto& resource)
+            {
+               return resource.close();
             });
 
             if( ! algorithm::all_of( results, []( auto r){ return r == code::xa::ok;}))
-            {
-               log::line( log::category::error, "failed to close one or more resource");
-            }
+               log::line( log::category::error, code::xa::resource_error, "failed to close one or more resource");
          }
 
 
@@ -584,16 +580,16 @@ namespace casual
             const auto process = process::handle();
 
             if( ! transaction.trid)
-               throw exception::tx::no::Begin{ "commit - no ongoing transaction"};
+               code::raise::log( code::tx::no_begin, "commit - no ongoing transaction");
 
             if( transaction.trid.owner() != process)
-               throw exception::tx::Protocol{ string::compose( "commit - not owner of transaction: ", transaction)};
+               code::raise::error( code::tx::protocol, "commit - not owner of transaction: ", transaction.trid);
 
             if( transaction.state != Transaction::State::active)
-               throw exception::tx::Protocol{ string::compose( "commit - transaction is in rollback only mode - ", transaction)};
+               code::raise::error( code::tx::protocol, "commit - transaction is in rollback only mode - ", transaction.trid);
 
             if( transaction.pending())
-               throw exception::tx::Protocol{ string::compose(  "commit - pending replies associated with transaction: ", transaction)};
+               code::raise::error( code::tx::protocol, "commit - pending replies associated with transaction: ", transaction.trid);
 
             // end resources
             resources_end( transaction, flag::xa::Flag::success);
@@ -666,7 +662,7 @@ namespace casual
                      }
                   }
 
-                  exception::tx::handle( reply.state, "commit");
+                  local::raise_if_not_ok( reply.state, "during commit");
                }
             }
          }
@@ -689,12 +685,12 @@ namespace casual
             log::line( log::category::transaction, "transaction: ", transaction);
 
             if( ! transaction)
-               throw exception::tx::Protocol{ "no ongoing transaction"};
+               code::raise::log( code::tx::protocol, "no ongoing transaction");
 
             const auto process = process::handle();
 
             if( transaction.trid.owner() != process)
-               throw exception::tx::Protocol{ string::compose( "current process not owner of transaction: ", transaction.trid)};
+               code::raise::error( code::tx::protocol, "current process not owner of transaction: ", transaction.trid);
 
             // end resources
             resources_end( transaction, flag::xa::Flag::success);
@@ -724,7 +720,7 @@ namespace casual
 
                log::line( log::category::transaction, "rollback reply tx: ", reply.state);
 
-               exception::tx::handle( reply.state, "rollback");
+               local::raise_if_not_ok( reply.state, "during rollback");
             }
          }
 
@@ -748,12 +744,12 @@ namespace casual
                }
                default:
                {
-                  throw exception::tx::Argument{};
+                  code::raise::error( code::tx::argument, "set_commit_return");
                }
             }
          }
 
-         COMMIT_RETURN Context::get_commit_return()
+         COMMIT_RETURN Context::get_commit_return() noexcept
          {
             return static_cast< COMMIT_RETURN>( m_commit_return);
          }
@@ -779,7 +775,7 @@ namespace casual
                }
                default:
                {
-                  throw exception::tx::Argument{ string::compose( "argument control has invalid value: ", control)};
+                  code::raise::error( code::tx::argument, "set_transaction_control");
                }
             }
          }
@@ -787,7 +783,7 @@ namespace casual
          void Context::set_transaction_timeout( TRANSACTION_TIMEOUT timeout)
          {
             if( timeout < 0)
-               throw exception::tx::Argument{ "timeout value has to be 0 or greater"};
+               code::raise::error( code::tx::argument, "timeout value has to be 0 or greater");
 
             m_timeout = timeout;
          }
@@ -812,12 +808,12 @@ namespace casual
             Trace trace{ "transaction::Context::suspend"};
 
             if( xid == nullptr)
-               throw exception::tx::Argument{ "argument xid is null"};
+               code::raise::error( code::tx::argument, "suspend: argument xid is null");
 
             auto& ongoing = current();
 
             if( id::null( ongoing.trid))
-               throw exception::tx::Protocol{ "attempt to suspend a null xid"};
+               code::raise::error( code::tx::protocol, "suspend: attempt to suspend a null xid");
 
             // We don't check if current transaction is aborted. This differs from Tuxedo's semantics
 
@@ -837,23 +833,23 @@ namespace casual
             Trace trace{ "transaction::Context::resume"};
 
             if( xid == nullptr)
-               throw exception::tx::Argument{ "argument xid is null"};
+               code::raise::log( code::tx::argument, "resume: argument xid is null");
 
             if( id::null( *xid))
-               throw exception::tx::Argument{ "attempt to resume a 'null xid'"};
+               code::raise::log( code::tx::argument, "resume: attempt to resume a 'null xid'");
 
             auto& ongoing = current();
 
             if( ongoing.trid)
-               throw exception::tx::Protocol{ "active transaction"};
+               code::raise::error( code::tx::protocol, "resume: ongoing transaction is active'");
 
             if( ! ongoing.dynamic().empty())
-               throw exception::tx::Outside{ string::compose( "ongoing work outside global transaction: ", ongoing)};
+               code::raise::error( code::tx::outside, "resume: ongoing work outside global transaction: ", ongoing);
 
             auto found = algorithm::find( m_transactions, *xid);
 
             if( ! found)
-               throw exception::tx::Argument{ "transaction not known"};
+               code::raise::error( code::tx::argument, "resume: transaction not known");
 
 
             // All precondition are met, let's set wanted transaction as current
@@ -957,15 +953,13 @@ namespace casual
             Trace trace{ "transaction::Context::resources_commit"};
             log::line( log::category::transaction, "transaction: ", transaction, " - rm: ", rm, " - flags: ", flags);
 
-            auto found = algorithm::find( m_resources.all, rm);
-
-            if( found)
+            if( auto found = algorithm::find( m_resources.all, rm))
             {
                auto code = common::code::convert::to::tx( found->commit( transaction.trid, flags));
-               exception::tx::handle( code, "resource commit");
+               local::raise_if_not_ok( code, "resource commit");
             }
             else
-               throw exception::tx::Error{ string::compose( "resource id not known - rm: ", rm, " transaction: ", transaction)};
+               code::raise::error( code::tx::error, "resource id not known - rm: ", rm, " transaction: ", transaction);
          }
 
          void Context::resource_rollback( strong::resource::id rm, const Transaction& transaction)
@@ -973,15 +967,13 @@ namespace casual
             Trace trace{ "transaction::Context::resource_rollback"};
             log::line( log::category::transaction, "transaction: ", transaction, " - rm: ", rm);
 
-            auto found = algorithm::find( m_resources.all, rm);
-
-            if( found)
+            if( auto found = algorithm::find( m_resources.all, rm))
             {
                auto code = common::code::convert::to::tx( found->rollback( transaction.trid, flag::xa::Flag::no_flags));
-               exception::tx::handle( code, "resource rollback");
+               local::raise_if_not_ok( code, "resource rollback");
             }
             else
-               throw exception::tx::Error{ string::compose( "resource id not known - rm: ", rm, " transaction: ", transaction)};
+               code::raise::error( code::tx::error, "resource id not known - rm: ", rm, " transaction: ", transaction);
          }
 
          void Context::pop_transaction()
@@ -1018,7 +1010,7 @@ namespace casual
                }
                default:
                {
-                  throw exception::tx::Fail{ "unknown control directive - this can not happen"};
+                  code::raise::error( code::tx::fail, "unknown control directive - this can not happen");
                }
             }
          }

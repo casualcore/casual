@@ -10,7 +10,7 @@
 #include "common/event/listen.h"
 #include "common/unittest/eventually/send.h"
 
-#include "common/exception/casual.h"
+#include "common/code/casual.h"
 
 
 namespace casual
@@ -26,9 +26,9 @@ namespace casual
             unittest::eventually::send( communication::ipc::inbound::ipc(), message::shutdown::Request{});
          }
 
-         EXPECT_THROW({
+         EXPECT_CODE({
             event::listen( event::condition::compose());
-         }, exception::casual::Shutdown);
+         }, code::casual::shutdown);
       }
 
       TEST( common_event, process_exit_event___expect_registration__event_dispatch)

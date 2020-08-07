@@ -36,7 +36,7 @@ namespace casual
          {
             if( time != platform::time::point::limit::zero())
             {
-               return chronology::local( time);
+               return chronology::utc::offset( time);
             }
             return "-";
          }

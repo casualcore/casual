@@ -17,10 +17,6 @@ namespace casual
 {
    namespace common
    {
-      namespace log
-      {
-         class Stream;
-      } // log
       namespace code
       {
 
@@ -47,11 +43,9 @@ namespace casual
 
          static_assert( static_cast< int>( tx::ok) == 0, "tx::ok has to be 0");
 
-         std::error_code make_error_code( tx code);
+         std::error_code make_error_code( code::tx code);
+         const char* description( code::tx code);
 
-         common::log::Stream& stream( code::tx code);
-
-         std::ostream& operator << ( std::ostream& out, code::tx value);
 
       } // code
 
@@ -65,10 +59,7 @@ namespace std
 }
 
 
-//
 // To help prevent missuse of "raw codes"
-//
-
 
 #ifndef CASUAL_NO_XATMI_UNDEFINE
 

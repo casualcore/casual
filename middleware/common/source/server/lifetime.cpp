@@ -31,25 +31,16 @@ namespace casual
 
                   auto requested = algorithm::transform_if( servers, []( auto& handle){ return handle.pid;}, []( auto& handle)
                   {
-                     try
-                     {
-                        return ! communication::device::non::blocking::send( handle.ipc, message::shutdown::Request{}).empty();
-                     }
-                     catch( const exception::system::communication::Unavailable&)
-                     {
-                        return false;
-                     }
+                     return communication::device::non::blocking::optional::send( handle.ipc, message::shutdown::Request{ process::handle()});
                   });
-
 
                   auto terminated = process::lifetime::wait( requested, timeout);
 
                   algorithm::append( std::get< 0>( algorithm::intersection( terminated, requested)), result);
 
                   log::line( log::debug, "soft off-line: ", result);
-
+                  
                   return result;
-
                }
 
             } // soft

@@ -20,12 +20,15 @@ namespace casual
    {
       namespace chronology
       {
-         //! Format a timepoint to iso 8601 extended date time with UTC offset
-         //! TODO maintainence: _local_ is probably not accurate any more? perhaps _iso_?
-         //! @{
-         void local( std::ostream& out, platform::time::point::type time);
-         std::string local( platform::time::point::type time);
-         //! @}
+         namespace utc
+         {
+            //! Format a timepoint to iso 8601 extended date time with UTC offset
+            //! @{
+            void offset( std::ostream& out, platform::time::point::type time);
+            std::string offset( platform::time::point::type time);
+            //! @}
+         } // utc
+
 
          namespace unit
          {
@@ -81,28 +84,29 @@ namespace casual
 
       namespace stream
       {
-         template< typename R, typename P>
-         struct has_formatter< std::chrono::duration< R, P>> : std::true_type
+         namespace customization
          {
-            using formatter = chronology::format;
-         };
-
-         template<>
-         struct has_formatter< platform::time::point::type> : std::true_type
-         {
-            struct formatter
+            template< typename R, typename P>
+            struct point< std::chrono::duration< R, P>>
             {
-               void operator () ( std::ostream& out, const platform::time::point::type& time) const
+               template< typename D>
+               static void stream( std::ostream& out, D&& duration)
                {
-                  chronology::local( out, time);
+                  out << duration.count() << chronology::unit::string( duration);
                }
             };
-         };
+
+            template<>
+            struct point< platform::time::point::type>
+            {
+               static void stream( std::ostream& out, const platform::time::point::type& time)
+               {
+                  chronology::utc::offset( out, time);
+               }
+            };
+         } // customization
+
       } // stream
-
-
    } // common
 } // casual
-
-
 

@@ -7,10 +7,11 @@
 
 #include "common/unittest.h"
 
-
 #include "common/argument.h"
 #include "common/argument/cardinality.h"
+#include "common/code/casual.h"
 #include "common/execute.h"
+
 
 namespace casual
 {
@@ -547,9 +548,9 @@ namespace casual
          argument::Parse parse{ "description", 
             argument::Option{ std::tie( value), { "-a"}, "description"}};
 
-         EXPECT_THROW({
+         EXPECT_CODE({
             parse( { "-a", "42", "43"});
-         }, argument::exception::invalid::Argument);
+         }, code::casual::invalid_argument);
       }
 
       TEST( common_argument_parse, group_with_values)
@@ -658,9 +659,9 @@ namespace casual
          argument::Parse parse{ "description", 
             argument::Option{ std::tie( value), { "-a"}, "description"}};
           
-         EXPECT_THROW({
+         EXPECT_CODE({
             parse( { "-a"});
-         }, argument::exception::invalid::Argument);
+         }, code::casual::invalid_argument);
       }
 
       TEST( common_argument_parse, option_1__values_2__expect_throw)
@@ -671,9 +672,9 @@ namespace casual
          argument::Parse parse{ "description", 
             argument::Option{ std::tie( value), { "-a"}, "description"}};
           
-         EXPECT_THROW({
+         EXPECT_CODE({
             parse( { "-a", "42", "42"});
-         }, argument::exception::invalid::Argument);
+         }, code::casual::invalid_argument);
       }
 
       TEST( common_argument_parse, option_tuple_var_2__values_1__expect_throw)
@@ -686,9 +687,9 @@ namespace casual
          argument::Parse parse{ "description", 
             argument::Option{ std::tie( a, b), { "-a"}, "description"}};
           
-         EXPECT_THROW({
+         EXPECT_CODE({
             parse( { "-a", "42"});
-         }, argument::exception::invalid::Argument);
+         }, code::casual::invalid_argument);
       }
 /*
       TEST( common_argument_parse, nested_option__2_levels___expect_values_to_be_set)
@@ -742,9 +743,9 @@ namespace casual
             }
          };
           
-         EXPECT_THROW({
+         EXPECT_NO_THROW({
             parse( { "--help"});
-         }, argument::exception::user::Help);
+         });
       }
 
       TEST( common_argument_parse, builtin_help__complex_cardinality_output)
@@ -757,9 +758,9 @@ namespace casual
                argument::Option{ a, { "--alfa", "-a"}, "description"},
          };
           
-         EXPECT_THROW({
+         EXPECT_NO_THROW({
             parse( { "--help"});
-         }, argument::exception::user::Help);
+         });
       }
 
       TEST( common_argument_parse, builtin_help__completer_output)
@@ -775,9 +776,9 @@ namespace casual
                argument::Option{ std::tie( a), completer, { "--alfa", "-a"}, "description"},
          };
           
-         EXPECT_THROW({
+         EXPECT_NO_THROW({
             parse( { "--help"});
-         }, argument::exception::user::Help);
+         });
       }
 
 
@@ -798,9 +799,9 @@ namespace casual
             }
          };
           
-         EXPECT_THROW({
+         EXPECT_NO_THROW({
             parse( { argument::reserved::name::help()});
-         }, argument::exception::user::Help);
+         });
       }
 
 
@@ -814,9 +815,9 @@ namespace casual
          std::ostringstream out;
          auto capture = unittest::capture::standard::out( out);
 
-         EXPECT_THROW({
+         EXPECT_NO_THROW({
             parse( { argument::reserved::name::completion()});
-         }, argument::exception::user::bash::Completion);
+         });
 
          EXPECT_TRUE( out.str().empty());
       }
@@ -832,9 +833,9 @@ namespace casual
          std::ostringstream out;
          auto capture = unittest::capture::standard::out( out);
 
-         EXPECT_THROW({
+         EXPECT_NO_THROW({
             parse( { argument::reserved::name::completion()});
-         }, argument::exception::user::bash::Completion);
+         });
 
          EXPECT_TRUE( out.str() == "--alfa\n") << " out.str(): " <<  out.str();
       }
@@ -850,12 +851,12 @@ namespace casual
          std::ostringstream out;
          auto capture = unittest::capture::standard::out( out);
 
-         EXPECT_THROW({
+         EXPECT_NO_THROW({
             parse( { 
                argument::reserved::name::completion(),
                "--alfa"
             });
-         }, argument::exception::user::bash::Completion);
+         });
 
          EXPECT_TRUE( out.str() == argument::reserved::name::suggestions::value() + local::newline()) << " out.str(): " <<  out.str();
       }
@@ -877,7 +878,7 @@ namespace casual
          std::ostringstream out;
          auto capture = unittest::capture::standard::out( out);
 
-         EXPECT_THROW({
+         EXPECT_NO_THROW({
             parse( { 
                argument::reserved::name::completion(),
                "some-group",
@@ -886,7 +887,7 @@ namespace casual
                "45",
                "--beta",
             });
-         }, argument::exception::user::bash::Completion);
+         });
 
          EXPECT_TRUE( out.str() == argument::reserved::name::suggestions::value() + local::newline()) << " out.str(): " <<  out.str();
       }
@@ -909,13 +910,12 @@ namespace casual
          std::ostringstream out;
          auto capture = unittest::capture::standard::out( out);
 
-         EXPECT_THROW({
-            parse( { 
-               argument::reserved::name::completion(),
-               "some-group",
-               "--beta",
-            });
-         }, argument::exception::user::bash::Completion);
+         parse( { 
+            argument::reserved::name::completion(),
+            "some-group",
+            "--beta",
+         });
+
 
          auto expected = argument::reserved::name::suggestions::value() + local::newline() + "--alfa" + local::newline();
 
@@ -945,15 +945,14 @@ namespace casual
          std::ostringstream out;
          auto capture = unittest::capture::standard::out( out);
 
-         EXPECT_THROW({
-            parse( { 
-               argument::reserved::name::completion(),
-               "a-group",
-               "-a",
-               "42",
-               "b-group"
-            });
-         }, argument::exception::user::bash::Completion);
+         parse( { 
+            argument::reserved::name::completion(),
+            "a-group",
+            "-a",
+            "42",
+            "b-group"
+         });
+
 
          auto expected = R"(-b
 c-group
@@ -977,12 +976,10 @@ c-group
          std::ostringstream out;
          auto capture = unittest::capture::standard::out( out);
 
-         EXPECT_THROW({
-            parse( { 
-               argument::reserved::name::completion(),
-               "--alfa"
-            });
-         }, argument::exception::user::bash::Completion);
+         parse( { 
+            argument::reserved::name::completion(),
+            "--alfa"
+         });
 
          EXPECT_TRUE( out.str() == "a\nb\nc\n") << " out.str(): " <<  out.str();
       }

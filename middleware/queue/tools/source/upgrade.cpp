@@ -225,7 +225,7 @@ INSERT INTO queue
 
 int main( int argc, char** argv)
 {
-   return casual::common::exception::guard( std::cerr, [=]()
+   return casual::common::exception::main::guard( std::cerr, [=]()
    {
       casual::queue::upgrade::local::main( argc, argv);
    });

@@ -14,7 +14,6 @@
 #include "common/message/event.h"
 #include "common/message/dispatch.h"
 #include "common/log.h"
-#include "common/exception/tx.h"
 #include "common/process.h"
 #include "common/algorithm.h"
 #include "common/communication/ipc.h"
@@ -35,11 +34,6 @@ namespace casual
          {
             common::communication::ipc::inbound::Device& device();
          } // ipc
-
-         namespace user
-         {
-            using error = common::exception::tx::exception;
-         } // transaction
 
 
          namespace handle

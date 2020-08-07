@@ -82,8 +82,9 @@ namespace casual
          {
             Trace trace{ "queue::group::Server~Server"};
 
-            common::exception::guard( [&](){
-                handle::shutdown( m_state);
+            common::exception::guard( [&state = m_state]()
+            {
+                handle::shutdown( state);
             });
          }
 

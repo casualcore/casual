@@ -55,7 +55,7 @@ namespace casual
                      case State::scale_out: return out << "scale-out";
                      case State::scale_in: return out << "scale-in";
                      case State::exit: return out << "exit";
-                     case State::error: return out << "serror";
+                     case State::error: return out << "error";
                   }
                   return out << "unknown";
                }

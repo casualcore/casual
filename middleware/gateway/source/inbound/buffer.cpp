@@ -17,16 +17,16 @@ namespace casual
 
          Buffer::complete_type Buffer::get( const common::Uuid& correlation)
          {
-            auto found = common::algorithm::find( m_messages, correlation);
+            if( auto found = common::algorithm::find( m_messages, correlation))
+            {
+               auto result = std::move( *found);
+               m_messages.erase( std::begin( found));
+               m_size -= result.payload.size();
 
-            if( ! found)
-               throw common::exception::system::invalid::Argument{ common::string::compose( "failed to find correlation: ", correlation)};
-            
-            auto result = std::move( *found);
-            m_messages.erase( std::begin( found));
-            m_size -= result.payload.size();
+               return result;
+            }
 
-            return result;
+            common::code::raise::log( common::code::casual::invalid_argument, "failed to find correlation: ", correlation);
          }
 
          std::ostream& operator << ( std::ostream& out, const Buffer& value)

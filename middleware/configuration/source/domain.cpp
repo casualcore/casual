@@ -13,6 +13,9 @@
 #include "common/environment.h"
 #include "common/algorithm.h"
 
+#include "common/code/raise.h"
+#include "common/code/casual.h"
+
 #include "common/serialize/create.h"
 
 #include <algorithm>
@@ -61,8 +64,7 @@ namespace casual
                      if( duplicates)
                      {
                         auto names = algorithm::transform( duplicates, []( auto& g){ return g.get().name;});
-
-                        throw exception::system::invalid::Argument{ string::compose( "the following groups are defined more than once: ", names)};
+                        code::raise::error( code::casual::invalid_configuration, "the following groups are defined more than once: ", names);
                      }
                   }
 
@@ -71,9 +73,7 @@ namespace casual
                      auto validate_path = []( auto& e)
                      {
                         if( e.path.empty())
-                        {
-                           throw exception::system::invalid::Argument{ "servers and executables need to have a path"};
-                        }
+                           code::raise::error( code::casual::invalid_configuration,  "servers and executables need to have a path");
                      };
 
                      algorithm::for_each( configuration.executables, validate_path);
@@ -105,8 +105,7 @@ namespace casual
                      if( duplicates)
                      {
                         auto aliases = algorithm::transform( duplicates, []( const Executable& e){ return e.alias.value();});
-
-                        throw exception::system::invalid::Argument{ string::compose( "defined aliases are used more than once: ", aliases)};
+                        code::raise::error( code::casual::invalid_configuration, "defined aliases are used more than once: ", aliases);
                      }
                   }
                }

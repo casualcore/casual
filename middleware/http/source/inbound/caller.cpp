@@ -13,8 +13,13 @@
 #include "casual/buffer/field.h"
 #include "common/service/call/context.h"
 #include "common/transcode.h"
-#include "common/exception/system.h"
 #include "common/string.h"
+
+#include "common/code/raise.h"
+#include "common/code/casual.h"
+#include "common/code/category.h"
+#include "common/code/xatmi.h"
+#include "common/exception/handle.h"
 
 namespace casual
 {
@@ -51,13 +56,11 @@ namespace casual
                   LookupStore::iterator find( long key)
                   {
                      auto found = store.find( key);
-                     if ( found == store.end())
-                     {
-                        throw common::exception::system::invalid::Argument{ 
-                           string::compose( "could not find lookup object for key: ", key)};
-                     }
+                     
+                     if( found != store.end())
+                        return found;
 
-                     return found;
+                     code::raise::error( code::casual::invalid_argument, "could not find lookup object for key: ", key);
                   }
 
                   common::service::non::blocking::Lookup consume( long key)
@@ -234,27 +237,26 @@ namespace casual
                      {
                         throw;
                      }
-                     catch ( common::service::call::Fail& exception)
+                     catch( common::service::call::Fail& exception)
                      {
                         transport->code = cast::underlying( code::xatmi::service_fail);
                         http::buffer::transcode::to::wire( exception.result.buffer);
                         transport->payload = buffer::copy( exception.result.buffer.memory);
                         usercode = exception.result.user;
                      }
-                     catch ( const common::exception::xatmi::exception& exception)
+                     catch( ...)
                      {
-                        transport->code = exception.code().value();
-                        transport->payload = buffer::copy( exception.code().message());
-                     }
-                     catch ( const common::exception::system::invalid::Argument& exception)
-                     {
-                        transport->code = exception.code().value();
-                        transport->payload = buffer::copy( std::string( exception.what()));
-                     }
-                     catch (...)
-                     {
-                        transport->code = common::code::make_error_code( common::code::xatmi::os).value();
-                        transport->payload = buffer::copy( std::string( "unknown error"));
+                        auto condition = common::exception::code();
+
+                        if( condition == code::xatmi::no_message)
+                           return AGAIN; // No reply yet, try again later
+
+                        if( code::is::category< code::xatmi>( condition))
+                           transport->code = condition.value();
+                        else 
+                           transport->code = cast::underlying( code::xatmi::os);
+
+                        transport->payload = buffer::copy( string::compose( condition));
                      }
 
                      // Handle reply headers
@@ -381,11 +383,6 @@ namespace casual
 
 
                         return OK;
-                     }
-                     catch ( const common::exception::xatmi::no::Message&)
-                     {
-                        // No reply yet, try again later
-                        return AGAIN;
                      }
                      catch (...)
                      {

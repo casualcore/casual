@@ -8,7 +8,6 @@
 #include "common/unittest/thread.h"
 
 #include "common/communication/tcp.h"
-#include "common/exception/system.h"
 #include "common/exception/handle.h"
 
 #include "common/message/service.h"
@@ -37,16 +36,11 @@ namespace casual
                         connections.push_back( listener());
 
                         log::line( log::debug, "connections: ", connections);
-
                      }
-                  }
-                  catch( const exception::signal::exception& exception)
-                  {
-                     log::line( log::debug, "got signal: ", exception);
                   }
                   catch( ...)
                   {
-                     exception::handle();
+                     exception::sink::log();
                   }
                }
 
@@ -70,9 +64,9 @@ namespace casual
          {   
             common::unittest::Trace trace;
 
-            EXPECT_THROW( {
+            EXPECT_CODE( {
                tcp::connect( local::address());
-            }, exception::system::communication::Refused);
+            }, code::casual::communication_refused);
          }
 
          TEST( common_communication_tcp, listener_port)
@@ -138,7 +132,7 @@ namespace casual
                      }
                      catch( ...)
                      {
-                        exception::handle();
+                        exception::handle( log::debug);
                      }
 
                   }
@@ -158,7 +152,7 @@ namespace casual
                      }
                      catch( ...)
                      {
-                        exception::handle();
+                        exception::handle( log::debug);
                      }
                   }
 

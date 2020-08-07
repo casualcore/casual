@@ -11,9 +11,11 @@
 #include "common/buffer/type.h"
 #include "casual/platform.h"
 #include "common/algorithm.h"
-#include "common/exception/system.h"
-#include "common/exception/xatmi.h"
 #include "common/string.h"
+
+#include "common/code/raise.h"
+#include "common/code/casual.h"
+#include "common/code/xatmi.h"
 
 #include "common/log.h"
 
@@ -37,9 +39,9 @@ namespace casual
                Holder() = default;
 
 
-               struct Base
+               struct concept
                {
-                  virtual ~Base() = default;
+                  virtual ~concept() = default;
 
                   virtual platform::buffer::raw::type allocate( const std::string& type, platform::binary::size::type size) = 0;
                   virtual platform::buffer::raw::type reallocate( platform::buffer::raw::immutable::type handle, platform::binary::size::type size) = 0;
@@ -64,15 +66,15 @@ namespace casual
                };
 
                template< typename P>
-               struct Concrete : Base
+               struct model : concept
                {
                   using pool_type = P;
 
-                  Concrete( pool_type pool) : m_pool( std::move( pool)) {}
-                  ~Concrete() = default;
+                  model( pool_type pool) : m_pool( std::move( pool)) {}
+                  ~model() = default;
 
-                  Concrete( const Concrete&) = delete;
-                  Concrete& operator = ( const Concrete&) = delete;
+                  model( const model&) = delete;
+                  model& operator = ( const model&) = delete;
 
                   pool_type& pool()
                   {
@@ -101,9 +103,7 @@ namespace casual
                      for( auto& check : pool_type::types())
                      {
                         if( check == type)
-                        {
                            return true;
-                        }
                      }
                      return false;
                   }
@@ -167,7 +167,7 @@ namespace casual
 
 
                platform::buffer::raw::type m_inbound = nullptr;
-               std::vector< std::unique_ptr< Base>> m_pools;
+               std::vector< std::unique_ptr< concept>> m_pools;
 
                template< typename P>
                friend class Registration;
@@ -175,25 +175,13 @@ namespace casual
                template< typename P>
                P& registration( P&& pool)
                {
-
                   for( auto& type : P::types())
                   {
-                     try
-                     {
-                        find( type);
-                     }
-                     catch( ...)
-                     {
-                        continue;
-                     }
-
-                     {
-                        throw exception::system::invalid::Argument{ string::compose( "buffer type already registered: ", type)};
-                     }
-
+                     if( Holder::find_concept( type))
+                        code::raise::generic( code::casual::buffer_type_duplicate, log::stream::get( "error"), "buffer type already registered: ", type);
                   }
 
-                  auto subtype = std::make_unique< Concrete< P>>( std::forward< P>( pool));
+                  auto subtype = std::make_unique< model< P>>( std::forward< P>( pool));
 
                   auto& result = subtype->pool();
 
@@ -203,8 +191,9 @@ namespace casual
                }
 
 
-               Base& find( const std::string& type);
-               Base& find( platform::buffer::raw::immutable::type handle);
+               concept* find_concept( const std::string& type);
+               concept& get_concept( const std::string& type);
+               concept& get_concept( platform::buffer::raw::immutable::type handle);
 
                const Payload& null_payload() const;
 
@@ -319,27 +308,24 @@ namespace casual
 
                buffer_type& get( platform::buffer::raw::immutable::type handle)
                {
-                  auto found = find( handle);
-
-                  if( found)
+                  if( auto found = find( handle))
                      return *found;
 
-                  throw exception::xatmi::invalid::Argument{ "failed to find buffer"};
+                  code::raise::generic( code::xatmi::argument, log::category::buffer, "failed to find buffer");
                }
 
 
                buffer_type release( platform::buffer::raw::immutable::type handle)
                {
-                  auto found = find( handle);
-
-                  if( found)
+                  if( auto found = find( handle))
                   {
                      buffer_type result{ std::move( *found)};
                      m_pool.erase( std::begin( found));
 
                      return result;
                   }
-                  throw exception::xatmi::invalid::Argument{ "failed to find buffer"};
+
+                  code::raise::generic( code::xatmi::argument, log::category::buffer, "failed to find buffer");
                }
 
 
@@ -374,7 +360,6 @@ namespace casual
 
             template< typename P>
             CASUAL_MAYBE_UNUSED P& Registration< P>::pool = Holder::instance().registration( P{});
-            //[[maybe_unused]] P& Registration< P>::pool = Holder::instance().registration( P{});
 
          } // pool
       } // buffer

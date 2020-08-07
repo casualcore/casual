@@ -1,23 +1,22 @@
 //!
-//! casual
+//! Copyright (c) 2013, The casual project
+//!
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-#ifndef SQL_DATABASE_H_
-#define SQL_DATABASE_H_
-
+#pragma once
 
 #include <sqlite3.h>
 
 
 #include "common/algorithm.h"
-#include "common/exception/system.h"
 #include "common/file.h"
 #include "common/string.h"
 #include "common/compare.h"
+#include "common/code/raise.h"
+#include "common/code/serialize.h"
 
-//
-// std
-//
+
 #include <stdexcept>
 #include <vector>
 #include <string>
@@ -31,28 +30,75 @@ namespace sql
 {
    namespace database
    {
+      namespace code
+      {
+         enum class sql : int 
+         {
+            ok = SQLITE_OK,
+            row = SQLITE_ROW,
+            done = SQLITE_DONE,
+            cant_open = SQLITE_CANTOPEN,
+         };
+
+         static_assert( static_cast< int>( sql::ok) == 0, "sql::ok has to be 0"); 
+
+         namespace detail
+         {
+            struct Category : std::error_category
+            {
+               inline const char* name() const noexcept override
+               {
+                  return "sql";
+               }
+
+               inline std::string message( int code) const override
+               {
+                  return sqlite3_errstr( code);
+               }
+            };
+            inline const Category& category()
+            {
+               return casual::common::code::serialize::registration< Category>( 0xa5fb63c2e7f343c3a8b0147f3f0a667a_uuid);
+            }
+         } // detail
+
+         inline std::error_code make( int code)
+         {
+            return { code, detail::category()};
+         }
+
+         inline std::error_code make_error_code( code::sql code)
+         {
+            return { static_cast< int>( code), detail::category()};
+         }
+
+         template< typename H>
+         [[noreturn]] void raise( std::error_code code, H&& handle)
+         {
+            throw std::system_error{ code, sqlite3_errmsg( handle.get())};
+         }
+      } // code
+
+   } // database
+} // sql
+
+namespace std
+{
+   template <>
+   struct is_error_code_enum< sql::database::code::sql> : true_type {};
+}
+
+namespace sql
+{
+   namespace database
+   {
+
       namespace memory
       {
          constexpr auto file = ":memory:";
       } // memory
-      
-      namespace exception
-      {
-         struct Base : public casual::common::exception::system::invalid::Argument
-         {
-            using casual::common::exception::system::invalid::Argument::Argument;
-         };
 
-         struct Connection : Base
-         {
-            using Base::Base;
-         };
 
-         struct Query : public Base
-         {
-            using Base::Base;
-         };
-      }
 
       using duration_type = std::chrono::microseconds;
 
@@ -66,70 +112,70 @@ namespace sql
          const char* data;
       };
 
-      inline bool parameter_bind( sqlite3_stmt* statement, int index, std::nullptr_t)
+      inline auto parameter_bind( sqlite3_stmt* statement, int index, std::nullptr_t)
       {
-         return sqlite3_bind_null( statement, index) == SQLITE_OK;
+         return code::make( sqlite3_bind_null( statement, index));
       }
 
-      inline bool parameter_bind( sqlite3_stmt* statement, int index, const std::string& value)
+      inline auto parameter_bind( sqlite3_stmt* statement, int index, const std::string& value)
       {
-         return sqlite3_bind_text( statement, index, value.c_str(), value.size(), SQLITE_STATIC) == SQLITE_OK;
+         return code::make( sqlite3_bind_text( statement, index, value.c_str(), value.size(), SQLITE_STATIC));
       }
 
-      inline bool parameter_bind( sqlite3_stmt* statement, int index, const std::vector< char>& value)
+      inline auto parameter_bind( sqlite3_stmt* statement, int index, const std::vector< char>& value)
       {
-         return sqlite3_bind_blob( statement, index, value.data(), value.size(), SQLITE_STATIC) == SQLITE_OK;
+         return code::make( sqlite3_bind_blob( statement, index, value.data(), value.size(), SQLITE_STATIC));
       }
 
-      inline bool parameter_bind( sqlite3_stmt* statement, int index, const Blob& value)
+      inline auto parameter_bind( sqlite3_stmt* statement, int index, const Blob& value)
       {
-         return sqlite3_bind_blob( statement, index, value.data, value.size, SQLITE_STATIC) == SQLITE_OK;
+         return code::make( sqlite3_bind_blob( statement, index, value.data, value.size, SQLITE_STATIC));
       }
 
       template< typename Iter>
-      inline bool parameter_bind( sqlite3_stmt* statement, int index, const casual::common::Range< Iter>& value)
+      inline auto parameter_bind( sqlite3_stmt* statement, int index, const casual::common::Range< Iter>& value)
       {
-         return sqlite3_bind_blob( statement, index, value.data(), value.size(), SQLITE_STATIC) == SQLITE_OK;
+         return code::make( sqlite3_bind_blob( statement, index, value.data(), value.size(), SQLITE_STATIC));
       }
 
 
       template< typename T, std::size_t array_size>
-      inline bool parameter_bind( sqlite3_stmt* statement, int index, T const (&value)[ array_size])
+      inline auto parameter_bind( sqlite3_stmt* statement, int index, T const (&value)[ array_size])
       {
          const auto value_size = sizeof( T) * array_size;
 
-         return sqlite3_bind_blob( statement, index, value, value_size, SQLITE_STATIC) == SQLITE_OK;
+         return code::make( sqlite3_bind_blob( statement, index, value, value_size, SQLITE_STATIC));
       }
 
-      inline bool parameter_bind( sqlite3_stmt* statement, int index, int value)
+      inline auto parameter_bind( sqlite3_stmt* statement, int index, int value)
       {
-         return sqlite3_bind_int( statement, index, value) == SQLITE_OK;
+         return code::make( sqlite3_bind_int( statement, index, value));
       }
 
-      inline bool parameter_bind( sqlite3_stmt* statement, int index, long value)
+      inline auto parameter_bind( sqlite3_stmt* statement, int index, long value)
       {
-         return sqlite3_bind_int64( statement, index, value) == SQLITE_OK;
+         return code::make( sqlite3_bind_int64( statement, index, value));
       }
 
-      inline bool parameter_bind( sqlite3_stmt* statement, int index, long long value)
+      inline auto parameter_bind( sqlite3_stmt* statement, int index, long long value)
       {
-         return sqlite3_bind_int64( statement, index, value) == SQLITE_OK;
+         return code::make( sqlite3_bind_int64( statement, index, value));
       }
 
-      inline bool parameter_bind( sqlite3_stmt* statement, int index, std::size_t value)
+      inline auto parameter_bind( sqlite3_stmt* statement, int index, std::size_t value)
       {
-         return sqlite3_bind_int64( statement, index, value) == SQLITE_OK;
+         return code::make( sqlite3_bind_int64( statement, index, value));
       }
 
       template< typename Rep, typename Period>
-      inline bool parameter_bind( sqlite3_stmt* statement, int index, const std::chrono::duration< Rep, Period>& value)
+      inline auto parameter_bind( sqlite3_stmt* statement, int index, const std::chrono::duration< Rep, Period>& value)
       {
          long long duration = std::chrono::duration_cast< duration_type>( value).count();
          return parameter_bind( statement, index, duration);
       }
 
       template< typename system_clock, typename duration>
-      inline bool parameter_bind( sqlite3_stmt* statement, int index, const std::chrono::time_point< system_clock, duration>& value)
+      inline auto parameter_bind( sqlite3_stmt* statement, int index, const std::chrono::time_point< system_clock, duration>& value)
       {
          long long time = std::chrono::time_point_cast< duration_type>( value).time_since_epoch().count();
          return parameter_bind( statement, index, time);
@@ -137,7 +183,7 @@ namespace sql
 
 
       template< typename T>
-      inline std::enable_if_t< std::is_enum< T>::value, bool>
+      inline std::enable_if_t< std::is_enum< T>::value, std::error_code>
       parameter_bind( sqlite3_stmt* statement, int column, T value)
       {
          return parameter_bind( statement, column, static_cast< casual::common::traits::underlying_type_t< T>>( value));
@@ -327,60 +373,54 @@ namespace sql
 
            std::vector< Row> fetch()
            {
-              std::vector< Row> result;
-              switch( sqlite3_step( m_statement.get()))
-              {
-                 case SQLITE_ROW:
-                 {
-                    result.emplace_back( m_statement);
-                    break;
-                 }
-                 case SQLITE_DONE:
-                    break;
-                 default:
-                    throw exception::Query{ sqlite3_errmsg( m_handle.get())};
-              }
+               std::vector< Row> result;
+               auto code = code::make( sqlite3_step( m_statement.get()));
 
-              return result;
+               if( code == code::sql::row)
+                  result.emplace_back( m_statement);
+               else if( code != code::sql::done)
+                  code::raise( code, m_handle);
+
+               return result;
            }
 
 
-           bool fetch( Row& row)
-           {
-              switch( sqlite3_step( m_statement.get()))
-              {
-                 case SQLITE_ROW:
-                 {
-                    row = Row( m_statement);
-                    return true;
-                    break;
-                 }
-                 case SQLITE_DONE:
-                    return false;
-                 default:
-                    throw exception::Query{ sqlite3_errmsg( m_handle.get())};
-              }
-           }
+            bool fetch( Row& row)
+            {
+               auto code = code::make( sqlite3_step( m_statement.get()));
+
+               if( code == code::sql::row)
+               {
+                  row = Row( m_statement);
+                  return true;
+               }
+
+               if( code == code::sql::done)
+                  return false;
+
+               code::raise( code, m_handle);
+            }
 
             void execute()
             {
-               if( sqlite3_step( m_statement.get()) != SQLITE_DONE)
-                  throw exception::Query{ sqlite3_errmsg( m_handle.get())};
+               auto code = code::make( sqlite3_step( m_statement.get()));
+
+               if( code != code::sql::done)
+                  code::raise( code, m_handle);
             }
 
          private:
 
-           void bind( int index) { /* no op */}
+            void bind( int index) { /* no op */}
 
-           template< typename T, typename ...Params>
-           void bind( int index, T&&value, Params&&... params)
-           {
-              if( ! parameter_bind( m_statement.get(), index, std::forward< T>( value)))
-              {
-                 throw exception::Query{ sqlite3_errmsg( m_handle.get()) + std::string{ " index: "} + std::to_string( index)};
-              }
-              bind( index + 1, std::forward< Params>( params)...);
-           }
+            template< typename T, typename ...Params>
+            void bind( int index, T&&value, Params&&... params)
+            {
+               if( auto code = parameter_bind( m_statement.get(), index, std::forward< T>( value)))
+                  code::raise( code, m_handle);
+               
+               bind( index + 1, std::forward< Params>( params)...);
+            }
 
             std::shared_ptr< sqlite3> m_handle;
             std::shared_ptr< sqlite3_stmt> m_statement;
@@ -392,10 +432,11 @@ namespace sql
          {
             sqlite3_stmt* stmt;
 
-            if( sqlite3_prepare_v2( m_handle.get(), statement.data(), -1, &stmt, nullptr) != SQLITE_OK)
-            {
-               throw exception::Query{ sqlite3_errmsg( handle.get())};
-            }
+            auto code = code::make( sqlite3_prepare_v2( m_handle.get(), statement.data(), -1, &stmt, nullptr));
+
+            if( code != code::sql::ok)
+               code::raise( code, handle);
+
             m_statement = std::shared_ptr< sqlite3_stmt>( stmt, sqlite3_finalize);
          }
 
@@ -459,55 +500,30 @@ namespace sql
 
             sqlite3* p_handle = nullptr;
 
-            auto result = sqlite3_open( file.c_str(), &p_handle);
+            auto code = code::make( sqlite3_open( file.c_str(), &p_handle));
 
             std::shared_ptr< sqlite3> handle( p_handle, sqlite3_close);
 
-            switch( result)
+            if( code == code::sql::ok)
+               return handle;
+            
+            if( code == code::sql::cant_open)
             {
-               case SQLITE_OK:
-                  break;
-               case SQLITE_CANTOPEN:
-               {
-                  if( casual::common::file::exists( file))
-                  {
-                     throw exception::Connection( casual::common::string::compose( sqlite3_errmsg( handle.get())," file: ", file, " result: ", result));
-                  }
-                  else
-                  {
-                     auto created = casual::common::directory::create( casual::common::directory::name::base( file));
+               if( casual::common::file::exists( file))
+                  code::raise( code, handle);
 
-                     if (!created)
-                     {
-                        throw exception::Connection( casual::common::string::compose( sqlite3_errmsg( handle.get())," file: ", file, " result: ", result));
-                     }
+               if( ! casual::common::directory::create( casual::common::directory::name::base( file)))
+                  code::raise( code, handle);
 
-                     return open( file);
-                  }
-                  break;
-               }
-               default:
-               {
-                  throw exception::Connection( casual::common::string::compose( sqlite3_errmsg( handle.get())," file: ", file, " result: ", result));
-               }
-
-
+               return open( file);
             }
 
-            return handle;
+            code::raise( code, handle);
          }
 
          std::string file() const
          {
             return m_file;
-            /*
-            auto path = sqlite3_db_filename( m_handle.get(), "main");
-            if( ! path)
-            {
-               return {};
-            }
-            return path;
-            */
          }
 
 
@@ -532,10 +548,8 @@ namespace sql
 
          void statement( const char* sql)
          {
-            if( sqlite3_exec( m_handle.get(), sql, nullptr, nullptr, nullptr) != SQLITE_OK)
-            {
-               throw exception::Query{ sqlite3_errmsg( m_handle.get())};
-            }
+            if( auto code = code::make( sqlite3_exec( m_handle.get(), sql, nullptr, nullptr, nullptr)))
+               code::raise( code, m_handle);
          }
 
          //! @returns true if the table exists
@@ -670,5 +684,3 @@ namespace sql
 
 
 
-
-#endif /* DATABASE_H_ */

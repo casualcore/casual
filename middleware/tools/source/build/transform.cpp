@@ -9,7 +9,9 @@
 
 #include "common/algorithm.h"
 #include "common/string.h"
-#include "common/exception/system.h"
+
+#include "common/code/raise.h"
+#include "common/code/casual.h"
 
 namespace casual
 {
@@ -66,8 +68,8 @@ namespace casual
                   auto property = common::algorithm::find_if( properties, [&key]( auto& property){ return property.key == key;});
 
                   if( ! property)
-                     throw common::exception::system::invalid::Argument{
-                        common::string::compose( "failed to find resource property for key: ", key, " - check resource configuration for casual")};
+                     common::code::raise::error( common::code::casual::invalid_configuration, 
+                        "failed to find resource property for key: ", key, " - check resource configuration for casual");
                   
                   model::Resource result;
 

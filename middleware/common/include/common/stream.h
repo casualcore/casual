@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include "common/stream/customization.h"
 #include "common/traits.h"
 #include "common/algorithm.h"
 #include "common/functional.h"
@@ -21,27 +22,31 @@ namespace casual
    namespace common
    {
       namespace stream
-      {
-
-         template< typename T, typename Enable = void>
-         struct has_formatter : std::false_type{};
-         
+      {         
          namespace detail
          {
-            // just a helper to get rid of syntax
+            // using SFINAE expression to get a sutable specialization
             template< typename T> 
-            auto formatter( std::ostream& out, const T& value) 
-               -> decltype( typename stream::has_formatter< traits::remove_cvref_t< T>>::formatter{}( out, value), out)
+            auto formatter( std::ostream& out, T&& value, traits::priority::tag< 1>) 
+               -> decltype( void( customization::supersede::point< traits::remove_cvref_t< T>>::stream( out, std::forward< T>( value))), out)
             {
-               typename stream::has_formatter< traits::remove_cvref_t< T>>::formatter{}( out, value);
+               customization::supersede::point< traits::remove_cvref_t< T>>::stream( out, std::forward< T>( value));
+               return out;
+            }
+
+            template< typename T> 
+            auto formatter( std::ostream& out, T&& value, traits::priority::tag< 0>) 
+               -> decltype( void( customization::point< traits::remove_cvref_t< T>>::stream( out, std::forward< T>( value))), out)
+            {
+               customization::point< traits::remove_cvref_t< T>>::stream( out, std::forward< T>( value));
                return out;
             }
 
             template< typename T>
-            auto write( std::ostream& out, const T& value) 
-               -> decltype( formatter( out, value))
+            auto write( std::ostream& out, T&& value) 
+               -> decltype( formatter( out, std::forward< T>( value), traits::priority::tag< 1>{}))
             {
-               return formatter( out, value);
+               return formatter( out, std::forward< T>( value), traits::priority::tag< 1>{});
             }
 
          } // detail
@@ -54,9 +59,9 @@ namespace casual
 // std stream operator is a better match then this, hence this is a fallback
 // this also need to be declared before used by formatters below
 template< typename S, typename T>
-auto operator << ( S& out, const T& value) -> decltype( casual::common::stream::detail::write( out, value)) 
+auto operator << ( S& out, T&& value) -> decltype( casual::common::stream::detail::write( out, std::forward< T>( value))) 
 {
-   return casual::common::stream::detail::write( out, value);
+   return casual::common::stream::detail::write( out, std::forward< T>( value));
 }
 
 
@@ -68,10 +73,26 @@ namespace casual
    {
       namespace stream
       {
-
          namespace detail
          {
-            // lower, takes all that have a defined formatter
+            // highest priority, takes all that have specialized customization::supersede::point
+            template< typename T> 
+            auto indirection( std::ostream& out, T&& value, traits::priority::tag< 2>) 
+               -> decltype( void( customization::supersede::point< traits::remove_cvref_t< T>>::stream( out, std::forward< T>( value))), out)
+            {
+               customization::supersede::point< traits::remove_cvref_t< T>>::stream( out, std::forward< T>( value));
+               return out;
+            }
+
+            // takes all that can use the ostream stream operator, including the one defined above.
+            template< typename T> 
+            auto indirection( std::ostream& out, T&& value, traits::priority::tag< 1>) 
+               -> decltype( out << std::forward< T>( value))
+            {
+               return out << std::forward< T>( value);
+            }
+
+            // lower, takes all that can be serialized
             template< typename T> 
             auto indirection( std::ostream& out, T&& value, traits::priority::tag< 0>) 
                -> decltype( void( std::declval< serialize::line::Writer&>() << std::forward< T>( value)), out)
@@ -80,14 +101,6 @@ namespace casual
                archive << std::forward< T>( value);
                archive.consume( out);
                return out;
-            }
-
-            // higher priority, takes all that can use the ostream stream operator
-            template< typename T> 
-            auto indirection( std::ostream& out, T&& value, traits::priority::tag< 1>) 
-               -> decltype( out << std::forward< T>( value))
-            {
-               return out << std::forward< T>( value);
             }
             
          } // detail
@@ -98,24 +111,51 @@ namespace casual
          //! write multible values
          template< typename T, typename... Ts>
          auto write( std::ostream& out, T&& t, Ts&&... ts) 
-            -> decltype( detail::indirection( out, std::forward< T>( t), traits::priority::tag< 1>{})) 
+            -> decltype( detail::indirection( out, std::forward< T>( t), traits::priority::tag< 2>{})) 
          {
-            detail::indirection( out, std::forward< T>( t), traits::priority::tag< 1>{});
+            detail::indirection( out, std::forward< T>( t), traits::priority::tag< 2>{});
             return write( out, std::forward< Ts>( ts)...);
          }
 
-         //! Specialization for iterables, to log ranges
-         template< typename C> 
-         struct has_formatter< C, std::enable_if_t< 
-            traits::is::iterable< C>::value 
-            && ! traits::is::string::like< C>::value
-            >>
-            : std::true_type
+
+         namespace customization
          {
-            struct formatter
+
+            namespace supersede
+            {
+               //! Specialization for error_code
+               // will take presens over error_code ostream stream operator
+               template<>
+               struct point< std::error_code>
+               {
+                  static void stream( std::ostream& out, const std::error_code& value)
+                  {
+                     out << '[' << value.category().name() << ':' << value.message() << ']';
+                  }
+               };
+
+               //! Specialization for error_condition
+               // will take presens over error_condition ostream stream operator, which is non existent?
+               template<>
+               struct point< std::error_condition>
+               {
+                  static void stream( std::ostream& out, const std::error_condition& value)
+                  {
+                     out << '[' << value.category().name() << ':' << value.message() << ']';
+                  }
+               };
+               
+            } // supersede
+
+
+            //! Specialization for iterables, to log ranges
+            template< typename C> 
+            struct point< C, std::enable_if_t< 
+               traits::is::iterable< C>::value 
+               && ! traits::is::string::like< C>::value>>
             {
                template< typename R>
-               void operator () ( std::ostream& out, R&& range) const
+               static void stream( std::ostream& out, R&& range)
                {
                   out << '[';
 
@@ -128,65 +168,51 @@ namespace casual
                   out << ']';
                }
             };
-         };
 
-         //! Specialization for error code
-         template< typename C> 
-         struct has_formatter< C, std::enable_if_t< 
-            std::is_error_code_enum< C>::value>>
-            : std::true_type
-         {
-            struct formatter
+
+            //! specialization for std::error_code
+            template< typename C> 
+            struct point< C, std::enable_if_t< 
+               std::is_error_code_enum< C>::value>>
             {
-               template< typename S>
-               void operator () ( std::ostream& out, const C& value) const
+               template< typename T>
+               static auto stream( std::ostream& out, T value)
+                  -> decltype( void( stream::write( out, std::error_code{ value})))
                {
-                  auto code = std::error_code( value);
-                  out << '[' << code << ' ' << code.message() << ']';
+                  stream::write( out, std::error_code{ value});
                }
             };
-         };
 
-         //! Specialization for error condition
-         template< typename C> 
-         struct has_formatter< C, std::enable_if_t< 
-            std::is_error_condition_enum< C>::value>>
-            : std::true_type
-         {
-            struct formatter
+            //! specialization for std::error_condition
+            template< typename C> 
+            struct point< C, std::enable_if_t< 
+               std::is_error_condition_enum< C>::value>>
             {
-               void operator () ( std::ostream& out, const C& value) const
+               template< typename T>
+               static auto stream( std::ostream& out, T value)
+                  -> decltype( void( stream::write( out, std::error_condition{ value})))
                {
-                  auto condition = std::error_condition( value);
-                  out << condition.category().name() << ':' << condition.value() << " - " << condition.message();
+                  stream::write( out, std::error_condition{ value});
                }
             };
-         };
 
-         //! Specialization for named
-         template< typename T>
-         struct has_formatter< T, std::enable_if_t< serialize::traits::is::named::value< T>::value>>
-            : std::true_type
-         {
-            struct formatter
-            {
+            //! Specialization for named
+            template< typename T>
+            struct point< T, std::enable_if_t< serialize::traits::is::named::value< T>::value>>
+            {               
                template< typename C>
-               void operator () ( std::ostream& out, const C& value) const
+               static void stream( std::ostream& out, const C& value)
                {
                   stream::write( out, value.name(), ": ", value.value());
                }
             };
-         };
 
-         //! Specialization for std::exception
-         template< typename T>
-         struct has_formatter< T, std::enable_if_t< std::is_base_of< std::exception, T>::value>>
-            : std::true_type
-         {
-            struct formatter
+            //! Specialization for std::exception
+            template< typename T>
+            struct point< T, std::enable_if_t< std::is_base_of< std::exception, T>::value>>
             {
                template< typename C>
-               void operator () ( std::ostream& out, const C& value) const
+               static void stream( std::ostream& out, const C& value)
                {
                   indirection( out, value);
                }
@@ -198,34 +224,26 @@ namespace casual
 
                static void indirection( std::ostream& out, const std::system_error& value)
                {
-                  out << value.code() << " " << value.what();
+                  stream::write( out, value.code(), " ", value.what());
                }
             };
-         };
 
-         //! Specialization for reference_wrapper
-         template< typename T>
-         struct has_formatter< std::reference_wrapper< T>>
-            : std::true_type
-         {
-            struct formatter
-            {
+            //! Specialization for reference_wrapper
+            template< typename T>
+            struct point< std::reference_wrapper< T>>
+            {  
                template< typename C>
-               void operator () ( std::ostream& out, const C& value) const
+               static void stream( std::ostream& out, const C& value)
                {
                   stream::write( out, value.get());
-               }
+               };
             };
-         };
 
-         //! Specialization for _messages_
-         template< typename T>
-         struct has_formatter< T, std::enable_if_t< serialize::traits::is::message::like< T>::value>>
-            : std::true_type
-         {
-            struct formatter
-            {
-               void operator () ( std::ostream& out, const T& value) const
+            //! Specialization for _messages_
+            template< typename T>
+            struct point< T, std::enable_if_t< serialize::traits::is::message::like< T>::value>>
+            {  
+               static void stream( std::ostream& out, const T& value)
                {
                   stream::write( out, "{ type: ", value.type(), ", correlation: ", value.correlation, ", payload: ");
                   serialize::line::Writer archive;
@@ -234,7 +252,10 @@ namespace casual
                   out << '}';
                }
             };
-         };
+
+
+
+         } // customization
 
       } // stream
    } // common

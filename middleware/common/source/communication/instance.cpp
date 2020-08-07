@@ -9,10 +9,12 @@
 #include "common/communication/ipc.h"
 #include "common/communication/log.h"
 
-#include "common/exception/casual.h"
 #include "common/message/domain.h"
 #include "common/message/server.h"
 #include "common/environment.h"
+
+#include "common/code/raise.h"
+#include "common/code/casual.h"
 
 namespace casual
 {
@@ -95,13 +97,11 @@ namespace casual
                      {
                         case M::Directive::singleton:
                         {
-                           common::log::line( common::log::category::error, "domain-manager denied startup - reason: executable is a singleton - action: terminate");
-                           throw exception::casual::Shutdown{ "domain-manager denied startup - reason: process is regarded a singleton - action: terminate"};
+                           code::raise::error( code::casual::shutdown, "domain-manager denied startup - reason: executable is a singleton - action: terminate");
                         }
                         case M::Directive::shutdown:
                         {
-                           common::log::line( common::log::category::error, "domain-manager denied startup - reason: domain-manager is in shutdown mode - action: terminate");
-                           throw exception::casual::Shutdown{ "domain-manager denied startup - reason: domain-manager is in shutdown mode - action: terminate"};
+                           code::raise::error( code::casual::shutdown, "domain-manager denied startup - reason: domain-manager is in shutdown mode - action: terminate");
                         }
                         default:
                         {
@@ -189,9 +189,7 @@ namespace casual
                               log::line( verbose::log, "process: ", process);
 
                               if( ipc::exists( process.ipc))
-                              {
                                  return process;
-                              }
                            }
 
                            try
@@ -199,15 +197,18 @@ namespace casual
                               auto process = instance::fetch::handle( identity, directive);
 
                               if( process && ! environment.empty())
-                              {
                                  environment::variable::process::set( environment, process);
-                              }
+
                               return process;
                            }
-                           catch( const exception::system::communication::Unavailable&)
+                           catch( ...)
                            {
-                              common::log::line( log, "failed to fetch instance with identity: ", identity);
-                              return {};
+                              if( exception::code() == code::casual::communication_unavailable)
+                              {
+                                 common::log::line( log, "failed to fetch instance with identity: ", identity);
+                                 return {};
+                              }
+                              throw;
                            }
                         }
 
@@ -232,7 +233,7 @@ namespace casual
                      reset( local::fetch( m_identity, m_environment, directive));
 
                      if( ! m_process)
-                        throw common::exception::system::communication::unavailable::Removed{};
+                        code::raise::generic( code::casual::communication_unavailable, verbose::log, "process absent: ", m_process);
 
                      log::line( verbose::log, "connector: ", *this);
                   }
@@ -375,9 +376,7 @@ namespace casual
                               process = singleton_policy();
 
                               if( ! ipc::exists( process.ipc))
-                              {
-                                 throw exception::system::communication::unavailable::Removed{ "failed to locate domain manager"};
-                              }
+                                 code::raise::log( code::casual::domain_unavailable, "failed to locate domain manager");
 
                               return process;
                            }

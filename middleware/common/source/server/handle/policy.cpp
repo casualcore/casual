@@ -14,6 +14,9 @@
 
 #include "common/message/domain.h"
 
+#include "common/code/raise.h"
+#include "common/code/xatmi.h"
+
 #include "common/log.h"
 #include "common/execute.h"
 
@@ -142,7 +145,7 @@ namespace casual
                      }
                      catch( ...)
                      {
-                        exception::handle();
+                        exception::handle( log::category::error);
                      }
                   }
 
@@ -203,7 +206,7 @@ namespace casual
                      }
 
                      // Set 'global deadline'
-                     transaction::Context::instance().current().timout.set( now, timeout);
+                     transaction::Context::instance().current().timeout.set( now, timeout);
                   }
 
 
@@ -224,14 +227,11 @@ namespace casual
 
 
                            if( transaction::context().pending())
-                           {
-                              throw common::exception::xatmi::service::Error( "service: " + message.service.name + " tried to forward with pending transactions");
-                           }
+                              code::raise::error( code::xatmi::service_error, "forward with pending transactions - service: ", message.service.name);
 
                            common::service::Lookup lookup{
                               forward.parameter.service.name,
                               common::service::Lookup::Context::forward};
-
 
                            auto request = message;
 
@@ -271,9 +271,7 @@ namespace casual
                      // Connection to the domain has been done before...
 
                      if( ! arguments.resources.empty())
-                     {
-                        throw exception::system::invalid::Argument{ "can't build and link an administration server with resources"};
-                     }
+                        code::raise::error( code::casual::invalid_semantics, "can't build and link an administration server with resources");
 
                      policy::local::configure::services( arguments.services, {});
 
@@ -311,7 +309,7 @@ namespace casual
 
                   void Admin::forward( common::service::invoke::Forward&& forward, const message::service::call::callee::Request& message)
                   {
-                     throw common::exception::xatmi::System{ "can't forward within an administration server"};
+                     code::raise::error( code::casual::invalid_semantics, "can't forward within an administration server");
                   }
 
                } // call

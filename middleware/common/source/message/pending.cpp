@@ -46,13 +46,14 @@ namespace casual
                      {
                         try
                         {
-                           communication::ipc::outbound::Device device{ process.ipc};
-
                            return ! communication::device::non::blocking::put( process.ipc, message.complete).empty();
                         }
-                        catch( const exception::system::communication::Unavailable&)
+                        catch( ...)
                         {
-                           return true;
+                           if( exception::code() == code::casual::communication_unavailable)
+                              return true;
+
+                           throw;
                         }
                      };
 

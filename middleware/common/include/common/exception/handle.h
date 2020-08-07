@@ -1,15 +1,16 @@
-//! 
-//! Copyright (c) 2015, The casual project
+//!
+//! Copyright (c) 2020, The casual project
 //!
 //! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-
 #pragma once
 
-#include "common/traits.h"
+#include "common/log/stream.h"
 
+#include <system_error>
 #include <iosfwd>
+#include <string>
 
 namespace casual
 {
@@ -17,85 +18,48 @@ namespace casual
    {
       namespace exception
       {
-         //! throws pending exception, catches it and log based on the exception. returns the 
-         //! corresponding error code.
-         int handle() noexcept;
 
-         int handle( std::ostream& out) noexcept;
 
-         template< typename F> 
-         auto guard( F&& callable)
-         {
-            try 
-            {
-               callable();
-               return 0;
-            }
-            catch( ...)
-            {
-               return exception::handle();
-            }
-         }
 
-         template< typename F> 
-         auto guard( std::ostream& out, F&& callable)
-         {
-            try 
-            {
-               callable();
-               return 0;
-            }
-            catch( ...)
-            {
-               return exception::handle( out);
-            }
-         }
+         //! catches all possible exceptions and convert them to error_code
+         std::error_code code() noexcept;
+
+
+         //! tries to catch all possible exceptions, including error_code/conditions 
+         //! logs with appropriate stream, and returns the corresponding error_code
+         //std::error_code handle();
 
          namespace detail
          {
-            template< typename F, typename B> 
-            auto guard( F&& callable, B&& fallback, traits::priority::tag< 1>) 
-               -> decltype( common::traits::convertable::type( callable(), std::forward< B>( fallback)))
+            template< typename... Ts>
+            std::error_code handle( std::ostream& out, Ts&&... ts)
             {
-               try 
-               {
-                  return callable();
-               }
-               catch( ...)
-               {
-                  exception::handle();
-               }
-               return std::forward< B>( fallback);
+               auto code = exception::code();
+               log::line( out, code, std::forward< Ts>( ts)...);
+               return code;
             }
-
-            template< typename F, typename B> 
-            auto guard( F&& callable, B&& fallback, traits::priority::tag< 0>) 
-               -> decltype( common::traits::convertable::type( callable(), fallback()))
-            {
-               try 
-               {
-                  return callable();
-               }
-               catch( ...)
-               {
-                  exception::handle();
-               }
-               return fallback();
-            }
-            
          } // detail
-
-         template< typename F, typename B> 
-         auto guard( F&& callable, B&& fallback) 
-            -> decltype( detail::guard( std::forward< F>( callable), std::forward< B>( fallback), traits::priority::tag< 1>{}))
+         
+         inline std::error_code handle( std::ostream& out)
          {
-            return detail::guard( std::forward< F>( callable), std::forward< B>( fallback), traits::priority::tag< 1>{});
+            return detail::handle( out);
          }
+
+         template< typename... Ts>
+         std::error_code handle( std::ostream& out, Ts&&... ts)
+         {
+            return detail::handle( out, ' ', std::forward< Ts>( ts)...);
+         }
+
+
+         namespace sink
+         {
+            void error() noexcept;
+            void log() noexcept;
+            void silent() noexcept;
+         } // sink
+
 
       } // exception
    } // common
 } // casual
-
-
-
-

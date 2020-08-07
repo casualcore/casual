@@ -36,7 +36,7 @@ Manages casual queue, the provided queue functionality.
 
 int main( int argc, char **argv)
 {
-   return casual::common::exception::guard( [=]()
+   return casual::common::exception::main::guard( [=]()
    {
       casual::queue::manager::main( argc, argv);
    });

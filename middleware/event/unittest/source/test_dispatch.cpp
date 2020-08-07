@@ -12,7 +12,7 @@
 #include "domain/pending/message/send.h"
 #include "casual/domain/manager/api/state.h"
 
-#include "common/exception/casual.h"
+
 #include "common/message/event.h"
 #include "common/communication/instance.h"
 

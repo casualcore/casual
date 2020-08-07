@@ -13,9 +13,11 @@
 #include "common/communication/ipc.h"
 #include "common/message/dispatch.h"
 #include "common/message/handle.h"
-#include "common/exception/casual.h"
 #include "common/transaction/context.h"
 #include "common/execute.h"
+
+#include "common/code/raise.h"
+#include "common/code/casual.h"
 
 #include "common/communication/instance.h"
 
@@ -55,18 +57,13 @@ namespace casual
                            rollback.release();
                         }
                      }
-                  }
-                  catch( const common::exception::casual::Shutdown&)
-                  {
-                     return false;
+                     return true;
                   }
                   catch( ...)
                   {
-                     common::exception::handle();
+                     common::exception::sink::log();
                      return false;
                   }
-
-                  return true;
                }
 
             } // <unnamed>
@@ -79,7 +76,7 @@ namespace casual
             Trace trace{ "queue::forward::Dispatch::Dispatch"};
 
             if( m_tasks.size() != 1)
-               throw common::exception::system::invalid::Argument{ "only one task is allowed"};
+               common::code::raise::error( common::code::casual::invalid_argument, "only one task is allowed");
 
             // wait for queue-manager to be up and running
             {

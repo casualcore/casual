@@ -15,7 +15,7 @@
 
 int main( int argc, char** argv)
 {
-   return casual::common::exception::guard( [&]()
+   return casual::common::exception::main::guard( [&]()
    {
       casual::transaction::manager::Settings settings;
       {

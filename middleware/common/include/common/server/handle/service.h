@@ -13,9 +13,11 @@
 
 #include "common/buffer/transport.h"
 #include "common/execution.h"
-#include "common/exception/xatmi.h"
 #include "common/log.h"
 #include "common/execute.h"
+
+#include "common/code/raise.h"
+#include "common/code/xatmi.h"
 
 #include "common/flag.h"
 
@@ -117,8 +119,11 @@ namespace casual
 
                   if( ! found)
                   {
-                     throw common::exception::xatmi::System( "service: " + parameter.service.name + " not present at server - inconsistency between broker and server");
+                     code::raise::error( 
+                        code::xatmi::system, 
+                        parameter.service.name + " not present at server - inconsistency between service-manager and server");
                   }
+ 
 
                   auto& service = found->second;
 

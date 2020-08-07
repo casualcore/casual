@@ -95,7 +95,7 @@ namespace casual
                   struct base_connector
                   {
                      using blocking_policy = ipc::outbound::Connector::blocking_policy;
-                     using non_blocking_policy = ipc::outbound::Connector::blocking_policy;
+                     using non_blocking_policy = ipc::outbound::Connector::non_blocking_policy;
 
                      inline base_connector( process::Handle process)
                         : m_process{ std::move( process)}, m_connector( m_process.ipc),

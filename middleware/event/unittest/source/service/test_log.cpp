@@ -11,7 +11,6 @@
 #include "domain/manager/unittest/process.h"
 #include "casual/domain/manager/api/state.h"
 
-#include "common/exception/casual.h"
 #include "common/communication/instance.h"
 #include "common/communication/select.h"
 #include "common/signal.h"
@@ -132,7 +131,7 @@ domain:
       }
 
 
-      TEST( event_service_log, discard_metric)
+      TEST( event_service_log, filter_exclusive)
       {
          common::unittest::Trace trace;
 
@@ -154,7 +153,7 @@ domain:
 
    executables:
       - path: "${PWD}/bin/casual-event-service-log"
-        arguments: [ --file, "${SERVICE_LOG_FILE}", --discard, '^[.].*$']
+        arguments: [ --file, "${SERVICE_LOG_FILE}", --filter-exclusive, '^[.].*$']
         memberships: [ second]
         
 )"};
@@ -174,7 +173,7 @@ domain:
       }
 
 
-      TEST( event_service_log, filter_metric)
+      TEST( event_service_log, filter_inclusive)
       {
          common::unittest::Trace trace;
 
@@ -196,7 +195,7 @@ domain:
 
    executables:
       - path: "${PWD}/bin/casual-event-service-log"
-        arguments: [ --file, "${SERVICE_LOG_FILE}", --filter, '^[.].*$']
+        arguments: [ --file, "${SERVICE_LOG_FILE}", --filter-inclusive, '^[.].*$']
         memberships: [ second]
         
 )"};

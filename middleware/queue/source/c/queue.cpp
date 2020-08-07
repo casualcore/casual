@@ -8,16 +8,16 @@
 
 #include "queue/api/queue.h"
 #include "queue/common/log.h"
-#include "queue/exception.h"
-
+#include "queue/code.h"
 
 #include "casual/platform.h"
 #include "common/exception/handle.h"
-#include "common/exception/system.h"
 #include "common/value/optional.h"
 #include "common/algorithm.h"
 #include "common/string.h"
 #include "common/log/category.h"
+#include "common/code/casual.h"
+#include "common/code/category.h"
 
 namespace casual
 {
@@ -40,16 +40,19 @@ namespace casual
                   global::code = queue::code::ok;
                   return functor( std::forward< Ts>( ts)...);
                }
-               catch( const queue::exception::base& e)
+               catch( ...)
                {
-                  common::log::line( queue::log, "error: ", e);
-                  global::code = e.type();
+                  auto code = common::exception::code();
+
+                  if( common::code::is::category< queue::code>( code))
+                     global::code = static_cast< queue::code>( code.value());
+                  else
+                  {
+                     common::log::line( common::log::category::error, common::code::casual::internal_unexpected_value, " unexpected error: ", code);
+                     global::code = queue::code::system;
+                  }
                }
-               catch( const std::exception& exception)
-               {
-                  common::log::line( common::log::category::error, "unexpected error: ", exception.what());
-                  global::code = queue::code::system;
-               }
+
                return error;
             }
 
@@ -71,12 +74,12 @@ namespace casual
 
                Holder& get( id_type descriptor)
                {
-                  auto found = common::algorithm::find_if( m_cache, [descriptor]( auto& m){ return m.id == descriptor;});
+                  auto is_descriptor = [descriptor]( auto& holder ){ return holder.id == descriptor;};
 
-                  if( ! found)
-                     throw exception::invalid::Argument{ common::string::compose( "descriptor: ", descriptor)};
-                  
-                  return *found;
+                  if( auto found = common::algorithm::find_if( m_cache, is_descriptor))
+                     return *found;
+
+                  queue::raise( queue::code::argument);
                }
 
                Holder& add( value_type value)
@@ -272,7 +275,7 @@ namespace casual
                }( queue, selector);
 
                if( message.empty())
-                  throw exception::no::Message{};
+                  queue::raise( queue::code::no_message);
 
                return local::message::global::cache.add( std::move( message.front())).id.value();
             }

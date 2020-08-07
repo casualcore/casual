@@ -7,6 +7,7 @@
 #include "queue/code.h"
 
 #include "common/cast.h"
+#include "common/code/serialize.h"
 
 namespace casual
 {
@@ -20,7 +21,7 @@ namespace casual
             {
                const char* name() const noexcept override
                {
-                  return "cq";
+                  return "queue";
                }
 
                std::string message( int code) const override
@@ -28,18 +29,19 @@ namespace casual
                   switch( static_cast< queue::code>( code))
                   {
                      case code::ok: return "ok";
-                     case code::argument: return "invalid arguments";
-                     case code::no_message: return "no message";
-                     case code::no_queue: return "no queue";
+                     case code::argument: return "invalid-arguments";
+                     case code::no_message: return "no-message";
+                     case code::no_queue: return "no-queue";
                      case code::system: return "system";
                   }
                   return "unknown";
                }
             };
 
-            const Category category{};
+            const auto& category = common::code::serialize::registration< Category>( 0xc6518f7c3e244cbcbd877538061c6415_uuid);
          } // <unnamed>
       } // local
+
 
       std::error_code make_error_code( queue::code code)
       {

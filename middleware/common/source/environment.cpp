@@ -6,13 +6,15 @@
 
 
 #include "common/environment.h"
-#include "common/exception/system.h"
 #include "common/file.h"
 #include "common/algorithm.h"
 #include "common/range/adapter.h"
 #include "common/log.h"
 #include "common/string.h"
 #include "common/view/string.h"
+
+#include "common/code/convert.h"
+#include "common/code/system.h"
 
 
 #include <memory>
@@ -73,7 +75,7 @@ namespace casual
                         lock_type lock { m_mutex};
 
                         if( setenv( name, value.c_str(), 1) == -1)
-                           exception::system::throw_from_errno();
+                           code::raise::log( code::convert::to::casual( code::system::last::error()), "environment::set");
                      }
 
                      void unset( const char* name) const
@@ -81,7 +83,7 @@ namespace casual
                         lock_type lock { m_mutex};
 
                         if( ::unsetenv( name) == -1)
-                           exception::system::throw_from_errno();
+                           code::raise::log( code::convert::to::casual( code::system::last::error()), "environment::unset");
                      }
 
                      std::mutex& mutex() const
@@ -124,7 +126,7 @@ namespace casual
                std::string get( const char* name)
                {
                   if( ! exists( name))
-                     throw exception::system::invalid::Argument( string::compose( "failed to get variable: ",name));
+                     code::raise::error( code::casual::invalid_argument, "failed to get variable: ",name);
 
                   return local::native::Variable::instance().get( name);
                }

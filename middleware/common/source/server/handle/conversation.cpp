@@ -23,7 +23,7 @@ namespace casual
          namespace handle
          {
 
-            void Conversation::operator () ( message_type& message)
+            void Conversation::operator () ( message::conversation::connect::callee::Request& message)
             {
                Trace trace{ "server::handle::Conversation::operator()"};
 
@@ -61,7 +61,8 @@ namespace casual
                }
                catch( ...)
                {
-                  common::exception::handle();
+                  log::line( log::category::error, exception::code(), " conversation connect");
+                  log::line( log::category::verbose::error, "message: ", message);
                }
 
             }

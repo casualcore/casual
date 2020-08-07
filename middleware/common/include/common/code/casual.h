@@ -8,10 +8,8 @@
 #pragma once
 
 
-#include "common/log/stream.h"
-#include "common/signal.h"
-
 #include <system_error>
+#include <iosfwd>
 
 namespace casual
 {
@@ -23,18 +21,37 @@ namespace casual
          {
             //ok = 0,
             shutdown = 1,
-            validation,
+            interupted,
+
             invalid_configuration,
             invalid_document,
             invalid_node,
             invalid_version,
+            invalid_path,
+            invalid_argument,
+            invalid_semantics,
+
+            failed_transcoding,
+
+            communication_unavailable,
+            communication_refused,
+            communication_protocol,
+            communication_retry,
+            communication_no_message,
+
+            domain_unavailable,
+            domain_running,
+            domain_instance_unavailable,
+
+            buffer_type_duplicate,
+
+            internal_out_of_bounds,
+            internal_unexpected_value,
+            internal_correlation,
          };
 
-
-         std::error_code make_error_code( casual code);
-
-         
-         log::Stream& stream( casual code);
+         std::error_code make_error_code( code::casual code);
+         const char* description( code::casual code);
 
       } // code
    } // common

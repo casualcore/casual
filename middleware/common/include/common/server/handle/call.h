@@ -90,7 +90,7 @@ namespace casual
                   }
                   catch( ...)
                   {
-                     exception::handle();
+                     exception::code();
                   }
                }
 

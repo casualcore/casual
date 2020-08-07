@@ -6,9 +6,11 @@
 
 
 #include "common/service/type.h"
-#include "common/exception/system.h"
 #include "common/cast.h"
 #include "common/string.h"
+
+#include "common/code/raise.h"
+#include "common/code/casual.h"
 
 
 #include <map>
@@ -42,13 +44,14 @@ namespace casual
                if( mode == "atomic") return Type::atomic;
                if( mode == "none") return Type::none;
                if( mode == "branch") return Type::branch;
-               throw exception::system::invalid::Argument{ "invalid transaction mode: " + mode};
+
+               code::raise::error( code::casual::invalid_argument, "transaction mode: ", mode);
             }
 
             Type mode( std::uint16_t mode)
             {
                if( mode < cast::underlying( Type::automatic) || mode > cast::underlying( Type::branch))
-                  throw exception::system::invalid::Argument{ string::compose( "invalid transaction mode: ", mode)};
+                  code::raise::error( code::casual::invalid_argument, "transaction mode: ", mode);
 
                return static_cast< Type>( mode);
             }

@@ -6,9 +6,12 @@
 
 
 #include "common/process.h"
-#include "common/exception/system.h"
-#include "common/exception/casual.h"
+
 #include "common/exception/handle.h"
+#include "common/code/raise.h"
+#include "common/code/casual.h"
+#include "common/code/system.h"
+#include "common/code/convert.h"
 
 #include "common/file.h"
 #include "common/log.h"
@@ -63,9 +66,8 @@ namespace casual
                   std::uint32_t size = platform::size::max::path;
                   std::vector< char> path( platform::size::max::path);
                   if( ::_NSGetExecutablePath( path.data(), &size) != 0)
-                  {
-                     throw exception::system::invalid::Argument{ "failed to get the path to the current executable"};
-                  }
+                     code::raise::log( code::casual::invalid_path, "failed to get the path to the current executable");
+
                   if( path.data()) 
                      return path.data();
 
@@ -157,13 +159,13 @@ namespace casual
 
             if( nanosleep( &posix_time, nullptr) == -1)
             {
-               switch( code::last::system::error())
+               switch( code::system::last::error())
                {
-                  case code::system::interrupted:
+                  case std::errc::interrupted:
                      signal::dispatch();
                      break;
                   default:
-                     exception::system::throw_from_errno();
+                     code::system::raise();
                }
             }
          }
@@ -305,10 +307,13 @@ namespace casual
 
                   private:
 
-                     void check_error( int code, const char* message)
+                     void check_error( int result, const char* message)
                      {
-                        if( code != 0)
-                           exception::system::throw_from_code( code);
+                        if( result == 0)
+                           return;
+
+                        auto code = static_cast< std::errc>( result);
+                        code::raise::error( code::convert::to::casual( code), message);
                      };
 
                      posix_spawnattr_t m_attributes;
@@ -336,8 +341,7 @@ namespace casual
             // could still go wrong, since we don't know if the path will actually execute,
             // but we'll probably get rid of most of the errors (due to bad configuration and such)
             if( ! file::permission::execution( path))
-               throw exception::system::invalid::Argument( string::compose( "spawn failed - path: ", path));
-
+               code::raise::log( code::casual::invalid_path, "spawn failed - path: ", path);
 
             log::line( log::debug, "process::spawn ", path, ' ', arguments);
             log::line( verbose::log, "environment: ", environment);
@@ -357,16 +361,16 @@ namespace casual
                // make sure we don't block interupt and terminate
                signal::thread::scope::Unblock unblock{ signal::Set{ code::signal::interrupt, code::signal::terminate}};
 
-               auto status =  posix_spawnp(
-                     &native_pid,
-                     path.c_str(),
-                     nullptr,
-                     attributes.get(),
-                     const_cast< char* const*>( c_arguments.data()),
-                     const_cast< char* const*>( c_environment.data()));
+               auto status = posix_spawnp(
+                  &native_pid,
+                  path.c_str(),
+                  nullptr,
+                  attributes.get(),
+                  const_cast< char* const*>( c_arguments.data()),
+                  const_cast< char* const*>( c_environment.data()));
 
                if( status != 0)
-                  exception::system::throw_from_code( status);
+                  code::raise::log( code::casual::invalid_path, "spawn failed - path: ", path, " system: ", static_cast< std::errc>( status));
             
                return strong::process::id{ native_pid};
             }();
@@ -432,21 +436,20 @@ namespace casual
 
                      if( result == -1)
                      {
-                        switch( code::last::system::error())
+                        switch( auto code = code::system::last::error())
                         {
-                           case code::system::no_child_process:
+                           case std::errc::no_child_process:
                               // no child
                               break;
 
-                           case code::system::interrupted:
+                           case std::errc::interrupted:
                               signal::dispatch();
 
                               // We do another turn in the loop
                               return true;
 
                            default:
-                              log::line( log::category::error, "failed to check state of pid: ", exit.pid, " - ", code::last::system::error());
-                              exception::system::throw_from_errno();
+                              code::raise::error( code::convert::to::casual( code), "failed to check state of pid: ", exit.pid, " - ", code); 
                         }
                      }
                      else if( result != 0)
@@ -618,16 +621,16 @@ namespace casual
                   return {};
 
                std::vector< Exit> result;
+               
                try
                {
                   signal::timer::Scoped alarm( timeout);
-
                   local::wait( pids, result);
-
                }
-               catch( const exception::signal::Timeout&)
+               catch( ...)
                {
-
+                  if( exception::code() != code::signal::alarm)
+                     throw;
                }
                return result;
             }
@@ -657,21 +660,14 @@ namespace casual
       {
          if( m_handle.pid)
          {
-            try 
-            {
-               process::terminate( m_handle);
-            }
-            catch( ...)
-            {
-               exception::handle();
-            }
+            exception::guard( [&](){ process::terminate( m_handle);});
          }
       }
 
       void Process::handle( const process::Handle& handle)
       {
          if( m_handle.pid != handle.pid)
-            throw exception::system::invalid::Process{ string::compose( "trying to update process with different pids: ", m_handle.pid, " != ", handle.pid)};
+            code::raise::error( code::casual::invalid_argument, "trying to update process with different pids: ", m_handle.pid, " != ", handle.pid);
 
          m_handle = handle;
       }

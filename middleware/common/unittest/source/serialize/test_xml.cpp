@@ -5,11 +5,11 @@
 //!
 
 
-#include <gtest/gtest.h>
+#include "common/unittest.h"
 
 
 #include "common/serialize/xml.h"
-#include "common/exception/casual.h"
+#include "common/code/casual.h"
 
 #include <sstream>
 
@@ -154,10 +154,10 @@ namespace casual
       {
          const std::string xml{ "<?xml version='1.0'?><root>" };
 
-         EXPECT_THROW
+         EXPECT_CODE
          ({
             auto reader = serialize::xml::strict::reader( xml);
-         }, exception::casual::invalid::Document);
+         }, code::casual::invalid_document);
 
       }
 
@@ -177,11 +177,11 @@ namespace casual
    )"
          };
 
-         EXPECT_THROW
+         EXPECT_CODE
          ({
             test::SimpleVO value;
             local::string_to_value( xml, value);
-         }, exception::casual::invalid::Node);
+         }, code::casual::invalid_node);
 
       }
 
@@ -201,11 +201,11 @@ namespace casual
    )"
          };
 
-         EXPECT_THROW
+         EXPECT_CODE
          ({
             test::SimpleVO value;
             local::string_to_value( xml, value);
-         }, exception::casual::invalid::Node);
+         }, code::casual::invalid_node);
       }
 
       TEST( common_serialize_xml_archive, read_with_too_long_short__expecting_exception)
@@ -224,11 +224,11 @@ namespace casual
    )"
          };
 
-         EXPECT_THROW
+         EXPECT_CODE
          ({
             test::SimpleVO value;
             local::string_to_value( xml, value);
-         }, exception::casual::invalid::Node);
+         }, code::casual::invalid_node);
 
       }
 

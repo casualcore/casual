@@ -36,7 +36,7 @@ namespace casual
 
 int main( int argc, char **argv)
 {
-   return casual::common::exception::guard( [=]()
+   return casual::common::exception::main::guard( [=]()
    {
        casual::gateway::manager::main( argc, argv);
    });

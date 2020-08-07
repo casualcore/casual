@@ -13,9 +13,12 @@
 #include "common/algorithm.h"
 #include "common/transaction/id.h"
 
-#include "common/exception/xatmi.h"
+#include "common/code/raise.h"
+#include "common/code/xatmi.h"
 
+#include "common/log.h"
 #include "common/string.h"
+
 
 #include <vector>
 
@@ -121,7 +124,7 @@ namespace casual
                if( found)
                   found->active = false;
                else
-                  throw exception::xatmi::invalid::Descriptor{ string::compose( "invalid descriptor: ", descriptor)};
+                  code::raise::generic( code::xatmi::descriptor, log::debug, "invalid descriptor: ", descriptor);
             }
 
             template< typename I>
@@ -129,10 +132,10 @@ namespace casual
             {
                auto found = algorithm::find( m_descriptors, descriptor);
                
-               if( found && found->active)
-                  return *found;
-               else 
-                  throw exception::xatmi::invalid::Descriptor{ string::compose( "invalid call descriptor: ", descriptor)};
+               if( ! ( found && found->active))
+                  code::raise::generic( code::xatmi::descriptor, log::debug, "invalid call descriptor: ", descriptor);
+
+               return *found;
             }
 
 

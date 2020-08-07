@@ -11,6 +11,8 @@
 #include "common/log.h"
 #include "common/terminal.h"
 
+#include "common/code/raise.h"
+
 
 namespace casual
 {
@@ -59,8 +61,6 @@ namespace casual
                      }
                   }
                } // representation
-
-
 
                namespace help
                {
@@ -235,8 +235,6 @@ namespace casual
                         full( range::make( options), description);
                      else 
                         partial( arguments, range::make( options));
-
-                     throw exception::user::Help{ "built in help was invoked"};
                   }
 
                } // help
@@ -408,8 +406,6 @@ namespace casual
                         // 3
                         parse_options( range::make( invoked), holder.representation());
                      }
-
-                     throw exception::user::bash::Completion{ "user abort - bash-completion"};
                   }
                } // completion
 
@@ -420,7 +416,7 @@ namespace casual
          {  
             void correlation( const std::string& key)
             {
-               throw invalid::Argument{ "failed to correlate option " + key};
+               code::raise::log( code::casual::invalid_argument, "failed to correlate option ", key);
             }
 
          } // exception
@@ -469,17 +465,19 @@ namespace casual
                void cardinality( const std::string& key, const Cardinality& cardinality, size_type value)
                {
                   if( ! cardinality.valid( value))
-                     throw exception::invalid::Argument{ string::compose( "cardinality not satisfied for option: ", key)};
+                     code::raise::log( code::casual::invalid_argument, "cardinality not satisfied for option: ", key);
                }
 
                namespace value
                {
                   void cardinality( const std::string& key, const Cardinality& cardinality, range_type values)
                   {
-                     if( ! cardinality.valid( values.size()))
-                        throw exception::invalid::Argument{ 
-                           string::compose( "cardinality not satisfied for values to option: ", key, 
-                              " - ", cardinality, ", values: ", values)};
+                     if( cardinality.valid( values.size()))
+                        return;
+
+                     code::raise::log( code::casual::invalid_argument, 
+                        "cardinality not satisfied for values to option: ", key, 
+                        " - ", cardinality, ", values: ", values);
                   }
                } // value
 
@@ -491,13 +489,14 @@ namespace casual
          {
             Default::Default( std::string description) : description( std::move( description)) {}
 
-            void Default::overrides( range_type arguments, callback_type callback)
+            bool Default::overrides( range_type arguments, common::unique_function< detail::Holder()> callback)
             {
                // help
                if( auto found = algorithm::find_first_of( arguments, local::help::global::keys.active()))
                {
                   algorithm::rotate( arguments, found);
                   local::help::invoke( ++arguments, callback().representation(), description);
+                  return true;
                }
                   
                // bash-completion                  
@@ -505,8 +504,9 @@ namespace casual
                {
                   algorithm::rotate( arguments, found);
                   local::completion::invoke( ++arguments, callback());
+                  return true;
                }
-
+               return false;
             }
          } // policy
          

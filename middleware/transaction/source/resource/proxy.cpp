@@ -9,13 +9,14 @@
 #include "transaction/common.h"
 
 #include "common/message/transaction.h"
-#include "common/exception/xa.h"
 #include "common/process.h"
 #include "common/message/dispatch.h"
 #include "common/message/handle.h"
 #include "common/communication/ipc.h"
-#include "common/event/send.h"
 #include "common/environment.h"
+
+#include "common/code/raise.h"
+#include "common/code/xa.h"
 
 #include "common/communication/instance.h"
 
@@ -40,27 +41,14 @@ namespace casual
                {
                   namespace handle
                   {
-                     struct Base
-                     {
-                        Base( State& state ) : state( state) {}
-                     protected:
-                        State& state;
-                     };
-
-
                      void open( State& state)
                      {
                         Trace trace{ "open resource"};
 
-                        auto result = state.resource.open();
+                        auto code = state.resource.open();
 
-                        if( result != code::xa::ok)
-                        {
-                           auto message = string::compose( result, " failed to open xa resource ", state.resource.id());
-                           event::error::send( message);
-
-                           throw exception::xa::exception{ result, message};
-                        }
+                        if( code != code::xa::ok)
+                           code::raise::error( code, "failed to open xa resource - id: ", state.resource.id(), ", name: ", state.resource.name());
 
                         message::transaction::resource::Ready ready{ common::process::handle()};
                         ready.id = state.resource.id();
@@ -69,68 +57,57 @@ namespace casual
                            communication::instance::outbound::transaction::manager::device(), ready);
                      }
 
-
-                     template< typename P>
-                     struct basic_handler : public Base
+                     template< typename M, typename A> 
+                     void helper( State& state, M&& message, A&& action)
                      {
-                        using policy_type = P;
-                        //! deduce second argument as message type.
-                        using message_type = common::traits::remove_cvref_t< typename common::traits::function< policy_type>::template argument_t< 1>>; 
+                        auto reply = common::message::reverse::type( message);
 
-                        using Base::Base;
+                        reply.statistics.start = platform::time::clock::type::now();
 
-                        void operator () ( message_type& message)
-                        {
-                           auto reply = common::message::reverse::type( message);
+                        reply.process = common::process::handle();
+                        reply.resource = state.resource.id();
 
-                           reply.statistics.start = platform::time::clock::type::now();
+                        reply.state = action( state.resource, message.trid, message.flags);
+                        reply.trid = std::move( message.trid);
 
-                           reply.process = common::process::handle();
-                           reply.resource = state.resource.id();
+                        reply.statistics.end = platform::time::clock::type::now();
 
-                           reply.state = policy_type()( state, message);
-                           reply.trid = std::move( message.trid);
+                        communication::device::blocking::send(
+                           communication::instance::outbound::transaction::manager::device(), reply);  
+                     }
 
-                           reply.statistics.end = platform::time::clock::type::now();
-
-                           communication::device::blocking::send(
-                              communication::instance::outbound::transaction::manager::device(), reply);
-
-                        }
-                     };
-
-
-                     namespace policy
+                     auto prepare( State& state)
                      {
-                        struct Prepare
+                        return [&state]( common::message::transaction::resource::prepare::Request& message)
                         {
-                           auto operator() ( State& state, common::message::transaction::resource::prepare::Request& message) const
+                           helper( state, message, [](auto& resource, auto& trid, auto flags)
                            {
-                              return state.resource.prepare( message.trid, message.flags);
-                           }
+                              return resource.prepare( trid, flags);
+                           });
                         };
+                     }
 
-                        struct Commit
+                     auto commit( State& state)
+                     {
+                        return [&state]( common::message::transaction::resource::commit::Request& message)
                         {
-                           auto operator() ( State& state, common::message::transaction::resource::commit::Request& message) const
+                           helper( state, message, [](auto& resource, auto& trid, auto flags)
                            {
-                              return state.resource.commit( message.trid, message.flags);
-                           }
+                              return resource.commit( trid, flags);
+                           });
                         };
+                     }
 
-                        struct Rollback
+                     auto rollback( State& state)
+                     {
+                        return [&state]( common::message::transaction::resource::rollback::Request& message)
                         {
-                           auto operator() ( State& state, common::message::transaction::resource::rollback::Request& message) const
+                           helper( state, message, [](auto& resource, auto& trid, auto flags)
                            {
-                              return state.resource.rollback( message.trid, message.flags);
-                           }
+                              return resource.rollback( trid, flags);
+                           });
                         };
-
-                     } // policy
-
-                     using Prepare = basic_handler< policy::Prepare>;
-                     using Commit = basic_handler< policy::Commit>;
-                     using Rollback = basic_handler< policy::Rollback>;
+                     }
 
                   } // handle
 
@@ -140,7 +117,7 @@ namespace casual
                      void validate( bool ok, Ts&&... ts)
                      {
                         if( ! ok)
-                           throw exception::system::invalid::Argument{ common::string::compose( std::forward< Ts>( ts)...)};
+                           code::raise::error( code::casual::invalid_argument, std::forward< Ts>( ts)...);
                      };
 
                      State state( proxy::Settings settings, casual_xa_switch_mapping* switches)
@@ -191,9 +168,9 @@ namespace casual
             
             auto handler = common::message::dispatch::handler( device,
                common::message::handle::defaults( device),
-               proxy::local::handle::Prepare{ m_state},
-               proxy::local::handle::Commit{ m_state},
-               proxy::local::handle::Rollback{ m_state}
+               proxy::local::handle::prepare( m_state),
+               proxy::local::handle::commit( m_state),
+               proxy::local::handle::rollback( m_state)
             );
 
             proxy::local::handle::open( m_state);
@@ -202,7 +179,7 @@ namespace casual
 
             common::message::dispatch::pump( 
                handler, 
-               common::communication::ipc::inbound::device());
+               device);
 
          }
       } // resource

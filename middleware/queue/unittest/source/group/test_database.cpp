@@ -845,8 +845,8 @@ namespace casual
             EXPECT_TRUE( info.messages.at( 0).origin == queue.id);
             EXPECT_TRUE( info.messages.at( 0).queue == queue.id);
             EXPECT_TRUE( info.messages.at( 0).available > now + std::chrono::hours{ 1}) 
-               << "available: " << common::chronology::local( info.messages.at( 0).available) 
-               << "\nlimit: " << common::chronology::local( now + std::chrono::hours{ 1});
+               << "available: " << common::chronology::utc::offset( info.messages.at( 0).available) 
+               << "\nlimit: " << common::chronology::utc::offset( now + std::chrono::hours{ 1});
             // check that we've not over-delayed it ( 2s to be safe on really slow machines)
             EXPECT_TRUE( info.messages.at( 0).available < now + std::chrono::hours{ 1} + std::chrono::seconds{ 2});
          }

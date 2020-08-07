@@ -7,7 +7,7 @@
 
 #include <common/unittest.h>
 
-#include "common/exception/tx.h"
+#include "common/code/tx.h"
 
 
 #include "common/transaction/context.h"
@@ -34,7 +34,7 @@ namespace casual
 
             XID xid;
 
-            EXPECT_THROW( Context::instance().suspend( &xid), exception::tx::Protocol);
+            EXPECT_CODE( Context::instance().suspend( &xid);, code::tx::protocol);
          }
 
          TEST( casual_common_transaction_context, begin__expect_transaction)
@@ -52,7 +52,7 @@ namespace casual
 
 
             EXPECT_NO_THROW( context().begin());
-            EXPECT_THROW( context().begin(), exception::tx::Protocol);
+            EXPECT_CODE( context().begin();, code::tx::protocol);
             EXPECT_NO_THROW( context().rollback());
          }
 

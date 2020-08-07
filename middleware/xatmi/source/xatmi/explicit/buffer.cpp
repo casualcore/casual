@@ -25,7 +25,7 @@ char* casual_buffer_allocate( const char* type, const char* subtype, long size)
    }
    catch( ...)
    {
-      casual::xatmi::internal::error::set( casual::common::exception::xatmi::handle());
+      casual::xatmi::internal::error::set( casual::xatmi::internal::exception::code());
       return nullptr;
    }
 }
@@ -41,7 +41,7 @@ char* casual_buffer_reallocate( const char* ptr, long size)
    }
    catch( ...)
    {
-      casual::xatmi::internal::error::set( casual::common::exception::xatmi::handle());
+      casual::xatmi::internal::error::set( casual::xatmi::internal::exception::code());
       return nullptr;
    }
 }
@@ -77,7 +77,7 @@ long casual_buffer_type( const char* const ptr, char* const type, char* const su
    }
    catch( ...)
    {
-      casual::xatmi::internal::error::set( casual::common::exception::xatmi::handle());
+      casual::xatmi::internal::error::set( casual::xatmi::internal::exception::code());
       return -1;
    }
 
@@ -91,7 +91,7 @@ void casual_buffer_free( const char* const ptr)
    }
    catch( ...)
    {
-      casual::xatmi::internal::error::set( casual::common::exception::xatmi::handle());
+      casual::xatmi::internal::error::set( casual::xatmi::internal::exception::code());
    }
 }
 

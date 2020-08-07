@@ -28,15 +28,17 @@ namespace casual
             //! deleted - use streams only with common::log::line or common::log::write
             template< typename T>
             Stream& operator << ( T&& value) = delete;
+
+            //! crates an 'inactive' stream. Only for internal use.
+            Stream();
          };
 
          namespace stream
          {
             namespace thread
             {
-               class Lock
+               struct Lock : traits::unrelocatable
                {
-               public:
                   inline Lock() : m_lock( m_mutex) {}
 
                private:

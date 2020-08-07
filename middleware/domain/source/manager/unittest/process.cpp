@@ -11,9 +11,11 @@
 #include "common/communication/ipc.h"
 #include "common/event/listen.h"
 #include "common/execute.h"
-#include "common/exception/casual.h"
 #include "common/message/event.h"
 #include "common/message/handle.h"
+
+#include "common/code/raise.h"
+#include "common/code/casual.h"
 
 #include "common/unittest.h"
 #include "common/unittest/file.h"
@@ -112,7 +114,7 @@ namespace casual
                         log::line( log::debug, "event: ", event);
 
                         if( event.severity == decltype( event.severity)::fatal)
-                           throw exception::casual::Shutdown{ string::compose( "fatal error: ", event)};
+                           code::raise::error( code::casual::shutdown, "fatal error: ", event);
                      }
                   );
 

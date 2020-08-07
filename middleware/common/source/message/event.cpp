@@ -7,6 +7,7 @@
 #include "common/message/event.h"
 
 #include "common/terminal.h"
+#include "common/log/stream.h"
 
 namespace casual
 {
@@ -88,14 +89,14 @@ namespace casual
                      switch( event.severity)
                      {
                         using Enum = decltype( event.severity);
-                        case Enum::warning : return common::terminal::color::green;
-                        case Enum::error : return common::terminal::color::magenta;
-                        default: return common::terminal::color::red;
+                        case Enum::warning : return common::terminal::color::value::green;
+                        case Enum::error : return common::terminal::color::value::magenta;
+                        default: return common::terminal::color::value::red;
                      }
                   };
 
-                  out << event::local::sub::indentation << severity_color() << event.severity << ": ";
-                  return out << common::terminal::color::white << event.message << '\n'; 
+                  common::stream::write( out, event::local::sub::indentation, severity_color(), event.severity,  ' ', event.code, ": ", common::terminal::color::value::no_color);
+                  return  out << common::terminal::color::white << event.message << '\n'; 
                }
 
                std::ostream& print( std::ostream& out, const process::Spawn& event)

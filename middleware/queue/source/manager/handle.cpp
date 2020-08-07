@@ -9,14 +9,15 @@
 #include "queue/common/log.h"
 #include "queue/manager/admin/server.h"
 
-#include "common/exception/system.h"
-#include "common/exception/casual.h"
 #include "common/process.h"
 #include "common/server/lifetime.h"
 #include "common/server/handle/call.h"
 #include "common/message/handle.h"
 #include "common/event/listen.h"
 #include "common/algorithm/compare.h"
+
+#include "common/code/raise.h"
+#include "common/code/casual.h"
 
 #include "common/communication/instance.h"
 
@@ -114,7 +115,7 @@ namespace casual
                                  handle::process::exit( group);
                               });
 
-                           throw common::exception::casual::Shutdown{};
+                           code::raise::condition( code::casual::shutdown);
                         };
                      }
 

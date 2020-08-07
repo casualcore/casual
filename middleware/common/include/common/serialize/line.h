@@ -6,9 +6,12 @@
 
 #pragma once
 
+
 #include "common/serialize/value.h"
 #include "common/serialize/archive.h"
+#include "common/stream/customization.h"
 #include "common/cast.h"
+
 
 #include <ostream>
 
@@ -24,6 +27,29 @@ namespace casual
             {
                constexpr auto first = "";
                constexpr auto scope = ", ";
+               
+               template<typename T>
+               auto write( std::ostream& out, T&& value, traits::priority::tag< 1>)
+                  -> decltype( stream::customization::supersede::point< traits::remove_cvref_t< T>>::stream( out, std::forward< T>( value)))
+               {
+                  stream::customization::supersede::point< traits::remove_cvref_t< T>>::stream( out, std::forward< T>( value));
+               }
+
+               template<typename T>
+               auto write( std::ostream& out, T&& value, traits::priority::tag< 0>)
+                  -> decltype( void( out << std::forward< T>( value)))
+               {
+                  out << std::forward< T>( value);
+               }
+
+               //! to enable to override std ostream stream operatator, and use our specializations
+               template<typename T>
+               auto write( std::ostream& out, T&& value)
+                  -> decltype( write( out, std::forward< T>( value), traits::priority::tag< 1>{}))
+               {
+                  write( out, std::forward< T>( value), traits::priority::tag< 1>{});
+               }
+               
             } // detail
 
             struct Writer
@@ -40,10 +66,10 @@ namespace casual
 
                template<typename T>
                auto write( T&& value, const char* name)
-                  -> decltype( void( std::declval< std::ostream&>() << std::forward< T>( value)))
+                  -> decltype( detail::write( std::declval< std::ostream&>(), std::forward< T>( value)))
                {
                   in_scope();
-                  maybe_name( name) << std::forward< T>( value);
+                  detail::write( maybe_name( name), std::forward< T>( value));
                }
 
                void write( bool value, const char* name);
@@ -54,7 +80,7 @@ namespace casual
 
                template< typename T>
                auto operator << ( T&& value)
-                  -> decltype( (void)serialize::value::write( *this, std::forward< T>( value), nullptr), *this)
+                  -> decltype( void( serialize::value::write( *this, std::forward< T>( value), nullptr)), *this)
                {
                   serialize::value::write( *this, std::forward< T>( value), nullptr);
                   return *this;

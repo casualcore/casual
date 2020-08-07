@@ -9,7 +9,7 @@
 #include "common/algorithm.h"
 #include "common/file.h"
 #include "common/argument.h"
-#include "common/exception/handle.h"
+#include "common/exception/guard.h"
 #include "common/server/start.h"
 #include "common/server/service.h"
 
@@ -176,7 +176,7 @@ namespace casual
 
 int main( int argc, char** argv)
 {
-   return casual::common::exception::guard( [&]()
+   return casual::common::exception::main::guard( [&]()
    {
       casual::test::mockup::string::local::main( argc, argv);
    });

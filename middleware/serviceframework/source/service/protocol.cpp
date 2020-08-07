@@ -9,8 +9,10 @@
 #include "serviceframework/service/protocol/implementation.h"
 #include "serviceframework/log.h"
 
-#include "common/exception/system.h"
 #include "common/log/stream.h"
+
+#include "common/code/raise.h"
+#include "common/code/casual.h"
 
 namespace casual
 {
@@ -80,7 +82,8 @@ namespace casual
 
                   return protocol;
                }
-               throw common::exception::system::invalid::Argument( "no suitable protocol was found for type: " + parameter.payload.type);
+               
+               common::code::raise::error( common::code::casual::communication_protocol, "no suitable protocol was found for type: " + parameter.payload.type);
             }
 
 

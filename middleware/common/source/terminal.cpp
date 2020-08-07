@@ -8,7 +8,7 @@
 #include "common/terminal.h"
 
 #include "common/environment.h"
-#include "common/exception/handle.h"
+#include "common/exception/guard.h"
 #include "common/execute.h"
 
 
@@ -29,15 +29,10 @@ namespace casual
                   template< typename String, typename V> 
                   auto get( String&& environment, V value)
                   {
-                     try 
+                     return exception::guard( [&]()
                      {
                         return environment::variable::get( std::forward< String>( environment), value);
-                     }
-                     catch( ...)
-                     {
-                        exception::handle();
-                     }
-                     return value;
+                     }, value);
                   }
 
                   namespace global
@@ -134,15 +129,15 @@ namespace casual
 
          namespace color
          {
-            Color no_color{ "\033[0m"};
-            Color grey{ "\033[0;30m"};
-            Color red{ "\033[0;31m"};
-            Color green{ "\033[0;32m"};
-            Color yellow{ "\033[0;33m"};
-            Color blue{ "\033[0;34m"};
-            Color magenta{ "\033[0;35m"};
-            Color cyan{ "\033[0;36m"};
-            Color white{ "\033[0;37m"};
+            Color no_color{ value::no_color};
+            Color grey{ value::grey};
+            Color red{ value::red};
+            Color green{ value::green};
+            Color yellow{ value::yellow};
+            Color blue{ value::blue};
+            Color magenta{ value::magenta};
+            Color cyan{ value::cyan};
+            Color white{ value::white};
          } // color
 
 

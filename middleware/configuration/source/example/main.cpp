@@ -17,7 +17,7 @@
 
 
 #include "common/argument.h"
-#include "common/exception/handle.h"
+#include "common/exception/guard.h"
 
 namespace casual
 {
@@ -105,7 +105,7 @@ the output format will be deduced from file extension
 
 int main( int argc, char **argv)
 {
-   return casual::common::exception::guard( std::cerr, [=]()
+   return casual::common::exception::main::guard( std::cerr, [=]()
    {
       casual::configuration::example::main( argc, argv);
    });

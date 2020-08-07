@@ -76,15 +76,10 @@ namespace casual
                                  common::message::shutdown::Request request;
                                  request.process = common::process::handle();
 
-                                 try
+                                 if( ! communication::device::blocking::optional::send( connection.process.ipc, request))
                                  {
-                                    communication::ipc::outbound::Device ipc{ connection.process.ipc};
-                                    ipc.send( request, communication::ipc::policy::Blocking{});
-                                 }
-                                 catch( const exception::system::communication::Unavailable&)
-                                 {
-                                    connection.runlevel = state::base_connection::Runlevel::error;
                                     // no op, will be removed
+                                    connection.runlevel = state::base_connection::Runlevel::error;
                                  }
                               }
                               else if( connection.process.pid)
@@ -140,7 +135,7 @@ namespace casual
                            }
                            catch( ...)
                            {
-                              exception::handle();
+                              exception::handle( log::category::error, "handle outbound connect"); 
                               connection.runlevel = manager::state::outbound::Connection::Runlevel::error;
                            }
                         }

@@ -93,7 +93,7 @@ namespace casual
             descriptor_type descriptor() const noexcept;
 
             //! return SO_ERROR from getsockopt
-            std::error_code error() const;
+            std::errc error() const;
 
 
             template< typename Option>

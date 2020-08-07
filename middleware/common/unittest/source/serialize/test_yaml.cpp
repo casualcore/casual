@@ -11,7 +11,8 @@
 
 #include "common/serialize/yaml.h"
 #include "common/serialize/line.h"
-#include "common/exception/casual.h"
+
+#include "common/code/casual.h"
 
 
 #include "common/algorithm.h"
@@ -109,10 +110,10 @@ value:
 
          test::SimpleVO wrongRoleName;
 
-         EXPECT_THROW(
+         EXPECT_CODE(
          {
             reader >> CASUAL_NAMED_VALUE( wrongRoleName);
-         }, exception::casual::invalid::Node);
+         }, code::casual::invalid_node);
 
       }
 
@@ -265,10 +266,10 @@ value:
       {
          const std::string yaml{ "   " };
 
-         EXPECT_THROW
+         EXPECT_CODE
          ({
             serialize::yaml::strict::reader( yaml);
-         }, exception::casual::invalid::Document);
+         }, code::casual::invalid_document);
       }
 
       TEST( common_serialize_yaml, read_invalid_bool__expecting_exception)
@@ -283,11 +284,11 @@ value:
    m_time: 1234567890
 )";
 
-         EXPECT_THROW
+         EXPECT_CODE
          ({
             test::SimpleVO value;
             local::string_to_strict_value( yaml, value);
-         }, exception::casual::invalid::Node);
+         }, code::casual::invalid_document);
       }
 
    } // common

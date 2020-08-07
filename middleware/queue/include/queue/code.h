@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include "common/log/category.h"
+
 #include <system_error>
 
 namespace casual
@@ -23,8 +25,20 @@ namespace casual
 
       std::error_code make_error_code( queue::code code);
 
+      [[noreturn]] inline void raise( queue::code code)
+      {
+         throw std::system_error{ make_error_code( code)};
+      }
 
-   } // common
+      template< typename... Ts>
+      [[noreturn]] inline void error( queue::code code, Ts&&... ts)
+      {
+         common::log::line( common::log::category::error, code, ' ', std::forward< Ts>( ts)...);
+         queue::raise( code);
+      }
+
+
+   } // queue
 } // casual
 
 namespace std

@@ -12,6 +12,8 @@
 
 #include "common/buffer/type.h"
 
+#include "common/code/casual.h"
+
 namespace casual
 {
    namespace common
@@ -147,10 +149,10 @@ namespace casual
       {
          common::unittest::Trace trace;
 
-         EXPECT_THROW(
+         EXPECT_CODE(
          {
             serialize::create::writer::from( "foo");
-         }, exception::system::invalid::Argument);
+         }, code::casual::invalid_argument);
 
       }
 
@@ -158,30 +160,30 @@ namespace casual
       {
          common::unittest::Trace trace;
 
-         EXPECT_THROW(
+         EXPECT_CODE(
          {
             serialize::create::reader::consumed::from( "foo", std::cin);
-         }, exception::system::invalid::Argument);
+         }, code::casual::invalid_argument);
       }
 
       TEST( archive_create, create_strict_reader_from_unknown_archive__expecting_exception)
       {
          common::unittest::Trace trace;
 
-         EXPECT_THROW(
+         EXPECT_CODE(
          {
             serialize::create::reader::strict::from( "foo", std::cin);
-         }, exception::system::invalid::Argument);
+         }, code::casual::invalid_argument);
       }
 
       TEST( archive_create, create_relaxed_reader_from_unknown_archive__expecting_exception)
       {
          common::unittest::Trace trace;
 
-         EXPECT_THROW(
+         EXPECT_CODE(
          {
             serialize::create::reader::relaxed::from( "foo", std::cin);
-         }, exception::system::invalid::Argument);
+         }, code::casual::invalid_argument);
       }
    } // common
 } // casual

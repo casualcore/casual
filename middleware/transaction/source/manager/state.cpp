@@ -13,11 +13,12 @@
 #include "configuration/domain.h"
 
 
-#include "common/exception/system.h"
-#include "common/exception/casual.h"
 #include "common/algorithm.h"
 #include "common/environment.h"
 #include "common/event/send.h"
+
+#include "common/code/raise.h"
+#include "common/code/casual.h"
 
 
 namespace casual
@@ -351,9 +352,7 @@ namespace casual
 
             for( auto& resource : resources)
             {
-               auto found = common::algorithm::find( resource.instances, death.pid);
-
-               if( found)
+               if( auto found = common::algorithm::find( resource.instances, death.pid))
                {
                   if( found->state() != state::resource::Proxy::Instance::State::shutdown)
                   {
@@ -373,37 +372,37 @@ namespace casual
 
          state::resource::Proxy& State::get_resource( state::resource::id::type rm)
          {
-            auto found = common::algorithm::find( resources, rm);
+            if( auto found = common::algorithm::find( resources, rm))
+               return *found;
 
-            if( ! found)
-               throw common::exception::system::invalid::Argument{ "failed to find resource"};
+            code::raise::error( code::casual::invalid_argument, "failed to find resource - rm: ", rm);
+         }
 
-            return *found;
+         state::resource::Proxy* State::find_resource( const std::string& name)
+         {
+            if( auto found = common::algorithm::find_if( resources, [&name]( auto& r){ return r.name == name;}))
+               return &( *found);
+
+            return nullptr;
          }
 
          state::resource::Proxy& State::get_resource( const std::string& name)
          {
-            auto found = common::algorithm::find_if( resources, [&name]( auto& r){ return r.name == name;});
+            if( auto found = find_resource( name))
+               return *found;
 
-            if( ! found)
-               throw common::exception::system::invalid::Argument{ "failed to find resource"};
-
-            return *found;
+            code::raise::error( code::casual::invalid_argument, "failed to find resource - name: ", name);
          }
 
          state::resource::Proxy::Instance& State::get_instance( state::resource::id::type rm, common::strong::process::id pid)
          {
             auto& resource = get_resource( rm);
+            auto has_pid = [pid]( auto& instance){ return instance.process.pid == pid;};
 
-            auto found = common::algorithm::find_if( resource.instances, [=]( const state::resource::Proxy::Instance& instance){
-                  return instance.process.pid == pid;
-               });
+            if( auto found = common::algorithm::find_if( resource.instances, has_pid))
+               return *found;
 
-            if( ! found)
-            {
-               throw common::exception::system::invalid::Argument{ "failed to find instance"};
-            }
-            return *found;
+            code::raise::error( code::casual::invalid_argument, "failed to find instance - rm: ", rm, ", pid: ", pid);
          }
 
          bool State::remove_instance( common::strong::process::id pid)
@@ -422,16 +421,12 @@ namespace casual
 
          const state::resource::external::Proxy& State::get_external( state::resource::id::type rm) const
          {
-            auto found = common::algorithm::find_if( externals, [rm]( const state::resource::external::Proxy& p){
-               return p.id == rm;
-            });
-
-            if( found)
-            {
+            auto has_id = [rm]( auto& proxy){ return proxy.id == rm;};
+            
+            if( auto found = common::algorithm::find_if( externals, has_id))
                return *found;
-            }
 
-            throw common::exception::system::invalid::Argument{ common::string::compose( "failed to find external resource proxy: ", rm)};
+            code::raise::error( code::casual::invalid_argument, "failed to find external resource proxy: ", rm);
          }
          
       } // manager

@@ -15,15 +15,12 @@ namespace casual
       {
          namespace category
          {
-
-
+            
             Stream parameter{ "parameter"};
             Stream information{ "information"};
             Stream warning{ "warning"};
 
-            //
             // Always on
-            //
             Stream error{ "error"};
 
             namespace verbose

@@ -14,9 +14,6 @@
 #include "common/flag/service/call.h"
 
 #include "common/message/service.h"
-#include "common/exception/xatmi.h"
-
-
 
 
 #include <vector>
@@ -60,10 +57,16 @@ namespace casual
             } // sync
 
             //! Will be thrown if service fails (application error)
-            struct Fail : common::exception::xatmi::service::Fail
+            struct Fail
             {
-               using common::exception::xatmi::service::Fail::Fail;
                reply::Result result;
+               inline friend std::ostream& operator << ( std::ostream& out, const Fail& value) 
+               { 
+                  return out << "{ buffer: " << value.result.buffer
+                     << ", buffer: " << value.result.descriptor
+                     << ", user: " << value.result.user
+                     << '}';
+               }
             };
 
             class Context

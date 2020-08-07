@@ -7,13 +7,18 @@
 
 #include "common/signal.h"
 #include "casual/platform.h"
-#include "common/exception/signal.h"
 #include "common/log.h"
 #include "common/flag.h"
 #include "common/process.h"
 #include "common/chronology.h"
 #include "common/memory.h"
 #include "common/cast.h"
+
+#include "common/code/raise.h"
+#include "common/code/signal.h"
+#include "common/code/system.h"
+#include "common/result.h"
+#include "common/stream.h"
 
 
 
@@ -43,20 +48,9 @@ namespace casual
                {
                   log::line( verbose::log, "local::signal::send pid: ", pid, " signal: ", signal);
 
-                  if( ::kill( pid.value(), cast::underlying( signal)) != 0)
-                  {
-                     switch( errno)
-                     {
-                        case ESRCH:
-                           log::line( log::debug, "failed to send signal - ", signal, " -> pid: ", pid, " - error: ", code::last::system::error());
-                           break;
-                        default:
-                           log::line( log::category::error, "failed to send signal - ", signal, " -> pid: ", pid, " - error: ", code::last::system::error());
-                           break;
-                     }
-                     return false;
-                  }
-                  return true;
+                  return posix::log::result( 
+                     ::kill( pid.value(), cast::underlying( signal)), 
+                     "failed to send signal - ", signal, " -> pid: ", pid);
                }
 
                namespace handler
@@ -115,8 +109,8 @@ namespace casual
 
                      if( ::sigaction( cast::underlying( signal), &sa, nullptr) == -1)
                      {
-                        std::cerr << "failed to register handle for signal: " << signal << " - "  << code::last::system::error() << '\n';
-                        exception::system::throw_from_errno();
+                        std::cerr << "failed to register handle for signal: " << signal << " - "  << code::system::last::error() << '\n';
+                        code::system::raise( "failed to register handle for signal");
                      }
                   }
 
@@ -163,7 +157,7 @@ namespace casual
                        if( auto found = algorithm::find_if( m_handlers, [signal]( auto& handler){ return handler.signal == signal;}))
                            found->callbacks.push_back( std::move( callback));
                         else 
-                           throw exception::system::invalid::Argument{ string::compose( "failed to find signal handler for: ", signal)};
+                           code::raise::generic( code::casual::invalid_argument, log::stream::get( "error"), "failed to find signal handler for: ", signal);
                      }
 
                      callback::detail::Replace replace( callback::detail::Replace wanted)
@@ -217,7 +211,7 @@ namespace casual
                         
                      };
 
-                     template< code::signal signal, typename Exception>
+                     template< code::signal signal>
                      static auto create_dispatcher()
                      {
                         return []( const signal::Set& current, Handler::callbacks_type& callbacks)
@@ -230,7 +224,7 @@ namespace casual
 
                               // if we don't have any handlers we need to propagate the signal via exception.
                               if( callbacks.empty())
-                                 throw Exception{};
+                                 code::raise::log( signal, "raise signal");
                               
                               // execute the "callbacks"
                               algorithm::for_each( callbacks, []( auto& callback){ callback();});
@@ -241,7 +235,7 @@ namespace casual
                         };
                      }
 
-                     template< typename Exception, code::signal signal = Exception::type()>
+                     template< code::signal signal>
                      static Handler create_handler( int flags = 0)
                      {
                         // Register the signal handler for this signal
@@ -249,33 +243,33 @@ namespace casual
 
                         Handler result;
                         result.signal = signal;
-                        result.disptacher = create_dispatcher< signal, Exception>();
+                        result.disptacher = create_dispatcher< signal>();
                         return result;
                      }
 
-                     template< typename Exception, typename C, code::signal signal = Exception::type()>
+                     template< code::signal signal, typename C>
                      static Handler create_handler( C&& callback, int flags = 0)
                      {
-                        auto result = create_handler< Exception, signal>( flags);
+                        auto result = create_handler< signal>( flags);
                         result.callbacks.push_back( std::move( callback));
                         return result;
                      }
 
                      std::vector< Handler> m_handlers = {
 
-                        Handle::create_handler< exception::signal::child::Terminate>( SA_NOCLDSTOP),
-                        Handle::create_handler< exception::signal::Timeout>(),
-                        Handle::create_handler< exception::signal::User>(),
+                        Handle::create_handler< code::signal::child>( SA_NOCLDSTOP),
+                        Handle::create_handler< code::signal::alarm>(),
+                        Handle::create_handler< code::signal::user>(),
 
                         // reopen 'casual.log' on hangup
-                        Handle::create_handler< exception::signal::Hangup>( []()
+                        Handle::create_handler< code::signal::hangup>( []()
                         {
                            log::stream::reopen();
                         }),
 
-                        Handle::create_handler< exception::signal::Terminate, code::signal::terminate>(),
-                        Handle::create_handler< exception::signal::Terminate, code::signal::quit>(),
-                        Handle::create_handler< exception::signal::Terminate, code::signal::interrupt>(),
+                        Handle::create_handler< code::signal::terminate>(),
+                        Handle::create_handler< code::signal::quit>(),
+                        Handle::create_handler< code::signal::interrupt>(),
                      };
                   };
 
@@ -353,7 +347,7 @@ namespace casual
                      itimerval old;
 
                      if( ::getitimer( ITIMER_REAL, &old) != 0)
-                        exception::system::throw_from_errno( "timer::get");
+                        code::system::raise( "timer::get");
 
                      return convert( old);
                   }
@@ -363,7 +357,7 @@ namespace casual
                      itimerval old;
 
                      if( ::setitimer( ITIMER_REAL, &value, &old) != 0)
-                        exception::system::throw_from_errno( "timer::set");
+                        code::system::raise( "timer::set");
 
                      log::line( verbose::log, "timer set: ",
                            value.it_value.tv_sec, ".", std::setw( 6), std::setfill( '0'), value.it_value.tv_usec, "s - was: ",
@@ -520,22 +514,25 @@ namespace casual
          {
             sigemptyset( &set);
          }
+         
 
          std::ostream& operator << ( std::ostream& out, const Set& value)
          {
             out << "[";
 
-            bool exists = false;
-            for( auto& signal : { code::signal::alarm, code::signal::child, code::signal::interrupt, code::signal::kill, code::signal::pipe, code::signal::quit, code::signal::terminate, code::signal::user})
+            constexpr code::signal signals[] = { code::signal::alarm, code::signal::child, code::signal::interrupt, code::signal::kill, code::signal::pipe, code::signal::quit, code::signal::terminate, code::signal::user};
+
+            bool first = true;
+            for( auto& signal : signals)
             {
                if( value.exists( signal))
                {
-                  if( exists)
-                     out << ", " << signal;
+                  if( ! first)
+                     common::stream::write( out, ", ", signal);
                   else
                   {
-                     out << signal;
-                     exists = true;
+                     common::stream::write( out, signal);
+                     first = false;
                   }
                }
             }
@@ -605,7 +602,7 @@ namespace casual
                if( pthread_kill( thread, 0) == 0)
                {
                   if( pthread_kill( thread, cast::underlying( signal)) != 0)
-                      log::line( log::category::error, "failed to send signal - ", signal, " -> thread: ", thread, " - error: " , code::last::system::error());
+                      log::line( log::category::error, "failed to send signal - ", signal, " -> thread: ", thread, " - error: " , code::system::last::error());
                }
             }
 

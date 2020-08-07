@@ -9,9 +9,11 @@
 #include "common/process.h"
 #include "common/argument.h"
 #include "common/environment.h"
-#include "common/exception/handle.h"
+#include "common/exception/guard.h"
 #include "common/terminal.h"
 
+#include "common/code/raise.h"
+#include "common/code/casual.h"
 
 #include "domain/manager/admin/cli.h"
 #include "service/manager/admin/cli.h"
@@ -21,6 +23,7 @@
 #include "casual/buffer/admin/cli.h"
 #include "tools/service/call/cli.h"
 #include "tools/service/describe/cli.h"
+
 
 
 #include <string>
@@ -88,8 +91,8 @@ namespace casual
                      {
                         if( auto found = algorithm::find_if( mapping, [&key]( auto& dispatch){ return std::get< 0>( dispatch) == key;}))
                            std::get< 1>( *found)( information);
-                        else 
-                           throw exception::system::invalid::Argument{ string::compose( "not a valid information context: ", key)};
+                        else
+                           code::raise::error( code::casual::invalid_argument, "not a valid information context: ", key);
                      };
                      algorithm::for_each( managers, dispatch);
 
@@ -170,7 +173,7 @@ Where <option> is one of the listed below
 
 int main( int argc, char** argv)
 {
-   return casual::common::exception::guard( std::cerr, [=]()
+   return casual::common::exception::main::guard( std::cerr, [=]()
    {
       casual::admin::main( argc, argv);
    });

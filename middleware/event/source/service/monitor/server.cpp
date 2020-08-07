@@ -13,7 +13,7 @@
 #include "common/argument.h"
 #include "common/log.h"
 #include "common/server/start.h"
-#include "common/exception/handle.h"
+#include "common/exception/guard.h"
 
 #include "serviceframework/service/protocol.h"
 
@@ -136,7 +136,7 @@ namespace casual
 
 int main( int argc, char **argv)
 {
-   return casual::common::exception::guard( [&]()
+   return casual::common::exception::main::guard( [&]()
    {
       casual::event::service::monitor::main( argc, argv);
    });

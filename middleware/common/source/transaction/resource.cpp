@@ -14,6 +14,11 @@
 #include "common/log/category.h"
 #include "common/flag.h"
 
+#include "common/code/raise.h"
+#include "common/code/casual.h"
+
+#include "common/event/send.h"
+
 #include <array>
 
 namespace casual
@@ -45,7 +50,7 @@ namespace casual
             : m_key( std::move( link.key)), m_xa( link.xa), m_id(std::move( id)), m_openinfo( std::move( openinfo)), m_closeinfo( std::move( closeinfo))
          {
             if( ! m_xa)
-               throw common::exception::system::invalid::Argument( "xa-switch is null");
+               common::code::raise::error( common::code::casual::invalid_argument, "xa-switch is null");
 
             log::line( log::category::transaction, "associated resource: ", *this);
          }
@@ -99,8 +104,9 @@ namespace casual
 
             auto result = local::convert( m_xa->xa_open_entry( info.c_str(), m_id.value(), flags.underlaying()));
 
+            // we send an event if we fail to open resource
             if( result != code::ok)
-               log::line( log::category::error, result, " failed to open resource - ", m_id, " - openinfo: ", m_openinfo);
+               common::event::error::send( result, "failed to open resource: ", m_id, " '", m_xa->name, "'");
 
             return result;
          }
@@ -114,7 +120,7 @@ namespace casual
             auto result = local::convert( m_xa->xa_close_entry( info.c_str(), m_id.value(), flags.underlaying()));
 
             if( result != code::ok)
-               log::line( log::category::error, result, " failed to close resource - ", m_id, " - closeinfo: ", m_closeinfo);
+               log::line( log::category::error, result, " failed to close resource: ", m_id, " '", m_xa->name, "'");
 
             return result;
          }

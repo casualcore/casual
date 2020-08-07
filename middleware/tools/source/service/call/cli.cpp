@@ -134,7 +134,7 @@ namespace casual
                         auto handle_lookup = [&state]( casual::cli::message::Payload& message)
                         {
                            Trace trace{ "tools::service::call::local::handle::pipe::handle_lookup"};
-                           log::line( verbose::log, "state: ", state);
+                           //log::line( verbose::log, "state: ", state);
 
                            if( state.iterations <= 0)
                               return;
@@ -147,7 +147,9 @@ namespace casual
                               // we will wait 'for ever'.
                               request.context = decltype( request.context)::gateway;
 
-                              algorithm::for_n( state.iterations, [&request](){
+                              algorithm::for_n( state.iterations, [&request]()
+                              {
+                                 Trace trace{ "tools::service::call::local::handle::pipe::handle_lookup eventually send"};
                                  casual::domain::pending::message::eventually::send( 
                                     communication::instance::outbound::service::manager::device(), 
                                     request);

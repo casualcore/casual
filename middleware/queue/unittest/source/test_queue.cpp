@@ -13,7 +13,7 @@
 #include "queue/api/queue.h"
 #include "queue/manager/admin/model.h"
 #include "queue/manager/admin/services.h"
-#include "queue/exception.h"
+#include "queue/code.h"
 
 #include "common/process.h"
 #include "common/message/gateway.h"
@@ -393,9 +393,9 @@ domain:
                common::communication::instance::outbound::queue::manager::device(), remote);
          }
 
-         EXPECT_THROW({
+         EXPECT_CODE({
             queue::peek::information( "remote-queue");
-         }, queue::exception::invalid::Argument);
+         },  queue::code::argument);
       }
 
       TEST( casual_queue, enqueue_1_message__dequeue_1_message)

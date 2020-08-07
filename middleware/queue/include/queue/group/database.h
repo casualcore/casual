@@ -12,7 +12,6 @@
 
 #include "queue/group/database/statement.h"
 
-#include "common/exception/system.h"
 #include "common/string.h"
 #include "common/message/queue.h"
 #include "common/message/pending.h"

@@ -212,7 +212,7 @@ namespace casual
             {
                auto result = waitpid( pid, nullptr, 0);
 
-               EXPECT_TRUE( result == pid) << "result: " << result << " - pid: " << pid << " - errno: " << common::code::last::system::error();
+               EXPECT_TRUE( result == pid) << "result: " << result << " - pid: " << pid << " - errno: " << common::code::system::last::error();
 
                if( result == pid)
                {
@@ -235,6 +235,55 @@ namespace casual
          common::optional< std::size_t> optional{ 42};
          EXPECT_TRUE( optional.has_value());
          EXPECT_TRUE( optional.value() == 42);
+      }
+
+
+      namespace local
+      {
+         namespace
+         {
+            int handle_exception()
+            {
+               try 
+               {
+                  throw;
+               }
+               catch( int value)
+               {
+                  return value;
+               }
+               catch( ...)
+               {
+                  return 0;
+               }
+            }
+
+            void handle_exception_rethrow( int value)
+            {
+               try 
+               {
+                  throw value;
+               }
+               catch( ...)
+               {
+                  EXPECT_TRUE( handle_exception() == value);
+                  throw;
+               }
+            }
+            
+         } // <unnamed>
+      } // local
+
+      TEST( common_conformance, nested_handled_exception_retrown)
+      {
+         try 
+         {
+            local::handle_exception_rethrow( 42);
+         }
+         catch( ...)
+         {
+            EXPECT_TRUE( local::handle_exception() == 42);
+         }
       }
 
       /*

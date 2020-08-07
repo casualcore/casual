@@ -14,6 +14,10 @@
 #include "common/environment.h"
 
 #include "common/exception/handle.h"
+#include "common/code/raise.h"
+#include "common/code/casual.h"
+#include "common/code/system.h"
+#include "common/code/convert.h"
 
 
 #include <sys/types.h>
@@ -87,7 +91,7 @@ namespace casual
                const auto max_size = sizeof( m_native.sun_path) - postfix.size() - 1;
 
                if( directory.size() > max_size)
-                  throw exception::system::invalid::Argument{ string::compose( "transient directory path to long - max size: ", max_size)};
+                  code::raise::error( code::casual::invalid_path, "transient directory path to long - max size: ", max_size);
 
                auto target = std::begin( m_native.sun_path);
 
@@ -109,44 +113,35 @@ namespace casual
                {
                   namespace
                   {
-
-                     bool check_error( code::system code)
+                     bool check_error( std::error_condition code)
                      {
-                        switch( code)
-                        {
 #ifdef __APPLE__
-                           case code::system::no_buffer_space:
-                              // try again...
-                              
-                              // we flush our inbound to mitigate deadlocks...
-                              inbound::device().flush();
-                              std::this_thread::sleep_for( std::chrono::microseconds{ 100});
-                              break;
-#endif
-                           
-
-                           case code::system::no_such_file_or_directory:
-                              throw exception::system::communication::unavailable::File{}; 
-
-                           case code::system::resource_unavailable_try_again:
-#if EAGAIN != EWOULDBLOCK
-                           case code::system::operation_would_block: 
-#endif                           
-                              // return false
-                              break;
-                           
-                           default: 
-                           
-                              // will allways throw
-                              exception::system::throw_from_code( code);   
-                        
+                        if( code == std::errc::no_buffer_space)
+                        {
+                           // try again...
+                           std::this_thread::sleep_for( std::chrono::microseconds{ 100});
+                           return false;
                         }
-                        return false;
+#endif
+                        if( code == std::errc::resource_unavailable_try_again)
+                           return false;
+
+#if EAGAIN != EWOULDBLOCK
+                        if( code == std::errc::operation_would_block)
+                           return false;
+#endif 
+                        
+                        if( code == std::errc::no_such_file_or_directory)
+                           code::raise::condition( code::casual::communication_unavailable);
+
+                         
+                        // will allways throw
+                        code::raise::error( code::casual::internal_unexpected_value, "ipc - errno: ", code);                        
                      }
 
                      bool check_error()
                      {
-                        return check_error( code::last::system::error());
+                        return check_error( code::system::last::error());
                      } 
                   } // <unnamed>
                } // local
@@ -198,7 +193,7 @@ namespace casual
                            return true;
                         }
 
-                        local::check_error();
+                        local::check_error( error);
                         log::line( verbose::log, "ipc ---> blocking send - error: ", error, ", destination: ", destination);
 
                      }
@@ -251,7 +246,7 @@ namespace casual
                         );
 
                         if( error)
-                           return local::check_error( error.value());
+                           return local::check_error( error);
 
                         log::line( verbose::log, "---> non blocking send - socket: ", socket, ", destination: ", destination, ", transport: ", transport);
                         return true;
@@ -468,16 +463,12 @@ namespace casual
 
                Connector::~Connector()
                {
-                  try
+                  if( m_handle)
                   {
-                     if( m_handle)
+                     exception::guard( [&]()
                      {
                         ipc::remove( m_handle.ipc());
-                     }
-                  }
-                  catch( ...)
-                  {
-                     exception::handle();
+                     });
                   }
                }
 

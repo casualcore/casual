@@ -16,9 +16,10 @@
 #include "common/message/service.h"
 
 #include "common/service/lookup.h"
-#include "common/exception/xatmi.h"
 #include "common/communication/instance.h"
 #include "common/event/listen.h"
+
+#include "common/code/xatmi.h"
 
 #include "serviceframework/service/protocol/call.h"
 #include "serviceframework/log.h"
@@ -307,13 +308,13 @@ domain:
             EXPECT_TRUE( request.processes == reply.processes);
          }
 
-         EXPECT_THROW({
+         EXPECT_CODE({
             auto service = common::service::Lookup{ "service1"}();
-         }, common::exception::xatmi::service::no::Entry);
+         }, common::code::xatmi::no_entry);
 
-         EXPECT_THROW({
+         EXPECT_CODE({
             auto service = common::service::Lookup{ "service2"}();
-         }, common::exception::xatmi::service::no::Entry);
+         }, common::code::xatmi::no_entry);
       }
 
       TEST( service_manager, lookup_service__expect_service_to_be_busy)
@@ -351,9 +352,9 @@ domain:
 
          // echo server has unadvertise this service. The service is
          // still "present" in service-manager with no instances. Hence it's absent
-         EXPECT_THROW({
+         EXPECT_CODE({
             auto service = common::service::Lookup{ "service2"}();
-         }, common::exception::xatmi::service::no::Entry);
+         }, common::code::xatmi::no_entry);
       }
 
 
@@ -366,9 +367,9 @@ domain:
 
          service::unittest::advertise( { "service1", "service2"});
 
-         EXPECT_THROW({
+         EXPECT_CODE({
             auto service = common::service::Lookup{ "non-existent-service"}();
-         }, common::exception::xatmi::service::no::Entry);
+         }, common::code::xatmi::no_entry);
       }
 
 

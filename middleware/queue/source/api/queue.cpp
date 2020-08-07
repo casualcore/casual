@@ -12,7 +12,7 @@
 #include "queue/common/queue.h"
 #include "queue/common/transform.h"
 #include "queue/manager/admin/services.h"
-#include "queue/exception.h"
+#include "queue/code.h"
 
 #include "common/range.h"
 #include "common/buffer/type.h"
@@ -72,7 +72,7 @@ namespace casual
                   auto group = lookup();
 
                   if( ! group.process.ipc)
-                     throw exception::no::Queue{ "failed to look up queue"};
+                     queue::raise( queue::code::no_message);
 
                   request.queue = group.queue;
 
@@ -93,7 +93,7 @@ namespace casual
                   auto group = lookup();
 
                   if( ! group)
-                     throw exception::no::Queue{ "failed to lookup queue: " + lookup.name()};
+                     queue::raise( queue::code::no_queue);
 
                   const auto correlation = common::uuid::make();
 
@@ -101,26 +101,18 @@ namespace casual
 
                   auto forget_blocking = common::execute::scope( [&]()
                   {
-                     common::message::queue::dequeue::forget::Request request;
-                     request.process = common::process::handle();
+                     common::message::queue::dequeue::forget::Request request{ common::process::handle()};
                      request.correlation = correlation;
-
                      request.queue = group.queue;
 
-                     try
+                     if( common::communication::device::blocking::optional::send( group.process.ipc, request))
                      {
-                        common::communication::device::blocking::send( group.process.ipc, request);
-
                         auto handler = common::message::dispatch::handler( ipc,
                            []( common::message::queue::dequeue::forget::Request& request) {}, // no-op
                            []( common::message::queue::dequeue::forget::Reply& request) {} // no-op
                         );
 
                         handler( common::communication::device::blocking::next( ipc, handler.types()));
-                     }
-                     catch( const common::exception::system::communication::Unavailable&)
-                     {
-                        // queue-manager is off-line
                      }
                   });
 
@@ -162,7 +154,7 @@ namespace casual
                         }
 
                         if( reply.correlation != correlation)
-                           throw exception::System{ "correlation mismatch"};
+                           queue::error( code::system, "correlation mismatch");
 
                         common::algorithm::transform( reply.message, result, queue::transform::Message{});
 
@@ -240,13 +232,14 @@ namespace casual
             Message dequeue( const std::string& queue, const Selector& selector)
             {
                Trace trace{ "casual::queue::blocking::dequeue"};
+               common::log::line( verbose::log, "queue: ", queue, ", selector: ", selector);
 
                queue::Lookup lookup( queue);
 
                auto message = local::dequeue( lookup, selector, true);
 
                if( message.empty())
-                  throw exception::no::Message{ "failed to get message from queue: " + queue};
+                  queue::raise( code::no_message);
 
                return std::move( message.front());
             }
@@ -274,9 +267,13 @@ namespace casual
                      {
                         return blocking::dequeue( queue, selector);
                      }
-                     catch( const exception::no::Queue&)
+                     catch( ...)
                      {
-                        common::log::line( verbose::log, queue, " - queue not available yet"); 
+                        auto code = common::exception::code();
+                        if( code != queue::code::no_queue)
+                           throw;
+
+                        common::log::line( verbose::log, code, " queue not available yet - ", queue); 
                      }
                      sleep();
                   }
@@ -397,9 +394,7 @@ namespace casual
                auto queue = lookup();
 
                if( queue.order > 0)
-               {
-                  throw exception::invalid::Argument{ "not possible to peek a remote queue"};
-               }
+                  queue::error( queue::code::argument, "not possible to peek a remote queue: ", queuename);
 
                request.queue = queue.queue;
 
@@ -443,6 +438,7 @@ namespace casual
             std::vector< Message> messages( const std::string& queuename, const std::vector< queue::Message::id_type>& ids)
             {
                Trace trace{ "casual::queue::peek::messages"};
+               common::log::line( verbose::log, "queue: ", queuename, ", ids: ", ids);
 
                queue::Lookup lookup{ queuename};
 
@@ -452,10 +448,10 @@ namespace casual
                auto queue = lookup();
 
                if( queue.order > 0)
-                  throw exception::invalid::Argument{ "not possible to peek a remote queue"};
+                  queue::error( queue::code::argument, "not possible to peek a remote queue: ", queuename);
 
                if( ! queue.process)
-                  throw exception::no::Queue{};
+                  queue::raise( queue::code::no_queue);
 
                auto reply = common::communication::ipc::call( queue.process.ipc, request);
 

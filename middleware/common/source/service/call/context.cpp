@@ -17,8 +17,10 @@
 
 #include "common/environment.h"
 #include "common/flag.h"
-#include "common/exception/xatmi.h"
 #include "common/signal.h"
+
+#include "common/code/raise.h"
+#include "common/code/xatmi.h"
 
 #include "common/transaction/context.h"
 
@@ -26,7 +28,8 @@
 
 #include "xatmi.h"
 
-// std
+
+
 #include <algorithm>
 #include <cassert>
 
@@ -51,7 +54,7 @@ namespace casual
                         if( flags.exist( call::async::Flag::no_reply)  && ! flags.exist( call::async::Flag::no_transaction)
                               && common::transaction::Context::instance().current())
                         {
-                           throw exception::xatmi::invalid::Argument{ "TPNOREPLY can only be used with TPNOTRAN"};
+                           code::raise::error( code::xatmi::argument, "TPNOREPLY can only be used with TPNOTRAN");
                         }
 
                         return flags.exist( call::async::Flag::no_reply) ?
@@ -128,10 +131,8 @@ namespace casual
                               transaction.associate( message.correlation);
 
                               // We use the transaction deadline if it's earlier
-                              if( transaction.timout.deadline() < descriptor.timeout.deadline())
-                              {
-                                 descriptor.timeout.set( start, std::chrono::duration_cast< platform::time::unit>( transaction.timout.deadline() - start));
-                              }
+                              if( transaction.timeout.deadline() < descriptor.timeout.deadline())
+                                 descriptor.timeout.set( start, std::chrono::duration_cast< platform::time::unit>( transaction.timeout.deadline() - start));
                            }
 
                            message.service.timeout = descriptor.timeout.timeout;
@@ -246,7 +247,7 @@ namespace casual
                   {
                      // We fetch any
                      if( ! local::receive( reply, flags))
-                        throw common::exception::xatmi::no::Message();
+                        code::raise::log( code::xatmi::no_message);
 
                      return std::make_pair(
                         std::move( reply),
@@ -260,7 +261,7 @@ namespace casual
                      signal::timer::Deadline deadline{ pending.timeout.deadline(), start};
 
                      if( ! local::receive( reply, flags, pending.correlation))
-                        throw common::exception::xatmi::no::Message();
+                        code::raise::log( code::xatmi::no_message);
 
                      return std::make_pair(
                         std::move( reply),
@@ -299,7 +300,7 @@ namespace casual
                   }
                   default: 
                   {
-                     throw exception::xatmi::exception{ reply.code.result};
+                     code::raise::error( reply.code.result);
                   }
                }
                return result;
