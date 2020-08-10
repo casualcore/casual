@@ -10,8 +10,6 @@
 
 #include "casual/xatmi/code.h"
 
-#include "common/log/stream.h"
-
 #include <system_error>
 #include <iosfwd>
 
@@ -43,18 +41,10 @@ namespace casual
             service_advertised = TPEMATCH,
          };
 
-         std::error_code make_error_code( xatmi code);
+         std::error_code make_error_code( code::xatmi code) noexcept;
+         const char* description( code::xatmi code) noexcept;
 
-         common::log::Stream& stream( code::xatmi code);
-
-         //! @return a "message" representation of the code.
-         const char* message( xatmi code) noexcept;
-
-         //! @return the string representation of the code.
-         const char* string( xatmi code) noexcept;
-
-
-      } // codee
+      } // code
    } // common
 } // casual
 

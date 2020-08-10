@@ -38,9 +38,13 @@ namespace casual
                         {
                            return ! communication::device::non::blocking::send( process.ipc, message).empty();
                         }
-                        catch( const exception::system::communication::Unavailable&)
+                        catch( ...)
                         {
-                           log::line( log, "failed to send message - type: ", common::message::type( message), " to: ", process, " - action: ignore");
+                           auto condition = exception::code();
+                           if( condition != code::casual::communication_unavailable)
+                              throw condition;
+
+                           log::line( log, condition, " failed to send message - type: ", common::message::type( message), " to: ", process, " - action: ignore");
                         }
                         return true;
                      }
@@ -50,21 +54,7 @@ namespace casual
                         template< typename M>
                         void send( State& state, const process::Handle& process, M&& message)
                         {
-                           try
-                           {
-                              communication::device::blocking::send( process.ipc, message);
-                              /*
-                              if( ! communication::device::non::blocking::send( process.ipc, message))
-                              {
-                                 log::line( verbose::log, "failed to send message - type: ", common::message::type( message), " to: ", process, " - action: try later");
-                                 state.pending.replies.emplace_back( std::move( message), process);
-                              }
-                              */
-                           }
-                           catch( const exception::system::communication::Unavailable&)
-                           {
-                              log::line( log, "failed to send message - type: ", common::message::type( message), " to: ", process, " - action: ignore");
-                           }
+                           communication::device::blocking::optional::send( process.ipc, message);
                         }
                      } // optional
                   } // ipc
@@ -160,9 +150,10 @@ namespace casual
                               {
                                  message.buffer = request::receive::transcode::payload( std::move( request));
                               }
-                              catch( const std::exception& exception)
+                              catch( ...)
                               {
-                                 log::line( log::category::verbose::error, "failed to transcode payload: ", exception);
+                                 auto condition = exception::code();
+                                 log::line( log::category::verbose::error, common::code::xatmi::protocol, " failed to transcode payload - reason: ", condition);
                                  message.code.result = common::code::xatmi::protocol; 
                               }
                            }
@@ -237,7 +228,7 @@ namespace casual
 
             try
             {
-               log::line( log::category::information, "pending.requests.size: ", m_state.pending.requests.size(), 
+               log::line( verbose::log, "pending.requests.size: ", m_state.pending.requests.size(), 
                   ", pending.requests.capacity: ", m_state.pending.requests.capacity());
 
                auto send_error_reply = []( const auto& pending)
@@ -254,7 +245,7 @@ namespace casual
             }
             catch( ...)
             {
-               exception::handle();
+               exception::handle( log::category::error, "shutdown - send service error replies");
             }
 
          }

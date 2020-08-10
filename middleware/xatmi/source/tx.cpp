@@ -10,16 +10,32 @@
 
 #include "common/transaction/context.h"
 #include "common/code/tx.h"
-#include "common/exception/tx.h"
+#include "common/code/category.h"
+#include "common/exception/handle.h"
 #include "common/cast.h"
 
 namespace local
 {
    namespace
    {
-      int convert( casual::common::code::tx value)
+      auto convert( casual::common::code::tx value)
       {
          return casual::common::cast::underlying( value);
+      }
+
+      auto code()
+      {
+         auto code = casual::common::exception::code();
+
+         if( casual::common::code::is::category< casual::common::code::tx>( code))
+            return static_cast< casual::common::code::tx>( code.value());
+
+         return casual::common::code::tx::error;
+      }
+
+      auto handle()
+      {         
+         return convert( local::code());
       }
 
       template< typename E, typename... Args>
@@ -28,14 +44,13 @@ namespace local
          try
          {
             executer( std::forward< Args>( args)...);
+            return convert( casual::common::code::tx::ok);
          }
          catch( ...)
          {
-            return convert( casual::common::exception::tx::handle());
+            return local::handle();
          }
-         return convert( casual::common::code::tx::ok);
       }
-
 
    } // <unnamed>
 } // local
@@ -43,7 +58,7 @@ namespace local
 int tx_begin()
 {
    return local::wrap( [](){
-      return casual::common::transaction::Context::instance().begin();
+      casual::common::transaction::Context::instance().begin();
    });
 }
 
@@ -57,7 +72,7 @@ int tx_close()
 int tx_commit()
 {
    return local::wrap( [](){
-      return casual::common::transaction::Context::instance().commit();
+      casual::common::transaction::Context::instance().commit();
    });
 }
 
@@ -71,7 +86,7 @@ int tx_open()
 int tx_rollback()
 {
    return local::wrap( [](){
-      return casual::common::transaction::Context::instance().rollback();
+      casual::common::transaction::Context::instance().rollback();
    });
 }
 
@@ -85,7 +100,7 @@ int tx_set_commit_return(COMMIT_RETURN value)
 int tx_set_transaction_control(TRANSACTION_CONTROL control)
 {
    return local::wrap( []( auto value){
-      return casual::common::transaction::Context::instance().set_transaction_control( value);
+      casual::common::transaction::Context::instance().set_transaction_control( value);
    }, control);
 }
 
@@ -104,8 +119,12 @@ int tx_info( TXINFO* info)
    }
    catch( ...)
    {
-      casual::common::exception::tx::handle();
-      return 0; // false;
+      switch( local::code())
+      {
+         using code = casual::common::code::tx;
+         case code::protocol: return local::convert( code::protocol);
+         default: return local::convert( code::fail);
+      }
    }
 }
 
@@ -127,15 +146,7 @@ int tx_resume( const XID* xid)
 
 COMMIT_RETURN tx_get_commit_return()
 {
-   try
-   {
-      return casual::common::transaction::Context::instance().get_commit_return();
-   }
-   catch( ...)
-   {
-      casual::common::exception::tx::handle();
-      return 0;
-   }
+   return casual::common::transaction::Context::instance().get_commit_return();
 }
 
 

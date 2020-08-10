@@ -16,8 +16,10 @@
 #include "common/server/handle/call.h"
 #include "common/event/send.h"
 #include "common/communication/instance.h"
-#include "common/exception/casual.h"
 #include "common/instance.h"
+
+#include "common/code/raise.h"
+#include "common/code/casual.h"
 
 #include "domain/pending/message/send.h"
 
@@ -48,7 +50,6 @@ namespace casual
                   communication::instance::outbound::domain::manager::device(),
                   common::message::domain::configuration::Request{ process::handle()}));
                   
-
                {
                   Trace trace{ "transaction manager xa-switch configuration"};
 
@@ -58,7 +59,7 @@ namespace casual
                   {
                      auto result = state.resource_properties.emplace( resource.key, std::move( resource));
                      if( ! result.second)
-                        throw common::exception::casual::invalid::Configuration( "multiple keys in resource config: " + result.first->first);
+                        code::raise::error( code::casual::invalid_configuration, "multiple keys in resource config: " + result.first->first);
                   }
                }
 
@@ -84,9 +85,7 @@ namespace casual
                   {
                      if( ! common::algorithm::find( state.resource_properties, r.key))
                      {
-                        log::line( log::category::error, "failed to correlate resource key '", r.key, "' - action: skip resource");
-
-                        common::event::error::send( "failed to correlate resource key '" + r.key + "'");
+                        common::event::error::send( code::casual::internal_correlation, "failed to correlate resource key '" + r.key + "' - action: skip resource");
                         return false;
                      }
                      return true;
@@ -138,8 +137,7 @@ namespace casual
                         }
                         catch( ...)
                         {
-                           common::exception::handle();
-                           common::event::error::send( "failed to spawn resource-proxy-instance: " + info.server);
+                           common::event::error::send( common::exception::code(), "failed to spawn resource-proxy-instance: " + info.server);
                         }
                      }
                   }
@@ -191,20 +189,17 @@ namespace casual
                   // Make sure we only update a specific RM one time
                   for( auto& directive : algorithm::unique( algorithm::sort( instances)))
                   {
-                     try
+                     if( auto resource = state.find_resource( directive.name))
                      {
-                        auto& resource = state.get_resource( directive.name);
-                        resource.concurency = directive.instances;
-
-                        Instances{ state}( resource);
-
-                        result.push_back( admin::transform::resource::Proxy{}( resource));
+                        resource->concurency = directive.instances;
+                        Instances{ state}( *resource);
+                        result.push_back( admin::transform::resource::Proxy{}( *resource));
                      }
-                     catch( const common::exception::system::invalid::Argument&)
-                     {
-                        // User did not use correct resource-id. We propagate this by not including
-                        // the resource in the result
-                     }
+
+                     // else:
+                     // User did not use correct resource-id. We propagate this by not including
+                     // the resource in the result
+           
                   }
 
                   return result;
@@ -238,30 +233,37 @@ namespace casual
                bool request( State& state, state::pending::Request& message)
                {
                   Trace trace{ "transaction::action::resource::request"};
+                  log::line( verbose::log, "message: ", message);
 
                   if( state::resource::id::local( message.resource))
                   {
-                     auto found = state.idle_instance( message.resource);
+                     if( auto found = state.idle_instance( message.resource))
+                     {
+                        if( local::instance::request( message.message, *found))
+                           return true;
+                        
+                        log::line( log, "failed to send resource request - type: ", message.message.type, " to: ", found->process, " - action: try later");
+                        return false;  
+                     }
+            
+                     log::line( log, "failed to find idle resource - action: wait");
+                     return false;
+                  }
 
-                     if( found )
-                     {
-                        if( ! local::instance::request( message.message, *found))
-                        {
-                           log::line( log, "failed to send resource request - type: ", message.message.type, " to: ", found->process);
-                           return false;
-                        }
-                     }
-                     else
-                     {
-                        log::line( log, "failed to find idle resource - action: wait");
-                        return false;
-                     }
-                  }
-                  else
+                  // 'external' resource proxy
+                  auto& resource = state.get_external( message.resource);
+
+                  // we flush our inbound ipc to maximise success of sending directly (the resource might be trying to send
+                  // stuff to us right now, and our inbound and the resource inbound might be 'full', unlikely on linux
+                  // system but it can occur on OSX/BSD with extremely high loads)
+                  communication::ipc::inbound::device().flush();
+
+                  if( communication::device::non::blocking::put( resource.process.ipc, message.message).empty())
                   {
-                     auto& domain = state.get_external( message.resource);
-                     communication::device::blocking::put( domain.process.ipc, message.message);
+                     log::line( log, "failed to send resource request to 'external' resource -  ", resource.process, " - action: send via pending");
+                     casual::domain::pending::message::send( resource.process, std::move( message.message));
                   }
+                  
                   return true;
                }
 

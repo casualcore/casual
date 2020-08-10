@@ -39,7 +39,7 @@ namespace casual
                      }
                      catch( ...)
                      {
-                        exception::handle();
+                        exception::handle( log::category::error, "unittest::eventually::send::local::send");
                      }
                   }
 

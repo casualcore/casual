@@ -18,8 +18,6 @@
 #include "common/process.h"
 #include "common/environment.h"
 #include "common/environment/normalize.h"
-#include "common/exception/signal.h"
-#include "common/exception/handle.h"
 #include "common/event/send.h"
 
 #include "common/communication/instance.h"
@@ -85,12 +83,9 @@ namespace casual
                            state.group_executable,
                            { "--queuebase", group.queuebase, "--name", group.name});
                      }
-                     catch( const common::exception::base& exception)
+                     catch( ...)
                      {
-                        auto message = common::string::compose( "failed to spawn queue group:  ", group.name, " - ", exception);
-                        
-                        common::log::line( common::log::category::error, message);
-                        common::event::error::send( message, common::event::error::Severity::error);
+                        common::event::error::send( exception::code(), "failed to spawn queue group:  ", group.name);
                      }
 
                      return result;
@@ -165,14 +160,12 @@ namespace casual
             common::log::line( common::log::category::information, "casual-queue-manager is off-line");
 
          }
-         catch( const common::exception::signal::Timeout& exception)
-         {
-            auto pids = m_state.processes();
-            common::log::line( common::log::category::error, "failed to terminate groups - pids: ", pids);
-         }
          catch( ...)
          {
-            common::exception::handle();
+            common::log::line( 
+               common::log::category::error, 
+               common::exception::code(), 
+               " termination of groups failed - pids: ",  m_state.processes());
          }
 
       }

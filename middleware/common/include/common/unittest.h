@@ -13,6 +13,7 @@
 #include "common/serialize/macro.h"
 #include "common/message/type.h"
 #include "common/execute.h"
+#include "common/exception/handle.h"
 
 
 #include <array>
@@ -127,8 +128,50 @@ namespace casual
             } // standard
          } // capture
 
+         namespace detail
+         {
+            template< typename A, typename C> 
+            auto expect_code( A&& action, C code) -> decltype( ::testing::AssertionSuccess())
+            {
+               try 
+               {
+                  action();
+                  return ::testing::AssertionFailure() << "no std::error_code was throwned\n";
+               }
+               catch( ...)
+               {
+                  auto condition = exception::code();
+
+                  if( condition == code)
+                     return ::testing::AssertionSuccess();
+
+                  return ::testing::AssertionFailure() << "expected: " << code << " - got: " << condition << '\n';
+               }
+            }
+            
+         } // detail
+
       } // unittest
    } // common
 } // casual
+
+#define EXPECT_CODE( action, code_value)                                                  \
+casual::common::unittest::detail::expect_code( [&](){ action;}, code_value)
+
+
+#define ASSERT_CODE( action, code_value)                                                  \
+try                                                                                       \
+{                                                                                         \
+   action                                                                                 \
+   FAIL() << "no std::error_code was throwned";                                           \
+}                                                                                         \
+catch( ...)                                                                               \
+{                                                                                         \
+   auto condition = ::casual::common::exception::code();                                  \
+   ASSERT_TRUE( condition == code_value) << "expected: " << code_value << " - got: " << condition;    \
+}
+
+
+
 
 

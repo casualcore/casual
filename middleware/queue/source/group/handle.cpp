@@ -12,6 +12,8 @@
 #include "common/event/listen.h"
 #include "common/exception/handle.h"
 #include "common/execute.h"
+#include "common/code/casual.h"
+#include "common/code/category.h"
 
 #include "common/communication/instance.h"
 
@@ -55,9 +57,14 @@ namespace casual
                                  if( ! communication::device::non::blocking::send(  destination.ipc, message))
                                     casual::domain::pending::message::send( destination, message);
                               }
-                              catch( const common::exception::system::communication::Unavailable&)
+                              catch( ...)
                               {
-                                 log::line( log, "destination not available: ", destination, " - action: ignore");
+                                 auto code = exception::code();
+                                 
+                                 if( code != code::casual::communication_unavailable)
+                                    throw;
+
+                                 log::line( log, code, " destination not available: ", destination, " - action: ignore");
                                  log::line( verbose::log, "dropped message: ", message);
                               }                         
                            }
@@ -172,6 +179,7 @@ namespace casual
 
                   } // information
 
+
                   namespace enqueue
                   {
                      auto request( State& state)
@@ -180,7 +188,7 @@ namespace casual
                         {
                            Trace trace{ "queue::handle::enqueue::Request"};
 
-                           try
+                           try 
                            {
                               // Make sure we've got the quid.
                               message.queue = state.queuebase.id( message);
@@ -204,11 +212,10 @@ namespace casual
 
                                  // handle::persist will take care of pending dequeue requests
                               }
-
                            }
-                           catch( const sql::database::exception::Base& exception)
+                           catch( ...)
                            {
-                              log::line( log::category::error, exception.what());
+                              exception::handle( log::category::error, "failed with enqueue request");
                            }
                         };
                      }
@@ -276,11 +283,12 @@ namespace casual
 
                               return handle( state, message);
                            }
-                           catch( const sql::database::exception::Base& exception)
+                           catch( ...)
                            {
-                              log::line( log::category::error, exception.what());
+                              exception::handle( log::category::error, "failed with dequeue request");
+                              return true;
                            }
-                           return true;
+                           
                         };
                      }
 
@@ -355,7 +363,7 @@ namespace casual
                               }
                               catch( ...)
                               {
-                                 common::exception::handle();
+                                 common::exception::handle( common::log::category::error, "transaction commit request");
                                  reply.state = common::code::xa::resource_fail;
                               }
 
@@ -410,7 +418,7 @@ namespace casual
                               }
                               catch( ...)
                               {
-                                 common::exception::handle();
+                                 common::log::line( common::log::category::error, common::code::xa::resource_fail, " transaction rollback request - ", common::exception::code());
                                  reply.state = common::code::xa::resource_fail;
                               }
                               

@@ -198,21 +198,12 @@ namespace casual
 
          EXPECT_TRUE( common::file::exists( path));
 
-         auto destination = file::scoped::Path{ file::name::unique( "/", "/non-existent-paht.txt")};
+         auto destination = file::scoped::Path{ file::name::unique( "/", "/non-existent-path.txt")};
 
-         try
+         EXPECT_CODE(
          {
             file::move( path, destination);
-         }
-         catch( const exception::system::exception& e)
-         {
-            std::cerr << typeid( e).name() << '\n';
-            std::cerr << e << '\n';
-            std::cerr << exception::system::invalid::File{} << '\n';
-         }
-         //EXPECT_THROW({
-         //   file::move( path, destination);
-         //}, exception::system::invalid::File);
+         }, code::casual::invalid_path);
       }
 
       TEST(casual_common_directory, create_one_level__expect_true)

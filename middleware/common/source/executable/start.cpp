@@ -7,8 +7,8 @@
 #include "common/executable/start.h"
 
 #include "common/log.h"
-#include "common/exception/handle.h"
-#include "common/exception/system.h"
+#include "common/code/raise.h"
+#include "common/code/casual.h"
 
 #include "common/transaction/context.h"
 
@@ -20,13 +20,13 @@ namespace casual
       {
          inline namespace v1
          {
-            int start( std::vector< argument::transaction::Resource> resources, std::function< int()> user_main)
+            int start( std::vector< argument::transaction::Resource> resources, unique_function< int()> user_main)
             {
                Trace trace{ "common::executable::start"};
 
                // validate that all resources are named
                if( algorithm::any_of( resources, [](auto& r){ return r.name.empty();}))
-                  throw exception::system::invalid::Argument{ "casual resource executable has to be built with named resources"};
+                  code::raise::error( code::casual::invalid_semantics, "casual resource executable has to be built with named resources");
 
                // configure resources
                transaction::context().configure( std::move( resources), {});

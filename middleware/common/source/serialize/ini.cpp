@@ -8,10 +8,11 @@
 #include "common/serialize/ini.h"
 #include "common/serialize/create.h"
 
-#include "common/exception/casual.h"
-
 #include "common/transcode.h"
 #include "common/buffer/type.h"
+
+#include "common/code/raise.h"
+#include "common/code/casual.h"
 
 #include <sstream>
 #include <iterator>
@@ -76,7 +77,7 @@ namespace casual
                               case 'r': stream.put( '\r');  break;
                               case 't': stream.put( '\t');  break;
                               case 'v': stream.put( '\v');  break;
-                              default: throw exception::casual::invalid::Document{ "Invalid content"};
+                              default: code::raise::error( code::casual::invalid_document, "Invalid content");
                               }
                            }
                            else
@@ -147,9 +148,7 @@ namespace casual
                                     auto candidate = trim( std::move( name) );
 
                                     if( candidate.empty())
-                                    {
-                                       throw exception::casual::invalid::Document{ "Invalid name"};
-                                    }
+                                       code::raise::error( code::casual::invalid_document, "invalid name");
                                     else
                                     {
                                        result.push_back( std::move( candidate));
@@ -157,13 +156,9 @@ namespace casual
                                  }
 
                                  if( result.empty())
-                                 {
-                                    throw exception::casual::invalid::Document{ "Invalid name"};
-                                 }
+                                    code::raise::error( code::casual::invalid_document, "invalid name");
 
                                  return result;
-
-
                               };
 
                               // An internal lambda-helper to help out where to add this section
@@ -214,7 +209,7 @@ namespace casual
                            }
 
                            // Unknown content
-                           exception::casual::invalid::Document( "Invalid document");
+                           code::raise::error( code::casual::invalid_document, "invalid document");
                         }
                      }
 
@@ -291,7 +286,7 @@ namespace casual
                               // An idea to handle this is by creating fake serializable
                               //
                               // E.g. [@name], [@name.@name], etc or something
-                              throw exception::casual::invalid::Node{ "Nested containers not supported (yet)"};
+                              code::raise::error( code::casual::invalid_node, "nested containers not supported (yet)");
                            }
 
                            // Note that we return 'true' anyway - Why?
@@ -375,7 +370,7 @@ namespace casual
                         { 
                            if( *m_data_stack.back() == "true")  value = true;
                            else if( *m_data_stack.back() == "false") value = false;
-                           else throw exception::casual::invalid::Node{ "unexpected type"};
+                           else code::raise::error( code::casual::invalid_node, "unexpected type");
                         }
 
                         void read( char& value)
@@ -392,7 +387,7 @@ namespace casual
                         {
                            auto binary = common::transcode::base64::decode( *m_data_stack.back());
                            if( range::size( binary) != range::size( value))
-                              throw exception::casual::invalid::Node{ "binary size missmatch"};
+                              code::raise::error( code::casual::invalid_node, "binary size missmatch");
 
                            algorithm::copy( binary, std::begin( value));
                         }
@@ -485,7 +480,7 @@ namespace casual
                            if( name)
                               m_name_stack.push_back( name);
                            else
-                              throw exception::casual::invalid::Node{ "Nested containers not supported (yet)"};
+                              code::raise::error( code::casual::invalid_node, "nested containers not supported (yet)");
 
                            return size;
                         }
@@ -493,9 +488,7 @@ namespace casual
                         void container_end( const char* const name)
                         {
                            if( name)
-                           {
                               m_name_stack.pop_back();
-                           }
                         }
 
                         void composite_start( const char* const name)

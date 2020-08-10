@@ -11,9 +11,11 @@
 #include "common/serialize/archive.h"
 #include "common/serialize/log.h"
 #include "common/log/category.h"
-#include "common/exception/casual.h"
 #include "common/log.h"
 #include "common/string.h"
+
+#include "common/code/raise.h"
+#include "common/code/casual.h"
 
 #include <tuple>
 
@@ -33,7 +35,7 @@ namespace casual
                inline static bool apply( bool exist, const char* role)
                {
                   if( ! exist)
-                     throw exception::casual::invalid::Node{ string::compose( "failed to find role in document - role: ", role)};
+                     code::raise::error( code::casual::invalid_node, "failed to find role in document - role: ", role);
 
                   return exist;
                }
@@ -189,15 +191,8 @@ namespace casual
                   common::log::line( verbose::log, "available: ", available);
                   common::log::line( verbose::log, "consumed: ", consumed);
 
-                  auto not_consumed = common::algorithm::difference( available, consumed);
-
-                  if( not_consumed)
-                  {
-                     throw common::exception::casual::invalid::Configuration{ 
-                        "not all information consumed from source",
-                        common::range::to_vector( not_consumed)
-                     };
-                  }
+                  if( auto not_consumed = common::algorithm::difference( available, consumed))
+                     code::raise::error( code::casual::invalid_configuration, "not all information consumed from source - ", not_consumed);
                }
             private:
                policy::canonical::Representation m_canonical;

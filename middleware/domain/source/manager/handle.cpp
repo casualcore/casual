@@ -82,15 +82,16 @@ namespace casual
                            {
                               range->spawned( scale::spawn( entity, instance, variables));
                            }
-                           catch( const exception::system::invalid::Argument& exception)
+                           catch( ...)
                            {
-                              log::line( log::category::error, "failed to spawn: ", entity, " - ", exception);
+                              auto code = exception::code();
+                              log::line( log::category::error, code, " failed to spawn: ", entity.path);
 
                               manager::task::event::dispatch( state, [&]()
                               {
                                  common::message::event::Error message{ common::process::handle()};
                                  message.severity = decltype( message.severity)::error;
-                                 message.message = string::compose( exception);
+                                 message.message = string::compose( code, " failed to spawn: ", entity.path);
                                  return message;
                               });
                            }
@@ -297,9 +298,10 @@ namespace casual
                   {
                      communication::device::blocking::send( service_manager.ipc, prepare);
                   }
-                  catch( const exception::system::communication::Unavailable&)
+                  catch( ...)
                   {
-                     log::line( log, "service-manager not online - action: emulate reply");
+                     auto code = exception::code();
+                     log::line( log, code, " failed to reach service-manager - action: emulate reply");
 
                      // service-manager is not online, we emulate the reply from service-manager
                      // and send it to our self to ensure that possible tasks are initalized and
@@ -933,9 +935,9 @@ namespace casual
                               auto service_manager = m_state.singleton( common::communication::instance::identity::service::manager);
                               communication::device::blocking::send( service_manager.ipc, message);
                            }
-                           catch( const exception::system::communication::Unavailable&)
+                           catch( ...)
                            {
-                              common::log::line( log, "service-manager is not online - action: discard sending ACK");
+                              common::log::line( log, exception::code(), " failed to reach service-manager - action: discard sending ACK");
                            }
                         }
 

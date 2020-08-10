@@ -138,3 +138,16 @@ namespace casual
       } // outbound
    } // http
 } // casual
+
+std::error_code make_error_code( CURLcode code);
+std::error_code make_error_code( CURLMcode code);
+
+namespace std
+{
+   template <>
+   struct is_error_code_enum< CURLcode> : true_type {};
+
+   template <>
+   struct is_error_code_enum< CURLMcode> : true_type {};
+}
+

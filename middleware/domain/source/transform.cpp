@@ -12,8 +12,10 @@
 #include "configuration/message/transform.h"
 
 #include "common/domain.h"
-#include "common/exception/casual.h"
 #include "common/message/gateway.h"
+
+#include "common/code/raise.h"
+#include "common/code/casual.h"
 
 
 namespace casual
@@ -42,7 +44,7 @@ namespace casual
                            process.alias = file::name::base( process.path);
 
                            if( process.alias.empty())
-                              throw exception::casual::invalid::Configuration{ string::compose( "executables has to have a path - process_ ", process)};
+                              code::raise::error( code::casual::invalid_configuration, "executables has to have a path - process: ", process);
                         }
 
                         auto& count = m_mapping[ process.alias];
@@ -61,7 +63,6 @@ namespace casual
                      std::map< std::string, std::size_t> m_mapping;
                   };
 
-
                } // verify
 
 
@@ -76,7 +77,7 @@ namespace casual
                      if( found)
                         result.push_back( found->id);
                      else
-                        throw exception::casual::invalid::Configuration{ "unresolved dependency to group '" + name + "'" };
+                        code::raise::error( code::casual::invalid_configuration, "unresolved dependency to group '", name, "'" );
                   }
 
                   return result;
@@ -107,14 +108,12 @@ namespace casual
 
                   manager::state::Group::id_type id( const std::string& name) const
                   {
-                     auto found = algorithm::find_if( m_state.groups, [&]( const manager::state::Group& group){
-                        return group.name == name;
-                     });
+                     auto has_name = [&name]( auto& group){ return group.name == name;};
 
-                     if( found)
+                     if( auto found = algorithm::find_if( m_state.groups, has_name))
                         return found->id;
 
-                     throw exception::casual::invalid::Configuration{ "unresolved dependency to group '" + name + "'" };
+                     code::raise::error( code::casual::invalid_configuration, "unresolved dependency to group '", name, "'" );
                   }
 
                   const manager::State& m_state;

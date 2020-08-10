@@ -8,9 +8,11 @@
 #include "common/service/header.h"
 
 #include "common/algorithm.h"
-#include "common/exception/system.h"
 #include "common/log.h"
 #include "common/serialize/line.h"
+
+#include "common/code/raise.h"
+#include "common/code/casual.h"
 
 namespace casual
 {
@@ -36,13 +38,11 @@ namespace casual
 
                      template< typename F>
                      decltype( auto) find_at( F& fields, const std::string& key)
-                     {
-                        auto found = find( fields, key);
-                        
-                        if( found) 
+                     {  
+                        if( auto found = find( fields, key))
                            return *found;
-   
-                        throw exception::system::invalid::Argument{ "service header key not found: " + key};
+                        
+                        code::raise::log( code::casual::invalid_argument, "service header key not found: ", key);
                      }
 
                   } // <unnamed>
@@ -74,22 +74,17 @@ namespace casual
                   return local::find_at( *this, key).value;
                }
 
-               std::string Fields::at( const std::string& key, const std::string& default_value) const
+               std::string Fields::at( const std::string& key, const std::string& optional) const
                {
-                  auto found = local::find( *this, key);
-
-                  if( found)
-                  {
+                  if( auto found = local::find( *this, key))
                      return found->value;
-                  }
-                  return default_value;
+                
+                  return optional;
                }
 
                optional< const std::string&> Fields::find( const std::string& key) const
                {
-                  auto found = local::find( *this, key);
-
-                  if( found)
+                  if( auto found = local::find( *this, key))
                      return { found->value};
 
                   return {};
@@ -97,12 +92,8 @@ namespace casual
 
                std::string& Fields::operator[] ( const std::string& key )
                {
-                  auto found = local::find( *this, key);
-                  
-                  if( found)
-                  {
+                  if( auto found = local::find( *this, key))
                      return found->value;
-                  }
 
                   fields_type::emplace_back( key, "");
                   return fields_type::back().value;

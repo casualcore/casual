@@ -7,11 +7,9 @@
 
 #include "common/unittest.h"
 
+#include "common/code/raise.h"
+#include "common/code/casual.h"
 
-//#include "common/message/event.h"
-//#include "common/message/handle.h"
-
-#include "common/exception/system.h"
 
 // std
 #include <random>
@@ -31,9 +29,8 @@ namespace casual
                   const size_type size_type_size = sizeof( platform::binary::type::size_type);
 
                   if( size < size_type_size)
-                  {
-                     throw exception::system::invalid::Argument{ "mockup message size is to small"};
-                  }
+                     code::raise::log( code::casual::invalid_argument, "mockup message size is to small");
+
                   return size - size_type_size;
                }
             } // <unnamed>

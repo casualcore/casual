@@ -41,7 +41,7 @@ namespace casual
             explicit Transaction( ID trid);
 
             ID trid;
-            Timeout timout;
+            Timeout timeout;
             State state = State::active;
 
             //! @return true if `trid` is _active_ 
@@ -97,6 +97,9 @@ namespace casual
             friend bool operator == ( const Transaction& lhs, const XID& rhs);
 
             CASUAL_LOG_SERIALIZE({
+               CASUAL_SERIALIZE( trid);
+               CASUAL_SERIALIZE( timeout);
+               CASUAL_SERIALIZE( state);
                CASUAL_SERIALIZE_NAME( m_involved, "involved");
                CASUAL_SERIALIZE_NAME( m_pending, "pending");
                CASUAL_SERIALIZE_NAME( m_dynamic, "dynamic");

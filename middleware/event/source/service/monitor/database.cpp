@@ -11,7 +11,7 @@
 #include "common/process.h"
 #include "common/algorithm.h"
 #include "common/event/listen.h"
-#include "common/exception/handle.h"
+#include "common/exception/guard.h"
 #include "common/communication/instance.h"
 #include "common/uuid.h"
 
@@ -144,15 +144,10 @@ namespace casual
 
 int main( int argc, char **argv)
 {
-   try
+   return casual::common::exception::main::guard( [=]()
    {
       casual::event::service::main( argc, argv);
-      return 0;
-   }
-   catch( ...)
-   {
-      return casual::common::exception::handle();
-   }
+   });
 }
 
 

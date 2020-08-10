@@ -8,10 +8,10 @@
 #include "http/outbound/request.h"
 #include "http/common.h"
 
-#include "common/exception/system.h"
 #include "common/string.h"
 #include "common/algorithm.h"
 #include "common/transcode.h"
+#include "common/log/stream.h"
 
 #include "common/memory.h"
 #include "common/environment.h"

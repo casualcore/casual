@@ -8,7 +8,6 @@
 #include "domain/manager/manager.h"
 
 #include "common/exception/handle.h"
-#include "common/exception/casual.h"
 #include "common/argument.h"
 
 namespace casual
@@ -25,23 +24,19 @@ namespace casual
                {
                   int exception( common::strong::ipc::id event_ipc)
                   {
-                     try
-                     {
-                        throw;
-                     }
-                     catch( const std::exception& exception)
-                     {
-                        if( event_ipc)
-                        {
-                           common::message::event::Error event;
-                           event.message = exception.what();
-                           event.severity = common::message::event::Error::Severity::fatal;
+                     auto code = common::exception::code();
 
-                           common::communication::device::non::blocking::send( event_ipc, event);
-                        }
-                        return casual::common::exception::handle();
+                     if( event_ipc)
+                     {
+                        common::message::event::Error event;
+                        event.message = common::string::compose( "fatal abort");
+                        event.severity = common::message::event::Error::Severity::fatal;
+                        event.code = code;
+
+                        common::communication::device::non::blocking::send( event_ipc, event);
                      }
-                     return 666;
+                  
+                     return code.value();
                   }
                } // handle
 
@@ -63,13 +58,13 @@ namespace casual
                      Manager domain( std::move( settings));
                      domain.start();
 
+                     return 0;
                   }
                   catch( ...)
                   {
                      return handle::exception( settings.event.ipc);
                   }
 
-                  return 0;
                }
             } // <unnamed>
          } // local

@@ -161,7 +161,7 @@ namespace casual
 
 int main( int argc, char** argv)
 {
-   return casual::exception::guard( [=]()
+   return casual::common::exception::main::guard( [=]()
    {
       casual::example::local::error::main( argc, argv);
    });

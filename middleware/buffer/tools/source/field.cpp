@@ -11,7 +11,7 @@
 
 #include "common/environment.h"
 #include "common/argument.h"
-#include "common/exception/handle.h"
+#include "common/exception/guard.h"
 
 #include <stdexcept>
 #include <iostream>
@@ -69,7 +69,7 @@ if not provided, environment variable CASUAL_FIELD_TABLE will be used.
 
 int main( int argc, char* argv[])
 {
-   return casual::exception::guard( std::cerr, [=]()
+   return casual::exception::main::guard( std::cerr, [=]()
    {
       casual::buffer::field::local::main( argc, argv);
    });

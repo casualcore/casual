@@ -9,8 +9,10 @@
 #include "common/uuid.h"
 #include "common/transcode.h"
 #include "common/memory.h"
-#include "common/exception/system.h"
 #include "common/string.h"
+
+#include "common/code/raise.h"
+#include "common/code/casual.h"
 
 #include <cassert>
 #include <ostream>
@@ -131,19 +133,19 @@ namespace casual
          in >> string;
 
          if( ! std::regex_match( string, std::regex{ "[a-f0-9]{32}"}))
-            throw exception::system::invalid::Argument{ "invalid uuid"};
+            code::raise::error( code::casual::invalid_argument, "invalid uuid: ", string);
 
          transcode::hex::decode( string, value.m_uuid);
          return in;
       }
 
    } // common
-
-   common::Uuid operator"" _uuid ( const char* data)
-   {
-      return common::Uuid{ common::view::String( data + 2)};
-   }
 } // casual
+
+casual::common::Uuid operator"" _uuid ( const char* data)
+{
+   return casual::common::Uuid{ casual::common::view::String( data + 2)};
+}
 
 
 

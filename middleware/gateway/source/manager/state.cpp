@@ -180,6 +180,20 @@ namespace casual
             } // coordinate
          } // state
 
+         namespace local
+         {
+            namespace
+            {
+               auto has_descriptor( strong::file::descriptor::id descriptor)
+               {
+                  return [descriptor]( auto& entry)
+                  { 
+                     return entry.descriptor() == descriptor;
+                  };
+               }
+            } // <unnamed>
+         } // local
+
 
          bool State::running() const
          {
@@ -200,29 +214,21 @@ namespace casual
          {
             Trace trace{ "gateway::manager::State::remove"};
 
+            if( auto found = common::algorithm::find_if( m_listeners, local::has_descriptor( listener)))
+            {
+               m_listeners.erase( std::begin( found));
+               algorithm::trim( m_descriptors, common::algorithm::remove( m_descriptors, listener));
+               directive.read.remove( listener);
+            }
 
-            auto found = common::algorithm::find_if( m_listeners, [listener]( const listen::Entry& entry) {
-               return entry.descriptor() == listener;
-            });
-
-            if( ! found)
-               throw common::exception::system::invalid::Argument{ common::string::compose( "failed to find descriptor in listeners - descriptor: ", listener)};
-
-
-            m_listeners.erase( std::begin( found));
-            algorithm::trim( m_descriptors, common::algorithm::remove( m_descriptors, listener));
-            directive.read.remove( listener);
+            code::raise::log( code::casual::invalid_argument, "failed to find descriptor in listeners - descriptor: ", listener);
          }
 
          listen::Connection State::accept( common::strong::file::descriptor::id descriptor)
          {
             Trace trace{ "gateway::manager::State::accept"};
 
-            auto found = common::algorithm::find_if( m_listeners, [descriptor]( const listen::Entry& entry) {
-               return entry.descriptor() == descriptor;
-            });
-
-            if( found)
+            if( auto found = common::algorithm::find_if( m_listeners, local::has_descriptor( descriptor)))
                return found->accept();
 
             return {};

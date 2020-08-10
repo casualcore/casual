@@ -17,7 +17,6 @@
 #include "common/server/service.h"
 #include "common/communication/ipc.h"
 #include "common/event/dispatch.h"
-#include "common/exception/system.h"
 
 #include <vector>
 #include <string>
@@ -56,15 +55,6 @@ namespace casual
 
          namespace state
          {
-
-            namespace exception
-            {
-               struct Missing : public common::exception::system::invalid::Argument
-               {
-                  using common::exception::system::invalid::Argument::Argument;
-               };
-
-            }
 
             struct Service;
 

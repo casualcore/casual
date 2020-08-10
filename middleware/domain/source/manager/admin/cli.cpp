@@ -142,7 +142,7 @@ namespace casual
                         if( ! files.empty())
                         {
                            if( ! algorithm::all_of( files, &common::file::exists))
-                              throw exception::system::invalid::File{ string::compose( "at least one file does not exist - files: ", files)};
+                              code::raise::error( code::casual::invalid_path, "at least one file does not exist - files: ", files);
                            
                            arguments.emplace_back( "--configuration-files");
                            algorithm::append( files, arguments);
@@ -431,7 +431,7 @@ namespace casual
                                  auto format_ipc = []( auto& i) { return i.instance->handle.ipc;};
                                  auto format_state = []( auto& i) { return i.instance->state;};
                                  auto format_alias = []( auto& i) { return i.server->alias;};
-                                 auto format_spawnpoint = []( auto& i) { return chronology::local( i.instance->spawnpoint);};
+                                 auto format_spawnpoint = []( auto& i) { return chronology::utc::offset( i.instance->spawnpoint);};
 
                                  return terminal::format::formatter< Type>::construct(
                                     terminal::format::column( "pid", format_pid, terminal::color::white, terminal::format::Align::right),
@@ -489,7 +489,7 @@ namespace casual
                                  auto format_pid = []( auto& i) { return i.instance->handle;};
                                  auto format_state = []( auto& i) { return i.instance->state;};
                                  auto format_alias = []( auto& i) { return i.executable->alias;};
-                                 auto format_spawnpoint = []( auto& i) { return chronology::local( i.instance->spawnpoint);};
+                                 auto format_spawnpoint = []( auto& i) { return chronology::utc::offset( i.instance->spawnpoint);};
 
                                  return terminal::format::formatter< Type>::construct(
                                     terminal::format::column( "pid", format_pid, terminal::color::white, terminal::format::Align::right),

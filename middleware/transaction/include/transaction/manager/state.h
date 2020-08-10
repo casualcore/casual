@@ -56,6 +56,13 @@ namespace casual
                platform::time::point::type requested{};
 
                Metrics& operator += ( const Metrics& rhs);
+
+               CASUAL_LOG_SERIALIZE(
+               { 
+                  CASUAL_SERIALIZE( resource);
+                  CASUAL_SERIALIZE( roundtrip);
+                  CASUAL_SERIALIZE( requested);
+               })
             };
 
             namespace resource
@@ -99,10 +106,10 @@ namespace casual
 
                      CASUAL_LOG_SERIALIZE(
                      { 
-                        CASUAL_NAMED_VALUE( id);
-                        CASUAL_NAMED_VALUE( process);
-                        CASUAL_NAMED_VALUE( metrics);
-                        CASUAL_NAMED_VALUE_NAME( m_state, "state");
+                        CASUAL_SERIALIZE( id);
+                        CASUAL_SERIALIZE( process);
+                        CASUAL_SERIALIZE( metrics);
+                        CASUAL_SERIALIZE_NAME( m_state, "state");
                      })
 
                   private:
@@ -143,15 +150,15 @@ namespace casual
 
                   CASUAL_LOG_SERIALIZE(
                   { 
-                     CASUAL_NAMED_VALUE( id);
-                     CASUAL_NAMED_VALUE( key);
-                     CASUAL_NAMED_VALUE( openinfo);
-                     CASUAL_NAMED_VALUE( closeinfo);
-                     CASUAL_NAMED_VALUE( concurency);
-                     CASUAL_NAMED_VALUE( metrics);
-                     CASUAL_NAMED_VALUE( instances);
-                     CASUAL_NAMED_VALUE( name);
-                     CASUAL_NAMED_VALUE( note);
+                     CASUAL_SERIALIZE( id);
+                     CASUAL_SERIALIZE( key);
+                     CASUAL_SERIALIZE( openinfo);
+                     CASUAL_SERIALIZE( closeinfo);
+                     CASUAL_SERIALIZE( concurency);
+                     CASUAL_SERIALIZE( metrics);
+                     CASUAL_SERIALIZE( instances);
+                     CASUAL_SERIALIZE( name);
+                     CASUAL_SERIALIZE( note);
                   })
                };
 
@@ -192,6 +199,12 @@ namespace casual
                   common::communication::message::Complete message;
 
                   inline friend bool operator == ( const Request& lhs, resource::id::type rhs) { return lhs.resource == rhs;}
+
+                  CASUAL_LOG_SERIALIZE(
+                  { 
+                     CASUAL_SERIALIZE( resource);
+                     CASUAL_SERIALIZE( message);
+                  })
                };
 
             } // pending
@@ -312,10 +325,10 @@ namespace casual
 
                CASUAL_LOG_SERIALIZE(
                { 
-                  CASUAL_NAMED_VALUE( id);
-                  CASUAL_NAMED_VALUE( stage);
-                  CASUAL_NAMED_VALUE( result);
-                  CASUAL_NAMED_VALUE_NAME( done(), "done");
+                  CASUAL_SERIALIZE( id);
+                  CASUAL_SERIALIZE( stage);
+                  CASUAL_SERIALIZE( result);
+                  CASUAL_SERIALIZE_NAME( done(), "done");
                })
             };
 
@@ -346,10 +359,10 @@ namespace casual
 
                CASUAL_LOG_SERIALIZE(
                { 
-                  CASUAL_NAMED_VALUE( trid);
-                  CASUAL_NAMED_VALUE( resources);
-                  CASUAL_NAMED_VALUE_NAME( results(), "results");
-                  CASUAL_NAMED_VALUE_NAME( stage(), "stage");
+                  CASUAL_SERIALIZE( trid);
+                  CASUAL_SERIALIZE( resources);
+                  CASUAL_SERIALIZE_NAME( results(), "results");
+                  CASUAL_SERIALIZE_NAME( stage(), "stage");
                })
             };
 
@@ -398,12 +411,12 @@ namespace casual
 
             CASUAL_LOG_SERIALIZE(
             { 
-               CASUAL_NAMED_VALUE( global);
-               CASUAL_NAMED_VALUE( branches);
-               CASUAL_NAMED_VALUE( started);
-               CASUAL_NAMED_VALUE( deadline);
-               CASUAL_NAMED_VALUE( correlation);
-               CASUAL_NAMED_VALUE( resource);
+               CASUAL_SERIALIZE( global);
+               CASUAL_SERIALIZE( branches);
+               CASUAL_SERIALIZE( started);
+               CASUAL_SERIALIZE( deadline);
+               CASUAL_SERIALIZE( correlation);
+               CASUAL_SERIALIZE( resource);
                
             })
          };
@@ -459,6 +472,7 @@ namespace casual
 
             state::resource::Proxy& get_resource( state::resource::id::type rm);
             state::resource::Proxy& get_resource( const std::string& name);
+            state::resource::Proxy* find_resource( const std::string& name);
             state::resource::Proxy::Instance& get_instance( state::resource::id::type rm, common::strong::process::id pid);
 
             bool remove_instance( common::strong::process::id pid);

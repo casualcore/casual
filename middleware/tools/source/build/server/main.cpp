@@ -16,8 +16,7 @@
 #include "common/execute.h"
 #include "common/environment.h"
 #include "common/server/service.h"
-#include "common/exception/system.h"
-#include "common/exception/handle.h"
+#include "common/exception/guard.h"
 
 #include "configuration/build/server.h"
 #include "configuration/build/resource.h"
@@ -241,7 +240,7 @@ namespace casual
 
 int main( int argc, char **argv)
 {
-   return casual::common::exception::guard( std::cerr, [=]()
+   return casual::common::exception::main::guard( std::cerr, [=]()
    {
       casual::tools::build::local::main( argc, argv);
    });

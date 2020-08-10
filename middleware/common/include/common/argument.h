@@ -9,7 +9,9 @@
 
 
 #include "common/argument/cardinality.h"
-#include "common/argument/exception.h"
+
+#include "common/code/raise.h"
+#include "common/code/casual.h"
 
 #include "common/algorithm.h"
 #include "common/functional.h"
@@ -20,7 +22,6 @@
 #include <vector>
 #include <string>
 #include <memory>
-#include <functional>
 #include <iostream>
 
 
@@ -78,7 +79,7 @@ namespace casual
                      : m_active( std::move( active)), m_deprecated( std::move( deprecated)) 
                   {
                      if( empty())
-                        throw exception::invalid::Argument{ "at least one option 'key' has to be provided"};
+                        code::raise::error( code::casual::invalid_argument, "at least one option 'key' has to be provided");
                   }
 
                   inline bool operator == ( const std::string& key) const noexcept
@@ -954,8 +955,7 @@ namespace casual
             struct Default
             {
                Default( std::string description);
-               using callback_type = std::function< detail::Holder()>;
-               void overrides( range_type arguments, callback_type callback);
+               bool overrides( range_type arguments, common::unique_function< detail::Holder()> callback);
                
                std::string description;
             };
@@ -988,7 +988,8 @@ namespace casual
 
             void operator() ( range_type arguments)
             {               
-               m_policy.overrides( arguments, callback( *this));
+               if( m_policy.overrides( arguments, [&](){ return m_options;}))
+                  return;
 
                detail::traverse( m_options, arguments, []( auto& option, auto& key, auto argument){
                   option.assign( key, argument);
@@ -999,10 +1000,6 @@ namespace casual
 
          private:
 
-            static policy::Default::callback_type callback( const basic_parse& parse)
-            {
-               return [&parse](){ return parse.m_options;};
-            }
             policy_type m_policy;
             detail::Holder m_options;
          };

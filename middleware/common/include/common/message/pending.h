@@ -30,13 +30,16 @@ namespace casual
                inline Message( communication::message::Complete&& complete, destinations_type destinations) 
                   : destinations( std::move( destinations)), complete( std::move( complete)) {}
 
+               inline Message( communication::message::Complete&& complete, const destination_type& destination) 
+                  : destinations{ destination}, complete( std::move( complete)) {}
+
                template< typename M>
                Message( M&& message, destinations_type destinations)
                   : Message{ serialize::native::complete( std::forward< M>( message)), std::move( destinations)} {}
 
                template< typename M>
-               Message( M&& message, destination_type destination)
-                  : Message{ serialize::native::complete( std::forward< M>( message)), destinations_type{ destination}} {}
+               Message( M&& message, const destination_type& destination)
+                  : Message{ serialize::native::complete( std::forward< M>( message)), destination} {}
 
                
                Message() = default;

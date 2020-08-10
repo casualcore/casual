@@ -14,7 +14,7 @@ endif
 COMPILER = $(CXX)
 
 
-#
+# -Woverloaded-virtual add when g++ fixes bug
 # -Wno-noexcept-type  we can probably remove this on g++ 8
 # -Wno-implicit-fallthrough remove and add [[fallthrough]] attribute, when we're on c++17
 #
@@ -24,7 +24,6 @@ WARNING_DIRECTIVE = -Wall \
  -Wsign-compare \
  -Wuninitialized  \
  -Winit-self \
- -Woverloaded-virtual \
  -Wno-unused-parameter \
  -Wno-missing-declarations \
  -Wno-noexcept-type \

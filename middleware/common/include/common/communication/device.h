@@ -8,19 +8,16 @@
 #pragma once
 
 
-
 #include "common/communication/message.h"
+#include "common/communication/log.h"
 
 #include "common/serialize/native/binary.h"
 #include "common/serialize/native/complete.h"
 #include "common/signal.h"
-#include "common/exception/signal.h"
-#include "common/exception/system.h"
 #include "common/predicate.h"
 #include "common/traits.h"
 
-#include "common/log.h"
-
+#include "common/code/casual.h"
 
 
 namespace casual
@@ -42,13 +39,13 @@ namespace casual
             namespace policy
             {
                template< typename D>
-               auto blocking( D&& device) -> decltype( typename std::decay_t< D>::connector_type::blocking_policy{})
+               constexpr auto blocking( D&& device) -> decltype( typename std::decay_t< D>::connector_type::blocking_policy{})
                {
                   return typename std::decay_t< D>::connector_type::blocking_policy{};
                }
 
                template< typename D>
-               auto blocking( D&& device) -> decltype( typename customization_point< std::decay_t< D>>::blocking_policy{})
+               constexpr auto blocking( D&& device) -> decltype( typename customization_point< std::decay_t< D>>::blocking_policy{})
                {
                   return typename customization_point< std::decay_t< D>>::blocking_policy{};
                }
@@ -56,13 +53,13 @@ namespace casual
                namespace non
                {
                   template< typename D>
-                  auto blocking( D&& device) -> decltype( typename std::decay_t< D>::connector_type::non_blocking_policy{})
+                  constexpr auto blocking( D&& device) -> decltype( typename std::decay_t< D>::connector_type::non_blocking_policy{})
                   {
                      return typename std::decay_t< D>::connector_type::non_blocking_policy{};
                   }
 
                   template< typename D>
-                  auto blocking( D&& device) -> decltype( typename customization_point< std::decay_t< D>>::non_blocking_policy{})
+                  constexpr auto blocking( D&& device) -> decltype( typename customization_point< std::decay_t< D>>::non_blocking_policy{})
                   {
                      return typename customization_point< std::decay_t< D>>::non_blocking_policy{};
                   }
@@ -438,14 +435,18 @@ namespace casual
                         // Delegate the invocation to the policy
                         return policy.send( Base::connector(), complete);
                      }
-                     catch( const exception::system::communication::Unavailable&)
-                     {
-                        // Let connector take a crack at resolving this problem, if implemented...
-                        reconnect( Base::connector(), traits::priority::tag< 1>{});
-                     }
                      catch( ...)
                      {
-                        device::handle::error(); 
+                        auto code = exception::code();
+                        if( code == code::casual::communication_unavailable)
+                        {
+                           // Let connector take a crack at resolving this problem, if implemented...
+                           reconnect( Base::connector(), traits::priority::tag< 1>{});
+                        }
+                        else if( code == code::casual::interupted)
+                           signal::dispatch();
+                        else
+                           throw;
                      }
                   }
                }
@@ -511,6 +512,7 @@ namespace casual
                return customization_point< std::decay_t< D>>::put( std::forward< D>( device), std::forward< Ts>( ts)...);
             }
             //! @}
+
             
             namespace blocking
             {
@@ -562,10 +564,38 @@ namespace casual
                         blocking::send( std::forward< Ts>( ts)...);
                         return true;
                      }
-                     catch( const exception::system::communication::Unavailable&)
+                     catch( ...)
                      {
-                        log::line( log::debug, "failed to send message - action: ignore");
-                        return false;
+                        if( exception::code() == code::casual::communication_unavailable)
+                        {
+                           log::line( communication::log, code::casual::communication_unavailable, " failed to send message - action: ignore");
+                           return false;
+                        }
+                        // propagate other errors
+                        throw;
+                     }
+                  }
+
+                  //! blocked put of the message, if callee is unreachable (for example. the process has died)
+                  //! `false` is returned
+                  //! @returns true if sent, false if Unavailable
+                  template< typename... Ts>
+                  auto put( Ts&&... ts) -> decltype( void( blocking::put( std::forward< Ts>( ts)...)), bool())
+                  {
+                     try 
+                     {
+                        blocking::put( std::forward< Ts>( ts)...);
+                        return true;
+                     }
+                     catch( ...)
+                     {
+                        if( exception::code() == code::casual::communication_unavailable)
+                        {
+                           log::line( communication::log, code::casual::communication_unavailable, " failed to put message - action: ignore");
+                           return false;
+                        }
+                        // propagate other errors
+                        throw;
                      }
                   }
                } // optional
@@ -602,6 +632,31 @@ namespace casual
                   {
                      return device::put( std::forward< D>( device), std::forward< Ts>( ts)..., policy::non::blocking( device));
                   }
+
+                  namespace optional
+                  {
+                     //! non blocked send of the message, if not possible to send or if callee is unreachable 
+                     //! (for example. the process has died) `false` is returned
+                     //! @returns true if sent, false otherwise or if Unavailable
+                     template< typename... Ts>
+                     auto send( Ts&&... ts) -> decltype( void( blocking::send( std::forward< Ts>( ts)...)), bool())
+                     {
+                        try 
+                        {
+                           return ! non::blocking::send( std::forward< Ts>( ts)...).empty();
+                        }
+                        catch( ...)
+                        {
+                           if( exception::code() == code::casual::communication_unavailable)
+                           {
+                              log::line( communication::log, code::casual::communication_unavailable, " failed to send message - action: ignore");
+                              return false;
+                           }
+                           // propagate other errors
+                           throw;
+                        }
+                     }
+               } // optional
 
                } // blocking
             } // non         

@@ -10,7 +10,9 @@
 #include "common/algorithm.h"
 #include "common/environment/string.h"
 #include "common/process.h"
-#include "common/exception/system.h"
+
+#include "common/code/raise.h"
+#include "common/code/casual.h"
 
 #include <iostream>
 
@@ -44,7 +46,7 @@ namespace casual
          void validate( const Directive& settings)
          {
             if( ! settings.use_defaults && ! settings.output.empty())
-               throw common::exception::system::invalid::Argument{ "output can't be used with 'no-defaults' - the 'output' has to be provided in a linker specific way"};
+               code::raise::error( code::casual::invalid_argument, "output can't be used with 'no-defaults' - the 'output' has to be provided in a linker specific way");
          }
 
 
@@ -101,7 +103,7 @@ namespace casual
                trace::Exit log( "execute " + directive.compiler, directive.verbose);
                
                if( common::process::execute( directive.compiler, arguments) != 0)
-                  throw common::exception::system::invalid::Argument{ "failed to compile"};
+                  code::raise::error( code::casual::invalid_argument, "failed to compile");
             }
          }
 

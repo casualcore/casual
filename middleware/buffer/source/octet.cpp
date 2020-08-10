@@ -30,15 +30,11 @@ namespace casual
             {
                using common::buffer::Buffer::Buffer;
 
-               //!
                //! Implement Buffer::transport
-               //!
                size_type transport( const size_type user_size) const
                {
-                  //
-                  // Just ignore user-size all together
-                  //
 
+                  // Just ignore user-size all together
                   return payload.memory.size();
                }
 
@@ -125,13 +121,13 @@ namespace casual
                {
                   return CASUAL_OCTET_OUT_OF_MEMORY;
                }
-               catch( const common::exception::xatmi::invalid::Argument&)
-               {
-                  return CASUAL_OCTET_INVALID_HANDLE;
-               }
                catch( ...)
                {
-                  common::exception::handle();
+                  auto condition = common::exception::code();
+
+                  if( condition == common::code::xatmi::argument)
+                     return CASUAL_OCTET_INVALID_HANDLE;
+
                   return CASUAL_OCTET_INTERNAL_FAILURE;
                }
             }

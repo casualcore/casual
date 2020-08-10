@@ -371,7 +371,7 @@ namespace casual
                         if( value.metric.last == platform::time::point::limit::zero())
                            return "-";
 
-                        return common::chronology::local( value.metric.last);
+                        return common::chronology::utc::offset( value.metric.last);
                      };
 
                      auto remote_invocations = []( auto& value){ return value.metric.remote;};

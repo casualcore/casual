@@ -14,6 +14,9 @@
 
 #include "common/message/conversation.h"
 
+#include "common/code/raise.h"
+#include "common/code/xatmi.h"
+
 #include "common/communication/ipc.h"
 #include "common/communication/instance.h"
 
@@ -111,9 +114,7 @@ namespace casual
                         constexpr connect::Flags duplex{ connect::Flag::send_only, connect::Flag::receive_only};
 
                         if( ( flags & duplex) == duplex || ! ( flags & duplex))
-                        {
-                           throw exception::xatmi::invalid::Argument{ string::compose( "send or receive intention must be provided - flags: ", flags)};
-                        }
+                           code::raise::log( code::xatmi::argument, "send or receive intention must be provided - flags: ", flags);
                      }
 
                      void send( const State::descriptor_type& descriptor)
@@ -123,9 +124,7 @@ namespace casual
                         log::line( log::debug, "descriptor: ", descriptor);
 
                         if( descriptor.duplex != state::descriptor::Information::Duplex::send)
-                        {
-                           throw exception::xatmi::Protocoll{ "caller has not the control of the conversation"};
-                        }
+                           code::raise::log( code::xatmi::protocol, "caller has not the control of the conversation");
                      }
 
                      void receive( const State::descriptor_type& descriptor)
@@ -135,9 +134,7 @@ namespace casual
                         log::line( log::debug, "descriptor: ", descriptor);
 
                         if( descriptor.duplex != state::descriptor::Information::Duplex::receive)
-                        {
-                           throw exception::xatmi::Protocoll{ "caller has not the control of the conversation"};
-                        }
+                           code::raise::log( code::xatmi::protocol, "caller has not the control of the conversation");
                      }
 
                      void disconnect( const State::descriptor_type& descriptor)
@@ -147,9 +144,7 @@ namespace casual
                         log::line( log::debug, "descriptor: ", descriptor);
 
                         if( ! descriptor.initiator)
-                        {
-                           throw exception::xatmi::invalid::Descriptor{ "not the initiator of the conversation"};
-                        }
+                           code::raise::log( code::xatmi::descriptor, "caller has not the control of the conversation");
                      }
 
                   } // validate
@@ -196,9 +191,7 @@ namespace casual
             Context::~Context()
             {
                if( pending())
-               {
-                  log::line( log::category::error, "pending conversations: ", m_state.descriptors.size());
-               }
+                  log::line( log::category::error, code::casual::invalid_semantics,  " pending conversations: ", m_state.descriptors.size());
                
             }
 
@@ -330,7 +323,7 @@ namespace casual
                      message, 
                      descriptor.correlation))
                   {
-                     throw common::exception::xatmi::no::Message();
+                     code::raise::log( code::xatmi::no_message);
                   }
                }
                else

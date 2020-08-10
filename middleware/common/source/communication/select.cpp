@@ -1,10 +1,11 @@
 #include "common/communication/select.h"
 #include "common/communication/device.h"
 
-#include "common/exception/system.h"
 #include "common/signal.h"
 #include "common/result.h"
 #include "common/memory.h"
+#include "common/code/raise.h"
+#include "common/code/casual.h"
 
 namespace casual
 {
@@ -89,15 +90,13 @@ namespace casual
 
                      // check pending signals
                      if( signal::pending( block.previous()))
-                        throw exception::system::Interupted{};
+                        code::raise::log( code::casual::interupted);
 
                      log::line( verbose::log, "pselect - blocked signals: ", block.previous());
                     
                      posix::result( 
                          // will set previous signal mask atomically 
-                        ::pselect( FD_SETSIZE, result.read.native(), nullptr, nullptr, nullptr, &block.previous().set),
-                        // we need to pass previous set to be able to dispatch on signals
-                        block.previous().set);
+                        ::pselect( FD_SETSIZE, result.read.native(), nullptr, nullptr, nullptr, &block.previous().set));
 
                      return result;
                   }

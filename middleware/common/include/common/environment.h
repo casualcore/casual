@@ -13,7 +13,9 @@
 #include "common/uuid.h"
 #include "common/process.h"
 #include "common/string.h"
-#include "common/exception/system.h"
+
+#include "common/code/raise.h"
+#include "common/code/casual.h"
 
 
 #include <string>
@@ -84,7 +86,7 @@ namespace casual
                }
                catch( ...)
                {
-                  throw exception::system::invalid::Argument{ string::compose( "failed to convert value of environment variable: ", name)};
+                  code::raise::error( code::casual::invalid_argument, "failed to convert value of environment variable: ", name);
                }
             }
             

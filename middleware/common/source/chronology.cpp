@@ -7,9 +7,11 @@
 
 #include "common/chronology.h"
 
-#include "common/exception/system.h"
 #include "common/environment.h"
 #include "common/range/adapter.h"
+
+#include "common/code/raise.h"
+#include "common/code/casual.h"
 
 #include <ctime>
 
@@ -68,7 +70,7 @@ namespace casual
                      ( time.tm_gmtoff < 0 ? '-' : '+') << 
                      // get the 'hour' part
                      std::setw( 2) << offset / 3600 << ':' << 
-                     // get the 'minit' part
+                     // get the 'minute' part
                      std::setw( 2) << ( offset % 3600) / 60;
                   }
 
@@ -97,18 +99,20 @@ namespace casual
             } // <unnamed>
          }
 
-         std::string local( platform::time::point::type timepoint)
+         namespace utc
          {
-            std::ostringstream out;
-            local( out, timepoint);
-            return std::move( out).str();
-         }
+            std::string offset( platform::time::point::type timepoint)
+            {
+               std::ostringstream out;
+               offset( out, timepoint);
+               return std::move( out).str();
+            }
 
-         void local( std::ostream& out, platform::time::point::type timepoint)
-         {
-            internal::format( out, timepoint);
-         }
-
+            void offset( std::ostream& out, platform::time::point::type timepoint)
+            {
+               internal::format( out, timepoint);
+            }
+         } // utc
 
          namespace from
          {
@@ -151,8 +155,7 @@ namespace casual
                      if( unit == "d") return std::chrono::hours( count * 24);
                      if( unit == "ns") return std::chrono::duration_cast< time_unit>( std::chrono::nanoseconds( count));
 
-
-                     throw exception::system::invalid::Argument{ string::compose( "invalid time representation: ", view::String{ value})};
+                     code::raise::log( code::casual::invalid_argument, "invalid time representation: ", view::String{ value});
                   }
 
                } // <unnamed>

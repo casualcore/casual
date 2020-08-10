@@ -11,6 +11,7 @@
 #include "common/serialize/traits.h"
 #include "common/optional.h"
 #include "common/view/binary.h"
+#include "common/code/serialize.h"
 
 #include <system_error>
 
@@ -339,7 +340,7 @@ namespace casual
                   auto size = std::get< 0>( context);
 
                   if( expected_size != size)
-                     throw std::system_error{ std::make_error_code( std::errc::invalid_argument), "unexpected size"};
+                     throw std::system_error{ std::make_error_code( std::errc::invalid_argument), "unexpected tuple size"};
 
                   detail::tuple::Read< std::tuple_size< T>::value>::serialize( archive, value);
 
@@ -643,6 +644,35 @@ namespace casual
             }
          };
          //! @}
+
+         //! Specialization for std::error_code
+         template< typename A>
+         struct Value< std::error_code, A>
+         {
+            static auto write( A& archive, const std::error_code& code, const char* name)
+            {
+               archive.composite_start( name);
+               value::write( archive, code::serialize::lookup::id( code.category()), "id");
+               value::write( archive, code.value(), "value");
+               archive.composite_end( name);
+            }
+            static auto read( A& archive, std::error_code& code, const char* name)
+            {
+               if( ! archive.composite_start( name))
+                  return false;
+
+               Uuid id;
+               value::read( archive, id, "id");
+               decltype( code.value()) value{};
+               value::read( archive, value, "value");
+
+               code = code::serialize::create( id, value);
+
+               archive.composite_end( name);
+               return true;
+   
+            }
+         };  
 
          //! Specialization for named value
          template< typename T, typename A>

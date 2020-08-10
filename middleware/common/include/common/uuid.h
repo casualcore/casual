@@ -16,7 +16,7 @@
 #include "common/range.h"
 
 #include "common/serialize/macro.h"
-#include "common/serialize/value.h"
+//#include "common/serialize/value.h"
 
 #include <string>
 
@@ -83,9 +83,9 @@ namespace casual
 
    } // common
 
-   common::Uuid operator"" _uuid ( const char* data);
-
 } // casual
+
+casual::common::Uuid operator"" _uuid ( const char* data);
 
 
 

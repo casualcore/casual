@@ -42,6 +42,8 @@ namespace casual
                   void operator () ( const message::domain::instance::global::state::Request& message);
                };
             } // global
+
+            
             
 
             template< typename Device> 

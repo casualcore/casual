@@ -11,7 +11,6 @@
 
 #include "common/message/dispatch.h"
 #include "common/message/handle.h"
-#include "common/exception/casual.h"
 
 #include "common/server/handle/call.h"
 #include "common/communication/instance.h"
@@ -39,22 +38,26 @@ namespace casual
                   template< typename M> 
                   bool send( const process::Handle& process, M&& message)
                   {
+
                      try
                      {
                         if( ! communication::device::non::blocking::send( process.ipc, message))
                         {
                            log::line( log, "could not send message ", message.type(), " to process: ", process, " - action: eventually send");
-
                            casual::domain::pending::message::send( process, message);
                         }
+                        return true;
                      }
-                     catch( const exception::system::communication::Unavailable&)
+                     catch( ...)
                      {
+                        auto code = exception::code();
+                        if( code != code::casual::communication_unavailable)
+                           throw;
+
                         // No-op, we just drop the message
-                        log::line( log, "failed to sendmessage ", message.type(), " to process: ", process, " - action: discard");
+                        log::line( log, code, " failed to sendmessage ", message.type(), " to process: ", process, " - action: discard");
                         return false;
                      }
-                     return true;
                   }
 
                } // ipc
@@ -109,7 +112,7 @@ namespace casual
                         }
                         catch( ...)
                         {
-                           exception::handle();
+                           exception::sink::error();
                         }
                      }
 
@@ -146,7 +149,7 @@ namespace casual
 
                         if( message.state == message::service::lookup::Reply::State::absent)
                         {
-                           log::line( log::category::error, "service '", message.service.name, "' has no entry - action: send error reply");
+                           log::line( log::category::error, code::casual::domain_instance_unavailable,  " service '", message.service.name, "' has no entry - action: send error reply");
                            return;
                         }
 
@@ -205,21 +208,13 @@ namespace casual
 
          void Cache::start()
          {
+            auto handler = message::dispatch::handler( communication::ipc::inbound::device(),
+               handle::service::name::Lookup{ m_state},
+               handle::service::Call{ m_state},
+               message::handle::Shutdown{}
+            );
 
-            try
-            {
-               auto handler = message::dispatch::handler( communication::ipc::inbound::device(),
-                  handle::service::name::Lookup{ m_state},
-                  handle::service::Call{ m_state},
-                  message::handle::Shutdown{}
-               );
-
-               message::dispatch::pump( handler, communication::ipc::inbound::device());
-            }
-            catch( const exception::casual::Shutdown&)
-            {
-               exception::handle();
-            }
+            message::dispatch::pump( handler, communication::ipc::inbound::device());
          }
       } // forward
    } // service

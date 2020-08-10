@@ -8,11 +8,16 @@
 #include "common/file.h"
 #include "common/log.h"
 #include "common/uuid.h"
-#include "common/exception/system.h"
 #include "common/algorithm.h"
 #include "common/environment.h"
 #include "common/memory.h"
 #include "common/string.h"
+
+#include "common/code/raise.h"
+#include "common/code/casual.h"
+#include "common/code/system.h"
+#include "common/code/convert.h"
+#include "common/result.h"
 
 // std
 #include <cstdio>
@@ -51,9 +56,7 @@ namespace casual
          Input::Input( std::string path) : std::ifstream( path), m_path( std::move( path)) 
          {
             if( ! is_open())
-            {
-               throw exception::system::invalid::File{ string::compose( "failed to open file: ", m_path)};
-            }
+               code::raise::log( code::casual::invalid_path, "failed to open file: ", m_path);
          }
 
          std::string Input::extension() const { return file::name::extension( m_path);}
@@ -61,9 +64,7 @@ namespace casual
          Output::Output( std::string path) : std::ofstream( path), m_path( std::move( path)) 
          {
             if( ! is_open())
-            {
-               throw exception::system::invalid::File{ string::compose( "failed to open file: ", m_path)};
-            }
+               code::raise::log( code::casual::invalid_path, "failed to open file: ", m_path);
          }
 
          std::string Output::extension() const { return file::name::extension( m_path);}
@@ -74,22 +75,15 @@ namespace casual
             if( ! path.empty())
             {
                if( std::remove( path.c_str()))
-               {
-                  log::line( log::category::error, "failed to remove file: ", path);
-               }
+                  log::line( log::category::error, code::casual::invalid_path, " failed to remove file: ", path);
                else
-               {
                   log::line( log::debug, "removed file: ", path);
-               }
             }
          }
 
          void move( const std::string& source, const std::string& destination)
          {
-            if( ::rename( source.c_str(), destination.c_str()) == -1)
-            {
-               exception::system::throw_from_errno( string::compose( "source: ", source, " destination: ", destination));
-            }
+            posix::result( ::rename( source.c_str(), destination.c_str()), "source: ", source, " destination: ", destination);
             log::line( log::debug, "moved file source: ", source, " -> destination: ", destination);
          }
 
@@ -97,7 +91,7 @@ namespace casual
          namespace scoped
          {
             Path::Path( std::string path)
-                  : m_path( std::move( path))
+               : m_path( std::move( path))
             {
             }
 
@@ -114,7 +108,6 @@ namespace casual
 
             Path::Path( Path&& rhs) noexcept : m_path( std::move( rhs.m_path))
             {
-
             }
 
 
@@ -164,9 +157,7 @@ namespace casual
                   if( std::regex_match( element->d_name, search))
                   {
                      if( path.back() != '/')
-                     {
                         result = path + "/";
-                     }
 
                      result += element->d_name;
                      break;
@@ -181,11 +172,9 @@ namespace casual
             auto absolute = memory::guard( realpath( path.c_str(), nullptr), &free);
 
             if( absolute)
-            {
                return absolute.get();
-            }
 
-            throw exception::system::invalid::File{ path};
+            code::raise::log( code::casual::invalid_path, path);
          }
 
          namespace name
@@ -194,9 +183,8 @@ namespace casual
             bool absolute( const std::string& path)
             {
                if( ! path.empty())
-               {
                   return path[ 0] == '/';
-               }
+
                return false;
             }
 
@@ -239,15 +227,11 @@ namespace casual
             {
                std::vector< char> link_name( PATH_MAX);
 
-               if( ::readlink( path.c_str(), link_name.data(), link_name.size()) == -1)
-               {
-                  exception::system::throw_from_errno( "file::name::link");
-               }
+               posix::result( ::readlink( path.c_str(), link_name.data(), link_name.size()), "file::name::link");
 
                if( link_name.data())
-               {
                   return link_name.data();
-               }
+
                return {};
             }
 
@@ -298,10 +282,10 @@ namespace casual
          std::string current()
          {
             char buffer[ platform::size::max::path];
+
             if( getcwd( buffer, sizeof( buffer)) == nullptr)
-            {
-               exception::system::throw_from_errno( "file::name::link");
-            }
+               code::system::raise( "directory::current");
+
             return buffer;
          }
 
@@ -310,10 +294,7 @@ namespace casual
          {
             auto current = directory::current();
 
-            if( chdir( path.c_str()) == -1)
-            {
-               exception::system::throw_from_errno( "file::name::link");
-            }
+            posix::result( chdir( path.c_str()), "directory::change");
 
             return current;
          }
@@ -339,9 +320,7 @@ namespace casual
 
                // To be conformant to dirname, we have to return at least '/'
                if( end == path.crend())
-               {
                   return "/";
-               }
 
                return std::string{ path.cbegin(), end.base()};
             }
@@ -364,10 +343,7 @@ namespace casual
             }
 
             if( mkdir( path.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) != 0 && errno != EEXIST)
-            {
-               log::line( log::category::error, "failed to create ", path, " - ", code::last::system::error());
                return false;
-            }
 
             return true;
          }
@@ -375,10 +351,8 @@ namespace casual
          bool remove( const std::string& path)
          {
             if( rmdir( path.c_str()) != 0)
-            {
-               log::line( log::category::error, "failed to remove ", path, " - ", code::last::system::error());
                return false;
-            }
+
             return true;
          }
       }

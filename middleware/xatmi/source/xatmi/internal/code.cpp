@@ -7,6 +7,8 @@
 #include "casual/xatmi/internal/code.h"
 
 #include "common/service/call/context.h"
+#include "common/exception/handle.h"
+#include "common/code/category.h"
 
 namespace casual
 {
@@ -14,6 +16,24 @@ namespace casual
    {
       namespace internal
       {
+
+
+         namespace exception
+         {
+            common::code::xatmi code( std::error_code code) noexcept
+            {
+               if( common::code::is::category< common::code::xatmi>( code))
+                  return static_cast< common::code::xatmi>( code.value());
+
+               return common::code::xatmi::system;
+            }
+
+            common::code::xatmi code() noexcept
+            {
+               return exception::code( common::exception::code());
+            }
+         } // exception
+
          namespace error
          {
             namespace local

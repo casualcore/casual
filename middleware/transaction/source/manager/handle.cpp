@@ -14,7 +14,10 @@
 #include "common/message/handle.h"
 #include "common/event/listen.h"
 #include "common/server/handle/call.h"
+
+#include "common/code/raise.h"
 #include "common/code/convert.h"
+#include "common/code/category.h"
 
 #include "common/communication/instance.h"
 
@@ -50,9 +53,13 @@ namespace casual
                            casual::domain::pending::message::send( target, message);
                         }
                      }
-                     catch( const common::exception::system::communication::Unavailable&)
+                     catch( ...)
                      {
-                        common::log::line( log, "failed to send message to queue: ", device);
+                        auto code = common::exception::code();
+                        if( code != common::code::casual::communication_unavailable)
+                           throw;
+
+                        common::log::line( log, code, " failed to send message to target: ", target);
                      }
 
                   }
@@ -230,8 +237,7 @@ namespace casual
                               {
                                  auto create_message = [&]()
                                  {
-                                    M message;
-                                    message.process = common::process::handle();
+                                    M message{ common::process::handle()};
                                     message.trid = branch.trid;
                                     message.flags = flags;
                                     message.resource = resource.id;
@@ -1042,33 +1048,29 @@ namespace casual
                {
                   Handler::operator() ( message);
                }
-               catch( const user::error& exception)
-               {
-                  common::exception::handle();
-
-                  auto reply = local::transform::reply( message);
-                  reply.stage = decltype( reply)::Stage::error;
-                  reply.state = exception.type();
-
-                  local::send::reply( std::move( reply), message.process);
-               }
-               catch( const common::exception::signal::Terminate&)
-               {
-                  throw;
-               }
                catch( ...)
                {
-                  auto fail = common::code::tx::fail;
-                  common::log::line( common::log::category::error, fail, " unexpected error - action: send reply ");
-
-                  common::exception::handle();
+                  auto condition = common::exception::code();
 
                   auto reply = local::transform::reply( message);
                   reply.stage = decltype( reply)::Stage::error;
-                  reply.state = fail;
 
-                  local::send::reply( std::move( reply), message.process);
+                  if( condition == common::code::casual::shutdown)
+                     throw;
+
+                  if( common::code::is::category< common::code::tx>( condition))
+                     reply.state = static_cast< common::code::tx>( condition.value());
+                  else if( common::code::is::category< common::code::xa>( condition))
+                     reply.state = common::code::convert::to::tx( static_cast< common::code::xa>( condition.value()));
+                  else 
+                  {
+                     common::log::line( common::log::category::error, condition, " unexpected error - action: send reply with tx::fail");
+                     reply.state = common::code::tx::fail;
+                  }
+
+                  local::send::reply( std::move( reply), message.process);                  
                }
+
             }
 
 
@@ -1086,13 +1088,9 @@ namespace casual
                {
                   case Transaction::Resource::Stage::involved:
                   case Transaction::Resource::Stage::not_involved:
-                  {
                      break;
-                  }
                   default:
-                  {
-                     throw user::error{ common::code::tx::protocol, common::string::compose( "Attempt to commit transaction, which is not in a state for commit - trid: ",message.trid)};
-                  }
+                     common::code::raise::error( common::code::tx::protocol, "attempt to commit transaction, which is not in a state for commit - trid: ", message.trid);
                }
 
                // Local normal commit phase
@@ -1145,7 +1143,7 @@ namespace casual
                      transaction.correlation = message.correlation;
 
                      // More than one resource involved, we do the prepare stage
-                     common::log::line( log, transaction.global, " more than one resource involved");
+                     common::log::line( log, "global: ", transaction.global, " more than one resource involved");
 
                      local::send::resource::request< common::message::transaction::resource::prepare::Request>(
                         m_state,

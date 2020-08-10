@@ -17,9 +17,7 @@ namespace casual
    {
       namespace communication
       {
-         //!
          //! Log with category 'casual.communication'
-         //!
          extern common::log::Stream log;
 
          namespace verbose

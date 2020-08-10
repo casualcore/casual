@@ -8,9 +8,11 @@
 #include "common/serialize/xml.h"
 #include "common/serialize/create.h"
 
-#include "common/exception/casual.h"
 #include "common/transcode.h"
 #include "common/buffer/type.h"
+
+#include "common/code/raise.h"
+#include "common/code/casual.h"
 
 #include <pugixml.hpp>
 
@@ -102,7 +104,8 @@ namespace casual
                      private:
                         void check( const pugi::xml_parse_result& result)
                         {
-                           if( !result) throw exception::casual::invalid::Document{ result.description()};
+                           if( ! result) 
+                              code::raise::error( code::casual::invalid_document, result.description());
                         }
                      };
 
@@ -272,7 +275,8 @@ namespace casual
                               value = true;
                            else if( boolean == "false") 
                               value = false;
-                           else throw exception::casual::invalid::Node{ "unexpected type"};
+                           else 
+                              code::raise::error( code::casual::invalid_node, "unexpected type");
                         }
 
                         template<typename T>
@@ -281,8 +285,10 @@ namespace casual
                            std::istringstream stream( node.text().get());
                            T result;
                            stream >> result;
-                           if( ! stream.fail() && stream.eof())   return result;
-                           throw exception::casual::invalid::Node{ "unexpected type"};
+                           if( ! stream.fail() && stream.eof())
+                              return result;
+
+                           code::raise::error( code::casual::invalid_node, "unexpected type");
                         }
 
                         void read( short& value) const
@@ -310,7 +316,7 @@ namespace casual
                            auto binary = common::transcode::base64::decode( m_stack.back().text().get());
 
                            if( range::size( binary) != range::size( value))
-                              throw exception::casual::invalid::Node{ string::compose( "binary size missmatch - wanted: ", range::size( value), " got: ", range::size( binary))};
+                              code::raise::error( code::casual::invalid_node, "binary size missmatch - wanted: ", range::size( value), " got: ", range::size( binary));
 
                            algorithm::copy( binary, std::begin( value));
                         }

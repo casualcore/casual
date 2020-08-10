@@ -9,9 +9,11 @@
 
 
 #include "common/serialize/macro.h"
-#include "common/exception/system.h"
 #include "common/string.h"
 #include "common/traits.h"
+
+#include "common/code/raise.h"
+#include "common/code/casual.h"
 
 #include <initializer_list>
 #include <type_traits>
@@ -71,9 +73,8 @@ namespace casual
          constexpr Flags convert( underlaying_type flags) const
          {
             if( flags & ~underlaying())
-            {
-               throw exception::system::invalid::Argument{ string::compose( "invalid flags: ", flags, " limit: ", *this)};
-            }
+               code::raise::error( code::casual::invalid_argument, "flags: ", flags, " limit: ", *this);
+
             return Flags{ flags};
          }
 

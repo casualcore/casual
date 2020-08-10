@@ -13,9 +13,9 @@
 #include "common/environment.h"
 #include "common/algorithm.h"
 #include "common/file.h"
-#include "common/exception/casual.h"
 
-
+#include "common/code/raise.h"
+#include "common/code/casual.h"
 
 #include "serviceframework/log.h"
 #include "common/serialize/create.h"
@@ -90,7 +90,7 @@ namespace casual
                   void operator ()( const Queue& queue) const
                   {
                      if( queue.name.empty())
-                        throw common::exception::casual::invalid::Configuration{ "queue has to have a name"};
+                        code::raise::error( code::casual::invalid_configuration, "queue has to have a name");
 
                      if( queue.retries)
                         log::line( log::category::error, "configuration - queue.retries is deprecated - use queue.retry.count instead");
@@ -99,10 +99,10 @@ namespace casual
                   void operator ()( const Group& group) const
                   {
                      if( group.name.empty())
-                        throw common::exception::casual::invalid::Configuration{ "queue group has to have a name"};
+                        code::raise::error( code::casual::invalid_configuration, "queue group has to have a name");
 
                      if( group.queuebase.value_or( "").empty())
-                        throw common::exception::casual::invalid::Configuration{ "queue group has to have a queuebase path"};
+                        code::raise::error( code::casual::invalid_configuration, "queue group has to have a queuebase path");
 
                      common::algorithm::for_each( group.queues, *this);
                   }
@@ -122,7 +122,7 @@ namespace casual
                      auto groups = common::range::to_reference( manager.groups);
 
                      if( common::algorithm::adjacent_find( common::algorithm::sort( groups, order_group_name), equality_group_name))
-                        throw common::exception::casual::invalid::Configuration{ "queue groups has to have unique names and queuebase paths"};
+                        code::raise::error( code::casual::invalid_configuration, "queue groups has to have unique names and queuebase paths");
 
                      auto order_group_qb = []( G lhs, G rhs){ return lhs.queuebase < rhs.queuebase;};
                      auto equality_group_gb = []( G lhs, G rhs){ return lhs.queuebase == rhs.queuebase;};
@@ -131,7 +131,7 @@ namespace casual
                      auto persitent_groups = algorithm::filter( groups, []( G g){ return g.queuebase.value_or( "") != ":memory:";});
 
                      if( common::algorithm::adjacent_find( common::algorithm::sort( persitent_groups, order_group_qb), equality_group_gb))
-                        throw common::exception::casual::invalid::Configuration{ "queue groups has to have unique names and queuebase paths"};
+                        code::raise::error( code::casual::invalid_configuration, "queue groups has to have unique names and queuebase paths");
                   }
 
                   // Check unique queues
@@ -143,7 +143,7 @@ namespace casual
                         common::algorithm::append( group.queues, queues);
 
                      if( common::algorithm::adjacent_find( common::algorithm::sort( queues)))
-                        throw common::exception::casual::invalid::Configuration{ "queues has to be unique"};
+                        code::raise::error( code::casual::invalid_configuration, "queues has to be unique");
                   }
                }
 

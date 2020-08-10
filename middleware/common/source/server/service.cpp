@@ -14,6 +14,10 @@
 #include "common/buffer/pool.h"
 
 #include "common/exception/handle.h"
+#include "common/code/raise.h"
+#include "common/code/xatmi.h"
+#include "common/code/casual.h"
+
 
 
 namespace casual
@@ -134,24 +138,22 @@ namespace casual
                            case state::Jump::Location::c_no_jump:
                            {
                               invoke( argument);
-
+                              
                               // User service returned, not by tpreturn.
-                              throw exception::xatmi::service::Error( "service: " + argument.service.name + " did not call tpreturn");
+                              code::raise::error( code::xatmi::service_error, "service did not call tpreturn - ", argument.service.name);
                            }
                            case state::Jump::Location::c_forward:
                            {
                               log::line( log::debug, "user called tpforward");
-
                               throw transform::forward( state.jump);
                            }
                            default:
                            {
-                              throw common::exception::system::invalid::Argument{ "unexpected value from setjmp"};
+                              code::raise::error( code::casual::internal_unexpected_value, "unexpected value from setjmp");
                            }
                            case state::Jump::Location::c_return:
                            {
                               log::line( log::debug, "user called tpreturn");
-
                               return transform::result( state.jump);
                            }
                         }
@@ -170,10 +172,9 @@ namespace casual
                         }
                         catch( ...)
                         {
-                           exception::handle();
-                           log::line( log::category::error, "exception thrown from service: ", argument.service.name);
+                           log::line( log::category::error, code::casual::invalid_semantics, 
+                              " exception thrown from service: ", argument.service.name, " - ", exception::code());
                         }
-
                      }
 
                      function_type m_function;

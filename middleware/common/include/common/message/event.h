@@ -69,11 +69,13 @@ namespace casual
 
                friend std::ostream& operator << ( std::ostream& out, Severity value);
 
+               std::error_code code;
                std::string message;
                Severity severity = Severity::error;
 
                CASUAL_CONST_CORRECT_SERIALIZE(
                   base_error::serialize( archive);
+                  CASUAL_SERIALIZE( code);
                   CASUAL_SERIALIZE( message);
                   CASUAL_SERIALIZE( severity);
                )

@@ -10,9 +10,11 @@
 
 #include "common/serialize/create.h"
 
+#include "common/code/raise.h"
+#include "common/code/casual.h"
+
 
 #include "common/environment.h"
-#include "common/exception/system.h"
 #include "common/serialize/line.h"
 
 namespace casual
@@ -70,15 +72,11 @@ namespace casual
                const auto file = local::file();
 
                if( ! file.empty())
-               {
                   return get( file);
-               }
-               else
-               {
-                  throw common::exception::system::invalid::File( common::string::compose( "could not find resource configuration file",
-                        " path: ", common::environment::directory::casual(),  "/configuration",
-                        " name: ", "resources.(yaml|json|xml|..."));
-               }
+            
+               common::code::raise::error( common::code::casual::invalid_path, "could not find resource configuration file",
+                     " path: ", common::environment::directory::casual(),  "/configuration",
+                     " name: ", "resources.(yaml|json|xml|...");
             }
 
 

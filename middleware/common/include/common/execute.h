@@ -11,7 +11,7 @@
 
 #include "common/move.h"
 #include "common/traits.h"
-#include "common/exception/handle.h"
+#include "common/exception/guard.h"
 
 #include <utility>
 #include <functional>
@@ -30,20 +30,11 @@ namespace casual
          {
             using execute_type = E;
 
-            
-
             basic_scope( execute_type&& execute) : m_execute( std::move( execute)) {}
 
             ~basic_scope() noexcept
             {
-               try
-               {
-                  (*this)();
-               }
-               catch( ...)
-               {
-                  exception::handle();
-               }
+               exception::guard( [&](){ (*this)();});
             }
 
             // Why does not this work?

@@ -11,6 +11,8 @@
 #include "common/communication/ipc.h" 
 #include "common/message/pending.h"
 
+#include "common/code/casual.h"
+
 namespace casual
 {
    namespace domain
@@ -40,9 +42,12 @@ namespace casual
                   if( ! common::communication::device::non::blocking::send( process.ipc, message))
                      ipc::pending::send( state, common::message::pending::Message{ std::forward< M>( message), process});
                }
-               catch( const common::exception::system::communication::Unavailable&)
+               catch( ...)
                {
-                  common::log::line( domain::log, "failed to send message - type: ", common::message::type( message), " to: ", process, " - action: ignore");
+                  if( common::exception::code() != common::code::casual::communication_unavailable)
+                     throw;
+
+                  common::log::line( domain::log, common::code::casual::communication_unavailable, " failed to send message - type: ", common::message::type( message), " to: ", process, " - action: ignore");
                   common::log::line( domain::verbose::log, "message: ", message);
                }
             }

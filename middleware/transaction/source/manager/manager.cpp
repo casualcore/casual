@@ -14,8 +14,6 @@
 #include "common/message/dispatch.h"
 #include "common/message/handle.h"
 #include "common/log.h"
-#include "common/exception/casual.h"
-#include "common/exception/handle.h"
 #include "common/chronology.h"
 
 #include "common/communication/instance.h"

@@ -54,10 +54,10 @@ namespace casual
 
          auto stream = writer.consume< std::stringstream>();
 
-         EXPECT_THROW({
+         EXPECT_CODE({
             auto archive = serialize::create::reader::consumed::from( this->param(), stream);
             archive.validate();
-         }, common::exception::casual::invalid::Configuration) << "stream: " << stream.str();
+         }, code::casual::invalid_configuration) << "stream: " << stream.str();
       }
 
       TEST_P( archive_maker, validate_sequence__expect_throw)
@@ -73,10 +73,10 @@ namespace casual
 
          auto stream = writer.consume< std::stringstream>();
 
-         EXPECT_THROW({
+         EXPECT_CODE({
             auto archive = serialize::create::reader::consumed::from(  this->param(), stream);
             archive.validate();
-         }, common::exception::casual::invalid::Configuration) << "stream: " << stream.str();
+         }, code::casual::invalid_configuration) << "stream: " << stream.str();
       }
    
       namespace local
@@ -111,10 +111,10 @@ namespace casual
 
          auto stream = writer.consume< std::stringstream>();
 
-         EXPECT_THROW({
+         EXPECT_CODE({
             auto archive = serialize::create::reader::consumed::from(  this->param(), stream);
             archive.validate();
-         }, common::exception::casual::invalid::Configuration);
+         }, code::casual::invalid_configuration);
       }
 
 
@@ -304,7 +304,7 @@ namespace casual
             writer << CASUAL_NAMED_VALUE( composite);
          }
 
-         EXPECT_THROW(
+         EXPECT_CODE(
          {
             auto stream = writer.consume< std::stringstream>();
             auto reader = serialize::create::reader::consumed::from( this->param(), stream);
@@ -312,7 +312,7 @@ namespace casual
             reader >> CASUAL_NAMED_VALUE( composite);
             reader.validate();
 
-         }, common::exception::casual::invalid::Configuration);
+         }, code::casual::invalid_configuration);
       }
    } // common
 } // casual

@@ -49,6 +49,24 @@ namespace casual
                      default: return tx::fail;
                   }
                }
+
+               code::casual casual( std::errc code)
+               {
+                  switch( code)
+                  {
+                     case std::errc::connection_refused: return code::casual::communication_refused;
+                     case std::errc::invalid_argument:   return code::casual::invalid_argument;
+                     case std::errc::protocol_error:     return code::casual::communication_protocol;
+                     
+                     case std::errc::no_such_file_or_directory: return code::casual::invalid_path;
+                     case std::errc::no_such_process: return code::casual::domain_instance_unavailable;
+                     
+                     case std::errc::interrupted:        return code::casual::interupted;
+
+                     default: return code::casual::internal_unexpected_value;
+                  }
+
+               }
             } // to
          } // convert
       } // code

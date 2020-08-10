@@ -187,43 +187,33 @@ resources:
             common::strong::resource::id rm_1{ 1};
             common::strong::resource::id rm_2{ 2};
 
-            auto begin() 
+            template< typename A>
+            std::error_code wrap( A&& action)
             {
-               try 
+               try
                {
-                  common::transaction::context().begin();
+                  action();
                   return common::code::tx::ok;
                }
-               catch( const common::exception::tx::exception& exception)
+               catch( ...)
                {
-                  return exception.type();
+                  return exception::code();
                }
+            }
+
+            auto begin() 
+            {
+               return wrap( [](){ common::transaction::context().begin();});
             }
 
             auto commit() 
             {
-               try 
-               {
-                  common::transaction::context().commit();
-                  return common::code::tx::ok;
-               }
-               catch( const common::exception::tx::exception& exception)
-               {
-                  return exception.type();
-               }
+               return wrap( [](){ common::transaction::context().commit();});
             }
 
             auto rollback() 
             {
-               try 
-               {
-                  common::transaction::context().rollback();
-                  return common::code::tx::ok;
-               }
-               catch( const common::exception::tx::exception& exception)
-               {
-                  return exception.type();
-               }
+               return wrap( [](){ common::transaction::context().rollback();});
             }
 
          } // <unnamed>

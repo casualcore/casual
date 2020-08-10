@@ -32,9 +32,8 @@ namespace casual
 
          static_assert( static_cast< int>( ax::ok) == 0, "ax::ok has to be 0");
 
-         std::error_code make_error_code( ax code);
-
-         common::log::Stream& stream( code::ax code);
+         std::error_code make_error_code( code::ax code);
+         const char* description( code::ax code);
 
          enum class xa : int
          {
@@ -70,9 +69,8 @@ namespace casual
 
          static_assert( static_cast< int>( xa::ok) == 0, "xa::ok has to be 0");
 
-         std::error_code make_error_code( xa code);
-
-         common::log::Stream& stream( code::xa code);
+         std::error_code make_error_code( code::xa code);
+         const char* description( code::xa code);
 
       } // code
    } // common

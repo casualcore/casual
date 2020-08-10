@@ -8,19 +8,18 @@
 #include "common/argument.h"
 #include "common/process.h"
 
-#include "common/exception/handle.h"
+#include "common/exception/guard.h"
 
 using namespace casual::common;
 
 int main( int argc, char** argv)
 {
-
    try
    {
       int return_value = 0;
-      argument::Parse parse{ "", argument::Option( std::tie( return_value), {"-r"}, "bla") };
-
-      parse( argc, argv);
+      argument::Parse{ "", 
+         argument::Option( std::tie( return_value), {"-r"}, "bla")
+      }( argc, argv);
 
       process::sleep( std::chrono::milliseconds( 100));
 
@@ -28,6 +27,6 @@ int main( int argc, char** argv)
    }
    catch( ...)
    {
-      return exception::handle();
+      return exception::code().value();
    }
 }

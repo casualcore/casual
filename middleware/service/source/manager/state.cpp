@@ -15,6 +15,9 @@
 #include "common/environment/normalize.h"
 #include "common/process.h"
 
+#include "common/code/raise.h"
+#include "common/code/casual.h"
+
 #include <functional>
 
 namespace casual
@@ -29,31 +32,34 @@ namespace casual
          {
             namespace
             {
-               template< typename M, typename ID>
-               auto get( M& map, ID&& id) ->
-                std::enable_if_t< common::traits::is::container::associative::like< M>::value, decltype( map.at( id))>
+               namespace detail
                {
-                  auto found = common::algorithm::find( map, id);
-
-                  if( found)
+                  template< typename V>
+                  auto value( V&& value, traits::priority::tag< 1>)
+                     -> decltype( value->second)&
                   {
-                     return found->second;
+                     return value->second;
                   }
-                  throw state::exception::Missing{ common::string::compose( "missing id: ", id)};
-               }
+
+                  template< typename V>
+                  auto value( V&& value, traits::priority::tag< 0>)
+                     -> decltype( *value)&
+                  {
+                     return *value;
+                  }
+               } // detail
+
 
                template< typename C, typename ID>
-               auto get( C& container, ID&& id) ->
-                std::enable_if_t< common::traits::is::container::sequence::like< C>::value, decltype( *std::begin( container))>
+               auto get( C& container, ID&& id) 
+                  -> decltype( detail::value( common::algorithm::find( container, id), traits::priority::tag< 1>{}))
                {
-                  auto found = common::algorithm::find( container, id);
+                  if( auto found = common::algorithm::find( container, id))
+                     return detail::value( found, traits::priority::tag< 1>{});
 
-                  if( found)
-                  {
-                     return *found;
-                  }
-                  throw state::exception::Missing{ common::string::compose( "missing id: ", id)};
+                  code::raise::generic( code::casual::domain_instance_unavailable, verbose::log, "missing id: ", id);
                }
+
 
                namespace equal
                {
@@ -425,7 +431,7 @@ namespace casual
 
             if( ! message.process)
             {
-               log::line( common::log::category::error, "invalid process ", message.process, " tries to advertise services - action: ignore");
+               log::line( common::log::category::error, code::casual::internal_unexpected_value, " invalid process ", message.process, " tries to advertise services - action: ignore");
                log::line( verbose::log, "message: ", message);
                return;
             }
@@ -466,7 +472,7 @@ namespace casual
 
             if( ! message.process)
             {
-               log::line( common::log::category::error, "invalid process ", message.process, " tries to advertise services - action: ignore");
+               log::line( common::log::category::error, code::casual::internal_unexpected_value, " invalid process ", message.process, " tries to advertise services - action: ignore");
                log::line( verbose::log, "message: ", message);
                return;
             }

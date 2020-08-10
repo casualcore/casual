@@ -35,9 +35,7 @@ namespace local
          using enum_type = typename Flags::enum_type;
 
          if( flags.exist( enum_type::no_change) && result.buffer.type != output.payload().type)
-         {
-            throw casual::common::exception::xatmi::buffer::type::Output{};
-         }
+            casual::common::code::raise::log( casual::common::code::xatmi::buffer_output);
 
          casual::common::buffer::pool::Holder::instance().deallocate( *odata);
          std::tie( *odata, *olen) = casual::common::buffer::pool::Holder::instance().insert( std::move( result.buffer));
@@ -92,7 +90,7 @@ int casual_service_call( const char* const service, char* idata, const long ilen
    }
    catch( ...)
    {
-      casual::xatmi::internal::error::set( casual::common::exception::xatmi::handle());
+      casual::xatmi::internal::error::set( casual::xatmi::internal::exception::code());
    }
    return -1;
 }
@@ -127,7 +125,7 @@ int casual_service_asynchronous_send( const char* const service, char* idata, co
    }
    catch( ...)
    {
-      casual::xatmi::internal::error::set( casual::common::exception::xatmi::handle());
+      casual::xatmi::internal::error::set( casual::xatmi::internal::exception::code());
    }
    return -1;
 }
@@ -167,22 +165,15 @@ int casual_service_asynchronous_receive( int *const descriptor, char** odata, lo
       casual::common::buffer::pool::Holder::instance().deallocate( *odata);
       std::tie( *odata, *olen) = casual::common::buffer::pool::Holder::instance().insert( std::move( fail.result.buffer));      
    }
-   catch( const casual::common::exception::xatmi::exception& exception)
-   {
-      switch( exception.type())
-      {
-         // we "need" to treat no_entry as service_error to conform to xatmi-spec.
-         case casual::common::code::xatmi::no_entry:
-            casual::xatmi::internal::error::set( casual::common::code::xatmi::service_error);
-            break;
-         default:
-            casual::xatmi::internal::error::set( exception.type());
-            break;
-      }
-   }
    catch( ...)
    {
-      casual::xatmi::internal::error::set( casual::common::exception::xatmi::handle());
+      auto code = casual::common::exception::code();
+      
+      // we "need" to treat no_entry as service_error to conform to xatmi-spec.
+      if( code == casual::common::code::xatmi::no_entry)
+         casual::xatmi::internal::error::set( casual::common::code::xatmi::service_error);
+      else 
+         casual::xatmi::internal::error::set( casual::xatmi::internal::exception::code( code));
    }
    return -1;
 }

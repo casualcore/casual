@@ -9,13 +9,14 @@
 
 #include "common/buffer/pool.h"
 #include "common/buffer/type.h"
-#include "common/exception/xatmi.h"
 #include "common/exception/handle.h"
 #include "common/network/byteorder.h"
 #include "casual/platform.h"
 #include "common/log.h"
 #include "common/algorithm.h"
 #include "common/execute.h"
+
+#include "common/code/xatmi.h"
 
 #include <cstring>
 #include <utility>
@@ -197,13 +198,13 @@ namespace casual
                   {
                      return CASUAL_ORDER_OUT_OF_BOUNDS;
                   }
-                  catch( const common::exception::xatmi::invalid::Argument&)
-                  {
-                     return CASUAL_ORDER_INVALID_HANDLE;
-                  }
                   catch( ...)
                   {
-                     common::exception::handle();
+                     auto condition = common::exception::code();
+
+                     if( condition == common::code::xatmi::argument)
+                        return CASUAL_ORDER_INVALID_HANDLE;
+
                      return CASUAL_ORDER_INTERNAL_FAILURE;
                   }
                }

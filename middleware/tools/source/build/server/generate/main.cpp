@@ -12,7 +12,7 @@
 #include "configuration/resource/property.h"
 
 #include "common/argument.h"
-#include "common/exception/handle.h"
+#include "common/exception/guard.h"
 
 #include <fstream>
 
@@ -127,7 +127,7 @@ namespace casual
 
 int main(int argc, char** argv)
 {
-   return casual::common::exception::guard( std::cerr, [=]()
+   return casual::common::exception::main::guard( std::cerr, [=]()
    {
       casual::tools::build::server::generate::local::main( argc, argv);
    });

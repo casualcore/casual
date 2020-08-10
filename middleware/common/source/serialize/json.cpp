@@ -7,7 +7,9 @@
 
 #include "common/serialize/json.h"
 #include "common/serialize/create.h"
-#include "common/exception/casual.h"
+
+#include "common/code/raise.h"
+#include "common/code/casual.h"
 
 #include "common/transcode.h"
 #include "common/functional.h"
@@ -54,7 +56,7 @@ namespace casual
                               return common::invoke( fetcher, value);
 
                            // TODO operations: more information about what type and so on...
-                           throw exception::casual::invalid::Node{ string::compose( "unexpected type")};
+                           code::raise::error( code::casual::invalid_node, "unexpected type");
                         }
                      } // check
 
@@ -68,7 +70,7 @@ namespace casual
                            document.Parse( json);
                         
                         if( document.HasParseError())
-                           throw exception::casual::invalid::Document{ rapidjson::GetParseError_En( document.GetParseError())};
+                           code::raise::error( code::casual::invalid_document, rapidjson::GetParseError_En( document.GetParseError()));
                         
                         return document;
                      }
@@ -210,7 +212,7 @@ namespace casual
 
                            // This check is to avoid terminate (via assert)
                            if( ! node.IsArray())
-                              throw exception::casual::invalid::Node{ string::compose( "expected array - name: ", name ? name : "")};
+                              code::raise::error( code::casual::invalid_node, "expected array - name: ", name ? name : "");
 
                            // Stack 'em backwards
 
@@ -234,7 +236,7 @@ namespace casual
 
                            // This check is to avoid terminate (via assert)
                            if( ! m_stack.back()->IsObject())
-                              throw exception::casual::invalid::Node{ "expected object"};
+                              code::raise::error( code::casual::invalid_node, "expected object - name: ", name ? name : "");
 
                            return true;
                         }
@@ -315,7 +317,7 @@ namespace casual
                               check::read( m_stack.back(), &rapidjson::Value::IsString, &rapidjson::Value::GetString));
                            
                            if( range::size( binary) != range::size( value))
-                              throw exception::casual::invalid::Node{ string::compose( "binary size missmatch - wanted: ", range::size( value), " got: ", range::size( binary))};
+                              code::raise::error( code::casual::invalid_node, "binary size missmatch - wanted: ", range::size( value), " got: ", range::size( binary));
 
                            algorithm::copy( binary, std::begin( value));
                         }
@@ -436,7 +438,7 @@ namespace casual
                            else
                            {
                               // TODO: Better
-                              throw exception::casual::invalid::Document{ "Failed to write document"};
+                              code::raise::error( code::casual::invalid_document, "failed to write document");
                            }
                         }
 
@@ -452,7 +454,7 @@ namespace casual
                            else
                            {
                               // TODO: Better
-                              throw exception::casual::invalid::Document{ "Failed to write document"};
+                              code::raise::error( code::casual::invalid_document, "failed to write document");
                            }
                         }
 

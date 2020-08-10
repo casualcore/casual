@@ -9,7 +9,7 @@
 
 #include "common/log/category.h"
 #include "common/code/system.h"
-#include "common/exception/handle.h"
+#include "common/exception/guard.h"
 
 #include <fstream>
 
@@ -57,7 +57,7 @@ namespace casual
                      void clear( const std::string& path)
                      {
                         if( ::nftw( path.c_str(), &local::unlink, 64, FTW_DEPTH | FTW_PHYS))
-                           log::line( log::category::error, "failed to remove path - ", common::code::last::system::error());
+                           log::line( log::category::error, "failed to remove path - ", common::code::system::last::error());
                      }
                   } // <unnamed>
                } // local

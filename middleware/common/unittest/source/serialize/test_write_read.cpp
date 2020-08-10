@@ -18,7 +18,10 @@
 #include "common/serialize/native/binary.h"
 #include "common/serialize/archive/consume.h"
 
+
 #include "common/log.h"
+#include "common/code/casual.h"
+#include "common/code/xatmi.h"
 
 #include "../../include/test_vo.h"
 
@@ -309,6 +312,24 @@ namespace casual
             tuple, tuple, tuple, tuple
          };
          EXPECT_TRUE( TestFixture::write_read( value) == value);
+      }
+
+      TYPED_TEST( common_serialize_write_read, type_code_casual)
+      {
+         std::error_code value = code::casual::invalid_path;
+         EXPECT_TRUE( TestFixture::write_read( value) == code::casual::invalid_path);
+      }
+
+      TYPED_TEST( common_serialize_write_read, type_code_xatmi)
+      {
+         std::error_code value = code::xatmi::protocol;
+         EXPECT_TRUE( TestFixture::write_read( value) == code::xatmi::protocol);
+      }
+
+      TYPED_TEST( common_serialize_write_read, type_code_errc)
+      {
+         auto value = std::make_error_code( std::errc::no_such_process);
+         EXPECT_TRUE( TestFixture::write_read( value) == std::errc::no_such_process);
       }
 
    } // common

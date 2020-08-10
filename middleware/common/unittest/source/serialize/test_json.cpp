@@ -7,9 +7,8 @@
 
 #include "common/unittest.h"
 
-
 #include "common/serialize/json.h"
-#include "common/exception/casual.h"
+#include "common/code/casual.h"
 
 #include "../../include/test_vo.h"
 
@@ -167,10 +166,10 @@ namespace casual
    )"
          };
 
-         EXPECT_THROW
+         EXPECT_CODE
          ({
             auto reader = serialize::json::strict::reader( json);
-         }, exception::casual::invalid::Document);
+         }, code::casual::invalid_document);
       }
 
       TEST( common_serialize_json, read_with_invalid_long__expecting_exception)
@@ -193,11 +192,11 @@ namespace casual
    )"
          };
 
-         EXPECT_THROW
+         EXPECT_CODE
          ({
             test::SimpleVO value;
             local::string_to_strict_value( json, value);
-         }, exception::casual::invalid::Node);
+         }, code::casual::invalid_node);
 
       }
 
@@ -220,11 +219,11 @@ namespace casual
    )"
          };
 
-         EXPECT_THROW
+         EXPECT_CODE
          ({
             test::SimpleVO value;
             local::string_to_strict_value( json, value);
-         }, exception::casual::invalid::Node);
+         }, code::casual::invalid_node);
 
       }
 

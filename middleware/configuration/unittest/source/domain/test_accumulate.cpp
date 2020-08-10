@@ -4,12 +4,12 @@
 //! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-#include <gtest/gtest.h>
 #include "common/unittest.h"
 #include "common/unittest/file.h"
 
 #include "configuration/domain.h"
-#include "common/exception/system.h"
+
+#include "common/code/casual.h"
 
 namespace casual
 {
@@ -231,9 +231,9 @@ domain:
      - name: A2
          )");
 
-         EXPECT_THROW({
+         EXPECT_CODE({
             auto value = domain::get( { file_a.path(), file_b.path()});
-         }, common::exception::system::invalid::Argument);
+         }, common::code::casual::invalid_argument);
       }
 
       TEST( configuration_domain_accumulate, group_duplicates_in_one_file__throws)
@@ -257,9 +257,9 @@ domain:
      - name: B2
          )");
 
-         EXPECT_THROW({
+         EXPECT_CODE({
             auto value = domain::get( { file_a.path(), file_b.path()});
-         }, common::exception::system::invalid::Argument);
+         }, common::code::casual::invalid_argument);
       }
 
       TEST( configuration_domain_accumulate, groups)
@@ -412,9 +412,9 @@ domain:
        alias: a2
          )");
 
-         EXPECT_THROW({
+         EXPECT_CODE({
             auto value = domain::get( { file_a.path(), file_b.path()});
-         }, common::exception::system::invalid::Argument);
+         }, common::code::casual::invalid_argument);
       }
 
    } // configuration   

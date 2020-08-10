@@ -8,7 +8,25 @@
 #include "xa.h"
 #include "common/transaction/context.h"
 
-#include "common/exception/xa.h"
+#include "common/code/xa.h"
+#include "common/code/category.h"
+#include "common/exception/handle.h"
+
+namespace local
+{
+   namespace
+   {
+      int handle()
+      {
+         auto condition = casual::common::exception::code();
+
+         if( casual::common::code::is::category< casual::common::code::ax>( condition))
+               return condition.value();
+
+         return casual::common::cast::underlying( casual::common::code::ax::error);
+      }
+   } // <unnamed>
+} // local
 
 
 extern "C"
@@ -22,7 +40,7 @@ extern "C"
       }
       catch( ...)
       {
-         return casual::common::cast::underlying( casual::common::exception::ax::handle());
+         return local::handle();
       }
    }
 
@@ -35,7 +53,7 @@ extern "C"
       }
       catch( ...)
       {
-         return casual::common::cast::underlying( casual::common::exception::ax::handle());
+         return local::handle();
       }
    }
 }

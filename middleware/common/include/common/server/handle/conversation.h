@@ -20,9 +20,7 @@ namespace casual
          {
             struct Conversation
             {
-               using message_type = message::conversation::connect::callee::Request;
-
-               void operator () ( message_type& message);
+               void operator () ( message::conversation::connect::callee::Request& message);
             };
 
          } // handle

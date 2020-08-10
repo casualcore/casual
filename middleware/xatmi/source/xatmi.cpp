@@ -96,7 +96,7 @@ int tpcancel( int id)
 
 const char* tperrnostring( int error)
 {
-   return casual::common::code::message( static_cast< casual::common::code::xatmi>( error));
+   return casual::common::code::description( static_cast< casual::common::code::xatmi>( error));
 }
 
 int tpsvrinit( int argc, char **argv)

@@ -13,11 +13,12 @@
 #include "common/uuid.h"
 #include "common/string.h"
 #include "common/process.h"
-#include "common/exception/system.h"
-#include "common/exception/handle.h"
 #include "common/serialize/log.h"
 #include "configuration/resource/property.h"
 
+#include "common/exception/guard.h"
+#include "common/code/raise.h"
+#include "common/code/casual.h"
 
 #include <string>
 #include <iostream>
@@ -186,13 +187,12 @@ int main( int argc, char** argv)
                               configuration::resource::property::get() : configuration::resource::property::get( settings.properties_file);
 
                         auto found = common::algorithm::find_if( switches,
-                           [&]( const configuration::resource::Property& value){ return value.key == settings.key;});
+                           [&]( auto& value){ return value.key == settings.key;});
 
-                        if( ! found)
-                        {
-                           throw common::exception::system::invalid::Argument( "resource-key: " + settings.key + " not found");
-                        }
-                        return *found;
+                        if( found)
+                           return *found;
+
+                        common::code::raise::generic( common::code::casual::invalid_argument, std::cerr, "resource-key: ", settings.key, " not found");
                      }
 
                      void main( int argc, char* argv[])
@@ -256,14 +256,9 @@ int main( int argc, char** argv)
 
 int main( int argc, char **argv)
 {
-   try
+   return casual::common::exception::main::guard( std::cerr, [=]()
    {
       casual::tools::build::resource::proxy::local::main( argc, argv);
-   }
-   catch( ...)
-   {
-      return casual::common::exception::handle( std::cerr);
-   }
-   return 0;
+   });
 }
 

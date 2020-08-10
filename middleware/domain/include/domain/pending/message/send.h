@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include "domain/common.h"
 
 #include "common/message/pending.h"
 #include "common/communication/message.h"

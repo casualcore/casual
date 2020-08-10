@@ -14,6 +14,8 @@
 #include "common/memory.h"
 #include "common/exception/handle.h"
 
+#include "common/code/raise.h"
+#include "common/code/xatmi.h"
 
 
 #include <cstring>
@@ -51,7 +53,7 @@ namespace casual
                   // string within allocated area
 
                   if( used > size)
-                     throw common::exception::xatmi::invalid::Argument{ "string is longer than allocated size"};
+                     common::code::raise::error( common::code::xatmi::argument, "string is longer than allocated size");
 
                   return used;
                }
@@ -158,13 +160,11 @@ namespace casual
                {
                   return CASUAL_STRING_OUT_OF_MEMORY;
                }
-               catch( const common::exception::xatmi::invalid::Argument&)
-               {
-                  return CASUAL_STRING_INVALID_HANDLE;
-               }
                catch( ...)
                {
-                  common::exception::handle();
+                  if( common::exception::code() == common::code::xatmi::argument)
+                     return CASUAL_STRING_INVALID_HANDLE;
+
                   return CASUAL_STRING_INTERNAL_FAILURE;
                }
             }

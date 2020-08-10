@@ -9,8 +9,9 @@
 
 #include "common/process.h"
 #include "common/file.h"
-#include "common/exception/signal.h"
 
+#include "common/code/signal.h"
+#include "common/code/casual.h"
 #include "common/signal.h"
 
 
@@ -95,10 +96,10 @@ namespace casual
 
          // We wait for signal that the child died
 
-         ASSERT_THROW(
+         ASSERT_CODE(
          {
             process::sleep( std::chrono::seconds{ 2});
-         }, exception::signal::child::Terminate);
+         }, common::code::signal::child);
 
          terminated = process::lifetime::ended();
 
@@ -138,9 +139,9 @@ namespace casual
       {
          common::unittest::Trace trace;
 
-         EXPECT_THROW({
+         EXPECT_CODE({
             process::spawn( local::processPath() + "_non_existing_file", {});
-         }, exception::base);
+         }, code::casual::invalid_path);
       }
 
    }

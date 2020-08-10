@@ -11,7 +11,8 @@
 
 #include "common/communication/ipc.h"
 
-#include "common/exception/xatmi.h"
+#include "common/code/raise.h"
+#include "common/code/xatmi.h"
 
 namespace casual
 {
@@ -66,16 +67,10 @@ namespace casual
 
             void State::Pending::unreserve( descriptor_type descriptor)
             {
-               auto found = algorithm::find( m_descriptors, descriptor);
-
-               if( found)
-               {
+               if( auto found = algorithm::find( m_descriptors, descriptor))
                   found->active = false;
-               }
                else
-               {
-                  throw exception::xatmi::invalid::Descriptor{ "invalid call descriptor: " + std::to_string( descriptor)};
-               }
+                  code::raise::generic( code::xatmi::descriptor, log::debug, "invalid call descriptor: ", descriptor);
             }
 
             bool State::Pending::active( descriptor_type descriptor) const
@@ -92,30 +87,24 @@ namespace casual
             const State::Pending::Descriptor& State::Pending::get( descriptor_type descriptor) const
             {
                auto found = algorithm::find( m_descriptors, descriptor);
-               if( found && found->active)
-               {
-                  return *found;
-               }
-               throw exception::xatmi::invalid::Descriptor{ "invalid call descriptor: " + std::to_string( descriptor)};
+               if( ! found || ! found->active)
+                  code::raise::generic( code::xatmi::descriptor, log::debug, "invalid call descriptor: ", descriptor);
+
+               return *found;
             }
 
             const State::Pending::Descriptor& State::Pending::get( const Uuid& correlation) const
             {
                auto found = algorithm::find_if( m_descriptors, [&]( const auto& d){ return d.correlation == correlation;});
-               if( found && found->active)
-               {
-                  return *found;
-               }
-               throw exception::xatmi::invalid::Descriptor{ string::compose( "failed to locate pending from correlation: ", correlation)};
+               if( ! ( found && found->active))
+                  code::raise::generic( code::xatmi::descriptor, log::debug, "failed to locate pending from correlation: ", correlation);
+                  
+               return *found;
             }
 
             signal::timer::Deadline State::Pending::deadline( descriptor_type descriptor, const platform::time::point::type& now) const
             {
-               if( descriptor == 0)
-               {
-
-               }
-               else
+               if( descriptor != 0)
                {
                   auto& desc = get( descriptor);
                   return { desc.timeout.deadline(), now};
@@ -128,17 +117,12 @@ namespace casual
             {
                const auto& holder = get( descriptor);
 
-               //
-               // Can't be associated with a transaction
-               //
-               if( common::transaction::Context::instance().associated( holder.correlation))
-               {
-                  throw exception::xatmi::transaction::Support{ "descriptor " + std::to_string( holder.descriptor) + " is associated with a transaction"};
-               }
 
-               //
+               // Can't be associated with a transaction
+               if( common::transaction::Context::instance().associated( holder.correlation))
+                  code::raise::generic( code::xatmi::transaction, log::debug, "descriptor is associated with a transaction - ", holder.descriptor);
+
                // Discards the correlation (directly if in cache, or later if not)
-               //
                communication::ipc::inbound::device().discard( holder.correlation);
 
                unreserve( descriptor);

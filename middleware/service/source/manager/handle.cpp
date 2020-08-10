@@ -53,17 +53,8 @@ namespace casual
                      template< typename D, typename M>
                      bool send( D&& device, M&& message)
                      {
-                        try
-                        {
-                           log::line( verbose::log, "send message: ", message);
-                           communication::device::blocking::send( device, message);
-                           return true;
-                        }
-                        catch( const common::exception::system::communication::Unavailable&)
-                        {
-                           log::line( log, "ipc unavailable: ", device);
-                           return false;
-                        }
+                        log::line( verbose::log, "send message: ", message);
+                        return communication::device::blocking::optional::send( device, message);
                      }
                   } // optional
 
@@ -82,9 +73,13 @@ namespace casual
 
                            return true;
                         }
-                        catch( const common::exception::system::communication::Unavailable&)
+                        catch( ...)
                         {
-                           log::line( log, "destination unavailable - ", destination);
+                           auto code = exception::code();
+                           if( code != code::casual::communication_unavailable)
+                              throw;
+                              
+                           log::line( log, code, " destination unavailable - ", destination);
                            return false;
                         }
 
@@ -150,7 +145,8 @@ namespace casual
                            {
                               Trace trace{ "service::manager::handle::process::local::service_call_error_reply"};
 
-                              log::line( common::log::category::error, "callee terminated with pending reply to caller - callee: ", 
+                              log::line( common::log::category::error, code::casual::invalid_semantics, 
+                                 " callee terminated with pending reply to caller - callee: ", 
                                  instance.process.pid, " - caller: ", instance.caller().pid);
 
                               log::line( common::log::category::verbose::error, "instance: ", instance);
@@ -326,7 +322,7 @@ namespace casual
                            }
                            catch( ...)
                            {
-                              common::exception::handle();
+                              common::exception::code();
                            }
                         }
 
@@ -407,8 +403,12 @@ namespace casual
                                  }
                               }
                            }
-                           catch( const state::exception::Missing&)
+                           catch( ...)
                            {
+                              auto code = exception::code();
+                              if( code != code::casual::domain_instance_unavailable)
+                                 throw;
+
                               auto name = message.requested;
                               discover( state, std::move( message), name);
                            }
@@ -623,9 +623,13 @@ namespace casual
                               }
                            }
                         }
-                        catch( const state::exception::Missing&)
+                        catch( ...)
                         {
-                           log::line( log::category::error, "failed to find instance on ACK - indicate inconsistency - action: ignore");
+                           auto code = exception::code();
+                           if( code != code::casual::domain_instance_unavailable)
+                              throw;
+
+                           log::line( log::category::error, code, " failed to find instance on ACK - indicate inconsistency - action: ignore");
                         }
                      };
                   }
@@ -664,7 +668,7 @@ namespace casual
 
             void Policy::forward( common::service::invoke::Forward&& forward, const common::message::service::call::callee::Request& message)
             {
-               throw common::exception::xatmi::System{ "can't forward within service-manager"};
+               code::raise::error( code::casual::invalid_semantics, "can't forward within service-manager");
             }
 
             void Policy::statistics( common::strong::ipc::id, common::message::event::service::Call&)

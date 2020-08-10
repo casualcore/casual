@@ -7,7 +7,7 @@
 #include "casual/buffer/admin/cli.h"
 
 
-#include "common/exception/handle.h"
+#include "common/exception/guard.h"
 #include "casual/platform.h"
 #include "common/argument.h"
 #include "common/terminal.h"
@@ -56,7 +56,7 @@ namespace casual
 
 int main( int argc, char** argv)
 {
-   return casual::common::exception::guard( [&]()
+   return casual::common::exception::main::guard( [&]()
    {
       casual::buffer::tools::generic::local::main( argc, argv);
    });

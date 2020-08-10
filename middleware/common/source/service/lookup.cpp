@@ -7,8 +7,6 @@
 #include "common/service/lookup.h"
 
 #include "common/communication/instance.h"
-#include "common/exception/xatmi.h"
-#include "common/exception/handle.h"
 
 
 namespace casual
@@ -62,7 +60,7 @@ namespace casual
                   }
                   catch( ...)
                   {
-                     exception::handle();
+                     exception::handle( log::category::error);
                   }
                }
             }
@@ -105,7 +103,7 @@ namespace casual
                      break;
                   case State::absent:
                      m_correlation = Uuid{};
-                     throw common::exception::xatmi::service::no::Entry{ m_service};
+                     code::raise::log( code::xatmi::no_entry, "lookup: ", *this);
                      break;
                   case State::busy:
                      m_reply = std::move( reply);

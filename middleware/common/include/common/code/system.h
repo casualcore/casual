@@ -7,33 +7,28 @@
 
 #pragma once
 
-
 #include <system_error>
 
 namespace casual
 {
    namespace common
    {
-      namespace log
-      {
-         class Stream;
-      } // log
-
       namespace code
       {
-         using system = std::errc;
-
-         common::log::Stream& stream( system code);
-
-         namespace last
+         namespace system
          {
-            namespace system
+            namespace last
             {
                //! returns the last error code from errno
-               code::system error();
-            } // system
+               std::errc error();
+               
+            } // last
+            
+            //! converts last system error to code::casual and raise an exception
+            [[noreturn]] void raise() noexcept( false);
+            [[noreturn]] void raise( const std::string& context) noexcept( false);
 
-         } // last
+         } // system
 
       } // code
    } // common

@@ -97,9 +97,9 @@ namespace casual
 
             pool::Holder::instance().clear();
 
-            EXPECT_THROW({
+            EXPECT_CODE({
                pool::Holder::instance().get( inbound);
-            }, exception::xatmi::invalid::Argument);
+            }, code::xatmi::argument);
 
          }
 
@@ -107,9 +107,9 @@ namespace casual
          {
             common::unittest::Trace trace;
 
-            EXPECT_THROW({
+            EXPECT_CODE({
                pool::Holder::instance().allocate( { "non-existing", "non-existing"}, 1024);
-            }, exception::xatmi::buffer::type::Input);
+            }, code::xatmi::buffer_input);
          }
 
 
@@ -138,9 +138,9 @@ namespace casual
 
             pool::Holder::instance().deallocate( big);
 
-            EXPECT_THROW({
+            EXPECT_CODE({
                pool::Holder::instance().reallocate( small, 2048);
-            }, exception::xatmi::invalid::Argument);
+            }, code::xatmi::argument);
 
          }
 

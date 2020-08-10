@@ -8,7 +8,8 @@
 #include "common/communication/stream.h"
 
 #include "common/log.h"
-
+#include "common/code/raise.h"
+#include "common/code/casual.h"
 
 namespace casual
 {
@@ -33,13 +34,13 @@ namespace casual
 
                         // First we read the header
                         if( ! in.read( current, communication::message::complete::network::header::size()))
-                           throw exception::system::communication::unavailable::Pipe{};
+                           code::raise::log( code::casual::communication_unavailable, "stream is unavailable - header");
 
                         // we now know the size, read the complete message
                         communication::message::Complete message{ header};
 
                         if( ! in.read( message.payload.data(), message.payload.size()))
-                           throw exception::system::communication::unavailable::Pipe{};
+                           code::raise::log( code::casual::communication_unavailable, "stream is unavailable - pauload");
 
                         log::line( verbose::log, "stream <-- ", message);
 
@@ -56,12 +57,12 @@ namespace casual
 
                            auto data = reinterpret_cast< const char*>( &header);
                            if( ! out.write( data, communication::message::complete::network::header::size()))
-                              throw exception::system::communication::unavailable::Pipe{};
+                              code::raise::log( code::casual::communication_unavailable, "stream is unavailable");
                         }
 
                         // write the complete message
                         if( ! out.write( complete.payload.data(), complete.payload.size()))
-                           throw exception::system::communication::unavailable::Pipe{};
+                           code::raise::log( code::casual::communication_unavailable, "stream is unavailable");
 
                         log::line( verbose::log, "stream --> ", complete);
 

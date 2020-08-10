@@ -10,7 +10,8 @@
 
 #include "common/event/listen.h"
 #include "common/communication/ipc.h"
-#include "common/exception/casual.h"
+
+#include "common/code/casual.h"
 
 
 namespace casual
@@ -57,12 +58,25 @@ namespace casual
 
             void start() 
             {
+               struct
+               {
+                  bool done = false;
+               } state;
+
+
+               auto handle_shutdown = [&state]( const message::shutdown::Request&){ state.done = true;};
+               auto done = [&state](){ return state.done;};
+
                if( empty)
                   common::event::listen( 
-                     common::event::condition::compose( common::event::condition::idle( std::move( empty))), 
-                     std::move( handler));
+                     common::event::condition::compose( 
+                        common::event::condition::idle( std::move( empty)),
+                        common::event::condition::done( std::move( done))),
+                     std::move( handler) + std::move( handle_shutdown));
                else 
-                  common::event::listen( common::event::condition::compose(), std::move( handler));
+                  common::event::listen( 
+                     common::event::condition::compose( common::event::condition::done( std::move( done))),
+                     std::move( handler) + std::move( handle_shutdown));
             }
 
             template< typename T> 
@@ -127,19 +141,7 @@ namespace casual
          {
             Trace trace{ "event::detail::Dispatch::start"};
 
-            try 
-            {
-               m_implementation->start();
-            }
-            catch( const exception::casual::Shutdown&)
-            {
-               log::line( log, "shutdown");
-            }
-            catch( const std::system_error& error)
-            {
-               log::line( log::category::error, error);
-               throw;
-            }
+            m_implementation->start();           
          }
          
          void Dispatch::add( std::function< void( const model::service::Call&)> callback)

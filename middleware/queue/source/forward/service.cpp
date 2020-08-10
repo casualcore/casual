@@ -72,9 +72,9 @@ namespace casual
                {
                   log::line( queue::log, "service call failed - rollback - ", exception);
                }
-               catch( const common::exception::xatmi::exception& exception)
+               catch( ...)
                {
-                  log::line( log::category::error, exception);
+                  common::exception::sink::log();
                }
             }
 
@@ -116,7 +116,7 @@ namespace casual
 
 int main( int argc, char** argv)
 {
-   return casual::common::exception::guard( [=]()
+   return casual::common::exception::main::guard( [=]()
    {
       casual::queue::forward::main( argc, argv);
    });

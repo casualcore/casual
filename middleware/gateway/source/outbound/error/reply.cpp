@@ -40,16 +40,7 @@ namespace casual
                         template< typename D, typename M>
                         bool send( D&& device, M&& message)
                         {
-                           try
-                           {
-                              blocking::send( std::forward< D>( device), std::forward< M>( message));
-                              return true;
-                           }
-                           catch( const common::exception::system::communication::Unavailable&)
-                           {
-                              log::line( log, "destination queue unavailable - device: ", device, ", message: ", message ," - action: discard");
-                              return false;
-                           }
+                           return communication::device::blocking::optional::send( std::forward< D>( device), std::forward< M>( message));
                         }
                      } // optional
                   }

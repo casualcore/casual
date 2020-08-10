@@ -7,41 +7,37 @@
 
 #include "common/code/system.h"
 
-#include "common/log.h"
-
-#include <string>
+#include "common/code/convert.h"
+#include "common/code/raise.h"
 
 namespace casual
 {
    namespace common
    {
-
       namespace code
       {
-
-         common::log::Stream& stream( code::system code)
+         namespace system
          {
-            switch( code)
+            namespace last
             {
-               // debug
-               //case casual::ok: return common::log::debug;
-
-               // rest is errors
-               default: return common::log::category::error;
-            }
-         }
-
-         namespace last
-         {
-            namespace system
-            {
-               code::system error()
+               std::errc error()
                {
-                  return static_cast< code::system>( errno);
+                  return static_cast< std::errc>( errno);
                }
-            } // system
-         } // last
+               
+            } // last
 
+            void raise() noexcept( false)
+            {
+               code::raise::log( code::convert::to::casual( last::error()));
+            }
+
+            void raise( const std::string& context) noexcept( false)
+            {
+               code::raise::log( code::convert::to::casual( last::error()), context);
+            }
+
+         } // system
       } // code
    } // common
 } // casual

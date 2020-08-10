@@ -174,50 +174,50 @@ target_test_domain = LinkUnittest( 'bin/test-casual-domain',
 Dependencies( target_test_domain, [ target_domain_manager, target_simple_server, pending_executable])
 
 
-message_lib = LinkLibrary( 'bin/casual-delay-message', 
-    [
-      Compile( 'source/delay/message.cpp'),
-    ],
-    [ 
-        common_archive,
-        'casual-common'
-    ]
-    )
-
-delay_objects = [
-     Compile( 'source/delay/delay.cpp')
-    ]
-
-
-target_delay_message = LinkExecutable( 'bin/casual-delay-message',
-    [
-        Compile( 'source/delay/main.cpp'),
-    ] + delay_objects,
-    [
-      message_lib,
-      manager_archive,
-      common_archive,
-     'casual-common'
-    ])
-
-
-target_test_delay = LinkUnittest( 'bin/test-casual-domain-delay', 
-    [ 
-        Compile( 'unittest/source/test_delay.cpp'),
-    ],
-    [
-     message_lib,
-     common_archive,
-     domain_unittest_library,
-     'casual-common',
-     'casual-unittest',
-    ])        
+#message_lib = LinkLibrary( 'bin/casual-delay-message', 
+#    [
+#      Compile( 'source/delay/message.cpp'),
+#    ],
+#    [ 
+#        common_archive,
+#        'casual-common'
+#    ]
+#    )
+#
+#delay_objects = [
+#     Compile( 'source/delay/delay.cpp')
+#    ]
+#
+#
+#target_delay_message = LinkExecutable( 'bin/casual-delay-message',
+#    [
+#        Compile( 'source/delay/main.cpp'),
+#    ] + delay_objects,
+#    [
+#      message_lib,
+#      manager_archive,
+#      common_archive,
+#     'casual-common'
+#    ])
+#
+#
+#target_test_delay = LinkUnittest( 'bin/test-casual-domain-delay', 
+#    [ 
+#        Compile( 'unittest/source/test_delay.cpp'),
+#    ],
+#    [
+#     message_lib,
+#     common_archive,
+#     domain_unittest_library,
+#     'casual-common',
+#     'casual-unittest',
+#    ])        
 
 #
 # We execute 'target_domain_delay' from test-casual-domain-delay, so
 # we need to make sure target_domain_delay is built before
 #
-Dependencies( target_test_delay, [ target_delay_message ])
+#Dependencies( target_test_delay, [ target_delay_message ])
 
 
 

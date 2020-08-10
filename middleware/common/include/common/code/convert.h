@@ -10,6 +10,7 @@
 
 #include "common/code/tx.h"
 #include "common/code/xa.h"
+#include "common/code/casual.h"
 
 
 namespace casual
@@ -23,6 +24,8 @@ namespace casual
             namespace to
             {
                code::tx tx( code::xa code);
+
+               code::casual casual( std::errc code);
             } // to
          } // convert
       } // code

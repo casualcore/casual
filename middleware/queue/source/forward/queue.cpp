@@ -10,7 +10,7 @@
 #include "queue/common/log.h"
 
 #include "common/argument.h"
-#include "common/exception/handle.h"
+#include "common/exception/guard.h"
 
 #include "common/buffer/pool.h"
 
@@ -78,7 +78,7 @@ namespace casual
 
 int main( int argc, char** argv)
 {
-   return casual::common::exception::guard( [=]()
+   return casual::common::exception::main::guard( [=]()
    {
       casual::queue::forward::main( argc, argv);
    });

@@ -6,8 +6,11 @@
 
 #include "common/buffer/pool.h"
 #include "common/algorithm.h"
-#include "common/exception/xatmi.h"
 #include "common/log.h"
+
+#include "common/code/raise.h"
+#include "common/code/xatmi.h"
+#include "common/exception/guard.h"
 
 #include <functional>
 
@@ -19,30 +22,42 @@ namespace casual
       {
          namespace pool
          {
-
-            Holder::Base& Holder::find( const std::string& type)
+            namespace local
             {
-               auto pool = algorithm::find_if( m_pools, [&]( std::unique_ptr< Base>& b)
+               namespace
                {
-                  return b->manage( type);
-               });
+                  auto find = []( auto& pools, auto&& key)
+                  {
+                     return algorithm::find_if( pools, [&key]( auto& base)
+                     {
+                        return base->manage( key);
+                     });
+                  };
+               } // <unnamed>
+            } // local
 
-               if( ! pool)
-                  throw exception::xatmi::buffer::type::Input{};
+            Holder::concept* Holder::find_concept( const std::string& type)
+            {
+               if( auto found = local::find( m_pools, type))
+                  return &( **found);
 
-               return **pool;
+               return nullptr;
             }
 
-            Holder::Base& Holder::find( platform::buffer::raw::immutable::type handle)
+            Holder::concept& Holder::get_concept( const std::string& type)
             {
-               auto pool = algorithm::find_if( m_pools, [&]( std::unique_ptr< Base>& b){
-                  return b->manage( handle);
-               });
+               if( auto found = Holder::find_concept( type))
+                  return *found;
 
-               if( ! pool)
-                  throw exception::xatmi::invalid::Argument{ "buffer not valid"};
+               code::raise::log( code::xatmi::buffer_input, "invalid buffer type");
+            }
 
-               return **pool;
+            Holder::concept& Holder::get_concept( platform::buffer::raw::immutable::type handle)
+            {
+               if( auto found = local::find( m_pools, handle))
+                  return **found;
+
+               code::raise::log( code::xatmi::argument, "buffer not valid");
             }
 
             const Payload& Holder::null_payload() const
@@ -55,14 +70,14 @@ namespace casual
             platform::buffer::raw::type Holder::allocate( const std::string& type, platform::binary::size::type size)
             {
                log::line( log::category::buffer, "allocate: type: ", type, ", size: ", size);
-               return find( type).allocate( type, size);
+               return get_concept( type).allocate( type, size);
             }
 
             platform::buffer::raw::type Holder::reallocate( platform::buffer::raw::immutable::type handle, platform::binary::size::type size)
             {
                log::line( log::category::buffer, "reallocate: handle: ", static_cast< const void*>( handle), ", size: ", size);
 
-               auto buffer = find( handle).reallocate( handle, size);
+               auto buffer = get_concept( handle).reallocate( handle, size);
 
                if( handle == m_inbound)
                   m_inbound = buffer;
@@ -83,7 +98,7 @@ namespace casual
 
                // according to the XATMI-spec it's a no-op for tpfree for the inbound-buffer...
                if( handle != m_inbound && handle != nullptr)
-                  find( handle).deallocate( handle);
+                  get_concept( handle).deallocate( handle);
             }
 
             platform::buffer::raw::type Holder::adopt( Payload&& payload)
@@ -117,7 +132,7 @@ namespace casual
                else 
                {
                   auto size = payload.memory.size();
-                  auto& holder = find( payload.type);
+                  auto& holder = get_concept( payload.type);
                   return return_type{ holder.insert( std::move( payload)), size};
                }
             }
@@ -127,7 +142,7 @@ namespace casual
                if( handle == nullptr)
                   return null_payload();
 
-               return find( handle).get( handle, user_size);
+               return get_concept( handle).get( handle, user_size);
             }
 
             payload::Send Holder::get( platform::buffer::raw::immutable::type handle)
@@ -135,7 +150,7 @@ namespace casual
                if( handle == nullptr)
                   return null_payload();
 
-               return find( handle).get( handle);
+               return get_concept( handle).get( handle);
             }
 
 
@@ -144,7 +159,7 @@ namespace casual
                if( handle == nullptr)
                   return null_payload();
 
-               auto result = find( handle).release( handle);
+               auto result = get_concept( handle).release( handle);
 
                if( m_inbound == handle) 
                   m_inbound = nullptr;
@@ -159,7 +174,7 @@ namespace casual
                if( handle == nullptr)
                   return null_payload();
 
-               auto result = find( handle).release( handle, size);
+               auto result = get_concept( handle).release( handle, size);
 
                if( m_inbound == handle) 
                   m_inbound = nullptr;
@@ -174,17 +189,13 @@ namespace casual
             {
                if( m_inbound)
                {
-                  try
+                  exception::guard( [&]()
                   {
-                     find( m_inbound).deallocate( m_inbound);
+                     get_concept( m_inbound).deallocate( m_inbound);
                      m_inbound = nullptr;
-                  }
-                  catch( const exception::base& exception)
-                  {
-                     log::line( log::category::error, "failed to deallocate inbound buffer - ", exception);
-                  }
+                  });
                }
-               algorithm::for_each( m_pools, std::mem_fn( &Base::clear));
+               algorithm::for_each( m_pools, std::mem_fn( &concept::clear));
             }
 
 

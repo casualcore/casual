@@ -11,8 +11,12 @@
 
 #include "common/result.h"
 
-#include "common/exception/system.h"
-#include "common/exception/handle.h"
+//#include "common/exception/handle.h"
+
+#include "common/code/convert.h"
+#include "common/code/raise.h"
+#include "common/code/system.h"
+#include "common/code/casual.h"
 
 #include "common/log.h"
 
@@ -81,7 +85,7 @@ namespace casual
                         // AI_ADDRCONFIG only return addresses if configured
                         passive = AI_PASSIVE,
                         address_config = AI_ADDRCONFIG,
-                        cannonical = AI_CANONNAME,
+                        canonical = AI_CANONNAME,
                      };
 
                      namespace address
@@ -116,14 +120,11 @@ namespace casual
                               // TCP/IP
                               hints.ai_socktype = SOCK_STREAM;
 
-                              flags |= Flag::cannonical;
+                              flags |= Flag::canonical;
                               hints.ai_flags = flags.underlaying();
 
                               if( const int result = getaddrinfo( address::host( address), address::port( address), &hints, &information.value))
-                              {
-                                 throw exception::system::invalid::Argument( string::compose( 
-                                    gai_strerror( result), " address: ", address));
-                              }
+                                 code::raise::log( code::casual::invalid_argument, gai_strerror( result), " address: ", address);
                            }
 
                            Native() = default;
@@ -185,15 +186,7 @@ namespace casual
                            }
                         }
 
-                        switch( common::code::last::system::error())
-                        {
-                           case common::code::system::connection_refused:
-                              throw exception::system::communication::Refused( string::compose( address));
-                           default:
-                              exception::system::throw_from_errno();
-                        }
-                        // will never be reached...
-                        return {};
+                        code::raise::error( code::convert::to::casual( code::system::last::error()), "address: ", address);
                      }
 
                      Socket connect( const Address& address)
@@ -293,7 +286,7 @@ namespace casual
                   }
                   default:
                   {
-                     throw exception::system::invalid::Argument{ string::compose( "invalid address: ", address)};
+                     code::raise::error( code::casual::invalid_argument, "address: ", address);
                   }
                }
             }
@@ -393,9 +386,11 @@ namespace casual
                      {
                         return tcp::connect( address);
                      }
-                     catch( const exception::system::communication::Refused&)
+                     catch( ...)
                      {
-                        // no-op - we go to sleep
+                        // if refused : no-op - we go to sleep
+                        if( exception::code() != code::casual::communication_refused)
+                           throw;
                      }
                   }
                   while( sleep());
@@ -453,7 +448,7 @@ namespace casual
                            if( bytes == 0)
                            {
                               // Fake an error-description
-                              throw exception::system::communication::unavailable::Pipe{};
+                              code::raise::log( code::casual::communication_unavailable);
                            }
                            common::log::line( verbose::log, "bytes: ", bytes); 
 
@@ -477,7 +472,7 @@ namespace casual
                            const auto bytes = local::send( descriptor, first, std::distance( first, last), flags);
 
                            if( bytes > std::distance( first, last))
-                              throw exception::system::communication::Protocol( "somehow more bytes was sent over the socket than requested");
+                              code::raise::error( code::casual::communication_protocol, "somehow more bytes was sent over the socket than requested");
 
                            first += bytes;
                         }
@@ -500,9 +495,12 @@ namespace casual
 
                      return complete.correlation;
                   }
-                  catch( const exception::system::communication::no::Message&)
+                  catch( ...)
                   {
-                     return uuid::empty();
+                     if( exception::code() == code::casual::communication_refused)
+                        return {};
+
+                     throw;
                   }
                }
 
@@ -534,9 +532,12 @@ namespace casual
 
                      return message;
                   }
-                  catch( const exception::system::communication::no::Message&)
+                  catch( ...)
                   {
-                     return {};
+                     if( exception::code() == code::casual::communication_retry)
+                        return {};
+
+                     throw;
                   }
                }
 

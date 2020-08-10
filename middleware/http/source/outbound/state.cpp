@@ -8,8 +8,9 @@
 #include "http/outbound/request.h"
 
 #include "common/communication/ipc.h"
-#include "common/exception/handle.h"
-#include "common/exception/system.h"
+#include "common/code/raise.h"
+#include "common/code/casual.h"
+#include "common/exception/guard.h"
 
 namespace casual
 {
@@ -40,9 +41,7 @@ namespace casual
                   auto handle = curl_slist_append( m_header.get(), value.c_str());
 
                   if( ! handle)
-                  {
                      log::line( log::category::error, "request - failed to add header: ", value, " - action: ignore");
-                  }
                   else
                   {
                      m_header.release();
@@ -61,16 +60,12 @@ namespace casual
 
             Pending::~Pending() noexcept
             {
-               try
+               exception::guard( [&]()
                {
-                  algorithm::for_each( m_pending, [&]( const pending::Request& request){
+                  algorithm::for_each( m_pending, [&]( auto& request){
                      curl::multi::remove( m_multi, request.easy());
                   });
-               }
-               catch( ...)
-               {
-                  exception::handle();
-               }
+               });
             }
 
             void Pending::add( pending::Request&& request)
@@ -85,18 +80,16 @@ namespace casual
             {
                Trace trace{ "http::outbound::state::Pending::extract"};
 
-               auto found = algorithm::find( m_pending, easy);
-
-               if( ! found)
+               if( auto found = algorithm::find( m_pending, easy))
                {
-                  throw exception::system::invalid::Argument{ "failed to find pending"};
+                  auto result = std::move( *found);
+                  m_pending.erase( std::begin( found));
+                  curl::multi::remove( m_multi, result.easy());
+
+                  return result;
                }
-
-               auto result = std::move( *found);
-               m_pending.erase( std::begin( found));
-               curl::multi::remove( m_multi, result.easy());
-
-               return result;
+               
+               code::raise::error( code::casual::invalid_argument, "failed to find pending");               
             }
 
          } // state

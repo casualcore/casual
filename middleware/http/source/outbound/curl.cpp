@@ -6,9 +6,11 @@
 
 #include "http/outbound/curl.h"
 
-#include "common/exception/system.h"
-#include "common/exception/handle.h"
 #include "common/string.h"
+#include "common/code/raise.h"
+#include "common/code/casual.h"
+#include "common/code/serialize.h"
+#include "common/exception/handle.h"
 
 namespace casual
 {
@@ -102,8 +104,45 @@ namespace casual
                         curl_easy_getinfo( handle.get(), code, &value);
                         return value;
                      } 
-                      
                   } // get
+
+                  namespace code
+                  {
+                     namespace category
+                     {
+                        struct Easy : std::error_category
+                        {
+                           const char* name() const noexcept override
+                           {
+                              return "curl-easy";
+                           }
+
+                           std::string message( int code) const override
+                           {
+                              return curl_easy_strerror( static_cast< CURLcode>( code));
+                           }
+                        };
+
+                        const auto& easy = common::code::serialize::registration< Easy>( 0x54edf8d7545d475fbecd24e15e6828b4_uuid);
+
+                        struct Multi : std::error_category
+                        {
+                           const char* name() const noexcept override
+                           {
+                              return "curl-multi";
+                           }
+
+                           std::string message( int code) const override
+                           {
+                              return curl_multi_strerror( static_cast< CURLMcode>( code));
+                           }
+                        };
+
+                        const auto& multi = common::code::serialize::registration< Multi>( 0x76797ff9a38f49b08ef6592418d2f13c_uuid);
+
+                     } // category
+                  } // code
+
                } // <unnamed>
             } // local
 
@@ -146,9 +185,7 @@ namespace casual
                   case code::CURLM_CALL_MULTI_PERFORM: break;
 
                   default: 
-                  {  
-                     throw exception::system::invalid::Argument{ string::compose( "code: ", value, " - ", curl_multi_strerror( value))};
-                  }
+                     common::code::raise::error( common::code::casual::internal_unexpected_value, value);
                }
             }
 
@@ -160,20 +197,14 @@ namespace casual
                   case code::CURLE_OK: break;
 
                   case CURLE_COULDNT_CONNECT:
-                  {
-                     throw common::exception::system::communication::unavailable::no::Connect{ common::string::compose(
-                        "failed to connect - code: ", value, " - message: ", error::buffer().data())};
-                  }
+                     common::code::raise::log( common::code::casual::communication_refused, "failed to connect - code: ", value, ' ', error::buffer().data());
+
                   case CURLE_GOT_NOTHING:
                   case CURLE_RECV_ERROR:
-                  {
-                     throw common::exception::system::communication::no::message::Absent{ common::string::compose(
-                        "failed to receive - code: ", value, " - message: ", error::buffer().data())};
-                  }
+                     common::code::raise::log( common::code::casual::communication_no_message, "failed to receive - code: ", value, ' ', error::buffer().data());
+
                   default: 
-                  {  
-                     throw exception::system::invalid::Argument{ string::compose( "code: ", value, " - ", curl_easy_strerror( value))};
-                  }
+                     common::code::raise::error( common::code::casual::internal_unexpected_value, value);
                }
             }
 
@@ -185,7 +216,7 @@ namespace casual
                }
                catch( ...)
                {
-                  exception::handle();
+                  exception::sink::log();
                }
             }
 
@@ -226,3 +257,14 @@ namespace casual
       } // outbound
    } // http
 } // casual
+
+
+std::error_code make_error_code( CURLcode code)
+{
+   return { code, casual::http::outbound::curl::local::code::category::easy};
+}
+
+std::error_code make_error_code( CURLMcode code)
+{
+   return { code, casual::http::outbound::curl::local::code::category::multi};
+}

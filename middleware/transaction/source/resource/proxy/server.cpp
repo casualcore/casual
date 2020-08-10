@@ -11,8 +11,8 @@
 #include "transaction/resource/proxy.h"
 #include "transaction/common.h"
 
-#include "common/exception/handle.h"
-#include "common/exception/signal.h"
+#include "common/exception/guard.h"
+
 #include "common/argument.h"
 #include "common/environment.h"
 
@@ -25,7 +25,7 @@ int casual_start_reource_proxy( struct casual_resource_proxy_service_argument* s
 
 int casual_start_resource_proxy( struct casual_resource_proxy_service_argument* serverArguments)
 {
-   return casual::common::exception::guard( [&]()
+   return casual::common::exception::main::guard( [&]()
    {
       casual::transaction::Trace trace{ "casual_start_resource_proxy"};
 

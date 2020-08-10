@@ -7,7 +7,7 @@
 
 #include "service/forward/cache.h"
 
-#include "common/exception/handle.h"
+#include "common/exception/guard.h"
 #include "common/argument.h"
 
 namespace casual
@@ -17,24 +17,12 @@ namespace casual
    {
       namespace forward
       {
-
-         int main( int argc, char **argv)
+         void main( int argc, char **argv)
          {
-            try
-            {
-               {
-                  casual::common::argument::Parse parse{ "service forward"};
-                  parse( argc, argv);
-               }
-
-               Cache cache;
-               cache.start();
-            }
-            catch( ...)
-            {
-               return common::exception::handle();
-            }
-            return 0;
+            casual::common::argument::Parse{ "service forward"}( argc, argv);
+      
+            Cache cache;
+            cache.start();
          }
       } // forward
    } // service
@@ -44,5 +32,8 @@ namespace casual
 
 int main( int argc, char **argv)
 {
-   return casual::service::forward::main( argc, argv);
+   return casual::common::exception::main::guard( [=]()
+   {
+      casual::service::forward::main( argc, argv);
+   });
 }

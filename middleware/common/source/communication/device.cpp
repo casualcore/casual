@@ -6,8 +6,9 @@
 
 #include "common/communication/device.h"
 
-#include "common/exception/system.h"
 #include "common/signal.h"
+#include "common/code/casual.h"
+
 
 namespace casual
 {
@@ -25,11 +26,14 @@ namespace casual
                   {
                      throw;
                   }
-                  catch( const exception::system::Interupted& exception)
+                  catch( ...)
                   {
-                     log::line( verbose::log, "device interupted: ", exception);
+                     if( exception::code() != code::casual::interupted)
+                        throw;
 
+                     log::line( verbose::log, "device interupted");
                      signal::dispatch();
+
                   }
                }
             } // handle

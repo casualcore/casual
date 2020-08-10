@@ -64,9 +64,12 @@ namespace casual
                void listen( C&& condition, Callback&&... callbacks)
                {
                   auto& device = communication::ipc::inbound::device();
-                  auto handler = handler_type{ std::forward< Callback>( callbacks)...} + common::message::handle::defaults( device);
+                  auto handler = handler_type{ std::forward< Callback>( callbacks)...};
                   auto unsubscription = scope::unsubscribe( handler.types());
-                  common::message::dispatch::relaxed::pump( std::forward< C>( condition), handler, device);
+                  common::message::dispatch::relaxed::pump( 
+                     std::forward< C>( condition), 
+                     common::message::handle::defaults( device) + std::move( handler),
+                     device);
                }
             } // subscription
          } // no
@@ -80,11 +83,16 @@ namespace casual
          template< typename C, typename... Callback>
          void listen( C&& condition, Callback&&... callbacks)
          {
+            Trace trace{ "common::event::listen"};
+            
             auto& device = communication::ipc::inbound::device();
             auto handler = handler_type{ std::forward< Callback>( callbacks)...};
             auto subscription = scope::subscribe( handler.types());
-            handler += common::message::handle::defaults( device); 
-            common::message::dispatch::relaxed::pump( std::forward< C>( condition), handler, device);
+
+            common::message::dispatch::relaxed::pump( 
+               std::forward< C>( condition),
+               common::message::handle::defaults( device) + std::move( handler),
+               device);
          }
 
 
