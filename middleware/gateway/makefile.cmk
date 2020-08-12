@@ -97,6 +97,11 @@ target = LinkExecutable( 'bin/casual-gateway-inbound',
 install_bin.append( target)
 
 
+# protocol example
+protocol_objects = [
+    Compile( 'source/documentation/protocol/example.cpp')
+]
+
 
 # Unittest
 
@@ -104,7 +109,8 @@ target_unittest = LinkUnittest( 'bin/test-casual-gateway',
    [
         Compile( 'unittest/source/test_manager.cpp'),
         Compile( 'unittest/source/test_state.cpp'),
-   ], 
+        Compile( 'unittest/source/test_protocol.cpp'),
+   ] + protocol_objects, 
    [ 
        common_archive, 
        'casual-serviceframework',
@@ -118,10 +124,7 @@ target_unittest = LinkUnittest( 'bin/test-casual-gateway',
 # Make sure we link the executables before we run the unittest
 Dependencies( target_unittest, install_bin)
 
-# protocol example
-protocol_objects = [
-    Compile( 'source/documentation/protocol/example.cpp')
-]
+
 
 
 

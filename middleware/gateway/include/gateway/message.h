@@ -178,6 +178,17 @@ template< typename A> struct Value< type, A, std::enable_if_t< common::serialize
                   CASUAL_CUSTOMIZATION_POINT_SERIALIZE( services);
                   CASUAL_CUSTOMIZATION_POINT_SERIALIZE( queues);
                })
+               
+               CASUAL_CUSTOMIZATION_POINT_NETWORK( common::message::gateway::domain::discover::Reply::Service,
+               {
+                  CASUAL_CUSTOMIZATION_POINT_SERIALIZE( name);
+                  CASUAL_CUSTOMIZATION_POINT_SERIALIZE( category);
+                  CASUAL_CUSTOMIZATION_POINT_SERIALIZE( transaction);
+                  // TODO 2.0
+                  // CASUAL_CUSTOMIZATION_POINT_SERIALIZE( type);
+                  CASUAL_CUSTOMIZATION_POINT_SERIALIZE( timeout);
+                  CASUAL_CUSTOMIZATION_POINT_SERIALIZE( hops);
+               })
 
                CASUAL_CUSTOMIZATION_POINT_NETWORK( common::message::gateway::domain::discover::Reply,
                {

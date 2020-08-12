@@ -323,10 +323,14 @@ namespace casual
                         detail::services( state, execution, [&services]( auto& message)
                         {
                            message.services.add = std::forward< S>( services);
-
-                           // add one hop, since we now it has passed a domain boundary
-                           for( auto& service : message.services.add) 
+                           
+                           for( auto& service : message.services.add)
+                           {
+                              // add one hop, since we now it has passed a domain boundary
                               ++service.hops;
+                              // outbound has "infinite" instances and can be called concurrent.
+                              service.type = decltype( service.type)::concurrent;
+                           }
                         });
                      }
 

@@ -59,7 +59,7 @@ role name                 | network type   | network size             | descript
 execution                 | (fixed) binary |                       16 | uuid of the current execution context (breadcrumb)     
 domain.id                 | (fixed) binary |                       16 | uuid of the outbound domain                            
 domain.name.size          | uint64         |                        8 | size of the outbound domain name                       
-domain.name.data          | dynamic string | [0..9223372036854775807] | dynamic byte array with the outbound domain name       
+domain.name.data          | dynamic string | [0..4611686018427387897] | dynamic byte array with the outbound domain name       
 protocol.versions.size    | uint64         |                        8 | number of protocol versions outbound domain can 'speak'
 protocol.versions.element | uint64         |                        8 | a protocol version                                     
 
@@ -74,7 +74,7 @@ role name        | network type   | network size             | description
 execution        | (fixed) binary |                       16 | uuid of the current execution context (breadcrumb)                
 domain.id        | (fixed) binary |                       16 | uuid of the inbound domain                                        
 domain.name.size | uint64         |                        8 | size of the inbound domain name                                   
-domain.name.data | dynamic string | [0..9223372036854775807] | dynamic byte array with the inbound domain name                   
+domain.name.data | dynamic string | [0..4611686018427387897] | dynamic byte array with the inbound domain name                   
 protocol.version | uint64         |                        8 | the chosen protocol version to use, or invalid (0) if incompatible
 
 ## Discovery messages
@@ -93,13 +93,13 @@ role name             | network type   | network size             | description
 execution             | (fixed) binary |                       16 | uuid of the current execution context (breadcrumb)           
 domain.id             | (fixed) binary |                       16 | uuid of the caller domain                                    
 domain.name.size      | uint64         |                        8 | size of the caller domain name                               
-domain.name.data      | dynamic string | [0..9223372036854775807] | dynamic byte array with the caller domain name               
+domain.name.data      | dynamic string | [0..4611686018427387897] | dynamic byte array with the caller domain name               
 services.size         | uint64         |                        8 | number of requested services to follow (an array of services)
 services.element.size | uint64         |                        8 | size of the current service name                             
-services.element.data | dynamic string | [0..9223372036854775807] | dynamic byte array of the current service name               
+services.element.data | dynamic string | [0..4611686018427387897] | dynamic byte array of the current service name               
 queues.size           | uint64         |                        8 | number of requested queues to follow (an array of queues)    
 queues.element.size   | uint64         |                        8 | size of the current queue name                               
-queues.element.data   | dynamic string | [0..9223372036854775807] | dynamic byte array of the current queue name                 
+queues.element.data   | dynamic string | [0..4611686018427387897] | dynamic byte array of the current queue name                 
 
 #### message::gateway::domain::discover::Reply
 
@@ -112,18 +112,18 @@ role name                      | network type   | network size             | des
 execution                      | (fixed) binary |                       16 | uuid of the current execution context (breadcrumb)              
 domain.id                      | (fixed) binary |                       16 | uuid of the caller domain                                       
 domain.name.size               | uint64         |                        8 | size of the caller domain name                                  
-domain.name.data               | dynamic string | [0..9223372036854775807] | dynamic byte array with the caller domain name                  
+domain.name.data               | dynamic string | [0..4611686018427387897] | dynamic byte array with the caller domain name                  
 services.size                  | uint64         |                        8 | number of services to follow (an array of services)             
 services.element.name.size     | uint64         |                        8 | size of the current service name                                
-services.element.name.data     | dynamic string | [0..9223372036854775807] | dynamic byte array of the current service name                  
+services.element.name.data     | dynamic string | [0..4611686018427387897] | dynamic byte array of the current service name                  
 services.element.category.size | uint64         |                        8 | size of the current service category                            
-services.element.category.data | dynamic string | [0..9223372036854775807] | dynamic byte array of the current service category              
+services.element.category.data | dynamic string | [0..4611686018427387897] | dynamic byte array of the current service category              
 services.element.transaction   | uint16         |                        2 | service transaction mode (auto, atomic, join, none)             
 services.element.timeout       | uint64         |                        8 | service timeout                                                 
 services.element.hops          | uint64         |                        8 | number of domain hops to the service (local services has 0 hops)
 queues.size                    | uint64         |                        8 | number of requested queues to follow (an array of queues)       
 queues.element.name.size       | uint64         |                        8 | size of the current queue name                                  
-queues.element.name.data       | dynamic string | [0..9223372036854775807] | dynamic byte array of the current queue name                    
+queues.element.name.data       | dynamic string | [0..4611686018427387897] | dynamic byte array of the current queue name                    
 queues.element.retries         | uint64         |                        8 | how many 'retries' the queue has                                
 
 ## Service messages
@@ -141,17 +141,17 @@ role name          | network type   | network size             | description
 ------------------ | -------------- | ------------------------ | -------------------------------------------------------------------
 execution          | (fixed) binary |                       16 | uuid of the current execution context (breadcrumb)                 
 service.name.size  | uint64         |                        8 | service name size                                                  
-service.name.data  | dynamic string | [0..9223372036854775807] | byte array with service name                                       
+service.name.data  | dynamic string | [0..4611686018427387897] | byte array with service name                                       
 service.timeout    | uint64         |                        8 | timeout of the service in use (in microseconds)                    
 parent.size        | uint64         |                        8 | parent service name size                                           
-parent.data        | dynamic string | [0..9223372036854775807] | byte array with parent service name                                
+parent.data        | dynamic string | [0..4611686018427387897] | byte array with parent service name                                
 xid.formatID       | uint64         |                        8 | xid format type. if 0 no more information of the xid is transported
 xid.gtrid_length   | uint64         |                        8 | length of the transaction gtrid part                               
 xid.bqual_length   | uint64         |                        8 | length of the transaction branch part                              
 xid.data           | (fixed) binary |                       32 | byte array with the size of gtrid_length + bqual_length (max 128)  
 flags              | uint64         |                        8 | XATMI flags sent to the service                                    
 buffer.type.size   | uint64         |                        8 | buffer type name size                                              
-buffer.type.data   | dynamic string | [0..9223372036854775807] | byte array with buffer type in the form 'type/subtype'             
+buffer.type.data   | dynamic string | [0..4611686018427387897] | byte array with buffer type in the form 'type/subtype'             
 buffer.memory.size | uint64         |                        8 | buffer payload size (could be very big)                            
 buffer.memory.data | dynamic binary | [0..9223372036854775807] | buffer payload data (with the size of buffer.payload.size)         
 
@@ -172,7 +172,7 @@ transaction.xid.bqual_length | uint64         |                        8 | lengt
 transaction.xid.data         | (fixed) binary |                       32 | byte array with the size of gtrid_length + bqual_length (max 128)             
 transaction.state            | uint8          |                        1 | state of the transaction TX_ACTIVE, TX_TIMEOUT_ROLLBACK_ONLY, TX_ROLLBACK_ONLY
 buffer.type.size             | uint64         |                        8 | buffer type name size                                                         
-buffer.type.data             | dynamic string | [0..9223372036854775807] | byte array with buffer type in the form 'type/subtype'                        
+buffer.type.data             | dynamic string | [0..4611686018427387897] | byte array with buffer type in the form 'type/subtype'                        
 buffer.memory.size           | uint64         |                        8 | buffer payload size (could be very big)                                       
 buffer.memory.data           | dynamic binary | [0..9223372036854775807] | buffer payload data (with the size of buffer.payload.size)                    
 
@@ -299,19 +299,19 @@ role name               | network type   | network size             | descriptio
 ----------------------- | -------------- | ------------------------ | -------------------------------------------------------------------
 execution               | (fixed) binary |                       16 | uuid of the current execution context (breadcrumb)                 
 name.size               | uint64         |                        8 | size of queue name                                                 
-name.data               | dynamic string | [0..9223372036854775807] | data of queue name                                                 
+name.data               | dynamic string | [0..4611686018427387897] | data of queue name                                                 
 xid.formatID            | uint64         |                        8 | xid format type. if 0 no more information of the xid is transported
 xid.gtrid_length        | uint64         |                        8 | length of the transaction gtrid part                               
 xid.bqual_length        | uint64         |                        8 | length of the transaction branch part                              
 xid.data                | (fixed) binary |                       32 | byte array with the size of gtrid_length + bqual_length (max 128)  
 message.id              | (fixed) binary |                       16 | id of the message                                                  
 message.properties.size | uint64         |                        8 | length of message properties                                       
-message.properties.data | dynamic string | [0..9223372036854775807] | data of message properties                                         
+message.properties.data | dynamic string | [0..4611686018427387897] | data of message properties                                         
 message.reply.size      | uint64         |                        8 | length of the reply queue                                          
-message.reply.data      | dynamic string | [0..9223372036854775807] | data of reply queue                                                
+message.reply.data      | dynamic string | [0..4611686018427387897] | data of reply queue                                                
 message.available       | uint64         |                        8 | when the message is available for dequeue (us since epoc)          
 message.type.size       | uint64         |                        8 | length of the type string                                          
-message.type.data       | dynamic string | [0..9223372036854775807] | data of the type string                                            
+message.type.data       | dynamic string | [0..4611686018427387897] | data of the type string                                            
 message.payload.size    | uint64         |                        8 | size of the payload                                                
 message.payload.data    | dynamic binary | [0..9223372036854775807] | data of the payload                                                
 
@@ -338,13 +338,13 @@ role name                | network type   | network size             | descripti
 ------------------------ | -------------- | ------------------------ | -------------------------------------------------------------------
 execution                | (fixed) binary |                       16 | uuid of the current execution context (breadcrumb)                 
 name.size                | uint64         |                        8 | size of the queue name                                             
-name.data                | dynamic string | [0..9223372036854775807] | data of the queue name                                             
+name.data                | dynamic string | [0..4611686018427387897] | data of the queue name                                             
 xid.formatID             | uint64         |                        8 | xid format type. if 0 no more information of the xid is transported
 xid.gtrid_length         | uint64         |                        8 | length of the transaction gtrid part                               
 xid.bqual_length         | uint64         |                        8 | length of the transaction branch part                              
 xid.data                 | (fixed) binary |                       32 | byte array with the size of gtrid_length + bqual_length (max 128)  
 selector.properties.size | uint64         |                        8 | size of the selector properties (ignored if empty)                 
-selector.properties.data | dynamic string | [0..9223372036854775807] | data of the selector properties (ignored if empty)                 
+selector.properties.data | dynamic string | [0..4611686018427387897] | data of the selector properties (ignored if empty)                 
 selector.id              | (fixed) binary |                       16 | selector uuid (ignored if 'empty'                                  
 block                    | uint8          |                        1 | dictates if this is a blocking call or not                         
 
@@ -360,12 +360,12 @@ execution                       | (fixed) binary |                       16 | uu
 message.size                    | uint64         |                        8 | number of messages dequeued                               
 message.element.id              | (fixed) binary |                       16 | id of the message                                         
 message.element.properties.size | uint64         |                        8 | length of message properties                              
-message.element.properties.data | dynamic string | [0..9223372036854775807] | data of message properties                                
+message.element.properties.data | dynamic string | [0..4611686018427387897] | data of message properties                                
 message.element.reply.size      | uint64         |                        8 | length of the reply queue                                 
-message.element.reply.data      | dynamic string | [0..9223372036854775807] | data of reply queue                                       
+message.element.reply.data      | dynamic string | [0..4611686018427387897] | data of reply queue                                       
 message.element.available       | uint64         |                        8 | when the message was available for dequeue (us since epoc)
 message.element.type.size       | uint64         |                        8 | length of the type string                                 
-message.element.type.data       | dynamic string | [0..9223372036854775807] | data of the type string                                   
+message.element.type.data       | dynamic string | [0..4611686018427387897] | data of the type string                                   
 message.element.payload.size    | uint64         |                        8 | size of the payload                                       
 message.element.payload.data    | dynamic binary | [0..9223372036854775807] | data of the payload                                       
 message.element.redelivered     | uint64         |                        8 | how many times the message has been redelivered           
@@ -386,10 +386,10 @@ role name                       | network type   | network size             | de
 ------------------------------- | -------------- | ------------------------ | -------------------------------------------------------------------
 execution                       | (fixed) binary |                       16 | uuid of the current execution context (breadcrumb)                 
 service.name.size               | uint64         |                        8 | size of the service name                                           
-service.name.data               | dynamic string | [0..9223372036854775807] | data of the service name                                           
+service.name.data               | dynamic string | [0..4611686018427387897] | data of the service name                                           
 service.timeout                 | uint64         |                        8 | timeout (in ns                                                     
 parent.size                     | uint64         |                        8 | size of the parent service name (the caller)                       
-parent.data                     | dynamic string | [0..9223372036854775807] | data of the parent service name (the caller)                       
+parent.data                     | dynamic string | [0..4611686018427387897] | data of the parent service name (the caller)                       
 xid.formatID                    | uint64         |                        8 | xid format type. if 0 no more information of the xid is transported
 xid.gtrid_length                | uint64         |                        8 | length of the transaction gtrid part                               
 xid.bqual_length                | uint64         |                        8 | length of the transaction branch part                              
@@ -398,7 +398,7 @@ flags                           | uint64         |                        8 | xa
 recording.nodes.size            | uint64         |                        8 | size of the recording of 'passed nodes'                            
 recording.nodes.element.address | (fixed) binary |                       16 | 'address' of a node'                                               
 buffer.type.size                | uint64         |                        8 | buffer type name size                                              
-buffer.type.data                | dynamic string | [0..9223372036854775807] | byte array with buffer type in the form 'type/subtype'             
+buffer.type.data                | dynamic string | [0..4611686018427387897] | byte array with buffer type in the form 'type/subtype'             
 buffer.memory.size              | uint64         |                        8 | buffer payload size (could be very big)                            
 buffer.memory.data              | dynamic binary | [0..9223372036854775807] | buffer payload data (with the size of buffer.payload.size)         
 
@@ -433,7 +433,7 @@ route.nodes.element.address | (fixed) binary |                       16 | 'addre
 events                      | uint64         |                        8 | events                                                    
 code.result                 | uint32         |                        4 | status of the connection                                  
 buffer.type.size            | uint64         |                        8 | buffer type name size                                     
-buffer.type.data            | dynamic string | [0..9223372036854775807] | byte array with buffer type in the form 'type/subtype'    
+buffer.type.data            | dynamic string | [0..4611686018427387897] | byte array with buffer type in the form 'type/subtype'    
 buffer.memory.size          | uint64         |                        8 | buffer payload size (could be very big)                   
 buffer.memory.data          | dynamic binary | [0..9223372036854775807] | buffer payload data (with the size of buffer.payload.size)
 

@@ -238,7 +238,7 @@ namespace casual
                      message.name = "queueA";
                      message.trid = local::trid();
 
-                     message.message.id = common::uuid::make();
+                     message.message.id = 0xe6fd9fcf86ac47f4a5252f597e25fc6a_uuid;
                      message.message.properties = "property 1:property 2";
                      message.message.reply = "queueB";
                      message.message.available = local::time::point();
