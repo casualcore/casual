@@ -32,7 +32,7 @@ namespace casual
          template< typename Event>
          constexpr void send( Event&& event)
          {
-            static_assert( message::is::event::message< Event>(), "only events can be sent");
+            static_assert( message::is::event::message< std::decay_t< Event>>(), "only events can be sent");
             detail::send( serialize::native::complete( std::forward< Event>( event)));
          }
 

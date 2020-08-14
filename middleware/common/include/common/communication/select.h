@@ -172,38 +172,8 @@ namespace casual
 
                   namespace pump
                   {
-                     //! used if there are no error condition provided
                      template< typename C, typename... Ts>
-                     void dispatch( C&& condition, const Directive& directive, traits::priority::tag< 0>, Ts&&... handlers)
-                     {
-                        condition::detail::invoke< condition::detail::tag::prelude>( condition);
-
-                        while( ! condition::detail::invoke< condition::detail::tag::done>( condition))
-                        {
-                           // make sure we try to consume from the handlers before
-                           // we might block forever. Handlers could have cached messages
-                           // that wont be triggered via multiplexing on file descriptors
-                           while( detail::consume::dispatch( handlers...))
-                              if( condition::detail::invoke< condition::detail::tag::done>( condition))
-                                 return;
-
-                           // we're idle
-                           condition::detail::invoke< condition::detail::tag::idle>( condition);
-
-                           // we might be done after idle
-                           if( condition::detail::invoke< condition::detail::tag::done>( condition))
-                              return;
-
-                           // we block
-                           auto result = detail::select( directive);
-                              detail::dispatch( result, handlers...);
-                        }
-                     }   
-
-                     //! used if there are an error condition provided
-                     template< typename C, typename... Ts>
-                     auto dispatch( C&& condition, const Directive& directive, traits::priority::tag< 1>, Ts&&... handlers) 
-                        -> decltype( condition.invoke( condition::detail::tag::error{}))
+                     auto dispatch( C&& condition, const Directive& directive, Ts&&... handlers) 
                      {
                        condition::detail::invoke< condition::detail::tag::prelude>( condition);
 
@@ -253,13 +223,13 @@ namespace casual
                template< typename C, typename... Ts>  
                void pump( C&& condition, const Directive& directive, Ts&&... handlers)
                {
-                  detail::pump::dispatch( std::forward< C>( condition), directive, traits::priority::tag< 1>{}, std::forward< Ts>( handlers)...);
+                  detail::pump::dispatch( std::forward< C>( condition), directive, std::forward< Ts>( handlers)...);
                }
 
                template< typename... Ts>  
                void pump( const Directive& directive, Ts&&... handlers)
                {
-                  detail::pump::dispatch( condition::compose(), directive, traits::priority::tag< 1>{}, std::forward< Ts>( handlers)...);
+                  detail::pump::dispatch( condition::compose(), directive, std::forward< Ts>( handlers)...);
                }
 
             } // dispatch

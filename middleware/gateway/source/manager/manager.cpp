@@ -54,8 +54,7 @@ namespace casual
 
 
                   // Ask domain manager for configuration
-                  common::message::domain::configuration::Request request;
-                  request.process = process::handle();
+                  common::message::domain::configuration::Request request{ process::handle()};
 
                   return gateway::transform::state(
                      communication::ipc::call(

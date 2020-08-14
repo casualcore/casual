@@ -46,7 +46,7 @@ namespace casual
             {
                bool send( strong::process::id pid, code::signal signal)
                {
-                  log::line( verbose::log, "local::signal::send pid: ", pid, " signal: ", signal);
+                  log::line( verbose::log, "local::signal::send ", signal, " -> pid: ", pid);
 
                   return posix::log::result( 
                      ::kill( pid.value(), cast::underlying( signal)), 

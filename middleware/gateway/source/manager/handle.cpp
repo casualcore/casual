@@ -10,8 +10,6 @@
 #include "gateway/environment.h"
 #include "gateway/common.h"
 
-
-
 #include "common/server/handle/call.h"
 #include "common/message/handle.h"
 #include "common/communication/instance.h"
@@ -132,6 +130,16 @@ namespace casual
                                       "--order", std::to_string( connection.order)});
 
                               connection.runlevel = manager::state::outbound::Connection::Runlevel::connecting;
+
+                              // Send event
+                              {
+                                 common::message::event::process::Spawn event{ common::process::handle()};
+                                 event.path = local::executable( connection);
+                                 event.alias = file::name::base( event.path);
+                                 event.pids.push_back( connection.process.pid);
+                                 common::event::send( event);
+                              }
+                              
                            }
                            catch( ...)
                            {
@@ -242,16 +250,27 @@ namespace casual
                   {
                      state::inbound::Connection inbound;
                      inbound.runlevel = state::inbound::Connection::Runlevel::connecting;
+                     auto path = common::environment::directory::casual() + "/bin/casual-gateway-inbound";
 
                      inbound.process.pid = common::process::spawn(
-                        common::environment::directory::casual() + "/bin/casual-gateway-inbound",
+                        path,
                         {
-                              "--descriptor", std::to_string( connection.socket.descriptor().value()),
-                              "--limit-messages", std::to_string( connection.limit.messages),
-                              "--limit-size", std::to_string( connection.limit.size),
+                           "--descriptor", std::to_string( connection.socket.descriptor().value()),
+                           "--limit-messages", std::to_string( connection.limit.messages),
+                           "--limit-size", std::to_string( connection.limit.size),
                         });
 
+                     // Send event to domain.
+                     {
+                        common::message::event::process::Spawn event{ common::process::handle()};
+                        event.path = path;
+                        event.alias = file::name::base( event.path);
+                        event.pids.push_back( inbound.process.pid);
+                        common::event::send( event);
+                     }
+
                      m_state.get().connections.inbound.push_back( std::move( inbound));
+
                   }
                }
                

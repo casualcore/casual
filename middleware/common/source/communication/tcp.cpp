@@ -186,7 +186,7 @@ namespace casual
                            }
                         }
 
-                        code::raise::error( code::convert::to::casual( code::system::last::error()), "address: ", address);
+                        code::raise::log( code::convert::to::casual( code::system::last::error()), "address: ", address);
                      }
 
                      Socket connect( const Address& address)

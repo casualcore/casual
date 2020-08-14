@@ -13,12 +13,12 @@
 #include "common/environment.h"
 #include "common/service/lookup.h"
 #include "common/communication/instance.h"
+#include "common/event/listen.h"
 
 #include "common/message/domain.h"
 #include "common/message/queue.h"
 
 #include "serviceframework/service/protocol/call.h"
-#include "serviceframework/log.h"
 
 #include "domain/manager/unittest/process.h"
 #include "service/unittest/advertise.h"
@@ -329,8 +329,7 @@ domain:
 
          // enqueue
          {
-            message::queue::enqueue::Request request;
-            request.process = process::handle();
+            message::queue::enqueue::Request request{ process::handle()};
             request.name = "queue1";
             request.message.type = "json";
             request.message.payload = payload;
@@ -342,8 +341,7 @@ domain:
 
          // dequeue
          {
-            message::queue::dequeue::Request request;
-            request.process = process::handle();
+            message::queue::dequeue::Request request{ process::handle()};
             request.name = "queue1";
 
             auto reply = communication::ipc::call( outbound.ipc, request);
@@ -351,6 +349,127 @@ domain:
             EXPECT_TRUE( reply.message.front().payload == payload);
             EXPECT_TRUE( reply.message.front().type == "json");
          }
+      }
+
+      TEST( casual_gateway_manager_tcp, connect_to_our_self__kill_outbound__expect_restart)
+      {
+         common::unittest::Trace trace;
+
+         local::Domain domain;
+
+         EXPECT_TRUE( common::communication::instance::fetch::handle( common::communication::instance::identity::gateway::manager));
+
+         auto state = local::call::wait::ready::state();
+
+         ASSERT_TRUE( state.connections.size() == 2);
+
+         algorithm::sort( state.connections);
+         auto& outbound = state.connections.at( 0);
+
+         EXPECT_TRUE( common::communication::instance::fetch::handle( outbound.process.pid) == outbound.process);
+
+         // send signal, outbound terminates, wait for outbound to spawn again (via event::Spawn)
+         {
+            bool done = false;
+            event::listen( 
+               event::condition::compose( 
+                  event::condition::prelude( [pid = outbound.process.pid]()
+                  {
+                     EXPECT_TRUE( signal::send( pid, code::signal::terminate));
+                  }),
+                  event::condition::done( [&done]()
+                  {
+                     return done;
+                  })
+               ),
+               [&done]( const common::message::event::process::Spawn& event)
+               {
+                  log::line( log::debug, "event: ", event);
+                  // we're done if outbound spawns
+                  done = event.alias == "casual-gateway-outbound";
+               });
+         }
+      }
+
+
+      TEST( casual_gateway_manager_tcp, connect_to_our_self__kill_inbound__expect_restart)
+      {
+         common::unittest::Trace trace;
+
+         local::Domain domain;
+
+         EXPECT_TRUE( common::communication::instance::fetch::handle( common::communication::instance::identity::gateway::manager));
+
+         auto state = local::call::wait::ready::state();
+
+         ASSERT_TRUE( state.connections.size() == 2);
+
+         algorithm::sort( state.connections);
+         auto& inbound = state.connections.at( 1);
+
+         EXPECT_TRUE( common::communication::instance::fetch::handle( inbound.process.pid) == inbound.process);
+
+         // send signal, inbound terminates, wait for inbound and outbound to spawn again (via event::Spawn)
+         {
+            auto done = std::make_tuple( false, false);
+            event::listen( 
+               event::condition::compose( 
+                  event::condition::prelude( [pid = inbound.process.pid]()
+                  {
+                     EXPECT_TRUE( signal::send( pid, code::signal::terminate));
+                  }),
+                  event::condition::done( [&done]()
+                  {
+                     return std::get< 0>( done) && std::get< 1>( done);
+                  })
+               ),
+               [&done]( const common::message::event::process::Spawn& event)
+               {
+                  log::line( log::debug, "event: ", event);
+
+                  if( event.alias == "casual-gateway-inbound")
+                     std::get< 0>( done) = true;
+
+                  if( event.alias == "casual-gateway-outbound")
+                     std::get< 1>( done) = true;
+               });
+         }
+      }
+
+      TEST( casual_gateway_manager_tcp,  outbound_to_non_existent_listener)
+      {
+         common::unittest::Trace trace;
+
+         static constexpr auto configuration = R"(
+domain: 
+   name: gateway-domain
+
+   groups: 
+      - name: base
+      - name: gateway
+        dependencies: [ base]
+   
+   servers:
+      - path: "${CASUAL_HOME}/bin/casual-service-manager"
+        memberships: [ base]
+      - path: "${CASUAL_HOME}/bin/casual-transaction-manager"
+        memberships: [ base]
+      - path: "./bin/casual-gateway-manager"
+        memberships: [ gateway]
+   gateway:
+      connections:
+         - address: 127.0.0.1:6666
+)";
+
+
+         local::Domain domain{ configuration};
+
+         auto state = local::call::state();
+         ASSERT_TRUE( state.connections.size() == 1);
+         auto& outbound = state.connections.at( 0);
+         auto process = common::communication::instance::fetch::handle( outbound.process.pid);
+         EXPECT_TRUE( communication::instance::ping( process.ipc) == process);
+
       }
 
    } // gateway

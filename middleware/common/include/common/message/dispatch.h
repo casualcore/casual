@@ -218,7 +218,11 @@ namespace casual
                      template<>
                      struct default_invoke< tag::error>
                      {
-                        static void invoke() { throw;};
+                        static void invoke() 
+                        { 
+                           // takes care of signals
+                           communication::device::handle::error();
+                        };
                      };
                   } // tag
 
@@ -283,37 +287,9 @@ namespace casual
 
                   namespace pump
                   {
-
-                     //! used if there are no error condition provided
-                     template< typename C, typename H, typename D>
-                     void dispatch( C&& condition, H&& handler, D& device, traits::priority::tag< 0>)
-                     {
-                        Trace trace{ "common::message::dispatch::detail::pump::dispatch"};
-
-                        detail::invoke< detail::tag::prelude>( condition);
-
-                        while( ! detail::invoke< detail::tag::done>( condition))
-                        {
-                           while( handler( device, communication::device::policy::non::blocking( device)))
-                              if( detail::invoke< detail::tag::done>( condition))
-                                 return;
-
-                           // we're idle
-                           detail::invoke< detail::tag::idle>( condition);
-
-                           // we might be done after idle
-                           if( detail::invoke< detail::tag::done>( condition))
-                              return;
-
-                           // we block
-                           handler( device, communication::device::policy::blocking( device));
-                        } 
-                     }   
-
                      //! used if there are an error condition provided
                      template< typename C, typename H, typename D>
-                     auto dispatch( C&& condition, H&& handler, D& device, traits::priority::tag< 1>) 
-                        -> decltype( void( condition( tag::error{})))
+                     auto dispatch( C&& condition, H&& handler, D& device) 
                      {
                         Trace trace{ "common::message::dispatch::detail::pump::dispatch error"};
 
@@ -343,6 +319,8 @@ namespace casual
                            }
                         } 
                      }
+
+
                      namespace consume
                      {
                         template< typename H> 
@@ -409,7 +387,7 @@ namespace casual
             void pump( C&& condition, H&& handler, D& device)
             {
                auto consume = condition::detail::pump::consume::strict( handler);
-               condition::detail::pump::dispatch( std::forward< C>( condition), consume, device, traits::priority::tag< 1>{});
+               condition::detail::pump::dispatch( std::forward< C>( condition), consume, device);
             }
 
             namespace relaxed
@@ -420,7 +398,7 @@ namespace casual
                void pump( C&& condition, H&& handler, D& device)
                {
                   auto consume = condition::detail::pump::consume::relaxed( handler);
-                  condition::detail::pump::dispatch( std::forward< C>( condition), consume, device, traits::priority::tag< 1>{});
+                  condition::detail::pump::dispatch( std::forward< C>( condition), consume, device);
                }
             } // relaxed
 
