@@ -153,9 +153,7 @@ find /git/casual -user root | xargs chmod 777
 exit $returncode
 '''
 
-//
 // Script for the backend builder centos
-//
 def backend_builder_centos = '''#! /bin/sh
 CASUAL_VERSION=''' + env.CASUAL_VERSION + '''
 CASUAL_RELEASE=''' + rpmRelease() + '''
@@ -175,9 +173,7 @@ source scl_source enable devtoolset-7
 
 ''' + common_backend_builder
 
-//
 // Script for the backend builder suse
-//
 def backend_builder_suse = '''#! /bin/sh
 CASUAL_VERSION=''' + env.CASUAL_VERSION + '''
 CASUAL_RELEASE=''' + rpmRelease() + '''
@@ -193,10 +189,7 @@ performCoverageMeasuring()
 
 ''' + common_backend_builder
 
-
-//
 // Script for the frontend builder
-//
 def frontend_builder = '''#! /bin/sh
 umask 000
 cd /git/casual/webapp
@@ -208,9 +201,7 @@ zip -q -r casual-webapp.zip webapp
 chmod a+w -R .
 '''
 
-//
 // Dockerfile for creating testcontainer
-//
 def dockerfile = '''FROM centos:latest
 MAINTAINER flurig <flurig@localhost>
 
@@ -304,7 +295,35 @@ try
    )    
    
    parallel(
-   
+      "suse" :
+      {
+         node( "cplusplus" && "suse")
+         {
+            try
+            { 
+
+               deleteDir()
+
+               stage('Build backend - Unittest - Suse')
+               {
+                  checkout scm
+                  
+                  unstash 'frontend'
+                  
+                  build( 'susecompile', 'casual/suse-builder', backend_builder_suse)
+
+                  archive includes: '**/casual-middleware*.rpm'
+                  
+                  stash includes: '**/casual-middleware*.rpm', name: 'suse_backend'
+               }
+            }
+            catch (Exception e)
+            {
+               archive includes: '**/casual.log'
+               throw e
+            }
+         }
+      },
       "centos" :
       {
          node( "cplusplus" && "centos")
@@ -344,9 +363,7 @@ try
                {
                   stage('Create container - Centos')
                   {
-                     // 
                      // Setup files
-                     //
                      writeFile file: 'Dockerfile', text: dockerfile
 
                      sh '''
@@ -374,36 +391,6 @@ try
                      fi
                      """
                   } 
-               }
-            }
-            catch (Exception e)
-            {
-               archive includes: '**/casual.log'
-               throw e
-            }
-         }
-      },
-      
-      "suse" :
-      {
-         node( "cplusplus" && "suse")
-         {
-            try
-            { 
-
-               deleteDir()
-
-               stage('Build backend - Unittest - Suse')
-               {
-                  checkout scm
-                  
-                  unstash 'frontend'
-                  
-                  build( 'susecompile', 'casual/suse-builder', backend_builder_suse)
-
-                  archive includes: '**/casual-middleware*.rpm'
-                  
-                  stash includes: '**/casual-middleware*.rpm', name: 'suse_backend'
                }
             }
             catch (Exception e)
