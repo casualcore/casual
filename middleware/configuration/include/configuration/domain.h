@@ -91,8 +91,8 @@ namespace casual
             friend Manager operator + ( Manager lhs, const Manager& rhs);
          };
 
-
-         Manager get( const std::vector< std::string>& files);
+         //! find all files based on pattern, and aggregate this to on domain configuration
+         Manager get( const std::vector< std::string>& patterns);
 
          //! Complement with defaults and validates
          //!

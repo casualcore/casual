@@ -108,7 +108,9 @@ http:
       url: a.se/a
       discard_transaction: true
 )");
-            auto model = configuration::get( file);
+
+            auto pattern = common::directory::name::base( file.path()) + "*.yaml";
+            auto model = configuration::get(  pattern);
             ASSERT_TRUE( model.services.size() == 1);
             EXPECT_TRUE( model.services.at( 0).discard_transaction.value() == true) << CASUAL_NAMED_VALUE( model);
          }
@@ -134,6 +136,8 @@ http:
 
          TEST( http_outbound_configuration, two_files__expect_aggregate)
          {
+            common::unittest::Trace trace;
+
             auto file_a = common::unittest::file::temporary::content( ".yaml", R"(
 
 http:
@@ -151,6 +155,7 @@ http:
       url: b.se/b
 
 )");
+
             auto model = configuration::get( std::vector< std::string>{ file_a.path(), file_b.path()});
             EXPECT_TRUE( model.services.size() == 2);
             EXPECT_TRUE( model.services.at( 0).name == "a");

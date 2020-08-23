@@ -5,11 +5,13 @@
 //!
 
 
-#include <common/unittest.h>
+#include "common/unittest.h"
+#include "common/unittest/file.h"
 
 #include "common/file.h"
 #include "common/environment.h"
 #include "common/uuid.h"
+#include "common/algorithm/is.h"
 
 
 #include <fstream>
@@ -65,7 +67,7 @@ namespace casual
          EXPECT_TRUE(verify=="testextension") << verify;
       }
 
-      TEST(casual_common_file,extension_no_extension)
+      TEST( common_file,extension_no_extension)
       {
          common::unittest::Trace trace;
 
@@ -73,7 +75,7 @@ namespace casual
          EXPECT_TRUE( verify == "") << verify;
       }
 
-      TEST(casual_common_file,extension_no_extension_dot_in_path)
+      TEST( common_file,extension_no_extension_dot_in_path)
       {
          common::unittest::Trace trace;
 
@@ -81,7 +83,7 @@ namespace casual
          EXPECT_TRUE( verify == "") << verify;
       }
 
-      TEST(casual_common_file,extension_empty_path)
+      TEST( common_file,extension_empty_path)
       {
          common::unittest::Trace trace;
 
@@ -89,7 +91,7 @@ namespace casual
          EXPECT_TRUE( verify == "") << verify;
       }
 
-      TEST(casual_common_file, basedir_normal)
+      TEST( common_file, basedir_normal)
       {
          common::unittest::Trace trace;
 
@@ -97,7 +99,7 @@ namespace casual
          EXPECT_TRUE(verify == "/base/dir/") << verify;
       }
 
-      TEST(casual_common_file, basedir_empty_path)
+      TEST( common_file, basedir_empty_path)
       {
          common::unittest::Trace trace;
 
@@ -105,7 +107,7 @@ namespace casual
          EXPECT_TRUE(verify == "/") << verify;
       }
 
-      TEST(casual_common_file, basedir_only_filename_path)
+      TEST( common_file, basedir_only_filename_path)
       {
          common::unittest::Trace trace;
 
@@ -114,7 +116,7 @@ namespace casual
          EXPECT_TRUE(verify == "/") << verify;
       }
 
-      TEST(casual_common_file,find_existing_file)
+      TEST( common_file_find_regex, existing_file)
       {
          common::unittest::Trace trace;
 
@@ -127,7 +129,8 @@ namespace casual
          EXPECT_TRUE( verify == file) << verify;
       }
 
-      TEST(casual_common_file,find_nonexisting_file)
+
+      TEST( common_file_find_regex, nonexisting_file)
       {
          common::unittest::Trace trace;
 
@@ -140,7 +143,7 @@ namespace casual
          EXPECT_TRUE( verify == "") << verify;
       }
 
-      TEST(casual_common_file,find_empty_arguments)
+      TEST( common_file_find_regex, empty_arguments)
       {
          common::unittest::Trace trace;
 
@@ -153,21 +156,101 @@ namespace casual
          EXPECT_TRUE( verify == "") << verify;
       }
 
-      TEST(casual_common_file, exists__expect_true)
+      TEST( common_file_find_pattern, existing_files)
+      {
+         common::unittest::Trace trace;
+         
+         auto paths = common::file::find( common::directory::name::base( __FILE__) + "/test_*.cpp");
+
+         EXPECT_TRUE( paths.size() > 1) << "paths :" << paths;
+      }
+
+      TEST( common_file_find_pattern, specific_file)
+      {
+         common::unittest::Trace trace;
+         
+         auto paths = common::file::find( __FILE__);
+         EXPECT_TRUE( paths.size() == 1) << "paths :" << paths;
+         EXPECT_TRUE( paths.at( 0) == __FILE__) << "paths :" << paths;
+      }
+
+      TEST( common_file_find_pattern, nonexistent_path)
+      {
+         common::unittest::Trace trace;
+
+         auto pattern = common::file::name::unique( "/a/b/c/", "/*");
+         
+         auto paths = common::file::find( pattern);
+         EXPECT_TRUE( paths.empty()) << "paths :" << paths;
+      }
+
+      TEST( common_file_find_pattern, empty_pattern__expect_no_found)
+      {
+         common::unittest::Trace trace;
+         
+         auto paths = common::file::find( "");
+
+         EXPECT_TRUE( paths.empty()) << "paths :" << paths;
+      }
+
+      TEST( common_file_find_pattern, same_pattern_twice__expect_unique_paths)
+      {
+         common::unittest::Trace trace;
+
+         const auto pattern = common::directory::name::base( __FILE__) + "test_*.cpp";
+         
+         auto paths = common::file::find( std::vector< std::string>{ pattern, pattern});
+
+         EXPECT_TRUE( paths.size() > 1) << "paths :" << paths;
+         EXPECT_TRUE( algorithm::is::unique( paths)) << "paths :" << paths;
+         EXPECT_TRUE( common::file::find( pattern) == paths) << "paths :" << paths;
+      }
+
+
+      TEST( common_file_find_pattern, two_patterns__expect_preserved_order_between_the_patterns)
+      {
+         common::unittest::Trace trace;
+
+         unittest::directory::temporary::Scoped dir;
+         file::Output a{ dir.path() + "/a_foo.yaml"};
+         file::Output b{ dir.path() + "/b_foo.yaml"};
+         
+         auto paths = common::file::find( std::vector< std::string>{ dir.path() + "/b*.yaml", dir.path() + "/a*.yaml"});
+         ASSERT_TRUE( paths.size() == 2) << "paths :" << paths;
+         EXPECT_TRUE( paths.at( 0) == b.path()) << "paths :" << paths;
+         EXPECT_TRUE( paths.at( 1) == a.path()) << "paths :" << paths;
+      }
+
+      TEST( common_file_find_pattern, two_files__expect_sorted_order)
+      {
+         common::unittest::Trace trace;
+
+         unittest::directory::temporary::Scoped dir;
+         file::Output b{ dir.path() + "/b_foo.yaml"};
+         file::Output a{ dir.path() + "/a_foo.yaml"};
+         
+         auto paths = common::file::find( dir.path() + "/*.yaml");
+         ASSERT_TRUE( paths.size() == 2) << "paths :" << paths;
+         EXPECT_TRUE( paths.at( 0) == a.path()) << "paths :" << paths;
+         EXPECT_TRUE( paths.at( 1) == b.path()) << "paths :" << paths;
+      }
+
+
+      TEST( common_file, exists__expect_true)
       {
          common::unittest::Trace trace;
 
          EXPECT_TRUE( common::file::exists( __FILE__));
       }
 
-      TEST(casual_common_file, exists__expect_false)
+      TEST( common_file, exists__expect_false)
       {
          common::unittest::Trace trace;
 
          EXPECT_FALSE( common::file::exists( std::string( __FILE__) + "_not_a_file_"));
       }
 
-      TEST(casual_common_file, move_file__expect_success)
+      TEST( common_file, move_file__expect_success)
       {
          common::unittest::Trace trace;
 
@@ -186,7 +269,7 @@ namespace casual
          });
       }
 
-      TEST(casual_common_file, move_file__expect_throw)
+      TEST( common_file, move_file__expect_throw)
       {
          common::unittest::Trace trace;
 
@@ -206,7 +289,7 @@ namespace casual
          }, code::casual::invalid_path);
       }
 
-      TEST(casual_common_directory, create_one_level__expect_true)
+      TEST( common_directory, create_one_level__expect_true)
       {
          common::unittest::Trace trace;
 
@@ -216,7 +299,7 @@ namespace casual
          EXPECT_TRUE( directory::remove( path));
       }
 
-      TEST(casual_common_directory, create_3_level__expect_true)
+      TEST( common_directory, create_3_level__expect_true)
       {
          common::unittest::Trace trace;
 

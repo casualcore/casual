@@ -9,6 +9,7 @@
 #include "common/unittest/log.h"
 #include "common/algorithm.h"
 #include "common/algorithm/compare.h"
+#include "common/algorithm/is.h"
 
 namespace casual
 {
@@ -27,7 +28,7 @@ namespace casual
       } // local
 
 
-      TEST( casual_common_algorithm_range, default_constructor__expect_empty)
+      TEST( common_algorithm_range, default_constructor__expect_empty)
       {
          common::unittest::Trace trace;
 
@@ -38,7 +39,7 @@ namespace casual
          EXPECT_TRUE( empty.size() == 0);
       }
 
-      TEST( casual_common_algorithm_range, default_constructor_int_pointer__expect_empty)
+      TEST( common_algorithm_range, default_constructor_int_pointer__expect_empty)
       {
          common::unittest::Trace trace;
 
@@ -48,7 +49,7 @@ namespace casual
          EXPECT_TRUE( empty.size() == 0);
       }
 
-      TEST( casual_common_algorithm_equal, list_container)
+      TEST( common_algorithm_equal, list_container)
       {
          common::unittest::Trace trace;
 
@@ -58,7 +59,7 @@ namespace casual
          EXPECT_TRUE( algorithm::equal( range, container));
       }
 
-      TEST( casual_common_algorithm_equal, deque_container)
+      TEST( common_algorithm_equal, deque_container)
       {
          common::unittest::Trace trace;
 
@@ -68,7 +69,7 @@ namespace casual
          EXPECT_TRUE( algorithm::equal( range, container));
       }
 
-      TEST( casual_common_algorithm_equal, array_container)
+      TEST( common_algorithm_equal, array_container)
       {
          common::unittest::Trace trace;
 
@@ -78,7 +79,7 @@ namespace casual
          EXPECT_TRUE( algorithm::equal( range, container));
       }
 
-      TEST( casual_common_algorithm_equal, c_array_container)
+      TEST( common_algorithm_equal, c_array_container)
       {
          common::unittest::Trace trace;
 
@@ -88,7 +89,7 @@ namespace casual
          EXPECT_TRUE( algorithm::equal( range, container));
       }
 
-      TEST( casual_common_algorithm_position, overlap)
+      TEST( common_algorithm_position, overlap)
       {
          common::unittest::Trace trace;
 
@@ -102,7 +103,7 @@ namespace casual
          EXPECT_FALSE( range::position::overlap( range::make( std::begin( container), 40), range::make( std::begin( container) + 60, 30)));
       }
 
-      TEST( casual_common_algorithm_position, subtract_two_equal_ranges__expect_empty_result)
+      TEST( common_algorithm_position, subtract_two_equal_ranges__expect_empty_result)
       {
          common::unittest::Trace trace;
 
@@ -114,7 +115,7 @@ namespace casual
          EXPECT_TRUE( std::get< 1>( result).empty());
       }
 
-      TEST( casual_common_algorithm_position, subtract_bigger_from_smaller__expect_empty_result)
+      TEST( common_algorithm_position, subtract_bigger_from_smaller__expect_empty_result)
       {
          common::unittest::Trace trace;
 
@@ -126,7 +127,7 @@ namespace casual
          EXPECT_TRUE( std::get< 1>( result).empty());
       }
 
-      TEST( casual_common_algorithm_position, subtract_right_overlapping__expect_first)
+      TEST( common_algorithm_position, subtract_right_overlapping__expect_first)
       {
          common::unittest::Trace trace;
 
@@ -140,7 +141,7 @@ namespace casual
          EXPECT_TRUE( std::get< 1>( result).empty());
       }
 
-      TEST( casual_common_algorithm_position, subtract_left_overlapping__expect_first)
+      TEST( common_algorithm_position, subtract_left_overlapping__expect_first)
       {
          common::unittest::Trace trace;
 
@@ -154,7 +155,7 @@ namespace casual
          EXPECT_TRUE( std::get< 1>( result).empty());
       }
 
-      TEST( casual_common_algorithm_position, subtract_smaller_from_larger_overlapping__expect_splitted_into_two_ranges)
+      TEST( common_algorithm_position, subtract_smaller_from_larger_overlapping__expect_splitted_into_two_ranges)
       {
          common::unittest::Trace trace;
 
@@ -176,7 +177,7 @@ namespace casual
 
 
 
-      TEST( casual_common_algorithm, sort)
+      TEST( common_algorithm, sort)
       {
          common::unittest::Trace trace;
 
@@ -194,7 +195,7 @@ namespace casual
       }
 
 
-      TEST( casual_common_algorithm, sort_predi)
+      TEST( common_algorithm, sort_predicate)
       {
          common::unittest::Trace trace;
 
@@ -206,10 +207,9 @@ namespace casual
          //EXPECT_TRUE( sorted);
          EXPECT_TRUE( ! sorted.empty());
          EXPECT_TRUE( algorithm::equal( sorted, s));
-
       }
 
-      TEST( casual_common_algorithm, sort_reverse)
+      TEST( common_algorithm, sort_reverse)
       {
          common::unittest::Trace trace;
 
@@ -224,7 +224,7 @@ namespace casual
       }
 
 
-      TEST( casual_common_algorithm, sort_predicate_reverse)
+      TEST( common_algorithm, sort_predicate_reverse)
       {
          common::unittest::Trace trace;
 
@@ -239,7 +239,7 @@ namespace casual
 
       }
 
-      TEST( casual_common_algorithm, partition)
+      TEST( common_algorithm, partition)
       {
          common::unittest::Trace trace;
 
@@ -252,7 +252,7 @@ namespace casual
          EXPECT_TRUE( std::get< 0>( part).size() + std::get< 1>( part).size() == range::size( us));
       }
 
-      TEST( casual_common_algorithm, partition_reverse)
+      TEST( common_algorithm, partition_reverse)
       {
          common::unittest::Trace trace;
 
@@ -265,7 +265,7 @@ namespace casual
          EXPECT_TRUE( std::get< 0>( part).size() + std::get< 1>( part).size() == range::size( us));
       }
 
-      TEST( casual_common_algorithm, find_value)
+      TEST( common_algorithm, find_value)
       {
          common::unittest::Trace trace;
 
@@ -277,7 +277,7 @@ namespace casual
          EXPECT_TRUE( *found == 3);
       }
 
-      TEST( casual_common_algorithm, find_map_value)
+      TEST( common_algorithm, find_map_value)
       {
          common::unittest::Trace trace;
 
@@ -289,7 +289,7 @@ namespace casual
          EXPECT_TRUE( found->second == "three");
       }
 
-      TEST( casual_common_algorithm, find_value_reverse)
+      TEST( common_algorithm, find_value_reverse)
       {
          common::unittest::Trace trace;
 
@@ -303,7 +303,7 @@ namespace casual
       }
 
 
-      TEST( casual_common_algorithm, search)
+      TEST( common_algorithm, search)
       {
          common::unittest::Trace trace;
 
@@ -313,7 +313,7 @@ namespace casual
       }
 
 
-      TEST( casual_common_algorithm, uniform__true)
+      TEST( common_algorithm, uniform__true)
       {
          common::unittest::Trace trace;
 
@@ -323,7 +323,7 @@ namespace casual
 
       }
 
-      TEST( casual_common_algorithm, uniform__false)
+      TEST( common_algorithm, uniform__false)
       {
          common::unittest::Trace trace;
 
@@ -333,7 +333,7 @@ namespace casual
       }
 
 
-      TEST( casual_common_algorithm, sort_partition_find_value)
+      TEST( common_algorithm, sort_partition_find_value)
       {
          common::unittest::Trace trace;
 
@@ -349,7 +349,7 @@ namespace casual
          EXPECT_TRUE( *found == 3);
       }
 
-      TEST( casual_common_algorithm, trim_container)
+      TEST( common_algorithm, trim_container)
       {
          common::unittest::Trace trace;
 
@@ -363,7 +363,7 @@ namespace casual
       }
 
 
-      TEST( casual_common_algorithm, sort_unique_trim_container)
+      TEST( common_algorithm, sort_unique_trim_container)
       {
          common::unittest::Trace trace;
 
@@ -378,7 +378,7 @@ namespace casual
       }
 
 
-      TEST( casual_common_algorithm, duplicates)
+      TEST( common_algorithm, duplicates)
       {
          common::unittest::Trace trace;
 
@@ -392,7 +392,7 @@ namespace casual
       }
 
 
-      TEST( casual_common_algorithm, copy_empty)
+      TEST( common_algorithm, copy_empty)
       {
          common::unittest::Trace trace;
 
@@ -404,7 +404,7 @@ namespace casual
          EXPECT_TRUE( target.empty()) << target;
       }
 
-      TEST( casual_common_algorithm, copy_string_to_existing_string__expect_overwrite)
+      TEST( common_algorithm, copy_string_to_existing_string__expect_overwrite)
       {
          common::unittest::Trace trace;
 
@@ -416,7 +416,7 @@ namespace casual
          EXPECT_TRUE( target == source) << target;
       }
 
-      TEST( casual_common_algorithm, copy_max__source_shorter_than_target)
+      TEST( common_algorithm, copy_max__source_shorter_than_target)
       {
          common::unittest::Trace trace;
 
@@ -429,7 +429,7 @@ namespace casual
 
       }
 
-      TEST( casual_common_algorithm, copy_max__source_equal_to_target)
+      TEST( common_algorithm, copy_max__source_equal_to_target)
       {
          common::unittest::Trace trace;
 
@@ -441,7 +441,7 @@ namespace casual
          EXPECT_TRUE( source == target) << target;
       }
 
-      TEST( casual_common_algorithm, copy_max_range__source_equal_to_target)
+      TEST( common_algorithm, copy_max_range__source_equal_to_target)
       {
          common::unittest::Trace trace;
 
@@ -455,7 +455,7 @@ namespace casual
 
       }
 
-      TEST( casual_common_algorithm, copy_max__source_longer_than_target)
+      TEST( common_algorithm, copy_max__source_longer_than_target)
       {
          common::unittest::Trace trace;
 
@@ -467,7 +467,7 @@ namespace casual
          EXPECT_TRUE( target == "1234") << target;
       }
 
-      TEST( casual_common_algorithm, copy_max__range__source_longer_than_target)
+      TEST( common_algorithm, copy_max__range__source_longer_than_target)
       {
          common::unittest::Trace trace;
 
@@ -480,7 +480,7 @@ namespace casual
          EXPECT_TRUE( target == "1234") << "\nsource: '" << source << "'\ntarget: '" << target << "'";
       }
 
-      TEST( casual_common_algorithm, intersection)
+      TEST( common_algorithm, intersection)
       {
          common::unittest::Trace trace;
 
@@ -523,7 +523,7 @@ namespace casual
          } // <unnamed>
       } // local
 
-      TEST( casual_common_algorithm, intersection_predicate)
+      TEST( common_algorithm, intersection_predicate)
       {
          common::unittest::Trace trace;
 
@@ -539,7 +539,7 @@ namespace casual
       }
 
 
-      TEST( casual_common_algorithm_coalesce, lvalue_string__expect_lvalue)
+      TEST( common_algorithm_coalesce, lvalue_string__expect_lvalue)
       {
          common::unittest::Trace trace;
 
@@ -549,7 +549,7 @@ namespace casual
          EXPECT_TRUE( std::is_lvalue_reference< decltype( coalesce( first, second))>::value);
       }
 
-      TEST( casual_common_algorithm_coalesce, rvalue_string_first__expect_rvalue)
+      TEST( common_algorithm_coalesce, rvalue_string_first__expect_rvalue)
       {
          common::unittest::Trace trace;
 
@@ -559,7 +559,7 @@ namespace casual
          EXPECT_TRUE( ! std::is_lvalue_reference< decltype( coalesce( std::move( first), second))>::value);
       }
 
-      TEST( casual_common_algorithm_coalesce, lvalue_string_first__literal_string_second__expect_string_rvalue)
+      TEST( common_algorithm_coalesce, lvalue_string_first__literal_string_second__expect_string_rvalue)
       {
          common::unittest::Trace trace;
 
@@ -570,7 +570,7 @@ namespace casual
          EXPECT_TRUE( coalesce( first, "0") == "0");
       }
 
-      TEST( casual_common_algorithm_coalesce, int_nullptr_first__int_pointer_second__expect_second)
+      TEST( common_algorithm_coalesce, int_nullptr_first__int_pointer_second__expect_second)
       {
          common::unittest::Trace trace;
 
@@ -583,7 +583,7 @@ namespace casual
       }
 
 
-      TEST( casual_common_algorithm_coalesce, lvalue_string_10__last_literal___expect_string_rvalue)
+      TEST( common_algorithm_coalesce, lvalue_string_10__last_literal___expect_string_rvalue)
       {
          common::unittest::Trace trace;
 
@@ -612,21 +612,21 @@ namespace casual
 
 
 
-      TEST( casual_common_algorithm_compare_any, value_1__to_1__expect_true)
+      TEST( common_algorithm_compare_any, value_1__to_1__expect_true)
       {
          common::unittest::Trace trace;
 
          EXPECT_TRUE( algorithm::compare::any( 1, 1));
       }
 
-      TEST( casual_common_algorithm_compare_any, value_1__to_2__expect_false)
+      TEST( common_algorithm_compare_any, value_1__to_2__expect_false)
       {
          common::unittest::Trace trace;
 
          EXPECT_FALSE( algorithm::compare::any( 1, 2));
       }
 
-      TEST( casual_common_algorithm_compare_any, value_1__to_5_3_2_1__expect_true)
+      TEST( common_algorithm_compare_any, value_1__to_5_3_2_1__expect_true)
       {
          common::unittest::Trace trace;
 
@@ -634,7 +634,7 @@ namespace casual
       }
 
 
-      TEST( casual_common_algorithm_remove, empty_empty__expect_empty)
+      TEST( common_algorithm_remove, empty_empty__expect_empty)
       {
          common::unittest::Trace trace;
 
@@ -643,7 +643,7 @@ namespace casual
          EXPECT_TRUE( algorithm::remove( range::make( container), range::make( container)).empty());
       }
 
-      TEST( casual_common_algorithm_remove, source_4__unwanted_empty__expect_4)
+      TEST( common_algorithm_remove, source_4__unwanted_empty__expect_4)
       {
          common::unittest::Trace trace;
 
@@ -652,7 +652,7 @@ namespace casual
          EXPECT_TRUE( algorithm::remove( range::make( container), range::make( std::begin( container), 0)) == container);
       }
 
-      TEST( casual_common_algorithm_remove, source_4__unwanted_first__expect_3)
+      TEST( common_algorithm_remove, source_4__unwanted_first__expect_3)
       {
          common::unittest::Trace trace;
 
@@ -662,7 +662,7 @@ namespace casual
       }
 
 
-      TEST( casual_common_algorithm_remove, source_4__unwanted_last__expect_3)
+      TEST( common_algorithm_remove, source_4__unwanted_last__expect_3)
       {
          common::unittest::Trace trace;
 
@@ -671,7 +671,7 @@ namespace casual
          EXPECT_TRUE(( algorithm::remove( range::make( container), range::make( std::end( container) - 1, 1)) == std::vector< int>{ 1, 2, 3}));
       }
 
-      TEST( casual_common_algorithm_remove, source_4__unwanted_middle_2__expect_2)
+      TEST( common_algorithm_remove, source_4__unwanted_middle_2__expect_2)
       {
          common::unittest::Trace trace;
 
@@ -680,7 +680,7 @@ namespace casual
          EXPECT_TRUE(( algorithm::remove( range::make( container), range::make( std::begin( container) + 1, 2)) == std::vector< int>{ 1, 4}));
       }
 
-      TEST( casual_common_algorithm_append_unique, empty__exepct_empty)
+      TEST( common_algorithm_append_unique, empty__exepct_empty)
       {
          common::unittest::Trace trace;
 
@@ -692,7 +692,7 @@ namespace casual
          EXPECT_TRUE( target.empty());
       }
 
-      TEST( casual_common_algorithm_append_unique, unique_values__exepct_all)
+      TEST( common_algorithm_append_unique, unique_values__exepct_all)
       {
          common::unittest::Trace trace;
 
@@ -704,7 +704,7 @@ namespace casual
          EXPECT_TRUE( target == source);
       }
 
-      TEST( casual_common_algorithm_append_unique, not_unique_values__exepct_some)
+      TEST( common_algorithm_append_unique, not_unique_values__exepct_some)
       {
          common::unittest::Trace trace;
 
@@ -716,7 +716,7 @@ namespace casual
          EXPECT_TRUE(( target == std::vector< int>{ 1, 2, 4, 3}));
       }
 
-      TEST( casual_common_algorithm_transform_if, rvalue)
+      TEST( common_algorithm_transform_if, rvalue)
       {
          common::unittest::Trace trace;
 
@@ -726,7 +726,7 @@ namespace casual
          EXPECT_TRUE(( result == std::vector< std::string>{ "3", "3", "3"}));
       }
 
-      TEST( casual_common_algorithm_transform_if, back_inserter)
+      TEST( common_algorithm_transform_if, back_inserter)
       {
          common::unittest::Trace trace;
 
@@ -735,6 +735,38 @@ namespace casual
          algorithm::transform_if( source, std::back_inserter( result), []( auto v){ return std::to_string( v);}, []( auto v){ return v == 3;});
 
          EXPECT_TRUE(( result == std::vector< std::string>{ "3", "3", "3"}));
+      }
+
+      TEST( common_algorithm_is_unique, empty__expect_true)
+      {
+         common::unittest::Trace trace;
+         std::vector< int> range;
+
+         EXPECT_TRUE( algorithm::is::unique( range));
+      }
+
+      TEST( common_algorithm_is_unique, some_unique_values__expect_true)
+      {
+         common::unittest::Trace trace;
+         std::vector< int> range{ 5, 6, 7, 1, 2, 3, 4};
+
+         EXPECT_TRUE( algorithm::is::unique( range));
+      }
+
+      TEST( common_algorithm_is_unique, some_not_unique_values__expect_false)
+      {
+         common::unittest::Trace trace;
+         std::vector< int> range{ 5, 6, 7, 1, 2, 3, 4, 2};
+
+         EXPECT_TRUE( ! algorithm::is::unique( range));
+      }
+
+      TEST( common_algorithm_is_unique, last_two_not_unique__expect_false)
+      {
+         common::unittest::Trace trace;
+         std::vector< int> range{ 5, 6, 7, 1, 2, 3, 4, 42, 42};
+
+         EXPECT_TRUE( ! algorithm::is::unique( range));
       }
    } // common
 

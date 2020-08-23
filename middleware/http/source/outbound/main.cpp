@@ -22,8 +22,7 @@ namespace casual
             {
                using namespace casual::common::argument;
                Parse parse{ "http outbound",
-                  Option( std::tie( settings.configurations), { "--configuration-files"}, "[deprecated]"),
-                  Option( std::tie( settings.configurations), { "--configuration"}, "configuration files")
+                  Option( std::tie( settings.configurations), option::keys( { "--configuration"}, { "--configuration-files"}), "configuration files")
                };
 
                parse( argc, argv);

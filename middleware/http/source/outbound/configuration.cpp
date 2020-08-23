@@ -49,6 +49,16 @@ namespace casual
                      return current + http;
 
                   }
+
+                  Model accumulate( const std::vector< std::string>& paths)
+                  {
+                     auto result = common::algorithm::accumulate( paths, Model{}, &local::get);
+
+                     // normalize environment stuff
+                     common::environment::normalize( result);
+
+                     return result;
+                  }
                } // <unnamed>
             } // local
 
@@ -67,30 +77,20 @@ namespace casual
                return lhs;
             }
 
-            Model get( const std::string& file)
+            Model get( const std::string& pattern)
             {
                Trace trace{ "http::outbound::configuration::get"};
+               common::log::line( verbose::log, "pattern: ", pattern);
 
-               auto result = local::get( Model{}, file);
-               
-               // normalize environment stuff
-               common::environment::normalize( result);
-
-               return result;
+               return local::accumulate( common::file::find( pattern));
             }
 
-            Model get( const std::vector< std::string>& files)
+            Model get( const std::vector< std::string>& patterns)
             {
                Trace trace{ "http::outbound::configuration::get"};
+               common::log::line( verbose::log, "patterns: ", patterns);
 
-               common::log::line( verbose::log, "files: ", files);
-
-               auto result = common::algorithm::accumulate( files, Model{}, &local::get);
-
-               // normalize environment stuff
-               common::environment::normalize( result);
-
-               return result;
+               return local::accumulate( common::file::find( patterns));
             }
 
          } // configuration

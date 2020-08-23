@@ -92,8 +92,8 @@ namespace casual
             };
 
 
-            Model get( const std::string& file);
-            Model get( const std::vector< std::string>& files);
+            Model get( const std::string& pattern);
+            Model get( const std::vector< std::string>& patterns);
 
          } // configuration
 

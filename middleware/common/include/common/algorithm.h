@@ -166,18 +166,6 @@ namespace casual
             return std::forward< R>( range);
          }
 
-         template< typename R>
-         bool is_sorted( R&& range)
-         {
-            return std::is_sorted( std::begin( range), std::end( range));
-         }
-
-         template< typename R, typename C>
-         bool is_sorted( R&& range, C compare)
-         {
-            return std::is_sorted( std::begin( range), std::end( range), compare);
-         }
-
          //! fills the container with `value`
          //! @returns the range
          template< typename R, typename V>
@@ -186,7 +174,6 @@ namespace casual
             std::fill( std::begin( range), std::end( range), std::forward< V>( value));
             return std::forward< R>( range);
          }
-
 
          namespace detail
          {

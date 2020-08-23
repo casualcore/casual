@@ -28,6 +28,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <glob.h>
 
 namespace casual
 {
@@ -140,6 +141,35 @@ namespace casual
 
          } // scoped
 
+
+         std::vector< std::string> find( const std::string& pattern)
+         {
+            Trace trace{ "common::file::find"};
+            log::line( verbose::log, "pattern: ", pattern);
+
+            auto error_callback = []( const char* path, int error) -> int
+            {
+               log::line( log::category::warning, static_cast< std::errc>( error), " error detected during find file - path: ", path);
+               return 0;
+            };
+
+            ::glob_t buffer{};
+            auto guard = memory::guard( &buffer, &::globfree);
+
+            ::glob( pattern.c_str(), 0, error_callback, &buffer);
+
+            return { buffer.gl_pathv, buffer.gl_pathv + buffer.gl_pathc};
+         }
+
+         std::vector< std::string> find( const std::vector< std::string>& patterns)
+         {
+            std::vector< std::string> result;
+
+            for( auto& pattern : patterns)
+               algorithm::append_unique( find( pattern), result);
+
+            return result;
+         }
 
 
          std::string find( const std::string& path, const std::regex& search)

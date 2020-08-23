@@ -91,7 +91,16 @@ namespace casual
 
 
          } // scoped
-
+         
+         //! @return found paths that matches _glob_ pattern(s)
+         //! explained at:
+         //!   * https://man7.org/linux/man-pages/man7/glob.7.html
+         //!   * https://en.wikipedia.org/wiki/Glob_(programming)
+         //! @{
+         std::vector< std::string> find( const std::string& pattern);
+         std::vector< std::string> find( const std::vector< std::string>& patterns);
+         //! @}
+         
 
          //! Find the first file that matches search
          //!

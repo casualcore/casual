@@ -9,6 +9,7 @@
 
 #include "common/unittest.h"
 #include "common/predicate.h"
+#include "common/algorithm/is.h"
 
 
 namespace casual
@@ -93,12 +94,12 @@ namespace casual
          ); 
 
          std::vector< int> values{ 4, 3, 2, 1, 4, 4, 2, 3};
-         EXPECT_TRUE( ! algorithm::is_sorted( values));
+         EXPECT_TRUE( ! algorithm::is::sorted( values));
 
          algorithm::sort( values, pred);
 
-         EXPECT_TRUE( algorithm::is_sorted( values));
-         EXPECT_TRUE( algorithm::is_sorted( values, pred));
+         EXPECT_TRUE( algorithm::is::sorted( values));
+         EXPECT_TRUE( algorithm::is::sorted( values, pred));
       }
 
       TEST( casual_common_predicate, order__two_lambda)
@@ -112,11 +113,11 @@ namespace casual
 
 
          std::vector< int> values{ 4, 3, 2, 1, 6, 8, 5, 7};
-         EXPECT_TRUE( ! algorithm::is_sorted( values, pred));
+         EXPECT_TRUE( ! algorithm::is::sorted( values, pred));
 
          algorithm::sort( values, pred);
 
-         EXPECT_TRUE( algorithm::is_sorted( values, pred)) << range::make( values);
+         EXPECT_TRUE( algorithm::is::sorted( values, pred)) << range::make( values);
          EXPECT_TRUE(( values == std::vector< int>{ 2, 4, 6, 8, 1, 3, 5, 7}));
       }
 

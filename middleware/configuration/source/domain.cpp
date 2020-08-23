@@ -205,7 +205,8 @@ namespace casual
          {
             Trace trace{ "configuration::domain::get"};
 
-            auto domain = algorithm::accumulate( files, Manager{}, &local::get);
+            // apply file::find, if user using patterns
+            auto domain = algorithm::accumulate( common::file::find( files), Manager{}, &local::get);
 
             // finalize the complete domain configuration
             finalize( domain);
