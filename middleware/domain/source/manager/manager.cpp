@@ -48,7 +48,7 @@ namespace casual
                   common::process::handle());
 
             // start casual-domain-pending-message
-            m_state.process.pending = handle::start::pending::message();
+            handle::start::pending::message( m_state);
 
             if( ! m_state.bare)
                handle::mandatory::boot::prepare( m_state);

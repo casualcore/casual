@@ -6,6 +6,8 @@
 
 #include "common/code/convert.h"
 
+#include "common/log.h"
+
 namespace casual
 {
    namespace common
@@ -57,13 +59,17 @@ namespace casual
                      case std::errc::connection_refused: return code::casual::communication_refused;
                      case std::errc::invalid_argument:   return code::casual::invalid_argument;
                      case std::errc::protocol_error:     return code::casual::communication_protocol;
+                     case std::errc::address_in_use:     return code::casual::communication_address_in_use;
+                     case std::errc::address_not_available: return code::casual::communication_refused;
                      
                      case std::errc::no_such_file_or_directory: return code::casual::invalid_path;
                      case std::errc::no_such_process: return code::casual::domain_instance_unavailable;
                      
                      case std::errc::interrupted:        return code::casual::interupted;
 
-                     default: return code::casual::internal_unexpected_value;
+                     default: 
+                       log::line( log::debug, "no explict conversion for ", code, "(", cast::underlying( code), ") - using: ", code::casual::internal_unexpected_value); 
+                       return code::casual::internal_unexpected_value;
                   }
 
                }

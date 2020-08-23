@@ -215,11 +215,11 @@ namespace casual
          Manager::Manager( manager::Settings settings) 
             : m_state( transform::configuration( configuration::get( settings.configurations)))
          {
+            // we advertise before we connect
+            manager::local::advertise( m_state);
 
             // connect to domain
             common::communication::instance::connect();
-
-            manager::local::advertise( m_state);
          }
 
          Manager::~Manager()

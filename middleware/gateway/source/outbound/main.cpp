@@ -198,7 +198,7 @@ namespace casual
                   {
                      auto condition = exception::code();
                      if( condition != code::casual::communication_refused)
-                        throw condition;
+                        throw;
 
                      // no-op
                   }
@@ -223,7 +223,7 @@ namespace casual
                      {
                         auto condition = exception::code();
                         if( condition != code::casual::communication_refused)
-                           throw condition;
+                           throw;
                         
                         common::signal::timer::set( std::chrono::seconds{ 1});
                      }

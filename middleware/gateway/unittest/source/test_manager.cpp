@@ -62,9 +62,9 @@ domain:
         memberships: [ gateway]
    gateway:
       listeners: 
-         - address: 127.0.0.1:6666
+         - address: 127.0.0.1:6669
       connections:
-         - address: 127.0.0.1:6666
+         - address: 127.0.0.1:6669
 )";
 
             };
@@ -101,9 +101,9 @@ domain:
                            if( state.connections.empty())
                               return false;
 
-                           return algorithm::all_of( state.connections, []( const manager::admin::model::Connection& c){
-                              return c.runlevel >= manager::admin::model::Connection::Runlevel::online &&
-                                 c.process == communication::instance::ping( c.process.ipc);
+                           return algorithm::all_of( state.connections, []( auto& connection){
+                              return connection.runlevel >= manager::admin::model::Connection::Runlevel::online &&
+                                 connection.process == communication::instance::ping( connection.process.ipc);
                            });
                         };
 
@@ -391,6 +391,51 @@ domain:
          }
       }
 
+      TEST( casual_gateway_manager_tcp, connect_to_our_self__10_outbound_connections)
+      {
+         common::unittest::Trace trace;
+
+         static constexpr auto configuration = R"(
+domain: 
+   name: gateway-domain
+
+   groups: 
+      - name: base
+      - name: gateway
+        dependencies: [ base]
+   
+   servers:
+      - path: "${CASUAL_HOME}/bin/casual-service-manager"
+        memberships: [ base]
+      - path: "${CASUAL_HOME}/bin/casual-transaction-manager"
+        memberships: [ base]
+      - path: "./bin/casual-gateway-manager"
+        memberships: [ gateway]
+   gateway:
+      listeners: 
+         - address: 127.0.0.1:6666
+      connections:
+         - address: 127.0.0.1:6666
+         - address: 127.0.0.1:6666
+         - address: 127.0.0.1:6666
+         - address: 127.0.0.1:6666
+         - address: 127.0.0.1:6666
+         - address: 127.0.0.1:6666
+         - address: 127.0.0.1:6666
+         - address: 127.0.0.1:6666
+         - address: 127.0.0.1:6666
+         - address: 127.0.0.1:6666
+)";
+
+
+         local::Domain domain{ configuration};
+
+         EXPECT_TRUE( common::communication::instance::fetch::handle( common::communication::instance::identity::gateway::manager));
+
+         auto state = local::call::wait::ready::state();
+
+         EXPECT_TRUE( state.connections.size() == 2 * 10) << state.connections;
+      }
 
       TEST( casual_gateway_manager_tcp, connect_to_our_self__kill_inbound__expect_restart)
       {

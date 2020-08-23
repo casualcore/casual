@@ -73,7 +73,7 @@ namespace casual
                Manager& append( Manager& lhs, G&& rhs)
                {
                   local::replace_or_add( lhs.listeners, std::move( rhs.listeners));
-                  local::replace_or_add( lhs.connections, std::move( rhs.connections));
+                  algorithm::move( rhs.connections, std::back_inserter( lhs.connections));
 
                   return lhs;
                }
@@ -97,11 +97,6 @@ namespace casual
             restart = common::coalesce( std::move( restart), rhs.restart);
             address = common::coalesce( std::move( address), rhs.address);
             return *this;
-         }
-
-         bool operator == ( const Connection& lhs, const Connection& rhs)
-         {
-            return lhs.address == rhs.address;
          }
 
          Manager& Manager::operator += ( const Manager& rhs)

@@ -182,7 +182,7 @@ namespace casual
                            if( socket && binder( socket, info))
                            {
                               socket.set( local::socket::option::no_delay{});
-                              return socket;
+                              return socket; 
                            }
                         }
 
@@ -196,16 +196,20 @@ namespace casual
                         // We block all signals while we're doing one connect attempt
                         //common::signal::thread::scope::Block block;
 
-                        return create( address,[]( Socket& s, const addrinfo& info)
+                        return create( address,[]( Socket& socket, const addrinfo& info)
                         {
                            Trace trace( "common::communication::tcp::local::socket::connect lambda");
 
                            // To avoid possible TIME_WAIT from previous
                            // possible connections
-                           s.set( communication::socket::option::reuse_address< true>{});
-                           s.set( communication::socket::option::linger{ std::chrono::seconds{ 1}});
+                           socket.set( communication::socket::option::reuse_address< true>{});
+                           socket.set( communication::socket::option::linger{ std::chrono::seconds{ 1}});
 
-                           return ::connect( s.descriptor().value(), info.ai_addr, info.ai_addrlen) != -1;
+                           if( ::connect( socket.descriptor().value(), info.ai_addr, info.ai_addrlen) == 0)
+                              return true;
+
+                           log::line( verbose::log, code::system::last::error(), ", socket: ", socket, ", info: ", info);
+                           return false;
                         });
                      }
 
@@ -239,8 +243,7 @@ namespace casual
                      {
                         char host[ NI_MAXHOST];
                         char serv[ NI_MAXSERV];
-                        //const int flags{ NI_NUMERICHOST | NI_NUMERICSERV};
-                        const int flags{ };
+                        const int flags{ NI_NUMERICHOST | NI_NUMERICSERV};
 
                         posix::result(
                            getnameinfo(

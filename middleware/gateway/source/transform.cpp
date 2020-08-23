@@ -10,6 +10,8 @@
 
 #include "common/algorithm.h"
 #include "common/environment/normalize.h"
+#include "common/event/send.h"
+#include "common/exception/handle.h"
 
 namespace casual
 {
@@ -107,7 +109,14 @@ namespace casual
 
             for( auto& listener : configuration.gateway.listeners)
             {
-               state.add( local::Listener{}( listener));
+               try 
+               {
+                  state.add( local::Listener{}( listener));
+               }
+               catch( ...)
+               {
+                  event::error::send( exception::code(), "failed to add listener: ", listener);
+               }
             }
 
             algorithm::transform( configuration.gateway.connections, state.connections.outbound, local::Connection{});
@@ -120,6 +129,8 @@ namespace casual
                   connection.order = ++order;
                }
             }
+
+            log::line( verbose::log, "state: ", state);
 
             return state;
          }

@@ -229,6 +229,7 @@ ENV CASUAL_HOME /opt/casual
 ENV PATH $CASUAL_HOME/bin:$PATH
 ENV LD_LIBRARY_PATH $LD_LIBRARY_PATH:$CASUAL_HOME/lib
 ENV CASUAL_DOMAIN_HOME /test/casual
+ENV CASUAL_LOG_PATH $CASUAL_DOMAIN_HOME/casual.log
 ENV CASUAL_LOG '(error|warning|information)'
 
 RUN mkdir -p $CASUAL_DOMAIN_HOME/logs
@@ -304,36 +305,6 @@ try
    
    parallel(
    
-      "suse" :
-      {
-         node( "cplusplus" && "suse")
-         {
-            try
-            { 
-
-               deleteDir()
-
-               stage('Build backend - Unittest - Suse')
-               {
-                  checkout scm
-                  
-                  unstash 'frontend'
-                  
-                  build( 'susecompile', 'casual/suse-builder', backend_builder_suse)
-
-                  archive includes: '**/casual-middleware*.rpm'
-                  
-                  stash includes: '**/casual-middleware*.rpm', name: 'suse_backend'
-               }
-            }
-            catch (Exception e)
-            {
-               archive includes: '**/casual.log'
-               throw e
-            }
-         }
-      },
-
       "centos" :
       {
          node( "cplusplus" && "centos")
@@ -403,6 +374,36 @@ try
                      fi
                      """
                   } 
+               }
+            }
+            catch (Exception e)
+            {
+               archive includes: '**/casual.log'
+               throw e
+            }
+         }
+      },
+      
+      "suse" :
+      {
+         node( "cplusplus" && "suse")
+         {
+            try
+            { 
+
+               deleteDir()
+
+               stage('Build backend - Unittest - Suse')
+               {
+                  checkout scm
+                  
+                  unstash 'frontend'
+                  
+                  build( 'susecompile', 'casual/suse-builder', backend_builder_suse)
+
+                  archive includes: '**/casual-middleware*.rpm'
+                  
+                  stash includes: '**/casual-middleware*.rpm', name: 'suse_backend'
                }
             }
             catch (Exception e)

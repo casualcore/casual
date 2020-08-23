@@ -276,24 +276,29 @@ namespace casual
             {
                namespace connect
                {
-                  using base_request = basic_request< Type::domain_process_connect_request>;
-                  struct Request : base_request
+
+                  template< message::Type type>
+                  struct basic_request : message::basic_request< type>
                   {
-                     using base_request::base_request;
+                     using base_type = message::basic_request< type>;;
+                     using base_type::base_type;
 
                      Uuid identification;
 
                      CASUAL_CONST_CORRECT_SERIALIZE(
                      {
-                        base_request::serialize( archive);
+                        base_type::serialize( archive);
                         CASUAL_SERIALIZE( identification);
                      })
                   };
 
-                  using base_reply = basic_message< Type::domain_process_connect_reply>;
-                  struct Reply : basic_message< Type::domain_process_connect_reply>
+                  using Request = basic_request< Type::domain_process_connect_request>;
+
+                  template< message::Type type>
+                  struct basic_reply : message::basic_message< type>
                   {
-                     using base_reply::base_reply;
+                     using base_type =  message::basic_message< type>;
+                     using base_type::base_type;
 
                      enum class Directive : short
                      {
@@ -317,10 +322,12 @@ namespace casual
 
                      CASUAL_CONST_CORRECT_SERIALIZE(
                      {
-                        base_reply::serialize( archive);
+                        base_type::serialize( archive);
                         CASUAL_SERIALIZE( directive);
                      })
                   };
+
+                  using Reply = basic_reply< Type::domain_process_connect_reply>;
 
                } // connect
 

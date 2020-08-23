@@ -98,9 +98,7 @@ namespace casual
                CASUAL_SERIALIZE( note);
             )
 
-            Connection& operator += ( const connection::Default& rhs);
-            friend bool operator == ( const Connection& lhs, const Connection& rhs);
-            
+            Connection& operator += ( const connection::Default& rhs);            
          };
 
          namespace manager

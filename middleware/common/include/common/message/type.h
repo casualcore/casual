@@ -61,8 +61,9 @@ namespace casual
             domain_server_configuration_request,
             domain_server_configuration_reply,
 
-            domain_pending_send_connect = DOMAIN_BASE + 300,
-            domain_pending_send_request,
+            domain_pending_message_connect_request = DOMAIN_BASE + 300,
+            domain_pending_message_connect_reply,
+            domain_pending_message_send_request,
 
             domain_instance_global_state_request = DOMAIN_BASE + 400,
             domain_instance_global_state_reply,

@@ -45,7 +45,7 @@ namespace casual
             {
                namespace pending
                {
-                  common::Process message();
+                  void message( State& state);
                } // pending
             } // start
 

@@ -54,13 +54,13 @@ namespace casual
 
                   namespace shutdown
                   {
-                     struct Connection
+                     // @returns false if 'connection' is _absent_, otherwise true and the
+                     // shutdown was delivered
+                     auto connection()
                      {
-
-                        template< typename C>
-                        void operator () ( C& connection) const
+                        return []( auto& connection)
                         {
-                           Trace trace{ "gateway::manager::handle::local::shutdown::Connection"};
+                           Trace trace{ "gateway::manager::handle::local::shutdown::connection"};
 
                            // We only want to handle terminate during this
                            common::signal::thread::scope::Mask mask{ signal::set::filled( code::signal::terminate)};
@@ -73,40 +73,22 @@ namespace casual
 
                                  common::message::shutdown::Request request;
                                  request.process = common::process::handle();
-
-                                 if( ! communication::device::blocking::optional::send( connection.process.ipc, request))
-                                 {
-                                    // no op, will be removed
-                                    connection.runlevel = state::base_connection::Runlevel::error;
-                                 }
+                                 
+                                 // if unavailable we remove the connection.
+                                 return communication::device::blocking::optional::send( connection.process.ipc, request);
+            
                               }
                               else if( connection.process.pid)
                               {
                                  log::line( log, "terminate connection: ", connection);
 
-                                 // try to fetch handle from domain manager
-                                 {
-                                    auto handle = common::communication::instance::fetch::handle( 
-                                       connection.process.pid, common::communication::instance::fetch::Directive::direct);
-
-                                    log::line( log, "fetched handle: ", handle);
-
-                                    if( handle)
-                                    {
-                                       connection.process = handle;
-                                       operator() ( connection);
-                                    }
-                                    else 
-                                    {
-                                       common::process::lifetime::terminate( { connection.process.pid});
-                                       connection.runlevel = state::base_connection::Runlevel::offline;
-                                    }
-                                 }
+                                 // if unavailable we remove the connection.
+                                 return common::process::terminate( connection.process.pid);
                               }
                            }
-                        }
-
-                     };
+                           return true;
+                        };
+                     }
                   } // shutdown
 
                   std::string executable( const manager::state::outbound::Connection& connection)
@@ -167,8 +149,8 @@ namespace casual
 
                log::line( verbose::log, "state: ", state);
 
-               algorithm::for_each( state.connections.inbound, local::shutdown::Connection{});
-               algorithm::for_each( state.connections.outbound, local::shutdown::Connection{});
+               algorithm::trim( state.connections.inbound, algorithm::filter( state.connections.inbound, local::shutdown::connection()));
+               algorithm::trim( state.connections.outbound, algorithm::filter( state.connections.outbound, local::shutdown::connection()));
 
                auto handler = manager::handler( state);
 
@@ -244,6 +226,9 @@ namespace casual
             {
                void Accept::read( descriptor_type descriptor)
                {
+                  Trace trace{ "gateway::manager::handle::listen::Accept::read"};
+                  log::line( verbose::log, "descriptor: ", descriptor);
+
                   auto connection = m_state.get().accept( descriptor);
 
                   if( m_state.get().runlevel != State::Runlevel::shutdown && connection.socket)
@@ -472,19 +457,19 @@ namespace casual
                            Trace trace{ "gateway::manager::handle::local::outbound::connect"};
                            log::line( verbose::log, "message: ", message);
 
-                           auto found = algorithm::find( state.connections.outbound, message.process.pid);
-
-                           if( found)
+                           if( auto found = algorithm::find( state.connections.outbound, message.process.pid))
                            {
                               found->process = message.process;
                               found->remote = message.domain;
                               found->address.local = message.address.local;
                               found->address.peer = message.address.peer;
 
-                              if( found->runlevel == state::outbound::Connection::Runlevel::connecting)
-                                 found->runlevel = state::outbound::Connection::Runlevel::online;
+                              using Enum = decltype( found->runlevel);
+
+                              if( found->runlevel == Enum::connecting)
+                                 found->runlevel = Enum::online;
                               else
-                                 log::line( log::category::error, "outbound connected is in wrong state: ", *found, " - action: discard");
+                                 log::line( verbose::log, "outbound connected is in wrong state: ", *found, " - action: discard");
                            }
                            else
                               log::line( log::category::error, "unknown outbound connected ", message, " - action: discard");
@@ -520,6 +505,8 @@ namespace casual
 
          handle::dispatch_type handler( State& state)
          {
+            static common::server::handle::admin::Call call{ manager::admin::services( state)};
+
             return common::message::dispatch::handler( ipc::device(),
                common::message::handle::defaults( ipc::device()),
                handle::local::process::exit( state),
@@ -529,7 +516,8 @@ namespace casual
                handle::local::domain::discover::request( state),
                handle::local::domain::discover::reply( state),
                handle::local::domain::rediscover::reply( state),
-               common::server::handle::admin::Call{ manager::admin::services( state)});
+               std::ref( call));
+               //common::server::handle::admin::Call{ manager::admin::services( state)});
          }
 
       } // manager

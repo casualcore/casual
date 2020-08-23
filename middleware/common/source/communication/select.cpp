@@ -80,9 +80,10 @@ namespace casual
                {
                   Directive select( const Directive& directive)
                   {
-                     auto result = directive;
-
                      Trace trace{ "common::communication::select::dispatch::detail::select"};
+                     log::line( verbose::log, "directive: ", directive);
+
+                     auto result = directive;
 
                      // block all signals, just local in this scope, not when we do the dispatch 
                      // further down.
@@ -98,6 +99,7 @@ namespace casual
                          // will set previous signal mask atomically 
                         ::pselect( FD_SETSIZE, result.read.native(), nullptr, nullptr, nullptr, &block.previous().set));
 
+                     log::line( verbose::log, "result: ", result);
                      return result;
                   }
 

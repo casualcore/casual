@@ -152,6 +152,7 @@ namespace casual
 
                   } // scale
 
+
                } // <unnamed>
             } // local
 
@@ -159,20 +160,29 @@ namespace casual
             {
                namespace pending
                {
-                  common::Process message()
+                  void message( State& state)
                   {
                      Trace trace{ "domain::manager::handle::start::pending::message"};
+                     log::line( verbose::log, "state.process.pending: ", state.process.pending);
 
                      auto process = common::Process{ string::compose( common::environment::directory::casual(), "/bin/", casual::domain::pending::message::environment::executable)};
 
                      // wait for connect
-                     casual::domain::pending::message::Connect connect;
-                     communication::device::blocking::receive( ipc::device(), connect);
+                     casual::domain::pending::message::connect::Request request;
+                     communication::device::blocking::receive( ipc::device(), request);
+                     log::line( verbose::log, "request: ", request);
 
-                     process.handle( connect.process);
-                     environment::variable::process::set( casual::domain::pending::message::environment::variable, process.handle());
+                     // pending is a kind of singleton, we handle the lookup right here and assumes that 
+                     // pending is not spawned _on the side_ 
+                     state.singletons[ request.identification] = request.process;
+                     process.handle( request.process);
 
-                     return process;
+                     // set environment to help children get the ipc for pending ()
+                     environment::variable::process::set( casual::domain::pending::message::environment::variable, request.process);
+
+                     communication::device::blocking::send( request.process.ipc, common::message::reverse::type( request));
+
+                     state.process.pending = std::move( process);
                   }
                } // pending
             } // start
@@ -587,7 +597,7 @@ namespace casual
                                  if( message.state.pid == state.process.pending.handle())
                                  {
                                     log::line( log::category::error, "pending send exited: ", message.state);
-                                    state.process.pending = handle::start::pending::message();
+                                    handle::start::pending::message( state);
                                  }
                               }
                            };

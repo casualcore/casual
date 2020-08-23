@@ -6,8 +6,8 @@
 
 #pragma once
 
-#include "common/message/type.h"
 #include "common/message/pending.h"
+#include "common/message/domain.h"
 
 namespace casual
 {
@@ -17,18 +17,15 @@ namespace casual
       {
          namespace message
          {
-            using base_connect = common::message::basic_message< common::message::Type::domain_pending_send_request>;
-            struct Connect : base_connect
+            namespace connect
             {
-               common::process::Handle process;
+               using Request = common::message::domain::process::connect::basic_request< common::message::Type::domain_pending_message_connect_request>;
+               using Reply = common::message::domain::process::connect::basic_reply< common::message::Type::domain_pending_message_connect_reply>;
 
-               CASUAL_CONST_CORRECT_SERIALIZE(
-               {
-                  base_connect::serialize( archive);
-                  CASUAL_SERIALIZE( process);
-               })
-            };
-            using base_request = common::message::basic_message< common::message::Type::domain_pending_send_request>;
+            } // connect
+
+
+            using base_request = common::message::basic_message< common::message::Type::domain_pending_message_send_request>;
             struct Request : base_request
             {
                Request( common::message::pending::Message&& message)
@@ -66,4 +63,18 @@ namespace casual
          } // message
       } // pending
    } // domain
+
+   namespace common
+   {
+      namespace message
+      {
+         namespace reverse
+         {
+            template<>
+            struct type_traits< casual::domain::pending::message::connect::Request> : detail::type< casual::domain::pending::message::connect::Reply> {};
+
+         } // reverse
+
+      } // message
+   } // common
 } // casual

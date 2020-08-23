@@ -34,7 +34,11 @@ namespace casual
             } // <unnamed>
          } // local
          Socket::Socket( descriptor_type descriptor) noexcept 
-            : m_descriptor( std::move( descriptor)) {}
+            : m_descriptor( std::move( descriptor)) 
+         {
+            if( *this)
+               common::log::line( log, "Socket::adopted - descriptor: ", m_descriptor);
+         }
 
          Socket::~Socket() noexcept
          {

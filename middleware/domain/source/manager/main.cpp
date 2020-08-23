@@ -33,7 +33,7 @@ namespace casual
                         event.severity = common::message::event::Error::Severity::fatal;
                         event.code = code;
 
-                        common::communication::device::non::blocking::send( event_ipc, event);
+                        common::communication::device::non::blocking::optional::send( event_ipc, event);
                      }
                   
                      return code.value();

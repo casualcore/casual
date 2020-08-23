@@ -141,13 +141,19 @@ namespace casual
 
                      // connect process
                      {
-                        pending::message::Connect connect;
-                        connect.process = common::process::handle();
-                        communication::device::blocking::send( communication::instance::outbound::domain::manager::device(), connect);
+                        pending::message::connect::Request request{ common::process::handle()};
+                        request.identification = message::environment::identification;
+                        
+                        auto reply = communication::ipc::call( communication::instance::outbound::domain::manager::device(), request);
+
+                        if( reply.directive != decltype( reply.directive)::start)
+                        {
+                           log::line( log::category::error, "domain manager said no to start: ", reply.directive);
+                           return;
+                        }
+
                      }
                      
-                     // Connect singleton to domain
-                     communication::instance::connect( message::environment::identification);
 
                      auto handler = common::message::dispatch::handler( ipc,
                         common::message::handle::defaults( ipc),

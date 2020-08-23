@@ -38,6 +38,7 @@ namespace casual
             communication_protocol,
             communication_retry,
             communication_no_message,
+            communication_address_in_use,
 
             domain_unavailable,
             domain_running,
