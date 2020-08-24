@@ -290,7 +290,7 @@ try
                   }
                   dir("casual-documentation")
                   {
-                     git branch: master url: https://bitbucket.org/casualcore/casual-documentation.git
+                     git branch: 'master', url: 'https://bitbucket.org/casualcore/casual-documentation.git'
                      sh """
                         export CASUAL_BUILD_HOME=$WORKSPACE/casual
                         cd casual/casual-middleware
