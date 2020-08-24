@@ -281,13 +281,9 @@ try
                deleteDir()
                stage('Documentation')
                {
-                  checkout scm
-                         
-                  sh """
-                    gitbook init .
-                    gitbook build .
-                    DOCUMENT_ROOT=/var/www/documentation/doxygen doxygen documentation/Doxyfile
-                  """
+                  echo "'git book' is failing and is not the way we are going to produce documentation in the future"
+                  echo "disabling this step in waiting of new sphinx soloution"
+                  echo "now this is just a placeholder"
                }
             }
          }
