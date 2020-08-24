@@ -614,7 +614,7 @@ note: some aliases are unrestartable
                         auto completion = []( auto values, bool help) -> std::vector< std::string>
                         {
                            if( help)
-                              return { "<alias>"};
+                              return { "<group>"};
                            
                            return fetch_groups();
                         };
@@ -1009,8 +1009,8 @@ note: not all options has legend, use 'auto complete' to find out which legends 
             {
                argument::Group options()
                {
-                  auto state_format = serialize::create::writer::complete::format();
-                  auto configuration_format = serialize::create::reader::complete::format();
+                  auto state_format = []( auto, bool){ return std::vector< std::string>{ "json", "yaml", "xml", "ini"};};
+                  auto configuration_format = state_format;
 
                   return argument::Group{ [](){}, { "domain"}, "local casual domain related administration",
                      argument::Option( &local::action::list::servers::invoke, { "-ls", "--list-servers"}, local::action::list::servers::description),

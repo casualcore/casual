@@ -8,6 +8,7 @@
 
 #include "configuration/domain.h"
 #include "configuration/example/domain.h"
+#include "configuration/example/create.h"
 
 
 #include "common/serialize/line.h"
@@ -74,7 +75,7 @@ namespace casual
          common::unittest::Trace trace;
 
          // serialize and deserialize
-         auto domain = domain::get( { example::temporary( example::domain(), GetParam())});
+         auto domain = domain::get( { example::create::file::temporary( example::domain(), "domain", GetParam())});
 
          EXPECT_TRUE( domain.name == "domain.A42") << "name: " << domain.name;
       }
@@ -84,7 +85,7 @@ namespace casual
          common::unittest::Trace trace;
 
          // serialize and deserialize
-         auto domain = domain::get( { example::temporary( example::domain(), GetParam())});
+         auto domain = domain::get( { example::create::file::temporary( example::domain(), "domain", GetParam())});
 
          EXPECT_TRUE( domain.groups.size() == 3) << CASUAL_NAMED_VALUE( domain.groups);
       }
@@ -94,7 +95,7 @@ namespace casual
          common::unittest::Trace trace;
 
          // serialize and deserialize
-         auto domain = domain::get( { example::temporary( example::domain(), GetParam())});
+         auto domain = domain::get( { example::create::file::temporary( example::domain(), "domain", GetParam())});
 
          EXPECT_TRUE( domain.manager_default.server.instances == 1) << CASUAL_NAMED_VALUE( domain.manager_default.server.instances); //<< CASUAL_NAMED_VALUE( path.release());
          EXPECT_TRUE( domain.manager_default.server.restart == true);
@@ -107,7 +108,7 @@ namespace casual
          common::unittest::Trace trace;
 
          // serialize and deserialize
-         auto domain = domain::get( { example::temporary( example::domain(), GetParam())});
+         auto domain = domain::get( { example::create::file::temporary( example::domain(), "domain", GetParam())});
 
          EXPECT_TRUE( domain.manager_default.service.timeout == std::string( "90s"));
       }
@@ -117,7 +118,7 @@ namespace casual
          common::unittest::Trace trace;
    
          // serialize and deserialize
-         auto domain = domain::get( { example::temporary( example::domain(), GetParam())});
+         auto domain = domain::get( { example::create::file::temporary( example::domain(), "domain", GetParam())});
 
          EXPECT_TRUE( domain.transaction.manager_default.resource.instances == 3);
          EXPECT_TRUE( domain.transaction.manager_default.resource.key == "db2_rm");
@@ -129,7 +130,7 @@ namespace casual
          common::unittest::Trace trace;
 
          // serialize and deserialize
-         auto domain = domain::get( { example::temporary( example::domain(), GetParam())});
+         auto domain = domain::get( { example::create::file::temporary( example::domain(), "domain", GetParam())});
 
          ASSERT_TRUE( domain.servers.size() == 5) << "size: " << domain.servers.size();
          EXPECT_TRUE( domain.servers.at( 2).instances.value() == 10) << CASUAL_NAMED_VALUE( domain.servers);
@@ -141,7 +142,7 @@ namespace casual
          common::unittest::Trace trace;
 
          // serialize and deserialize
-         auto domain = domain::get( { example::temporary( example::domain(), GetParam())});
+         auto domain = domain::get( { example::create::file::temporary( example::domain(), "domain", GetParam())});
 
          EXPECT_TRUE( domain.transaction.log == "/some/fast/disk/domain.A42/transaction.log");
 

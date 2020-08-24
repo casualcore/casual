@@ -6,6 +6,7 @@
 
 
 #include "configuration/example/build/server.h"
+#include "configuration/example/create.h"
 
 #include "common/serialize/create.h"
 
@@ -22,70 +23,37 @@ namespace casual
             namespace server
             {
 
-               model_type example()
+               configuration::build::server::Server example()
                {
-                  model_type result;
 
-                  result.server_default.service.transaction.emplace( "join");
-                  result.server_default.service.category.emplace( "some.category");
+                  static constexpr auto yaml = R"(
+server:
+  default:
+    service:
+      transaction: join
+      category: some.category
 
 
-                  result.resources = {
-                     []()
-                     {
-                        configuration::build::Resource v;
-                        v.key = "rm-mockup";
-                        v.name = "resource-1";
-                        v.note = "the runtime configuration for this resource is correlated with the name 'resource-1' - no group is needed for resource configuration";
-                        return v;
-                     }()
-                  };
+  resources:
+    - key: rm-mockup
+      name: resource-1
+      note: the runtime configuration for this resource is correlated with the name 'resource-1' - no group is needed for resource configuration
 
-                  result.services = {
-                        [](){
-                           configuration::build::server::Service v;
-                           v.name = "s1";
-                           return v;
-                        }(),
-                        [](){
-                           configuration::build::server::Service v;
-                           v.name = "s2";
-                           v.transaction.emplace( "auto");
-                           return v;
-                        }(),
-                        [](){
-                           configuration::build::server::Service v;
-                           v.name = "s3";
-                           v.function.emplace( "f3");
-                           return v;
-                        }(),
-                        [](){
-                           configuration::build::server::Service v;
-                           v.name = "s4";
-                           v.function.emplace( "f4");
-                           v.category.emplace( "some.other.category");
-                           return v;
-                        }()
-                  };
+  services:
+    - name: s1
 
-                  return result;
-               }
+    - name: s2
+      transaction: auto
 
-               void write( const model_type& server, const std::string& name)
-               {
-                  common::file::Output file{ name};
-                  auto archive = common::serialize::create::writer::from( file.extension());
-                  archive << CASUAL_NAMED_VALUE( server);
-                  archive.consume( file);
-               }
+    - name: s3
+      function: f3
 
-               common::file::scoped::Path temporary(const model_type& server, const std::string& extension)
-               {
-                  common::file::scoped::Path file{ common::file::name::unique( common::directory::temporary() + "/build_server_", extension)};
+    - name: s4
+      function: f4
+      category: some.other.category
+)";
 
-                   write( server, file);
-
-                  return file;
+                  return create::model< configuration::build::server::Server>( yaml, "server");
                }
 
             } // server

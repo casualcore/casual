@@ -7,9 +7,7 @@
 
 #pragma once
 
-
 #include "configuration/build/server.h"
-#include "common/file.h"
 
 namespace casual
 {
@@ -21,13 +19,7 @@ namespace casual
          {
             namespace server
             {
-               using model_type = configuration::build::server::Server;
-
-               model_type example();
-
-               void write( const model_type& model, const std::string& file);
-
-               common::file::scoped::Path temporary(const model_type& model, const std::string& extension);
+               configuration::build::server::Server example();
 
             } // server
 

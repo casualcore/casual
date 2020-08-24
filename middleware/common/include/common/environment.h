@@ -178,9 +178,13 @@ namespace casual
                {
                   constexpr auto home = "CASUAL_DOMAIN_HOME";
                   constexpr auto id = "CASUAL_DOMAIN_ID";
-                  constexpr auto path = "CASUAL_DOMAIN_PATH";
                   constexpr auto name = "CASUAL_DOMAIN_NAME";
                } // domain
+
+               namespace resource
+               {
+                  constexpr auto configuration = "CASUAL_RESOURCE_CONFIGURATION_FILE";
+               } // resource
 
                namespace log
                {

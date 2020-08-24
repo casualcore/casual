@@ -6,14 +6,14 @@
 
 
 #include "configuration/example/domain.h"
+#include "configuration/example/create.h"
+#include "configuration/common.h"
 
 #include "common/file.h"
 #include "common/serialize/macro.h"
 #include "common/serialize/create.h"
 
-
 #include <fstream>
-
 
 namespace casual
 {
@@ -23,350 +23,245 @@ namespace casual
       {
          domain::Manager domain()
          {
-            domain::Manager domain;
+            Trace trace{ "configuration::example::domain"};
 
-            domain.name = "domain.A42";
+            static constexpr auto yaml = R"(
+domain:
+  name: domain.A42
+  default:
+    environment:
+      files:
+        - /some/path/to/environment/file
+        - /some/other/file
 
-            // default
-            {
-               domain.manager_default.environment.variables = {
-                  [](){
-                     environment::Variable v;
-                     v.key = "SOME_VARIABLE";
-                     v.value = "42";
-                     return v;
-                  }(),
-                  [](){
-                     environment::Variable v;
-                     v.key = "SOME_OTHER_VARIABLE";
-                     v.value = "some value";
-                     return v;
-                  }()
-               };
-               domain.manager_default.environment.files = {
-                     { "/some/path/to/environment/file"},
-                     { "/some/other/file"}
-               };
+      variables:
+        - key: SOME_VARIABLE
+          value: 42
 
-               domain.manager_default.service.timeout = "90s";
-               domain.manager_default.server.restart = true;
-            }
+        - key: SOME_OTHER_VARIABLE
+          value: some value
 
-            {
-               domain.transaction.manager_default.resource.instances = 3;
-               domain.transaction.manager_default.resource.key = "db2_rm";
+    server:
+      instances: 1
+      restart: true
 
-               domain.transaction.log = "/some/fast/disk/domain.A42/transaction.log";
+    executable:
+      instances: 1
+    service:
+      timeout: 90s
 
-               domain.transaction.resources = {
-                     [](){
-                        transaction::Resource r;
-                        r.name = "customer-db";
-                        r.openinfo.emplace( "db=customer,uid=db2,pwd=db2");
-                        r.instances.emplace( 5);
-                        r.note = "this resource is named 'customer-db' - using the default rm-key (db_rm) - overrides the default rm-instances to 5";
-                        return r;
-                     }(),
-                     [](){
-                        transaction::Resource r;
-                        r.name = "sales-db";
-                        r.openinfo.emplace( "db=sales,uid=db2,pwd=db2");
-                        r.note = "this resource is named 'sales-db' - using the default rm-key (db_rm) - using default rm-instances";
-                        return r;
-                     }(),
-                     [](){
-                        transaction::Resource r;
-                        r.name = "event-queue";
-                        r.key.emplace( "mq_rm");
-                        r.openinfo.emplace( "some-mq-specific-stuff");
-                        r.closeinfo.emplace( "some-mq-specific-stuff");
-                        r.note = "this resource is named 'event-queue' - overrides rm-key - using default rm-instances";
-                        return r;
-                     }()
-               };
-            }
 
-            // group
-            {
-               domain.groups = {
-                  [](){
-                     Group v;
-                     v.name = "common-group";
-                     v.note = "group that logically groups 'common' stuff";
-                     return v;
-                  }(),
-                  [](){
-                     Group v;
-                     v.name = "customer-group";
-                     v.note = "group that logically groups 'customer' stuff";
-                     v.resources.emplace( { std::string{ "customer-db"}});
-                     v.dependencies.emplace( { std::string{ "common-group"}});
-                     return v;
-                  }(),
-                  [](){
-                     Group v;
-                     v.name = "sales-group";
-                     v.note = "group that logically groups 'customer' stuff";
-                     v.resources.emplace( { std::string{ "sales-db"}, std::string{ "event-queue"}});
-                     v.dependencies.emplace( { std::string{ "customer-group"}});
-                     return v;
-                  }()
-               };
+  transaction:
+    default:
+      resource:
+        key: db2_rm
+        instances: 3
 
-               domain.servers = {
-                  [](){
-                     Server v;
-                     v.path = "customer-server-1";
-                     v.memberships.emplace( { std::string{ "customer-group"}});
-                     return v;
-                  }(),
-                  [](){
-                     Server v;
-                     v.path = "customer-server-2";
-                     v.memberships.emplace( { std::string{ "customer-group"}});
-                     return v;
-                  }(),
-                  [](){
-                     Server v;
-                     v.path = "sales-server";
-                     v.alias.emplace( "sales-pre");
-                     v.instances.emplace( 10);
-                     v.memberships.emplace( { std::string{ "sales-group"}});
-                     v.restrictions.emplace( { std::string{ "preSalesSaveService"}, std::string{ "preSalesGetService"}});
-                     v.note.emplace( "the only services that will be advertised are 'preSalesSaveService' and 'preSalesGetService'");
-                     return v;
-                  }(),
-                  [](){
-                     Server v;
-                     v.path = "sales-server";
-                     v.alias.emplace( "sales-post");
-                     v.memberships.emplace( { std::string{ "sales-group"}});
-                     v.restrictions.emplace( { std::string{ "postSalesSaveService"}, std::string{ "postSalesGetService"}});
-                     v.note.emplace( "the only services that will be advertised are 'postSalesSaveService' and 'postSalesGetService'");
-                     return v;
-                  }(),
-                  [](){
-                     Server v;
-                     v.path = "sales-broker";
-                     v.memberships.emplace( { std::string{ "sales-group"}});
-                     v.resources.emplace( { std::string{ "event-queue"}});
-                     v.environment.emplace( [](){
-                        Environment e;
-                        e.variables = { 
-                           [](){
-                              environment::Variable v;
-                              v.key = "SALES_BROKER_VARIABLE";
-                              v.value = "556";
-                              return v;
-                           }()
-                        };
-                        return e;
-                     }());
+    log: /some/fast/disk/domain.A42/transaction.log
+    resources:
+      - name: customer-db
+        instances: 5
+        note: this resource is named 'customer-db' - using the default rm-key (db_rm) - overrides the default rm-instances to 5
+        openinfo: db=customer,uid=db2,pwd=db2
 
-                     return v;
-                  }()
-               };
+      - name: sales-db
+        note: this resource is named 'sales-db' - using the default rm-key (db_rm) - using default rm-instances
+        openinfo: db=sales,uid=db2,pwd=db2
 
-               domain.executables = {
-                  [](){
-                     Executable v;
-                     v.path = "mq-server";
-                     v.memberships.emplace( { std::string{ "common-group"}});
-                     v.arguments.emplace( { std::string{ "--configuration"}, std::string{ "/path/to/configuration"}});
-                     return v;
-                  }()
-               };
+      - name: event-queue
+        key: mq_rm
+        note: this resource is named 'event-queue' - overrides rm-key - using default rm-instances
+        openinfo: some-mq-specific-stuff
+        closeinfo: some-mq-specific-stuff
 
-               domain.services = {
-                  [](){
-                     Service v;
-                     v.name = "postSalesSaveService";
-                     v.timeout.emplace( "2h");
-                     v.routes.emplace( { std::string( "postSalesSaveService"), std::string( "sales/post/save")});
-                     return v;
-                  }(),
-                  [](){
-                     Service v;
-                     v.name = "postSalesGetService";
-                     v.timeout.emplace( "130ms");
-                     return v;
-                  }()
-               };
-            }
+  groups:
+    - name: common-group
+      note: group that logically groups 'common' stuff
 
-            // gateway
-            {
-               domain.gateway.listeners = {
-                  [](){
-                     gateway::Listener v;
-                     v.address = "localhost:7779";
-                     v.note = "local host - if threshold of 2MB of total payload 'in flight' is reach inbound will stop consume from socket until we're below";
-                     gateway::listener::Limit limit;
-                     limit.size = 2 * 1024 * 1024;
-                     v.limit = limit;
-                     return v;
-                  }(),
-                  [](){
-                     gateway::Listener v;
-                     v.address = "some.host.org:7779";
-                     v.note = "listener that is bound to some 'external ip' - limit to max 200 calls 'in flight'";
-                     gateway::listener::Limit limit;
-                     limit.messages = 200;
-                     v.limit = limit;
-                     return v;
-                  }(),
-                  [](){
-                     gateway::Listener v;
-                     v.address = "some.host.org:9999";
-                     v.note = "listener - threshold of either 10 messages OR 10MB - the first that is reach, inbound will stop consume";
-                     gateway::listener::Limit limit;
-                     limit.messages = 10;
-                     limit.size = 10 * 1024 * 1024;
-                     v.limit = limit;
-                     return v;
-                  }(),
-                  [](){
-                     gateway::Listener v;
-                     v.address = "some.host.org:4242";
-                     v.note = "listener - no limits";
-                     return v;
-                  }()
-               };
+    - name: customer-group
+      note: group that logically groups 'customer' stuff
+      resources:
+        - customer-db
 
-               domain.gateway.connections = {
-                  [](){
-                     gateway::Connection v;
-                     v.address.emplace( "a45.domain.host.org:7779");
-                     v.note = "connection to domain 'a45' - we expect to find service 's1' and 's2' there.";
-                     v.services = { "s1", "s2"};
-                     return v;
-                  }(),
-                  [](){
-                     gateway::Connection v;
-                     v.address.emplace( "a46.domain.host.org:7779");
-                     v.note = "connection to domain 'a46' - we expect to find queues 'q1' and 'q2' and service 's1' - casual will only route 's1' to a46 if it's not accessible in a45 (or local)";
-                     v.queues = { "q1", "q2"};
-                     v.services = { "s1"};
-                     return v;
-                  }(),
-                  [](){
-                     gateway::Connection v;
-                     v.address.emplace( "a99.domain.host.org:7780");
-                     v.note = "connection to domain 'a99' - if the connection is closed from a99, casual will not try to reestablish the connection";
-                     v.restart = false;
-                     return v;
-                  }()
-               };
-            }
+      dependencies:
+        - common-group
 
-            // queue
-            {
-               domain.queue = example::queue();
-            }
+    - name: sales-group
+      note: group that logically groups 'customer' stuff
+      resources:
+        - sales-db
+        - event-queue
+
+      dependencies:
+        - customer-group
+
+  servers:
+    - path: customer-server-1
+      memberships:
+        - customer-group
+
+    - path: customer-server-2
+      memberships:
+        - customer-group
+
+    - path: sales-server
+      alias: sales-pre
+      note: the only services that will be advertised are 'preSalesSaveService' and 'preSalesGetService'
+      instances: 10
+      memberships:
+        - sales-group
+
+      restrictions:
+        - preSalesSaveService
+        - preSalesGetService
+
+    - path: sales-server
+      alias: sales-post
+      note: the only services that will be advertised are 'postSalesSaveService' and 'postSalesGetService'
+      memberships:
+        - sales-group
+
+      restrictions:
+        - postSalesSaveService
+        - postSalesGetService
+
+    - path: sales-broker
+      memberships:
+        - sales-group
+
+      environment:
+        variables:
+          - key: SALES_BROKER_VARIABLE
+            value: 556
+
+      resources:
+        - event-queue
+
+  executables:
+    - path: mq-server
+      arguments:
+        - --configuration
+        - /path/to/configuration
+
+      memberships:
+        - common-group
+
+  services:
+    - name: postSalesSaveService
+      timeout: 2h
+      routes:
+        - postSalesSaveService
+        - sales/post/save
+
+    - name: postSalesGetService
+      timeout: 130ms
+
+  gateway:
+    default:
+      connection:
+        restart: true
+
+    listeners:
+      - address: localhost:7779
+        limit:
+          size: 2097152
+
+        note: local host - if threshold of 2MB of total payload 'in flight' is reach inbound will stop consume from socket until we're below
+
+      - address: some.host.org:7779
+        limit:
+          messages: 200
+
+        note: listener that is bound to some 'external ip' - limit to max 200 calls 'in flight'
+
+      - address: some.host.org:9999
+        limit:
+          size: 10485760
+          messages: 10
+
+        note: listener - threshold of either 10 messages OR 10MB - the first that is reach, inbound will stop consume
+
+      - address: some.host.org:4242
+        note: listener - no limits
+
+
+    connections:
+      - address: a45.domain.host.org:7779
+        services:
+          - s1
+          - s2
+
+        note: connection to domain 'a45' - we expect to find service 's1' and 's2' there.
+
+      - address: a46.domain.host.org:7779
+        services:
+          - s1
+
+        queues:
+          - q1
+          - q2
+
+        note: connection to domain 'a46' - we expect to find queues 'q1' and 'q2' and service 's1' - casual will only route 's1' to a46 if it's not accessible in a45 (or local)
+
+      - address: a99.domain.host.org:7780
+        restart: false
+        note: connection to domain 'a99' - if the connection is closed from a99, casual will not try to reestablish the connection
+
+)";
+
+            auto domain = create::model< configuration::domain::Manager>( yaml, "domain");
+            domain.queue = example::queue();
 
             return domain;
          }
 
          configuration::queue::Manager queue()
          {
+            Trace trace{ "configuration::example::queue"};
 
-            configuration::queue::Manager queue;
-            queue.note.emplace( 
-               "retry.count - if number of rollbacks is greater, message is moved to error-queue : "
-               "retry.delay - the amount of time before the message is available for consumption, after rollback");
+            static constexpr auto yaml = R"(
+queue:
+  default:
+    queue:
+      retry:
+        count: 3
+        delay: 20s
+    directory: ${CASUAL_DOMAIN_HOME}/queue/groups
 
-            queue.manager_default.queue.retry.emplace( configuration::queue::Queue::Retry{ 3, std::string{ "20s"}});
+  note: > 
+   retry.count - if number of rollbacks is greater, message is moved to error-queue 
+   retry.delay - the amount of time before the message is available for consumption, after rollback
 
-            queue.groups = {
-               [](){
-                  queue::Group v;
-                  v.name = "groupA";
-                  v.note.emplace( "will get default queuebase: ${CASUAL_DOMAIN_HOME}/queue/groupA.gb");
-                  v.queues = {
-                     [](){
-                        queue::Queue v;
-                        v.name = "q_A1";
-                        return v;
-                     }(),
-                     [](){
-                        queue::Queue v;
-                        v.name = "q_A2";
-                        v.retry.emplace( configuration::queue::Queue::Retry{ 10, std::string{ "100ms"}});
-                        v.note.emplace( "after 10 rollbacked dequeues, message is moved to q_A2.error");
-                        return v;
-                     }(),
-                     [](){
-                        queue::Queue v;
-                        v.name = "q_A3";
-                        return v;
-                     }(),
-                     [](){
-                        queue::Queue v;
-                        v.name = "q_A4";
-                        return v;
-                     }(),
-                  };
-                  return v;
-               }(),
-               [](){
-                  queue::Group v;
-                  v.name = "groupB";
-                  v.queuebase.emplace( "/some/fast/disk/queue/groupB.qb");
-                  v.queues = {
-                     [](){
-                        queue::Queue v;
-                        v.name = "q_B1";
-                        return v;
-                     }(),
-                     [](){
-                        queue::Queue v;
-                        v.name = "q_B2";
-                        v.retry.emplace( configuration::queue::Queue::Retry{ 20, std::nullopt});
-                        v.note.emplace( "after 20 rollbacked dequeues, message is moved to q_B2.error. retry.delay is 'inherited' from default, if any");
-                        return v;
-                     }(),
-                  };
-                  return v;
-               }(),
-               [](){
-                  queue::Group v;
-                  v.name = "groupC";
-                  v.queuebase.emplace( ":memory:");
-                  v.note.emplace( "group is an in-memory queue, hence no persistence");
-                  v.queues = {
-                     [](){
-                        queue::Queue v;
-                        v.name = "q_C1";
-                        return v;
-                     }(),
-                     [](){
-                        queue::Queue v;
-                        v.name = "q_C2";
-                        return v;
-                     }(),
-                  };
-                  return v;
-               }(),
-            };
+  groups:
+    - name: groupA
+      note: "will get default queuebase: ${CASUAL_DOMAIN_HOME}/queue/groupA.gb"
+      queues:
+        - name: q_A1
+        - name: q_A2
+          retry:
+            count: 10
+            delay: 100ms
+          note: after 10 rollbacked dequeues, message is moved to q_A2.error
+        - name: q_A3
+        - name: q_A4
+    - name: groupB
+      queuebase: /some/fast/disk/queue/groupB.qb
+      queues:
+        - name: q_B1
+        - name: q_B2
+          retry:
+            count: 20
+          note: after 20 rollbacked dequeues, message is moved to q_B2.error. retry.delay is 'inherited' from default, if any
+    - name: groupC
+      queuebase: ":memory:"
+      note: group is an in-memory queue, hence no persistence
+      queues:
+        - name: q_C1
+        - name: q_C2
 
-            return queue;
-         }
+)";
 
-         void write( const domain::Manager& domain, const std::string& name)
-         {
-            common::file::Output file{ name};
-            auto archive = common::serialize::create::writer::from( file.extension());
-            archive << CASUAL_NAMED_VALUE( domain);
-            archive.consume( file);
-         }
-
-         common::file::scoped::Path temporary( const configuration::domain::Manager& domain, const std::string& extension)
-         {
-            common::file::scoped::Path file{ common::file::name::unique( common::directory::temporary() + "/domain_", extension)};
-
-            write( domain, file);
-
-            return file;
+            return create::model< configuration::queue::Manager>( yaml, "queue");
          }
 
       } // example

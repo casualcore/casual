@@ -551,35 +551,35 @@ namespace casual
                         constexpr auto description = R"()";
 
                         constexpr auto legend = R"(
-         name:
-            the name of the service
-         category:
-            arbitrary category to help understand the 'purpose' with the service
-         mode: 
-            transaction mode - can be one of the following (auto, join, none, atomic)
-         timeout:
-            the timeout for the service (in seconds)
-         LI:
-            Local-Instances number of local instances
-         C:
-            calls - number of calls to the service
-         AT:
-            average-time - the average time of the service (in seconds)
-         min:
-            minimum-time - the minimum time of the service (in seconds)
-         max:
-            maximum-time - the maximum time of the service (in seconds)
-         P
-            Pending - total number of pending request, over time.
-         PAT
-            Pending-Average-Time - the average time request has waited for a service to be available, over time (in seconds)
-         RI:
-            Remote-Instances - number of remote instances
-         RC:
-            Remote-Calls - number of calls to remote instances (a subset of C)
-         last:
-            the last time the service was requested    
-      )";
+   name:
+      the name of the service
+   category:
+      arbitrary category to help understand the 'purpose' with the service
+   mode: 
+      transaction mode - can be one of the following (auto, join, none, atomic)
+   timeout:
+      the timeout for the service (in seconds)
+   LI:
+      Local-Instances number of local instances
+   C:
+      calls - number of calls to the service
+   AT:
+      average-time - the average time of the service (in seconds)
+   min:
+      minimum-time - the minimum time of the service (in seconds)
+   max:
+      maximum-time - the maximum time of the service (in seconds)
+   P
+      Pending - total number of pending request, over time.
+   PAT
+      Pending-Average-Time - the average time request has waited for a service to be available, over time (in seconds)
+   RI:
+      Remote-Instances - number of remote instances
+   RC:
+      Remote-Calls - number of calls to remote instances (a subset of C)
+   last:
+      the last time the service was requested    
+)";
 
                      } // service
                   } // list
@@ -657,9 +657,9 @@ namespace casual
 
                      constexpr auto description = R"(the legend for the supplied option
 
-      Documentation and description for abbreviations and acronyms used as columns in output
+Documentation and description for abbreviations and acronyms used as columns in output
 
-      note: not all options has legend, use 'auto complete' to find out which legends are supported.
+note: not all options has legend, use 'auto complete' to find out which legends are supported.
       )";
 
                   } // legend

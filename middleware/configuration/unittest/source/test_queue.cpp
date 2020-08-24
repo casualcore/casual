@@ -9,6 +9,7 @@
 
 #include "configuration/domain.h"
 #include "configuration/example/domain.h"
+#include "configuration/example/create.h"
 
 #include "common/file.h"
 
@@ -39,7 +40,7 @@ namespace casual
          common::unittest::Trace trace;
 
          // serialize and deserialize
-         auto queue = domain::get( { example::temporary( example::domain(), GetParam())}).queue;
+         auto queue = domain::get( { example::create::file::temporary( example::domain(), "domain", GetParam())}).queue;
 
          EXPECT_TRUE( queue.groups.size() == 3) << CASUAL_NAMED_VALUE( queue);
       }
@@ -50,7 +51,7 @@ namespace casual
          common::unittest::Trace trace;
 
          // serialize and deserialize
-         auto manager = domain::get( { example::temporary( example::domain(), GetParam())}).queue;
+         auto manager = domain::get( { example::create::file::temporary( example::domain(), "domain", GetParam())}).queue;
 
          auto& group =  manager.groups.at( 0);
 

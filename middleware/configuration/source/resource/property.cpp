@@ -52,7 +52,7 @@ namespace casual
                {
                   std::string file()
                   {
-                     auto file = common::environment::variable::get( "CASUAL_RESOURCE_CONFIGURATION_FILE", "");
+                     auto file = common::environment::variable::get( common::environment::variable::name::resource::configuration, "");
 
                      if( file.empty())
                      {

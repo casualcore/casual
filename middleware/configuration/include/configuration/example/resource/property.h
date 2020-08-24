@@ -9,7 +9,8 @@
 
 
 #include "configuration/resource/property.h"
-#include "common/file.h"
+
+#include <vector>
 
 namespace casual
 {
@@ -21,13 +22,7 @@ namespace casual
          {
             namespace property
             {
-               using resources_type = std::vector< configuration::resource::Property>;
-
-               resources_type example();
-
-               void write( const resources_type& resources, const std::string& file);
-
-               common::file::scoped::Path temporary(const resources_type& resources, const std::string& extension);
+               std::vector< configuration::resource::Property> example();
 
             } // property
 

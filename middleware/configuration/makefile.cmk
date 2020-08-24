@@ -80,11 +80,15 @@ LinkUnittest( 'bin/test-casual-configuration',
    ])  
 
 # Example maker
-LinkExecutable( 'bin/casual-configuration-example-maker', 
+LinkExecutable( 'bin/casual-configuration-documentation', 
     [ 
-        Compile( 'source/example/main.cpp'),
+        Compile( 'source/documentation/main.cpp'),
    ],          
-   [ example_archive, lib_configuration, 'casual-serviceframework', 'casual-common'])  
+   [ 
+      example_archive, 
+      lib_configuration,  
+      'casual-common'
+   ])  
 
 # Install
 Install( intall_libs, '$(CASUAL_HOME)/lib')

@@ -9,6 +9,7 @@
 
 #include "configuration/resource/property.h"
 #include "configuration/example/build/server.h"
+#include "configuration/example/create.h"
 
 #include "common/file.h"
 
@@ -37,7 +38,7 @@ namespace casual
 
             // serialize and deserialize
             auto model = build::server::get(
-                  example::build::server::temporary( example::build::server::example(), GetParam()));
+               example::create::file::temporary( example::build::server::example(), "server", GetParam()));
 
             EXPECT_TRUE( model.services.size() == 4);
          }
@@ -48,7 +49,7 @@ namespace casual
 
             // serialize and deserialize
             auto model = build::server::get(
-                  example::build::server::temporary( example::build::server::example(), GetParam()));
+               example::create::file::temporary( example::build::server::example(), "server", GetParam()));
 
             ASSERT_TRUE( model.server_default.service.transaction.has_value());
             EXPECT_TRUE( model.server_default.service.transaction.value() == "join");
@@ -63,7 +64,7 @@ namespace casual
 
             // serialize and deserialize
             auto model = build::server::get(
-                  example::build::server::temporary( example::build::server::example(), GetParam()));
+               example::create::file::temporary( example::build::server::example(), "server", GetParam()));
 
             auto& service = model.services.at( 0);
 
@@ -79,7 +80,7 @@ namespace casual
 
             // serialize and deserialize
             auto model = build::server::get(
-                  example::build::server::temporary( example::build::server::example(), GetParam()));
+               example::create::file::temporary( example::build::server::example(), "server", GetParam()));
 
             auto& service = model.services.at( 1);
 
@@ -93,7 +94,7 @@ namespace casual
 
             // serialize and deserialize
             auto model = build::server::get(
-                  example::build::server::temporary( example::build::server::example(), GetParam()));
+               example::create::file::temporary( example::build::server::example(), "server", GetParam()));
 
             auto& service = model.services.at( 2);
 
@@ -107,7 +108,7 @@ namespace casual
 
             // serialize and deserialize
             auto model = build::server::get(
-                  example::build::server::temporary( example::build::server::example(), GetParam()));
+               example::create::file::temporary( example::build::server::example(), "server", GetParam()));
 
             auto& service = model.services.at( 3);
 

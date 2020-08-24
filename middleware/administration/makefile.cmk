@@ -38,22 +38,44 @@ LibraryPaths( [
 install_libs = []
 install_exe = []
 
+cli_library = LinkLibrary( 'bin/causal-administration-cli',
+   [
+      Compile( 'source/cli.cpp')
+   ],
+   [
+      'casual-common',
+      'casual-domain-admin-cli',
+      'casual-service-admin-cli',
+      'casual-queue-admin-cli',
+      'casual-transaction-admin-cli',
+      'casual-gateway-admin-cli',
+      'casual-tools-service-cli',
+      'casual-buffer-cli',
+   ]
+)
+
+install_libs.append( cli_library)
+
 target = LinkExecutable( 'bin/casual', 
     [ 
         Compile( 'source/main.cpp'),
     ], 
     [ 
-        'casual-common',
-        'casual-domain-admin-cli',
-        'casual-service-admin-cli',
-        'casual-queue-admin-cli',
-        'casual-transaction-admin-cli',
-        'casual-gateway-admin-cli',
-        'casual-tools-service-cli',
-        'casual-buffer-cli',
+      cli_library,
+      'casual-common',
     ])
 
 install_exe.append( target)
+
+
+LinkExecutable( 'bin/casual-administration-cli-documentation', 
+   [ 
+      Compile( 'source/documentation/cli.cpp')
+   ],
+   [
+      cli_library,
+      'casual-common',
+   ])
 
 
 Install( install_exe, '$(CASUAL_HOME)/bin')

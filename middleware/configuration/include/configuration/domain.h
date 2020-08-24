@@ -101,8 +101,7 @@ namespace casual
 
       } // v1
       } // domain
-
-   } // config
+   } // configuration
 } // casual
 
 

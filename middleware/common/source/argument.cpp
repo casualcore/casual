@@ -70,7 +70,12 @@ namespace casual
 
                      bool operator () ( const detail::Representation& option)
                      {
-                        indent() << string::join( option.keys.active(), ", ") << "  " << option.cardinality;
+                        if( option.keys.active().empty() && ! option.keys.deprecated().empty())
+                        {
+                           indent() << "[deprecated] " << string::join( option.keys.deprecated(), ", ") << " [" << option.cardinality << ']';
+                        }
+                        else
+                           indent() << string::join( option.keys.active(), ", ") << " [" << option.cardinality << ']';
 
                         {
                            auto information = option.invocable.complete( {}, true);
@@ -97,7 +102,7 @@ namespace casual
                            indent( 6)  << row << "\n";
                         });
 
-                        if( ! option.keys.deprecated().empty())
+                        if( ! option.keys.deprecated().empty() && ! option.keys.active().empty())
                         {
                            m_out << '\n';
                            indent( 6) << "deprecated: " << option.keys.deprecated() << "\n";
@@ -179,12 +184,9 @@ namespace casual
 
                   void full( representation::range_type options, const std::string& description)
                   {
-                     std::cout << "NAME\n   ";
-                     std::cout << file::name::base( process::path()) << '\n';
-
                      if( ! description.empty())
                      {
-                        std::cout << "\nDESCRIPTION\n";
+                        std::cout << "DESCRIPTION\n";
 
                         algorithm::for_each( string::split( description, '\n'), [&]( auto& row){
                            std::cout << std::string( 2, ' ')  << row << "\n";

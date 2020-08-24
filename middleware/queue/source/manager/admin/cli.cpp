@@ -520,11 +520,24 @@ cat somefile.bin | casual queue --enqueue <queue-name>
                      cli::pipe::done();
                   };
 
+                  auto complete = []()
+                  {
+                     return []( auto, bool help) -> std::vector< std::string>
+                     {
+                        if( help)
+                           return { "<queue>", "[<id>]"};
+
+                        return local::queues();
+                     };
+                  };
+
                   return argument::Option{
                      std::move( invoke),
-                     complete::queues,
+                     complete(),
                      { "-d", "--dequeue"},
                      R"(dequeue buffer from a queue to stdout
+
+if id is absent the oldest available message is dequeued. 
 
 Example:
 casual queue --dequeue <queue> | <some other part in casual-pipe> | ... | <casual-pipe termination>
@@ -637,7 +650,7 @@ casual queue --consume <queue-name> [<count>] | <some other part of casual-pipe>
                   auto complete = []( auto& values, bool help) -> std::vector< std::string>
                   { 
                      if( help) 
-                        return { "<queue>", "<id>"};
+                        return { "<queue>", "[<id>]"};
 
                      if( values.empty())
                         return local::queues();

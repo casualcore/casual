@@ -9,6 +9,7 @@
 
 #include "configuration/domain.h"
 #include "configuration/example/domain.h"
+#include "configuration/example/create.h"
 
 #include "serviceframework/log.h"
 #include "common/serialize/create.h"
@@ -36,7 +37,7 @@ namespace casual
          common::unittest::Trace trace;
 
          // serialize and deserialize
-         auto gateway = domain::get( { example::temporary( example::domain(), GetParam())}).gateway;
+         auto gateway = domain::get( { example::create::file::temporary( example::domain(), "domain", GetParam())}).gateway;
 
          ASSERT_TRUE( gateway.listeners.size() == 4);
          EXPECT_TRUE( gateway.listeners.at( 0).address == "localhost:7779") << CASUAL_NAMED_VALUE( gateway);
@@ -50,7 +51,7 @@ namespace casual
          common::unittest::Trace trace;
 
          // serialize and deserialize
-         auto gateway = domain::get( { example::temporary( example::domain(), GetParam())}).gateway;
+         auto gateway = domain::get( { example::create::file::temporary( example::domain(), "domain", GetParam())}).gateway;
 
          ASSERT_TRUE( ! gateway.connections.empty());
          ASSERT_TRUE( gateway.connections.at( 0).address.value() == "a45.domain.host.org:7779");
@@ -63,7 +64,7 @@ namespace casual
          common::unittest::Trace trace;
 
          // serialize and deserialize
-         auto gateway = domain::get( { example::temporary( example::domain(), GetParam())}).gateway;
+         auto gateway = domain::get( { example::create::file::temporary( example::domain(), "domain", GetParam())}).gateway;
 
          EXPECT_TRUE( gateway.connections.at( 0).restart.value() == true) << CASUAL_NAMED_VALUE( gateway);
 

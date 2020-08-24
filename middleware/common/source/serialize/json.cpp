@@ -475,12 +475,12 @@ namespace casual
                         std::vector< rapidjson::Value*> m_stack;
                      };
 
+                     using Implementation = basic_implementation< rapidjson::Writer< rapidjson::StringBuffer>>;
+
                      namespace pretty
                      {
                         using Implementation = basic_implementation< rapidjson::PrettyWriter< rapidjson::StringBuffer>>;
                      } // pretty
-
-                     using Implementation = basic_implementation< rapidjson::Writer< rapidjson::StringBuffer>>;
 
                   } // writer
                } // <unnamed>
@@ -530,7 +530,7 @@ namespace casual
             } // writer
             namespace writer
             {
-               template struct Registration< json::local::writer::Implementation>;
+               template struct Registration< json::local::writer::pretty::Implementation>;
             } // writer
          } // create
 

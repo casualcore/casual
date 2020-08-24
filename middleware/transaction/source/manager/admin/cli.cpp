@@ -757,7 +757,7 @@ namespace casual
 
 * associates all upstream transaction aware messages with the 'single' transaction, if they don't are associated already.
 * all directives from upstream will be 'terminated', that is, notify the upstream 'owner' and not forward the directive
-* sends the directive downsteram, so other casual-pipe components can assocate 'new stuff' with the 'single' transaction
+* sends the directive downstream, so other casual-pipe components can associate 'new stuff' with the 'single' transaction
 
 hence, only one 'directive' can be in flight within a link in the casual-pipe.
 )"
@@ -775,7 +775,7 @@ hence, only one 'directive' can be in flight within a link in the casual-pipe.
 
 * associates all upstream transaction aware messages with a new transaction, if they don't are associated already.
 * all directives from upstream will be 'terminated', that is, notify the upstream 'owner' and not forward the directive
-* sends the directive downsteram, so other casual-pipe components can assocate 'new stuff' with a new transaction
+* sends the directive downstream, so other casual-pipe components can associate 'new stuff' with a new transaction
 
 hence, only one 'directive' can be in flight within a link in the casual-pipe.
 )"

@@ -9,7 +9,6 @@
 
 
 #include "configuration/build/executable.h"
-#include "common/file.h"
 
 namespace casual
 {
@@ -22,8 +21,6 @@ namespace casual
             namespace executable
             {
                configuration::build::Executable example();
-
-               void write( const configuration::build::Executable& model, const std::string& file);
 
             } // executable
 

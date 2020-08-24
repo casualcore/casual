@@ -6,6 +6,7 @@
 
 
 #include "configuration/example/resource/property.h"
+#include "configuration/example/create.h"
 
 #include "common/serialize/create.h"
 
@@ -21,46 +22,32 @@ namespace casual
          {
             namespace property
             {
-               resources_type example()
+               std::vector< configuration::resource::Property> example()
                {
-                  return {
-                     [](){
-                        configuration::resource::Property v;
-                        v.key = "db2";
-                        v.xa_struct_name = "db2xa_switch_static_std";
-                        v.server = "rm-proxy-db2-static";
-                        v.libraries = { "db2" };
-                        v.paths.library = { "${DB2DIR}/lib64"};
-                        return v;
-                     }()
-                     ,
-                     [](){
-                        configuration::resource::Property v;
-                        v.key = "rm-mockup";
-                        v.xa_struct_name = "casual_mockup_xa_switch_static";
-                        v.server = "rm-proxy-casual-mockup";
-                        v.libraries = { "casual-mockup-rm" };
-                        v.paths.library = { "${CASUAL_HOME}/lib"};
-                        return v;
-                     }()
-                  };
-               }
 
-               void write( const resources_type& resources, const std::string& name)
-               {
-                  common::file::Output file{ name};
-                  auto archive = common::serialize::create::writer::from( file.extension());
-                  archive << CASUAL_NAMED_VALUE( resources);
-                  archive.consume( file);
-               }
+                  static constexpr auto yaml = R"(
+resources:
+  - key: db2
+    server: rm-proxy-db2-static
+    xa_struct_name: db2xa_switch_static_std
+    libraries:
+      - db2
 
-               common::file::scoped::Path temporary(const resources_type& resources, const std::string& extension)
-               {
-                  common::file::scoped::Path file{ common::file::name::unique( common::directory::temporary() + "/domain_", extension)};
+    paths:
+      library:
+        - ${DB2DIR}/lib64
 
-                  write( resources, file);
+  - key: rm-mockup
+    server: rm-proxy-casual-mockup
+    xa_struct_name: casual_mockup_xa_switch_static
+    libraries:
+      - casual-mockup-rm
+    paths:
+      library:
+        - ${CASUAL_HOME}/lib
+)";
 
-                  return file;
+                  return create::model< std::vector< configuration::resource::Property>>( yaml, "resources");
                }
 
             } // property
