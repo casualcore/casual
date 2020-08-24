@@ -113,12 +113,12 @@ namespace casual
 
       namespace detail
       {
-         auto c_wrapper = []( view::String value, auto&& function, auto... base) noexcept
+         template< typename F, typename... B>
+         auto c_wrapper( view::String value, F&& function, B... base) noexcept
          {
             char* end = nullptr;
             return function( std::begin( value), &end, base...);
-         };
-
+         }
 
          namespace from
          {

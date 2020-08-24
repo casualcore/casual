@@ -18,7 +18,7 @@ namespace casual
    {
       namespace outbound
       {
-         TEST( http_outbound_configuration, empty_empty_add__expect_empty)
+         TEST( http_outbound_model, empty_empty_add__expect_empty)
          {
             common::unittest::Trace trace;
 
@@ -29,7 +29,7 @@ namespace casual
             EXPECT_TRUE( result.services.empty());
          }
 
-         TEST( http_outbound_configuration, read_basic_configuration_file)
+         TEST( http_outbound_model, read_basic_configuration_file)
          {
             common::unittest::Trace trace;
 
@@ -48,7 +48,7 @@ http:
          }
 
 
-         TEST( http_outbound_configuration, default_headers)
+         TEST( http_outbound_model, default_headers)
          {
             common::unittest::Trace trace;
 
@@ -66,7 +66,7 @@ http:
             EXPECT_TRUE( model.casual_default.service.headers.at( 0).value == "bla");
          }
 
-         TEST( http_outbound_configuration, default_discard_transaction__true)
+         TEST( http_outbound_model, default_discard_transaction__true)
          {
             common::unittest::Trace trace;
 
@@ -81,7 +81,7 @@ http:
             EXPECT_TRUE( model.casual_default.service.discard_transaction == true) << CASUAL_NAMED_VALUE( model);
          }
 
-         TEST( http_outbound_configuration, default_discard_transaction__false)
+         TEST( http_outbound_model, default_discard_transaction__false)
          {
             common::unittest::Trace trace;
 
@@ -97,7 +97,7 @@ http:
          }
 
 
-         TEST( http_outbound_configuration, service_discard_transaction__true)
+         TEST( http_outbound_model, service_discard_transaction__true)
          {
             common::unittest::Trace trace;
 
@@ -109,13 +109,13 @@ http:
       discard_transaction: true
 )");
 
-            auto pattern = common::directory::name::base( file.path()) + "*.yaml";
+            auto pattern = common::file::name::without::extension( file) + "*yaml";
             auto model = configuration::get(  pattern);
             ASSERT_TRUE( model.services.size() == 1);
             EXPECT_TRUE( model.services.at( 0).discard_transaction.value() == true) << CASUAL_NAMED_VALUE( model);
          }
 
-         TEST( http_outbound_configuration, service_discard_transaction__false)
+         TEST( http_outbound_model, service_discard_transaction__false)
          {
             common::unittest::Trace trace;
 
@@ -134,7 +134,7 @@ http:
 
 
 
-         TEST( http_outbound_configuration, two_files__expect_aggregate)
+         TEST( http_outbound_model, two_files__expect_aggregate)
          {
             common::unittest::Trace trace;
 
