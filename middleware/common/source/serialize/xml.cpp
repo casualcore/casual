@@ -44,6 +44,10 @@ namespace casual
 
                   namespace reader
                   {
+                     namespace parse
+                     {
+                        constexpr auto directive = pugi::parse_escapes | pugi::parse_ws_pcdata_single;
+                     } // parse
 
                      namespace empty
                      {
@@ -54,50 +58,44 @@ namespace casual
                      {
                         const pugi::xml_document& operator () ( pugi::xml_document& document, std::istream& stream)
                         {
-                           check( document.load( stream));
+                           check( document.load( stream, parse::directive));
                            return document;
                         }
 
                         const pugi::xml_document& operator () ( pugi::xml_document& document, const std::string& xml)
                         {
                            if( xml.empty())
-                           {
                               return operator ()( document, empty::document);
-                           }
-                           check( document.load_buffer( xml.data(), xml.size()));
+
+                           check( document.load_buffer( xml.data(), xml.size(), parse::directive));
                            return document;
                         }
 
                         const pugi::xml_document& operator () ( pugi::xml_document& document, const platform::binary::type& xml)
                         {
                            if( xml.empty())
-                           {
                               return operator ()( document, empty::document);
-                           }
-                           check( document.load_buffer( xml.data(), xml.size()));
+
+                           check( document.load_buffer( xml.data(), xml.size(), parse::directive));
                            return document;
                         }
 
                         const pugi::xml_document& operator () ( pugi::xml_document& document, const char* const xml, const platform::size::type size)
                         {
                            if( ! size || ! xml)
-                           {
                               return operator ()( document, empty::document);
-                           }
-                           check( document.load_buffer( xml, size));
+
+                           check( document.load_buffer( xml, size, parse::directive));
                            return document;
                         }
 
                         const pugi::xml_document& operator () ( pugi::xml_document& document, const char* const xml)
                         {
                            if( ! xml || xml[ 0] == '\n')
-                           {
                               return operator ()( document, empty::document);
-                              ;
-                           }
 
                            //local::check( m_document.load_string( xml));
-                           check( document.load( xml));
+                           check( document.load( xml, parse::directive));
                            return document;
                         }
 
@@ -189,9 +187,7 @@ namespace casual
                         std::tuple< platform::size::type, bool> container_start( const platform::size::type size, const char* const name)
                         {
                            if( ! start( name))
-                           {
                               return std::make_tuple( 0, false);
-                           }
 
                            // Stack 'em backwards
 
@@ -250,13 +246,9 @@ namespace casual
                               auto node =  m_stack.back().child( name);
 
                               if( node)
-                              {
                                  m_stack.push_back( m_stack.back().child( name));
-                              }
                               else
-                              {
                                  return false;
-                              }
                            }
                            return true;
                         }
@@ -303,10 +295,14 @@ namespace casual
                         { value = extract< double>( m_stack.back()); }
 
                         void read( char& value) const
-                        // If empty string this should result in '\0'
-                        { value = *common::transcode::utf8::decode( m_stack.back().text().get()).c_str(); }
+                        { 
+                           // If empty string this should result in '\0'
+                           value = *common::transcode::utf8::decode( m_stack.back().text().get()).c_str(); 
+                        }
                         void read( std::string& value) const
-                        { value = common::transcode::utf8::decode( m_stack.back().text().get()); }
+                        {
+                           value = common::transcode::utf8::decode( m_stack.back().text().get());
+                        }
                         
                         void read( std::vector<char>& value) const
                         { value = common::transcode::base64::decode( m_stack.back().text().get()); }
@@ -352,9 +348,7 @@ namespace casual
 
                            // Stack 'em backwards
                            for( platform::size::type idx = 0; idx < size; ++idx)
-                           {
                               m_stack.push_back( element.prepend_child( "element"));
-                           }
 
                            return size;
                         }

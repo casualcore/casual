@@ -54,6 +54,8 @@ namespace casual
 
             struct Writer
             {
+               Writer();
+               
                inline constexpr static auto archive_type() { return archive::Type::static_need_named;}
 
                static std::vector< std::string> keys();

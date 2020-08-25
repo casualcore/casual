@@ -23,6 +23,11 @@ namespace casual
       {
          namespace line
          {
+            Writer::Writer()
+            {
+               m_stream.precision( std::numeric_limits< double >::max_digits10);
+               m_stream.setf( std::ios_base::fixed, std::ios_base::floatfield);
+            }
 
             std::vector< std::string> Writer::keys() 
             { 

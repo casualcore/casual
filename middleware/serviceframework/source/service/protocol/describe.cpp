@@ -84,9 +84,7 @@ namespace casual
                            std::tuple< platform::size::type, bool> container_start( platform::size::type size, const char*)
                            {
                               if( size == 0)
-                              {
                                  return std::make_tuple( 1, true);
-                              }
 
                               return std::make_tuple( size, true);
                            }

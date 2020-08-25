@@ -289,8 +289,6 @@ namespace casual
                               code::raise::error( code::casual::invalid_node, "nested containers not supported (yet)");
                            }
 
-                           // Note that we return 'true' anyway - Why?
-
                            return std::make_tuple( 0, false);
 
                         }

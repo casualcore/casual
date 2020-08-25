@@ -337,19 +337,28 @@ namespace casual
                      {
                      public:
 
+                        enum class State : short
+                        {
+                           empty,
+                           implicit_map,
+                           unnamed_root,
+                        };
+
                         inline constexpr static auto archive_type() { return archive::Type::static_need_named;}
 
                         static decltype( auto) keys() { return local::keys();}
 
                         Implementation()
                         {
+                           m_output.SetFloatPrecision( std::numeric_limits< float >::max_digits10);
+                           m_output.SetDoublePrecision( std::numeric_limits< double >::max_digits10);
                            m_output << YAML::BeginDoc;
-                           m_output << YAML::BeginMap;
                         }
 
                         platform::size::type container_start( const platform::size::type size, const char* const name)
                         {
-                           maybe_name( name);
+                           possible_implicit_map( name);
+
                            m_output << YAML::BeginSeq;
 
                            return size;
@@ -358,25 +367,24 @@ namespace casual
                         void container_end( const char* const name)
                         {
                            m_output << YAML::EndSeq;
-                           m_output << YAML::Newline;
                         }
 
                         void composite_start( const char* const name)
                         {
-                           maybe_name( name);
+                           possible_implicit_map( name);
+                              
                            m_output << YAML::BeginMap;
                         }
 
                         void composite_end(  const char* const name)
                         {
                            m_output << YAML::EndMap;
-                           m_output << YAML::Newline;
                         }
 
                         template< typename T>
                         void write( const T& value, const char* name)
                         {
-                           maybe_name( name);
+                           possible_implicit_map( name);
                            write( value);
                         }
 
@@ -384,28 +392,39 @@ namespace casual
 
                         auto consume()
                         {
-                           m_output << YAML::EndMap;
+                           if( std::exchange( m_state, State::empty) == State::implicit_map)
+                              m_output << YAML::EndMap;
+
                            m_output << YAML::EndDoc;
 
                            auto size = m_output.size();
                            auto offset = std::exchange( m_offset, size);
 
                            m_output << YAML::BeginDoc;
-                           m_output << YAML::BeginMap;
 
                            return common::range::make( m_output.c_str() + offset, size - offset);
                         }
 
                      private:
 
-                        void maybe_name( const char* name)
+                        void possible_implicit_map( const char* key)
                         {
-                           if( name)
+                           if( key)
                            {
-                              m_output << YAML::Key << name;
+                              if( m_state == State::empty)
+                              {
+                                 // we need to wrap in a map
+                                 m_output << YAML::BeginMap;
+                                 m_state = State::implicit_map;
+                              }
+                              
+                              m_output << YAML::Key << key;
                               m_output << YAML::Value;
-                           }
+                           }  
+                           else if( m_state == State::empty)
+                              m_state = State::unnamed_root;
                         }
+
 
                         template< typename T>
                         void write( const T& value)
@@ -422,7 +441,7 @@ namespace casual
 
                         void write( const std::string& value)
                         {
-                           m_output << common::transcode::utf8::encode( value);
+                           m_output << YAML::DoubleQuoted << common::transcode::utf8::encode( value);
                         }
 
                         void write( const platform::binary::type& value)
@@ -437,6 +456,7 @@ namespace casual
                            m_output << binary;
                         }
 
+                        State m_state = State::empty;
                         YAML::Emitter m_output;
                         platform::size::type m_offset = 0;
                      };

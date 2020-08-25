@@ -92,7 +92,6 @@ value:
 
       }
 
-
       TEST( common_serialize_yaml, strict_read_serializable__gives_ok)
       {
          test::SimpleVO value;
@@ -138,6 +137,21 @@ value:
          }
       }
 
+      TEST( common_serialize_yaml, write_read_large_long)
+      {
+         long value = 2170471909096019789;
+
+         auto writer = serialize::yaml::writer();
+         writer << CASUAL_NAMED_VALUE( value);
+
+         auto yaml = writer.consume< platform::binary::type>();
+         auto reader = serialize::yaml::strict::reader( yaml);
+         long result{};
+         reader >> CASUAL_NAMED_VALUE_NAME( result, "value");
+
+         EXPECT_TRUE( value == result) << CASUAL_NAMED_VALUE( result);
+      }
+
       TEST( common_serialize_yaml, write_read_vector_pod)
       {
          std::string yaml;
@@ -161,7 +175,7 @@ value:
          EXPECT_TRUE( values.at( 6) == 23);
       }
 
-      TEST( common_serialize_yaml, write_read_vector_serializible)
+      TEST( common_serialize_yaml, write_read_vector_serializable)
       {
          std::string yaml;
 

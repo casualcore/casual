@@ -123,6 +123,15 @@ namespace casual
          }
       }
 
+
+      TEST( casual_common_transcode_utf8, transcode_ws)
+      {
+         common::unittest::Trace trace;
+         EXPECT_TRUE( transcode::utf8::encode( " ") == " ");
+         EXPECT_TRUE( transcode::utf8::decode( " ") == " ");
+         EXPECT_TRUE( transcode::utf8::decode( transcode::utf8::encode( " ")) == " ");
+      }
+
       TEST( casual_common_transcode_utf8, UTF8_encode_exotic_characters)
       {
          common::unittest::Trace trace;

@@ -315,6 +315,39 @@ namespace casual
                   template< typename A, typename T>
                   static void serialize( A&, T&) {}
                };
+
+               //! SFINAE expression to choose tuple_start instead of container_start if archive support it.
+               //! @{
+               template< typename A>
+               auto tuple_start( A& archive, platform::size::type size, const char* name, common::traits::priority::tag< 1>)
+                  -> decltype( archive.tuple_start( size, name))
+               {
+                  return archive.tuple_start( size, name);
+               }
+
+               template< typename A>
+               auto tuple_start( A& archive, platform::size::type size, const char* name, common::traits::priority::tag< 0>)
+                  -> decltype( archive.container_start( size, name))
+               {
+                  return archive.container_start( size, name);
+               }
+
+               //! SFINAE expression to choose tuple_end instead of container_end if archive support it.
+               //! @{
+               template< typename A>
+               auto tuple_end( A& archive, const char* name, common::traits::priority::tag< 1>)
+                  -> decltype( archive.tuple_end( name))
+               {
+                  return archive.tuple_end( name);
+               }
+
+               template< typename A>
+               auto tuple_end( A& archive, const char* name, common::traits::priority::tag< 0>)
+                  -> decltype( archive.container_end( name))
+               {
+                  return archive.container_end( name);
+               }
+               //! @}
             } // tuple
          } // detail
 
@@ -325,15 +358,15 @@ namespace casual
             template< typename V> 
             static void write( A& archive, V&& value, const char* name)
             {
-               archive.container_start( std::tuple_size< T>::value, name);
+               detail::tuple::tuple_start( archive, std::tuple_size< T>::value, name, common::traits::priority::tag< 1>{});
                detail::tuple::Write< std::tuple_size< T>::value>::serialize( archive, value);
-               archive.container_end( name);
+               detail::tuple::tuple_end( archive, name, common::traits::priority::tag< 1>{});
             }
 
             static bool read( A& archive, T& value, const char* name)
             {
                constexpr auto expected_size = std::tuple_size< T>::value;
-               const auto context = archive.container_start( expected_size, name);
+               const auto context = detail::tuple::tuple_start( archive, expected_size, name, common::traits::priority::tag< 1>{});
 
                if( std::get< 1>( context))
                {
@@ -344,7 +377,7 @@ namespace casual
 
                   detail::tuple::Read< std::tuple_size< T>::value>::serialize( archive, value);
 
-                  archive.container_end( name);
+                  detail::tuple::tuple_end( archive, name, common::traits::priority::tag< 1>{});
                   return true;
                }
                return false;

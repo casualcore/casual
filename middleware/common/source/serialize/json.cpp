@@ -392,9 +392,19 @@ namespace casual
                            }
                            else
                            {
-                              // We are in a container
-                              parent.PushBack( rapidjson::Value(), *m_allocator);
-                              m_stack.push_back( &(*(parent.End() - 1)));
+                              switch( parent.GetType())
+                              {
+                                 case rapidjson::Type::kObjectType:
+                                    // do nothing?
+                                    break;
+
+                                 default:
+                                    // We assume we're in a container
+                                    parent.PushBack( rapidjson::Value(), *m_allocator);
+                                    m_stack.push_back( &(*(parent.End() - 1)));
+                                    break;
+                              }
+
                            }
                         }
 

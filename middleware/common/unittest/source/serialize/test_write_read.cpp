@@ -7,6 +7,7 @@
 
 
 #include "common/unittest.h"
+#include "common/unittest/random/archive.h"
 
 
 #include "common/serialize/macro.h"
@@ -46,10 +47,21 @@ namespace casual
             using policy_type = P;
 
             template< typename T>
-            static T write_read( const T& value)
+            static auto string_document( const T& value) 
             {
                auto writer = policy_type::writer();
                writer << CASUAL_NAMED_VALUE( value);
+
+               std::stringstream out;
+               serialize::writer::consume( writer, out);
+               return std::move( out).str();
+            }
+
+            template< typename T>
+            static T write_read( const T& origin)
+            {
+               auto writer = policy_type::writer();
+               writer << CASUAL_NAMED_VALUE_NAME( origin, "value");
 
                {
                   auto buffer = policy_type::buffer();
@@ -58,6 +70,27 @@ namespace casual
                   auto reader = policy_type::reader( buffer);
                   T value;
                   reader >> CASUAL_NAMED_VALUE( value);
+
+                  return value;
+               }
+            }
+
+            template< typename T>
+            static T unnamed_write_read( const T& value)
+            {
+               auto writer = policy_type::writer();
+               writer << value;
+
+               {
+                  auto buffer = policy_type::buffer();
+                  serialize::writer::consume( writer, buffer);
+
+                  //if( serialize::traits::need::named< std::decay_t< decltype( writer)>>::value)
+                  //   log_buffer( buffer);
+
+                  auto reader = policy_type::reader( buffer);
+                  T value;
+                  reader >> value;
                   return value;
                }
             }
@@ -178,17 +211,19 @@ namespace casual
          EXPECT_TRUE( F::write_read( value) == value);
          {
             //std::cerr << std::fixed << "max: " << std::numeric_limits< T>::max() << '\n';
-            T value = std::numeric_limits< T>::max() - 1;
+            T value = std::numeric_limits< T>::max(); // - 1;
             EXPECT_TRUE( F::write_read( value) == value);
          }
          {
-            T value = std::numeric_limits< T>::min() + 1;
+            T value = std::numeric_limits< T>::min(); // + 1;
             EXPECT_TRUE( F::write_read( value) == value);
          }
       }
 
       TYPED_TEST( common_serialize_write_read, type_bool)
       {
+         unittest::Trace trace;
+
          bool value = true;
          //test_value_min_max< TestFixture>( value);
          EXPECT_TRUE( TestFixture::write_read( value) == true) << TestFixture::write_read( value);
@@ -197,6 +232,8 @@ namespace casual
 
       TYPED_TEST( common_serialize_write_read, type_char)
       {
+         unittest::Trace trace;
+
          char value = 'A';
          //test_value_min_max< TestFixture>( value);
          EXPECT_TRUE( TestFixture::write_read( value) == 'A') << TestFixture::write_read( value);
@@ -204,24 +241,32 @@ namespace casual
 
       TYPED_TEST( common_serialize_write_read, type_short)
       {
+         unittest::Trace trace;
+
          short value = 42;
          test_value_min_max< TestFixture>( value);
       }
 
       TYPED_TEST( common_serialize_write_read, type_int)
       {
+         unittest::Trace trace;
+
          int value = 42;
          test_value_min_max< TestFixture>( value);
       }
 
       TYPED_TEST( common_serialize_write_read, type_long)
       {
+         unittest::Trace trace;
+
          long value = 42;
          test_value_min_max< TestFixture>( value);
       }
 
       TYPED_TEST( common_serialize_write_read, type_string)
       {
+         unittest::Trace trace;
+
          std::string value = "value 42";
          auto result = TestFixture::write_read( value);
          EXPECT_TRUE( result == "value 42") << "result: " << result;
@@ -229,19 +274,53 @@ namespace casual
 
       TYPED_TEST( common_serialize_write_read, type_string_with_new_line)
       {
+         unittest::Trace trace;
+
          std::string value = "first\nother";
          EXPECT_TRUE( TestFixture::write_read( value) == "first\nother");
+      }
+
+      TYPED_TEST( common_serialize_write_read, type_string__complex)
+      {
+         unittest::Trace trace;
+
+         // -6tL~|O,-<f;>#
+         // Lr#jG<5S0#4:\>^y{{Njw00]9x'05*qJ
+         // "{}#[]"
+
+         std::string value{ "?HM'wz'o"};
+
+         EXPECT_TRUE( TestFixture::write_read( value) == value) << "value: '" << value; 
+      }
+
+      TYPED_TEST( common_serialize_write_read, type_string_all_printable_ascii)
+      {
+         unittest::Trace trace;
+
+         std::string string{ " "};
+
+         for( int value = 32; value < 127; value++)
+         {
+            string[ 0] = static_cast< char>( value);
+            auto result = TestFixture::write_read( string);
+            EXPECT_TRUE( result == string) << "value: " << value << ", string: '" << string << "', result: '" << result << "'";
+         }
+            
       }
 
       // TODO: gives warning from clang and gives failure on OSX with locale "UTF-8"
       TYPED_TEST( common_serialize_write_read, DISABLED_type_extended_string)
       {
+         unittest::Trace trace;
+
          std::string value = u8"Bängen Trålar";
          EXPECT_TRUE( TestFixture::write_read( value) == u8"Bängen Trålar");
       }
 
       TYPED_TEST( common_serialize_write_read, type_double)
       {
+         unittest::Trace trace;
+
          double value = 42.42;
          //test_value_min_max< TestFixture>( value);
          EXPECT_TRUE( TestFixture::write_read( value) == value) << TestFixture::write_read( value);
@@ -250,68 +329,151 @@ namespace casual
 
       TYPED_TEST( common_serialize_write_read, type_binary)
       {
-         platform::binary::type value{ 0, 42, -123, 23, 43, 11, 124};
+         unittest::Trace trace;
+
+         auto value = unittest::random::create< platform::binary::type>();
+
+         EXPECT_TRUE( ! value.empty());
          EXPECT_TRUE( TestFixture::write_read( value) == value);
       }
 
       TYPED_TEST( common_serialize_write_read, type_vector_long)
       {
-         std::vector< long> value{ 234, 34234, 3242, 4564, 6456, 546, 3453, 78678, 35345};
+         unittest::Trace trace;
+
+         auto value = unittest::random::create< std::vector< long>>();
+         EXPECT_TRUE( ! value.empty());
          EXPECT_TRUE( TestFixture::write_read( value) == value);
       }
 
       TYPED_TEST( common_serialize_write_read, type_list_long)
       {
-         std::list< long> value{ 234, 34234, 3242, 4564, 6456, 546, 3453, 78678, 35345};
+         unittest::Trace trace;
+
+         auto value = unittest::random::create< std::list< long>>();
+         EXPECT_TRUE( ! value.empty());
          EXPECT_TRUE( TestFixture::write_read( value) == value);
       }
 
       TYPED_TEST( common_serialize_write_read, type_deque_long)
       {
-         std::deque< long> value{ 234, 34234, 3242, 4564, 6456, 546, 3453, 78678, 35345};
+         unittest::Trace trace;
+
+         auto value = unittest::random::create< std::deque< long>>();
+         EXPECT_TRUE( ! value.empty());
          EXPECT_TRUE( TestFixture::write_read( value) == value);
       }
 
       TYPED_TEST( common_serialize_write_read, type_set_long)
       {
-         std::set< long> value{ 234, 34234, 3242, 4564, 6456, 546, 3453, 78678, 35345};
+         unittest::Trace trace;
+
+         auto value = unittest::random::create< std::set< long>>();
+         EXPECT_TRUE( ! value.empty());
          EXPECT_TRUE( TestFixture::write_read( value) == value);
       }
 
       TYPED_TEST( common_serialize_write_read, type_map_long_string)
       {
-         std::map< long, std::string> value{ { 234, "poo"}, { 34234, "sdkfljs"}, { 3242, "cmx,nvxnvjkjdf"}};
+         unittest::Trace trace;
+
+         auto value = unittest::random::create< std::map< long, std::string>>();
+         EXPECT_TRUE( ! value.empty());
          EXPECT_TRUE( TestFixture::write_read( value) == value);
       }
 
       TYPED_TEST( common_serialize_write_read, type_vector_vector_long)
       {
-         std::mt19937 random{ std::random_device{}()};
-         std::vector< std::vector< long>> value( 10);
-         for( auto& values : value)
-         {
-            values = { 234, 34234, 3242, 4564, 6456, 546, 3453, 78678, 35345};
-            std::shuffle( std::begin( values), std::end( values), random);
-         }
+         unittest::Trace trace;
+
+         auto value = unittest::random::create< std::vector< std::vector< long>>>();
+         EXPECT_TRUE( ! value.empty());
          EXPECT_TRUE( TestFixture::write_read( value) == value);
       }
 
       TYPED_TEST( common_serialize_write_read, type_tuple)
       {
-         std::tuple< int, std::string, char, long, float> value{ 23, "charlie", 'Q', 343534323434, 1.42};
+         unittest::Trace trace;
+         
+         // TODO maintainence - float, double does not work for all formats due to lack of precision, 
+         //auto value = unittest::random::create< std::tuple< int, std::string, char, long, float, double>>();
+
+         auto value = unittest::random::create< std::tuple< int, std::string, char, long, platform::binary::type, short>>();
+         
          auto result = TestFixture::write_read( value);
-         EXPECT_TRUE( result == value) << CASUAL_NAMED_VALUE( value) << CASUAL_NAMED_VALUE( result);
+         EXPECT_TRUE( result == value) << " " << CASUAL_NAMED_VALUE( value) << '\n' 
+            << CASUAL_NAMED_VALUE( result) << "\n" 
+            << "document: " << TestFixture::string_document( value);
       }
 
-      TYPED_TEST( common_serialize_write_read, type_vector_tuple)
+      namespace local
       {
-         using tuple_type = std::tuple< int, std::string, char, long, float>;
-         tuple_type tuple{ 23, "charlie", 'Q', 343534323434, 1.42};
+         namespace
+         {
+            struct Foo : compare::Equality< Foo>
+            {
+               std::string a;
+               long b = 0;
+               bool c = false;
+               std::tuple< int, std::string> d;
 
-         std::vector< tuple_type> value{
-            tuple, tuple, tuple, tuple
-         };
-         EXPECT_TRUE( TestFixture::write_read( value) == value);
+               CASUAL_CONST_CORRECT_SERIALIZE(
+                  CASUAL_SERIALIZE( a);
+                  CASUAL_SERIALIZE( b);
+                  CASUAL_SERIALIZE( c);
+                  CASUAL_SERIALIZE( d);
+               )
+
+               auto tie() const 
+               {
+                  return std::tie( a, b, c, d);
+               }
+            };
+         } // <unnamed>
+      } // local
+
+      TYPED_TEST( common_serialize_write_read, unnamed_type_composit)
+      {
+         unittest::Trace trace;
+
+         auto value = unittest::random::create< local::Foo>();
+
+         EXPECT_NO_THROW(
+         {
+            EXPECT_TRUE( TestFixture::unnamed_write_read( value) == value);
+         }) << CASUAL_NAMED_VALUE( value);
+      }
+
+      TYPED_TEST( common_serialize_write_read, unnamed_type_vector_long)
+      {
+         unittest::Trace trace;
+
+         auto value = unittest::random::create< std::vector< long>>();
+
+         EXPECT_TRUE( TestFixture::unnamed_write_read( value) == value);
+      }
+
+      TYPED_TEST( common_serialize_write_read, unnamed_type_tuple)
+      {
+         unittest::Trace trace;
+
+         auto value = unittest::random::create< std::tuple< int, std::string, char, long, platform::binary::type, short>>();
+
+         EXPECT_TRUE( TestFixture::unnamed_write_read( value) == value);
+      }
+
+      TYPED_TEST( common_serialize_write_read, unnamed_type_vector_composit)
+      {
+         unittest::Trace trace;
+
+         auto value = unittest::random::create< std::vector< local::Foo>>();
+
+         EXPECT_NO_THROW(
+         {
+            EXPECT_TRUE( TestFixture::unnamed_write_read( value) == value);
+         }) << value;
+         
+
       }
 
       TYPED_TEST( common_serialize_write_read, type_code_casual)
