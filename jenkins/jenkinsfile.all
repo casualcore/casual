@@ -294,6 +294,8 @@ try
                      sh """
                         export CASUAL_BUILD_HOME=$WORKSPACE/casual
                         cd casual/casual-middleware
+                        export CASUAL_VERSION=$CASUAL_VERSION
+                        export CASUAL_RELEASE=$CASUAL_RELEASE
                         make html
                      """
                   }

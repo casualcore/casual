@@ -12,7 +12,7 @@
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
-#import os
+import os
 #import sys
 #sys.path.insert(0, '')
 
@@ -25,9 +25,12 @@ copyright = u'2020, casual'
 author = u'casualcore'
 
 # The short X.Y version
-version = u'1.2'
+version = os.getenv("CASUAL_VERSION")
 # The full version, including alpha/beta/rc tags
-release = u'beta-1'
+release = os.getenv("CASUAL_RELEASE")
+
+if not version or not release:
+   raise SystemError("CASUAL_VERSION AND/OR CASUAL_RELEASE not set")
 
 
 # -- General configuration ---------------------------------------------------
