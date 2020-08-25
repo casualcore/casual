@@ -407,10 +407,12 @@ namespace casual
 
                         common::algorithm::for_each( result, [&current]( auto& c)
                         {
-                           if( current > max)
-                              current = min;
+                           c = current;
 
-                           c = current++;
+                           if( current == max)
+                              current = min;
+                           else
+                              ++current;
                         });
 
                         return result;
