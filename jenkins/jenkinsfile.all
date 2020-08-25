@@ -263,12 +263,11 @@ try
             deleteDir()
             stage('Build frontend')
             {
-               echo "frontend"
-               // checkout scm
+               checkout scm
                
-               // build( 'casualfrontend', 'casual/frontend-builder', frontend_builder)
+               build( 'casualfrontend', 'casual/frontend-builder', frontend_builder)
 
-               // stash includes: '**/casual-webapp.zip', name: 'frontend'
+               stash includes: '**/casual-webapp.zip', name: 'frontend'
             }
          }
       },
