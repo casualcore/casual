@@ -145,7 +145,7 @@ namespace casual
             };
 
             template< typename T, typename A>
-            void serialize( const T& value, A& io)
+            void serialize( T&& value, A& io)
             {
                common::algorithm::for_each( io.readers, [&value]( auto& archive){ *archive >> value;});
                common::algorithm::for_each( io.writers, [&value]( auto& archive){ *archive << value;});
@@ -154,7 +154,7 @@ namespace casual
             std::unique_ptr< concept> m_implementation;
          };
 
-                  namespace protocol
+         namespace protocol
          {
             class Factory
             {
