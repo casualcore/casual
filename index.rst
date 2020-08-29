@@ -57,14 +57,6 @@ casual
             <li><a href="middleware/documentation/operation.html">mainpage</a></li>
           </ul>
         </td>
-        <td>
-          <div style="display:inline-block;">
-            <h2>maintenace</h2>
-          </div>
-          <ul>
-            <li><a href="middleware/documentation/maintenance.html">mainpage</a></li>
-          </ul>
-        </td>
       </tr>
       <tr>
 
@@ -91,39 +83,21 @@ casual
 
 ------
 
+table of contents
+-----------------
 .. toctree::
-   :caption: table of contents
+   :caption: introduction
    :titlesonly:
    
-   Summary <README>
+   summary <README>
 
 .. toctree::
-   :caption: development
-   :maxdepth: 2
+   :caption: sections
+   :titlesonly:
 
-   mainpage <middleware/documentation/development>
-   components <middleware/documentation/components>
-   user-particles <middleware/documentation/user-particles>
-
-.. toctree::
-   :caption: operation
-   :maxdepth: 2
-
-   mainpage <middleware/documentation/operation>
-   command line interface <middleware/administration/documentation/cli/overview>
-   environment variables <middleware/administration/documentation/environment.operation>
-
-.. toctree::
-   :caption: maintenance 
-   :maxdepth: 2
-
-   mainpage <middleware/documentation/maintenance>
-
-.. toctree::
-   :caption: examples
-   :maxdepth: 2
-   
-   mainpage <middleware/documentation/examples>
+   operation <middleware/documentation/operation>
+   development <middleware/documentation/development>
+   examples <middleware/documentation/examples>
 
 * :ref:`genindex`
 
