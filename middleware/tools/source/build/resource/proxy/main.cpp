@@ -131,12 +131,12 @@ int main( int argc, char** argv)
 
 
 
-                     int build( const std::string& c_file, const configuration::resource::Property& resource, const Settings& settings)
+                     int build( const std::string& file, const configuration::resource::Property& resource, const Settings& settings)
                      {
                         trace::Exit log( "build resource proxy", settings.verbose);
 
                         // Compile and link
-                        std::vector< std::string> arguments{ c_file, "-o", settings.output};
+                        std::vector< std::string> arguments{ file, "-o", settings.output};
 
                         common::algorithm::append( common::string::adjacent::split( settings.directives.compile), arguments);
                         common::algorithm::append( common::string::adjacent::split( settings.directives.link), arguments);
@@ -235,16 +235,14 @@ int main( int argc, char** argv)
 
                            std::ofstream file( path);
                            local::generate( file, xa_switch);
-
-                           file.close();
                         }
+
+                        build( path, xa_switch, settings);
 
                         if( settings.keep_source)
                         {
                            path.release();
                         }
-
-                        build( path, xa_switch, settings);
                      }
                   } // <unnamed>
                } // local
