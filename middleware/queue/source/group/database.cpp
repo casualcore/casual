@@ -146,7 +146,7 @@ namespace casual
             m_connection.statement( "PRAGMA foreign_keys = ON;");
 
             // We can't set WAL mode, for some reason...
-            //m_connection.execute( "PRAGMA journal_mode=WAL;");
+            m_connection.statement( "PRAGMA journal_mode=WAL;");
 
             {
                Trace trace{ "queue::group::Database::Database create table queue"};
