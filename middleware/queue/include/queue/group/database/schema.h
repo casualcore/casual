@@ -63,7 +63,7 @@ CREATE INDEX IF NOT EXISTS i_dequeue_message  ON message ( queue, state, timesta
 CREATE INDEX IF NOT EXISTS i_dequeue_message_properties ON message ( queue, state, properties, timestamp ASC);
 CREATE INDEX IF NOT EXISTS i_message_timestamp ON message ( timestamp ASC);
 CREATE INDEX IF NOT EXISTS i_message_available ON message ( available ASC);
-CREATE INDEX IF NOT EXISTS i_gtrid_message  ON message ( gtrid);
+CREATE INDEX IF NOT EXISTS i_gtrid_message  ON message ( gtrid, state);
 )";
                      } // index
                   } // inline v2_0
