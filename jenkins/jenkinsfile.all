@@ -298,6 +298,11 @@ try
                         export CASUAL_RELEASE=$CASUAL_RELEASE
                         make html
                      """
+
+                     def path = "${WORKSPACE}"
+                     def directories = path.split("/")
+                     echo "http://casual.laz.se/documentation/workspace/" + directories[-1] + "/casual-documentation/casual/casual-middleware/build/html/"
+
                   }
                }
             }
