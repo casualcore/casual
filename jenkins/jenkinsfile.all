@@ -276,14 +276,34 @@ try
       {
          node( "documentation")
          {
-            if ( isPublishable() )
+            if ( true || isPublishable() )
             {
                deleteDir()
                stage('Documentation')
                {
-                  echo "'git book' is failing and is not the way we are going to produce documentation in the future"
-                  echo "disabling this step in waiting of new sphinx soloution"
-                  echo "now this is just a placeholder"
+                  sh """
+                  mkdir casual casual-documentation
+                  """
+                  dir("casual")
+                  {
+                     checkout scm
+                  }
+                  dir("casual-documentation")
+                  {
+                     git branch: 'master', url: 'https://bitbucket.org/casualcore/casual-documentation.git'
+                     sh """
+                        export CASUAL_BUILD_HOME=$WORKSPACE/casual
+                        cd casual/casual-middleware
+                        export CASUAL_VERSION=$CASUAL_VERSION
+                        export CASUAL_RELEASE=$CASUAL_RELEASE
+                        make html
+                     """
+
+                     def path = "${WORKSPACE}"
+                     def directories = path.split("/")
+                     echo "http://casual.laz.se/documentation/workspace/" + directories[-1] + "/casual-documentation/casual/casual-middleware/build/html/"
+
+                  }
                }
             }
          }
