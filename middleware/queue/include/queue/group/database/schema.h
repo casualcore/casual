@@ -54,6 +54,7 @@ namespace casual
                      {
                         constexpr auto queue = R"( 
 CREATE INDEX IF NOT EXISTS i_id_queue ON queue ( id);
+CREATE INDEX IF NOT EXISTS i_queue_count ON queue ( count);
 )";
 
                         constexpr auto message = R"( 

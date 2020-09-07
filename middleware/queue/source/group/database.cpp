@@ -424,11 +424,10 @@ namespace casual
             {
                message::Available message;
 
-               // SELECT m.queue, q.count, MIN( m.available)
+               // SELECT q.id, q.count
                sql::database::row::get( row, 
                   message.queue.underlaying(), 
-                  message.count,
-                  message.when
+                  message.count
                );
 
                return message;
@@ -439,6 +438,10 @@ namespace casual
             // keep only the intersection between result and wanted queues
             algorithm::trim( result, std::get< 0>( algorithm::intersection( result, queues)));
 
+            // get the earliest available message for each queue.
+            for( auto& available : result)
+               available.when = Database::available( available.queue).value_or( available.when);
+               
             return result;
          }
 
@@ -451,7 +454,7 @@ namespace casual
             {
                platform::time::point::type available;
 
-               // SELECT m.queue, q.count, MIN( m.available)
+               // "SELECT MIN( m.available)"
                sql::database::row::get( row, 
                   available
                );

@@ -120,11 +120,11 @@ namespace casual
 
                {
                   Trace trace{ "queue::group::Database::Database precompile statements available"};
-               
+
                   result.available.queues = connection.precompile(
-                     "SELECT m.queue, q.count, MIN( m.available)"
-                     " FROM message m INNER JOIN queue q ON m.queue = q.id AND m.state = 2"
-                     " GROUP BY m.queue;"
+                     "SELECT q.id, q.count "
+                     " FROM queue q"
+                     " WHERE q.count > 0;"
                   );
 
                   result.available.message = connection.precompile(
