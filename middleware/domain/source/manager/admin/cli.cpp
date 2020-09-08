@@ -40,7 +40,6 @@ namespace casual
             {
                namespace event
                {
-
                   auto handler( std::vector< Uuid>& tasks) 
                   {
                      return message::dispatch::handler( communication::ipc::inbound::device(),
@@ -131,7 +130,7 @@ namespace casual
                      
                   } // restart
 
-                  std::vector< Uuid> boot( const std::vector< std::string>& files)
+                  std::vector< Uuid> boot( const std::vector< std::string>& pattern)
                   {
                      auto correlation = uuid::make();
             
@@ -139,13 +138,10 @@ namespace casual
                      {
                         std::vector< std::string> arguments;
 
-                        if( ! files.empty())
-                        {
-                           if( ! algorithm::all_of( files, &common::file::exists))
-                              code::raise::error( code::casual::invalid_path, "at least one file does not exist - files: ", files);
-                           
-                           arguments.emplace_back( "--configuration-files");
-                           algorithm::append( files, arguments);
+                        if( ! pattern.empty())
+                        {                           
+                           arguments.emplace_back( "--configuration");
+                           algorithm::append( pattern, arguments);
                         }
 
                         arguments.emplace_back( "--event-ipc");
@@ -679,11 +675,11 @@ for all servers and executables
 
                   namespace boot
                   {
-                     void invoke( const std::vector< std::string>& files)
+                     void invoke( const std::vector< std::string>& pattern)
                      {
                         if( ! terminal::output::directive().block())
                         {
-                           call::boot( files);
+                           call::boot( pattern);
                            return;
                         }
 
@@ -692,7 +688,7 @@ for all servers and executables
                         auto condition = common::event::condition::compose(
                            common::event::condition::prelude( [&]()
                            {
-                              tasks = call::boot( files);
+                              tasks = call::boot( pattern);
                            }),
                            common::event::condition::done( [&tasks]()
                            { 

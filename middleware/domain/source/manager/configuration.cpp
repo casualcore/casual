@@ -25,8 +25,16 @@ namespace casual
    
             State state( const Settings& settings)
             {
-               auto state = casual::domain::transform::state( casual::configuration::domain::get( settings.configurationfiles));
+               const auto files = common::file::find( settings.configuration);
+               auto state = casual::domain::transform::state( casual::configuration::domain::get( files));
                state.bare = settings.bare;
+
+               // log the source of the configuration
+               if( settings.configuration == files)
+                  log::line( log::category::information, "used configuration: ", files);
+               else
+                  log::line( log::category::information, "used configuration: ", files, " - from patterns: ", settings.configuration);
+               
 
                if( settings.event.ipc)
                {

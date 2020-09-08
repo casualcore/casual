@@ -89,10 +89,11 @@ namespace casual
 
                               manager::task::event::dispatch( state, [&]()
                               {
-                                 common::message::event::Error message{ common::process::handle()};
-                                 message.severity = decltype( message.severity)::error;
-                                 message.message = string::compose( code, " failed to spawn: ", entity.path);
-                                 return message;
+                                 common::message::event::Error event{ common::process::handle()};
+                                 event.code = code;
+                                 event.severity = decltype( event.severity)::error;
+                                 event.message = string::compose( "failed to spawn: ", entity.path);
+                                 return event;
                               });
                            }
                            

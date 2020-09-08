@@ -17,7 +17,7 @@ namespace casual
       {
          struct Settings
          {
-            std::vector< std::string> configurationfiles;
+            std::vector< std::string> configuration;
 
             bool bare = false;
             bool persist = false;

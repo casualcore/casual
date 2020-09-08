@@ -34,7 +34,7 @@ namespace casual
                   auto file = common::unittest::file::temporary::content( ".yaml", configuration);
 
                   Settings settings;
-                  settings.configurationfiles.push_back( file);
+                  settings.configuration.push_back( file);
 
                   return configuration::state( settings);
                }
