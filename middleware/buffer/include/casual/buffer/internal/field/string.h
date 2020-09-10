@@ -47,10 +47,27 @@ namespace casual
 
                   inline static auto add( char** buffer, long id, value_type value) { return casual_field_add_string( buffer, id, value);}
                   inline static auto add( char** buffer, long id, const format_value_type& value) { return casual_field_add_string( buffer, id, value.c_str());}
+
+                  template< typename S>
+                  static auto consume( S& stream, long count) { return stream.consume( count);}
+               };
+
+               struct base_consume_traits
+               {
+                  template< typename S>
+                  static auto consume( S& stream, long count) 
+                  {
+                     auto result = stream.consume( count);
+
+                     if( result.size != count)
+                        throw std::out_of_range{ "stream buffer is depleted"};
+
+                     return result;
+                  }
                };
 
                template<>
-               struct base_field_traits< CASUAL_FIELD_SHORT>
+               struct base_field_traits< CASUAL_FIELD_SHORT> : base_consume_traits
                {
                   using value_type = short;
                   using format_value_type = value_type;
@@ -59,7 +76,7 @@ namespace casual
                };
 
                template<>
-               struct base_field_traits< CASUAL_FIELD_CHAR>
+               struct base_field_traits< CASUAL_FIELD_CHAR> : base_consume_traits
                {
                   using value_type = char;
                   using format_value_type = value_type;
@@ -68,7 +85,7 @@ namespace casual
                };               
 
                template<>
-               struct base_field_traits< CASUAL_FIELD_LONG>
+               struct base_field_traits< CASUAL_FIELD_LONG> : base_consume_traits
                {
                   using value_type = long;
                   using format_value_type = value_type;
@@ -151,8 +168,7 @@ namespace casual
 
                      view_type consume( long count)
                      {
-                        if( count > capacity() - size())
-                           throw std::out_of_range{ "stream buffer is depleted"};
+                        count = std::min( count, capacity() - size());
 
                         view_type result{ m_view.data + m_offset, count};
                         m_offset += count;
@@ -299,10 +315,10 @@ namespace casual
 
                   static void string( stream::Input& string, field::stream::Output& buffer, long size, char padding)
                   {
-                     auto view = string.consume( size);
-  
                      using traits = field::detail::field_traits< field>;
                      typename traits::format_value_type value{};
+
+                     auto view = traits::consume( string, size);
 
                      detail::format< alignment>{}( view, value, padding);
                      buffer.add< field>( std::move( value));

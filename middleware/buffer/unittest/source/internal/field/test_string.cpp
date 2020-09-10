@@ -141,7 +141,7 @@ namespace casual
          } // <unnamed>
       } // local
 
-      TEST( buffer_internal_field_string, empty_stream_consume__expect_throw)
+      TEST( buffer_internal_field_string, empty_stream_consume__expect_empty_view)
       {
          common::unittest::Trace trace;
 
@@ -149,9 +149,7 @@ namespace casual
 
          auto stream = stream_type{ stream_type::view_type{}};
 
-         EXPECT_THROW({
-            stream.consume( 2);
-         }, std::exception);
+         EXPECT_TRUE( stream.consume( 2).size == 0);
       }
 
       TEST( buffer_internal_field_string, missing_key__expect_throw)
@@ -222,6 +220,26 @@ namespace casual
       }
 
 
+      TEST( buffer_internal_field_string, from_string__key_1__last_string_shorter___expect_extraction)
+      {
+         common::unittest::Trace trace;
+
+         std::string value{ "first     second              third"};
+         
+         using stream_type = internal::field::string::stream::Input;
+         auto stream = stream_type{ stream_type::view_type( value.data(), value.size())};
+
+         local::Buffer buffer{ 128};
+         internal::field::string::convert::from( "key_1", stream, buffer.get());
+
+         internal::field::stream::Input input{ *buffer.get()};
+         EXPECT_TRUE( input.get< local::fld::string_1>() == std::string{ "first"});
+         EXPECT_TRUE( input.get< local::fld::string_2>() == std::string{ "second"});
+         EXPECT_TRUE( input.get< local::fld::string_3>() == std::string{ "third"});
+      }
+
+
+
       TEST( buffer_internal_field_string, from_string__key_2)
       {
          common::unittest::Trace trace;
@@ -238,6 +256,42 @@ namespace casual
          EXPECT_TRUE( input.get< local::fld::string_1>() == std::string{ "first"});
          EXPECT_TRUE( input.get< local::fld::string_2>() == std::string{ "second"});
          EXPECT_TRUE( input.get< local::fld::string_3>() == std::string{ "third"});
+      }
+
+      TEST( buffer_internal_field_string, from_string__key_3)
+      {
+         common::unittest::Trace trace;
+
+         const std::string value{ "0000000100                 200                           300"};
+         
+         using stream_type = internal::field::string::stream::Input;
+         auto stream = stream_type{ stream_type::view_type( value.data(), value.size())};
+
+         local::Buffer buffer{ 128};
+         internal::field::string::convert::from( "key_3", stream, buffer.get());
+
+         internal::field::stream::Input input{ *buffer.get()};
+
+         EXPECT_TRUE( input.get< local::fld::long_1>() == 100);
+         EXPECT_TRUE( input.get< local::fld::long_2>() == 200);
+         EXPECT_TRUE( input.get< local::fld::long_3>() == 300);
+      }
+
+
+      TEST( buffer_internal_field_string, from_string__key_3__shorter_last_string__expect_throw)
+      {
+         common::unittest::Trace trace;
+
+         const std::string value{ "0000000100                 200 300"};
+         
+         using stream_type = internal::field::string::stream::Input;
+         auto stream = stream_type{ stream_type::view_type( value.data(), value.size())};
+
+         local::Buffer buffer{ 128};
+
+         EXPECT_THROW({ 
+            internal::field::string::convert::from( "key_3", stream, buffer.get());
+         }, std::exception);
       }
 
 
