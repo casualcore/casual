@@ -69,29 +69,42 @@ namespace casual
 
                      auto& inbound = communication::ipc::inbound::device();
 
+                     struct 
+                     {
+                        bool done = false;
+                     } state;
+
                      auto handler = message::dispatch::handler( inbound,
                         message::handle::defaults( inbound),
                         // will configure and advertise services
                         server::handle::Call( local::transform::arguments( std::move( services), std::move( resources))),
-                        server::handle::Conversation{});
-
-                     auto prelude = message::dispatch::condition::prelude(
-                        [initialize = std::move( initialize)]()
+                        server::handle::Conversation{},
+                        [&state]( const common::message::shutdown::Request& message)
                         {
-                           Trace trace{ "common::server::start prelude"};
+                           log::line( verbose::log, "shutdown: ", message);
+                           state.done = true;
+                        });
 
-                           if( initialize)
-                              initialize();
+                     auto condition = message::dispatch::condition::compose( 
+                        message::dispatch::condition::prelude(
+                           [initialize = std::move( initialize)]()
+                           {
+                              Trace trace{ "common::server::start prelude"};
 
-                           // Connect to domain - send "ready"...
-                           communication::instance::connect();
-                        }
+                              if( initialize)
+                                 initialize();
+
+                              // Connect to domain - send "ready"...
+                              communication::instance::connect();
+                           }),
+                        message::dispatch::condition::done(
+                              [&state]() { return state.done;}
+                           )
                      );
-
 
                      // Start the message-pump
                      message::dispatch::pump(
-                        message::dispatch::condition::compose( std::move( prelude)),
+                        std::move( condition),
                         handler,
                         communication::ipc::inbound::device());
 

@@ -50,6 +50,7 @@ unittest_object = [
     Compile( 'unittest/source/domain/test_basic.cpp'),
     Compile( 'unittest/source/domain/xatmi/test_call.cpp'),
     Compile( 'unittest/source/domain/xatmi/test_conversation.cpp'),
+    Compile( 'unittest/source/domain/xatmi/test_start.cpp'),
     Compile( 'unittest/source/domain/test_transaction.cpp'),
 ]
 

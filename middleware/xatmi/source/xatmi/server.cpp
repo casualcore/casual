@@ -67,22 +67,27 @@ namespace casual
                   {
                      casual::xatmi::Trace trace{ "casual::xatmi::server::local::start"};
 
+                     auto done = common::execute::scope( [done = argument.server_done]()
+                     {
+                        if( done)
+                           common::invoke( done);
+                     });
+
                      // We block child so users can spawn stuff without actions/errors from casual
                      common::signal::thread::scope::Block block( { common::code::signal::child});
 
                      common::server::start(
-                           transform::services( argument),
-                           xatmi::transform::resources( argument.xa_switches),
-                           [&](){
-                              if( argument.server_init)
-                              {
-                                 if( common::invoke( argument.server_init, argument.argc, argument.argv) == -1)
-                                    common::event::error::raise( common::code::xatmi::argument, "server initialize failed - action: exit");
-                              }
-                     });
-
-                     if( argument.server_done)
-                        common::invoke( argument.server_done);
+                        transform::services( argument),
+                        xatmi::transform::resources( argument.xa_switches),
+                        [&]()
+                        {
+                           if( argument.server_init && common::invoke( argument.server_init, argument.argc, argument.argv) == -1)
+                           {      
+                              // if init is not ok, then we don't call done, symmetry with ctor/dtor
+                              done.release();
+                              common::event::error::raise( common::code::xatmi::argument, "server initialize failed - action: exit");
+                           }
+                        });
                   });
                }
 
