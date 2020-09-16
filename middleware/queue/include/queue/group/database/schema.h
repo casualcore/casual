@@ -60,7 +60,7 @@ CREATE INDEX IF NOT EXISTS i_queue_count ON queue ( count);
                         constexpr auto message = R"( 
 CREATE INDEX IF NOT EXISTS i_message_id  ON message ( id);
 CREATE INDEX IF NOT EXISTS i_message_queue  ON message ( queue);
-CREATE INDEX IF NOT EXISTS i_dequeue_message  ON message ( queue, state, timestamp ASC);
+CREATE INDEX IF NOT EXISTS i_dequeue_message  ON message ( queue, state, available ASC, timestamp ASC);
 CREATE INDEX IF NOT EXISTS i_dequeue_message_properties ON message ( queue, state, properties, timestamp ASC);
 CREATE INDEX IF NOT EXISTS i_message_timestamp ON message ( timestamp ASC);
 CREATE INDEX IF NOT EXISTS i_message_available ON message ( available ASC);

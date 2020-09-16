@@ -25,9 +25,13 @@ namespace casual
          Log::Log( std::string database)
                : m_connection( std::move( database))
          {
-            //m_connection.execute( "PRAGMA journal_mode = WAL;");
+            
+            // Make sure we set WAL-mode.
+            m_connection.statement( "PRAGMA journal_mode=WAL;");
 
             common::log::line( log, "transaction log version: ",  sql::database::version::get( m_connection));
+
+            
 
             sql::database::version::set( m_connection, sql::database::Version{ 1, 0});
 

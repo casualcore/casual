@@ -656,11 +656,30 @@ namespace casual
                functor();
          }
 
-         template< typename F>
-         constexpr void for_n( platform::size::type n, F functor)
+         namespace detail
          {
-            for( platform::size::type count = 0; count < n; ++count)
-               functor();
+            template< typename F>
+            constexpr auto for_n( platform::size::type n, F functor, common::traits::priority::tag< 1>) 
+               -> decltype( void( functor( n)))
+            {
+               for( platform::size::type index = 0; index < n; ++index)
+                  functor( index);
+            }
+
+            template< typename F>
+            constexpr auto for_n( platform::size::type n, F functor, common::traits::priority::tag< 0>) 
+               -> decltype( void( functor()))
+            {
+               for( platform::size::type index = 0; index < n; ++index)
+                  functor();
+            }
+         } // detail
+
+         template< typename F>
+         constexpr auto for_n( platform::size::type n, F functor) 
+            -> decltype( detail::for_n( n, std::move( functor), common::traits::priority::tag< 1>{}))
+         {
+            detail::for_n( n, std::move( functor), common::traits::priority::tag< 1>{});
          }
 
          //! associate container specialization

@@ -64,7 +64,6 @@ namespace casual
                struct
                {
                   sql::database::Statement match;
-                  sql::database::Statement first;
                   sql::database::Statement one_message;
                } peek;
 

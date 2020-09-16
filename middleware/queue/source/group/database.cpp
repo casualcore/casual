@@ -13,6 +13,7 @@
 #include "common/algorithm.h"
 #include "common/execute.h"
 #include "common/event/send.h"
+#include "common/environment.h"
 
 #include "common/code/raise.h"
 #include "common/code/casual.h"
@@ -60,6 +61,8 @@ namespace casual
                      {
                         std::int64_t rowid{};
                         common::message::queue::dequeue::Reply::Message message;
+
+                        explicit operator bool () const { return rowid != 0;}
                      };
 
                      // SELECT ROWID, id, properties, reply, redelivered, type, available, timestamp, payload
@@ -108,6 +111,18 @@ namespace casual
 
                } // transform
 
+               namespace explain
+               {
+                  auto log( const std::string& name)
+                  {
+                     if( environment::variable::exists( "CASUAL_QUEUE_PERFORMANCE_DIRECTORY"))
+                        return std::ofstream{ string::compose( environment::variable::get( "CASUAL_QUEUE_PERFORMANCE_DIRECTORY"), "/queue.", name , ".explain.", process::id())};
+
+                     return std::ofstream{};
+                  }
+
+               } // explain
+
 
                template< typename C>
                void check_version( C& connection)
@@ -136,7 +151,7 @@ namespace casual
 
 
          Database::Database( const std::string& database, std::string groupname) 
-            : m_connection( database), m_name( std::move( groupname))
+            : m_connection( database), m_name( std::move( groupname)), m_explain_log{ local::explain::log( m_name)}
          {
             Trace trace{ "queue::group::Database::Database"};
 
@@ -145,7 +160,7 @@ namespace casual
             // Make sure we got FK
             m_connection.statement( "PRAGMA foreign_keys = ON;");
 
-            // We can't set WAL mode, for some reason...
+            // Make sure we set WAL-mode.
             m_connection.statement( "PRAGMA journal_mode=WAL;");
 
             {
@@ -171,6 +186,14 @@ namespace casual
 
             // Precompile all other statements
             m_statement = database::statement( m_connection);
+
+         }
+
+         Database::~Database()
+         {
+            Trace trace{ "queue::group::Database::~Database"};
+
+            Database::explain();
          }
 
 
@@ -328,41 +351,50 @@ namespace casual
          {
             Trace trace{ "queue::Database::dequeue"};
 
-            common::message::queue::dequeue::Reply reply;
-
-            auto query = [&]()
+            auto fetch = [&]( auto& message, auto& now)
             {
-               if( message.selector.id)
-                  return m_statement.dequeue.first_id.query( message.selector.id.get(), message.queue.value(), now);
-               if( ! message.selector.properties.empty())
-                  return m_statement.dequeue.first_match.query( message.queue.value(), message.selector.properties, now);
-               return m_statement.dequeue.first.query( message.queue.value(), now);
+               auto query = [&]()
+               {
+                  if( message.selector.id)
+                     return m_statement.dequeue.first_id.query( message.selector.id.get(), message.queue.value(), now);
+                  if( ! message.selector.properties.empty())
+                     return m_statement.dequeue.first_match.query( message.queue.value(), message.selector.properties, now);
+                  
+                  log::line( verbose::log, "fifo dequeue query");
+                  return m_statement.dequeue.first.query( message.queue.value(), now);
+               }();
+
+               sql::database::Row row;
+
+               if( query.fetch( row))
+                  return local::transform::dequeue::result( row);
+
+               // default where result is "absent"
+               return decltype( local::transform::dequeue::result( row)){};
             };
 
-            auto first = sql::database::query::first( query(), []( auto& row)
-            {
-               return local::transform::dequeue::result( row);
-            });
 
-            if( ! first)
+            if( auto result = fetch( message, now))
             {
-               common::log::line( log, "dequeue - qid: ", message.queue, " - no message");
+               // Update state
+               if( message.trid)
+                  m_statement.state.xid.execute( common::transaction::id::range::global( message.trid), result.rowid);
+               else
+                  m_statement.state.nullxid.execute( result.rowid);
+
+               auto reply = common::message::reverse::type( message);
+               reply.message.push_back( std::move( result.message));
+
+               common::log::line( verbose::log, "reply: ", reply);
+
                return reply;
             }
-
-            auto& result = first.value();
-
-            // Update state
-            if( message.trid)
-               m_statement.state.xid.execute( common::transaction::id::range::global( message.trid), result.rowid);
             else
-               m_statement.state.nullxid.execute( result.rowid);
+            {
+                common::log::line( log, "dequeue - qid: ", message.queue, " - no message");
+               return common::message::reverse::type( message);
+            }
 
-            reply.message.push_back( std::move( result.message));
-
-            common::log::line( verbose::log, "reply: ", reply);
-
-            return reply;
          }
 
          common::message::queue::peek::information::Reply Database::peek( const common::message::queue::peek::information::Request& request)
@@ -450,16 +482,20 @@ namespace casual
             Trace trace{ "queue::Database::available earliest"};
             log::line( verbose::log, "queue: ", queue);
 
-            return sql::database::query::first( m_statement.available.message.query( queue.underlaying()), []( auto& row)
-            {
-               platform::time::point::type available;
+            auto query = m_statement.available.message.query( queue.underlaying());
+            sql::database::Row row;
 
-               // "SELECT MIN( m.available)"
-               sql::database::row::get( row, 
-                  available
-               );
-               return available;
-            });
+            if( ! query.fetch( row))
+               return {};
+
+            common::optional< platform::time::point::type> available;
+
+            // "SELECT MIN( m.available)"
+            sql::database::row::get( row, 
+               available
+            );
+
+            return available;
          }
 
          size_type Database::restore( common::strong::queue::id queue)
@@ -515,7 +551,7 @@ namespace casual
 
             m_statement.rollback1.execute( gtrid);
             m_statement.rollback2.execute( gtrid);
-            m_statement.rollback3.execute();
+            m_statement.rollback3.execute( gtrid);
          }
 
          std::vector< common::message::queue::information::Queue> Database::queues()
@@ -597,6 +633,63 @@ namespace casual
          sql::database::Version Database::version()
          {
             return sql::database::version::get( m_connection);
+         }
+
+
+// just a helper macro to make the performance logging easier.
+#define CASUAL_QUEUE_EXPLAIN_STATEMENT( value) \
+log_statement( value, #value)
+
+         void Database::explain()
+         {
+            if( ! m_explain_log)
+               return;
+
+            auto log_statement = [&]( const sql::database::Statement& statement, const char* name)
+            {
+               auto origin = statement.sql();
+               auto sql = string::compose( "EXPLAIN QUERY PLAN ", origin);
+
+               common::log::line( m_explain_log, name, ":\nsql: ", origin);
+               m_connection.statement( sql, m_explain_log);
+               m_explain_log << '\n';
+            };
+
+            common::log::trace::Scope trace{ "queue::group::database::local::explain::statement", m_explain_log};
+
+            CASUAL_QUEUE_EXPLAIN_STATEMENT( m_statement.enqueue);
+
+            CASUAL_QUEUE_EXPLAIN_STATEMENT( m_statement.dequeue.first);
+            CASUAL_QUEUE_EXPLAIN_STATEMENT( m_statement.dequeue.first_id);
+            CASUAL_QUEUE_EXPLAIN_STATEMENT( m_statement.dequeue.first_match);
+
+            CASUAL_QUEUE_EXPLAIN_STATEMENT( m_statement.state.xid);
+            CASUAL_QUEUE_EXPLAIN_STATEMENT( m_statement.state.nullxid);
+
+            CASUAL_QUEUE_EXPLAIN_STATEMENT( m_statement.commit1);
+            CASUAL_QUEUE_EXPLAIN_STATEMENT( m_statement.commit2);
+            CASUAL_QUEUE_EXPLAIN_STATEMENT( m_statement.commit3);
+
+            CASUAL_QUEUE_EXPLAIN_STATEMENT( m_statement.rollback1);
+            CASUAL_QUEUE_EXPLAIN_STATEMENT( m_statement.rollback2);
+            CASUAL_QUEUE_EXPLAIN_STATEMENT( m_statement.rollback3);
+
+            CASUAL_QUEUE_EXPLAIN_STATEMENT( m_statement.id);
+
+            CASUAL_QUEUE_EXPLAIN_STATEMENT( m_statement.information.queue);
+            CASUAL_QUEUE_EXPLAIN_STATEMENT( m_statement.information.message);
+
+            CASUAL_QUEUE_EXPLAIN_STATEMENT( m_statement.peek.match);
+            CASUAL_QUEUE_EXPLAIN_STATEMENT( m_statement.peek.one_message);
+
+            CASUAL_QUEUE_EXPLAIN_STATEMENT( m_statement.restore);
+            CASUAL_QUEUE_EXPLAIN_STATEMENT( m_statement.clear);
+
+            CASUAL_QUEUE_EXPLAIN_STATEMENT( m_statement.message.remove);
+
+            CASUAL_QUEUE_EXPLAIN_STATEMENT( m_statement.metric.reset);
+
+
          }
 
       } // server

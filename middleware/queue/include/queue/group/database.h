@@ -58,6 +58,7 @@ namespace casual
          public:
 
             Database( const std::string& database, std::string groupname);
+            ~Database();
 
             std::string file() const;
 
@@ -142,11 +143,15 @@ namespace casual
 
             sql::database::Version version();
  
-         private:         
+         private:
+
+            //! potentially log explain performance metrics
+            void explain();
 
             sql::database::Connection m_connection;
             database::Statement m_statement;
             std::string m_name;
+            std::ofstream m_explain_log;
          };
 
       } // group

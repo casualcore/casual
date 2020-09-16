@@ -190,88 +190,121 @@ namespace sql
       }
 
 
-
-
-      inline void column_get( sqlite3_stmt* statement, int column, long& value)
+      //! handles all integrals over 32b
+      template< typename T>
+      auto column_get( sqlite3_stmt* statement, int column, T& value)
+        -> std::enable_if_t< std::is_integral< T>::value && ( sizeof( T) > 4), bool>
       {
          value = sqlite3_column_int64( statement, column);
+
+         if( value == T{})
+            return sqlite3_column_type( statement, column) != SQLITE_NULL;
+
+         return true;
       }
 
-      inline void column_get( sqlite3_stmt* statement, int column, long long& value)
-      {
-         value = sqlite3_column_int64( statement, column);
-      }
 
-      inline void column_get( sqlite3_stmt* statement, int column, std::size_t& value)
-      {
-         value = sqlite3_column_int64( statement, column);
-      }
-
-      inline void column_get( sqlite3_stmt* statement, int column, int& value)
+      //! handles all integrals up to 32b
+      template< typename T>
+      auto column_get( sqlite3_stmt* statement, int column, T& value)
+        -> std::enable_if_t< std::is_integral< T>::value && ( sizeof( T) <= 4), bool>
       {
          value = sqlite3_column_int( statement, column);
+
+         if( value == T{})
+            return sqlite3_column_type( statement, column) != SQLITE_NULL;
+
+         return true;
       }
 
-      inline void column_get( sqlite3_stmt* statement, int column, std::string& value)
+      inline bool column_get( sqlite3_stmt* statement, int column, std::string& value)
       {
-         auto text = sqlite3_column_text( statement, column);
-         auto size = sqlite3_column_bytes( statement, column);
-         value.assign( text, text + size);
+         if( auto text = sqlite3_column_text( statement, column))
+         {
+            auto size = sqlite3_column_bytes( statement, column);
+            value.assign( text, text + size);
+            return true;
+         }
+         return false;
       }
 
-      inline void column_get( sqlite3_stmt* statement, int column, std::vector< char>& value)
+      inline bool column_get( sqlite3_stmt* statement, int column, std::vector< char>& value)
       {
-         auto blob = sqlite3_column_blob( statement, column);
-         auto size = sqlite3_column_bytes( statement, column);
+         if( auto blob = sqlite3_column_blob( statement, column))
+         {
+            auto size = sqlite3_column_bytes( statement, column);
 
-         value.resize( size);
-         memcpy( value.data(), blob, size);
+            value.resize( size);
+            memcpy( value.data(), blob, size);
+            return true;
+         }
+         return false;
       }
 
 
       template< typename T, std::size_t array_size>
-      inline void column_get( sqlite3_stmt* statement, int column, T (&value)[ array_size])
+      inline bool column_get( sqlite3_stmt* statement, int column, T (&value)[ array_size])
       {
-         const auto value_size = sizeof( T) * array_size;
+         constexpr auto value_size = sizeof( T) * array_size;
 
-         auto blob = sqlite3_column_blob( statement, column);
-         std::size_t blob_size = sqlite3_column_bytes( statement, column);
-
-         memcpy( value, blob, value_size > blob_size ? blob_size : value_size);
+         if( auto blob = sqlite3_column_blob( statement, column))
+         {
+            std::size_t blob_size = sqlite3_column_bytes( statement, column);
+            memcpy( value, blob, value_size > blob_size ? blob_size : value_size);
+            return true;
+         }
+         return false;
       }
 
 
       template< typename Clock, typename Duration>
-      inline void column_get( sqlite3_stmt* statement, int column, std::chrono::time_point< Clock, Duration>& value)
+      inline bool column_get( sqlite3_stmt* statement, int column, std::chrono::time_point< Clock, Duration>& value)
       {
          if( sqlite3_column_type( statement, column) != SQLITE_NULL)
          {
             using time_point = std::chrono::time_point< Clock, Duration>;
             duration_type duration{ sqlite3_column_int64( statement, column)};
             value = time_point( duration);
+            return true;
          }
+         return false;
       }
 
 
       template< typename Rep, typename Period>
-      inline void column_get( sqlite3_stmt* statement, int column, std::chrono::duration< Rep, Period>& value)
+      inline bool column_get( sqlite3_stmt* statement, int column, std::chrono::duration< Rep, Period>& value)
       {
          if( sqlite3_column_type( statement, column) != SQLITE_NULL)
          {
             duration_type duration{ sqlite3_column_int64( statement, column)};
             value = std::chrono::duration_cast< std::chrono::duration< Rep, Period>>( duration);
+            return true;
          }
+         return false;
       }
 
       template< typename T>
-      inline std::enable_if_t< std::is_enum< T>::value, void>
+      inline std::enable_if_t< std::is_enum< T>::value, bool>
       column_get( sqlite3_stmt* statement, int column, T& value)
       {
-         casual::common::traits::underlying_type_t< T> enum_value;
-         column_get( statement, column, enum_value);
-         value = static_cast< T>( enum_value);
+         casual::common::traits::underlying_type_t< T> underlying;
+         if( ! column_get( statement, column, underlying))
+            return false;
+         
+         value = static_cast< T>( underlying);
+         return true;
+      }
 
-         // column_get( statement, column, static_cast< enum_type&>( value));
+      template< typename T>
+      inline bool column_get( sqlite3_stmt* statement, int column, casual::common::optional< T>& optional)
+      {
+         T  value;
+         
+         if( ! column_get( statement, column, value))
+            return false;
+
+         optional = std::move( value);
+         return true;
       }
 
       struct Row
@@ -452,6 +485,12 @@ namespace sql
             Query{ m_handle, m_statement, std::forward< Params>( params)...}.execute();
          }
 
+         //! @returns the sql that the statement was created by
+         inline auto sql() const
+         {
+            return sqlite3_sql( m_statement.get());
+         } 
+
       private:
          std::shared_ptr< sqlite3> m_handle;
          std::shared_ptr< sqlite3_stmt> m_statement;
@@ -549,6 +588,26 @@ namespace sql
          void statement( const char* sql)
          {
             if( auto code = code::make( sqlite3_exec( m_handle.get(), sql, nullptr, nullptr, nullptr)))
+               code::raise( code, m_handle);
+         }
+
+         //! executes the provided statement and streams the human readable output to `out`
+         void statement( const std::string& sql, std::ostream& out)
+         {
+            auto callback = []( void* argument, int count, char** values, char** columns) -> int
+            {
+               auto out = static_cast< std::ostream*>( argument);
+
+               casual::common::algorithm::for_n( count, [=]( auto index)
+               {
+                  *out << values[ index] << '|';
+               });
+               *out << '\n';
+
+               return 0;
+            };
+
+            if( auto code = code::make( sqlite3_exec( m_handle.get(), sql.c_str(), callback, &out, nullptr)))
                code::raise( code, m_handle);
          }
 

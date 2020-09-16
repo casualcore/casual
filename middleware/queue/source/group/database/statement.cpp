@@ -47,26 +47,26 @@ namespace casual
                {
                   Trace trace{ "queue::group::Database::Database precompile statements dequeue"};
 
-                  result.dequeue.first = connection.precompile( R"( 
-                        SELECT 
-                           ROWID, id, properties, reply, redelivered, type, available, timestamp, payload
-                        FROM 
-                           message 
-                        WHERE queue = :queue AND state = 2 AND  available < :available ORDER BY timestamp ASC LIMIT 1; )");
+                  result.dequeue.first = connection.precompile( 
+                        "SELECT"
+                            " ROWID, id, properties, reply, redelivered, type, available, timestamp, payload"
+                        " FROM"
+                           " message"
+                        " WHERE queue = :queue AND state = 2 AND  available < :available ORDER BY timestamp ASC LIMIT 1;");
 
-                  result.dequeue.first_id = connection.precompile( R"( 
-                        SELECT 
-                           ROWID, id, properties, reply, redelivered, type, available, timestamp, payload
-                        FROM 
-                           message 
-                        WHERE id = :id AND queue = :queue AND state = 2 AND available < :available; )");
+                  result.dequeue.first_id = connection.precompile(  
+                        "SELECT"
+                           " ROWID, id, properties, reply, redelivered, type, available, timestamp, payload"
+                        " FROM "
+                           " message"
+                        " WHERE id = :id AND queue = :queue AND state = 2 AND available < :available;");
 
-                  result.dequeue.first_match = connection.precompile( R"( 
-                        SELECT 
-                           ROWID, id, properties, reply, redelivered, type, available, timestamp, payload
-                        FROM 
-                           message 
-                        WHERE queue = :queue AND state = 2 AND properties = :properties AND available < :available ORDER BY timestamp ASC LIMIT 1; )");
+                  result.dequeue.first_match = connection.precompile(
+                        "SELECT"
+                           " ROWID, id, properties, reply, redelivered, type, available, MIN( timestamp), payload"
+                        " FROM"
+                           " message"
+                        " WHERE queue = :queue AND state = 2 AND properties = :properties AND available < :available;");
                }
 
 
@@ -107,14 +107,15 @@ namespace casual
                         // we multiply by 1'000'000 to get microseconds, and we add retry_delay which is in us already.
                         " ELSE ( ( julianday('now') - 2440587.5) *86400 * 1000 * 1000) + retry_delay END" 
                         " FROM queue WHERE id = message.queue)"
-                     " WHERE gtrid = :gtrid AND state = 3");
+                     " WHERE gtrid = :gtrid AND state = 3");   
 
-                  //! increment redelivered and "move" messages to error-queue iff we've passed retry_count and the queue has an error-queue.
-                  //! error-queues themselfs does not have an error-queue, hence the message will stay in the error-queue until it's consumed.
+                  // increment redelivered and "move" messages to error-queue iff we've passed retry_count and the queue has an error-queue.
+                  // error-queues themselfs does not have an error-queue, hence the message will stay in the error-queue until it's consumed.
+                  // We use the fact that error-queues are odd and queues are even.
                   result.rollback3 = connection.precompile(
-                        "UPDATE message SET redelivered = 0, queue = ( SELECT q.error FROM queue q WHERE q.id = message.queue)"
-                        " WHERE message.redelivered > ( SELECT q.retry_count FROM queue q WHERE q.id = message.queue) "
-                        " AND ( SELECT q.error FROM queue q WHERE q.id = message.queue) != 0;"
+                        "UPDATE message SET redelivered = 0, queue = queue - 1"
+                        " WHERE gtrid = :gtrid AND ( queue % 2) = 0 "
+                        " AND redelivered > ( SELECT q.retry_count FROM queue q WHERE q.id = message.queue);"
                      );
                }
 
@@ -248,7 +249,7 @@ WHERE id = :id; )");
                result.restore = connection.precompile(R"( 
                   UPDATE message 
                   SET queue = :queue 
-                  WHERE state = 2 AND queue != origin AND origin = :queue; )");
+                  WHERE queue != origin AND state = 2 AND origin = :queue; )");
 
                result.clear = connection.precompile(R"( 
                   DELETE FROM message
