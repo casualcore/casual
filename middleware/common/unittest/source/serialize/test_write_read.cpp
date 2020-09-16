@@ -293,6 +293,17 @@ namespace casual
          EXPECT_TRUE( TestFixture::write_read( value) == value) << "value: '" << value; 
       }
 
+      TYPED_TEST( common_serialize_write_read, type_char__ws)
+      {
+         unittest::Trace trace;
+
+         const char value = ' ';
+         EXPECT_NO_THROW( 
+            EXPECT_TRUE( TestFixture::write_read( value) == value) << "value: '" << value; 
+         ) << "document:\n" << TestFixture::string_document( value);
+      }
+
+
       TYPED_TEST( common_serialize_write_read, type_string_all_printable_ascii)
       {
          unittest::Trace trace;
@@ -459,7 +470,9 @@ namespace casual
 
          auto value = unittest::random::create< std::tuple< int, std::string, char, long, platform::binary::type, short>>();
 
-         EXPECT_TRUE( TestFixture::unnamed_write_read( value) == value);
+         EXPECT_NO_THROW(
+            EXPECT_TRUE( TestFixture::unnamed_write_read( value) == value);
+         ) << CASUAL_NAMED_VALUE( value);
       }
 
       TYPED_TEST( common_serialize_write_read, unnamed_type_vector_composit)

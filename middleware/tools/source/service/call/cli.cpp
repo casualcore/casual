@@ -325,6 +325,42 @@ namespace casual
                         }
                      };
                   } // complete
+
+                  namespace option
+                  {
+                     auto examples( State& state)
+                     {
+                        auto invoke = [&state]()
+                        {
+                           // make sure we don't do any calls
+                           state.machine = State::Flag::done;
+
+                           std::cout << R"(examples:
+
+json buffer:
+   `host# echo '{ "key" : "some", "value": "json"}' | casual buffer --compose ".json/" | casual call --service a | casual buffer --extract`
+
+fielded buffer:
+   `host# cat some-fields.yaml | casual buffer --field-from-human yaml | casual call --service a | casual buffer --field-to-human json`
+
+   where the format of _human-fields_ are (in this case yaml):
+   
+   fields:
+     - name: "CUSTOMER_ID"
+       value: "9999999"
+     - name: "CUSTOMER_NAME"
+       value: "foo bar"
+   
+from a dequeue
+   `host# casual queue --dequeue qA | casual call --service a | casual queue --enqueue qB`
+)";
+
+                        };
+
+                        return argument::Option{ invoke, { "--examples"}, "prints several examples of how casual call can be used"};
+
+                     }
+                  } // option
                } // <unnamed>
             } // local
          
@@ -353,13 +389,13 @@ namespace casual
 
 Reads buffer(s) from stdin and call the provided service, prints the reply buffer(s) to stdout.
 Assumes that the input buffer to be in a conformant format, ie, created by casual.
-Error will be printed to stderr
+Errors will be printed to stderr
 
 @note: part of casual-pipe
 )",
                      argument::Option( std::tie( m_state.service), local::complete::service, { "-s", "--service"}, "service to call")( argument::cardinality::one{}),
-
                      argument::Option( std::tie( m_state.iterations), { "--iterations"}, "number of iterations (default: 1) - this could be helpful for testing load"),
+                     local::option::examples( m_state),
 
                      // deprecated
                      argument::Option( deprecated( asynchronous_information), argument::option::keys( {}, { "--asynchronous"}), asynchronous_information),

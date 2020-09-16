@@ -300,8 +300,9 @@ namespace casual
                         void read( double& value) const { consume( *m_stack.back(), value);}
                         void read( char& value) const
                         {
-                           consume( *m_stack.back(), value);
-                           value = *common::transcode::utf8::decode( { value}).c_str();
+                           std::string string;
+                           consume( *m_stack.back(), string);
+                           value = *common::transcode::utf8::decode( string).c_str();
                         }
                         void read( std::string& value) const
                         {
@@ -436,7 +437,7 @@ namespace casual
 
                         void write( const char& value)
                         {
-                           m_output << common::transcode::utf8::encode( { value});
+                           m_output << YAML::SingleQuoted << common::transcode::utf8::encode( { value});
                         }
 
                         void write( const std::string& value)
