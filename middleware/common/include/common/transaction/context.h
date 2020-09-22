@@ -37,6 +37,7 @@ namespace casual
 
             static Context& instance();
 
+
             //! Correspond to the tx API
             //! @{
             void open();
@@ -109,9 +110,17 @@ namespace casual
 
             //! @attention only for unittest... temporary until we fix the "context-fiasco".
             static Context& clear();
+
+            //! return true if the context holds no transactions, only (?) for unittest
+            bool empty() const;
             
 
          private:
+
+            std::vector< Transaction> m_transactions;
+
+            //! 'null' transaction, used when no transaction present...
+            Transaction m_empty;
 
             using control_type = TRANSACTION_CONTROL;
             enum class Control : control_type
@@ -134,7 +143,6 @@ namespace casual
 
             Commit_Return m_commit_return = Commit_Return::completed;
 
-
             struct resources_type
             {
                std::vector< Resource> all;
@@ -145,16 +153,11 @@ namespace casual
 
             } m_resources;
 
-            
-
-
-            std::vector< Transaction> m_transactions;
-
-            transaction::ID m_caller;
 
             TRANSACTION_TIMEOUT m_timeout = 0;
 
             Context();
+            ~Context();
 
             void commit( const Transaction& transaction);
             void rollback( const Transaction& transaction);

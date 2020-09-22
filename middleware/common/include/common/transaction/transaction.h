@@ -29,11 +29,11 @@ namespace casual
 
             enum class State : TRANSACTION_STATE
             {
-               //suspended = - 1,
                active = TX_ACTIVE,
                timeout = TX_TIMEOUT_ROLLBACK_ONLY,
                rollback = TX_ROLLBACK_ONLY,
             };
+
             friend std::ostream& operator << ( std::ostream& out, State value);
 
 
@@ -84,6 +84,12 @@ namespace casual
             //! associated descriptors to this transaction
             const std::vector< Uuid>& correlations() const;
 
+            //! functions to deduce or set if the transaction is suspended
+            //! or not.
+            void suspend();
+            void resume();
+            bool suspended() const;
+
             //! @return true if the transaction is only local, current process 
             //!  is the owner, no pending calls, and no external involvement
             bool local() const;
@@ -104,6 +110,7 @@ namespace casual
                CASUAL_SERIALIZE_NAME( m_pending, "pending");
                CASUAL_SERIALIZE_NAME( m_dynamic, "dynamic");
                CASUAL_SERIALIZE_NAME( m_external, "external");
+               CASUAL_SERIALIZE_NAME( m_suspended, "suspended");
             })
 
          private:
@@ -111,6 +118,7 @@ namespace casual
             std::vector< Uuid> m_pending;
             std::vector< strong::resource::id> m_dynamic;
             bool m_external = false;
+            bool m_suspended = false;
          };
 
       } // transaction

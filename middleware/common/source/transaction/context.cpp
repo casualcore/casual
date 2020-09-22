@@ -48,33 +48,37 @@ namespace casual
 
          Context::Context() = default;
 
+         Context::~Context()
+         {
+            if( ! m_transactions.empty())
+               log::line( log::stream::get( "error"), code::casual::invalid_semantics, " transactions not consumed: ", m_transactions.size());
+         }
+
          Context& Context::clear()
          {
             instance() = Context{};
             return instance();
          }
 
+         bool Context::empty() const
+         {
+            return m_transactions.empty();
+         }
+
          Transaction& Context::current()
          {
-            if( m_transactions.empty())
-            {
-               static Transaction singleton;
-               return singleton;
-            }
+            if( m_transactions.empty() || m_transactions.back().suspended())
+               return m_empty;
 
             return m_transactions.back();
          }
 
          bool Context::associated( const Uuid& correlation)
          {
-            for( auto& transaction : m_transactions)
+            return algorithm::any_of( m_transactions, [&correlation]( auto& transaction)
             {
-               if( transaction.state == Transaction::State::active && transaction.associated( correlation))
-               {
-                  return true;
-               }
-            }
-            return false;
+               return transaction.state == Transaction::State::active && transaction.associated( correlation);
+            });
          }
 
          namespace local
@@ -817,13 +821,13 @@ namespace casual
 
             // We don't check if current transaction is aborted. This differs from Tuxedo's semantics
 
+            // mark the transaction as suspended
+            ongoing.suspend();
+
             // Tell the RM:s to suspend
             resources_end( ongoing, flag::xa::Flag::suspend);
 
             *xid = ongoing.trid.xid;
-
-            // Push a null-xid to indicate suspended transaction
-            m_transactions.emplace_back();
          }
 
 
@@ -840,8 +844,8 @@ namespace casual
 
             auto& ongoing = current();
 
-            if( ongoing.trid)
-               code::raise::error( code::tx::protocol, "resume: ongoing transaction is active'");
+            if( ongoing.trid && ! ongoing.suspended())
+               code::raise::error( code::tx::protocol, "resume: ongoing transaction is active");
 
             if( ! ongoing.dynamic().empty())
                code::raise::error( code::tx::outside, "resume: ongoing work outside global transaction: ", ongoing);
@@ -851,14 +855,16 @@ namespace casual
             if( ! found)
                code::raise::error( code::tx::argument, "resume: transaction not known");
 
+            if( ! found->suspended())
+               code::raise::error( code::tx::protocol, "resume: wanted transaction is not suspended");
+
 
             // All precondition are met, let's set wanted transaction as current
             {
+               found->resume();
+
                // Tell the RM:s to resume
                resources_start( *found, flag::xa::Flag::resume);
-
-               // We pop the top null-xid that represent a suspended transaction
-               m_transactions.pop_back();
 
                // We rotate the wanted to end;
                algorithm::rotate( m_transactions, ++found);
@@ -980,31 +986,30 @@ namespace casual
          {
             Trace trace{ "transaction::Context::pop_transaction"};
 
+            // pop the current transaction
+            m_transactions.pop_back();
+
             // Dependent on control we do different stuff
             switch( m_control)
             {
                case Control::unchained:
                {
-                  // Same as pop, then push null-xid
-                  m_transactions.back() = Transaction{};
+                  // no op
                   break;
                }
                case Control::chained:
                {
-                  // Same as pop, then push null-xid
-                  m_transactions.back() = Transaction{};
-
                   // We start a new one
                   begin();
                   break;
                }
                case Control::stacked:
                {
-                  // Just promote the previous transaction in the stack to current
-                  m_transactions.pop_back();
-
-                  // Tell the RM:s to resume
-                  resources_end( m_transactions.back(), flag::xa::Flag::resume);
+                  if( auto& current = Context::current())
+                  {
+                     // Tell the RM:s to resume
+                     resources_end( current, flag::xa::Flag::resume);
+                  }
 
                   break;
                }

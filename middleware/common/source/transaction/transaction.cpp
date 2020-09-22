@@ -22,6 +22,7 @@ namespace casual
 
          Transaction::operator bool() const { return static_cast< bool>( trid);}
 
+
          void Transaction::associate( const Uuid& correlation)
          {
             m_external = true;
@@ -79,6 +80,10 @@ namespace casual
          {
             m_external = true;
          }
+
+         void Transaction::suspend() { m_suspended = true;}
+         void Transaction::resume() { m_suspended = false;}
+         bool Transaction::suspended() const { return m_suspended;}
 
          bool operator == ( const Transaction& lhs, const ID& rhs) { return lhs.trid == rhs;}
 

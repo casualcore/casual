@@ -20,15 +20,16 @@ namespace casual
       namespace transaction
       {
 
-         TEST( casual_common_transaction_context, current__expect_null_transaction)
+         TEST( common_transaction_context, current__expect_null_transaction)
          {
             common::unittest::Trace trace;
 
             EXPECT_TRUE( Context::instance().current().trid.null());
-
          }
 
-         TEST( casual_common_transaction_context, suspend__no_current_transaction__expect_TX_PROTOCOL_ERROR)
+
+
+         TEST( common_transaction_context, suspend__no_current_transaction__expect_TX_PROTOCOL_ERROR)
          {
             common::unittest::Trace trace;
 
@@ -37,7 +38,7 @@ namespace casual
             EXPECT_CODE( Context::instance().suspend( &xid);, code::tx::protocol);
          }
 
-         TEST( casual_common_transaction_context, begin__expect_transaction)
+         TEST( common_transaction_context, begin__expect_transaction)
          {
             common::unittest::Trace trace;
 
@@ -46,17 +47,16 @@ namespace casual
             EXPECT_NO_THROW( Context::instance().commit());
          }
 
-         TEST( casual_common_transaction_context, two_begin__expect_TX_PROTOCOLL_ERROR)
+         TEST( common_transaction_context, two_begin__expect_TX_PROTOCOLL_ERROR)
          {
             common::unittest::Trace trace;
-
 
             EXPECT_NO_THROW( context().begin());
             EXPECT_CODE( context().begin();, code::tx::protocol);
             EXPECT_NO_THROW( context().rollback());
          }
 
-         TEST( casual_common_transaction_context, begin_suspend_resume__rollback__expect_TX_OK)
+         TEST( common_transaction_context, begin_suspend_resume__rollback__expect_TX_OK)
          {
             common::unittest::Trace trace;
 
@@ -69,7 +69,7 @@ namespace casual
             ASSERT_NO_THROW( Context::instance().rollback());
          }
 
-         TEST( casual_common_transaction_context, begin__10__suspend_begin_suspend_resume__rollback__expect_TX_OK)
+         TEST( common_transaction_context, begin__10__suspend_begin_suspend_resume__rollback__expect_TX_OK)
          {
             common::unittest::Trace trace;
 
@@ -96,14 +96,14 @@ namespace casual
             EXPECT_NO_THROW( Context::instance().rollback());
          }
 
-         TEST( casual_common_transaction_context, no_xid__expect___pending_false)
+         TEST( common_transaction_context, no_xid__expect___pending_false)
          {
             common::unittest::Trace trace;
 
             EXPECT_TRUE( ! Context::instance().pending());
          }
 
-         TEST( casual_common_transaction_context, begin___expect__pending_true)
+         TEST( common_transaction_context, begin___expect__pending_true)
          {
             common::unittest::Trace trace;
 
@@ -113,7 +113,7 @@ namespace casual
             Context::instance().commit();
          }
 
-         TEST( casual_common_transaction_context, join_extern_trid___expect__pending_false)
+         TEST( common_transaction_context, join_extern_trid___expect__pending_false)
          {
             common::unittest::Trace trace;
 
@@ -125,6 +125,16 @@ namespace casual
             Context::instance().finalize( false);
          }
 
+         TEST( common_transaction_context, begin_commont__expect_context_empty)
+         {
+            common::unittest::Trace trace;
+
+            EXPECT_NO_THROW( context().begin());
+            EXPECT_TRUE( ! Context::instance().empty());
+            EXPECT_NO_THROW( context().commit());
+            EXPECT_TRUE( Context::instance().empty());
+            
+         }
 
       } // transaction
    } // common
