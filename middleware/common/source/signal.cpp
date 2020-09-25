@@ -557,19 +557,22 @@ namespace casual
          {
             signal::Set set( signal::Set mask)
             {
-               pthread_sigmask( SIG_SETMASK, &mask.set, &mask.set);
+               const auto set{mask.set};
+               pthread_sigmask( SIG_SETMASK, &set, &mask.set);
                return mask;
             }
 
             signal::Set block( signal::Set mask)
             {
-               pthread_sigmask( SIG_BLOCK, &mask.set, &mask.set);
+               const auto set{mask.set};
+               pthread_sigmask( SIG_BLOCK, &set, &mask.set);
                return mask;
             }
 
             signal::Set unblock( signal::Set mask)
             {
-               pthread_sigmask( SIG_UNBLOCK, &mask.set, &mask.set);
+               const auto set{mask.set};
+               pthread_sigmask( SIG_UNBLOCK, &set, &mask.set);
                return mask;
             }
 
