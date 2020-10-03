@@ -22,7 +22,7 @@ namespace casual
                Parse{ R"(
 Manages casual queue, the provided queue functionality.
 )",
-                  Option( std::tie( settings.group.executable), {"-g", "--group-executable"}, "path to casual-queue-group only (?) for unittest")
+                  Option( std::tie( settings.executable.path), { "--executable-path"}, "path for unittest"),
                }( argc, argv);
             }
 

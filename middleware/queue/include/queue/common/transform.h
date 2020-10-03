@@ -51,6 +51,13 @@ namespace casual
 
          std::vector< manager::admin::model::Message> messages( const common::message::queue::information::messages::Reply& reply);
 
+         manager::admin::model::Forward forward( std::vector< common::message::queue::forward::state::Reply> values);
+
+         //! We know we just have one instance of the forward for now...
+         common::message::queue::forward::configuration::Reply forward( manager::admin::model::Forward model);
+
+
+
 
       } // transform
    } // qeue

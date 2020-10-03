@@ -56,9 +56,11 @@ namespace casual
             friend bool operator < ( const Handle& lhs, const Handle& rhs);
 
             //! extended equality
-            inline friend bool operator == ( const Handle& lhs, const strong::process::id& rhs) { return lhs.pid == rhs;}
-            inline friend bool operator == ( const strong::process::id& lhs, const Handle& rhs) { return rhs == lhs;}
+            inline friend bool operator == ( const Handle& lhs, strong::process::id rhs) { return lhs.pid == rhs;}
+            inline friend bool operator != ( const Handle& lhs, strong::process::id rhs) { return lhs.pid != rhs;}
+            inline friend bool operator == ( strong::process::id lhs, const Handle& rhs) { return lhs == rhs.pid;}
             inline friend bool operator == ( const Handle& lhs, const strong::ipc::id& rhs) { return lhs.ipc == rhs;}
+            inline friend bool operator != ( const Handle& lhs, const strong::ipc::id& rhs) { return lhs.ipc != rhs;}
             inline friend bool operator == ( const strong::ipc::id& lhs, const Handle& rhs) { return rhs == lhs;}
 
             inline explicit operator bool() const
@@ -192,10 +194,16 @@ namespace casual
          //! Tries to terminate pid
          bool terminate( strong::process::id pid);
 
-         //! Tries to shutdown the process, if it fails terminate signal will be signaled
+         //! Tries to shutdown the process, if it fails terminate signal will be signaled.
+         //! @attention waits until the process dies.
          //!
          //! @param process to terminate
          void terminate( const Handle& process);
+
+         //! Tries to shutdown the processes, if it fails terminate signal will be signaled
+         //!
+         //! @return pids that got the directive delivered
+         std::vector< strong::process::id> terminate( const std::vector< Handle>& processes);
 
          namespace lifetime
          {
@@ -243,6 +251,7 @@ namespace casual
             //! Terminates and waits for the termination.
             //!
             //! @return the terminated l
+            std::vector< Exit> terminate( const std::vector< Handle>& handles);
             std::vector< Exit> terminate( const std::vector< strong::process::id>& pids);
             std::vector< Exit> terminate( const std::vector< strong::process::id>& pids, platform::time::unit timeout);
 
@@ -250,15 +259,15 @@ namespace casual
 
          namespace children
          {
-            //! Terminate all children that @p pids dictates.
+            //! Terminate all children that @p processes dictates.
             //! When a child is terminated callback is called
             //!
             //! @param callback the callback object
-            //! @param pids to terminate
-            template< typename C>
-            void terminate( C&& callback, std::vector< strong::process::id> pids)
+            //! @param processes to terminate (pids or process::Handles)
+            template< typename C, typename P>
+            void terminate( C&& callback, P&& processes)
             {
-               for( auto& death : lifetime::terminate( std::move( pids)))
+               for( auto& death : lifetime::terminate( std::forward< P>( processes)))
                {
                   callback( death);
                }
@@ -269,7 +278,7 @@ namespace casual
 
       } // process
 
-      struct Process 
+      struct Process : process::Handle
       {
          Process() = default;
          Process( const std::string& path, std::vector< std::string> arguments);
@@ -279,17 +288,12 @@ namespace casual
          Process( Process&&) noexcept = default;
          Process& operator = ( Process&&) noexcept = default;
 
-         inline const process::Handle& handle() const noexcept { return m_handle;}
+         inline const process::Handle& handle() const noexcept { return *this;}
          void handle( const process::Handle& handle);
 
-         // for logging only
-         CASUAL_LOG_SERIALIZE(
-         {
-            CASUAL_SERIALIZE_NAME( m_handle, "handle");
-         })
-
-      private:
-         process::Handle m_handle;
+         //! clears the handle, and no terminate on destruction will be attempted.
+         //! only (?) usefull when detected that the actual child process has died.
+         void clear();
       };
    } // common
 } // casual

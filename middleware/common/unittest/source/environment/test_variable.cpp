@@ -71,7 +71,7 @@ namespace casual
            
             Variable moved_from{ "NAME=VALUE"};
             auto variable = std::move( moved_from);
-            EXPECT_TRUE( moved_from.empty());
+            EXPECT_TRUE( moved_from.empty()); // NOLINT
             EXPECT_TRUE( ! variable.empty());
             EXPECT_TRUE( variable.name() == "NAME");
             EXPECT_TRUE( variable.value() == "VALUE");
@@ -86,7 +86,7 @@ namespace casual
             Variable variable;
             variable = std::move( moved_from);
 
-            EXPECT_TRUE( moved_from.empty());
+            EXPECT_TRUE( moved_from.empty()); // NOLINT
             EXPECT_TRUE( ! variable.empty());
             EXPECT_TRUE( variable.name() == "NAME");
             EXPECT_TRUE( variable.value() == "VALUE");

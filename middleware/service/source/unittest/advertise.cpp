@@ -16,6 +16,17 @@ namespace casual
    {
       namespace unittest
       {
+         namespace local
+         {
+            namespace
+            {
+               namespace ipc
+               {
+                  auto& manager() { return communication::instance::outbound::service::manager::device();}
+               } // ipc
+            } // <unnamed>
+         } // local
+
          void advertise( std::vector< std::string> services)
          {
             message::service::Advertise message{ process::handle()};
@@ -24,16 +35,18 @@ namespace casual
                return message::service::advertise::Service{ std::move( service)};
             });
 
-            communication::device::blocking::send( communication::instance::outbound::service::manager::device(), message);
+            communication::device::blocking::send( local::ipc::manager(), message);
          }
 
          void unadvertise( std::vector< std::string> services)
          {
             message::service::Advertise message{ process::handle()};
             message.services.remove = std::move( services);
-            communication::device::blocking::send( communication::instance::outbound::service::manager::device(), message);
-
+            communication::device::blocking::send( local::ipc::manager(), message);
          }
+
+         
+
       } // unittest
    } // common
 } // casual

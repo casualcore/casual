@@ -26,7 +26,6 @@
 
 #include "serviceframework/service/protocol/call.h"
 #include "common/serialize/macro.h"
-#include "serviceframework/log.h"
 
 #include "domain/manager/unittest/process.h"
 

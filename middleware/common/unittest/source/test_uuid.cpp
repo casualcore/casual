@@ -120,7 +120,7 @@ namespace casual
          Uuid moved{ std::move( value)};
 
 
-         EXPECT_TRUE( value.empty()) << uuid::string( value);
+         EXPECT_TRUE( value.empty()) << uuid::string( value); // NOLINT
          EXPECT_TRUE( ! moved.empty());
       }
 

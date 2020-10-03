@@ -17,7 +17,13 @@ host# casual --help queue
             list information of all groups in current domain
 
       -m, --list-messages [0..1]  (<queue>) [1]
-            list information of all messages of a queue
+            list information of all messages of the provided queue
+
+      --list-forward-services [0..1]
+            list information of all service forwards
+
+      --list-forward-queues [0..1]
+            list information of all queue forwards
 
       --restore [0..1]  (<queue>) [0..*]
             restores messages to queue
@@ -68,18 +74,24 @@ host# casual --help queue
             clears all messages from provided queues
             
             Example:
-            casual queue --clear queue-a queue-b
+            casual queue --clear a b c
 
       --remove-messages [0..1]  (<queue>, <id>) [2..*]
             removes specific messages from a given queue
 
-      --metric-reset [0..1]  (<queue>) [0..*]
+      --forward-scale-aliases [0..1]  (<alias>, <# instances>) [2..* {2}]
+            scales forward aliases to the requested number of instances
+            
+            Example:
+            casual queue --forward-scale-aliases a 2 b 0 c 10
+
+      --metric-reset [0..1]  (<queue>) [1..*]
             resets metrics for the provided queues
             
             if no queues are provided, metrics for all queues are reset.
             
             Example:
-            casual queue --metric-reset queue-a queue-b
+            casual queue --metric-reset a b
 
       --legend [0..1]  (list-queues, list-messages) [1]
             provide legend for the output for some of the options
@@ -91,7 +103,7 @@ host# casual --help queue
       --information [0..1]
             collect aggregated information about queues in this domain
 
-      --state [0..1]  (json|yaml|xml|ini) [0..1]
+      --state [0..1]  (json, yaml, xml, ini) [0..1]
             queue state
 
 ```

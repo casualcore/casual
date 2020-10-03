@@ -143,7 +143,7 @@ namespace casual
                         {
                            auto reply = []( State& state, auto& instance)
                            {
-                              Trace trace{ "service::manager::handle::process::local::service_call_error_reply"};
+                              Trace trace{ "service::manager::handle::local::process::detail::error::reply"};
 
                               log::line( common::log::category::error, code::casual::invalid_semantics, 
                                  " callee terminated with pending reply to caller - callee: ", 
@@ -164,7 +164,7 @@ namespace casual
                      {
                         return [&state]( common::message::event::process::Exit& message)
                         {
-                           Trace trace{ "service::manager::handle::process::Exit"};
+                           Trace trace{ "service::manager::handle::local::process::detail::exit"};
                            log::line( verbose::log, "message: ", message);
 
                            // we need to check if the dead process has anyone wating for a reply
@@ -236,6 +236,17 @@ namespace casual
 
                   namespace service
                   {
+                     namespace detail
+                     {
+                        namespace handle
+                        {
+                           // defined after lookup, below
+                           void pending( State& state, std::vector< state::service::Pending>&& pending);
+                        } // handle
+
+                        
+                     } // detail
+
                      auto advertise( State& state)
                      {
                         return [&state]( common::message::service::Advertise& message)
@@ -243,7 +254,8 @@ namespace casual
                            Trace trace{ "service::manager::handle::service::Advertise"};
                            log::line( verbose::log, "message: ", message);
 
-                           state.update( message);
+                           // some pending might got resolved, from the update
+                           detail::handle::pending( state, state.update( message));
                         };
                      }
 
@@ -256,7 +268,8 @@ namespace casual
                               Trace trace{ "service::manager::handle::service::concurrent::Advertise"};
                               common::log::line( verbose::log, "message: ", message);
 
-                              state.update( message);
+                              // some pending might got resolved.
+                              detail::handle::pending( state, state.update( message));
                            };
                         }
 
@@ -269,7 +282,7 @@ namespace casual
 
                               auto update_metric = [&]( auto& metric)
                               {
-                                 if( auto service = state.find_service( metric.service))
+                                 if( auto service = state.service( metric.service))
                                     service->metric.update( metric);
                               };
 
@@ -288,7 +301,7 @@ namespace casual
                      {
                         void discover( State& state, common::message::service::lookup::Request&& message, const std::string& name)
                         {
-                           Trace trace{ "service::manager::handle::service::Lookup::discover"};
+                           Trace trace{ "service::manager::handle::local::service::detail::discover"};
 
                            auto send_reply = execute::scope( [&]()
                            {
@@ -303,7 +316,6 @@ namespace casual
                               local::optional::send( message.process.ipc, reply);
                            });
 
-                           try
                            {
                               log::line( log, "no instances found for service: ", name, " - action: ask neighbor domains");
 
@@ -313,55 +325,55 @@ namespace casual
                               request.process = common::process::handle();
                               request.services.push_back( name);
 
-                              // If there is no gateway, this will throw
-                              communication::device::blocking::send( communication::instance::outbound::gateway::manager::optional::device(), request);
+                              auto& gateway = communication::instance::outbound::gateway::manager::optional::device();
 
-                              state.pending.requests.emplace_back( std::move( message), platform::time::clock::type::now());
+                              if( communication::device::blocking::optional::send( gateway, request)
+                                 || message.context == decltype( message.context)::wait)
+                              {
+                                 // we sent the request OR the caller is willing to wait for future 
+                                 // advertised services
 
-                              send_reply.release();
-                           }
-                           catch( ...)
-                           {
-                              common::exception::code();
+                                 state.pending.requests.emplace_back( std::move( message), platform::time::clock::type::now());
+                                 send_reply.release();
+                              }
                            }
                         }
 
                         void lookup( State& state, common::message::service::lookup::Request& message, platform::time::unit pending)
                         {
-                           Trace trace{ "service::manager::handle::service::Lookup::lookup"};
+                           Trace trace{ "service::manager::handle::local::service::detail::lookup"};
                            log::line( verbose::log, "message: ", message, ", pending: ", pending);
 
-                           try
+                           if( auto service = state.service( message.requested))
                            {
-                              // will throw 'Missing' if not found, and a discover will take place
-                              auto& service = state.service( message.requested);
-
-                              auto handle = service.reserve( message.process, message.correlation);
+                              auto handle = service->reserve( message.process, message.correlation);
 
                               if( handle)
                               {
                                  auto reply = common::message::reverse::type( message);
-                                 reply.service = service.information;
+                                 reply.service = service->information;
                                  reply.state = decltype( reply.state)::idle;
                                  reply.process = handle;
                                  reply.pending = pending;
 
+                                 // TODO maintainence: if the message is not sent, we need to unreserve
                                  local::optional::send( message.process.ipc, reply);
                               }
-                              else if( service.instances.empty())
+                              else if( service->instances.empty())
                               {
                                  // note: vi discover on the "real service name", in case it's a route
-                                 discover( state, std::move( message), service.information.name);
+                                 discover( state, std::move( message), service->information.name);
                               }
                               else
                               {
                                  auto reply = common::message::reverse::type( message);
-                                 reply.service = service.information;
+                                 reply.service = service->information;
 
                                  switch( message.context)
                                  {
-                                    case common::message::service::lookup::Request::Context::no_reply:
-                                    case common::message::service::lookup::Request::Context::forward:
+                                    using Context = decltype( message.context);
+
+                                    case Context::forward:
                                     {
                                        // The intention is "send and forget", or a plain forward, we use our forward-cache for this
                                        reply.process = state.forward;
@@ -374,20 +386,21 @@ namespace casual
 
                                        break;
                                     }
-                                    case common::message::service::lookup::Request::Context::gateway:
+                                    case Context::no_busy_intermediate:
                                     {
-                                       // the request is from some other domain, we'll wait until
+                                       // the caller does not want to get a busy intermediate, only want's to wait until
                                        // the service is idle. That is, we don't need to send timeout and
-                                       // stuff to the gateway, since the other domain has provided this to
-                                       // the caller (which of course can differ from our timeouts, if operation
-                                       // has change the timeout) 
+                                       // stuff to the caller.
+                                       //
+                                       // If this is from another domain the actual timeouts and stuff can differ
+                                       // and this might be a problem?
                                        // TODO semantics: something we need to address? probably not,
                                        // since we can't make it 100% any way...)
                                        state.pending.requests.emplace_back( std::move( message), platform::time::clock::type::now());
 
                                        break;
                                     }
-                                    default:
+                                    case Context::regular:
                                     {
                                        // send busy-message to caller, to set timeouts and stuff
                                        reply.state = decltype( reply.state)::busy;
@@ -400,15 +413,16 @@ namespace casual
 
                                        break;
                                     }
+                                    case Context::wait:
+                                    {
+                                       // we know the service exists, and it got instances, we do a regular pending.
+                                       state.pending.requests.emplace_back( std::move( message), platform::time::clock::type::now());
+                                    }
                                  }
                               }
                            }
-                           catch( ...)
+                           else
                            {
-                              auto code = exception::code();
-                              if( code != code::casual::domain_instance_unavailable)
-                                 throw;
-
                               auto name = message.requested;
                               discover( state, std::move( message), name);
                            }
@@ -433,14 +447,9 @@ namespace casual
                               Trace trace{ "service::manager::handle::service::discard::Lookup"};
                               log::line( verbose::log, "message: ", message);
 
-                              auto equal_correlation = [&message]( auto& pending)
-                              {
-                                 return message.correlation == pending.request.correlation;
-                              };
-
                               auto reply = message::reverse::type( message);
 
-                              if( auto found = algorithm::find_if( state.pending.requests, equal_correlation))
+                              if( auto found = algorithm::find( state.pending.requests, message.correlation))
                               {
                                  log::line( log, "found pending to discard");
                                  log::line( verbose::log, "pending: ", *found);
@@ -477,6 +486,33 @@ namespace casual
                            };
                         }
                      } // discard
+
+                     namespace detail
+                     {
+                        namespace handle
+                        {
+                           // Used by advertised above, defined here to be able to use lookup...
+                           void pending( State& state, std::vector< state::service::Pending>&& pending)
+                           {
+                              if( pending.empty())
+                                 return;
+
+                              auto lookup = [&state, now = platform::time::clock::type::now()]( auto& pending)
+                              {
+                                 // context::wait is not relevant for pending time.
+                                 if( pending.request.context == decltype( pending.request.context)::wait)
+                                    service::detail::lookup( state, pending.request, {});
+                                 else                              
+                                    service::detail::lookup( state, pending.request, platform::time::clock::type::now() - pending.when);
+                              };
+                              
+                              // we just use the 'regular' lookup to take care of the pending
+                              algorithm::for_each( pending, lookup);
+                           }
+                        } // handle
+
+                        
+                     } // detail
                   } // service
 
                   namespace domain
@@ -497,7 +533,7 @@ namespace casual
 
                               auto known_services = [&]( auto& name)
                               {
-                                 auto service = state.find_service( name);
+                                 auto service = state.service( name);
 
                                  // We don't allow other domains to access or know about our
                                  // admin services.
@@ -516,7 +552,7 @@ namespace casual
                                              service->information.name,
                                              service->information.category,
                                              service->information.transaction,
-                                             service->instances.concurrent.front().hops());
+                                             service->instances.concurrent.front().property);
                                     }
                                  }
                               };
@@ -534,17 +570,11 @@ namespace casual
                               Trace trace{ "service::manager::handle::gateway::discover::Reply"};
                               common::log::line( verbose::log, "message: ", message);
 
-                              auto has_correlation = [&message]( auto& pending)
+                              if( auto found = algorithm::find( state.pending.requests, message.correlation))
                               {
-                                 return pending.request.correlation == message.correlation;
-                              };
+                                 auto pending = algorithm::extract( state.pending.requests, std::begin( found));
 
-                              if( auto found = algorithm::find_if( state.pending.requests, has_correlation))
-                              {
-                                 auto pending = std::move( *found);
-                                 state.pending.requests.erase( std::begin( found));
-
-                                 auto service = state.find_service( pending.request.requested);
+                                 auto service = state.service( pending.request.requested);
 
                                  if( service && ! service->instances.empty())
                                  {
@@ -552,7 +582,12 @@ namespace casual
                                     // the lookup to decide how to progress.
                                     service::lookup( state)( pending.request);
                                  }
-                                 else
+                                 else if( pending.request.context == decltype( pending.request.context)::wait)
+                                 {
+                                    // we put the pending back. In front to be as fair as possible
+                                    state.pending.requests.push_front( std::move( pending));
+                                 }
+                                 else 
                                  {
                                     auto reply = common::message::reverse::type( pending.request);
                                     reply.service.name = pending.request.requested;
@@ -577,18 +612,15 @@ namespace casual
                   {
                      return [&state]( const common::message::service::call::ACK& message)
                      {
-                        Trace trace{ "service::manager::handle::ACK"};
+                        Trace trace{ "service::manager::local::handle::ack"};
                         log::line( verbose::log, "message: ", message);
 
-                        try
+                        // This message can only come from a local instance
+                        if( auto instance = state.sequential( message.metric.process.pid))
                         {
-                           //auto now = platform::time::clock::type::now();
+                           instance->unreserve( message.metric);
 
-                           // This message can only come from a local instance
-                           auto& instance = state.sequential( message.metric.process.pid);
-                           auto service = instance.unreserve( message.metric);
-
-                           // add metric
+                           // add event-metric
                            if( state.events.active< common::message::event::service::Calls>())
                            {
                               state.metric.add( std::move( message.metric));
@@ -599,37 +631,29 @@ namespace casual
                            // instance has.
 
                            {
-                              auto has_pending = [&instance]( const auto& pending)
+                              auto has_pending = [instance]( const auto& pending)
                               {
-                                 return instance.service( pending.request.requested);
+                                 return instance->service( pending.request.requested);
                               };
 
-                              if( auto pending = common::algorithm::find_if( state.pending.requests, has_pending))
+                              if( auto found = common::algorithm::find_if( state.pending.requests, has_pending))
                               {
-                                 log::line( verbose::log, "found pendig: ", *pending);
+                                 log::line( verbose::log, "found pendig: ", *found);
 
-                                 const auto waited = platform::time::clock::type::now() - pending->when;
+                                 auto pending = algorithm::extract( state.pending.requests, std::begin( found));
 
                                  // We now know that there are one idle server that has advertised the
                                  // requested service (we've just marked it as idle...).
                                  // We can use the normal request to get the response
-                                 service::detail::lookup( state, pending->request, waited);
-
-                                 // add pending metrics
-                                 service->metric.pending += waited;
-
-                                 // Remove pending
-                                 state.pending.requests.erase( std::begin( pending));
+                                 service::detail::lookup( state, pending.request, platform::time::clock::type::now() - pending.when);
                               }
                            }
                         }
-                        catch( ...)
+                        else
                         {
-                           auto code = exception::code();
-                           if( code != code::casual::domain_instance_unavailable)
-                              throw;
-
-                           log::line( log::category::error, code, " failed to find instance on ACK - indicate inconsistency - action: ignore");
+                           log::line( log::category::error, 
+                              code::casual::internal_correlation, 
+                              " failed to find instance on ACK - indicate inconsistency - action: ignore");
                         }
                      };
                   }

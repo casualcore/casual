@@ -29,6 +29,7 @@ namespace casual
             {
                namespace transform
                {
+
                   template< typename R> 
                   auto metric(common::message::event::service::Metric&& metric)
                   {
@@ -89,13 +90,17 @@ namespace casual
                   
                   auto transform_metric = []( common::message::event::service::Metric& metric)
                   {
-                     auto result = local::transform::metric< model::service::Call::Metric>( std::move( metric));
+                     using Metric = model::service::Call::Metric;
                      
-                     result.service.type = metric.type == decltype( metric.type)::concurrent ? 
-                        decltype( result.service.type)::concurrent : decltype( result.service.type)::sequential;
+                     auto type = metric.type == decltype( metric.type)::concurrent ? 
+                        decltype( Metric::service.type)::concurrent : decltype( Metric::service.type)::sequential;
+
+                     auto result = local::transform::metric< model::service::Call::Metric>( std::move( metric));
+                     result.service.type = type;
 
                      return result;
                   };
+
                   model::service::Call event;
                   algorithm::transform( message.metrics, event.metrics, transform_metric);
                   

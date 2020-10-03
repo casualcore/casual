@@ -182,6 +182,15 @@ namespace casual
 
                   //! correlations of all pending rediscoveries. 
                   std::vector< Uuid> rediscoveries;
+
+                  struct
+                  {
+                     std::vector< std::string> services;
+                     std::vector< std::string> queues;
+
+                     bool empty() const { return services.empty() && queues.empty();}
+
+                  } configured;
                };
 
 
@@ -315,22 +324,32 @@ namespace casual
                               common::communication::instance::outbound::queue::manager::optional::device(),
                               advertise);
                         }
+
+                        template< typename C>
+                        auto update_service_property( const C& configured)
+                        {
+                           return [&configured]( auto& service)
+                           {
+                              // add one hop, since we now it has passed a domain boundary
+                              ++service.property.hops;
+                              service.type = decltype( service.type)::concurrent;
+
+                              if( algorithm::sorted::search( configured.services, service.name))
+                                 service.property.type = decltype( service.property.type)::configured;
+                              else 
+                                 service.property.type = decltype( service.property.type)::discovered;
+                           };
+                        }
+
                      } // detail
 
                      template< typename S = std::vector< common::message::service::concurrent::advertise::Service>>
                      void services( State& state, const Uuid& execution, S&& services)
                      {
-                        detail::services( state, execution, [&services]( auto& message)
+                        detail::services( state, execution, [&services, &configured = state.configured]( auto& message)
                         {
                            message.services.add = std::forward< S>( services);
-                           
-                           for( auto& service : message.services.add)
-                           {
-                              // add one hop, since we now it has passed a domain boundary
-                              ++service.hops;
-                              // outbound has "infinite" instances and can be called concurrent.
-                              service.type = decltype( service.type)::concurrent;
-                           }
+                           algorithm::for_each( message.services.add, detail::update_service_property( configured));
                         });
                      }
 
@@ -349,14 +368,12 @@ namespace casual
                         template< typename S = std::vector< common::message::service::concurrent::advertise::Service>>
                         void services( State& state, const Uuid& execution, S&& services)
                         {
-                           detail::services( state, execution, [&services]( auto& message)
+                           detail::services( state, execution, [&services, &configured = state.configured]( auto& message)
                            {
                               message.reset = true;
                               message.services.add = std::forward< S>( services);
 
-                              // add one hop, since we now it has passed a domain boundary
-                              for( auto& service : message.services.add) 
-                                 ++service.hops;
+                              algorithm::for_each( message.services.add, detail::update_service_property( configured));
                            });
                         }
 
@@ -903,12 +920,18 @@ namespace casual
                      {
                         auto reply( State& state)
                         {
-                           return [&state]( const message::outbound::configuration::Reply& message)
+                           return [&state]( message::outbound::configuration::Reply& message)
                            {
                               Trace trace{ "gateway::outbound::local::handle::internal::configuration::reply"};
                               log::line( verbose::log, "message: ", message);
 
-                              if( ! message.services.empty() || ! message.queues.empty())
+                              state.configured.services = std::move( message.services);
+                              state.configured.queues = std::move( message.queues);
+
+                              algorithm::sort( state.configured.services);
+                              algorithm::sort( state.configured.queues);
+
+                              if( ! state.configured.empty())
                               {
                                  // We make sure we get the reply (hence not forwarding to some other process)
                                  common::message::gateway::domain::discover::Request request{ common::process::handle()};
@@ -917,8 +940,8 @@ namespace casual
                                  request.correlation = common::uuid::make();
 
                                  request.domain = common::domain::identity();
-                                 request.services = message.services;
-                                 request.queues = message.queues;
+                                 request.services = state.configured.services;
+                                 request.queues = state.configured.queues;
 
                                  // Use regular handler to manage the "routing"
                                  handle::internal::domain::discover::request( state)( request);

@@ -70,16 +70,38 @@ namespace casual
 
             namespace lookup
             {
+               namespace request
+               {
+                  enum class Context : short
+                  {
+                     direct,
+                     wait
+                  };
+
+                  inline std::ostream& operator << ( std::ostream& out, const Context& value)
+                  {
+                     switch( value)
+                     {
+                        case Context::direct: return out << "direct";
+                        case Context::wait: return out << "wait";
+                     }
+                     return out << "unknown";
+                  }
+               } // request
+
                using base_request = basic_request< Type::queue_lookup_request>;
                struct Request : base_request
                {
                   using base_request::base_request;
 
+
+                  request::Context context = request::Context::direct;
                   std::string name;
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
                   {
                      base_request::serialize( archive);
+                     CASUAL_SERIALIZE( context);
                      CASUAL_SERIALIZE( name);
                   })
                };
@@ -93,7 +115,8 @@ namespace casual
                   std::string name;
                   size_type order = 0;
 
-                  explicit operator bool () const { return ! process.ipc.empty();}
+                  inline explicit operator bool () const { return ! process.ipc.empty();}
+                  inline bool remote() const { return order > 0;}
 
                   CASUAL_CONST_CORRECT_SERIALIZE({
                      base_reply::serialize( archive);
@@ -101,9 +124,46 @@ namespace casual
                      CASUAL_SERIALIZE( name);
                      CASUAL_SERIALIZE( order);
                   })
-
-                  bool local() const;
                };
+
+               namespace discard
+               {
+                  using base_request = basic_request< Type::queue_lookup_discard_request>;
+
+                  //! only correlation is used to correlate previous lookup requests.
+                  using Request = base_request;
+
+                  namespace reply
+                  {
+                     enum class State : short
+                     {
+                        replied,
+                        discarded,
+                     };
+
+                     inline std::ostream& operator << ( std::ostream& out, State value)
+                     {
+                        switch( value)
+                        {
+                           case State::discarded: return out << "discarded";
+                           case State::replied: return out << "replied";
+                        }
+                        return out << "unknown";
+                     }
+                  } // reply
+
+                  using base_reply = basic_message< Type::queue_lookup_discard_request>;
+                  struct Reply : base_reply
+                  {
+                     reply::State state = reply::State::replied;
+
+                     CASUAL_CONST_CORRECT_SERIALIZE(
+                     {
+                        base_reply::serialize( archive);
+                        CASUAL_SERIALIZE( state);
+                     })
+                  };
+               } // discard
 
             } // lookup
 
@@ -497,27 +557,229 @@ namespace casual
                } // messages
             } // peek
 
-
-            namespace connect
+            namespace group
             {
-               using Request = basic_request< Type::queue_connect_request>;
-
-               using base_reply = basic_message< Type::queue_connect_reply>;
-               struct Reply : base_reply
+               namespace connect
                {
-                  using base_reply::base_reply;
+                  using Request = basic_request< Type::queue_group_connect_request>;
 
-                  std::string name;
-                  std::vector< Queue> queues;
-
-                  CASUAL_CONST_CORRECT_SERIALIZE(
+                  using base_reply = basic_message< Type::queue_group_connect_reply>;
+                  struct Reply : base_reply
                   {
-                     base_reply::serialize( archive);
-                     CASUAL_SERIALIZE( name);
-                     CASUAL_SERIALIZE( queues);
-                  })
-               };
-            } // connect
+                     using base_reply::base_reply;
+
+                     std::string name;
+                     std::vector< Queue> queues;
+
+                     CASUAL_CONST_CORRECT_SERIALIZE(
+                     {
+                        base_reply::serialize( archive);
+                        CASUAL_SERIALIZE( name);
+                        CASUAL_SERIALIZE( queues);
+                     })
+                  };
+               } // connect
+            } // group
+
+            namespace forward
+            {
+               namespace configuration
+               {
+                  using Request = basic_request< Type::queue_forward_configuration_request>;
+                  
+                  using base_reply = basic_message< Type::queue_forward_configuration_reply>;
+                  struct Reply : base_reply
+                  {
+                     using base_reply::base_reply;
+
+                     struct Source
+                     {
+                        std::string name;
+                        
+                        CASUAL_CONST_CORRECT_SERIALIZE(
+                           CASUAL_SERIALIZE( name);
+                        )
+                     };
+
+                     struct Queue
+                     {
+                        struct Target
+                        {
+                           std::string name;
+                           platform::time::unit delay{};
+
+                           CASUAL_CONST_CORRECT_SERIALIZE(
+                              CASUAL_SERIALIZE( name);
+                              CASUAL_SERIALIZE( delay);
+                           )
+                        };
+
+                        std::string alias;
+                        Source source;
+                        Target target;
+                        platform::size::type instances = 0;
+                        std::string note;
+
+                        CASUAL_CONST_CORRECT_SERIALIZE(
+                           CASUAL_SERIALIZE( alias);
+                           CASUAL_SERIALIZE( source);
+                           CASUAL_SERIALIZE( target);
+                           CASUAL_SERIALIZE( instances);
+                           CASUAL_SERIALIZE( note);
+                        )
+                     };
+
+                     struct Service
+                     {
+                        using Target = Source;
+                        using Reply = Queue::Target;
+                        
+                        std::string alias;
+                        Source source;
+                        Target target;
+                        platform::size::type instances = 0;
+                        common::optional< Reply> reply;
+                        std::string note;
+
+                        CASUAL_CONST_CORRECT_SERIALIZE(
+                           CASUAL_SERIALIZE( alias);
+                           CASUAL_SERIALIZE( source);
+                           CASUAL_SERIALIZE( target);
+                           CASUAL_SERIALIZE( instances);
+                           CASUAL_SERIALIZE( reply);
+                           CASUAL_SERIALIZE( note);
+                        )
+                     };
+
+                     std::vector< Service> services;
+                     std::vector< Queue> queues;
+
+                     CASUAL_CONST_CORRECT_SERIALIZE(
+                        base_reply::serialize( archive);
+                        CASUAL_SERIALIZE( services);
+                        CASUAL_SERIALIZE( queues);
+                     )
+                  };
+               } // configuration
+
+               namespace state
+               {
+                  using Request = basic_request< Type::queue_forward_state_request>;
+
+                  using base_reply = basic_request< Type::queue_forward_state_reply>;
+                  struct Reply : base_reply
+                  {
+                     using base_reply::base_reply;
+
+                     struct Instances
+                     {
+                        platform::size::type configured = 0;
+                        platform::size::type running = 0;
+
+                        CASUAL_CONST_CORRECT_SERIALIZE(
+                           CASUAL_SERIALIZE( configured);
+                           CASUAL_SERIALIZE( running);
+                        )
+                     };
+
+                     struct Metric
+                     {
+                        struct Count
+                        {
+                           platform::size::type count = 0;
+                           platform::time::point::type last{};
+
+                           CASUAL_CONST_CORRECT_SERIALIZE(
+                              CASUAL_SERIALIZE( count);
+                              CASUAL_SERIALIZE( last);
+                           )
+                        };
+
+                        Count commit;
+                        Count rollback;
+
+                        CASUAL_CONST_CORRECT_SERIALIZE(
+                           CASUAL_SERIALIZE( commit);
+                           CASUAL_SERIALIZE( rollback);
+                        )
+                     };
+
+                     struct Source
+                     {
+                        std::string name;
+                        
+                        CASUAL_CONST_CORRECT_SERIALIZE(
+                           CASUAL_SERIALIZE( name);
+                        )
+                     };
+
+                     struct Queue
+                     {
+                        struct Target
+                        {
+                           std::string name;
+                           platform::time::unit delay{};
+
+                           CASUAL_CONST_CORRECT_SERIALIZE(
+                              CASUAL_SERIALIZE( name);
+                              CASUAL_SERIALIZE( delay);
+                           )
+                        };
+
+                        std::string alias;
+                        Source source;
+                        Target target;
+                        Instances instances;
+                        Metric metric;
+                        std::string note;
+
+                        CASUAL_CONST_CORRECT_SERIALIZE(
+                           CASUAL_SERIALIZE( alias);
+                           CASUAL_SERIALIZE( source);
+                           CASUAL_SERIALIZE( target);
+                           CASUAL_SERIALIZE( instances);
+                           CASUAL_SERIALIZE( metric);
+                           CASUAL_SERIALIZE( note);
+                        )
+                     };
+
+                     struct Service
+                     {
+                        using Target = Source;
+                        using Reply = Queue::Target;
+                        
+                        std::string alias;
+                        Source source;
+                        Target target;
+                        Instances instances;
+                        common::optional< Reply> reply;
+                        Metric metric;
+                        std::string note;
+
+                        CASUAL_CONST_CORRECT_SERIALIZE(
+                           CASUAL_SERIALIZE( alias);
+                           CASUAL_SERIALIZE( source);
+                           CASUAL_SERIALIZE( target);
+                           CASUAL_SERIALIZE( instances);
+                           CASUAL_SERIALIZE( reply);
+                           CASUAL_SERIALIZE( metric);
+                           CASUAL_SERIALIZE( note);
+                        )
+                     };
+
+                     std::vector< Service> services;
+                     std::vector< Queue> queues;
+
+                     CASUAL_CONST_CORRECT_SERIALIZE(
+                        base_reply::serialize( archive);
+                        CASUAL_SERIALIZE( services);
+                        CASUAL_SERIALIZE( queues);
+                     )
+                  };
+
+               } // state          
+            } // forward
+
 
             namespace concurrent
             {
@@ -726,9 +988,18 @@ namespace casual
 
             template<>
             struct type_traits< queue::lookup::Request> : detail::type< queue::lookup::Reply> {};
+            template<>
+            struct type_traits< queue::lookup::discard::Request> : detail::type< queue::lookup::discard::Reply> {};
 
             template<>
             struct type_traits< queue::dequeue::forget::Request> : detail::type< queue::dequeue::forget::Reply> {};
+
+
+            template<>
+            struct type_traits< queue::forward::configuration::Request> : detail::type< queue::forward::configuration::Reply> {};
+
+            template<>
+            struct type_traits< queue::forward::state::Request> : detail::type< queue::forward::state::Reply> {};
 
 
             template<>
@@ -754,7 +1025,7 @@ namespace casual
 
 
             template<>
-            struct type_traits< queue::connect::Request> : detail::type< queue::connect::Reply> {};
+            struct type_traits< queue::group::connect::Request> : detail::type< queue::group::connect::Reply> {};
             
             template<>
             struct type_traits< queue::metric::reset::Request> : detail::type< queue::metric::reset::Reply> {};

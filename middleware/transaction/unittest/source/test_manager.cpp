@@ -1076,7 +1076,7 @@ domain:
             communication::device::blocking::receive( communication::ipc::inbound::device(), message);
 
             EXPECT_TRUE( message.trid == trid);
-            EXPECT_TRUE( message.stage == common::message::transaction::commit::Reply::Stage::prepare);
+            EXPECT_TRUE( message.stage == decltype( message.stage)::prepare);
             EXPECT_TRUE( message.state == common::code::tx::ok);
          }
 
@@ -1111,7 +1111,7 @@ domain:
             communication::device::blocking::receive( communication::ipc::inbound::device(), message);
 
             EXPECT_TRUE( message.trid == trid);
-            EXPECT_TRUE( message.stage == common::message::transaction::commit::Reply::Stage::commit);
+            EXPECT_TRUE( message.stage == decltype( message.stage)::commit);
             EXPECT_TRUE( message.state == common::code::tx::ok);
          }
       }

@@ -14,6 +14,7 @@
 #include "common/server/handle/call.h"
 #include "common/message/handle.h"
 #include "common/event/listen.h"
+#include "common/event/send.h"
 #include "common/algorithm/compare.h"
 
 #include "common/code/raise.h"
@@ -30,15 +31,6 @@ namespace casual
    {
       namespace manager
       {
-
-         namespace ipc
-         {
-            communication::ipc::inbound::Device& device()
-            {
-               return communication::ipc::inbound::device();
-            }
-
-         } // ipc
 
          namespace handle
          {
@@ -72,9 +64,9 @@ namespace casual
                   Trace trace{ "handle::process::exit"};
                   common::log::line( verbose::log, "exit: ", exit);
 
-                  // we handle it later
-                  ipc::device().push( common::message::event::process::Exit{ exit});
-
+                  // one of our own children has died, we send the event.
+                  // we'll later receive the event from domain-manager
+                  common::event::send( common::message::event::process::Exit{ exit});
                }
             } // process
 
@@ -106,14 +98,21 @@ namespace casual
                            Trace trace{ "queue::manager::handle::local::shutdown::request"};
                            common::log::line( verbose::log, "message: ", message);
 
-                           auto groups = common::algorithm::transform( state.groups, []( auto& group){ return group.process;});
+                           auto shutdown = [&state]( auto&& processes)
+                           {
+                              algorithm::for_each(
+                                 common::server::lifetime::soft::shutdown( processes, std::chrono::seconds{ 1}),
+                                 [&state]( auto& exit)
+                                 {
+                                    state.remove( exit.pid);
+                                 });
+                           };
 
-                           common::algorithm::for_each(
-                              common::server::lifetime::soft::shutdown( groups, std::chrono::seconds{ 1}),
-                              []( auto& group)
-                              {
-                                 handle::process::exit( group);
-                              });
+                           // forwards 'needs' to go down first.
+                           shutdown( state.forwards);
+
+                           // before groups...
+                           shutdown( algorithm::transform( state.groups, []( auto& group){ return group.process;}));
 
                            code::raise::condition( code::casual::shutdown);
                         };
@@ -166,7 +165,7 @@ namespace casual
                            if( communication::device::blocking::optional::send( 
                               common::communication::instance::outbound::gateway::manager::optional::device(), std::move( request)))
                            {
-                              state.pending.push_back( std::move( message));
+                              state.pending.lookups.push_back( std::move( message));
 
                               log::line( log, "pending request added to pending: " , state.pending);
 
@@ -184,13 +183,37 @@ namespace casual
                         };
                      }
 
+                     namespace discard
+                     {
+                        auto request( State& state)
+                        {
+                           return [&state]( const common::message::queue::lookup::discard::Request& message)
+                           {
+                              Trace trace{ "handle::lookup::discard::Request"};
+                              common::log::line( verbose::log, "message: ", message);
+
+                              auto reply = message::reverse::type( message);
+
+                              if( auto found = algorithm::find( state.pending.lookups, message.correlation))
+                              {
+                                 reply.state = decltype( reply.state)::discarded;
+                                 state.pending.lookups.erase( std::begin( found));
+                              }
+                              else
+                                 reply.state = decltype( reply.state)::replied;
+
+                              communication::device::blocking::optional::send( message.process.ipc, reply);
+                           };
+                        }
+                     } // discard
+
                   } // lookup
 
                   namespace connect
                   {
                      auto request( State& state)
                      {
-                        return [&state]( common::message::queue::connect::Request& message)
+                        return [&state]( common::message::queue::group::connect::Request& message)
                         {
                            Trace trace{ "queue::manager::handle::local::connect::request"};
                            log::line( verbose::log, "message: ", message);
@@ -263,6 +286,70 @@ namespace casual
                      }
                   } // connect
 
+                  namespace forward
+                  {
+                     namespace configuration
+                     {
+                        auto request( State& state)
+                        {
+                           return [&state]( const common::message::queue::forward::configuration::Request& message)
+                           {
+                              Trace trace{ "queue::manager::handle::local::forward::connect"};
+                              log::line( verbose::log, "message: ", message);
+
+                              auto found = algorithm::find( state.forwards, message.process.pid);
+
+                              if( ! found)
+                              {
+                                 log::line( log::category::error, "failed to correlate forward connect ", message.process, " - action: discard");
+                                 return;
+                              }
+
+                              found->ipc = message.process.ipc;
+
+                              // forward connect, send configuration
+
+                              common::message::queue::forward::configuration::Reply configuration;
+
+                              configuration.services = algorithm::transform( state.configuration.forward.services, []( auto& service)
+                              {
+                                 common::message::queue::forward::configuration::Reply::Service result;
+                                 result.alias = service.alias;
+                                 result.source.name = service.source.name;
+                                 result.target.name = service.target.name;
+                                 
+                                 if( service.reply)
+                                 {
+                                    common::message::queue::forward::configuration::Reply::Service::Reply reply;
+                                    reply.name = service.reply.value().name;
+                                    reply.delay = service.reply.value().delay;
+                                    result.reply = std::move( reply);
+                                 }
+
+                                 result.instances = service.instances;
+                                 result.note = service.note;
+                                 return result;
+                              });
+
+                              configuration.queues = algorithm::transform( state.configuration.forward.queues, []( auto& queue)
+                              {
+                                 common::message::queue::forward::configuration::Reply::Queue result;
+                                 result.alias = queue.alias;
+                                 result.source.name = queue.source.name;
+                                 result.target.name = queue.target.name;
+                                 result.target.delay = queue.target.delay;
+                                 result.instances = queue.instances;
+                                 result.note = queue.note;
+                                 return result;
+                              });
+
+                              communication::device::blocking::send( message.process.ipc, configuration);
+                           };
+                        }
+                     } // configuration
+                     
+                  } // forward
+
                   namespace concurrent
                   {
                      auto advertise( State& state)
@@ -276,9 +363,9 @@ namespace casual
 
                            if( ! message.queues.add.empty())
                            {
-                              // Queues has been added, we check if there are any pending
+                              // Queues has been added, we check if there are any pending lookups
 
-                              auto split = common::algorithm::stable_partition( state.pending,[&]( auto& pending)
+                              auto split = common::algorithm::stable_partition( state.pending.lookups,[&]( auto& pending)
                               {
                                  return ! common::algorithm::any_of( message.queues.add, [&]( auto& queue)
                                  {
@@ -286,16 +373,17 @@ namespace casual
                                  });
                               });
 
-                              common::traits::remove_cvref_t< decltype( state.pending)> pending;
+                              auto unmatched = std::get< 0>( split);
+                              auto matched = std::get< 1>( split);
 
-                              common::algorithm::move( std::get< 1>( split), pending);
-                              common::algorithm::trim( state.pending, std::get< 0>( split));
+                             log::line( log, "pending to lookup: ", matched);
 
-                              log::line( log, "pending to lookup: ", pending);
-
-                              common::algorithm::for_each( pending, [&]( auto& pending){
+                              common::algorithm::for_each( matched, [&]( auto& pending){
                                  lookup::request( state, pending);
                               });
+                              
+                              // we keep only unmatched
+                              common::algorithm::trim( state.pending.lookups, unmatched); 
                            }
                         }; 
                      }
@@ -342,10 +430,10 @@ namespace casual
 
                               auto is_correlated = [&message]( auto& pending){ return pending.correlation == message.correlation;};
 
-                              if( auto found = common::algorithm::find_if( state.pending, is_correlated))
+                              if( auto found = common::algorithm::find_if( state.pending.lookups, is_correlated))
                               {
                                  auto request = std::move( *found);
-                                 state.pending.erase( std::begin( found));
+                                 state.pending.lookups.erase( std::begin( found));
 
                                  auto reply = common::message::reverse::type( request);
                                  reply.name = request.name;
@@ -380,21 +468,20 @@ namespace casual
                   common::message::handle::defaults( ipc::device()),
                   handle::local::connect::request( state),
                   handle::local::connect::information( state),
-                  handle::local::process::exit( state)
+                  handle::local::forward::configuration::request( state),
+                  common::event::listener( handle::local::process::exit( state))
                );
             }
          } // startup
 
 
-         handle::dispatch_type handlers( State& state)
+         handle::dispatch_type handlers( State& state, handle::dispatch_type&& startup)
          {
             return common::message::dispatch::handler( ipc::device(),
-               common::message::handle::defaults( ipc::device()),
-               common::event::listener( handle::local::process::exit( state)),
-               handle::local::connect::information( state),
-               handle::local::connect::request( state),
+               std::move( startup),
                handle::local::shutdown::request( state),
                handle::local::lookup::request( state),
+               handle::local::lookup::discard::request( state),
                handle::local::concurrent::advertise( state),
                handle::local::domain::discover::request( state),
                handle::local::domain::discover::reply( state),

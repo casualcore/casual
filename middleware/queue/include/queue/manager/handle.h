@@ -9,6 +9,7 @@
 
 
 #include "queue/manager/manager.h"
+#include "queue/common/ipc.h"
 
 #include "common/message/queue.h"
 #include "common/message/transaction.h"
@@ -24,11 +25,6 @@ namespace casual
    {
       namespace manager
       {
-         namespace ipc
-         {
-            common::communication::ipc::inbound::Device& device();
-         } // ipc
-
          namespace handle
          {
             using dispatch_type = decltype( common::message::dispatch::handler( ipc::device()));
@@ -46,7 +42,7 @@ namespace casual
             handle::dispatch_type handlers( State& state);   
          } // startup
 
-         handle::dispatch_type handlers( State& state);
+         handle::dispatch_type handlers( State& state, handle::dispatch_type&& startup);
 
       } // manager
    } // queue

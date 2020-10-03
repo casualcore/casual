@@ -41,7 +41,7 @@ namespace casual
             // Talk to queue-manager to get configuration
             auto reply = communication::ipc::call(  
                common::communication::instance::outbound::queue::manager::device(),
-               common::message::queue::connect::Request{ process::handle()});
+               common::message::queue::group::connect::Request{ process::handle()});
 
             auto existing = m_state.queuebase.queues();
             log::line( verbose::log, "existing: ", existing);

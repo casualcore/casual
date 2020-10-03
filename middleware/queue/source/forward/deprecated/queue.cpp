@@ -5,7 +5,8 @@
 //!
 
 
-#include "queue/forward/common.h"
+#include "queue/forward/deprecated/common.h"
+
 #include "queue/api/queue.h"
 #include "queue/common/log.h"
 
@@ -62,6 +63,8 @@ namespace casual
          void main( int argc, char **argv)
          {
             Settings settings;
+
+            common::log::line( common::log::category::warning, "casual-queue-forward-queue is deprecated - configure forwards under the queue section in domain configuration");
 
             using namespace casual::common::argument;
             Parse{ "queue forward to queue",

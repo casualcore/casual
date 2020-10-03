@@ -291,7 +291,7 @@ namespace casual
                      template< typename C, typename H, typename D>
                      auto dispatch( C&& condition, H&& handler, D& device) 
                      {
-                        Trace trace{ "common::message::dispatch::detail::pump::dispatch error"};
+                        Trace trace{ "common::message::dispatch::detail::pump::dispatch"};
 
                         detail::invoke< detail::tag::prelude>( condition);
 

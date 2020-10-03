@@ -210,7 +210,7 @@ namespace casual
                               {
                                  request.correlation = message.correlation;
                                  request.requested = message.service.name;
-                                 request.context = common::message::service::lookup::Request::Context::gateway;
+                                 request.context = decltype( request.context)::no_busy_intermediate;
                                  request.process = common::process::handle();
                               }
 

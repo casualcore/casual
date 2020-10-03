@@ -656,10 +656,54 @@ namespace casual
                            throw;
                         }
                      }
-               } // optional
+                  } // optional
 
                } // blocking
-            } // non         
+            } // non
+
+            namespace async
+            {
+               template< typename R>
+               struct future
+               {
+                  future( R&& reply) : m_reply{ std::move( reply)} {}
+
+                  template< typename D>
+                  auto get( D&& device)
+                  {
+                     blocking::receive( device, m_reply, m_reply.correlation);
+                     return std::exchange( m_reply, {});
+                  }
+                  
+               private:
+                  R m_reply;
+               };
+
+               template< typename D, typename M>
+               auto call( D&& destination, M&& message)
+               {
+                  auto reply = common::message::reverse::type( message);
+                  reply.correlation = blocking::send( std::forward< D>( destination), std::forward< M>( message));
+
+                  return future< std::decay_t< decltype( reply)>>{ std::move( reply)};
+               }
+            } // async
+
+            template< typename D, typename M, typename Device>
+            auto call(
+                  D&& destination,
+                  M&& message,
+                  Device& device)
+            {
+               auto reply = common::message::reverse::type( message);
+               auto correlation = blocking::send( std::forward< D>( destination), std::forward< M>( message));
+
+               blocking::receive( device, reply, correlation);
+               return reply;
+            }
+
+
+
          } // device
       } // communication
    } // common

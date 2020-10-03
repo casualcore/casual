@@ -633,7 +633,9 @@ namespace casual
 
                   switch( reply.stage)
                   {
-                     case message::transaction::commit::Reply::Stage::prepare:
+                     using State = decltype( reply.stage);
+
+                     case State::prepare:
                      {
                         log::line( log::category::transaction, "prepare reply: ", reply.state);
 
@@ -654,12 +656,12 @@ namespace casual
 
                         break;
                      }
-                     case message::transaction::commit::Reply::Stage::commit:
+                     case State::commit:
                      {
                         log::line( log::category::transaction, "commit reply: ", reply.state);
                         break;
                      }
-                     case message::transaction::commit::Reply::Stage::error:
+                     case State::error:
                      {
                         log::line( log::category::error, "commit error: ", reply.state);
                         break;

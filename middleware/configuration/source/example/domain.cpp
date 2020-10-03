@@ -259,6 +259,17 @@ queue:
         - name: q_C1
         - name: q_C2
 
+  forward:
+     services:
+        - source: 
+            name: q_B1
+          target: 
+            name: casual/example/echo
+          instances: 4
+          reply: 
+            name: q_A4
+            delay: 10ms
+
 )";
 
             return create::model< configuration::queue::Manager>( yaml, "queue");

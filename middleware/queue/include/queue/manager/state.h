@@ -64,6 +64,7 @@ namespace casual
                size_type order = 0;
 
                friend bool operator == ( const Remote& lhs, const common::process::Handle& rhs);
+               friend bool operator == ( const Remote& lhs, common::strong::process::id pid);
 
                CASUAL_LOG_SERIALIZE({
                   CASUAL_NAMED_VALUE( process);
@@ -83,6 +84,7 @@ namespace casual
                size_type order = 0;
 
                friend bool operator < ( const Queue& lhs, const Queue& rhs);
+               inline friend bool operator == ( const Queue& lhs, common::strong::process::id rhs) { return lhs.process == rhs;}
 
                CASUAL_LOG_SERIALIZE({
                   CASUAL_SERIALIZE( process);
@@ -93,11 +95,26 @@ namespace casual
 
             std::unordered_map< std::string, std::vector< Queue>> queues;
 
-            std::deque< common::message::queue::lookup::Request> pending;
+            struct
+            {
+               std::deque< common::message::queue::lookup::Request> lookups;
+
+               CASUAL_LOG_SERIALIZE({
+                  CASUAL_SERIALIZE( lookups);
+               })
+            } pending;
+            
 
             std::vector< Group> groups;
             std::vector< Remote> remotes;
-            std::string group_executable;
+            std::vector< common::process::Handle> forwards;
+
+
+            struct
+            {
+               //! where to find casual-queue-group and forwards
+               std::string path;
+            } executable;
 
 
             std::vector< common::strong::process::id> processes() const noexcept;

@@ -8,7 +8,7 @@ host# casual --help call
         
         Reads buffer(s) from stdin and call the provided service, prints the reply buffer(s) to stdout.
         Assumes that the input buffer to be in a conformant format, ie, created by casual.
-        Error will be printed to stderr
+        Errors will be printed to stderr
         
         @note: part of casual-pipe
 
@@ -18,6 +18,9 @@ host# casual --help call
 
       --iterations [0..1]  (<value>) [1]
             number of iterations (default: 1) - this could be helpful for testing load
+
+      --examples [0..1]
+            prints several examples of how casual call can be used
 
       [deprecated] --asynchronous [0..1]  (<value>) [1]
             [removed] use `casual --block true|false call ...` instead
