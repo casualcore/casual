@@ -29,8 +29,8 @@ namespace casual
          {
             struct
             {
-               std::string executable;
-            } group;
+               std::string path;
+            } executable;
          };
 
       } // manager

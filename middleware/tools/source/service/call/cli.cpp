@@ -145,7 +145,7 @@ namespace casual
                               request.correlation = message.correlation;
                               request.requested = state.service;
                               // we will wait 'for ever'.
-                              request.context = decltype( request.context)::gateway;
+                              request.context = decltype( request.context)::no_busy_intermediate;
 
                               algorithm::for_n( state.iterations, [&request]()
                               {

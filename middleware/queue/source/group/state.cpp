@@ -28,18 +28,19 @@ namespace casual
 
             auto result = common::message::reverse::type( message);
 
-            auto partition = algorithm::partition( dequeues, [&message]( auto& m){ return m.correlation != message.correlation;});
-
-            if( std::get< 1>( partition))
-               result.found = true;
-            else
+            if( auto found = algorithm::find( dequeues, message.correlation))
             {
-               log::line( log::category::error, "failed to correlate pending dequeue from: ", message.process);
-               log::line( log::category::verbose::error, "message: ", message);
-               log::line( log::category::verbose::error, "dequeues: ", dequeues);
+               result.found = true;
+               dequeues.erase( std::begin( found));
             }
-
-            algorithm::trim( dequeues, std::get< 0>( partition));
+            else 
+            {
+               // we assume that we've sent the dequeue already, but caller hasn't consumed the message yet...
+               result.found = false;
+               log::line( verbose::log, "failed to correlate pending dequeue from: ", message.process);
+               log::line( verbose::log, "message: ", message);
+               log::line( verbose::log, "dequeues: ", dequeues);
+            }
 
             return result;
          }
@@ -48,8 +49,8 @@ namespace casual
          {
             return algorithm::transform( std::exchange( dequeues, {}), []( auto&& request)
             {
-               common::message::queue::dequeue::forget::Request result;
-               result.process = process::handle();
+               common::message::queue::dequeue::forget::Request result{ process::handle()};
+               result.correlation = request.correlation;
                result.queue = request.queue;
                result.name = request.name;
 
@@ -91,7 +92,6 @@ namespace casual
                m.remove( pid);
                return m.sent();
             });
-
          }
       } // group
    } // queue

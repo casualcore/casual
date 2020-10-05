@@ -39,6 +39,11 @@ namespace casual
             return lhs.process == rhs;
          }
 
+         bool operator == ( const State::Remote& lhs, common::strong::process::id pid)
+         {
+            return lhs.process == pid;
+         }
+
          static_assert( common::traits::is_movable< State::Remote>::value, "not movable");
 
 
@@ -55,12 +60,10 @@ namespace casual
 
          void State::remove_queues( common::strong::process::id pid)
          {
-            Trace trace{ "queue::broker::State::remove_queues"};
+            Trace trace{ "queue::manager::State::remove_queues"};
 
-            common::algorithm::erase_if( queues, [pid]( std::vector< Queue>& instances){
-               return common::algorithm::trim( instances, common::algorithm::remove_if( instances, [pid]( const Queue& q){
-                  return pid == q.process.pid;
-               })).empty();
+            common::algorithm::erase_if( queues, [pid]( auto& instances){
+               return common::algorithm::trim( instances, common::algorithm::remove( instances, pid)).empty();
             });
 
             log::line( log, "queues: ", queues);
@@ -68,24 +71,19 @@ namespace casual
 
          void State::remove( common::strong::process::id pid)
          {
-            Trace trace{ "queue::broker::State::remove"};
+            Trace trace{ "queue::manager::State::remove"};
 
             remove_queues( pid);
 
-            common::algorithm::trim( groups, common::algorithm::remove_if( groups, [pid]( const auto& g){
-               return pid == g.process.pid;
-            }));
-
-
-            common::algorithm::trim( remotes, common::algorithm::remove_if( remotes, [pid]( const auto& g){
-               return pid == g.process.pid;
-            }));
-
+            common::algorithm::trim( groups, common::algorithm::remove( groups, pid));
+            common::algorithm::trim( remotes, common::algorithm::remove( remotes, pid));
+            common::algorithm::trim( forwards, common::algorithm::remove( forwards, pid));
+            common::algorithm::trim( pending.lookups, common::algorithm::remove( pending.lookups, pid));
          }
 
          void State::update( common::message::queue::concurrent::Advertise& message)
          {
-            Trace trace{ "queue::broker::State::update"};
+            Trace trace{ "queue::manager::State::update"};
 
             if( message.reset)
                remove_queues( message.process.pid);

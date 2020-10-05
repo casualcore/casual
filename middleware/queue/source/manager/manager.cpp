@@ -40,20 +40,17 @@ namespace casual
          {
             namespace
             {
-
                namespace transform
                {
-
-                  State state( const Settings& settings)
+                  State state( Settings&& settings)
                   {
                      Trace trace( "queue::manager::local::transform::state");
 
                      State result;
 
-                     result.group_executable = common::coalesce(
-                        std::move( settings.group.executable),
-                        casual::common::environment::directory::casual() + "/bin/casual-queue-group"
-                     );
+                     result.executable.path = common::coalesce(
+                        std::move( settings.executable.path),
+                        casual::common::environment::directory::casual() + "/bin");
 
                      // We ask the domain manager for configuration
                      result.configuration = common::communication::ipc::call(
@@ -62,60 +59,110 @@ namespace casual
 
                      common::environment::normalize( result.configuration);
 
+                     log::line( verbose::log, "configuration: ", result.configuration);
+
                      return result;
                   }
                } // transform
 
-
-               auto spawn( State& state)
+               namespace spawn
                {
-                  return [&state]( const common::message::domain::configuration::queue::Group& group)
+                  auto group( const std::string& path)
                   {
-                     Trace trace( "queue::manager::local::Spawn");
-
-                     State::Group result;
-                     result.name = group.name;
-                     result.queuebase = group.queuebase;
-
-                     try
+                     return [&path]( const common::message::domain::configuration::queue::Group& group)
                      {
-                        result.process.pid = casual::common::process::spawn(
-                           state.group_executable,
-                           { "--queuebase", group.queuebase, "--name", group.name});
-                     }
-                     catch( ...)
+                        Trace trace( "queue::manager::local::spawn::group");
+
+                        State::Group result;
+                        result.name = group.name;
+                        result.queuebase = group.queuebase;
+
+                        try
+                        {
+                           result.process.pid = casual::common::process::spawn(
+                              path + "/casual-queue-group",
+                              { "--queuebase", group.queuebase, "--name", group.name});
+                        }
+                        catch( ...)
+                        {
+                           common::event::error::raise( exception::code(), "failed to spawn queue group:  ", group.name);
+                        }
+
+                        return result;
+                     };
+                  }
+
+                  void forwards( State& state)
+                  {
+                     Trace trace( "queue::manager::local::spawn::forwards");
+
+                     if( ! state.configuration.forward.services.empty() || ! state.configuration.forward.queues.empty())
                      {
-                        common::event::error::send( exception::code(), "failed to spawn queue group:  ", group.name);
+                        try
+                        {
+                           state.forwards.emplace_back( casual::common::process::spawn( 
+                              string::compose( state.executable.path, '/', "casual-queue-forward"), {}));
+                        }
+                        catch( ...)
+                        {
+                           common::event::error::raise( exception::code(), "failed to spawn casual-queue-forward");
+                        }
                      }
+                  }
 
-                     return result;
-                  };
-               }
+               } // spawn
 
 
-               void startup( State& state)
+               auto startup( State& state)
                {
                   Trace trace( "queue::manager::local::startup");
+
+                  auto handlers = manager::startup::handlers( state);
+
+                  //! some helpers
+                  //! @{
+                  auto wait_for_done = [&handlers]( auto&& is_done)
+                  {
+                     namespace dispatch = common::message::dispatch;
+
+                     auto condition = dispatch::condition::compose( 
+                        dispatch::condition::done( [&]()
+                        {
+                           return is_done();
+                        })
+                     );
+               
+                     dispatch::relaxed::pump( condition,
+                        handlers,
+                        ipc::device());
+                  };
+
+                  auto valid_pid = []( auto& value ){ return ! value.process.pid.empty();};
+                  //! @}
                   
-                  casual::common::algorithm::transform( state.configuration.groups, state.groups, local::spawn( state));
 
-                  common::algorithm::trim( state.groups, common::algorithm::remove_if( state.groups, []( auto& g){
-                     return ! g.process.pid;
-                  }));
+                  casual::common::algorithm::transform( state.configuration.groups, state.groups, local::spawn::group( state.executable.path));
 
-                  namespace dispatch = common::message::dispatch;
+                  // only keep spawned groups
+                  common::algorithm::trim( state.groups, common::algorithm::filter( state.groups, valid_pid));
 
-                  auto condition = dispatch::condition::compose( 
-                     dispatch::condition::done( [&]()
-                     {
-                        // Make sure all groups are up and running before we continue
-                        return common::algorithm::all_of( state.groups, []( auto& group){ return group.connected();});
-                     })
-                  );
-            
-                  dispatch::pump( condition,
-                     manager::startup::handlers( state),
-                     ipc::device());
+
+                  // Make sure all groups are up and running before we continue
+                  wait_for_done( [&state]()
+                  {
+                     return common::algorithm::all_of( state.groups, []( auto& group){ return group.connected();});
+                  });
+
+                  
+                  spawn::forwards( state);
+
+                  // Make sure all forwards are up and running before we continue
+                  wait_for_done( [&state]()
+                  {
+                     return common::algorithm::all_of( state.forwards, []( auto& process){ return static_cast< bool>( process);});
+                  });
+
+                  return handlers;
 
                }
 
@@ -125,7 +172,7 @@ namespace casual
 
 
       Manager::Manager( manager::Settings settings) 
-         : m_state{ manager::local::transform::state( settings)}
+         : m_state{ manager::local::transform::state( std::move( settings))}
       {
          Trace trace( "queue::Manager::Manager");
 
@@ -148,8 +195,12 @@ namespace casual
       {
          Trace trace( "queue::Manager::~Manager");
 
-         try
+         exception::guard( [&]()
          {
+            // first we shutdown all forwards
+            common::process::lifetime::terminate( m_state.forwards);
+
+            // then we can terminate the groups
             common::process::children::terminate(
                [&]( auto& exit)
                {
@@ -158,15 +209,7 @@ namespace casual
                m_state.processes());
 
             common::log::line( common::log::category::information, "casual-queue-manager is off-line");
-
-         }
-         catch( ...)
-         {
-            common::log::line( 
-               common::log::category::error, 
-               common::exception::code(), 
-               " termination of groups failed - pids: ",  m_state.processes());
-         }
+         });
 
       }
 
@@ -174,16 +217,14 @@ namespace casual
       {
          common::log::line( log, "queue manager start");
 
-         manager::local::startup( m_state);
-
-         auto handler = manager::handlers( m_state);
+         auto handler = manager::handlers( m_state, manager::local::startup( m_state));
 
          // Connect to domain
          common::communication::instance::connect( common::communication::instance::identity::queue::manager);
 
          common::log::line( common::log::category::information, "casual-queue-manager is on-line");
          
-         message::dispatch::pump( handler, manager::ipc::device());
+         message::dispatch::pump( handler, ipc::device());
       }
    } // queue
 

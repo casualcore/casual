@@ -167,8 +167,12 @@ namespace casual
 
             // casual queue
             QUEUE_BASE = 6000,
-            queue_connect_request,
-            queue_connect_reply,
+            queue_group_connect_request,
+            queue_group_connect_reply,
+            queue_forward_configuration_request,
+            queue_forward_configuration_reply,
+            queue_forward_state_request,
+            queue_forward_state_reply,
             queue_advertise,
             queue_enqueue_request  = 6100,
             queue_enqueue_reply    = 6101,
@@ -190,6 +194,8 @@ namespace casual
 
             queue_lookup_request = QUEUE_BASE + 500,
             queue_lookup_reply,
+            queue_lookup_discard_request,
+            queue_lookup_discard_reply,
 
             queue_restore_request = QUEUE_BASE + 600,
             queue_restore_reply,
@@ -276,6 +282,13 @@ namespace casual
             //! The execution-id
             mutable Uuid execution;
 
+            constexpr friend bool operator == ( const basic_message&, message::Type rhs) { return basic_message::type() == rhs;}
+            constexpr friend bool operator == ( message::Type lhs, const basic_message&) { return basic_message::type() == lhs;}
+
+            constexpr friend bool operator == ( const basic_message& lhs, const Uuid& rhs) { return lhs.correlation == rhs;}
+            constexpr friend bool operator == ( const Uuid& lhs, const basic_message& rhs) { return rhs == lhs;}
+
+
             CASUAL_CONST_CORRECT_SERIALIZE(
             {
                // correlation is part of ipc::message::Complete, and is
@@ -330,6 +343,9 @@ namespace casual
             inline basic_request( common::process::Handle process) : process{ std::move( process)} {}
 
             common::process::Handle process;
+
+            friend bool operator == ( const basic_request& lhs, strong::process::id rhs) { return lhs.process == rhs;}
+            friend bool operator == ( strong::process::id lhs, const basic_request& rhs) { return rhs == lhs;}
 
             CASUAL_CONST_CORRECT_SERIALIZE(
             {

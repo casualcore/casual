@@ -51,8 +51,8 @@ namespace casual
          EXPECT_TRUE( moved_from);
 
          auto moved_to = std::move( moved_from);
-         EXPECT_TRUE( moved_to != moved_from);
-         EXPECT_FALSE( moved_from);
+         EXPECT_TRUE( moved_to != moved_from); // NOLINT
+         EXPECT_FALSE( moved_from); // NOLINT
       }
 
       TEST( common_process, spawn_one_process)

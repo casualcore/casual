@@ -120,7 +120,7 @@ namespace casual
                      {
                         return manager::admin::model::service::instance::Concurrent{
                            value.process().pid,
-                           value.hops(),
+                           value.property.hops
                         };
                      };
 

@@ -94,13 +94,12 @@ namespace casual
                   m_correlation = correlation;
                }
 
-               state::Service* Sequential::unreserve( const common::message::event::service::Metric& metric)
+               void Sequential::unreserve( const common::message::event::service::Metric& metric)
                {
                   assert( state() == State::busy);
 
                   m_service->metric.update( metric);
-
-                  return std::exchange( m_service, nullptr);
+                  m_service = nullptr;
                }
 
                void Sequential::discard()
@@ -159,15 +158,6 @@ namespace casual
 
             namespace service
             {
-               namespace instance
-               {
-                  bool operator < ( const Concurrent& lhs, const Concurrent& rhs)
-                  {
-                     return std::make_tuple( lhs.get(), lhs.hops()) < std::make_tuple( rhs.get(), rhs.hops());
-                  }
-
-               } // instance
-
 
                void Advertised::remove( common::strong::process::id instance)
                {
@@ -195,15 +185,10 @@ namespace casual
             void Service::Metric::update( const common::message::event::service::Metric& metric)
             {
                invoked += metric.duration();
+               pending += metric.pending;
                last = metric.end;
             }
-            /*
-            void Service::Metric::update( const platform::time::point::type& now, const platform::time::point::type& then)
-            {
-               last = now;
-               invoked += now - then;
-            }
-            */
+
 
             void Service::add( state::instance::Sequential& instance)
             {
@@ -211,9 +196,9 @@ namespace casual
                instance.add( *this);
             }
 
-            void Service::add( state::instance::Concurrent& instance, size_type hops)
+            void Service::add( state::instance::Concurrent& instance, state::service::instance::Concurrent::Property property)
             {
-               instances.concurrent.emplace_back( instance, hops);
+               instances.concurrent.emplace_back( instance, std::move( property));
                instances.partition();
             }
 
@@ -263,9 +248,14 @@ namespace casual
             algorithm::for_each( configuration.services, add_service);
          }
 
-         state::Service& State::service( const std::string& name)
+         state::Service* State::service( const std::string& name)
          {
-            return local::get( services, name);
+            auto found = algorithm::find( services, name);
+
+            if( found)
+               return &found->second;
+
+            return nullptr;
          }
 
          namespace local
@@ -387,7 +377,7 @@ namespace casual
 
                   auto remove = [&]( auto& name)
                   {
-                     if( auto service = state.find_service( name))
+                     if( auto service = state.service( name))
                         service->remove( instance.process.pid);
                   };
 
@@ -425,7 +415,7 @@ namespace casual
             }
          }
 
-         void State::update( common::message::service::Advertise& message)
+         std::vector< state::service::Pending> State::update( common::message::service::Advertise& message)
          {
             Trace trace{ "service::manager::State::update local"};
 
@@ -433,15 +423,14 @@ namespace casual
             {
                log::line( common::log::category::error, code::casual::internal_unexpected_value, " invalid process ", message.process, " tries to advertise services - action: ignore");
                log::line( verbose::log, "message: ", message);
-               return;
+               return {};
             }
-
 
             if( message.clear())
             {
                // we just remove the process all together.
                remove( message.process.pid);
-               return;
+               return {}; 
             }
 
             auto& instance = local::find_or_add( instances.sequential, message.process);
@@ -463,10 +452,22 @@ namespace casual
             // remove
             local::remove_services( *this, instance, message.services.remove);
 
+            // now we need to check if there are pending request that this instance has enabled
+            {
+               auto requested_service = [&instance]( auto& pending)
+               {
+                  return instance.service( pending.request.requested);
+               };
+
+               if( auto found = algorithm::find_if( pending.requests, requested_service))
+                  return { algorithm::extract( pending.requests, std::begin( found))};
+            }
+
+            return {};
          }
 
 
-         void State::update( common::message::service::concurrent::Advertise& message)
+         std::vector< state::service::Pending> State::update( common::message::service::concurrent::Advertise& message)
          {
             Trace trace{ "service::manager::State::update remote"};
 
@@ -474,7 +475,7 @@ namespace casual
             {
                log::line( common::log::category::error, code::casual::internal_unexpected_value, " invalid process ", message.process, " tries to advertise services - action: ignore");
                log::line( verbose::log, "message: ", message);
-               return;
+               return {};
             }
 
             if( message.reset)
@@ -487,9 +488,9 @@ namespace casual
             {
                auto add_service = [&]( auto& service)
                {
-                  auto add_instance = [&instance, hops = service.hops]( auto& service)
+                  auto add_instance = [&instance, property = service.property]( auto& service)
                   {
-                     service.add( instance, hops);
+                     service.add( instance, property);
                   };
                   local::find_or_add_service( *this, local::transform( service), add_instance);
                };
@@ -499,6 +500,8 @@ namespace casual
 
             // remove
             local::remove_services( *this, instance, message.services.remove);
+
+            return {};
          }
 
          std::vector< std::string> State::metric_reset( std::vector< std::string> lookup)
@@ -519,7 +522,7 @@ namespace casual
             {
                for( auto& name : lookup)
                {
-                  auto service = find_service( name);
+                  auto service = State::service( name);
                   if( service)
                   {
                      service->metric.reset();
@@ -531,21 +534,12 @@ namespace casual
             return result;
          }
 
-         state::instance::Sequential& State::sequential( common::strong::process::id pid)
+         state::instance::Sequential* State::sequential( common::strong::process::id pid)
          {
-            return local::get( instances.sequential, pid);
-         }
-
-         state::Service* State::find_service( const std::string& name)
-         {
-            auto found = algorithm::find( services, name);
-
-            if( found)
+            if( auto found = algorithm::find( instances.sequential, pid))
                return &found->second;
-
             return nullptr;
          }
-
 
 
          void State::connect_manager( std::vector< common::server::Service> services)

@@ -234,7 +234,7 @@ namespace casual
                   {
                      // Appends from current process environment, if it's not
                      // already overridden.
-                     auto environment( std::vector< environment::Variable>&& variables)
+                     auto environment( std::vector< environment::Variable> variables)
                      {
                         auto current = environment::variable::native::current();
 
@@ -509,6 +509,19 @@ namespace casual
                   }
                }
 
+               auto terminate = []( const Handle& process)
+               {
+                  if( process)
+                  {
+                     message::shutdown::Request request{ handle()};
+                     communication::device::blocking::send( process.ipc, request);
+                  }
+                  else
+                     process::terminate( process.pid);
+
+                  return process.pid;
+               };
+
             } // <unnamed>
 
          } // local
@@ -535,17 +548,16 @@ namespace casual
 
          void terminate( const Handle& process)
          {
-            if( process)
-            {
-               message::shutdown::Request request{ handle()};
-               communication::device::blocking::send( process.ipc, request);
-            }
-            else if( process.pid)
-               terminate( process.pid);
-            else
-               return;
+            if( auto pid = local::terminate( process))
+               wait( pid);            
+         }
 
-            wait( process.pid);
+         std::vector< strong::process::id> terminate( const std::vector< Handle>& processes)
+         {
+            log::line( verbose::log, "process::terminate processes: ", processes);
+
+            auto result = algorithm::transform( processes, local::terminate);
+            return algorithm::trim( result, algorithm::remove_if( result, []( auto pid){ return pid.empty();}));
          }
 
 
@@ -634,6 +646,10 @@ namespace casual
                return result;
             }
 
+            std::vector< Exit> terminate( const std::vector< Handle>& processes)
+            {
+               return wait( process::terminate( processes));
+            }
 
             std::vector< Exit> terminate( const std::vector< strong::process::id>& pids)
             {
@@ -650,25 +666,28 @@ namespace casual
       } // process
 
       Process::Process( const std::string& path, std::vector< std::string> arguments)
-         : m_handle{ process::spawn( path, std::move( arguments))}
+         : process::Handle{ process::spawn( path, std::move( arguments))}
       {
 
       }
 
       Process::~Process() 
       {
-         if( m_handle.pid)
-         {
-            exception::guard( [&](){ process::terminate( m_handle);});
-         }
+         if( pid)
+            exception::guard( [&](){ process::terminate( *this);});
       }
 
       void Process::handle( const process::Handle& handle)
       {
-         if( m_handle.pid != handle.pid)
-            code::raise::error( code::casual::invalid_argument, "trying to update process with different pids: ", m_handle.pid, " != ", handle.pid);
+         if( pid != handle.pid)
+            code::raise::error( code::casual::invalid_argument, "trying to update process with different pids: ", pid, " != ", handle.pid);
 
-         m_handle = handle;
+         Handle::operator = ( handle);
+      }
+
+      void Process::clear()
+      {
+         Handle::operator = ( {});
       }
 
    } // common

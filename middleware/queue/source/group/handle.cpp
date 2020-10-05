@@ -187,6 +187,7 @@ namespace casual
                         return [&state]( common::message::queue::enqueue::Request& message)
                         {
                            Trace trace{ "queue::handle::enqueue::Request"};
+                           log::line( verbose::log, "message: ", message);
 
                            try 
                            {

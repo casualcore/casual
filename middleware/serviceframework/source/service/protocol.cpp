@@ -37,8 +37,7 @@ namespace casual
             {
                namespace
                {
-                  template< typename P>
-                  bool describe( const P& header)
+                  bool describe()
                   {
                      return common::service::header::fields().exists( "casual-service-describe") &&
                            common::service::header::fields().at( "casual-service-describe") != "false";
@@ -75,7 +74,7 @@ namespace casual
                   if( log::parameter)
                      protocol = Protocol::emplace< protocol::implementation::parameter::Log>( std::move( protocol));
                   
-                  if( local::describe( parameter))
+                  if( local::describe())
                      protocol = Protocol::emplace< protocol::implementation::Describe>( std::move( protocol));
 
                   common::log::line( log::debug, "protocol: ", protocol);

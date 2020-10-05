@@ -83,6 +83,53 @@ namespace casual
                         queue += manager.manager_default.queue;
                      });
                   }
+
+
+                  auto unique_alias = [mapping = std::map< std::string, platform::size::type>{}]( auto& forward) mutable
+                  {
+                     if( forward.alias.empty())
+                        forward.alias = forward.source.name;
+
+                     auto set_unique_alias = [&mapping]( auto& forward)
+                     {
+                        auto count = mapping[ forward.alias]++;
+                        
+                        if( count == 0)
+                           return true;
+
+                        forward.alias += string::compose( '.', count);
+                        return false;
+                     };
+
+                     while( ! set_unique_alias( forward))
+                        ; // iterate 
+                  };
+
+                  auto& defaults = manager.manager_default.forward;
+
+                  auto update_service = [&unique_alias, &defaults]( auto& forward)
+                  {
+                     unique_alias( forward);
+
+                     if( ! forward.instances)
+                        forward.instances = defaults.service.instances;
+                     
+                     if( forward.reply)
+                        forward.reply.value().delay = coalesce( forward.reply.value().delay, defaults.service.reply.delay);
+                  };
+
+                  auto update_queue = [&unique_alias, &defaults]( auto& forward)
+                  {
+                     unique_alias( forward);
+
+                     if( ! forward.instances)
+                        forward.instances = defaults.queue.instances;
+                     
+                     forward.target.delay = coalesce( forward.target.delay, defaults.queue.target.delay);
+                  };
+
+                  algorithm::for_each( manager.forward.services, update_service);
+                  algorithm::for_each( manager.forward.queues, update_queue);
                }
 
                struct Validate
@@ -152,9 +199,7 @@ namespace casual
                {
                   for( auto& value : rhs)
                   {
-                     auto found = common::algorithm::find( lhs, value);
-
-                     if( found)
+                     if( auto found = common::algorithm::find( lhs, value))
                         *found = std::move( value);
                      else
                         lhs.push_back( std::move( value));
@@ -169,6 +214,9 @@ namespace casual
                   lhs.manager_default = std::move( rhs.manager_default);
 
                   local::replace_or_add( lhs.groups, std::move( rhs.groups));
+
+                  local::replace_or_add( lhs.forward.services, std::move( rhs.forward.services));
+                  local::replace_or_add( lhs.forward.queues, std::move( rhs.forward.queues));
 
                   return lhs;
                }

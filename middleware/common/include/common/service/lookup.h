@@ -35,10 +35,6 @@ namespace casual
 
                //! Lookup an entry point for the @p service
                //! using a specific context
-               //!  * regular
-               //!  * no_reply
-               //!  * forward
-               //!  * gateway
                Lookup( std::string service, Context context);
 
                ~Lookup();

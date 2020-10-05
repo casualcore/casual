@@ -471,15 +471,31 @@ namespace casual
             for( auto current = std::begin( container); current != std::end( container);)
             {
                if( predicate( current->second))
-               {
                   current = container.erase( current);
-               }
                else
-               {
                   ++current;
-               }
             }
             return container;
+         }
+
+         namespace detail
+         {
+            // preparing for future 'specializations'
+            template< typename C, typename Iter>
+            auto extract( C& container, Iter where, traits::priority::tag< 0>)
+               -> traits::remove_cvref_t< decltype( *container.erase( where))>
+            {
+               auto result = std::move( *where);
+               container.erase( where);
+               return result;
+            }
+         } // detail
+
+         template< typename C, typename W>
+         auto extract( C& container, W&& where)
+            -> decltype( detail::extract( container, std::forward< W>( where), traits::priority::tag< 0>{}))
+         {
+            return detail::extract( container, std::forward< W>( where), traits::priority::tag< 0>{});
          }
 
          namespace detail

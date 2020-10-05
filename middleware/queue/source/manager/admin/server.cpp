@@ -34,27 +34,25 @@ namespace casual
                   {
                      admin::model::State result;
 
-                     auto get_queues = [](auto& state)
+                     auto future_get = []( auto& future){ return future.get( ipc::device());};
+
+
+                     auto queue_futures = algorithm::transform( state.groups, [&]( auto& group)
                      {
-                        auto send = [&]( auto& group)
-                        {
-                           return communication::device::blocking::send( group.process.ipc, 
-                              common::message::queue::information::queues::Request{ process::handle()});
-                        };
+                        return communication::device::async::call( group.process.ipc, 
+                           common::message::queue::information::queues::Request{ process::handle()});
+                     });
 
-                        auto receive = [&]( auto& correlation)
-                        {
-                           common::message::queue::information::queues::Reply reply;
-                           communication::device::blocking::receive( ipc::device(), reply, correlation);
-                           return reply;
-                        };
+                     auto forward_futures = algorithm::transform( state.forwards, [&]( auto& forward)
+                     {
+                        return communication::device::async::call( forward.ipc, 
+                           common::message::queue::forward::state::Request{ process::handle()});
+                     });
 
-                        return common::algorithm::transform( algorithm::transform( state.groups, send), receive);
-                     };
-
-                     result.queues = transform::queues( get_queues( state));
                      result.groups = transform::groups( state);
                      result.remote = transform::remote( state);
+                     result.queues = transform::queues( algorithm::transform( queue_futures, future_get));
+                     result.forward = transform::forward( algorithm::transform( forward_futures, future_get));
 
                      return result;
                   }
@@ -233,6 +231,46 @@ namespace casual
                      
                   } // metric
 
+                  namespace forward
+                  {
+                     namespace scale
+                     {
+                        void aliases( manager::State& state, const std::vector< manager::admin::model::scale::Alias>& aliases)
+                        {
+                           Trace trace{ "queue::manager::admin::local::forward::scale::aliases"};
+                           log::line( verbose::log, "aliases: ", aliases);
+
+                           auto forward_futures = algorithm::transform( state.forwards, [&]( auto& forward)
+                           {
+                              return communication::device::async::call( forward.ipc, 
+                                 common::message::queue::forward::state::Request{ process::handle()});
+                           });
+
+                           auto future_get = []( auto& future){ return future.get( ipc::device());};
+
+                           auto model = transform::forward( algorithm::transform( forward_futures, future_get));
+
+                           auto update_alias = [&aliases]( auto& forward)
+                           {
+                              if( auto found = algorithm::find( aliases, forward.alias))
+                                 forward.instances.configured = found->instances;
+                           };
+
+                           algorithm::for_each( model.services, update_alias);
+                           algorithm::for_each( model.queues, update_alias);
+
+                           auto configuration = transform::forward( std::move( model));
+
+                           // we know there's 0..1 forward processes...
+                           algorithm::for_each( state.forwards, [&configuration]( auto& process)
+                           {
+                              communication::device::blocking::optional::send( process.ipc, configuration);
+                           });
+
+                        }
+                     } // scale
+                  } // forward
+
 
                   namespace service
                   {
@@ -323,6 +361,26 @@ namespace casual
                         }
                      } // metric
 
+                     namespace forward
+                     {
+                        namespace scale
+                        {
+                           auto aliases( manager::State& state)
+                           {
+                              return [&state]( common::service::invoke::Parameter&& parameter)
+                              {
+                                 auto protocol = serviceframework::service::protocol::deduce( std::move( parameter));
+
+                                 auto aliases = protocol.extract< std::vector< manager::admin::model::scale::Alias>>( "aliases");
+
+                                 return serviceframework::service::user( std::move( protocol), &local::forward::scale::aliases, state, std::move( aliases));
+                              };
+                           }
+                        } // metric
+                        
+                     } // forward
+
+
                   } // service
                } // <unnamed>
             } // local
@@ -357,6 +415,11 @@ namespace casual
                      },
                      { service::name::metric::reset,
                         local::service::metric::reset( state),
+                        common::service::transaction::Type::none,
+                        common::service::category::admin
+                     },
+                     { service::name::forward::scale::aliases,
+                        local::service::forward::scale::aliases( state),
                         common::service::transaction::Type::none,
                         common::service::category::admin
                      },

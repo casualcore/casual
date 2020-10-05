@@ -5,7 +5,8 @@
 //!
 
 
-#include "queue/forward/common.h"
+#include "queue/forward/deprecated/common.h"
+
 #include "queue/common/log.h"
 #include "queue/common/queue.h"
 #include "queue/api/queue.h"

@@ -171,6 +171,43 @@ namespace casual
             {
                namespace advertise
                {
+                  namespace service
+                  {
+
+                     struct Property : common::Compare< Property>
+                     {
+
+                        enum class Type : short
+                        {
+                           configured,
+                           discovered,
+                        };
+
+                        inline friend std::ostream& operator << ( std::ostream& out, Type value)
+                        {
+                           switch( value)
+                           {
+                              case Type::configured: return out << "configured";
+                              case Type::discovered: return out << "discovered";
+                           }
+                           return out << "<unknown>";
+                        }
+
+                        platform::size::type hops = 0;
+                        Type type = Type::discovered;
+
+                        inline auto tie() const { return std::tie( type, hops);}
+
+                        CASUAL_CONST_CORRECT_SERIALIZE(
+                        {
+                           CASUAL_SERIALIZE( hops);
+                           CASUAL_SERIALIZE( type);
+                        })
+                     };
+
+
+                  } // service
+
                   //! Represent service information in a 'advertise context'
                   struct Service : message::Service
                   {
@@ -178,15 +215,15 @@ namespace casual
                      inline Service( std::string name, 
                         std::string category, 
                         common::service::transaction::Type transaction,
-                        platform::size::type hops = 0)
-                        : message::Service( std::move( name), std::move( category), transaction), hops( hops) {}
+                        service::Property property = service::Property{})
+                        : message::Service( std::move( name), std::move( category), transaction), property( property) {}
 
-                     platform::size::type hops = 0;
+                     service::Property property;
 
                      CASUAL_CONST_CORRECT_SERIALIZE(
                      {
                         message::Service::serialize( archive);
-                        CASUAL_SERIALIZE( hops);
+                        CASUAL_SERIALIZE( property);
                      })
                   };
 
@@ -237,19 +274,20 @@ namespace casual
                   enum class Context : short
                   {
                      regular,
-                     no_reply,
                      forward,
-                     gateway,
+                     no_busy_intermediate,
+                     wait,
                   };
 
                   inline friend std::ostream& operator << ( std::ostream& out, const Request::Context& value)
                   {
                      switch( value)
                      {
-                        case Request::Context::forward: return out << "forward";
-                        case Request::Context::gateway: return out << "gateway";
-                        case Request::Context::no_reply: return out << "no_reply";
                         case Request::Context::regular: return out << "regular";
+                        case Request::Context::forward: return out << "forward";
+                        case Request::Context::no_busy_intermediate: return out << "no-busy-intermediate";
+                        case Request::Context::wait: return out << "wait";
+                        
                      }
                      return out << "unknown";
                   }

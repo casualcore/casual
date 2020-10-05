@@ -87,7 +87,7 @@ namespace casual
 
             EXPECT_TRUE( state.instances.sequential.size() == 1);
             {
-               auto service = state.find_service( "service1");
+               auto service = state.service( "service1");
                ASSERT_TRUE( service);
                EXPECT_TRUE( service->information.name == "service1");
                ASSERT_TRUE( service->instances.sequential.size() == 1);
@@ -123,7 +123,7 @@ namespace casual
             }
 
             {
-               auto service = state.find_service( "service1");
+               auto service = state.service( "service1");
                ASSERT_TRUE( service);
                EXPECT_TRUE( service->information.name == "service1");
                EXPECT_TRUE( service->instances.sequential.size() == 0);
@@ -131,11 +131,11 @@ namespace casual
 
             {
 
-               auto& instance = state.sequential( common::process::id());
-
-               EXPECT_TRUE( instance.process == common::process::handle());
-               EXPECT_TRUE( instance.idle());
-               EXPECT_FALSE( instance.service( "service1"));
+               auto instance = state.sequential( common::process::id());
+               ASSERT_TRUE( instance);
+               EXPECT_TRUE( instance->process == common::process::handle());
+               EXPECT_TRUE( instance->idle());
+               EXPECT_FALSE( instance->service( "service1"));
             }
          }
 
@@ -161,12 +161,11 @@ namespace casual
             }
 
             {
-               auto& instance = state.sequential( common::process::id());
+               auto instance = state.sequential( common::process::id());
+               ASSERT_TRUE( instance);
 
-               for( auto& s : message.services.add)
-               {
-                  ASSERT_TRUE( instance.service( s.name));
-               }
+               for( auto& service : message.services.add)
+                  ASSERT_TRUE( instance->service( service.name));
             }
 
 
@@ -201,20 +200,20 @@ namespace casual
                state.update( message);
             }
             {
-               auto service = state.find_service( "s4");
+               auto service = state.service( "s4");
                ASSERT_TRUE( service);
                EXPECT_TRUE( service->instances.sequential.empty());
-               service = state.find_service( "s7");
+               service = state.service( "s7");
                ASSERT_TRUE( service);
                EXPECT_TRUE( service->instances.sequential.empty());
             }
 
             {
-               auto& instance = state.sequential( common::process::id());
-               EXPECT_FALSE( instance.service( "s4"));
-               EXPECT_FALSE( instance.service( "s7"));
-
-               EXPECT_TRUE( instance.service( "s0"));
+               auto instance = state.sequential( common::process::id());
+               ASSERT_TRUE( instance);
+               EXPECT_FALSE( instance->service( "s4"));
+               EXPECT_FALSE( instance->service( "s7"));
+               EXPECT_TRUE( instance->service( "s0"));
 
             }
          }

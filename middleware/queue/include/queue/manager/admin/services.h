@@ -35,7 +35,16 @@ namespace casual
                   namespace metric
                   {
                      constexpr auto reset = ".casual/queue/metric/reset";
-                  } // metric
+                  } // metric 
+
+                  namespace forward
+                  {
+                     namespace scale
+                     {
+                        constexpr auto aliases = ".casual/queue/forward/scale/aliases";
+                     } // scale
+                     
+                  } // forward
                   
                } // name
 

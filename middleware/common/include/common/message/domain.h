@@ -162,13 +162,88 @@ namespace casual
                      )
                   };
 
+                  struct Forward
+                  {
+                     struct Source
+                     {
+                        std::string name;
+                        
+                        CASUAL_CONST_CORRECT_SERIALIZE(
+                           CASUAL_SERIALIZE( name);
+                        )
+                     };
+
+                     struct Queue
+                     {
+                        struct Target
+                        {
+                           std::string name;
+                           platform::time::unit delay{};
+
+                           CASUAL_CONST_CORRECT_SERIALIZE(
+                              CASUAL_SERIALIZE( name);
+                              CASUAL_SERIALIZE( delay);
+                           )
+                        };
+
+                        std::string alias;
+                        Source source;
+                        Target target;
+                        platform::size::type instances = 0;
+                        std::string note;
+
+                        CASUAL_CONST_CORRECT_SERIALIZE(
+                           CASUAL_SERIALIZE( alias);
+                           CASUAL_SERIALIZE( source);
+                           CASUAL_SERIALIZE( target);
+                           CASUAL_SERIALIZE( instances);
+                           CASUAL_SERIALIZE( note);
+                        )
+                     };
+
+                     struct Service
+                     {
+                        using Target = Source;
+                        using Reply = Queue::Target;
+                        
+                        std::string alias;
+                        Source source;
+                        Target target;
+                        platform::size::type instances = 0;
+                        common::optional< Reply> reply;
+                        std::string note;
+
+                        CASUAL_CONST_CORRECT_SERIALIZE(
+                           CASUAL_SERIALIZE( alias);
+                           CASUAL_SERIALIZE( source);
+                           CASUAL_SERIALIZE( target);
+                           CASUAL_SERIALIZE( instances);
+                           CASUAL_SERIALIZE( reply);
+                           CASUAL_SERIALIZE( note);
+                        )
+                     };
+
+
+
+                     std::vector< Service> services;
+                     std::vector< Queue> queues;
+
+                     CASUAL_CONST_CORRECT_SERIALIZE
+                     (
+                        CASUAL_SERIALIZE( services);
+                        CASUAL_SERIALIZE( queues);
+                     )
+                  };
+
                   struct Manager
                   {
                      std::vector< Group> groups;
+                     Forward forward;
 
                      CASUAL_CONST_CORRECT_SERIALIZE
                      (
                         CASUAL_SERIALIZE( groups);
+                        CASUAL_SERIALIZE( forward);
                      )
                   };
 

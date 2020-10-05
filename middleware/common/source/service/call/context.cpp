@@ -49,7 +49,7 @@ namespace casual
                   namespace validate
                   {
 
-                     inline message::service::lookup::Request::Context flags( call::async::Flags flags)
+                     inline auto flags( call::async::Flags flags)
                      {
                         if( flags.exist( call::async::Flag::no_reply)  && ! flags.exist( call::async::Flag::no_transaction)
                               && common::transaction::Context::instance().current())
@@ -57,8 +57,10 @@ namespace casual
                            code::raise::error( code::xatmi::argument, "TPNOREPLY can only be used with TPNOTRAN");
                         }
 
+                        // if no-reply we treat it as a _forward-call_, and we'll not block until the service is idle.
+                        // Hence, it's a fire-and-forget message.
                         return flags.exist( call::async::Flag::no_reply) ?
-                              message::service::lookup::Request::Context::no_reply : message::service::lookup::Request::Context::regular;
+                              message::service::lookup::Request::Context::forward : message::service::lookup::Request::Context::regular;
                      }
                   } // validate
                } // <unnamed>

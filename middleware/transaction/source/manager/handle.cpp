@@ -430,7 +430,7 @@ namespace casual
                                     auto reply = local::transform::message< reply_type>( message);
                                     reply.correlation = transaction.correlation;
                                     reply.trid = transaction.global.trid;
-                                    reply.stage = reply_type::Stage::commit;
+                                    reply.stage = decltype( reply.stage)::commit;
                                     reply.state = common::code::tx::ok;
 
                                     local::send::reply( std::move( reply), transaction.owner());
@@ -451,7 +451,7 @@ namespace casual
                                     auto reply = local::transform::message< reply_type>( message);
                                     reply.correlation = transaction.correlation;
                                     reply.trid = transaction.global.trid;
-                                    reply.stage = reply_type::Stage::prepare;
+                                    reply.stage = decltype( reply.stage)::prepare;
                                     reply.state = common::code::tx::ok;
 
                                     local::send::persistent::reply( state, std::move( reply), transaction.owner());
@@ -510,7 +510,7 @@ namespace casual
                                  auto reply = local::transform::message< reply_type>( message);
                                  reply.correlation = transaction.correlation;
                                  reply.trid = transaction.global.trid;
-                                 reply.stage = reply_type::Stage::commit;
+                                 reply.stage = decltype( reply.stage)::commit;
                                  reply.state = common::code::tx::ok;
 
                                  if( transaction.resource_count() <= 1)
@@ -543,7 +543,7 @@ namespace casual
                                     auto reply = local::transform::message< reply_type>( message);
                                     reply.correlation = transaction.correlation;
                                     reply.trid = transaction.global.trid;
-                                    reply.stage = reply_type::Stage::commit;
+                                    reply.stage = decltype( reply.stage)::commit;
                                     reply.state = common::code::convert::to::tx( result);
 
                                     local::send::persistent::reply( state, std::move( reply), transaction.owner());
@@ -1053,7 +1053,7 @@ namespace casual
                   auto condition = common::exception::code();
 
                   auto reply = local::transform::reply( message);
-                  reply.stage = decltype( reply)::Stage::error;
+                  reply.stage = decltype( reply.stage)::error;
 
                   if( condition == common::code::casual::shutdown)
                      throw;
@@ -1112,7 +1112,7 @@ namespace casual
                         auto reply = local::transform::reply( message);
                         //reply.state = common::code::xa::read_only;
                         reply.state = common::code::tx::ok;
-                        reply.stage = reply_type::Stage::commit;
+                        reply.stage = decltype( reply.stage)::commit;
 
                         local::send::reply( std::move( reply), message.process);
                      }

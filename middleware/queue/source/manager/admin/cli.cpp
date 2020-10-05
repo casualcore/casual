@@ -89,17 +89,6 @@ namespace casual
                   return result;
                }
 
-               /*
-               auto enqueue( const common::message::queue::lookup::Reply& lookup, cli::message::Payload&& payload)
-               {
-                  
-
-
-
-
-               }
-               */
-
             } // call
 
 
@@ -188,9 +177,9 @@ namespace casual
                      terminal::format::column( "count", []( const auto& q){ return q.count;}, terminal::color::white, terminal::format::Align::right),
                      terminal::format::column( "size", []( const auto& q){ return q.size;}, common::terminal::color::white, terminal::format::Align::right),
                      terminal::format::column( "avg", avg_size, common::terminal::color::white, terminal::format::Align::right),
-                     terminal::format::column( "E", []( auto& q){ return q.metric.enqueued;}, common::terminal::color::cyan, terminal::format::Align::right),
-                     terminal::format::column( "D", []( auto& q){ return q.metric.dequeued;}, common::terminal::color::cyan, terminal::format::Align::right),
-                     terminal::format::column( "uc", []( const auto& q){ return q.uncommitted;}, common::terminal::color::magenta, terminal::format::Align::right),
+                     terminal::format::column( "EQ", []( auto& q){ return q.metric.enqueued;}, common::terminal::color::cyan, terminal::format::Align::right),
+                     terminal::format::column( "DQ", []( auto& q){ return q.metric.dequeued;}, common::terminal::color::cyan, terminal::format::Align::right),
+                     terminal::format::column( "UC", []( const auto& q){ return q.uncommitted;}, common::terminal::color::magenta, terminal::format::Align::right),
                      terminal::format::column( "last", []( auto& q){ return normalize::timestamp( q.last);}, common::terminal::color::blue)
                   );
                }
@@ -211,6 +200,121 @@ namespace casual
                   }
                   
                } // remote
+
+               namespace forward
+               {
+                  auto column_alias = []()
+                  {
+                     return terminal::format::column( "alias", []( auto& forward){ return forward.alias;}, terminal::color::yellow);
+                  };
+                  
+                  auto column_configure_instances = []()
+                  { 
+                     return terminal::format::column( "CI", []( auto& forward){ return forward.instances.configured;}, terminal::color::white);
+                  };
+                  auto column_running_instances = []()
+                  { 
+                     return terminal::format::column( "I", []( auto& forward){ return forward.instances.running;}, terminal::color::white);
+                  };
+
+                  auto column_source = []()
+                  {
+                     return terminal::format::column( "source", []( auto& forward){ return forward.source.name;}, terminal::color::white);
+                  };
+
+                  auto column_target_name = []()
+                  {
+                     return terminal::format::column( "target", []( auto& forward){ return forward.target.name;}, terminal::color::white);
+                  };
+
+                  auto column_commit = []()
+                  {
+                     return terminal::format::column( "commit", []( auto& forward)
+                     { 
+                        return forward.metric.commit.count;
+                     }, terminal::color::cyan, terminal::format::Align::right);
+                  };
+
+                  auto column_rollback = []()
+                  {
+                     return terminal::format::column( "rollback", []( auto& forward)
+                     { 
+                        return forward.metric.rollback.count;
+                     }, terminal::color::cyan, terminal::format::Align::right);
+                  };
+
+                  auto column_last = []()
+                  {
+                     return terminal::format::column( "last", []( auto& forward)
+                     {
+                        return local::normalize::timestamp( std::max( forward.metric.commit.last, forward.metric.rollback.last));
+                     }, terminal::color::blue);
+                  };
+
+                  using time_type = std::chrono::duration< double>;
+
+                  auto services()
+                  {
+                     auto column_reply_name = []()
+                     {
+                        return terminal::format::column( "reply", []( auto& forward)
+                        { 
+                           if( forward.reply)
+                              return forward.reply.value().name;
+                           
+                           return std::string{ "-"};
+                        }, terminal::color::cyan);
+                     };
+
+                     auto column_reply_delay = []()
+                     {
+                        return terminal::format::column( "delay", []( auto& forward)
+                        { 
+                           if( ! forward.reply)
+                              return std::string{ "-"};
+
+                           return std::to_string( std::chrono::duration_cast< time_type>( forward.reply.value().delay).count());
+                        }, terminal::color::cyan, terminal::format::Align::right);
+                     };
+
+                     return terminal::format::formatter< manager::admin::model::Forward::Service>::construct(
+                        column_alias(),
+                        column_source(),
+                        column_target_name(),
+                        column_reply_name(),
+                        column_reply_delay(),
+                        column_configure_instances(),
+                        column_running_instances(),
+                        column_commit(),
+                        column_rollback(),
+                        column_last()
+                     );
+                  }
+   
+                  auto queues()
+                  {
+                     auto column_target_delay = []()
+                     {
+                        return terminal::format::column( "delay", []( auto& forward)
+                        { 
+                           return std::chrono::duration_cast< time_type>( forward.target.delay).count();
+                        }, terminal::color::white, terminal::format::Align::right);
+                     };
+
+                     return terminal::format::formatter< manager::admin::model::Forward::Queue>::construct(
+                        column_alias(),
+                        column_source(),
+                        column_target_name(),
+                        column_target_delay(),
+                        column_configure_instances(),
+                        column_running_instances(),
+                        column_commit(),
+                        column_rollback(),
+                        column_last()
+                     );
+                  }
+
+               } // forward
 
             } // format
 
@@ -255,13 +359,13 @@ namespace casual
       the current size of the queue, aggregated message sizies
    avg:
       avarage message size in the queue
-   E: 
+   EQ: 
       enqueued - total number of successfully enqueued messages on the queue (committet), over time.
       note: this also include moved and restored messages.
-   D: 
+   DQ: 
       dequeued - total number of successfully dequeued messages on the queue (committet), over time. 
       note: this also includes when a message is moved to an error queue if a retry-count is reached.   
-   uc:
+   UC:
       number of currently uncommitted messages.
    last:
       the timetamp of the newest message on the queue, or has been on the queue if the queue is empty.
@@ -291,27 +395,35 @@ namespace casual
       when the message was enqueued
       
 )";
-               } // list            
+               } // list 
 
-               void invoke( const std::string& option)
+               auto option()
                {
-                  if( option == "list-queues")
-                     std::cout << legend::list::queues;
-                  else if( option == "list-messages")
-                     std::cout << legend::list::messages;
-               }
+                  auto invoke = []( const std::string& option)
+                  {
+                     if( option == "list-queues")
+                        std::cout << legend::list::queues;
+                     else if( option == "list-messages")
+                        std::cout << legend::list::messages;
+                  };
 
-               auto complete = []( auto& values, bool help) -> std::vector< std::string>
-               {     
-                  return { "list-queues", "list-messages"};
-               };
+                  auto complete = []( auto& values, bool help) -> std::vector< std::string>
+                  {     
+                     return { "list-queues", "list-messages"};
+                  };
 
-               constexpr auto description = R"(provide legend for the output for some of the options
+                  return argument::Option{
+                     std::move( invoke),
+                     complete,
+                     { "--legend"},
+                     R"(provide legend for the output for some of the options
 
 to view legend for --list-queues use casual queue --legend list-queues.
 
-use auto-complete to help which options has legends
-)";
+use auto-complete to help which options has legends)"
+                  };
+               }
+
             } // legend 
 
 
@@ -319,59 +431,125 @@ use auto-complete to help which options has legends
             {
                namespace queues
                {
-                  void invoke()
+                  auto option()
                   {
-                     auto state = call::state();
+                     auto invoke = []()
+                     {
+                        auto state = call::state();
 
-                     auto formatter = format::queues( state);
+                        auto formatter = format::queues( state);
 
-                     formatter.print( std::cout, algorithm::sort( state.queues));
+                        formatter.print( std::cout, algorithm::sort( state.queues));
+                     };
+
+                     return argument::Option{
+                        std::move( invoke),
+                        { "-q", "--list-queues"},
+                        R"(list information of all queues in current domain)"
+                     };
                   }
-
-                  constexpr auto description = R"(list information of all queues in current domain)";
+                  
                } // queues
 
                namespace remote
                {
                   namespace queues
                   {
-                     void invoke()
+                     auto option()
                      {
-                        auto state = call::state();
+                        auto invoke = []()
+                        {
+                           auto state = call::state();
+                           auto formatter = format::remote::queues( state);
+                           formatter.print( std::cout, algorithm::sort( state.remote.queues));
+                        };
                         
-                        auto formatter = format::remote::queues( state);
-
-                        formatter.print( std::cout, algorithm::sort( state.remote.queues));
+                        return argument::Option{
+                           std::move( invoke),
+                           { "-r", "--list-remote"},
+                           R"(list all remote discovered queues)"
+                        };
                      }
-                     constexpr auto description = R"(list all remote discovered queues)";
                   } // queues
                } // remote
 
                namespace groups
                {
-                  void invoke()
+                  auto option()
                   {
-                     auto state = call::state();
-
-                     format::groups().print( std::cout, state.groups);
+                     auto invoke = []()
+                     {
+                        auto state = call::state();
+                        format::groups().print( std::cout, state.groups);
+                     };
+                     
+                     return argument::Option{
+                        std::move( invoke),
+                        {  "-g", "--list-groups"},
+                        "list information of all groups in current domain"
+                     };
                   }
-
-                  constexpr auto description = R"(list information of all groups in current domain)";
                } // groups
 
                namespace messages
                {
-                  void invoke( const std::string& queue)
+                  auto option()
                   {
-                     auto messages = call::messages( queue);
-
-                     auto formatter = format::messages();
-
-                     formatter.print( std::cout, messages);
+                     auto invoke = []( const std::string& queue)
+                     {
+                        auto messages = call::messages( queue);
+                        auto formatter = format::messages();
+                        formatter.print( std::cout, messages);
+                     };
+                     
+                     return argument::Option{
+                        std::move( invoke),
+                        complete::queues,
+                        {  "-m", "--list-messages"},
+                        "list information of all messages of the provided queue"
+                     };
                   }
-
-                  constexpr auto description = R"(list information of all messages of a queue)";
                } // messages
+
+               namespace forward
+               {
+                  namespace services
+                  {
+                     auto option()
+                     {
+                        auto invoke = []()
+                        {
+                           auto state = call::state();
+                           format::forward::services().print( std::cout, state.forward.services);
+                        };
+                        
+                        return argument::Option{
+                           std::move( invoke),
+                           {  "--list-forward-services"},
+                           "list information of all service forwards"
+                        };
+                     }
+                  } // services
+
+                  namespace queues
+                  {
+                     auto option()
+                     {
+                        auto invoke = []()
+                        {
+                           auto state = call::state();
+                           format::forward::queues().print( std::cout, state.forward.queues);
+                        };
+                        
+                        return argument::Option{
+                           std::move( invoke),
+                           {  "--list-forward-queues"},
+                           "list information of all queue forwards"
+                        };
+                     }
+                  } // services
+
+               } // groups
             } // list
 
             namespace enqueue
@@ -678,125 +856,204 @@ casual queue --peek <queue-name> <id1> <id2> | <some other part of casual-pipe> 
 
             namespace restore
             {
-               void invoke( const std::vector< std::string>& queues)
+               auto option()
                {
-                  format::affected().print( std::cout, queue::restore::queue( queues));
-               }
+                  auto invoke = []( const std::vector< std::string>& queues)
+                  {
+                     format::affected().print( std::cout, queue::restore::queue( queues));
+                  };
 
-               constexpr auto description = R"(restores messages to queue
+                  return argument::Option{
+                     std::move( invoke),
+                     complete::queues,
+                     {  "--restore"},
+                     R"(restores messages to queue
 
 Messages will be restored to the queue they first was enqueued to (within the same queue-group)
 
 Example:
-casual queue --restore <queue-name>)";
-               
+casual queue --restore <queue-name>)"
+                  };
+               }
             } // restore
 
             namespace messages
             {
                namespace remove
                {
-                  void invoke( const std::string& queue, Uuid id, std::vector< Uuid> ids)
+                  auto option()
                   {
-                     ids.insert( std::begin( ids), std::move( id));
-
-                     auto removed = queue::messages::remove( queue, ids);
-
-                     algorithm::for_each( removed, []( auto& id)
+                     auto invoke = []( const std::string& queue, Uuid id, std::vector< Uuid> ids)
                      {
-                        std::cout << id << '\n';
-                     });
+                        ids.insert( std::begin( ids), std::move( id));
+                        auto removed = queue::messages::remove( queue, ids);
+
+                        algorithm::for_each( removed, []( auto& id)
+                        {
+                           std::cout << id << '\n';
+                        });
+                     };
+
+                     auto complete = []( auto& values, bool help) -> std::vector< std::string>
+                     { 
+                        if( help) 
+                           return { "<queue>", "<id>"};
+                        
+                        if( values.empty())
+                           return local::queues();
+                        
+                        return { "<value>"};
+                     };
+
+                     return argument::Option{
+                        std::move( invoke),
+                        complete,
+                        {  "--remove-messages"},
+                        R"(removes specific messages from a given queue)"
+                     };
                   }
-
-                  auto complete = []( auto& values, bool help) -> std::vector< std::string>
-                  { 
-                     if( help) 
-                        return { "<queue>", "<id>"};
-                     
-                     if( values.empty())
-                        return local::queues();
-                     
-                     return { "<value>"};
-                  };
-
-                  constexpr auto description = R"(removes specific messages from a given queue)";
                } // remove
 
             } // messages
 
             namespace clear
             {
-               void invoke( std::vector< std::string> queues)
+               auto option()
                {
-                  format::affected().print( std::cout, queue::clear::queue( queues));
-               }
+                  auto invoke = []( const std::vector< std::string>& queues)
+                  {
+                     format::affected().print( std::cout, queue::clear::queue( queues));
+                  };
 
-               constexpr auto description = R"(clears all messages from provided queues
+                  return argument::Option{
+                     argument::option::one::many( std::move( invoke)),
+                     complete::queues,
+                     {  "--clear"},
+                     R"(clears all messages from provided queues
 
 Example:
-casual queue --clear queue-a queue-b)";
-
-               auto complete = []( auto& values, bool help) -> std::vector< std::string>
-               { 
-                  if( help) 
-                     return { "<queue>"};
-                     
-                  return local::queues();
-               };
+casual queue --clear a b c)"
+                  };
+               }
 
             } // clear
+
+            namespace forward
+            {
+               namespace scale
+               {
+                  namespace aliases
+                  {
+                     auto option()
+                     {
+                        auto invoke = []( std::vector< std::tuple< std::string, platform::size::type>> values)
+                        {
+                           auto aliases = algorithm::transform( values, []( auto& value)
+                           {
+                              manager::admin::model::scale::Alias result;
+                              result.name = std::move( std::get< 0>( value));
+                              result.instances = std::get< 1>( value);
+                              return result;
+                           });
+
+                           serviceframework::service::protocol::binary::Call call;
+                           call << CASUAL_NAMED_VALUE( aliases);
+                           call( manager::admin::service::name::forward::scale::aliases);
+                        };
+
+                        auto complete = []( auto&& values, bool help) -> std::vector< std::string>
+                        {
+                           if( help)
+                              return { "<alias>", "<# instances>"};
+
+                           if( range::size( values) % 2 == 1)
+                              return { "<value>"};
+
+                           auto state = call::state();
+
+                           auto transform_alias = []( auto& forward){ return forward.alias;};
+
+                           auto aliases = algorithm::transform( state.forward.services, transform_alias);
+                           algorithm::transform( state.forward.queues, aliases, transform_alias);
+
+                           return aliases;
+                        };
+
+                        return argument::Option{
+                           argument::option::one::many( std::move( invoke)),
+                           complete,
+                           {  "--forward-scale-aliases"},
+                           R"(scales forward aliases to the requested number of instances
+
+Example:
+casual queue --forward-scale-aliases a 2 b 0 c 10)"
+                        };
+                     };  
+                  } // aliases
+
+               } // scale
+            } // forward
 
             namespace metric
             {
                namespace reset
                {
-                  void invoke( std::vector< std::string> queues)
+                  auto option()
                   {
-                     serviceframework::service::protocol::binary::Call call;
-                     call << CASUAL_NAMED_VALUE( queues);
-                     auto reply = call( manager::admin::service::name::metric::reset);
-                  }
+                     auto invoke = []( const std::vector< std::string>& queues)
+                     {
+                        serviceframework::service::protocol::binary::Call call;
+                        call << CASUAL_NAMED_VALUE( queues);
+                        auto reply = call( manager::admin::service::name::metric::reset);
+                     };
 
-                  constexpr auto description = R"(resets metrics for the provided queues
+                     return argument::Option{
+                        argument::option::one::many( std::move( invoke)),
+                        complete::queues,
+                        {  "--metric-reset"},
+                        R"(resets metrics for the provided queues
 
 if no queues are provided, metrics for all queues are reset.
 
 Example:
-casual queue --metric-reset queue-a queue-b)";
-
-
-               auto complete = []( auto& values, bool help) -> std::vector< std::string>
-               { 
-                  if( help) 
-                     return { "<queue>"};
-                     
-                  return local::queues();
-               };
-
+casual queue --metric-reset a b)"
+                     };
+                  }
                   
                } // reset
             } // metric
             
             namespace state
             {
-               void invoke( const common::optional< std::string>& format)
+               auto option()
                {
-                  auto state = call::state();
+                  auto invoke = []( const common::optional< std::string>& format)
+                  {
+                     auto state = call::state();
 
-                  auto archive = common::serialize::create::writer::from( format.value_or( ""));
-                  archive << CASUAL_NAMED_VALUE( state);
-                  archive.consume( std::cout);
-               } 
+                     auto archive = common::serialize::create::writer::from( format.value_or( ""));
+                     archive << CASUAL_NAMED_VALUE( state);
+                     archive.consume( std::cout);
+                  };
 
-               auto complete = []( auto values, bool) -> std::vector< std::string>
-               {
-                  return { "json|yaml|xml|ini"};
-               };
+                  auto complete = []( auto values, bool) -> std::vector< std::string>
+                  {
+                     return { "json", "yaml", "xml", "ini"};
+                  };
+
+                  return argument::Option{
+                     std::move( invoke),
+                     complete,
+                     {  "--state"},
+                     "queue state"
+                  };
+               }
                
             } // state
 
             namespace information
             {
+
                auto call() -> std::vector< std::tuple< std::string, std::string>> 
                {
                   auto state = local::call::state();
@@ -810,6 +1067,15 @@ casual queue --metric-reset queue-a queue-b)";
                      };
                   };
 
+                  auto max = []( auto extract)
+                  {
+                     return [extract]( auto& range)
+                     {
+                        decltype( extract( range::front( range))) initial{};
+                        return algorithm::accumulate( range, initial, [extract]( auto value, auto& element){ return std::max( value, extract( element));});
+                     };
+                  };
+
                   auto message_count = []( auto& queue){ return queue.count;};
                   auto message_size = []( auto& queue){ return queue.size;};
 
@@ -819,6 +1085,11 @@ casual queue --metric-reset queue-a queue-b)";
                   auto split = algorithm::partition( state.queues, []( auto& queue){ return queue.type() == decltype( queue.type())::queue;});
                   auto queues = std::get< 0>( split);
                   auto errors = std::get< 1>( split);
+
+                  auto commit_count = []( auto& forward){ return forward.metric.commit.count;};
+                  auto commit_last = []( auto& forward){ return forward.metric.commit.last;};
+                  auto rollback_count = []( auto& forward){ return forward.metric.rollback.count;};
+                  auto rollback_last = []( auto& forward){ return forward.metric.rollback.last;};
 
                   return {
                      { "queue.manager.group.count", string::compose( state.groups.size())},
@@ -833,15 +1104,31 @@ casual queue --metric-reset queue-a queue-b)";
                      { "queue.manager.error.queue.metric.dequeued", string::compose( accumulate( metric_dequeued)( errors))},
                      { "queue.manager.remote.domain.count", string::compose( state.remote.domains.size())},
                      { "queue.manager.remote.queue.count", string::compose( state.remote.queues.size())},
+                     { "queue.manager.forward.services.count", string::compose( state.forward.services.size())},
+                     { "queue.manager.forward.services.metric.commit.count", string::compose( accumulate( commit_count)( state.forward.services))},
+                     { "queue.manager.forward.services.metric.commit.last", string::compose( max( commit_last)( state.forward.services))},
+                     { "queue.manager.forward.services.metric.rollback.count", string::compose( accumulate( rollback_count)( state.forward.services))},
+                     { "queue.manager.forward.services.metric.rollback.last", string::compose( max( rollback_last)( state.forward.services))},
+                     { "queue.manager.forward.queues.count", string::compose( state.forward.queues.size())},
+                     { "queue.manager.forward.queues.metric.commit.count", string::compose( accumulate( commit_count)( state.forward.queues))},
+                     { "queue.manager.forward.queues.metric.commit.last", string::compose( max( commit_last)( state.forward.queues))},
+                     { "queue.manager.forward.queues.metric.rollback.count", string::compose( accumulate( rollback_count)( state.forward.queues))},
+                     { "queue.manager.forward.queues.metric.rollback.last", string::compose( max( rollback_last)( state.forward.queues))},
                   };
-               } 
-               
-               void invoke()
-               {
-                  terminal::formatter::key::value().print( std::cout, call());
-               }
+               };
 
-               constexpr auto description = R"(collect aggregated information about queues in this domain)";
+               auto option()
+               {
+                  auto invoke = []()
+                  {
+                     terminal::formatter::key::value().print( std::cout, information::call());
+                  };
+
+                  return argument::Option{
+                     std::move( invoke),
+                     {  "--information"},
+                     "collect aggregated information about queues in this domain"};
+                  }
 
             } // information
 
@@ -859,21 +1146,24 @@ casual queue --metric-reset queue-a queue-b)";
                {
 
                   return argument::Group{ [](){}, { "queue"}, "queue related administration",
-                     argument::Option( &local::list::queues::invoke, { "-q", "--list-queues"}, local::list::queues::description),
-                     argument::Option( &local::list::remote::queues::invoke, { "-r", "--list-remote"}, local::list::remote::queues::description),
-                     argument::Option( &local::list::groups::invoke, { "-g", "--list-groups"}, local::list::groups::description),
-                     argument::Option( &local::list::messages::invoke, local::complete::queues, { "-m", "--list-messages"}, local::list::messages::description),
-                     argument::Option( &local::restore::invoke, local::complete::queues, { "--restore"}, local::restore::description),
+                     local::list::queues::option(),
+                     local::list::remote::queues::option(),
+                     local::list::groups::option(),
+                     local::list::messages::option(),
+                     local::list::forward::services::option(),
+                     local::list::forward::queues::option(),
+                     local::restore::option(),
                      local::enqueue::option(),
                      local::dequeue::option(),
                      local::peek::option(),
                      local::consume::option(),
-                     argument::Option( argument::option::one::many( &local::clear::invoke), local::clear::complete, { "--clear"}, local::clear::description),
-                     argument::Option( &local::messages::remove::invoke, local::messages::remove::complete, { "--remove-messages"}, local::messages::remove::description),
-                     argument::Option( &local::metric::reset::invoke, local::metric::reset::complete, { "--metric-reset"}, local::metric::reset::description),
-                     argument::Option( &local::legend::invoke, local::legend::complete, {"--legend"}, local::legend::description),
-                     argument::Option( &local::information::invoke, {"--information"}, local::information::description),
-                     argument::Option( &local::state::invoke, local::state::complete, {"--state"}, "queue state"),
+                     local::clear::option(),
+                     local::messages::remove::option(),
+                     local::forward::scale::aliases::option(),
+                     local::metric::reset::option(),
+                     local::legend::option(),
+                     local::information::option(),
+                     local::state::option(),
                   };
                }
             };

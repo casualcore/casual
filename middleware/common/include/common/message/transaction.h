@@ -79,8 +79,7 @@ namespace casual
                };
                static_assert( traits::is_movable< Request>::value, "not movable");
 
-               using base_reply = basic_reply< code::tx, Type::transaction_commit_reply>;
-               struct Reply : base_reply
+               namespace reply
                {
                   enum class Stage : char
                   {
@@ -89,26 +88,32 @@ namespace casual
                      error = 2,
                   };
 
-                  Stage stage = Stage::prepare;
-
-                  CASUAL_CONST_CORRECT_SERIALIZE(
-                  {
-                     base_reply::serialize( archive);
-                     CASUAL_SERIALIZE( stage);
-                  })
-
-                  inline friend std::ostream& operator << ( std::ostream& out, Stage value)
+                  inline std::ostream& operator << ( std::ostream& out, Stage value)
                   {
                      switch( value)
                      {
-                        case Stage::prepare: return out << "rollback";
+                        case Stage::prepare: return out << "prepare";
                         case Stage::commit: return out << "commit";
                         case Stage::error: return out << "error";
                      }
                      return out << "unknown";
                   }
+
+                  using base = basic_reply< code::tx, Type::transaction_commit_reply>;
+                  
+               } // reply
+
+               
+               struct Reply : reply::base
+               {
+                  reply::Stage stage = reply::Stage::prepare;
+
+                  CASUAL_CONST_CORRECT_SERIALIZE(
+                  {
+                     reply::base::serialize( archive);
+                     CASUAL_SERIALIZE( stage);
+                  })
                };
-               static_assert( traits::is_movable< Reply>::value, "not movable");
 
             } // commit
 

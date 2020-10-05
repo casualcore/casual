@@ -43,6 +43,7 @@ namespace casual
          auto queue = domain::get( { example::create::file::temporary( example::domain(), "domain", GetParam())}).queue;
 
          EXPECT_TRUE( queue.groups.size() == 3) << CASUAL_NAMED_VALUE( queue);
+         EXPECT_TRUE( queue.forward.services.size() == 1) << CASUAL_NAMED_VALUE( queue);
       }
 
 

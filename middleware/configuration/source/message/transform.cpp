@@ -125,6 +125,42 @@ namespace casual
 
                   return result;
                });
+
+               common::algorithm::transform( domain.queue.forward.services, result.queue.forward.services, []( auto& service)
+               {
+                  common::message::domain::configuration::queue::Forward::Service result;
+                  result.alias = service.alias;
+                  result.source.name = service.source.name;
+                  result.target.name = service.target.name;
+                  result.instances = service.instances.value_or( 0);
+
+                  if( service.reply)
+                  {
+                     common::message::domain::configuration::queue::Forward::Service::Reply reply;
+                     reply.name = service.reply.value().name;
+                     if( service.reply.value().delay)
+                        reply.delay = common::chronology::from::string( service.reply.value().delay.value());
+
+                     result.reply = std::move( reply);
+                  }
+
+                  result.note = service.note.value_or( "");
+                  return result;
+               });
+
+               common::algorithm::transform( domain.queue.forward.queues, result.queue.forward.queues, []( auto& queue)
+               {
+                  common::message::domain::configuration::queue::Forward::Queue result;
+                  result.alias = queue.alias;
+                  result.source.name = queue.source.name;
+                  result.target.name = queue.target.name;
+                  if( queue.target.delay)
+                     result.target.delay = common::chronology::from::string( queue.target.delay.value());
+                     
+                  result.instances = queue.instances.value_or( 0);
+                  result.note = queue.note.value_or( "");
+                  return result;
+               });
             }
 
             return result;

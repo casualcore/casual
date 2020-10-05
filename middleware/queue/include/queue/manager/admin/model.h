@@ -13,6 +13,9 @@
 #include "common/domain.h"
 
 
+#include <algorithm>
+
+
 namespace casual
 {
    namespace queue
@@ -41,6 +44,7 @@ namespace casual
                      CASUAL_SERIALIZE( queuebase);
                   })
                };
+
                namespace remote
                {
                   struct Domain
@@ -149,6 +153,119 @@ namespace casual
                   inline friend bool operator == ( const Queue& lhs, const std::string name) { return lhs.name == name;}
                };
 
+               struct Forward
+               {
+                  struct Instances
+                  {
+                     platform::size::type configured = 0;
+                     platform::size::type running = 0;
+
+                     CASUAL_CONST_CORRECT_SERIALIZE(
+                        CASUAL_SERIALIZE( configured);
+                        CASUAL_SERIALIZE( running);
+                     )
+                  };
+
+                  struct Metric
+                  {
+                     struct Count
+                     {
+                        platform::size::type count = 0;
+                        platform::time::point::type last{};
+
+                        CASUAL_CONST_CORRECT_SERIALIZE(
+                           CASUAL_SERIALIZE( count);
+                           CASUAL_SERIALIZE( last);
+                        )
+                     };
+
+                     Count commit;
+                     Count rollback;
+
+                     inline auto transactions() const { return commit.count + rollback.count;}
+                     inline auto last() const { return std::max( commit.last, rollback.last);}
+
+                     CASUAL_CONST_CORRECT_SERIALIZE(
+                        CASUAL_SERIALIZE( commit);
+                        CASUAL_SERIALIZE( rollback);
+                     )
+                  };
+
+                  struct Source
+                  {
+                     std::string name;
+                     
+                     CASUAL_CONST_CORRECT_SERIALIZE(
+                        CASUAL_SERIALIZE( name);
+                     )
+                  };
+
+                  struct Queue
+                  {
+                     struct Target
+                     {
+                        std::string name;
+                        platform::time::unit delay{};
+
+                        CASUAL_CONST_CORRECT_SERIALIZE(
+                           CASUAL_SERIALIZE( name);
+                           CASUAL_SERIALIZE( delay);
+                        )
+                     };
+
+                     std::string alias;
+                     Source source;
+                     Target target;
+                     Instances instances;
+                     Metric metric;
+                     std::string note;
+
+                     CASUAL_CONST_CORRECT_SERIALIZE(
+                        CASUAL_SERIALIZE( alias);
+                        CASUAL_SERIALIZE( source);
+                        CASUAL_SERIALIZE( target);
+                        CASUAL_SERIALIZE( instances);
+                        CASUAL_SERIALIZE( metric);
+                        CASUAL_SERIALIZE( note);
+                     )
+                  };
+
+                  struct Service
+                  {
+                     using Target = Source;
+                     using Reply = Queue::Target;
+                     
+                     std::string alias;
+                     Source source;
+                     Target target;
+                     Instances instances;
+                     common::optional< Reply> reply;
+                     Metric metric;
+                     std::string note;
+
+                     CASUAL_CONST_CORRECT_SERIALIZE(
+                        CASUAL_SERIALIZE( alias);
+                        CASUAL_SERIALIZE( source);
+                        CASUAL_SERIALIZE( target);
+                        CASUAL_SERIALIZE( instances);
+                        CASUAL_SERIALIZE( reply);
+                        CASUAL_SERIALIZE( metric);
+                        CASUAL_SERIALIZE( note);
+                     )
+                  };
+
+
+                  std::vector< Service> services;
+                  std::vector< Queue> queues;
+
+                  CASUAL_CONST_CORRECT_SERIALIZE
+                  (
+                     CASUAL_SERIALIZE( services);
+                     CASUAL_SERIALIZE( queues);
+                  )
+
+               };
+
                struct Message
                {
                   enum class State : int
@@ -193,6 +310,8 @@ namespace casual
                   std::vector< Group> groups;
                   std::vector< Queue> queues;
 
+                  Forward forward;
+
                   struct Remote
                   {
                      std::vector< remote::Domain> domains;
@@ -210,6 +329,7 @@ namespace casual
                   {
                      CASUAL_SERIALIZE( groups);
                      CASUAL_SERIALIZE( queues);
+                     CASUAL_SERIALIZE( forward);
                      CASUAL_SERIALIZE( remote);
                   })
 
@@ -239,6 +359,23 @@ namespace casual
                      CASUAL_SERIALIZE( count);
                   })
                };
+
+               namespace scale
+               {
+                  struct Alias
+                  {
+                     std::string name;
+                     platform::size::type instances;
+
+                     inline friend bool operator == ( const Alias& lhs, const std::string& rhs) { return lhs.name == rhs;}
+
+                     CASUAL_CONST_CORRECT_SERIALIZE(
+                        CASUAL_SERIALIZE( name);
+                        CASUAL_SERIALIZE( instances);
+                     )
+                  };
+
+               } // scale
 
             } // model
          } // admin

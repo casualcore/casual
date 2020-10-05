@@ -378,11 +378,7 @@ namespace casual
                   M&& message,
                   Device& device = inbound::device())
             {
-               auto correlation = device::blocking::send( std::forward< D>( destination), message);
-
-               auto reply = common::message::reverse::type( std::forward< M>( message));
-               device::blocking::receive( device, reply, correlation);
-               return reply;
+               return device::call( std::forward< D>( destination), std::forward< M>( message), device);
             }
 
 
