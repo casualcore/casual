@@ -96,13 +96,13 @@ namespace casual
                      return common::environment::directory::casual() + "/bin/casual-gateway-outbound";
                   }
 
-                  struct Boot
+                  auto boot()
                   {
-                     void operator () ( manager::state::outbound::Connection& connection) const
+                     return []( auto& connection)
                      {
                         Trace trace{ "gateway::manager::handle::local::Boot"};
 
-                        if( connection.runlevel == manager::state::outbound::Connection::Runlevel::absent)
+                        if( connection.runlevel == decltype( connection.runlevel)::absent)
                         {
                            try
                            {
@@ -111,7 +111,7 @@ namespace casual
                                     { "--address", connection.address.peer,
                                       "--order", std::to_string( connection.order)});
 
-                              connection.runlevel = manager::state::outbound::Connection::Runlevel::connecting;
+                              connection.runlevel = decltype( connection.runlevel)::connecting;
 
                               // Send event
                               {
@@ -131,9 +131,61 @@ namespace casual
                         }
                         else
                            log::line( log::category::error, "boot connection: ", connection, " - wrong runlevel - action: ignore");
-                     }
+                     };
 
                   };
+
+                  namespace rediscover
+                  {
+                     auto result( State& state, state::coordinate::outbound::rediscover::Tasks::Result result)
+                     {
+                        Trace trace{ "gateway::manager::handle::local::rediscover::result"};
+                        log::line( verbose::log, "result: ", result);
+
+                        auto send_end_event = []( auto& result)
+                        {
+                           // we're done, and can send end event (if caller is listening)
+                           common::message::event::Task event{ common::process::handle()};
+                           event.correlation = result.correlation;
+                           event.description = std::move( result.description);
+                           event.state = decltype( event.state)::done;
+                           common::event::send( std::move( event));
+                        };
+
+                        if( ! result.request)
+                        {
+                           // nothing left to do, we send end-event.
+                           send_end_event( result);
+                           return result.correlation;
+                        }
+
+                        auto& destination = result.request.value().destination;
+
+                        // outbound might not be available
+                        if( communication::device::blocking::optional::send( destination.ipc, result.request.value().message))
+                        {
+                           if( auto outbound = state.outbound( destination.pid))
+                           {
+                              common::message::event::sub::Task event{ common::process::handle()};
+                              event.correlation = result.correlation;
+                              event.description = "redescover " + outbound->remote.name;
+                              event.state = decltype( event.state)::started;
+                              common::event::send( std::move( event));
+                           }
+                        }
+                        else
+                        {
+                           // The outbound is not available for some reason. Remove the task...
+                           state.rediscover.tasks.remove( destination.pid);
+
+                           if( state.rediscover.tasks.empty())
+                              send_end_event( result);
+                        }
+
+                        return result.correlation;
+               
+                     };
+                  } // rediscover
 
                } // <unnamed>
             } // local
@@ -167,7 +219,7 @@ namespace casual
             {
                Trace trace{ "gateway::manager::handle::boot"};
 
-               algorithm::for_each( state.connections.outbound, local::Boot{});
+               algorithm::for_each( state.connections.outbound, local::boot());
             }
 
             namespace process
@@ -185,19 +237,11 @@ namespace casual
             } // process
 
 
-            std::vector< common::Uuid> rediscover( State& state)
+            common::Uuid rediscover( State& state)
             {
                Trace trace{ "gateway::manager::handle::rediscover"};
 
                auto result = state.rediscover.tasks.add( state, "rediscover outbound connections");
-               log::line( verbose::log, "result: ", result);
-
-               if( ! result.request)
-                  return {};
-
-               // send the first request
-               auto& destination = result.request.value().destination;
-               communication::device::blocking::send( destination.ipc, result.request.value().message);
 
                // main task
                {
@@ -208,18 +252,7 @@ namespace casual
                   common::event::send( std::move( event));
                }
 
-               // sub task
-               if( auto outbound = state.outbound( destination.pid))
-               {
-                  common::message::event::sub::Task event{ common::process::handle()};
-                  event.correlation = result.correlation;
-                  event.description = "redescover " + outbound->remote.name;
-                  event.state = decltype( event.state)::started;
-                  common::event::send( std::move( event));
-               }
-
-               return { result.correlation};
-
+               return local::rediscover::result( state, std::move( result));
             }
 
             namespace listen
@@ -295,7 +328,7 @@ namespace casual
                               if( outbound_found->restart && state.runlevel == State::Runlevel::online)
                               {
                                  outbound_found->reset();
-                                 local::Boot{}( *outbound_found);
+                                 local::boot()( *outbound_found);
                               }
                               else
                                  state.connections.outbound.erase( std::begin( outbound_found));
@@ -380,7 +413,6 @@ namespace casual
                               log::line( verbose::log, "message: ", message);
 
                               auto result = state.rediscover.tasks.reply( state, message);
-                              log::line( verbose::log, "result: ", result);
 
                               // sub event
                               if( auto outbound = state.outbound( message.process.pid))
@@ -392,29 +424,7 @@ namespace casual
                                  common::event::send( std::move( event));
                               }
 
-                              if( result.request)
-                              {
-                                 auto& destination = result.request.value().destination;
-                                 communication::device::blocking::send( destination.ipc, result.request.value().message);
-
-                                 if( auto outbound = state.outbound( destination.pid))
-                                 {
-                                    common::message::event::sub::Task event{ common::process::handle()};
-                                    event.correlation = result.correlation;
-                                    event.description = "redescover " + outbound->remote.name;
-                                    event.state = decltype( event.state)::started;
-                                    common::event::send( std::move( event));
-                                 }
-                              }
-                              else
-                              {
-                                 // we're done, and can send end event (if caller is listening)
-                                 common::message::event::Task event{ common::process::handle()};
-                                 event.correlation = result.correlation;
-                                 event.description = std::move( result.description);
-                                 common::event::send( std::move( event));
-                              }
-
+                              local::rediscover::result( state, std::move( result));
                            };
                         }
 
@@ -517,7 +527,6 @@ namespace casual
                handle::local::domain::discover::reply( state),
                handle::local::domain::rediscover::reply( state),
                std::ref( call));
-               //common::server::handle::admin::Call{ manager::admin::services( state)});
          }
 
       } // manager

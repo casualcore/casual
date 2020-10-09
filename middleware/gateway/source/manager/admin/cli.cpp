@@ -61,7 +61,7 @@ namespace casual
             serviceframework::service::protocol::binary::Call call;
             auto reply = call( manager::admin::service::name::rediscover);
 
-            std::vector< Uuid> result;
+            Uuid result;
             reply >> CASUAL_NAMED_VALUE( result);
 
             return result;
@@ -206,19 +206,19 @@ namespace casual
                   return;
                }
                
-               decltype( call::rediscover()) tasks;
+               Uuid correlation;
 
                auto condition = event::condition::compose( 
-                  event::condition::prelude( [&tasks]() { tasks = call::rediscover();}),
-                  event::condition::done( [&tasks](){ return tasks.empty();}));
+                  event::condition::prelude( [&correlation]() { correlation = call::rediscover();}),
+                  event::condition::done( [&correlation](){ return correlation.empty();}));
                
                event::listen( condition, 
-                  [&tasks]( const common::message::event::Task& task)
+                  [&correlation]( const common::message::event::Task& task)
                   {
                      common::message::event::terminal::print( std::cout, task);
 
                      if( task.done())
-                        algorithm::trim( tasks, algorithm::remove( tasks, task.correlation));
+                        correlation = {};
                   },
                   []( const common::message::event::sub::Task& task)
                   {

@@ -40,7 +40,7 @@ namespace casual
 
             void boot( State& state);
 
-            std::vector< common::Uuid> rediscover( State& state);
+            common::Uuid rediscover( State& state);
 
             namespace process
             {
