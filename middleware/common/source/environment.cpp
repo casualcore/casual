@@ -249,14 +249,14 @@ namespace casual
                      return file;
                   }();
 
-                  std::string ipc = []() -> std::string 
+                  std::string ipc = []() 
                   {
                      auto get = []()
                      {
                         if( variable::exists( variable::name::ipc::directory))
                            return variable::get( variable::name::ipc::directory);
 
-                        return environment::directory::temporary() + "/casual/ipc";
+                        return environment::directory::temporary() + "/.casual/ipc";
                      };
                      return create_path( get());
                   }();
@@ -317,8 +317,8 @@ namespace casual
 
             const std::string& temporary()
             {
-               static std::string singleton{ platform::directory::temporary};
-               return singleton;
+               static const std::string singleton{ environment::variable::get( "TMP", platform::directory::temporary)};
+               return singleton;               
             }
 
             const std::string& casual()
