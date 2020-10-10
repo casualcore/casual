@@ -105,7 +105,12 @@ namespace casual
 
                         auto correlation = uuid::make();
 
-                        auto running_outbounds = algorithm::sort( algorithm::filter( state.connections.outbound, []( auto& outbound){ return outbound.running();}));
+                        auto is_running = []( auto& outbound)
+                        {
+                           return outbound.running() && outbound.process;
+                        };
+
+                        auto running_outbounds = algorithm::sort( algorithm::filter( state.connections.outbound, is_running));
 
                         if( ! running_outbounds)
                            return { correlation, {}, std::move( description)};

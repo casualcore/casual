@@ -74,12 +74,23 @@ domain:
             namespace call
             {
 
-               manager::admin::model::State state()
+               auto state()
                {
                   serviceframework::service::protocol::binary::Call call;
                   auto reply = call( manager::admin::service::name::state);
 
                   manager::admin::model::State result;
+                  reply >> CASUAL_NAMED_VALUE( result);
+
+                  return result;
+               }
+
+               auto rediscover()
+               {
+                  serviceframework::service::protocol::binary::Call call;
+                  auto reply = call( manager::admin::service::name::rediscover);
+
+                  Uuid result;
                   reply >> CASUAL_NAMED_VALUE( result);
 
                   return result;
@@ -124,7 +135,7 @@ domain:
 
 
 
-      TEST( casual_gateway_manager_tcp, listen_on_127_0_0_1__6666)
+      TEST( gateway_manager_tcp, listen_on_127_0_0_1__6666)
       {
          common::unittest::Trace trace;
 
@@ -133,7 +144,7 @@ domain:
          });
       }
 
-      TEST( casual_gateway_manager_tcp, listen_on_127_0_0_1__6666__outbound__127_0_0_1__6666__expect_connection)
+      TEST( gateway_manager_tcp, listen_on_127_0_0_1__6666__outbound__127_0_0_1__6666__expect_connection)
       {
          common::unittest::Trace trace;
 
@@ -170,7 +181,7 @@ domain:
             } // service
          } // <unnamed>
       } // local
-      TEST( casual_gateway_manager_tcp, connect_to_our_self__remote1_call__expect_service_remote1)
+      TEST( gateway_manager_tcp, connect_to_our_self__remote1_call__expect_service_remote1)
       {
          common::unittest::Trace trace;
 
@@ -214,7 +225,7 @@ domain:
 
 
 
-      TEST( casual_gateway_manager_tcp, connect_to_our_self__remote1_call_in_transaction___expect_same_transaction_in_reply)
+      TEST( gateway_manager_tcp, connect_to_our_self__remote1_call_in_transaction___expect_same_transaction_in_reply)
       {
          common::unittest::Trace trace;
 
@@ -275,7 +286,7 @@ domain:
       }
 
 
-      TEST( casual_gateway_manager_tcp,  connect_to_our_self__enqueue_dequeue___expect_message)
+      TEST( gateway_manager_tcp,  connect_to_our_self__enqueue_dequeue___expect_message)
       {
          common::unittest::Trace trace;
 
@@ -351,7 +362,7 @@ domain:
          }
       }
 
-      TEST( casual_gateway_manager_tcp, connect_to_our_self__kill_outbound__expect_restart)
+      TEST( gateway_manager_tcp, connect_to_our_self__kill_outbound__expect_restart)
       {
          common::unittest::Trace trace;
 
@@ -391,7 +402,7 @@ domain:
          }
       }
 
-      TEST( casual_gateway_manager_tcp, connect_to_our_self__10_outbound_connections)
+      TEST( gateway_manager_tcp, connect_to_our_self__10_outbound_connections)
       {
          common::unittest::Trace trace;
 
@@ -437,7 +448,7 @@ domain:
          EXPECT_TRUE( state.connections.size() == 2 * 10) << state.connections;
       }
 
-      TEST( casual_gateway_manager_tcp, connect_to_our_self__kill_inbound__expect_restart)
+      TEST( gateway_manager_tcp, connect_to_our_self__kill_inbound__expect_restart)
       {
          common::unittest::Trace trace;
 
@@ -481,7 +492,7 @@ domain:
          }
       }
 
-      TEST( casual_gateway_manager_tcp,  outbound_to_non_existent_listener)
+      TEST( gateway_manager_tcp, outbound_to_non_existent_listener)
       {
          common::unittest::Trace trace;
 
@@ -515,6 +526,137 @@ domain:
          auto process = common::communication::instance::fetch::handle( outbound.process.pid);
          EXPECT_TRUE( communication::instance::ping( process.ipc) == process);
 
+      }
+
+      namespace local
+      {
+         namespace
+         {
+            auto wait_for_outbounds( int count)
+            {
+               auto number_of_running = []()
+               {
+                  auto running_outbound = []( auto& connection)
+                  {
+                     return connection.bound == decltype( connection.bound)::out &&
+                        connection.runlevel == decltype( connection.runlevel)::online;
+                  };
+
+                  auto state = call::state();
+
+                  return algorithm::count_if( state.connections, running_outbound);
+               };
+
+               while( number_of_running() < count)
+                  process::sleep( std::chrono::milliseconds{ 2});
+            }
+
+
+            namespace rediscover
+            {
+               auto listen()
+               {
+                  Uuid correlation;
+
+                  auto condition = event::condition::compose( 
+                     event::condition::prelude( [&correlation]() { correlation = call::rediscover();}),
+                     event::condition::done( [&correlation](){ return correlation.empty();}));
+                  
+                  event::listen( condition, 
+                     [&correlation]( const common::message::event::Task& task)
+                     {
+                        if( task.correlation != correlation)
+                           return;
+
+                        common::message::event::terminal::print( std::cout, task);
+
+                        if( task.done())
+                           correlation = {};
+                     },
+                     [&correlation]( const common::message::event::sub::Task& task)
+                     {
+                        if( task.correlation != correlation)
+                           return;
+                        common::message::event::terminal::print( std::cout, task);
+                     }
+                  );
+               }
+               
+            } // rediscover
+         } // <unnamed>
+      } // local
+
+
+      TEST( gateway_manager_tcp, rediscover_to_not_connected_outbounds)
+      {
+         common::unittest::Trace trace;
+
+         static constexpr auto configuration = R"(
+domain: 
+   name: gateway-domain
+
+   groups: 
+      - name: base
+      - name: gateway
+        dependencies: [ base]
+   
+   servers:
+      - path: "${CASUAL_HOME}/bin/casual-service-manager"
+        memberships: [ base]
+      - path: "${CASUAL_HOME}/bin/casual-transaction-manager"
+        memberships: [ base]
+      - path: "./bin/casual-gateway-manager"
+        memberships: [ gateway]
+   gateway:
+      connections:
+         - address: 127.0.0.1:6666
+         - address: 127.0.0.1:6667
+)";
+
+
+         local::Domain domain{ configuration};
+
+         EXPECT_NO_THROW(
+            local::rediscover::listen();
+         );
+      }
+
+      TEST( gateway_manager_tcp, rediscover_to_1_self_connected__1_not_connected__outbounds)
+      {
+         common::unittest::Trace trace;
+
+         static constexpr auto configuration = R"(
+domain: 
+   name: gateway-domain
+
+   groups: 
+      - name: base
+      - name: gateway
+        dependencies: [ base]
+   
+   servers:
+      - path: "${CASUAL_HOME}/bin/casual-service-manager"
+        memberships: [ base]
+      - path: "${CASUAL_HOME}/bin/casual-transaction-manager"
+        memberships: [ base]
+      - path: "./bin/casual-gateway-manager"
+        memberships: [ gateway]
+   gateway:
+      listeners: 
+         - address: 127.0.0.1:6666
+      connections:
+         - address: 127.0.0.1:6666
+         - address: 127.0.0.1:6667
+)";
+
+
+         local::Domain domain{ configuration};
+
+         local::wait_for_outbounds( 1);
+
+         EXPECT_NO_THROW(
+            local::rediscover::listen();
+         );
       }
 
    } // gateway
