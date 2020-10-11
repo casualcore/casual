@@ -23,11 +23,9 @@ namespace casual
                template< typename Base>
                struct basic_request : Base
                {
-                  using base_type = Base;
-
                   template< typename... Args>
                   basic_request( common::buffer::payload::Send buffer, Args&&... args)
-                        : base_type( std::forward< Args>( args)...), buffer( std::move( buffer))
+                        : Base( std::forward< Args>( args)...), buffer( std::move( buffer))
                   {
                   }
 
@@ -47,13 +45,7 @@ namespace casual
                template< typename Base>
                struct basic_request : Base
                {
-                  using base_type = Base;
-
-                  template< typename... Args>
-                  basic_request( Args&&... args)
-                        : base_type( std::forward< Args>( args)...)
-                  {
-                  }
+                  using Base::Base;
 
                   common::buffer::Payload buffer;
 

@@ -58,9 +58,11 @@ namespace casual
             namespace connect
             {
 
-               using base_request = type_wrapper< service::call::common_request, Type::service_conversation_connect_request>;
+               using base_request = service::call::common_request< Type::service_conversation_connect_request>;
                struct basic_request : base_request
                {
+                  using base_request::base_request;
+                  
                   Route recording;
                   flag::service::conversation::connect::Flags flags;
 

@@ -38,6 +38,14 @@ namespace casual
             {
                using size_type = platform::size::type;
 
+               namespace manager
+               {
+                  auto& service() { return communication::instance::outbound::service::manager::device();}
+                  auto& queue() { return common::communication::instance::outbound::queue::manager::optional::device();}
+                  
+               } // manager
+
+
                namespace blocking
                {
                   template< typename D, typename M>
@@ -132,15 +140,16 @@ namespace casual
                   template< typename M> 
                   void add_message( M&& message)
                   {
-                     buffer.add( common::serialize::native::complete( std::forward< M>( message)));
+                     buffer.add( std::forward< M>( message));
 
                      if( buffer.congested())
                         directive.read.remove( external.device.connector().socket().descriptor());
                   } 
 
-                  auto get_complete( const common::Uuid& correlation)
+                  template< typename... Ts>
+                  auto get_complete( Ts&&... ts)
                   {
-                     auto complete = buffer.get( correlation);
+                     auto complete = buffer.get( std::forward< Ts>( ts)...);
                      
                      if( ! buffer.congested())
                         directive.read.add( external.device.connector().socket().descriptor());
@@ -179,17 +188,6 @@ namespace casual
 
                namespace handle
                {
-                  namespace state
-                  {
-                     struct Base
-                     {
-                        Base( State& state) : m_state( state) {}
-
-                     protected:
-                        State& m_state;
-                     };
-                  } // state
-
                   namespace external
                   {
                      namespace call
@@ -218,7 +216,7 @@ namespace casual
                               state.add_message( std::move( message));
 
                               // Send lookup
-                              blocking::send( common::communication::instance::outbound::service::manager::device(), request);
+                              blocking::send( local::manager::service(), request);
                            };
                         }
                      } // call
@@ -243,7 +241,7 @@ namespace casual
                               }
 
                               // Add message to buffer
-                              state.add_message( std::move( message));
+                              state.add_message( std::forward< M>( message));
 
                               auto remove = common::execute::scope( [&](){
                                  state.get_complete( request.correlation);
@@ -252,7 +250,7 @@ namespace casual
                               try
                               {
                                  // Send lookup
-                                 blocking::send( common::communication::instance::outbound::queue::manager::optional::device(), request);
+                                 blocking::send( manager::queue(), request);
 
                                  // We could send the lookup, so we won't remove the message from the buffer
                                  remove.release();
@@ -345,7 +343,7 @@ namespace casual
 
                                  std::vector< common::strong::process::id> pids;
 
-                                 auto& service_manager = common::communication::instance::outbound::service::manager::device();
+                                 auto& service_manager = local::manager::service();
 
                                  if( ! message.services.empty())
                                  {
@@ -353,10 +351,8 @@ namespace casual
                                     pids.push_back( service_manager.connector().process().pid);
                                  }
 
-                                 auto& queue_manager = common::communication::instance::outbound::queue::manager::optional::device();
-
-                                 if( ! message.queues.empty() && blocking::optional::send( queue_manager, message))
-                                    pids.push_back( queue_manager.connector().process().pid);
+                                 if( ! message.queues.empty() && blocking::optional::send( manager::queue(), message))
+                                    pids.push_back( manager::queue().connector().process().pid);
 
                                  state.coordinate.discover.add( message.correlation, {}, state.coordinate.send, std::move( pids));
                               };
@@ -467,7 +463,7 @@ namespace casual
                                     state.external.send( reply);
                                  };
 
-                                 auto request = state.get_complete( message.correlation);
+                                 auto request = state.get_complete( message.correlation, message.pending);
 
                                  switch( message.state)
                                  {

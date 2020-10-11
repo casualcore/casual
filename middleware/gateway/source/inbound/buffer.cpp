@@ -10,6 +10,8 @@
 
 namespace casual
 {
+   using namespace common;
+
    namespace gateway
    {
       namespace inbound
@@ -17,13 +19,26 @@ namespace casual
 
          Buffer::complete_type Buffer::get( const common::Uuid& correlation)
          {
-            if( auto found = common::algorithm::find( m_messages, correlation))
+            if( auto found = algorithm::find( m_messages, correlation))
             {
-               auto result = std::move( *found);
-               m_messages.erase( std::begin( found));
+               auto result = algorithm::extract( m_messages, std::begin( found));
                m_size -= result.payload.size();
 
                return result;
+            }
+
+            code::raise::log( code::casual::invalid_argument, "failed to find correlation: ", correlation);
+         }
+
+         Buffer::complete_type Buffer::get( const common::Uuid& correlation, platform::time::unit pending)
+         {
+            if( auto found = common::algorithm::find( m_calls, correlation))
+            {
+               auto message = algorithm::extract( m_calls, std::begin( found));
+               m_size -= Buffer::size( message);
+               message.pending = pending;
+
+               return serialize::native::complete( std::move( message));
             }
 
             common::code::raise::log( common::code::casual::invalid_argument, "failed to find correlation: ", correlation);

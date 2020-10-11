@@ -8,7 +8,7 @@ IncludePaths([
    '../domain/include',
 	'../../thirdparty/database/include',
 	'$(CASUAL_OPTIONAL_INCLUDE_PATHS)',
-	])
+])
 
 
 LibraryPaths([
@@ -19,7 +19,7 @@ LibraryPaths([
     '../serviceframework/bin',
     '../configuration/bin',
     '$(CASUAL_OPTIONAL_LIBRARY_PATHS)',
-    ])
+])
 
 
 install_lib = []
@@ -27,18 +27,18 @@ install_bin = []
 install_header = []
 
 common_archive = LinkArchive( 'bin/casual-event-common',
-	[
-		Compile( 'source/common.cpp')
-	])
+    [
+        Compile( 'source/common.cpp')
+    ])
 
 lib_api = LinkLibrary( 'bin/casual-event-api',
     [
-		Compile( 'source/dispatch.cpp')
-	],
-   [
-      common_archive,
-      'casual-common',
-   ])
+        Compile( 'source/dispatch.cpp')
+    ],
+    [
+        common_archive,
+        'casual-common',
+    ])
 
 install_lib.append( lib_api)
 install_header += [
@@ -53,8 +53,10 @@ target = LinkExecutable( 'bin/casual-event-service-monitor',
         Compile( 'source/service/monitor/database.cpp')
 	],
 	[
-	'casual-common',
-	'sqlite3'] )
+        common_archive,
+        'casual-common',
+        'sqlite3'
+    ] )
 
 install_bin.append( target)
 
@@ -63,8 +65,8 @@ target = LinkExecutable( 'bin/casual-event-service-log',
 	    Compile( 'source/service/log/main.cpp')
 	],
 	[
-      common_archive,
-	   'casual-common'
+        common_archive,
+        'casual-common'
    ] )
 
 install_bin.append( target)
@@ -74,10 +76,10 @@ target = LinkExecutable( 'bin/casual-event-service-monitor-server',
 	    Compile( 'source/service/monitor/server.cpp')
 	],
 	[
-		common_archive,
-		'casual-common',
-		'casual-serviceframework',
-		'sqlite3'
+        common_archive,
+        'casual-common',
+        'casual-serviceframework',
+        'sqlite3'
 	] )
 
 install_bin.append( target)
@@ -85,16 +87,16 @@ install_bin.append( target)
 
 LinkUnittest( 'bin/test-casual-event',
 	[ 
-      Compile( 'unittest/source/test_dispatch.cpp'),
-      Compile( 'unittest/source/service/test_log.cpp'),
-   ],
+        Compile( 'unittest/source/test_dispatch.cpp'),
+        Compile( 'unittest/source/service/test_log.cpp'),
+    ],
 	[
-      lib_api,
-	   'casual-common',
-      'casual-unittest',
-      'casual-domain-api',
-      'casual-domain-pending-message',
-      'casual-domain-unittest',
+        lib_api,
+        'casual-common',
+        'casual-unittest',
+        'casual-domain-api',
+        'casual-domain-pending-message',
+        'casual-domain-unittest',
    ])	
 
 

@@ -83,9 +83,11 @@ namespace casual
             template< typename T> 
             void add_callback( T&& callback)
             {
+               Trace trace{ "event::detail::Dispatch::Implementation::add_callback"};
+
                auto handle = [ callback = std::forward< T>( callback)]( common::message::event::service::Calls& message)
                {
-                  Trace trace{ "event::detail::Implementation::handle message::event::service::Calls"};
+                  Trace trace{ "event::detail::Dispatch::Implementation callback message::event::service::Calls"};
                   log::line( verbose::log, "message: ", message);
                   
                   auto transform_metric = []( common::message::event::service::Metric& metric)

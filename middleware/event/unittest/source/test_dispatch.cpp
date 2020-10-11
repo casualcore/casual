@@ -14,7 +14,10 @@
 
 
 #include "common/message/event.h"
+#include "common/message/service.h"
 #include "common/communication/instance.h"
+
+#include "common/algorithm/is.h"
 
 
 namespace casual
@@ -77,8 +80,12 @@ domain:
          local::Domain domain;
 
          event::dispatch( 
-         []()
+         [executed = false]() mutable
          {
+            // this is an idle 'callback', we need to ensure we're only calling one time...
+            if( std::exchange( executed, true))
+               return;
+
             // we call domain manager, that will trigger a call-event
             auto state = casual::domain::manager::api::state();
             EXPECT_TRUE( ! state.servers.empty());
@@ -127,6 +134,92 @@ domain:
          EXPECT_TRUE( count == 5) << "count: " << count;
       }
 
+      TEST( event_dispatch, 5_service_async_call__expect_pending)
+      {
+         common::unittest::Trace trace;
+
+         local::Domain domain;
+
+         struct
+         {
+            std::vector< platform::time::unit> pending{};
+         } state;
+
+         
+
+         event::dispatch( 
+         [executed = false]() mutable
+         {
+            // this is an idle 'callback', we need to ensure we're only calling one time...
+            if( std::exchange( executed, true))
+               return;
+            
+            auto lookup = []()
+            {
+               common::message::service::lookup::Request request{ common::process::handle()};
+               request.requested = ".casual/domain/state";
+               request.context = decltype( request.context)::no_busy_intermediate;
+
+               return common::communication::device::async::call( 
+                  common::communication::instance::outbound::service::manager::device(),
+                  request);
+            };
+
+            std::vector< decltype( lookup())> lookups;
+
+            common::algorithm::for_n< 5>( [&]()
+            { 
+               lookups.push_back( lookup());
+            });
+
+            EXPECT_TRUE( lookups.size() == 5);
+
+            // fetch lookup and call service. 
+            // this works since we consume from our inbound, hence we'll 'cache'
+            // the replies from domain-manager, and we can consume them later 
+            auto requests = common::algorithm::transform( lookups, []( auto& lookup)
+            {
+               auto reply = lookup.get( common::communication::ipc::inbound::device());
+               EXPECT_TRUE( reply.state == decltype( reply.state)::idle);
+               common::message::service::call::callee::Request request;
+               request.process = common::process::handle();
+               request.service = std::move( reply.service);
+               request.pending = reply.pending;
+               request.buffer.type = common::buffer::type::binary();
+               
+               return common::communication::device::async::call( 
+                  reply.process.ipc,
+                  request);
+            });
+
+            // consume the replies. 
+            common::algorithm::for_each( requests, []( auto& request)
+            {
+               auto reply = request.get( common::communication::ipc::inbound::device());
+               EXPECT_TRUE( reply.code.result == decltype( reply.code.result)::ok);
+            });
+         },
+         [&state]( model::service::Call&& call)
+         {
+            common::algorithm::for_each( call.metrics, [&state]( auto& metric)
+            {
+               EXPECT_TRUE( metric.service.name == ".casual/domain/state");
+               state.pending.push_back( metric.pending);
+            });
+            
+            // we send shotdown to our self, to trigger "end"
+            if( state.pending.size() == 5)
+               local::send::shutdown();
+         });
+
+         ASSERT_TRUE( state.pending.size() == 5) << CASUAL_NAMED_VALUE( state.pending);
+         // we know it has to be pending for all except the first one..
+         EXPECT_TRUE( state.pending.at( 0) == platform::time::unit::zero()) << CASUAL_NAMED_VALUE( state.pending);
+         EXPECT_TRUE( state.pending.at( 1) > platform::time::unit::zero()) << CASUAL_NAMED_VALUE( state.pending);
+         // it has to be increasing pending time 
+         EXPECT_TRUE( common::algorithm::is::sorted( state.pending)) << CASUAL_NAMED_VALUE( state.pending);
+      }
+
 
       TEST( event_dispatch, faked_concurrent_metric)
       {
@@ -135,8 +228,12 @@ domain:
          local::Domain domain;
 
          event::dispatch( 
-         []()
+         [executed = false]() mutable
          {
+            // this is an idle 'callback', we need to ensure we're only calling one time...
+            if( std::exchange( executed, true))
+               return;
+
             // we fake a concurent metric message to service-manager
             // this only works since service-manager is (right now) very
             // laid back regarding if the services actually exist or not, 

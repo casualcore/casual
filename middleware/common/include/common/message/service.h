@@ -406,9 +406,12 @@ namespace casual
                   using Flags = common::Flags< Flag>;
 
                } // request
-               struct common_request
+
+               template< message::Type type>
+               struct common_request : message::basic_request< type>
                {
-                  common::process::Handle process;
+                  using base_type = message::basic_request< type>;
+                  using base_type::base_type;
 
                   Service service;
                   std::string parent;
@@ -424,7 +427,7 @@ namespace casual
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
                   {
-                     CASUAL_SERIALIZE( process);
+                     base_type::serialize( archive);
                      CASUAL_SERIALIZE( service);
                      CASUAL_SERIALIZE( parent);
                      CASUAL_SERIALIZE( trid);
@@ -434,9 +437,11 @@ namespace casual
                   })
                };
 
-               using base_request = type_wrapper< common_request, message::Type::service_call>;
+               using base_request = common_request< message::Type::service_call>;
                struct basic_request : base_request
                {
+                  using base_request::base_request;
+                  
                   request::Flags flags;
 
                   CASUAL_CONST_CORRECT_SERIALIZE(

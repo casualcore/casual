@@ -17,6 +17,7 @@
 
 #include "common/message/domain.h"
 #include "common/message/queue.h"
+#include "common/algorithm/is.h"
 
 #include "serviceframework/service/protocol/call.h"
 
@@ -169,14 +170,28 @@ domain:
                void echo() 
                {
                   common::message::service::call::callee::Request request;
-                  common::communication::device::blocking::receive( common::communication::ipc::inbound::device(), request);
+                  communication::device::blocking::receive( communication::ipc::inbound::device(), request);
                   
-                  common::message::service::call::Reply reply;
-                  reply.correlation = request.correlation;
+                  auto reply = message::reverse::type( request);
                   reply.buffer = std::move( request.buffer);
                   reply.transaction.trid = std::move( request.trid);
 
-                  common::communication::device::blocking::send( request.process.ipc, reply);
+                  // emulate some sort of work..
+                  process::sleep( std::chrono::milliseconds{ 1});
+
+                  communication::device::blocking::send( request.process.ipc, reply);
+
+                  {
+                     common::message::service::call::ACK ack;
+                     ack.metric.process = process::handle();
+                     ack.metric.trid = reply.transaction.trid;
+                     ack.metric.pending = request.pending;
+                     ack.metric.start = platform::time::clock::type::now();
+                     ack.metric.end = platform::time::clock::type::now();
+                     ack.metric.service = request.service.name;
+
+                     communication::device::blocking::send( communication::instance::outbound::service::manager::device(), ack);
+                  }
                };
             } // service
          } // <unnamed>
@@ -454,7 +469,7 @@ domain:
 
          local::Domain domain;
 
-         EXPECT_TRUE( common::communication::instance::fetch::handle( common::communication::instance::identity::gateway::manager));
+         EXPECT_TRUE( common::communication::instance::fetch::handle( common::communication::instance::identity::gateway::manager)); 
 
          auto state = local::call::wait::ready::state();
 
@@ -658,6 +673,102 @@ domain:
             local::rediscover::listen();
          );
       }
+
+      TEST( gateway_manager_tcp, async_5_remote1_call__expect_pending_metric)
+      {
+         common::unittest::Trace trace;
+
+         constexpr auto count = 5;
+         
+         local::Domain domain;
+
+         EXPECT_TRUE( common::communication::instance::fetch::handle( common::communication::instance::identity::gateway::manager)); 
+
+         local::wait_for_outbounds( 1);
+
+         // we exposes service "remote1"
+         casual::service::unittest::advertise( { "remote1"});
+
+         auto outbound = []() -> process::Handle
+         {
+            auto state = local::call::wait::ready::state();
+
+            auto is_outbound = []( auto& connection)
+            { 
+               return connection.bound == decltype( connection.bound)::out;
+            };
+            
+            if( auto found = algorithm::find_if( state.connections, is_outbound))
+               return found->process;
+
+            return {};
+         }();
+
+         ASSERT_TRUE( outbound);
+
+         // subscribe to metric events
+         event::subscribe( common::process::handle(), { message::event::service::Calls::type()});
+
+         
+
+         // Expect us to reach service remote1 via outbound -> inbound -> <service remote1>
+         // we act as the server
+         {
+            auto data = common::unittest::random::binary( 128);
+            
+
+            algorithm::for_n< count>( [&]()
+            {
+               common::message::service::call::callee::Request request;
+               request.process = common::process::handle();
+               request.service.name = "remote1";
+               request.buffer.memory = data;
+               
+               ASSERT_TRUE( common::communication::device::blocking::optional::send( outbound.ipc, request)) 
+                  << CASUAL_NAMED_VALUE( outbound);
+            });
+
+            algorithm::for_n< count>( [&]()
+            {
+               // echo the call
+               local::service::echo();
+            });
+
+            algorithm::for_n< count>( [&]()
+            {
+               common::message::service::call::Reply reply;
+               common::communication::device::blocking::receive( common::communication::ipc::inbound::device(), reply);
+
+               EXPECT_TRUE( reply.buffer.memory ==  data);
+            });
+         }
+
+         // consume the metric events (most likely from inbound cache)
+         {
+            std::vector< message::event::service::Metric> metrics;
+
+            while( metrics.size() < count)
+            {
+               message::event::service::Calls event;
+               common::communication::device::blocking::receive( common::communication::ipc::inbound::device(), event);
+               //EXPECT_TRUE( false) << CASUAL_NAMED_VALUE( event);
+               algorithm::append( event.metrics, metrics);
+            }
+
+            auto order_pending = []( auto& lhs, auto& rhs){ return lhs.pending < rhs.pending;};
+            algorithm::sort( metrics, order_pending);
+
+            ASSERT_TRUE( metrics.size() == count) << CASUAL_NAMED_VALUE( metrics);
+            // first should have 0 pending
+            EXPECT_TRUE( metrics.front().pending == platform::time::unit::zero());
+            // last should have more than 0 pending. could be several with 0 pending
+            // since messages buffers over tcp and it's not predictable when messages arrives.
+            EXPECT_TRUE( metrics.back().pending > platform::time::unit::zero()) << CASUAL_NAMED_VALUE( metrics);
+
+         }
+
+      }
+
 
    } // gateway
 

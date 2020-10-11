@@ -297,17 +297,6 @@ namespace casual
             })
          };
 
-         //! Wraps a message with basic_message
-         template< typename Message, message::Type message_type>
-         struct type_wrapper : Message, basic_message< message_type>
-         {
-            CASUAL_CONST_CORRECT_SERIALIZE(
-            {
-               basic_message< message_type>::serialize( archive);
-               Message::serialize( archive);
-            })
-         };
-
 
          namespace flush
          {
