@@ -145,7 +145,7 @@ domain:
             std::vector< platform::time::unit> pending{};
          } state;
 
-         
+         constexpr auto count = 5;
 
          event::dispatch( 
          [executed = false]() mutable
@@ -167,12 +167,12 @@ domain:
 
             std::vector< decltype( lookup())> lookups;
 
-            common::algorithm::for_n< 5>( [&]()
+            common::algorithm::for_n< count>( [&]()
             { 
                lookups.push_back( lookup());
             });
 
-            EXPECT_TRUE( lookups.size() == 5);
+            EXPECT_TRUE( lookups.size() == count);
 
             // fetch lookup and call service. 
             // this works since we consume from our inbound, hence we'll 'cache'
@@ -208,16 +208,17 @@ domain:
             });
             
             // we send shotdown to our self, to trigger "end"
-            if( state.pending.size() == 5)
+            if( state.pending.size() == count)
                local::send::shutdown();
          });
 
-         ASSERT_TRUE( state.pending.size() == 5) << CASUAL_NAMED_VALUE( state.pending);
+         ASSERT_TRUE( state.pending.size() == count) << CASUAL_NAMED_VALUE( state.pending);
+
+         common::algorithm::sort( state.pending);
+
          // we know it has to be pending for all except the first one..
          EXPECT_TRUE( state.pending.at( 0) == platform::time::unit::zero()) << CASUAL_NAMED_VALUE( state.pending);
          EXPECT_TRUE( state.pending.at( 1) > platform::time::unit::zero()) << CASUAL_NAMED_VALUE( state.pending);
-         // it has to be increasing pending time 
-         EXPECT_TRUE( common::algorithm::is::sorted( state.pending)) << CASUAL_NAMED_VALUE( state.pending);
       }
 
 

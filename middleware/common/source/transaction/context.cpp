@@ -538,7 +538,29 @@ namespace casual
 
             auto trans = local::start::transaction( platform::time::clock::type::now(), m_timeout);
 
-            resources_start( trans, flag::xa::Flag::no_flags);
+            // We know we've got a local transaction.
+            {
+               auto resource_start = [&trans]( auto& resource)
+               {
+                  return algorithm::compare::any( resource.start( trans.trid, flag::xa::Flag::no_flags), code::xa::ok, code::xa::read_only);
+               };
+               auto split = algorithm::partition( m_resources.fixed, resource_start);
+
+               if( auto failed = std::get< 1>( split))
+               {
+                  auto successfull = std::get< 0>( split);
+                  // some of the resources failed, make sure we xa_end the successfull ones...
+                  algorithm::for_each( successfull, [&trans]( auto& resource)
+                  {
+                     // TODO semantics: is it ok to end with success? Seams better than 
+                     // to mark this extremely short lived transaction with 'error'. Don't know
+                     // how resources "wants it"...
+                     resource.end( trans.trid, flag::xa::Flag::success);
+                  });
+                  
+                  code::raise::error( code::tx::error, "some resources failed to start: ", algorithm::transform( failed, []( auto& rm){ return rm.id();}));
+               }
+            }            
 
             m_transactions.push_back( std::move( trans));
 
@@ -902,7 +924,7 @@ namespace casual
             {
                log::line( log::category::transaction, "local transaction: ", transaction, " - flags: ", flags);
                
-               // local transaction, we don't need to coralate with TM
+               // local transaction, we don't need to corralate with TM
                algorithm::for_each( m_resources.fixed, start_functor( transaction.involved()));
             }
             else 

@@ -28,6 +28,7 @@
 #include "common/communication/instance.h"
 
 #include "common/unittest/file.h"
+#include "common/unittest/rm.h"
 #include "domain/manager/unittest/process.h"
 
 #include "serviceframework/service/protocol/call.h"
@@ -1573,6 +1574,27 @@ domain:
          ASSERT_NO_THROW({
             common::transaction::context().commit();
          });
+      }
+
+      TEST( transaction_manager, 1_local_RM_xa_start__error___begin____expect_TX_ERROR__no_started_transaction)
+      {
+         common::unittest::Trace trace;
+
+         // we set unittest environment variable to set "error"
+         common::environment::variable::set( "CASUAL_UNITTEST_OPEN_INFO_RM1", 
+            "--start " + std::to_string( XAER_RMFAIL));
+
+         local::Domain domain;
+
+         // configure the local rm - will get XAER_RMFAIL on xa_start
+         common::transaction::context().configure( { { "rm-mockup", "rm1", &casual_mockup_xa_switch_static}}, {});
+
+         EXPECT_TRUE( local::begin() == common::code::tx::error);
+
+         EXPECT_TRUE( ! common::transaction::context().current()) << CASUAL_NAMED_VALUE( common::transaction::context().current());
+
+         // unittest only...
+         common::transaction::context().clear();
       }
    
    } // transaction
