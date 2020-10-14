@@ -207,12 +207,26 @@ namespace casual
 
             void Service::add( state::instance::Sequential& instance)
             {
+               if( algorithm::find( instances.sequential, instance.process.pid))
+               {
+                  log::line( casual::service::log, "instance already known to service");
+                  log::line( verbose::log, "instance: ", instance, ", service: ", *this);
+                  return;
+               }
+
                instances.sequential.emplace_back( instance);
                instance.add( *this);
             }
 
             void Service::add( state::instance::Concurrent& instance, size_type hops)
             {
+               if( algorithm::find( instances.concurrent, instance.process.pid))
+               {
+                  log::line( casual::service::log, "instance already known to service");
+                  log::line( verbose::log, "instance: ", instance, ", service: ", *this);
+                  return;
+               }
+               
                instances.concurrent.emplace_back( instance, hops);
                instances.partition();
             }
@@ -427,7 +441,7 @@ namespace casual
 
          void State::update( common::message::service::Advertise& message)
          {
-            Trace trace{ "service::manager::State::update local"};
+            Trace trace{ "service::manager::State::update sequential"};
 
             if( ! message.process)
             {
@@ -468,7 +482,7 @@ namespace casual
 
          void State::update( common::message::service::concurrent::Advertise& message)
          {
-            Trace trace{ "service::manager::State::update remote"};
+            Trace trace{ "service::manager::State::update concurrent"};
 
             if( ! message.process)
             {

@@ -198,8 +198,9 @@ namespace casual
 
                      inline friend bool operator == ( const Sequential& lhs, common::strong::process::id rhs) { return lhs.process().pid == rhs;}
 
-                     // forward to reference_wrapper
-                     CASUAL_FORWARD_SERIALIZE( get());
+                     CASUAL_LOG_SERIALIZE(
+                        get().serialize( archive);
+                     )
                   };
 
                   using remote_base = std::reference_wrapper< state::instance::Concurrent>;
@@ -216,8 +217,11 @@ namespace casual
                      inline friend bool operator == ( const Concurrent& lhs, common::strong::process::id rhs) { return lhs.process().pid == rhs;}
                      friend bool operator < ( const Concurrent& lhs, const Concurrent& rhs);
 
-                     // forward to reference_wrapper
-                     CASUAL_FORWARD_SERIALIZE( get());
+                     CASUAL_LOG_SERIALIZE(
+                        get().serialize( archive);
+                        CASUAL_SERIALIZE_NAME( m_hops, "hops");
+                     )
+                     
 
                   private:
                      size_type m_hops = 0;
@@ -243,10 +247,9 @@ namespace casual
                      inline void partition() { common::algorithm::stable_sort( concurrent);}
 
                      CASUAL_LOG_SERIALIZE(
-                     { 
                         CASUAL_SERIALIZE( sequential);
                         CASUAL_SERIALIZE( concurrent);
-                     })
+                     )
                   };
 
                   // state
@@ -304,10 +307,9 @@ namespace casual
                   const common::Uuid& correlation);
 
                CASUAL_LOG_SERIALIZE(
-               { 
                   service::Advertised::serialize( archive);
                   CASUAL_SERIALIZE( metric);
-               })               
+               )
 
             };
          } // state
