@@ -199,8 +199,9 @@ namespace casual
 
                      inline friend bool operator == ( const Sequential& lhs, common::strong::process::id rhs) { return lhs.process().pid == rhs;}
 
-                     // forward to reference_wrapper
-                     CASUAL_FORWARD_SERIALIZE( get());
+                     CASUAL_LOG_SERIALIZE(
+                        get().serialize( archive);
+                     )
                   };
 
                   using remote_base = std::reference_wrapper< state::instance::Concurrent>;

@@ -543,5 +543,31 @@ domain:
          }
       }
 
+      TEST( service_manager, concurrent_advertise_same_instances_3_times_for_same_service___expect_one_instance_for_service)
+      {
+         common::unittest::Trace trace;
+
+         local::Domain domain;
+
+         common::algorithm::for_n< 3>( []()
+         {
+            common::message::service::concurrent::Advertise message{ common::process::handle()};
+            message.services.add.emplace_back( "concurrent_a", "", common::service::transaction::Type::none);
+            
+            common::communication::device::blocking::send( 
+               common::communication::instance::outbound::service::manager::device(),
+               message);
+         });
+
+         auto state = local::call::state();
+         auto service = local::service::find( state, "concurrent_a");
+
+         ASSERT_TRUE( service);
+         auto& instances = service->instances.concurrent;
+         ASSERT_TRUE( instances.size() == 1) << CASUAL_NAMED_VALUE( instances);
+         EXPECT_TRUE( instances.at( 0).pid == common::process::id());
+  
+      }
+
    } // service
 } // casual
