@@ -57,21 +57,14 @@ namespace casual
 
          
             //! service-manager needs to have it's own policy for callee::handle::basic_call, since
-            //! we can't communicate with blocking to the same queue (with read, who is
-            //! going to write? with write, what if the queue is full?)
+            //! we can't communicate with blocking to the same device (with read, who is
+            //! going to write? with write, what if the device is full?)
             struct Policy
             {
-
                Policy( manager::State& state) : m_state( state) {}
 
-               Policy( Policy&&) = default;
-               Policy& operator = ( Policy&&) = default;
-
-
                void configure( common::server::Arguments&);
-
                void reply( common::strong::ipc::id id, common::message::service::call::Reply& message);
-
                void ack( const common::message::service::call::ACK& ack);
 
                void transaction(

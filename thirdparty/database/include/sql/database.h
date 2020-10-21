@@ -296,7 +296,7 @@ namespace sql
       }
 
       template< typename T>
-      inline bool column_get( sqlite3_stmt* statement, int column, casual::common::optional< T>& optional)
+      inline bool column_get( sqlite3_stmt* statement, int column, std::optional< T>& optional)
       {
          T  value;
          
@@ -517,7 +517,7 @@ namespace sql
          auto first( Statement::Query query, F&& functor)
          {
             sql::database::Row row;
-            casual::common::optional< std::decay_t< decltype( functor( row))>> result;
+            std::optional< std::decay_t< decltype( functor( row))>> result;
 
             if( query.fetch( row))
                result = functor( row);

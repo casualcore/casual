@@ -75,7 +75,7 @@ namespace casual
 
             } // peek
 
-            common::optional< common::message::queue::information::Queue> get_queue( group::Database& queuebase, common::strong::queue::id id)
+            std::optional< common::message::queue::information::Queue> get_queue( group::Database& queuebase, common::strong::queue::id id)
             {
                auto result = queuebase.queues();
                auto found = common::algorithm::find( result, id);

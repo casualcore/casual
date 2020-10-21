@@ -24,7 +24,7 @@ namespace casual
                   {
 #ifdef __APPLE__
                      // error: The bzero() function is obsoleted by memset() [clang-analyzer-security.insecureAPI.bzero,-warnings-as-errors]
-                     memory::clear( value); 
+                     value = T{};
 #else
                      FD_ZERO( &value);
 #endif 

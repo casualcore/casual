@@ -292,7 +292,7 @@ namespace casual
                         } // resources
                      } // list
 
-                     void state( const common::optional< std::string>& format)
+                     void state( const std::optional< std::string>& format)
                      {
                         auto state = call::state();
                         auto archive = common::serialize::create::writer::from( format.value_or( ""));

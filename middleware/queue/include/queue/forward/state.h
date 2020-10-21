@@ -11,7 +11,6 @@
 #include "common/value/id.h"
 #include "common/strong/id.h"
 #include "common/process.h"
-#include "common/optional.h"
 
 #include "common/message/queue.h"
 
@@ -19,6 +18,7 @@
 #include <vector>
 #include <string>
 #include <iosfwd>
+#include <optional>
 
 namespace casual
 {
@@ -138,7 +138,7 @@ namespace casual
 
                   forward::Source source;
                   Target target;
-                  common::optional< Reply> reply;
+                  std::optional< Reply> reply;
                   forward::Instances instances;
                   Metric metric;
                   common::message::queue::dequeue::Selector selector;

@@ -32,7 +32,7 @@ WARNING_DIRECTIVE = -Wall \
 VERSION_DIRECTIVE = -DCASUAL_BUILD_VERSION=\"$(CASUAL_BUILD_VERSION)\"
 
 
-STD_DIRECTIVE = -std=c++14
+STD_DIRECTIVE = -std=c++17
 
 # Linkers
 LIBRARY_LINKER = $(CXX)
@@ -54,10 +54,7 @@ endif
 
 export EXECUTABLE_LINKER
 
-
-#
 # Compile and link directives
-#
 ifdef DEBUG
    COMPILE_DIRECTIVES = -g -pthread -c  -fpic $(VERSION_DIRECTIVE) $(WARNING_DIRECTIVE) $(STD_DIRECTIVE)
    LINK_DIRECTIVES_LIB = -g -pthread -shared  -fpic
@@ -80,33 +77,21 @@ endif
 
 BUILDSERVER = casual-build-server -c $(EXECUTABLE_LINKER) 
 
-
-#
 # VALGRIND
-#
 ifdef VALGRIND
 PRE_UNITTEST_DIRECTIVE=valgrind --xml=yes --xml-file=valgrind.xml
 endif
 
-
-#
 # Format the include-/library- paths
-# 
 LIBRARY_PATH_OPTION=-Wl,-rpath-link=
 
 INCLUDE_PATHS_DIRECTIVE = $(addprefix -I, $(INCLUDE_PATHS) )
 LIBRARY_PATHS_DIRECTIVE = $(addprefix -L, $(LIBRARY_PATHS) ) $(addprefix $(LIBRARY_PATH_OPTION), $(LIBRARY_PATHS) )
 
-
-#
 # Header dependency stuff
-#
 HEADER_DEPENDENCY_COMMAND = -g++ -MP -MM $(STD_DIRECTIVE)
 
-
-#
 # Directive for setting SONAME
-#
 LINKER_SONAME_DIRECTIVE = -Wl,-soname,
     
    

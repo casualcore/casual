@@ -7,7 +7,7 @@
 #pragma once
 
 #include "common/serialize/macro.h"
-#include "common/optional.h"
+#include <optional>
 
 #include <string>
 #include <vector>
@@ -42,7 +42,7 @@ namespace casual
 
                std::string name;
                std::string url;
-               common::optional< bool> discard_transaction;
+               std::optional< bool> discard_transaction;
 
                std::vector< Header> headers;
 

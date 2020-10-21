@@ -151,8 +151,9 @@ namespace casual
             //! Specialization for iterables, to log ranges
             template< typename C> 
             struct point< C, std::enable_if_t< 
-               traits::is::iterable< C>::value 
-               && ! traits::is::string::like< C>::value>>
+               traits::is::iterable< C>::value
+               && ! traits::is::string::like< C>::value
+               && traits::has::empty< C>::value>>
             {
                template< typename R>
                static void stream( std::ostream& out, R&& range)

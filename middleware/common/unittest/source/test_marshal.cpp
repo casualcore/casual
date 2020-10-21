@@ -45,7 +45,7 @@ namespace casual
                IO< binary::network::create::Input, binary::network::create::Output>
          >;
 
-         TYPED_TEST_CASE(casual_common_marshal, marshal_types);
+         TYPED_TEST_SUITE(casual_common_marshal, marshal_types);
 
 
          TYPED_TEST( casual_common_marshal, basic_io)

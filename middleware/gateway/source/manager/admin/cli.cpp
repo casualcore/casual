@@ -187,7 +187,7 @@ namespace casual
             format::listeners().print( std::cout, call::state().listeners);
          }
 
-         void state( const common::optional< std::string>& format)
+         void state( const std::optional< std::string>& format)
          {
             auto state = call::state();
 

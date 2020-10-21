@@ -183,7 +183,7 @@ namespace casual
                               })
                            };
                            common::Uuid correlation;
-                           common::optional< Request> request;
+                           std::optional< Request> request;
                            std::string description;
 
                            CASUAL_LOG_SERIALIZE(

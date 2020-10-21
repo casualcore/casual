@@ -10,7 +10,7 @@
 #include "casual/cli/pipe.h"
 
 #include "common/terminal.h"
-#include "common/optional.h"
+#include <optional>
 #include "common/communication/stream.h"
 
 namespace casual
@@ -113,7 +113,7 @@ if --verbose is provided the type of the buffer will be sent to stderr.
             {
                namespace field
                {
-                  void from_human( const common::optional< std::string>& format)
+                  void from_human( const std::optional< std::string>& format)
                   {
                      Trace trace{ "buffer::admin::cli::detail::field::from_human"};
 
@@ -128,7 +128,7 @@ if --verbose is provided the type of the buffer will be sent to stderr.
                      casual::cli::pipe::done();
                   }
 
-                  void to_human( const common::optional< std::string>& format)
+                  void to_human( const std::optional< std::string>& format)
                   {
                      Trace trace{ "buffer::admin::cli::detail::field::to_human"};
 
@@ -155,7 +155,7 @@ if --verbose is provided the type of the buffer will be sent to stderr.
                   }
                } // field
 
-               void compose( const common::optional< std::string>& type)
+               void compose( const std::optional< std::string>& type)
                {
                   Trace trace{ "buffer::admin::cli::detail::compose"};
 

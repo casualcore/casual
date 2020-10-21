@@ -577,7 +577,7 @@ namespace casual
          int* first = nullptr;
          int temp = 42;
          int* second = &temp;
-
+         
          EXPECT_TRUE( coalesce( first, second) == second);
          EXPECT_TRUE( *coalesce( first, second) == 42);
       }

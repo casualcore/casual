@@ -80,7 +80,7 @@ namespace casual
                      return from_string< T>( at( key, default_value));
                   }
 
-                  optional< const std::string&> find( const std::string& key) const;
+		  std::optional< std::string> find( const std::string& key) const;
 
                   //! Same semantics as std::map[]  
                   std::string& operator[] ( const std::string& key );

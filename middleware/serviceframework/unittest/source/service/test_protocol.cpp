@@ -227,7 +227,7 @@ namespace casual
          
       }
 
-      INSTANTIATE_TEST_CASE_P( casual_sf_service,
+      INSTANTIATE_TEST_SUITE_P( casual_sf_service,
             protocol,
             ::testing::Values(
                common::buffer::type::xml(),

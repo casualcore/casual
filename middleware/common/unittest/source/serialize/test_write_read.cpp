@@ -202,7 +202,7 @@ namespace casual
             holder::basic< holder::policy::binary>
        >;
 
-      TYPED_TEST_CASE( common_serialize_write_read, archive_types);
+      TYPED_TEST_SUITE( common_serialize_write_read, archive_types);
 
 
       template< typename F, typename T>
@@ -347,6 +347,17 @@ namespace casual
          EXPECT_TRUE( ! value.empty());
          EXPECT_TRUE( TestFixture::write_read( value) == value);
       }
+/*
+      TYPED_TEST( common_serialize_write_read, type_array_long)
+      {
+         unittest::Trace trace;
+
+         auto value = unittest::random::create< std::array< long, 10>>();
+
+         EXPECT_TRUE( ! value.empty());
+         EXPECT_TRUE( TestFixture::write_read( value) == value);
+      }
+*/
 
       TYPED_TEST( common_serialize_write_read, type_vector_long)
       {

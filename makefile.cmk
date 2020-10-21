@@ -1,7 +1,9 @@
+import os
 from casual.make.porcelain import *
 
 Parallel( False)
 
-Build('thirdparty/makefile.cmk')
+Build( os.environ[ 'CASUAL_THIRDPARTY'] + '/makefile.cmk')
+
 Build('middleware/makefile.cmk')
 Build('test/makefile.cmk')

@@ -292,7 +292,7 @@ namespace casual
                   // create potential rollback
                   //
                   const auto reset = common::execute::scope
-                  ( [&](){ if( std::uncaught_exception()) memory.resize( used);});
+                  ( [&](){ if( std::uncaught_exceptions()) memory.resize( used);});
 
                   //
                   // append first size chunk

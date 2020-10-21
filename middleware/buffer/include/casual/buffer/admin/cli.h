@@ -58,13 +58,13 @@ namespace casual
 
                namespace field
                {
-                  void from_human( const common::optional< std::string>& format);
-                  void to_human( const common::optional< std::string>& format);
+                  void from_human( const std::optional< std::string>& format);
+                  void to_human( const std::optional< std::string>& format);
 
 
                } // field
 
-               void compose( const common::optional< std::string>& type);
+               void compose( const std::optional< std::string>& type);
                void duplicate( platform::size::type count);
                void extract();
 

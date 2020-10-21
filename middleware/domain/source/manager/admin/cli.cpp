@@ -754,7 +754,7 @@ for all servers and executables
 
                   namespace configuration
                   {
-                     void get( const common::optional< std::string>& format)
+                     void get( const std::optional< std::string>& format)
                      {
                         auto domain = call::configuration::get();
                         auto archive = common::serialize::create::writer::from( format.value_or( ""));
@@ -785,7 +785,7 @@ The semantics are similar to http PUT:
                   } // configuration
 
 
-                  void state( const common::optional< std::string>& format)
+                  void state( const std::optional< std::string>& format)
                   {
                      auto state = call::state();
                      auto archive = common::serialize::create::writer::from( format.value_or( ""));
@@ -852,7 +852,7 @@ The semantics are similar to http PUT:
                   {
                      namespace state
                      {
-                        void invoke( platform::process::native::type pid, const optional< std::string>& format)
+                        void invoke( platform::process::native::type pid, const std::optional< std::string>& format)
                         {
                            auto handle = communication::instance::fetch::handle( 
                               common::strong::process::id{ pid}, communication::instance::fetch::Directive::direct);

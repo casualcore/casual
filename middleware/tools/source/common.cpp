@@ -23,7 +23,7 @@ namespace casual
          {
             if( m_print)
             {
-               if( std::uncaught_exception())
+               if( std::uncaught_exceptions())
                {
                   std::cerr << m_information << " - failed" << '\n';
                }

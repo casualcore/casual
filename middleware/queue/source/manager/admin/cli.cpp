@@ -626,7 +626,7 @@ cat somefile.bin | casual queue --enqueue <queue-name>
 
             namespace dequeue
             {
-               auto forward = []( auto& destination, auto& associate, const common::optional< Uuid>& id)
+               auto forward = []( auto& destination, auto& associate, const std::optional< Uuid>& id)
                {
                   // we 'start' a new execution 'context'
                   common::execution::reset();
@@ -671,7 +671,7 @@ cat somefile.bin | casual queue --enqueue <queue-name>
 
                auto option()
                {
-                  auto invoke = []( std::string queue, const common::optional< Uuid>& id)
+                  auto invoke = []( std::string queue, const std::optional< Uuid>& id)
                   {
                      Trace trace{ "queue::local::dequeue::invoke"};
 
@@ -734,7 +734,7 @@ casual queue --dequeue <queue> <id> | <some other part in casual-pipe> | ... | <
             {
                auto option()
                {
-                  auto invoke = []( std::string queue, common::optional< platform::size::type> count)
+                  auto invoke = []( std::string queue, std::optional< platform::size::type> count)
                   {
                      Trace trace{ "queue::local::consume::invoke"};
                      auto destination = queue::Lookup{ std::move( queue)}();
@@ -1027,7 +1027,7 @@ casual queue --metric-reset a b)"
             {
                auto option()
                {
-                  auto invoke = []( const common::optional< std::string>& format)
+                  auto invoke = []( const std::optional< std::string>& format)
                   {
                      auto state = call::state();
 

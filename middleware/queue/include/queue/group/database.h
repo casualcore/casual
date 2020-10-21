@@ -73,8 +73,8 @@ namespace casual
 
             //! @returns the queue if it exists
             //! @{
-            //common::optional< Queue> queue( const std::string& name);
-            common::optional< Queue> queue( common::strong::queue::id id);
+            //std::optional< Queue> queue( const std::string& name);
+            std::optional< Queue> queue( common::strong::queue::id id);
             //! @}
 
             common::message::queue::enqueue::Reply enqueue( const common::message::queue::enqueue::Request& message);
@@ -90,7 +90,7 @@ namespace casual
             std::vector< message::Available> available( std::vector< common::strong::queue::id> queues) const;
 
             //! @returns the earliest available message in the queue, if any.
-            common::optional< platform::time::point::type> available( common::strong::queue::id queue) const;
+            std::optional< platform::time::point::type> available( common::strong::queue::id queue) const;
 
             //! @return number of restored messages for the queue
             size_type restore( common::strong::queue::id id);

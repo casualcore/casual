@@ -6,6 +6,7 @@
 
 
 #include <common/unittest.h>
+#include <common/unittest/random/archive.h>
 
 
 #include "common/memory.h"
@@ -24,13 +25,17 @@ namespace casual
             struct Holder
             {
                using type = T;
-               std::size_t expected() { return Expected;}
+               auto expected() { return Expected;}
             };
 
 
             struct char_struct
             {
                char char_property = '0';
+
+               CASUAL_CONST_CORRECT_SERIALIZE(
+                  CASUAL_SERIALIZE( char_property);
+               )
             };
 
             struct pod_struct
@@ -38,6 +43,12 @@ namespace casual
                char char_property = 'A';
                int int_propertry = 42;
                long long_property = 666;
+
+               CASUAL_CONST_CORRECT_SERIALIZE(
+                  CASUAL_SERIALIZE( char_property);
+                  CASUAL_SERIALIZE( int_propertry);
+                  CASUAL_SERIALIZE( long_property);
+               )
 
             };
 
@@ -58,8 +69,8 @@ namespace casual
             local::Holder< short>,
             local::Holder< float>,
             local::Holder< double>,
-            local::Holder< char[ 10], sizeof( char) * 10>,
-            local::Holder< long[ 10], sizeof( long) * 10>,
+            local::Holder< std::array< char, 10>, sizeof( char) * 10>,
+            local::Holder< std::array< long, 10>, sizeof( long) * 10>,
             local::Holder< char[ 10][ 5], sizeof( char) * 10 * 5>,
             local::Holder< long[ 10][ 5], sizeof( long) * 10 * 5>,
             local::Holder< long[ 10][ 5][ 2], sizeof( long) * 10 * 5 * 2>,
@@ -67,10 +78,10 @@ namespace casual
             local::Holder< local::pod_struct, sizeof( local::pod_struct)>,
             // tuple is not trivially copyable
             //local::Holder< std::tuple< long, double, char, short, int>, sizeof( std::tuple< long, double, char, short, int>)>,
-            local::Holder< local::pod_struct[ 10], sizeof( local::pod_struct) * 10>
+            local::Holder< std::array< local::pod_struct, 10>, sizeof( local::pod_struct) * 10>
        >;
 
-      TYPED_TEST_CASE(casual_common_memory, memory_types);
+      TYPED_TEST_SUITE(casual_common_memory, memory_types);
 
       TYPED_TEST( casual_common_memory, size)
       {
@@ -78,24 +89,9 @@ namespace casual
 
          typename TestFixture::type current_type;
 
-         EXPECT_TRUE( memory::size( current_type) == TestFixture::expected())
+         EXPECT_TRUE( memory::size( current_type) == static_cast< platform::size::type>( TestFixture::expected()))
             << " memory::size( current_type): " <<  memory::size( current_type) << " - expected: " << TestFixture::expected();
 
-      }
-
-      TYPED_TEST( casual_common_memory, clear)
-      {
-         common::unittest::Trace trace;
-
-         typename TestFixture::type current_type;
-
-         memory::clear( current_type);
-         
-         auto first = reinterpret_cast< std::uint8_t*>( &current_type);
-
-         EXPECT_TRUE( std::all_of( first, first + memory::size( current_type), []( std::uint8_t v){
-            return v == 0;
-         }));
       }
 
 
@@ -109,22 +105,16 @@ namespace casual
 
          memory::append( current_type, original);
 
-         //
-         // make sure we don't have the same values in memory as before
-         memory::clear( current_type);
-
-         //
          // copy back to current type
          EXPECT_TRUE( memory::copy( original, 0, current_type) == memory::size( current_type));
 
-         //
          // append to new buffer
          platform::binary::type copied;
 
          memory::append( current_type, copied);
 
-         EXPECT_TRUE( original.size() == memory::size( current_type));
-         EXPECT_TRUE( copied.size() == memory::size( current_type));
+         EXPECT_TRUE( range::size( original) == memory::size( current_type));
+         EXPECT_TRUE( range::size( copied) == memory::size( current_type));
          EXPECT_TRUE( original == copied); //<< "original: " << range::make( original) << " - copied: " << range::make( copied);
       }
    } // common

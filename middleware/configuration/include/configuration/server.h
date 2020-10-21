@@ -8,7 +8,7 @@
 
 #include "configuration/executable.h"
 #include "common/serialize/macro.h"
-#include "common/optional.h"
+#include <optional>
 
 namespace casual
 {
@@ -16,8 +16,8 @@ namespace casual
    {
       struct Server : Executable
       {
-         common::optional< std::vector< std::string>> restrictions;
-         common::optional< std::vector< std::string>> resources;
+         std::optional< std::vector< std::string>> restrictions;
+         std::optional< std::vector< std::string>> resources;
 
          CASUAL_CONST_CORRECT_SERIALIZE
          (

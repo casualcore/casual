@@ -38,7 +38,7 @@ namespace casual
          long long m_longlong = std::numeric_limits< long long>::max();
          platform::time::point::type m_time = platform::time::point::type::max();
 
-         common::optional< long> m_optional = 42;
+         std::optional< long> m_optional = 42;
 
          CASUAL_CONST_CORRECT_SERIALIZE
          (

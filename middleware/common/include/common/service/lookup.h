@@ -10,8 +10,8 @@
 
 #include "common/uuid.h"
 #include "common/message/service.h"
-#include "common/optional.h"
 
+#include <optional>
 #include <string>
 
 namespace casual
@@ -59,7 +59,7 @@ namespace casual
 
                std::string m_service;
                Uuid m_correlation;
-               optional< Reply> m_reply;
+               std::optional< Reply> m_reply;
             };
          } // detail
 

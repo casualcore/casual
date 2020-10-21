@@ -70,7 +70,7 @@ namespace casual
          } // <unnamed>
       } // local
 
-      INSTANTIATE_TEST_CASE_P( common_serialize_create,
+      INSTANTIATE_TEST_SUITE_P( common_serialize_create,
             archive_create,
             ::testing::Values( 
                Directive{ Directive::Type::relaxed, "yaml"},

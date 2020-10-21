@@ -56,20 +56,19 @@ long casual_buffer_type( const char* const ptr, char* const type, char* const su
 
       auto combined = casual::common::buffer::type::dismantle( buffer.payload().type);
 
-
       // type is optional
       if( type)
       {
          auto destination = casual::common::range::make( type, 8);
-         casual::common::memory::clear( destination);
+         casual::common::algorithm::fill( destination, 0);
          casual::common::algorithm::copy_max( std::get< 0>( combined), destination);
       }
-
+      
       // subtype is optional
       if( subtype)
       {
          auto destination = casual::common::range::make( subtype, 16);
-         casual::common::memory::clear( destination);
+         casual::common::algorithm::fill( destination, 0);
          casual::common::algorithm::copy_max( std::get< 1>( combined), destination);
       }
 

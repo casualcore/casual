@@ -48,25 +48,6 @@ namespace casual
 
          template< typename T>
          std::enable_if_t< 
-            std::is_trivially_copyable< std::remove_reference_t< T>>::value
-            && ! traits::is::binary::like< T>::value
-         >
-         clear( T& value)
-         {
-            std::memset( &value, 0, size( value));
-         }
-
-         template< typename R>
-         std::enable_if_t< traits::is::binary::like< R>::value>
-         clear( R& value)
-         {
-            std::memset( &( *std::begin( value)), 0, range::size( value));
-         }
-
-
-
-         template< typename T>
-         std::enable_if_t< 
             traits::is_trivially_copyable< traits::remove_cvref_t< T>>::value
             && ! traits::is::binary::like< traits::remove_cvref_t< T>>::value, 
          size_type>

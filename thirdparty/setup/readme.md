@@ -1,13 +1,19 @@
+# setup
+
 This directory contain some helper scripts to setup environment with thirdparty dependencies.
+
+## basic
 
 To setup basic environment use puppet:
 
-    puppet apply casual.pp
+```shell
+host$ puppet apply casual.pp
+```
     
-To build and setup nginx plugin make sure that casual is build and environment set and then:
+## nginx
 
-    python install_nginx.py
-    
-Just in case you have to manually build and install yaml-cpp:
+To build and setup nginx plugin make sure that casual is built and environments are set and then:
 
-    python install_yaml.py	
+```shell
+host$ python install_nginx.py
+```

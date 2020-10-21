@@ -8,7 +8,7 @@
 
 #include "common/serialize/macro.h"
 #include "casual/platform.h"
-#include "common/optional.h"
+#include <optional>
 
 namespace casual
 {
@@ -19,8 +19,8 @@ namespace casual
          std::string name;
          std::string note;
 
-         common::optional< std::vector< std::string>> resources;
-         common::optional< std::vector< std::string>> dependencies;
+         std::optional< std::vector< std::string>> resources;
+         std::optional< std::vector< std::string>> dependencies;
 
          CASUAL_CONST_CORRECT_SERIALIZE(
          {

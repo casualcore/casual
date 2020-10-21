@@ -362,6 +362,9 @@ namespace casual
             using size = detect::is_detected< detail::size, T>;
 
             template< typename T>
+            inline constexpr bool size_v = size< T>::value;
+
+            template< typename T>
             using resize = detect::is_detected< detail::resize, T>;
 
             template< typename T>
@@ -437,6 +440,9 @@ namespace casual
             using iterable = detect::is_detected< detail::iterable, T>;
 
             template< typename T>
+            inline constexpr bool iterable_v = iterable< T>::value;
+
+            template< typename T>
             using iterator = detect::is_detected< detail::iterator, T>;
 
             template< typename T>
@@ -472,6 +478,9 @@ namespace casual
                template< typename T>
                using like = bool_constant< is::iterable< T>::value 
                   && is::char_type< decltype( *std::begin( std::declval< T&>()))>::value>;
+
+               template< typename T>
+               inline constexpr bool like_v = like< T>::value;
 
                template< typename T>
                using iterator = bool_constant< is::iterator< T>::value 

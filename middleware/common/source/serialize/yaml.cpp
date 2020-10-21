@@ -16,14 +16,8 @@
 #include "common/transcode.h"
 #include "common/buffer/type.h"
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 #include <yaml-cpp/yaml.h>
 #include <yaml-cpp/binary.h>
-#include <yaml-cpp/eventhandler.h>
-#include <yaml-cpp/anchor.h>
-#pragma GCC diagnostic pop
-
 
 namespace casual
 {
@@ -41,65 +35,38 @@ namespace casual
 
                   namespace reader
                   {
-
-                     struct Load
+                     namespace load
                      {
-
-                        const YAML::Node& operator() ( YAML::Node& document, std::istream& stream)
+                        YAML::Node document( std::istream& stream)
                         {
                            try
                            {
-                              YAML::Parser parser( stream);
-                              if( ! parser.GetNextDocument( document))
+                              auto result = YAML::Load( stream);
+
+                              if( result)
+                                 return result;
+                              else
                                  code::raise::error( code::casual::invalid_document, "no document");
                            }
                            catch( const YAML::ParserException& e)
                            {
                               code::raise::error( code::casual::invalid_document, e.what());
                            }
-
-                           return document;
                         }
 
-                        const YAML::Node& operator() ( YAML::Node& document, const platform::binary::type& yaml)
+                        YAML::Node document( const std::string& yaml)
                         {
-                           return operator() ( document, yaml.data(), yaml.size());
+                           // we need a real document
+                           std::istringstream stream{ yaml.empty() ? "---\n" : yaml};
+                           return document( stream);
                         }
 
-                        const YAML::Node& operator() ( YAML::Node& document, const std::string& yaml)
+                        YAML::Node document( const platform::binary::type& yaml)
                         {
-                           std::istringstream stream{ wrap_empty( yaml)};
-                           return operator()( document, stream);
+                           return document( std::string( yaml.data(), yaml.size()));
                         }
 
-                        const YAML::Node& operator() ( YAML::Node& document, const char* const yaml, const platform::size::type size)
-                        {
-                           std::istringstream stream{ wrap_empty( std::string( yaml, size))};
-                           return operator()( document, stream);
-                        }
-                     private:
-                        const std::string& empty()
-                        {
-                           static const std::string document{ "---\n"};
-                           return document;
-                        }
-
-                        const std::string& wrap_empty( const std::string& yaml)
-                        {
-                           if( yaml.empty())
-                              return empty();
-
-                           return yaml;
-                        }
-
-                        const char* wrap_empty( const char* const yaml)
-                        {
-                           if( ! yaml || yaml[ 0] == '\0')
-                              return empty().c_str();
-
-                           return yaml;
-                        }
-                     };
+                     } // load
 
                      namespace canonical
                      {
@@ -113,47 +80,48 @@ namespace casual
 
                         private:
 
-                           void deduce( const YAML::Node& node, const char* name)
+                           void deduce( const YAML::Node& node, const char* const name)
                            {
                               switch( node.Type())
                               { 
+                                 case YAML::NodeType::Undefined: break; // ?!?
+                                 case YAML::NodeType::Null: break; // ?!?
                                  case YAML::NodeType::Scalar: scalar( node, name); break;
                                  case YAML::NodeType::Sequence: sequence( node, name); break;
                                  case YAML::NodeType::Map: map( node, name); break;
-                                 case YAML::NodeType::Null: /*???*/ break;
                               }
                            }
 
-                           void scalar( const YAML::Node& node, const char* name)
+                           void scalar( const YAML::Node& node, const char* const name)
                            {
                               m_canonical.attribute( name);
                            }
 
-                           void sequence( const YAML::Node& node, const char* name)
+                           void sequence( const YAML::Node& node, const char* const name)
                            {
                               start( name);
 
                               for( auto& current : node)
-                                 deduce( current, "element");  
+                              {
+                                 deduce( current, "element");
+                              }  
                               
                               end( name);
                            }
 
-                           void map( const YAML::Node& node, const char* name)
+                           void map( const YAML::Node& node, const char* const name)
                            {
                               start( name);
 
                               for( auto current = node.begin(); current != node.end(); ++current)
                               {
-                                 std::string key;
-                                 current.first() >> key;
-                                 deduce( current.second(), key.data());
+                                 deduce( current->second, current->first.as<std::string>().data());
                               }
                               
                               end( name);
                            }
 
-                           void start( const char* name)
+                           void start( const char* const name)
                            {
                               // take care of the first node which doesn't have a name, and is
                               // not a composite in an archive sense.
@@ -161,7 +129,7 @@ namespace casual
                                  m_canonical.composite_start( name);
                            }
 
-                           void end( const char* name)
+                           void end( const char* const name)
                            {
                               // take care of the first node which doesn't have a name, and is
                               // not a composite in an archive sense.
@@ -188,14 +156,14 @@ namespace casual
                         static decltype( auto) keys() { return local::keys();}
 
                         template< typename... Ts>
-                        Implementation( Ts&&... ts) : m_stack{ &Load{}( m_document, std::forward< Ts>( ts)...)} {}
+                        Implementation( Ts&&... ts) : m_stack{ load::document( std::forward< Ts>( ts)...)} {}
 
                         std::tuple< platform::size::type, bool> container_start( platform::size::type size, const char* const name)
                         {
                            if( ! start( name))
                               return std::make_tuple( 0, false);
 
-                           const auto& node = *m_stack.back();
+                           const auto node = m_stack.back();
 
                            size = node.size();
 
@@ -207,11 +175,12 @@ namespace casual
 
                               // We stack'em in reverse order
                               for( auto index = size; index > 0; --index)
-                                 m_stack.push_back( &node[ index - 1]);
+                              {
+                                 m_stack.push_back( node[index - 1]);
+                              }
                            }
 
                            return std::make_tuple( size, true);
-
                         }
 
                         void container_end( const char* const name)
@@ -224,7 +193,7 @@ namespace casual
                            if( ! start( name))
                               return false;
 
-                           if( m_stack.back()->Type() != YAML::NodeType::Map)
+                           if( m_stack.back().Type() != YAML::NodeType::Map)
                               code::raise::error( code::casual::invalid_document, "expected map");
 
                            return true;
@@ -240,7 +209,7 @@ namespace casual
                         {
                            if( start( name))
                            {
-                              if( m_stack.back()->Type() != YAML::NodeType::Null)
+                              if( m_stack.back().Type() != YAML::NodeType::Null)
                                  read( value);
 
                               end( name);
@@ -252,7 +221,8 @@ namespace casual
 
                         policy::canonical::Representation canonical()
                         {
-                           return canonical::parse( m_document);
+                           // first element is the document root
+                           return canonical::parse( m_stack.front());
                         }
 
                      private:
@@ -261,7 +231,7 @@ namespace casual
                         {
                            if( name)
                            {
-                              auto node = m_stack.back()->FindValue( name);
+                              auto node = m_stack.back()[ name];
 
                               if( node)
                                  m_stack.push_back( node);
@@ -284,7 +254,7 @@ namespace casual
                         {
                            try
                            {
-                              node >> value;
+                              value = node.as<T>();
                            }
                            catch( const YAML::InvalidScalar& e)
                            {
@@ -292,40 +262,39 @@ namespace casual
                            }
                         }
 
-                        void read( bool& value) const { consume( *m_stack.back(), value);}
-                        void read( short& value) const { consume( *m_stack.back(), value);}
-                        void read( long& value) const { consume( *m_stack.back(), value);}
-                        void read( long long& value) const { consume( *m_stack.back(), value);}
-                        void read( float& value) const { consume( *m_stack.back(), value);}
-                        void read( double& value) const { consume( *m_stack.back(), value);}
+                        void read( bool& value) const { consume( m_stack.back(), value);}
+                        void read( short& value) const { consume( m_stack.back(), value);}
+                        void read( long& value) const { consume( m_stack.back(), value);}
+                        void read( long long& value) const { consume( m_stack.back(), value);}
+                        void read( float& value) const { consume( m_stack.back(), value);}
+                        void read( double& value) const { consume( m_stack.back(), value);}
                         void read( char& value) const
                         {
                            std::string string;
-                           consume( *m_stack.back(), string);
+                           consume( m_stack.back(), string);
                            value = *common::transcode::utf8::decode( string).c_str();
                         }
                         void read( std::string& value) const
                         {
-                           consume( *m_stack.back(), value);
+                           consume( m_stack.back(), value);
                            value = common::transcode::utf8::decode( value);
                         }
                         void read( platform::binary::type& value) const
                         {
                            YAML::Binary binary;
-                           consume( *m_stack.back(), binary);
+                           consume( m_stack.back(), binary);
                            value.assign( binary.data(), binary.data() + binary.size());
                         }
 
                         void read( view::Binary value) const
                         {
                            YAML::Binary binary;
-                           consume( *m_stack.back(), binary);
+                           consume( m_stack.back(), binary);
                            algorithm::copy( range::make( binary.data(), binary.size()), value);
                         }
 
                      protected:
-                        YAML::Node m_document;
-                        std::vector< const YAML::Node*> m_stack;
+                        std::vector< YAML::Node> m_stack;
 
                      };
 

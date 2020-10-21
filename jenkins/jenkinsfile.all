@@ -86,7 +86,7 @@ def setCurrentVersionAndRelease()
    }
    else if (isFeature())
    {
-      // 1.2-beta.buildnumber
+      // 1.2-alpha.branchname.buildnumber
       env.CASUAL_VERSION = retrieve_major_minor()
       env.CASUAL_RELEASE = "alpha." + normalizeBranchName(env.BRANCH_NAME) + "." + env.BUILD_NUMBER
    }
@@ -120,32 +120,42 @@ catch (Exception e)
 def common_backend_builder = '''
 umask 000
 mkdir -p /git/casual/dumps
-cd /git/casual
-find . -name "*.gc*" -print | xargs rm
-find . -name "report.xml" -print | xargs rm
-rm -rf middleware/.casual/unittest/.singleton/.domain-singleton
-casual-make --no-colors -d -a --use-valgrind make && \
-   casual-make --no-colors clean && \
-   casual-make --no-colors -d -a --use-valgrind compile && \
-   casual-make --no-colors -d -a --use-valgrind link && \
-   ISOLATED_UNITTEST_DIRECTIVES="--gtest_output='xml:report.xml'" casual-make --no-colors test && \
-   mkdir -p /git/casual/coverage && \
-   casual-make --no-colors make && \
-   casual-make --no-colors clean && \
-   casual-make --no-colors compile && \
-   casual-make --no-colors link && \
-   casual-make --no-colors install && \
-   cd /opt/casual && \
-   tar cf /git/casual/casual-middleware.tar . && \
-   cd /git/casual && python thirdparty/setup/install_nginx.py && \
-   cd /opt/ && \
-   tar cf casual-middleware.tar casual && \
-   cp casual-middleware.tar /git/casual/. && \
-   cp /git/casual/package/casual-middleware.spec /root/rpmbuild/SPECS/. && \
-   rpmbuild -bb --noclean --define "casual_version $CASUAL_VERSION" --define "casual_release $CASUAL_RELEASE" --define "distribution $DISTRIBUTION" /root/rpmbuild/SPECS/casual-middleware.spec  && \
-   cp /root/rpmbuild/RPMS/x86_64/casual-middleware*.rpm /git/casual/. && \
-   performCoverageMeasuring 
-   returncode=$?
+
+export CASUAL_REPO_ROOT=/git/casual/casual
+export CASUAL_TOOLS_HOME=$CASUAL_REPO_ROOT
+export PYTHONPATH=$CASUAL_REPO_ROOT/..
+export CASUAL_THIRDPARTY=/git/casual/casual-thirdparty
+export CASUAL_BUILD_HOME=$CASUAL_REPO_ROOT
+export CASUAL_OPTIONAL_INCLUDE_PATHS="${CASUAL_THIRDPARTY}/googletest/include"
+export CASUAL_OPTIONAL_LIBRARY_PATHS="${CASUAL_THIRDPARTY}/googletest/bin"
+export CASUAL_HOME=/opt/casual
+export PATH=$CASUAL_BUILD_HOME/tools/bin:$CASUAL_TOOLS_HOME/bin:$CASUAL_HOME/bin:$PATH
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CASUAL_HOME/lib:$CASUAL_BUILD_HOME/configuration/bin:$CASUAL_BUILD_HOME/common/bin:$CASUAL_BUILD_HOME/serviceframework/bin:$CASUAL_BUILD_HOME/xatmi/bin:/usr/local/lib
+
+cd /git/casual 
+find . -name "*.gc*" -print | xargs rm > /dev/null
+find . -name "report.xml" -print | xargs rm > /dev/null
+rm -rf middleware/.casual/unittest/.singleton/.domain-singleton > /dev/null
+
+export CASUAL_THIRDPARTY=/git/casual/casual-thirdparty
+cd $CASUAL_REPO_ROOT && \
+      casual-make --no-colors -d -a --use-valgrind make && \
+      casual-make --no-colors clean && \
+      casual-make --no-colors -d -a --use-valgrind compile && \
+      casual-make --no-colors -d -a --use-valgrind link && \
+      ISOLATED_UNITTEST_DIRECTIVES="--gtest_output='xml:report.xml'" casual-make --no-colors test && \
+      mkdir -p $CASUAL_REPO_ROOT/coverage && \
+      casual-make --no-colors make && \
+      casual-make --no-colors clean && \
+      casual-make --no-colors compile && \
+      casual-make --no-colors link && \
+      casual-make --no-colors install && \
+      cd $CASUAL_REPO_ROOT && python thirdparty/setup/install_nginx.py && \
+      cp $CASUAL_REPO_ROOT/package/casual-middleware.spec /root/rpmbuild/SPECS/. && \
+      rpmbuild -bb --noclean --define "casual_version $CASUAL_VERSION" --define "casual_release $CASUAL_RELEASE" --define "distribution $DISTRIBUTION" /root/rpmbuild/SPECS/casual-middleware.spec  && \
+      cp /root/rpmbuild/RPMS/x86_64/casual-middleware*.rpm $CASUAL_REPO_ROOT/. && \
+      performCoverageMeasuring 
+      returncode=$?
 
 cd /git/casual/
 find /git/casual -user root | xargs chmod 777
@@ -169,7 +179,7 @@ performCoverageMeasuring()
    # gcovr -r . --html --html-details --gcov-exclude='.*thirdparty.*|.*test_.*' -o coverage/index.html
 }
 
-source scl_source enable devtoolset-7
+source scl_source enable devtoolset-9
 
 ''' + common_backend_builder
 
@@ -320,13 +330,27 @@ try
 
                deleteDir()
 
-               stage('Build backend - Unittest - Suse')
+               stage( "checkout repos")
                {
-                  checkout scm
-                  
+
+                  dir("casual-thirdparty")
+                  {
+                     // casual-thirdparty
+                     git branch: 'master', url: 'https://bitbucket.org/casualcore/casual-thirdparty.git'
+                  }
+
+                  dir("casual")
+                  {
+                     // casual
+                     checkout scm
+                  }
+               }
+
+               stage('Build backend - Unittest - Suse')
+               {                  
                   unstash 'frontend'
                   
-                  build( 'susecompile', 'casual/suse-builder', backend_builder_suse)
+                  build( 'susecompile', 'casual/suse-builder'.concat(':').concat(retrieve_major_minor()), backend_builder_suse)
 
                   archive includes: '**/casual-middleware*.rpm'
                   
@@ -348,13 +372,27 @@ try
             { 
                deleteDir()
 
+               stage( "checkout repos")
+               {
+
+                  dir("casual-thirdparty")
+                  {
+                     // casual-thirdparty
+                     git branch: 'master', url: 'https://bitbucket.org/casualcore/casual-thirdparty.git'
+                  }
+
+                  dir("casual")
+                  {
+                     // casual
+                     checkout scm
+                  }
+               }
+
                stage('Build backend - Unittest/CodeCoverage - Centos')
                {
-                  checkout scm
-                  
                   unstash 'frontend'
                   
-                  build( 'centoscompile', 'casual/centos-builder', backend_builder_centos)
+                  build( 'centoscompile', 'casual/centos-builder'.concat(':').concat(retrieve_major_minor()), backend_builder_centos)
 
                   step([$class: 'XUnitBuilder',
                      thresholds: [[$class: 'FailedThreshold', failureThreshold: '1']],

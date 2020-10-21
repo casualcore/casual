@@ -202,7 +202,7 @@ namespace casual
             return m_connection.file();
          }
 
-         common::optional< Queue> Database::queue( common::strong::queue::id id)
+         std::optional< Queue> Database::queue( common::strong::queue::id id)
          {
             Trace trace{ "queue::Database::queue"};
             log::line( verbose::log, "id: ", id);
@@ -477,7 +477,7 @@ namespace casual
             return result;
          }
 
-         common::optional< platform::time::point::type> Database::available( common::strong::queue::id queue) const
+         std::optional< platform::time::point::type> Database::available( common::strong::queue::id queue) const
          {
             Trace trace{ "queue::Database::available earliest"};
             log::line( verbose::log, "queue: ", queue);
@@ -488,7 +488,7 @@ namespace casual
             if( ! query.fetch( row))
                return {};
 
-            common::optional< platform::time::point::type> available;
+            std::optional< platform::time::point::type> available;
 
             // "SELECT MIN( m.available)"
             sql::database::row::get( row, 

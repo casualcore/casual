@@ -171,7 +171,7 @@ namespace casual
                      {
                         Trace trace( "common::communication::tcp::local::socket::create");
 
-                        address::Native native{ address, flags};                   
+                        address::Native native{ address, flags}; 
                         log::line( verbose::log, "native: ", native);
 
                         for( auto& info : native)

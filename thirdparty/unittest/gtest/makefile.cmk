@@ -1,8 +1,0 @@
-from casual.make.porcelain import *
-
-
-IncludePaths( ['include', 'current'])
-
-LinkArchive('bin/gtest', [ Compile('current/src/gtest-all.cc')])
-LinkArchive( 'bin/gtest_main', [ Compile('current/src/gtest_main.cc')])
-

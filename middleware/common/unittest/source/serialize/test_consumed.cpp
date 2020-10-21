@@ -19,7 +19,7 @@ namespace casual
          auto param() const { return ::testing::TestWithParam<const char*>::GetParam();}
       };
 
-      INSTANTIATE_TEST_CASE_P( common_serialize_consumed_archive,
+      INSTANTIATE_TEST_SUITE_P( common_serialize_consumed_archive,
             archive_maker,
             ::testing::Values("yaml", "json", "xml"));
 

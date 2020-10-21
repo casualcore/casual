@@ -10,7 +10,7 @@
 
 #include "common/serialize/macro.h"
 #include "casual/platform.h"
-#include "common/optional.h"
+#include <optional>
 
 #include <string>
 #include <vector>
@@ -39,13 +39,13 @@ namespace casual
          struct Resource
          {
             std::string name;
-            common::optional< std::string> key;
-            common::optional< platform::size::type> instances;
+            std::optional< std::string> key;
+            std::optional< platform::size::type> instances;
             
             std::string note;
 
-            common::optional< std::string> openinfo;
-            common::optional< std::string> closeinfo;
+            std::optional< std::string> openinfo;
+            std::optional< std::string> closeinfo;
 
             CASUAL_CONST_CORRECT_SERIALIZE
             (

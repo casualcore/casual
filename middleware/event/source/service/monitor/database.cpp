@@ -65,7 +65,7 @@ namespace casual
 
                ~Handler()
                {
-                  if ( ! std::uncaught_exception())
+                  if ( ! std::uncaught_exceptions())
                   {
                      m_connection.commit();
                   }

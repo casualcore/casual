@@ -193,13 +193,20 @@ namespace casual
             using Archive = basic_archive< policy::Default>;
 
             template< typename T, typename A = Archive>
+            void fill( T& value)
+            {
+               A archive;
+               archive >> value;
+            } 
+
+            template< typename T, typename A = Archive>
             T create()
             {
                T value;
                A archive;
                archive >> value;
                return value;
-            } 
+            }
             
          } // random 
 

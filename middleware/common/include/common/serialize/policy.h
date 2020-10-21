@@ -91,7 +91,7 @@ namespace casual
                      attribute( name.data());
                   }
 
-                 inline void composite_start( const char* name)
+                  inline void composite_start( const char* name)
                   {
                      m_stack.emplace_back( get_name( name));
                   }
@@ -121,7 +121,7 @@ namespace casual
                      return ( name ? name : "element");
                   }
                   
-                  std::string get_path()
+                  std::string get_path() const
                   {
                      return string::join( m_stack, ".");
                   }

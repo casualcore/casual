@@ -11,7 +11,7 @@
 
 #include "common/serialize/macro.h"
 #include "casual/platform.h"
-#include "common/optional.h"
+#include <optional>
 
 #include <vector>
 #include <string>
@@ -44,7 +44,7 @@ namespace casual
 
             } paths;
 
-            common::optional< std::string> note;
+            std::optional< std::string> note;
 
 
             CASUAL_CONST_CORRECT_SERIALIZE

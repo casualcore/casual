@@ -23,7 +23,7 @@ namespace casual
                {
                   if( m_log)
                   {
-                     if( std::uncaught_exception())
+                     if( std::uncaught_exceptions())
                      {
                         log::line( m_log, m_information, " - in*");
                      }
@@ -38,7 +38,7 @@ namespace casual
                {
                   if( m_log)
                   {
-                     if( std::uncaught_exception())
+                     if( std::uncaught_exceptions())
                      {
                         log::line( m_log, m_information, " - out*");
                      }
@@ -54,7 +54,7 @@ namespace casual
 
                Outcome::~Outcome()
                {
-                  if( std::uncaught_exception())
+                  if( std::uncaught_exceptions())
                   {
                      log::line( m_fail, m_information, " - fail");  
                   }

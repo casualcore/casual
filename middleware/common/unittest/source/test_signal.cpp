@@ -75,7 +75,7 @@ namespace casual
             holder< code::signal::child>
        >;
 
-      TYPED_TEST_CASE( casual_common_signal_types, signal_type);
+      TYPED_TEST_SUITE( casual_common_signal_types, signal_type);
 
 
       TYPED_TEST( casual_common_signal_types, send_signal__expect_throw)

@@ -11,7 +11,7 @@
 
 #include "common/serialize/macro.h"
 #include "casual/platform.h"
-#include "common/optional.h"
+#include <optional>
 
 #include <string>
 #include <vector>
@@ -26,8 +26,8 @@ namespace casual
          {
             struct Retry 
             {
-               common::optional< platform::size::type> count;
-               common::optional< std::string> delay;
+               std::optional< platform::size::type> count;
+               std::optional< std::string> delay;
 
                CASUAL_CONST_CORRECT_SERIALIZE
                (
@@ -38,10 +38,10 @@ namespace casual
 
             struct Default
             {
-               common::optional< Retry> retry;
+               std::optional< Retry> retry;
             
                //! @deprecated
-               common::optional< platform::size::type> retries;
+               std::optional< platform::size::type> retries;
 
                CASUAL_CONST_CORRECT_SERIALIZE
                (
@@ -52,11 +52,11 @@ namespace casual
             };
 
             std::string name;
-            common::optional< Retry> retry;
-            common::optional< std::string> note;
+            std::optional< Retry> retry;
+            std::optional< std::string> note;
 
             //! @deprecated
-            common::optional< platform::size::type> retries;
+            std::optional< platform::size::type> retries;
 
             CASUAL_CONST_CORRECT_SERIALIZE
             (
@@ -75,8 +75,8 @@ namespace casual
          struct Group
          {
             std::string name;
-            common::optional< std::string> queuebase;
-            common::optional< std::string> note;
+            std::optional< std::string> queuebase;
+            std::optional< std::string> note;
             std::vector< Queue> queues;
 
             CASUAL_CONST_CORRECT_SERIALIZE
@@ -102,7 +102,7 @@ namespace casual
 
                   struct
                   {
-                     common::optional< std::string> delay;
+                     std::optional< std::string> delay;
 
                      CASUAL_CONST_CORRECT_SERIALIZE(
                         CASUAL_SERIALIZE( delay);
@@ -122,7 +122,7 @@ namespace casual
 
                   struct
                   {
-                     common::optional< std::string> delay;
+                     std::optional< std::string> delay;
 
                      CASUAL_CONST_CORRECT_SERIALIZE(
                         CASUAL_SERIALIZE( delay);
@@ -155,8 +155,8 @@ namespace casual
             {
                std::string alias;
                Source source;
-               common::optional< platform::size::type> instances;
-               common::optional< std::string> note;
+               std::optional< platform::size::type> instances;
+               std::optional< std::string> note;
 
                inline friend bool operator == ( const forward_base& lhs, const forward_base& rhs) { return lhs.alias == rhs.alias;}
 
@@ -173,7 +173,7 @@ namespace casual
                struct Target
                {
                   std::string name;
-                  common::optional< std::string> delay;
+                  std::optional< std::string> delay;
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
                      CASUAL_SERIALIZE( name);
@@ -195,7 +195,7 @@ namespace casual
                using Reply = Queue::Target;
 
                Target target;
-               common::optional< Reply> reply;
+               std::optional< Reply> reply;
 
                CASUAL_CONST_CORRECT_SERIALIZE(
                   forward_base::serialize( archive);
@@ -237,7 +237,7 @@ namespace casual
             std::vector< Group> groups;
             Forward forward;
 
-            common::optional< std::string> note;
+            std::optional< std::string> note;
 
             CASUAL_CONST_CORRECT_SERIALIZE
             (

@@ -1,26 +1,27 @@
 from casual.middleware.make.dsl import *
 
 IncludePaths( ['include',
-	'../middleware/common/include',
-	'../middleware/serviceframework/include',
+   '../middleware/common/include',
+   '../middleware/serviceframework/include',
    '../middleware/domain/include',
-	'../middleware/xatmi/include',
-	'../middleware/queue/include',
-	'../middleware/buffer/include',
-	'$(CASUAL_OPTIONAL_INCLUDE_PATHS)',
-    ])
+   '../middleware/xatmi/include',
+   '../middleware/queue/include',
+   '../middleware/buffer/include',
+   '$(CASUAL_OPTIONAL_INCLUDE_PATHS)',
+])
+
 LibraryPaths( [ 'bin',
-	'../middleware/xatmi/bin',
-	'../middleware/common/bin',
+   '../middleware/xatmi/bin',
+   '../middleware/common/bin',
    '../middleware/domain/bin',
-	'../middleware/queue/bin',
-	'../middleware/buffer/bin',
+   '../middleware/queue/bin',
+   '../middleware/buffer/bin',
    '../middleware/transaction/bin',
-	'../middleware/serviceframework/bin',
+   '../middleware/serviceframework/bin',
    '../middleware/configuration/bin',
    '../middleware/http/bin',
-	'$(CASUAL_OPTIONAL_LIBRARY_PATHS)',
-	])
+   '$(CASUAL_OPTIONAL_LIBRARY_PATHS)',
+])
 
 
 
@@ -39,48 +40,40 @@ Install( [ target],'$(CASUAL_HOME)/test/bin')
 
 
 test_archive = LinkArchive( 'bin/test-archive', 
-  [
-    Compile( 'source/domain.cpp'),
-  ]
+   [
+      Compile( 'source/domain.cpp'),
+   ]
 )
 
 # unittest
 
 unittest_object = [
-    Compile( 'unittest/source/domain/test_basic.cpp'),
-    Compile( 'unittest/source/domain/xatmi/test_call.cpp'),
-    Compile( 'unittest/source/domain/xatmi/test_conversation.cpp'),
-    Compile( 'unittest/source/domain/xatmi/test_start.cpp'),
-    Compile( 'unittest/source/domain/test_transaction.cpp'),
+   Compile( 'unittest/source/domain/test_basic.cpp'),
+   Compile( 'unittest/source/domain/xatmi/test_call.cpp'),
+   Compile( 'unittest/source/domain/xatmi/test_conversation.cpp'),
+   Compile( 'unittest/source/domain/xatmi/test_start.cpp'),
+   Compile( 'unittest/source/domain/test_transaction.cpp'),
 ]
 
 # only build http test cases if the enviornment is set up
 if "CASUAL_UNITTEST_HTTP_INBOUND_CONFIG" in os.environ and "CASUAL_UNITTEST_HTTP_INBOUND_PATH" in os.environ:
-    unittest_object.append( Compile( 'unittest/source/domain/test_http.cpp'))
+   unittest_object.append( Compile( 'unittest/source/domain/test_http.cpp'))
 
 LinkUnittest( 'unittest/bin/test-casual-basic',
-    unittest_object,
-    [ 
+   unittest_object,
+   [ 
       test_archive,
-		'casual-common', 
-		#'casual-serviceframework', 
+      'casual-common', 
+      #'casual-serviceframework', 
       'casual-buffer',
-		'casual-xatmi', 
-		'yaml-cpp', 
-		'casual-unittest',
+      'casual-xatmi', 
+      'casual-unittest',
       'casual-mockup-rm',
       'casual-domain-unittest'
-	])
+   ])
 	
 
 # Install
 Install( install_bin,'$(CASUAL_HOME)/bin')
 
 
-
-
-
-
-
-	
-	

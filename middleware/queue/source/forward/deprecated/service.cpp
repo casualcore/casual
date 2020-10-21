@@ -30,14 +30,14 @@ namespace casual
          {
             std::string queue;
             std::string service;
-            common::optional< std::string> reply;
+            std::optional< std::string> reply;
 
             auto tie() { return std::tie( queue, service, reply);}
          };
 
          struct Caller
          {
-            Caller( std::string service, common::optional< std::string> reply) 
+            Caller( std::string service, std::optional< std::string> reply) 
                : m_service( std::move( service)), m_reply( std::move( reply)) {}
 
             void operator () ( queue::Message&& message)
@@ -81,7 +81,7 @@ namespace casual
 
          private:
             std::string m_service;
-            common::optional< std::string> m_reply;
+            std::optional< std::string> m_reply;
          };
 
          std::vector< forward::Task> tasks( Settings settings)

@@ -264,7 +264,7 @@ namespace casual
       {
          unittest::Trace trace;
 
-         common::optional< int> value;
+         std::optional< int> value;
 
          auto invoke = argument::detail::invoke::create( std::tie( value));
 
@@ -276,7 +276,7 @@ namespace casual
       {
          unittest::Trace trace;
 
-         common::optional< std::tuple< int, int, int>> value;
+         std::optional< std::tuple< int, int, int>> value;
 
          auto invoke = argument::detail::invoke::create( std::tie( value));
 
@@ -289,7 +289,7 @@ namespace casual
          unittest::Trace trace;
          
          int a;
-         common::optional< std::tuple< int, int, int>> b;
+         std::optional< std::tuple< int, int, int>> b;
 
          auto invoke = argument::detail::invoke::create( std::tie( a, b));
          
@@ -513,7 +513,7 @@ namespace casual
       {
          unittest::Trace trace;
 
-         common::optional< std::tuple< int, int, int>> value;
+         std::optional< std::tuple< int, int, int>> value;
          argument::Parse parse{ "description", 
             argument::Option{ std::tie( value), { "-a"}, "description"}};
           
@@ -530,7 +530,7 @@ namespace casual
       {
          unittest::Trace trace;
 
-         common::optional< std::tuple< int, int, int>> value;
+         std::optional< std::tuple< int, int, int>> value;
          argument::Parse parse{ "description", 
             argument::Option{ std::tie( value), { "-a"}, "description"}};
           
@@ -544,7 +544,7 @@ namespace casual
       {
          unittest::Trace trace;
 
-         common::optional< std::tuple< int, int, int>> value;
+         std::optional< std::tuple< int, int, int>> value;
          argument::Parse parse{ "description", 
             argument::Option{ std::tie( value), { "-a"}, "description"}};
 
@@ -898,7 +898,7 @@ namespace casual
 
          int a;
          long b;
-         common::optional< long> c;
+         std::optional< long> c;
 
          argument::Parse parse{ "description", 
             argument::Group{ local::invocable_0, { "some-group"}, "",
@@ -926,7 +926,7 @@ namespace casual
       {
          unittest::Trace trace;
 
-         common::optional< long> a;
+         std::optional< long> a;
          long b;
          short c;
 

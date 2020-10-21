@@ -2,4 +2,4 @@ ngx_addon_name=ngx_http_xatmi_module
 HTTP_MODULES="$HTTP_MODULES ngx_http_xatmi_module"
 NGX_ADDON_SRCS="$NGX_ADDON_SRCS $ngx_addon_dir/ngx_http_xatmi_module.c $ngx_addon_dir/xatmi_handler.c"
 CORE_INCS="$CORE_INCS $CASUAL_BUILD_HOME/middleware/xatmi/include $CASUAL_BUILD_HOME/middleware/http/include"
-CORE_LIBS="$CORE_LIBS -L$CASUAL_BUILD_HOME/middleware/xatmi/bin -lcasual-xatmi -L$CASUAL_BUILD_HOME/middleware/http/bin -lcasual-http-inbound-common"
+CORE_LIBS="$CORE_LIBS -L$CASUAL_BUILD_HOME/middleware/xatmi/bin -Wl,-rpath=$CASUAL_BUILD_HOME/middleware/xatmi/bin -lcasual-xatmi -L$CASUAL_BUILD_HOME/middleware/http/bin -Wl,-rpath=$CASUAL_BUILD_HOME/middleware/http/bin -lcasual-http-inbound-common -Wl,-rpath=$CASUAL_BUILD_HOME/middleware/common/bin"

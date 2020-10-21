@@ -127,7 +127,7 @@ namespace casual
                      } // cli
                   } // format
 
-                  void print( const std::string& service, const common::optional< std::string>& format)
+                  void print( const std::string& service, const std::optional< std::string>& format)
                   {
                      Trace trace{ "tools::service::local::print"};
 

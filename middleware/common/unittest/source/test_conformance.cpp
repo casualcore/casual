@@ -12,7 +12,6 @@
 #include "common/algorithm.h"
 #include "common/traits.h"
 #include "common/signal.h"
-#include "common/optional.h"
 #include "common/code/system.h"
 
 #include <type_traits>
@@ -223,19 +222,6 @@ namespace casual
          }
       }
 
-
-      TEST( common_conformance, optional_default_ctor)
-      {
-         common::optional< std::size_t> optional;
-         EXPECT_TRUE( ! optional.has_value());
-      }
-
-      TEST( common_conformance, optional_ctor)
-      {
-         common::optional< std::size_t> optional{ 42};
-         EXPECT_TRUE( optional.has_value());
-         EXPECT_TRUE( optional.value() == 42);
-      }
 
 
       namespace local

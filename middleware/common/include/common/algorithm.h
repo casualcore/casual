@@ -13,12 +13,13 @@
 #include "common/traits.h"
 #include "casual/platform.h"
 #include "common/cast.h"
-#include "common/optional.h"
 #include "common/predicate.h"
 
 #include <algorithm>
 #include <numeric>
+#include <optional>
 #include <type_traits>
+
 #include <ostream>
 
 
@@ -51,16 +52,16 @@ namespace casual
          namespace coalesce
          {
             template< typename T>
-            auto empty( const T& value) -> std::enable_if_t< traits::has::empty< T>::value, bool>
-            { 
-               return value.empty();
-            }
+            auto empty( T&& value, traits::priority::tag< 2>) -> decltype( value == nullptr)
+            { return value == nullptr;}
 
             template< typename T>
-            bool empty( const T* value) { return value == nullptr;}
+            auto empty( T&& value, traits::priority::tag< 1>) -> decltype( value.empty()) 
+            { return value.empty();}
 
             template< typename T>
-            bool empty( const optional< T>& value) { return ! value.has_value();}
+            auto empty( T&& value, traits::priority::tag< 1>) -> decltype( ! value.has_value()) 
+            { return ! value.has_value();}
 
             template< typename T>
             decltype( auto) implementation( T&& value)
@@ -75,7 +76,9 @@ namespace casual
                   T, // only if T and Args are exactly the same, we use T, otherwise we convert to common type
                   std::common_type_t< T, Args...>>
             {
-               if( empty( value)) { return implementation( std::forward< Args>( args)...);}
+               if( coalesce::empty( value, traits::priority::tag< 2>{}))
+                  return implementation( std::forward< Args>( args)...);
+
                return std::forward< T>( value);
             }
 

@@ -8,10 +8,10 @@
 
 #include "casual/platform.h"
 
-#include "common/optional.h"
 #include "common/environment/variable.h"
 #include "common/serialize/macro.h"
 
+#include <optional>
 #include <string>
 
 namespace casual
@@ -39,7 +39,7 @@ namespace casual
 
          //! @return the instance information. If present this has been set
          //! by the parent.
-         const optional< Information>& information();
+         const std::optional< Information>& information();
 
       } // instance
    } // common

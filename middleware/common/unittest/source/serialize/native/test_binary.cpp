@@ -47,7 +47,7 @@ namespace casual
                   IO< binary::network::create::Reader, binary::network::create::Writer>
             >;
 
-            TYPED_TEST_CASE(casual_serialize_native_binary, marshal_types);
+            TYPED_TEST_SUITE(casual_serialize_native_binary, marshal_types);
 
 
             TYPED_TEST( casual_serialize_native_binary, basic_io)

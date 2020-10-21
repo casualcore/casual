@@ -9,7 +9,7 @@
 #include "tools/service/call/cli.h"
 
 #include "common/argument.h"
-#include "common/optional.h"
+#include <optional>
 #include "common/service/call/context.h"
 #include "common/exception/handle.h"
 #include "common/transaction/context.h"

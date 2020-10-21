@@ -210,7 +210,7 @@ namespace casual
                         Source source;
                         Target target;
                         platform::size::type instances = 0;
-                        common::optional< Reply> reply;
+                        std::optional< Reply> reply;
                         std::string note;
 
                         CASUAL_CONST_CORRECT_SERIALIZE(

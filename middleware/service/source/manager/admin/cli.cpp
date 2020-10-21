@@ -600,7 +600,7 @@ namespace casual
                   }
 
 
-                  void output_state( const common::optional< std::string>& format)
+                  void output_state( const std::optional< std::string>& format)
                   {
                      auto state = admin::api::state();
 

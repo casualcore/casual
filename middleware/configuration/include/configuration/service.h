@@ -9,7 +9,7 @@
 
 #include "common/serialize/macro.h"
 #include "casual/platform.h"
-#include "common/optional.h"
+#include <optional>
 
 namespace casual
 {
@@ -31,8 +31,8 @@ namespace casual
       struct Service
       {
          std::string name;
-         common::optional< std::string> timeout;
-         common::optional< std::vector< std::string>> routes;
+         std::optional< std::string> timeout;
+         std::optional< std::vector< std::string>> routes;
 
          CASUAL_CONST_CORRECT_SERIALIZE
          (

@@ -209,7 +209,7 @@ http:
             //Count{ 1000, 10000},
          };
 
-         INSTANTIATE_TEST_CASE_P( 
+         INSTANTIATE_TEST_SUITE_P( 
             http,
             test_parallel_http,
             ::testing::ValuesIn( counts)

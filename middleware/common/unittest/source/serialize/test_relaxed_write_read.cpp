@@ -98,7 +98,7 @@ namespace casual
             holder::xml
        >;
 
-      TYPED_TEST_CASE( common_serialize_relaxed_archive_write_read, archive_types);
+      TYPED_TEST_SUITE( common_serialize_relaxed_archive_write_read, archive_types);
 
 
       namespace local
@@ -169,7 +169,7 @@ namespace casual
 
                   // we need to have at least one value for yaml and json to work
                   long dummy_value = 0;
-                  optional< T> optional_value;
+                  std::optional< T> optional_value;
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
                       CASUAL_SERIALIZE( dummy_value);

@@ -28,7 +28,7 @@ namespace casual
       };
 
 
-      INSTANTIATE_TEST_CASE_P( protocol,
+      INSTANTIATE_TEST_SUITE_P( protocol,
             configuration_queue,
          ::testing::Values(".yaml", ".json", ".xml", ".ini"));
 

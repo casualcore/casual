@@ -30,7 +30,7 @@ namespace casual
 
                } // variable
 
-               optional< Information> information()
+               std::optional< Information> information()
                {
                   auto value = std::move( variable::value);
 
@@ -43,7 +43,7 @@ namespace casual
                      archive >> CASUAL_NAMED_VALUE( instance);
                   }
 
-                  return optional< Information>{ std::move( instance)};
+                  return { std::move( instance)};
                }
             } // <unnamed>
          } // local
@@ -60,7 +60,7 @@ namespace casual
             return { std::move( out).str()};
          };
 
-         const optional< Information>& information()
+         const std::optional< Information>& information()
          {
             static const auto singleton = local::information();
             return singleton;

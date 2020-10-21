@@ -210,7 +210,7 @@ namespace casual
             int count = xids.size();
             flag::xa::Flags flags = flag::xa::Flag::start_scan;
 
-            while( count == xids.size())
+            while(  count == range::size( xids))
             {
                count = m_xa->xa_recover_entry( xids.data(), xids.size(), m_id.value(), flags.underlaying());
 
@@ -223,7 +223,7 @@ namespace casual
                if( common::algorithm::find( range::make( std::begin( xids), count), transaction.xid))
                {
                   // we found it. Make sure to end the scan if there are more.
-                  if( count == xids.size())
+                  if( count == range::size( xids))
                   {
                      m_xa->xa_recover_entry(
                         xids.data(), 1, m_id.value(),

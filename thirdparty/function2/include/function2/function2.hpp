@@ -1119,25 +1119,30 @@ public:
   constexpr erasure(std::false_type /*use_bool_op*/, T&& callable,
                     Allocator&& allocator = Allocator{}) {
     vtable_t::init(vtable_,
-                   type_erasure::make_box(
-                       std::integral_constant<bool, Config::is_copyable>{},
-                       std::forward<T>(callable),
-                       std::forward<Allocator>(allocator)),
-                   this->opaque_ptr(), capacity());
+        type_erasure::make_box(
+            std::integral_constant<bool, Config::is_copyable>{},
+            std::forward<T>(callable),
+            std::forward<Allocator>(allocator)),
+        this->opaque_ptr(), capacity());
   }
   template <typename T, typename Allocator = std::allocator<std::decay_t<T>>>
-  constexpr erasure(std::true_type /*use_bool_op*/, T&& callable,
-                    Allocator&& allocator = Allocator{}) {
-    if (bool(callable)) {
-      vtable_t::init(vtable_,
-                     type_erasure::make_box(
-                         std::integral_constant<bool, Config::is_copyable>{},
-                         std::forward<T>(callable),
-                         std::forward<Allocator>(allocator)),
-                     this->opaque_ptr(), capacity());
-    } else {
-      vtable_.set_empty();
+  constexpr erasure(std::true_type /*use_bool_op*/, T&& callable, Allocator&& allocator = Allocator{}) 
+  {
+    if constexpr ( std::is_pointer_v<T>)
+    {
+      if( ! bool(callable))
+      {
+         vtable_.set_empty();
+         return;
+      }
     }
+	 
+    vtable_t::init(vtable_,
+          type_erasure::make_box(
+            std::integral_constant<bool, Config::is_copyable>{},
+            std::forward<T>(callable),
+            std::forward<Allocator>(allocator)),
+          this->opaque_ptr(), capacity());
   }
 
   ~erasure() {
@@ -1188,14 +1193,18 @@ public:
   }
 
   template <typename T, typename Allocator = std::allocator<std::decay_t<T>>>
-  void assign(std::true_type /*use_bool_op*/, T&& callable,
-              Allocator&& allocator = {}) {
-    if (bool(callable)) {
-      assign(std::false_type{}, std::forward<T>(callable),
-             std::forward<Allocator>(allocator));
-    } else {
-      operator=(nullptr);
+  void assign(std::true_type /*use_bool_op*/, T&& callable, Allocator&& allocator = {}) 
+  {
+    if constexpr ( std::is_pointer_v<T>)
+    {
+       if( ! bool(callable))
+       {
+          operator=(nullptr);
+          return;
+       }
     }
+
+    assign( std::false_type{}, std::forward<T>(callable), std::forward<Allocator>(allocator));
   }
 
   /// Returns true when the erasure doesn't hold any erased object

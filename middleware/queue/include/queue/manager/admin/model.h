@@ -239,7 +239,7 @@ namespace casual
                      Source source;
                      Target target;
                      Instances instances;
-                     common::optional< Reply> reply;
+                     std::optional< Reply> reply;
                      Metric metric;
                      std::string note;
 

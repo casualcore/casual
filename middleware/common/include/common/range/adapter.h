@@ -8,7 +8,8 @@
 
 #include "common/range.h"
 #include "common/traits.h"
-#include "common/optional.h"
+
+#include <optional>
 
 namespace casual
 {
@@ -62,7 +63,7 @@ namespace casual
                   return std::get< 0>( m_ranges).empty() && std::get< 1>( m_ranges).empty();
                }
 
-               common::optional< next_type> m_next;
+               std::optional< next_type> m_next;
                tuple_type m_ranges{};
             };
 

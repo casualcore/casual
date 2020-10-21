@@ -10,7 +10,7 @@
 
 #include "common/serialize/macro.h"
 #include "casual/platform.h"
-#include "common/optional.h"
+#include <optional>
 
 #include <string>
 #include <vector>
@@ -25,8 +25,8 @@ namespace casual
          {
             struct Limit
             {
-               common::optional< platform::size::type> size;
-               common::optional< platform::size::type> messages;
+               std::optional< platform::size::type> size;
+               std::optional< platform::size::type> messages;
 
                CASUAL_CONST_CORRECT_SERIALIZE
                (
@@ -50,7 +50,7 @@ namespace casual
          struct Listener
          {
             std::string address;
-            common::optional< listener::Limit> limit;
+            std::optional< listener::Limit> limit;
             std::string note;
 
             CASUAL_CONST_CORRECT_SERIALIZE
@@ -83,11 +83,11 @@ namespace casual
 
          struct Connection
          {
-            common::optional< std::string> address;
+            std::optional< std::string> address;
             std::vector< std::string> services;
             std::vector< std::string> queues;
             std::string note;
-            common::optional< bool> restart;
+            std::optional< bool> restart;
 
             CASUAL_CONST_CORRECT_SERIALIZE
             (

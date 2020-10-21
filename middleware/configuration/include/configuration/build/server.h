@@ -11,7 +11,7 @@
 
 #include "common/serialize/macro.h"
 #include "casual/platform.h"
-#include "common/optional.h"
+#include <optional>
 
 #include <algorithm>
 #include <string>
@@ -39,12 +39,12 @@ namespace casual
                   //! - 'branch' Branch current transaction, or start a new one if there is no current.
                   //!
                   //! default is 'auto'
-                  common::optional< std::string> transaction;
+                  std::optional< std::string> transaction;
 
                   //! Arbitrary category.
                   //!
                   //! @attention categories starting with '.' is reserved by casual
-                  common::optional< std::string> category;
+                  std::optional< std::string> category;
 
                   CASUAL_CONST_CORRECT_SERIALIZE
                   (
@@ -58,7 +58,7 @@ namespace casual
             struct Service : service::Default
             {
                std::string name;
-               common::optional< std::string> function;
+               std::optional< std::string> function;
 
                CASUAL_CONST_CORRECT_SERIALIZE
                (

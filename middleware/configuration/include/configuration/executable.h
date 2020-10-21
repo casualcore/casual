@@ -11,7 +11,7 @@
 #include "configuration/environment.h"
 
 #include "common/serialize/macro.h"
-#include "common/optional.h"
+#include <optional>
 
 namespace casual
 {
@@ -40,15 +40,15 @@ namespace casual
       struct Executable
       {
          std::string path;
-         common::optional< std::string> alias;
-         common::optional< std::string> note;
+         std::optional< std::string> alias;
+         std::optional< std::string> note;
 
-         common::optional< std::vector< std::string>> arguments;
+         std::optional< std::vector< std::string>> arguments;
 
-         common::optional< platform::size::type> instances;
-         common::optional< std::vector< std::string>> memberships;
-         common::optional< Environment> environment;
-         common::optional< bool> restart;
+         std::optional< platform::size::type> instances;
+         std::optional< std::vector< std::string>> memberships;
+         std::optional< Environment> environment;
+         std::optional< bool> restart;
 
          CASUAL_CONST_CORRECT_SERIALIZE
          (

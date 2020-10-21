@@ -9,10 +9,10 @@
 #include "common/serialize/value/customize.h"
 
 #include "common/serialize/traits.h"
-#include "common/optional.h"
 #include "common/view/binary.h"
 #include "common/code/serialize.h"
 
+#include <optional>
 #include <system_error>
 
 namespace casual

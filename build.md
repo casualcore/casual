@@ -1,88 +1,104 @@
 
-## build casual
+# build casual
 
+## prerequisites
 
-
-### Prerequisites
 The following packages need to be installed:
 
  * git
  * python
- * gcc (version 6)
- * g++ (version 6)
- * cmake
+ * gcc (version 8)
+ * g++ (version 8)
  * puppet
- * gtest (included, see below)
 
 *Note: casual will not build on a 32-bit system*
 
+**system environment variables**
 
-### clone repo
+variable        | used for
+----------------|------------------------------
+`TMPDIR`        | well, temporary files...
+
+
+## clone
 
 if you're planning on trying some of the examples there might be a good idea to use `$HOME/git` as your repo-root, then 
 the examples correspond exactly to your setup.
 
-Latest version is on `develop` branch (default)
+``` shell
+host$ git clone https://bitbucket.org/casualcore/casual.git
+host$ git clone https://bitbucket.org/casualcore/casual-thirdparty.git
+```
 
-    host$ git clone https://bitbucket.org/casualcore/casual.git
-    host$ cd casual
 
 
-### CentOS Setup
+## preperation
+
+platform specific preperations
+
+
+### CentOS
 
 Enable EPEL, Software Collections and install stuff
 
-    sudo yum install epel-release centos-release-scl
-    sudo yum install libuuid-devel pugixml-devel sqlite-devel python libcurl-devel devtoolset-6
-    scl enable devtoolset-6 bash
+``` shell
+sudo yum install epel-release centos-release-scl
+sudo yum install libuuid-devel sqlite-devel python libcurl-devel devtoolset-8
+scl enable devtoolset-8 bash
+```
 
-Compile the yaml lib
+### install dependencies with puppet
 
-    cd thirdparty/setup
-    CMAKE_CXX_COMPILER=g++ python install_yaml.py
+``` shell
+host$ sudo puppet apply $HOME/git/casual/thirdparty/setup/casual.pp
+```
 
-Use templatefile to setup environment
+## set up the environment
 
-    host$ cp middleware/example/env/casual.env .
+Enter the casual repo.
 
-edit the YAML include and library paths to
+```shell
+host$ cd $HOME/git/casual
+```
 
-    YAML_INCLUDE_PATH=/usr/local/include/yaml-cpp/
-    YAML_LIBRARY_PATH=/usr/local/lib/
+It should be enough to just source the example environment set up file.
+(if the casual and casual-thirdparty repo's are next to eachother)
 
-Then follow the instructions from Build Casual
+```shell
+host$ source middleware/example/env/casual.env
+```
 
-### Install dependencies with puppet
+### custom setup 
 
-    host$ sudo puppet apply thirdparty/setup/casual.pp
+If you got another setup or there are some platform specific problem, you need
+to edit the _casual.env_ file to suit your platform setup.
 
-### Set up the environment 
+```shell
+host$ cp middleware/example/env/casual.env .
+host$ vim casual.env # edit to suit your needs
+host$ source casual.env
+```
 
-Use templatefile to setup environment
 
-    host$ cp middleware/example/env/casual.env .
-
-
-Edit `casual.env`, to set correct paths that correspond to your setup. It
-should be pretty clear what you need to alter in the file.
-
-Then source the file
-
-    host$ source casual.env
-
-### Build casual
+## build casual
      
-    host$ casual-make
+```shell
+host$ casual-make
+```
      
 If you want to compile as much as possible in parallel you can use:
 
-     host$ casual-make compile && casual-make link
+```shell
+host$ casual-make compile && casual-make link
+```
 
-### Test casual
+## test casual
 
-     host$ casual-make test
+```shell
+host$ casual-make test
+```
 
+## feedback
 
-Tested on e.g. OS X and Ubuntu so far. More unix flavors needed
-
-Please report failed test cases (contact info below)   
+If this _how-to_ is not to your liking, or does not describe your platform
+please provide a pull-request to fix it.

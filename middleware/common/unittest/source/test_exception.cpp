@@ -72,7 +72,7 @@ namespace casual
             casual_holder< common::code::casual::communication_unavailable>
       >;
 
-      TYPED_TEST_CASE( casual_common_error, exceptions);
+      TYPED_TEST_SUITE( casual_common_error, exceptions);
 
       TYPED_TEST( casual_common_error, throw__expect_error_number)
       {

@@ -26,12 +26,19 @@ else:
 IncludePaths( [ 
     'include',
     '../xatmi/include',
-    '$(CASUAL_REPOSITORY_ROOT)/thirdparty/rapidjson/include',
+    '$(CASUAL_THIRDPARTY)/pugixml/src',
+    '$(CASUAL_THIRDPARTY)/rapidjson/include',
+    '$(CASUAL_THIRDPARTY)/yaml-cpp/include',
     '$(CASUAL_OPTIONAL_INCLUDE_PATHS)',
     ]
     + platform_specific_include_paths)
 
-LibraryPaths( [ 'bin'] + platform_specific_lib_paths + [ '$(CASUAL_OPTIONAL_LIBRARY_PATHS)'])
+LibraryPaths( [
+    'bin',
+    '$(CASUAL_THIRDPARTY)/pugixml/bin',
+    '$(CASUAL_THIRDPARTY)/yaml-cpp/bin',
+    ]
+     + platform_specific_lib_paths + [ '$(CASUAL_OPTIONAL_LIBRARY_PATHS)'])
 
 
 install_libs = []

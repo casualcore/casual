@@ -82,7 +82,7 @@ namespace casual
                   return optional;
                }
 
-               optional< const std::string&> Fields::find( const std::string& key) const
+	       std::optional< std::string> Fields::find( const std::string& key) const
                {
                   if( auto found = local::find( *this, key))
                      return { found->value};
