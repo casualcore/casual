@@ -68,18 +68,18 @@ namespace casual
          {
             void log() noexcept
             {
-               auto code = local::handle();
+               const auto code = local::handle();
                common::log::line( code::stream( code), code);
             }
 
             void error() noexcept
             {
-               common::log::line( common::log::category::error, code);
+               common::log::line( common::log::category::error, local::handle());
             }
             
             void silent() noexcept
             {
-               common::log::line( common::log::debug, code);
+               common::log::line( common::log::debug, local::handle());
             }
          } // sink
 
