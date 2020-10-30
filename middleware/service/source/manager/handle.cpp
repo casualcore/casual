@@ -542,14 +542,14 @@ namespace casual
                                     if( ! service->instances.sequential.empty())
                                     {
                                        reply.services.emplace_back(
-                                             service->information.name,
+                                             name,
                                              service->information.category,
                                              service->information.transaction);
                                     }
                                     else if( ! service->instances.concurrent.empty())
                                     {
                                        reply.services.emplace_back(
-                                             service->information.name,
+                                             name,
                                              service->information.category,
                                              service->information.transaction,
                                              service->instances.concurrent.front().property);

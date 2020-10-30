@@ -14,6 +14,7 @@
 #include "common/message/domain.h"
 #include "common/message/event.h"
 #include "common/message/service.h"
+#include "common/message/gateway.h"
 
 #include "common/service/lookup.h"
 #include "common/communication/instance.h"
@@ -196,6 +197,11 @@ domain:
 
          auto state = local::call::state();
 
+         auto service = common::service::Lookup{ "B"}();
+         // we expect the 'real-name' of the service to be replied
+         EXPECT_TRUE( service.service.name == "A");
+
+
          EXPECT_TRUE( local::has_services( state.services, { "B"})) << "state.services: " << state.services;
          EXPECT_TRUE( ! local::has_services( state.services, { "A"})) << "state.services: " << state.services;
          
@@ -231,9 +237,44 @@ domain:
 
          auto state = local::call::state();
 
+
          EXPECT_TRUE( local::has_services( state.services, { "B"})) << "state.services: " << state.services;
          EXPECT_TRUE( ! local::has_services( state.services, { "A"})) << "state.services: " << state.services;
          
+      }
+
+
+      TEST( service_manager, advertise_A__route_B___expect_discovery_for_B)
+      {
+         common::unittest::Trace trace;
+
+         constexpr auto configuration = R"(
+domain:
+   name: route-domain
+
+   servers:
+      - path: "./bin/casual-service-manager"
+        arguments: [ "--forward", "./bin/casual-service-forward"]
+
+   services:
+      - name: A
+        routes: [ B]
+
+)";
+
+         local::Domain domain{ configuration};
+         service::unittest::advertise( { "A"});
+
+         // discover
+         {
+            common::message::gateway::domain::discover::Request request{ common::process::handle()};
+            request.services = { "B"};
+            auto reply = common::communication::ipc::call( common::communication::instance::outbound::service::manager::device(), request);
+
+            ASSERT_TRUE( reply.services.size() == 1) << "reply: " << reply;
+            EXPECT_TRUE( reply.services.at( 0).name == "B") << "reply: " << reply;
+
+         }
       }
 
       TEST( service_manager, advertise_2_services_for_1_server)
