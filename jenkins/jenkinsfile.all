@@ -421,7 +421,7 @@ try
                      writeFile file: 'Dockerfile', text: dockerfile
 
                      sh '''
-                     docker build -t casual/middleware-centos --build-arg CASUAL_RPM=$(ls -t casual-middleware-*.rpm|head -1) -f Dockerfile .
+                     docker build -t casual/middleware-centos --build-arg CASUAL_RPM=$(ls -t casual/casual-middleware-*.rpm|head -1) -f Dockerfile .
                      '''
                   }
 
@@ -462,15 +462,20 @@ try
       {
          stage('Tag')
          {
-            checkout scm
+            deleteDir()
 
-            withCredentials([usernameColonPassword(credentialsId: '628eddfb-34f4-46de-9e61-c73b86ac681e', variable: 'USERPASS')])
+            dir("casual")
             {
-               tag = totalVersion()
-               sh """
-               git tag -a -m "Jenkins" $tag
-               git push https://${USERPASS}@bitbucket.org/casualcore/casual.git $tag
-               """
+               checkout scm
+
+               withCredentials([usernameColonPassword(credentialsId: '628eddfb-34f4-46de-9e61-c73b86ac681e', variable: 'USERPASS')])
+               {
+                  tag = totalVersion()
+                  sh """
+                  git tag -a -m "Jenkins" $tag
+                  git push https://${USERPASS}@bitbucket.org/casualcore/casual.git $tag
+                  """
+               }
             }
          }
 
@@ -484,7 +489,7 @@ try
                version=totalVersion()
                sh """
                set +x
-               for filename in \$( ls casual-middleware-${version}*.rpm )
+               for filename in \$( ls casual/casual-middleware-${version}*.rpm )
                do
                   curl -X POST --user "${USERPASS}" "https://api.bitbucket.org/2.0/repositories/casualcore/casual/downloads" --form files=@"\$filename"
                done
