@@ -209,6 +209,7 @@ namespace casual
    {
       "value":
       {
+         "m_bool": true,
          "m_long": 123456,
          "m_string": false,
          "m_short": 23,
