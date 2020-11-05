@@ -151,6 +151,60 @@ namespace casual
          }
       }
 
+      TEST( common_serialize_json, read_complete_document__expecting_no_exception)
+      {
+         common::unittest::Trace trace;
+         const std::string json
+         {
+            R"(
+   {
+      "value":
+      {
+         "m_bool": true,
+         "m_long": 123456,
+         "m_string": "bla bla bla",
+         "m_short": 23,
+         "m_longlong": 1234567890123456789,
+         "m_time": 1234567890,
+         "m_optional": 42
+      }
+   }
+   )"
+         };
+
+         EXPECT_NO_THROW
+         ({
+            test::SimpleVO value;
+            local::string_to_strict_value( json, value);
+         });
+      }
+
+      TEST( common_serialize_json, read_document_with_missing_optional__expecting_no_exception)
+      {
+         common::unittest::Trace trace;
+         const std::string json
+         {
+            R"(
+   {
+      "value":
+      {
+         "m_bool": true,
+         "m_long": 123456,
+         "m_string": "bla bla bla",
+         "m_short": 23,
+         "m_longlong": 1234567890123456789,
+         "m_time": 1234567890
+      }
+   }
+   )"
+         };
+
+         EXPECT_NO_THROW
+         ({
+            test::SimpleVO value;
+            local::string_to_strict_value( json, value);
+         });
+      }
 
       TEST( common_serialize_json, load_invalid_document__expecting_exception)
       {
