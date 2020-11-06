@@ -7,4 +7,3 @@ Build( os.environ[ 'CASUAL_THIRDPARTY'] + '/makefile.cmk')
 
 Build('middleware/makefile.cmk')
 Build('test/makefile.cmk')
-Build('console/makefile.cmk')

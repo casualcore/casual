@@ -4,6 +4,9 @@
 #
 
 # Maybe?
+
+print("Installing casual admin console backend")
+
 import os
 from shutil import copytree, rmtree, copyfile
 import subprocess
@@ -23,14 +26,14 @@ server_dest = console_home + "/server"
 
 
 
-client_src =  console_build_home + "/client/dist"
-client_dest = console_home + "/client"
+#client_src =  console_build_home + "/client/dist"
+#client_dest = console_home + "/client"
 
-if os.path.exists(client_dest):
-  rmtree(client_dest)
+#if os.path.exists(client_dest):
+#  rmtree(client_dest)
 
-print("Copying console frontend client")
-copytree(client_src, client_dest)
+#print("Copying console frontend client")
+#copytree(client_src, client_dest)
 
 nginx_src =  console_build_home + "/nginx"
 nginx_dest = os.getenv("CASUAL_HOME", "/tmp/casual/build") + "/nginx/conf"

@@ -206,7 +206,7 @@ umask 000
 cd /git/casual/console/client
 npm i
 npm run build
-zip -q -r casual-web-console.zip dist
+zip -q -r casual-console-client.zip dist
 chmod a+w -R .
 '''
 
@@ -252,11 +252,11 @@ def build( name, image, content)
    def current_dir = pwd()
    writeFile file: 'builder.sh', text: content
 
-   //sh """
-   //chmod +x builder.sh
-   //docker pull $image
-   //docker run --rm -v $current_dir:/git/casual:Z $image /git/casual/builder.sh
-   //"""
+   sh """
+   chmod +x builder.sh
+   docker pull $image
+   docker run --rm -v $current_dir:/git/casual:Z $image /git/casual/builder.sh
+   """
 }
 
 try
@@ -320,49 +320,49 @@ try
    )    
    
    parallel(
-      //"suse" :
-      //{
-      //   node( "cplusplus" && "suse")
-      //   {
-      //      try
-      //      { 
-//
-      //         deleteDir()
-//
-      //         stage( "checkout repos")
-      //         {
-//
-      //            dir("casual-thirdparty")
-      //            {
-      //               // casual-thirdparty
-      //               git branch: 'master', url: 'https://bitbucket.org/casualcore/casual-thirdparty.git'
-      //            }
-//
-      //            dir("casual")
-      //            {
-      //               // casual
-      //               checkout scm
-      //            }
-      //         }
-//
-      //         stage('Build backend - Unittest - Suse')
-      //         {                  
-      //            unstash 'frontend'
-      //            
-      //            build( 'susecompile', 'casual/suse-builder'.concat(':').concat(retrieve_major_minor()), //backend_builder_suse)
-//
-      //            archive includes: '**/casual-middleware*.rpm'
-      //            
-      //            stash includes: '**/casual-middleware*.rpm', name: 'suse_backend'
-      //         }
-      //      }
-      //      catch (Exception e)
-      //      {
-      //         archive includes: '**/casual.log'
-      //         throw e
-      //      }
-      //   }
-      //},
+      "suse" :
+      {
+         node( "cplusplus" && "suse")
+         {
+            try
+            { 
+
+             deleteDir()
+
+             stage( "checkout repos")
+             {
+
+                dir("casual-thirdparty")
+                {
+                   // casual-thirdparty
+                   git branch: 'master', url: 'https://bitbucket.org/casualcore/casual-thirdparty.git'
+                }
+
+                dir("casual")
+                {
+                   // casual
+                   checkout scm
+                }
+             }
+
+             stage('Build backend - Unittest - Suse')
+             {                  
+                unstash 'frontend'
+                
+                build( 'susecompile', 'casual/suse-builder'.concat(':').concat(retrieve_major_minor()), backend_builder_suse)
+
+                  archive includes: '**/casual-middleware*.rpm'
+                  
+                  stash includes: '**/casual-middleware*.rpm', name: 'suse_backend'
+               }
+            }
+            catch (Exception e)
+            {
+               archive includes: '**/casual.log'
+               throw e
+            }
+         }
+      },
       "centos" :
       {
          node( "cplusplus" && "centos")
