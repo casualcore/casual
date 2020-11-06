@@ -1,0 +1,19 @@
+#!/bin/bash
+
+
+
+python ${CASUAL_HOME}/console/server/run.py >> ${CASUAL_DOMAIN_HOME}/console.log 2>> ${CASUAL_DOMAIN_HOME}/error.log &
+#python ${CASUAL_BUILD_HOME}/console/run.py &
+console=$!
+
+function kill_console()
+{
+  kill -s SIGKILL $console
+  exit 0
+}
+
+trap kill_console TERM
+trap kill_console INT
+
+
+wait "$console"

@@ -1,0 +1,80 @@
+.scroll-to-top {
+  position: fixed;
+  right: 35px;
+  bottom: 35px;
+  .scroll-to-top-button {
+    font-size: 25px;
+    padding: 3px 10px;
+    background-color: $color-theme-tint-3;
+    color: $color-light-tint-1;
+    border: none;
+  }
+}
+
+.tabs {
+  display: flex;
+  //margin: 10px 0 5px 0;
+  padding-bottom: -1px;
+  border-bottom: 1px solid $color-light-tint-2;
+  box-sizing: border-box;
+
+  .tab {
+    color: inherit;
+    text-decoration: none;
+    position: relative;
+    display: inline-block;
+    margin-right: 30px;
+    padding: 0;
+    &:hover {
+      cursor: pointer;
+    }
+  }
+}
+
+#loader {
+  display: block;
+  //text-align: center;
+  width: 140px;
+  text-align: center;
+  img {
+    width: 140px;
+  }
+  span {
+    display: block;
+    text-align: center;
+  }
+}
+@keyframes rotating {
+  from {
+    transform: rotate(0deg);
+    -o-transform: rotate(0deg);
+    -ms-transform: rotate(0deg);
+    -moz-transform: rotate(0deg);
+    -webkit-transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+    -o-transform: rotate(360deg);
+    -ms-transform: rotate(360deg);
+    -moz-transform: rotate(360deg);
+    -webkit-transform: rotate(360deg);
+  }
+}
+@-webkit-keyframes rotating {
+  from {
+    transform: rotate(0deg);
+    -webkit-transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+    -webkit-transform: rotate(360deg);
+  }
+}
+.rotating {
+  -webkit-animation: rotating 1.5s ease-in-out infinite;
+  -moz-animation: rotating 1.5s ease-in-out infinite;
+  -ms-animation: rotating 1.5s ease-in-out infinite;
+  -o-animation: rotating 1.5s ease-in-out infinite;
+  animation: rotating 1.5s ease-in-out infinite;
+  animation-direction: alternate;
+}

@@ -151,6 +151,7 @@ cd $CASUAL_REPO_ROOT && \
       casual-make --no-colors link && \
       casual-make --no-colors install && \
       cd $CASUAL_REPO_ROOT && python thirdparty/setup/install_nginx.py && \
+      cd $CASUAL_REPO_ROOT && python console/setup/install_console.py && \
       cp $CASUAL_REPO_ROOT/package/casual-middleware.spec /root/rpmbuild/SPECS/. && \
       rpmbuild -bb --noclean --define "casual_version $CASUAL_VERSION" --define "casual_release $CASUAL_RELEASE" --define "distribution $DISTRIBUTION" /root/rpmbuild/SPECS/casual-middleware.spec  && \
       cp /root/rpmbuild/RPMS/x86_64/casual-middleware*.rpm $CASUAL_REPO_ROOT/. && \
@@ -202,12 +203,10 @@ performCoverageMeasuring()
 // Script for the frontend builder
 def frontend_builder = '''#! /bin/sh
 umask 000
-cd /git/casual/webapp
-bower update --allow-root
-touch bower_components/app-route/app-location.html
-polymer build
-cd ..
-zip -q -r casual-webapp.zip webapp
+cd /git/casual/console/client
+npm i
+npm run build
+zip -q -r casual-web-console.zip dist
 chmod a+w -R .
 '''
 
@@ -253,11 +252,11 @@ def build( name, image, content)
    def current_dir = pwd()
    writeFile file: 'builder.sh', text: content
 
-   sh """
-   chmod +x builder.sh
-   docker pull $image
-   docker run --rm -v $current_dir:/git/casual:Z $image /git/casual/builder.sh
-   """
+   //sh """
+   //chmod +x builder.sh
+   //docker pull $image
+   //docker run --rm -v $current_dir:/git/casual:Z $image /git/casual/builder.sh
+   //"""
 }
 
 try
@@ -277,7 +276,7 @@ try
                
                build( 'casualfrontend', 'casual/frontend-builder', frontend_builder)
 
-               stash includes: '**/casual-webapp.zip', name: 'frontend'
+               stash includes: '**/casual-console-client.zip', name: 'frontend'
             }
          }
       },
@@ -321,49 +320,49 @@ try
    )    
    
    parallel(
-      "suse" :
-      {
-         node( "cplusplus" && "suse")
-         {
-            try
-            { 
-
-               deleteDir()
-
-               stage( "checkout repos")
-               {
-
-                  dir("casual-thirdparty")
-                  {
-                     // casual-thirdparty
-                     git branch: 'master', url: 'https://bitbucket.org/casualcore/casual-thirdparty.git'
-                  }
-
-                  dir("casual")
-                  {
-                     // casual
-                     checkout scm
-                  }
-               }
-
-               stage('Build backend - Unittest - Suse')
-               {                  
-                  unstash 'frontend'
-                  
-                  build( 'susecompile', 'casual/suse-builder'.concat(':').concat(retrieve_major_minor()), backend_builder_suse)
-
-                  archive includes: '**/casual-middleware*.rpm'
-                  
-                  stash includes: '**/casual-middleware*.rpm', name: 'suse_backend'
-               }
-            }
-            catch (Exception e)
-            {
-               archive includes: '**/casual.log'
-               throw e
-            }
-         }
-      },
+      //"suse" :
+      //{
+      //   node( "cplusplus" && "suse")
+      //   {
+      //      try
+      //      { 
+//
+      //         deleteDir()
+//
+      //         stage( "checkout repos")
+      //         {
+//
+      //            dir("casual-thirdparty")
+      //            {
+      //               // casual-thirdparty
+      //               git branch: 'master', url: 'https://bitbucket.org/casualcore/casual-thirdparty.git'
+      //            }
+//
+      //            dir("casual")
+      //            {
+      //               // casual
+      //               checkout scm
+      //            }
+      //         }
+//
+      //         stage('Build backend - Unittest - Suse')
+      //         {                  
+      //            unstash 'frontend'
+      //            
+      //            build( 'susecompile', 'casual/suse-builder'.concat(':').concat(retrieve_major_minor()), //backend_builder_suse)
+//
+      //            archive includes: '**/casual-middleware*.rpm'
+      //            
+      //            stash includes: '**/casual-middleware*.rpm', name: 'suse_backend'
+      //         }
+      //      }
+      //      catch (Exception e)
+      //      {
+      //         archive includes: '**/casual.log'
+      //         throw e
+      //      }
+      //   }
+      //},
       "centos" :
       {
          node( "cplusplus" && "centos")

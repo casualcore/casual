@@ -1,0 +1,57 @@
+.button.environment-variable-del {
+  //height: 100%;
+  color: $color-theme-tint-2;
+  padding: 0 5px;
+  background-color: transparent;
+  &:hover {
+    background-color: $color-light-tint-3;
+  }
+  span {
+    display: inline-block; 
+    font-size: 15pt;
+    height: 25px;
+    line-height: 24px;
+    padding:auto;
+  }
+}
+
+.environment-input {
+  position: relative;
+  left: 0;
+  height: 25px;
+  font-family: inherit;
+  box-sizing: border-box;
+
+  width: 95%;
+}
+.environment-list-header {
+  margin-bottom: 0.5em;
+  font-weight: bold;
+}
+.environment-list-item {
+  &:not(.last){
+    margin-bottom: 0.75em;
+  }
+}
+.environment-variable-save
+{
+  position: relative;
+  text-align: center;
+
+  div#info-text {
+      display: inline-block;
+      height: 100%;
+      //line-height: 35px;
+      span {
+        display: block;
+        height: 100%;
+      }
+  }
+}
+.submit-b {
+  align-items: left;
+}
+.button.env-b {
+  //height: 100px;
+  
+}

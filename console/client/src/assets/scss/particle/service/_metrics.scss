@@ -1,0 +1,64 @@
+.service-metrics {
+  position: relative;
+  display: inline-block;
+  flex-direction: column;
+  border: 1px solid $color-light-tint-1;
+  box-shadow: 0 0 5px $color-light-tint-1;
+  padding: 2px 5px;
+  margin: 10px 0;
+}
+.metric {
+  min-width: $submetric-info-list-width;
+  //width: 100%;
+  margin-top: 15px;
+}
+.sub-metrics {
+  display: flex;
+  flex-direction: column;
+  flex-wrap: wrap;
+  .sub-metric {
+    padding: 2px 4px;
+    border: 1px solid $color-light-tint-1;
+    margin-right: 10px;
+    .sub-metric-head {
+      font-size: 11pt;
+      font-weight: bold;
+      border-bottom: 1px solid $color-light-tint-1;
+      padding-bottom: 3px;
+    }
+    .sub-metric-body {
+      display: flex;
+
+      //flex-grow: 100%;
+      flex-wrap: wrap;
+
+      padding: 3px 0;
+      //width: 100%;
+    }
+  }
+}
+
+
+.metric-info-list {
+  min-width: $submetric-info-list-width;
+  .metric-info {
+    display: flex;
+    //min-width: 350px;
+    //width: 100%;
+    justify-content: space-between;
+  }
+}
+.shared-metrics {
+  //border: 1px solid $color-light-tint-1;
+  position: relative;
+  display: inline-block;
+
+  padding: 2px 4px;
+}
+.metrics-col {
+  display: flex;
+  flex-direction: column;
+  //width: 100%;
+  justify-content: center;
+  flex: 1;
+}

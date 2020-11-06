@@ -1,0 +1,29 @@
+#service-filters {
+  .select {
+    select {
+      padding: 3px 15px;
+      border:none;
+      border-radius: 0;
+      border-bottom: 1px solid $color-light-tint-2;
+      &:hover {
+        cursor: pointer;
+      }
+    }
+  }
+
+  ul#filter-page {
+    display: inline-block;
+    li {
+      
+      display: inline-block;
+      &:hover {
+        cursor: pointer;
+      }
+    }
+  }
+
+  .button {
+    margin-left: 10px;
+  }
+}
+

@@ -1,0 +1,23 @@
+#!/bin/bash
+
+
+
+#mkdir -p ${CASUAL_BUILD_HOME}/console/server/log
+
+#python ${CASUAL_BUILD_HOME}/console/server/run.py >> ${CASUAL_DOMAIN_HOME}/console.log 2>> ${CASUAL_DOMAIN_HOME}/error.log &
+CONSOLE_CONFIG=app.config.config.DevelopmentConfig FLASK_APP=app:create_app FLASK_ENV=development flask run &
+
+console=$!
+
+function kill_console() {
+  echo "killing console"
+  pkill -9 -P $console
+  
+  exit 0
+}
+echo "$console"
+
+trap kill_console TERM
+trap kill_console INT
+
+wait "$console"

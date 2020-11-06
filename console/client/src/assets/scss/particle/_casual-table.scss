@@ -1,0 +1,30 @@
+.casual-table {
+  width: 100%;
+  border-collapse: collapse;
+  .casual-table-head {
+    border-bottom: 1px solid $color-light-tint-1;
+    font-size: 12pt;
+    padding: 3px 2px;
+    font-weight: bold;
+    text-align: left;
+  }
+
+  .casual-table-item {
+    text-align: left;
+    border: none;
+    border: none;
+    margin: none;
+    font-size: 9pt;
+    padding: 4px;
+    &:nth-child(even) {
+      background-color: $color-light-tint-1;
+    }
+    td {
+      padding: 4px;
+
+    }
+    &.dark{
+      background-color: $color-light-tint-1;
+    }
+  }
+}

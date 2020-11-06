@@ -1,0 +1,25 @@
+$color-theme-tint-1: #292e34;
+$color-theme-tint-2: #1d2124;
+$color-theme-tint-3: #3a424a;
+
+$color-dark-black: #000;
+$color-green-tint-1: #0f6674;
+$color-green-tint-2: #0f6674;
+
+$color-light-background: #f1f1f1;
+$color-light-tint-1: #f6f6f6;
+$color-light-tint-2: #adadad;
+$color-light-tint-3: #f0f0f0;
+
+
+//$color-theme-tint-1: #00283d;
+//$color-theme-tint-2: #046670;
+//$color-theme-tint-3: #3f8a91;
+
+$gradient-topnav-1: linear-gradient($color-theme-tint-2, black);
+
+:export {
+  theme1: $color-theme-tint-1;
+  theme2: $color-theme-tint-2;
+  theme3: $color-theme-tint-3;
+}

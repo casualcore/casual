@@ -1,0 +1,122 @@
+.particle {
+  padding: 15px 10px;
+  position: relative;
+
+  .particle-head {
+    position: relative;
+    > span {
+      font-size: 20pt;
+      font-weight: bold;
+    }
+  }
+  .particle-body {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+  }
+
+  ul.particle-list {
+    li.particle-list-item {
+      list-style: none;
+      display: flex;
+      justify-content: space-between;
+    }
+  }
+}
+a.particle-link,
+a:visited {
+  color: $color-green-tint-1;
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+.card-stack {
+  display: flex;
+  flex-direction: column;
+  &.child {
+    margin-left: 20px;
+    font-size: 12pt;
+    .card-head {
+    font-size: 12pt;
+
+    }
+  }
+}
+
+.card {
+  position: relative;
+  flex-direction: column;
+  border: 1px solid $color-light-tint-1;
+  box-shadow: 0 0 10px $color-light-tint-2;
+  padding: 7px 5px 10px 5px;
+  margin: 10px 0;
+  background-color: white;
+  font-size: 11pt;
+
+  &.slim {
+    margin: 3px 0;
+    .card-body {
+      padding-bottom: 10px;
+    }
+  }
+  &--hori {
+    flex-direction: row;
+  }
+
+  .card-head {
+    font-size: 15pt;
+    font-weight: bold;
+    margin-bottom: 5px;
+    border-bottom: 1px solid $color-light-tint-1;
+
+    &.small {
+      font-size: 13pt;
+    }
+  }
+}
+.key-value-item {
+  display: flex;
+  width: auto;
+  span:first-child {
+
+    font-weight: bold;
+    width: 200px;
+    text-align: right;
+    margin-right: 15px;
+  }
+  span:last-child {
+    width: 100%;
+    text-align: left;
+  }
+
+
+  justify-content: space-between;
+  &.odd {
+    background-color: $color-light-tint-1;
+  }
+  &.wide {
+    span:last-child {
+      max-width: 100%;
+      text-align: left;
+    }
+  }
+}
+.card-body {
+  .card-sub-body-head {
+    font-weight: bold;
+    font-size: 14pt;
+  }
+  .card-sub-body {
+    padding-left: 3em;
+  }
+}
+
+.card-foot {
+  margin-top: 1em;
+}
+
+li.odd {
+  background-color: $color-light-tint-1;
+}

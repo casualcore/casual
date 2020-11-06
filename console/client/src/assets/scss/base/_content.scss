@@ -1,0 +1,26 @@
+.content {
+  position: relative;
+  height: 100%;
+  display: block;
+}
+
+#casual-content-wrapper {
+  position: relative;
+  z-index: 1;
+  padding-top: $topnav-bar-height;
+  padding-left: $sidenav-bar-width;
+  // top: $topnav-bar-height;
+  // left: $sidenav-bar-width;
+  // width: calc(100% - #{$sidenav-bar-width});
+
+  transition: $transition-time-standard ease;
+  &.collapsed {
+    //left: $sidenav-bar-width--collapsed;
+    //width: calc(100% - #{$sidenav-bar-width--collapsed});
+    padding-left: $sidenav-bar-width--collapsed;
+  }
+
+  #casual-content {
+    padding: 10px;
+  }
+}
