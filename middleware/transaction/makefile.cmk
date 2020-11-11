@@ -65,7 +65,7 @@ target = LinkLibrary( 'bin/casual-transaction-admin-cli',
     [ 
         manager_archive,
         'casual-cli',
-        'casual-domain-pending-message',
+        'casual-domain-utility',
         'casual-serviceframework', 
         'casual-common',
     ])

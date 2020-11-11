@@ -40,7 +40,7 @@ service_cli = LinkLibrary( 'bin/casual-tools-service-cli',
         'casual-service-admin-api',
         'casual-common', 
         'casual-serviceframework',
-        'casual-domain-pending-message',
+        'casual-domain-utility',
         'casual-xatmi',
     ])
 
