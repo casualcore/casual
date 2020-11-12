@@ -1,10 +1,16 @@
 <template>
   <div id="sidenav-nav" class="collapsable" :class="{ collapsed: collapsed }">
-    <div class="logo">
+
+
+    <!--div id="logo">
+      <b>Casual Console</b>
+      <p id="version">Casual version: {{ version }}</p>
+    </div-->
+    <!--div class="logo">
       <router-link :to="{ name: 'Console' }"
         ><span id="logo-icon"></span
       ></router-link>
-    </div>
+    </div-->
     <ul id="sidenav-list">
       <sidenav-list-item itemlink="Groups" itemid="groups"
         >Groups</sidenav-list-item
@@ -26,7 +32,7 @@
       >
     </ul>
 
-    <button class="button collapse " @click="collapse">
+    <button class="button--collapse" @click="collapse" >
       <span
         class="collapse-icon collapsable"
         :class="{ collapsed: collapsed }"

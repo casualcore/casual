@@ -19,10 +19,20 @@ const routes: Array<RouteRecordRaw> = [
       import(/* webpackChunkName: "about" */ "@/views/Groups.vue")
   },
   {
+    path: "/groups/group",
+    name: "Group",
+    component: () => import("@/views/Group.vue")
+  },
+  {
     path: "/servers",
     name: "Servers",
     component: () =>
       import(/* webpackChunkName: "about" */ "@/views/Servers.vue")
+  },
+  {
+    path: "/servers/server",
+    name: "Server",
+    component: () => import("@/views/Server.vue")
   },
   {
     path: "/executables",
@@ -31,10 +41,22 @@ const routes: Array<RouteRecordRaw> = [
       import(/* webpackChunkName: "about" */ "@/views/Executables.vue")
   },
   {
+    path: "/executables/executable",
+    name: "Executable",
+    component: () =>
+      import(/* webpackChunkName: "about" */ "@/views/Executable.vue")
+  },
+  {
     path: "/services",
     name: "Services",
     component: () =>
       import(/* webpackChunkName: "about" */ "@/views/Services.vue")
+  },
+  {
+    path: "/services/service",
+    name: "Service",
+    component: () =>
+      import(/* webpackChunkName: "about" */ "@/views/Service.vue")
   },
   {
     path: "/gateways",

@@ -1,15 +1,15 @@
 <template>
   <div id="casual">
-    <navigation
-      @collapse="collapse"
-      :collapsed="collapsed"
-      class="casual-navigation"
-    ></navigation>
     <div id="casual-content-wrapper" :class="{ collapsed: collapsed }">
       <div id="casual-content">
         <router-view />
       </div>
     </div>
+    <navigation
+      @collapse="collapse"
+      :collapsed="collapsed"
+      class="casual-navigation"
+    ></navigation>
   </div>
 </template>
 <script lang="ts">

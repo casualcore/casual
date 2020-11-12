@@ -1,6 +1,6 @@
 <template>
-  <div>
-    <div class="card">
+  <div class="card-deck">
+    <div class="card" v-for="x in 10" :key="x">
       Casual console
     </div>
   </div>

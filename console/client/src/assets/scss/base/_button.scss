@@ -1,15 +1,19 @@
 .button {
-  background-color: $color-theme-tint-1;
+  background-color: $color-white;
   display: inline-block;
   border: none;
-  padding: 5px 15px;
-  // border-radius: 2px;
-  color: $color-light-tint-1;
+  min-width: 135px;
+  box-shadow: 0 2px 2px  rgba(0,0,0,0.15);
+  border-radius: 2px;
+  padding: 5px 10px;
+  font-size: 14pt;
+  border-radius: 1px;
+  color: $color-text-tint-1;
   position: relative;
-  margin: 0.25em 0;
+  //margin: 0.25em 3px;
   &:hover {
-    background-color: $color-theme-tint-2;
-    color: $color-light-tint-2;
+    background-color: $color-theme-tint-1;
+    color: $color-white;
     cursor: pointer;
   }
   &.right {
@@ -78,4 +82,11 @@
 .button-group {
   display: flex;
  width: auto; 
+}
+
+
+.casual-button-group {
+    .button {
+        margin: 0 2px;
+    }
 }

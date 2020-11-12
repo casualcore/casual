@@ -1,6 +1,6 @@
 <template>
   <div>
-    <pre class="card"
+    <pre class="float"
       >{{ gateway }}
     </pre>
   </div>

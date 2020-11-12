@@ -2,6 +2,10 @@
   font-family: "Source Code Pro";
   src: url("~@/assets/font/SourceCodePro-Regular.ttf") format("woff");
 }
+@font-face {
+  font-family: "Montserrat";
+  src: url("~@/assets/font/montserrat/Montserrat-Regular.ttf") format("woff");
+}
 
 //@import url('https://fonts.googleapis.com/css?family=Source+Code+Pro&display=swap');
 
@@ -11,3 +15,8 @@ p {
 
 }
 
+div.big {
+    font-size: 18pt;
+    display: inline-block;
+
+}

@@ -1,5 +1,12 @@
 <template>
   <div id="topnav" :class="{ collapsed: collapsed }">
+
+    <div class="logo">
+      <router-link :to="{ name: 'Console' }"
+        ><span id="logo-icon"></span
+      ></router-link>
+    </div>
+    
     <div id="console-head-line">
       <b>Casual Console</b>
       <p id="version">Casual version: {{ version }}</p>

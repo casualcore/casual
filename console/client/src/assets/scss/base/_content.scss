@@ -6,7 +6,6 @@
 
 #casual-content-wrapper {
   position: relative;
-  z-index: 1;
   padding-top: $topnav-bar-height;
   padding-left: $sidenav-bar-width;
   // top: $topnav-bar-height;
@@ -21,6 +20,6 @@
   }
 
   #casual-content {
-    padding: 10px;
+    padding: 20px;
   }
 }

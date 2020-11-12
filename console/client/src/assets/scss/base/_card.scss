@@ -1,0 +1,80 @@
+.card-deck {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    &.horizontal {
+        flex-direction: column;
+        .card {
+            margin-bottom: 0;
+        }
+    }
+    &.sm {
+        .card {
+            padding: 3px;
+            min-height: 25px;
+            width: 135px;
+            //margin: 3px 5px 3px 0;
+            &.value-card {
+                //min-height: 35px;
+                .value {
+                    font-size: 14pt;
+                }
+                .description {
+                    font-size: 11pt;
+                }
+            }
+        }
+    }
+}
+.card {
+    @extend .float;
+    width: 417px;
+    //display: flex;
+    //flex-direction: column;
+    //margin: 5px 8px 5px 0;
+    padding: 5px;
+    position: relative;
+    align-content: center;
+    align-self: stretch;
+
+    .card-head {
+        font-size: 16pt;
+        font-weight: bold;
+        padding-top: 0;
+        margin-bottom: 5px;
+        border-bottom: 1px solid $color-theme-tint-4;
+
+        &.small {
+            font-size: 13pt;
+        }
+    }
+
+    &.value-card {
+        text-align: right;
+        min-height: 85px;
+        position: relative;
+        background-color: $color-theme-tint-1;
+        color: $color-text-tint-2;
+        padding: 10px;
+        
+        //background: linear-gradient($color-theme-tint-1, $color-theme-tint-4,$color-theme-tint-1);
+        .value {
+            position: relative;
+            font-size: 25pt;
+            //font-weight: bold;
+        }
+        .description {
+            font-size: 13pt;
+            //position: absolute;
+            //right: 10px;
+            bottom: 25px;
+        }
+        &.sm {
+            height: 65px;
+            .description {
+                bottom: 10px;
+            }
+        }
+    }
+}

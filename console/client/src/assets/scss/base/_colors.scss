@@ -1,16 +1,50 @@
-$color-theme-tint-1: #292e34;
-$color-theme-tint-2: #1d2124;
-$color-theme-tint-3: #3a424a;
+//$color-theme-tint-1: #292e34;
+//$color-theme-tint-1: #24262d;
+//$color-theme-tint-7: #2e2e31;
+//$color-theme-tint-6: #0F1112;
+//$color-theme-tint-2: #a8adb3;
+//$color-theme-tint-3: rgba(60, 62, 68, 0.5);
+//$color-theme-tint-4: #d6d690;
+$color-theme-tint-1: #24262d;
+$color-theme-tint-2: #333333;
+$color-theme-tint-3: #f7f7f7;
+$color-theme-tint-4: #bbbbb5;
+$color-theme-tint-5: #919191;
+$color-theme-tint-6: #e6e6e6;
+$color-theme-tint-7: #2e2e31;
+
+
+
+
+$color-accent-tint-1: #e0ac00;
+$color-accent-tint-2: #312f29;
+
+//$color-theme-tint-1: #2C3531;
+//$color-theme-tint-2: #116466;
+//$color-theme-tint-3: #d4db95;
+//$color-theme-tint-4: #d7dbb3;
 
 $color-dark-black: #000;
-$color-green-tint-1: #0f6674;
+$color-green-tint-1: #3BBA9C;
 $color-green-tint-2: #0f6674;
+$color-green-tint-3: #10a567;
 
-$color-light-background: #f1f1f1;
-$color-light-tint-1: #f6f6f6;
+$color-ok: #10a567;
+$color-warning: #9c1414;
+$color-white: #ffffff;
+
+$color-light-background: #d3d3d3;
+$color-light-tint-1: #a8adb3;
 $color-light-tint-2: #adadad;
 $color-light-tint-3: #f0f0f0;
+$color-light-tint-4: rgba(103, 106, 116, 0.5);;
 
+$color-background:$color-theme-tint-6;
+$color-background-sidenav:$color-theme-tint-1;
+$color-background-topnav:$color-theme-tint-1;
+
+$color-text-tint-1:$color-theme-tint-2;
+$color-text-tint-2:$color-theme-tint-6;
 
 //$color-theme-tint-1: #00283d;
 //$color-theme-tint-2: #046670;

@@ -6,10 +6,13 @@
     "serve": "vue-cli-service serve",
     "build": "vue-cli-service build",
     "test:unit": "vue-cli-service test:unit",
-    "lint": "vue-cli-service lint"
+    "lint": "vue-cli-service lint",
+    "dev": "npm run serve -- --port 8085"
   },
   "dependencies": {
+    "@types/chart.js": "^2.9.27",
     "axios": "^0.21.0",
+    "chart.js": "^2.9.4",
     "core-js": "^3.6.5",
     "vue": "^3.0.0",
     "vue-router": "^4.0.0-0",

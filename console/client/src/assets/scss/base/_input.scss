@@ -1,0 +1,57 @@
+.casual-input {
+    position: relative;
+    display: inline-block;
+    
+    vertical-align: middle;
+    &.right {
+        float: right;
+        
+        .input-control {
+            margin-left: 10px;
+        }
+    }
+    .clear-input {
+        position: absolute;
+        right: 10;
+
+    }
+    .input-control {
+        input {
+            position: relative;
+            background: none;
+            border: none;
+            padding: 5px;
+            font-size: 13pt;
+            width: 90%;
+           //margin-right: 25px;
+            &:focus {
+                outline: none;
+            }
+        }
+        padding: 3px;
+        display: inline-block;
+        width: 265px;
+        background-color: $color-theme-tint-6;
+        border-radius: 2px;
+
+        &>button {
+            position: absolute;
+            right: 4px;
+            top: 25%;
+            background: none;
+            font-size: 14pt;
+            color: rgba(0,0,0,0.4);
+            border: none;
+            float: right;
+            clear: both;
+            &:hover {
+                cursor: pointer;
+            }
+            &:focus {
+                outline: none;
+            }
+        }
+    }
+
+
+}

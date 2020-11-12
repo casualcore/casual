@@ -1,5 +1,3 @@
-const path = require('path')
-
 module.exports = {
   devServer: {
     proxy: {
@@ -7,5 +5,5 @@ module.exports = {
         target: "http://localhost:5000"
       }
     }
-  },
+  }
 };

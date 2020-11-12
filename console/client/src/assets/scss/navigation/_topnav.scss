@@ -1,48 +1,67 @@
 #topnav {
   top: 0;
   display: flex;
+  z-index:1000;
 //  overflow: hidden;
   justify-content: space-between;
   position: fixed;
-  right:0;
-  width: calc(100% - #{$sidenav-bar-width});
+  //float: right;
+  //right:0;
+  width: 100%;
+  //width: calc(100% - #{$sidenav-bar-width});
   height: $topnav-bar-height;
   //background-image: $gradient-topnav-1;
-  border-bottom: 2px solid $color-light-tint-2;
-  box-shadow: 0 0 6px 0 $color-light-tint-2;
-  padding: 0 1em;
-  color: $color-theme-tint-1;
+  //border-bottom: 2px solid $color-theme-tint-1;
+  box-shadow: 0 0 3px 0 $color-theme-tint-2;
+  padding-right: 1em;
+  color: $color-accent-tint-1;
   box-sizing: border-box;
   align-items: center;
-  z-index: 10;
-  transition: width $transition-time-standard ease-out;
-  background-color: white;
-
-  .logo {
-    display: inline-block;
-    z-index: 100;
-    &:hover {
-      cursor: pointer;
+  //transition: width $transition-time-standard ease-out;
+  background-color: $color-background-topnav;
+  
+    #console-head-line {
+        #version {
+            font-size:8pt;
+            margin-right: 2em;
+        }
     }
-    img {
-      height: $topnav-bar-height;
-      //filter: invert(100%);
+    
+    .logout {
+        text-decoration: none;
+        font-weight: bold;
     }
-  }
-  #console-head-line {
-    #version {
-      font-size:8pt;
-      margin-right: 2em;
+    
+    &.collapsed {
+       // transition: width $transition-time-standard ease-out;
+        .logo {
+            width: $sidenav-bar-width--collapsed; 
+            span {
+                width: $sidenav-bar-width--collapsed; 
+            }
+        }
     }
-  }
+    
+}
 
-  .logout {
-    text-decoration: none;
-    font-weight: bold;
-  }
-
-  &.collapsed {
-    width: calc(100% - #{$sidenav-bar-width--collapsed}); 
-  }
-
+.logo {
+    width: $sidenav-bar-width;
+    background-color: $color-accent-tint-1;
+    transition: width $transition-time-standard ease-out;
+    span {
+        transition: width $transition-time-standard ease-out;
+        //transition: background-image $transition-time-standard ease;
+        display: inline-block;
+        background-size: contain;
+        background-repeat: no-repeat;
+        background-position: center;
+        width: $sidenav-bar-width;
+        height: $topnav-bar-height;
+        //height: 90px;
+        &#logo-icon {
+            background-image: url("~@/assets/img/casual_symbol_BW.svg");
+            //background-image: url("~@/assets/img/casual_vertical_BW.svg");
+        }
+    }
+    
 }

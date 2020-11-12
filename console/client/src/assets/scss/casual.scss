@@ -6,10 +6,12 @@ html,
 body {
   margin: 0;
   padding: 0;
-  font-family: "Source Code Pro";
+  font-family: "Montserrat";
+  //font-family: monospace;
   width: 100%;
   height: 100%;
-  background-color: $color-light-background;
+  background-color: $color-background;
+  color:$color-text-tint-1;
  // overflow: auto;
 }
 
