@@ -35,61 +35,40 @@
       </div>
     </div>
     <div class="row">
-        <c-card-deck>
-          <div class="row">
-            <div class="col">
-              <c-card>
-                <template v-slot:content v-if="service.name">
-                  <div class="row" style="text-align: center">
-                    <div class="col col-4">
-                      <div style="font-size: 7pt;">Min</div>
-                      <div style="font-size: 11pt;">{{ metric.min }}</div>
-                    </div>
-                    <div class="col col-4">
-                      <div style="font-size: 7pt;">Average</div>
-                      <div style="font-size: 11pt;">{{ metric.avg }}</div>
-                    </div>
-                    <div class="col col-4">
-                      <div style="font-size: 7pt;">Max</div>
-                      <div style="font-size: 11pt;">{{ metric.max }}</div>
-                    </div>
+      <c-card-deck>
+
+        <div class="row">
+          <div class="col">
+            <c-card>
+             
+              <template v-slot:content v-if="service.name">
+                <div class="row mb-1" style="text-align: center">
+                  <div class="col col-4">
+                    <div style="font-size: 7pt;">Min</div>
+                    <div style="font-size: 11pt;">{{ metric.min }}</div>
                   </div>
-                </template>
-              </c-card>
-            </div>
-          </div>
-          <div class="row">
-            <div class="col">
-              <c-card>
-                <!--template v-slot:cardTop>
-              <div class="row p-1" style="text-align: center">
-                <div class="col-4">
-                  <div style="font-size: 7pt;">Min</div>
-                  <div style="font-size: 11pt;">{{ metric.min }}</div>
+                  <div class="col col-4">
+                    <div style="font-size: 7pt;">Average</div>
+                    <div style="font-size: 11pt;">{{ metric.avg }}</div>
+                  </div>
+                  <div class="col col-4">
+                    <div style="font-size: 7pt;">Max</div>
+                    <div style="font-size: 11pt;">{{ metric.max }}</div>
+                  </div>
                 </div>
-                <div class="col-4">
-                  <div style="font-size: 7pt;">Average</div>
-                  <div style="font-size: 11pt;">{{ metric.avg }}</div>
-                </div>
-                <div class="col-4">
-                  <div style="font-size: 7pt;">Max</div>
-                  <div style="font-size: 11pt;">{{ metric.max }}</div>
-                </div>
-              </div>
-            </template-->
-                <!--template v-slot:header><slot name="cardHead"></slot></template-->
-                <template v-slot:content v-if="service.name">
+                <div class="row">
                   <bar-chart
                     :c-id="cType"
                     :chart-data="chartMetric"
                     :key="chartMetric"
                   ></bar-chart>
-                </template>
-              </c-card>
-            </div>
+                </div>
+              </template>
+            </c-card>
           </div>
-        </c-card-deck>
-      </div>
+        </div>
+      </c-card-deck>
+    </div>
   </div>
 </template>
 <script lang="ts">

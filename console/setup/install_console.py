@@ -34,18 +34,33 @@ copyfile(nginx_src + "/web.console.conf", nginx_dest + "/web.console.conf")
 
 
 if os.path.exists(server_dest):
-  rmtree(server_dest)
-  
+    rmtree(server_dest)
+    print(server_dest + " deleted")
+    print(subprocess.check_output([
+    'ls', '-lart', '/opt/casual/console'
+    ]))
+      
+
+print("Copying server files")
 copytree(server_src, server_dest)
+print("Files copied")
+print(subprocess.check_output([
+'ls', '-lart', '/opt/casual/console'
+]))
 
-
-
+print("Change dir to server_dest: ", server_dest)
 os.chdir(server_dest)
+print("Current dir", os.getcwd())
+print("Create lib dir")
 os.mkdir(server_dest + "/lib")
+
+print(subprocess.check_output([
+'ls', '-lart', server_dest
+]))
 print("Installing python dependencies for admin console")
 print("Running pip install")
 print(subprocess.check_output([
-  'pip', 'install', '--target='+server_dest+'/lib', '-r', server_dest +'/requirements.txt'
+  'pip', 'install', '--no-cache-dir', '--target=./lib', '-r', './requirements.txt'
 ]))
 print("Installed")
 

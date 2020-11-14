@@ -1,8 +1,0 @@
-from casual.middleware.make.dsl import *
-
-
-console_app = ['app/__init__.py', 
-  'app/main.py'
-]
-
-Install(console_app, '$(CASUAL_HOME)/console')
