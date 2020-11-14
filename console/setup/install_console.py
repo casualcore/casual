@@ -41,7 +41,7 @@ copytree(server_src, server_dest)
 
 
 os.chdir(server_dest)
-os.makedir("lib")
+os.mkdir("lib")
 print("Installing python dependencies for admin console")
 print("Running pip install")
 print(subprocess.check_output([

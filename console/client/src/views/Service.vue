@@ -1,27 +1,76 @@
 <template>
   <div>
-      <div class="row">
-        <div class="big ptb-1" >{{ service.name }}</div>
+    <div class="row mb-2 ">
+      <div class="col ">
+        <div class="big ">{{ service.name }}</div>
       </div>
-    <c-button class="button" @clicked="resetMetrics">reset metrics</c-button>
-    <c-card-deck>
-      <service-dashboard
-        :service="service"
-        :metric="service.invoked"
-        cType="invoked"
-      >
-        <template v-slot:cardHead>Invoked</template>
-      </service-dashboard>
-    </c-card-deck>
-    <c-card-deck>
-      <service-dashboard
-        :service="service"
-        :metric="service.pending"
-        cType="pending"
-      >
-        <template v-slot:cardHead>Pending</template>
-      </service-dashboard>
-    </c-card-deck>
+      <div class="col ">
+        <c-button class="button" @clicked="resetMetrics"
+          >reset metrics</c-button
+        >
+      </div>
+    </div>
+    <div class="row">
+      <div class="col">
+        <c-card variant="" class="ptb-1 mb-1">
+            <template v-slot:header>Summary</template>
+          <template v-slot:content>
+            <div class="row">
+              <div class="col">Category</div>
+              <div class="col right">
+                <b>{{ service.category }}</b>
+              </div>
+            </div>
+            <div class="row">
+              <div class="col ">Last called</div>
+              <div class="col right">
+                <b>{{ lastCalled }}</b>
+              </div>
+            </div>
+            <div class="row">
+              <div class="col " >Parent Server</div>
+              <div class="col right">
+                <router-link class="casual-link"
+                  :to="{ name: 'Server', query: { alias: service.parent } }"
+                  >{{ service.parent }}</router-link
+                >
+              </div>
+            </div>
+          </template>
+        </c-card>
+      </div>
+      {{ service.metric }}
+    </div>
+    <div class="row">
+      <div class="col ">
+        <div class="big">
+          Invoked
+        </div>
+        <c-card-deck>
+          <service-dashboard
+            :service="service"
+            :metric="service.invoked"
+            cType="invoked"
+          >
+            <template v-slot:cardHead>Invoked</template>
+          </service-dashboard>
+        </c-card-deck>
+      </div>
+      <div class="col ">
+        <div class="big">
+          Pending
+        </div>
+        <c-card-deck>
+          <service-dashboard
+            :service="service"
+            :metric="service.pending"
+            cType="pending"
+          >
+            <template v-slot:cardHead>Pending</template>
+          </service-dashboard>
+        </c-card-deck>
+      </div>
+    </div>
   </div>
 </template>
 <script lang="ts">
@@ -37,7 +86,8 @@ export default defineComponent({
   components: {
     ServiceDashboard,
     CCardDeck,
-    CButton
+    CButton,
+    CCard
   },
   data() {
     return {
@@ -49,7 +99,16 @@ export default defineComponent({
   async created() {
     await this.getService();
   },
+  computed: {
+    lastCalled: function(): string {
+      let last = "";
+      if (this.service.last) {
+        last = this.service.last;
+      }
 
+      return last;
+    }
+  },
   methods: {
     getService: async function(): Promise<void> {
       try {

@@ -66,6 +66,15 @@ export class Service {
         this._category = v;
     }
 
+    
+    private _parent : string;
+    public get parent() : string {
+        return this._parent;
+    }
+    public set parent(v : string) {
+        this._parent = v;
+    }
+    
     private _called: number;
     public get called(): number {
         return this._called;
@@ -92,20 +101,33 @@ export class Service {
     public set pending(v: Metric) {
         this._pending = v;
     }
+    
+    private _last : string;
+    public get last() : string {
+        return this._last;
+    }
+    public set last(v : string) {
+        this._last = v;
+    }
+    
 
 
     constructor(
         name = "",
         cat = "",
         called = 0,
+        parent= "",
         inv = new Metric(),
-        pen = new Metric()
+        pen = new Metric(),
+        last = ""
     ) {
         this._name = name;
         this._category = cat;
+        this._parent = parent;
         this._called = called;
         this._invoked = inv;
         this._pending = pen;
+        this._last = last;
     }
 
 }

@@ -4,6 +4,7 @@ import casual.server.buffer as buffer
 import json
 import serverutil as server_util
 import serviceutil as service_util
+from datetime import datetime
 
 class CasualService(object):
 
@@ -83,6 +84,8 @@ class CasualService(object):
     def get_service_by_name(self, name):
         service = service_util.filter_servers_by_name(self.services,name)
 
+        service['parent'] = service_util.get_parent_server(service, self.servers)
+
         return service
     def get_gateways(self):
       return self.gateways_state
@@ -108,6 +111,9 @@ class CasualService(object):
 
     def _set_service_metrics(self):
         for service in self.services:
+            last = service.get('metric').get('last')
+            service['metric']['last'] = last / (1000*1000)
+
             for metric_type in ['invoked', 'pending']:
                 metric = service['metric'].get(metric_type)
                 min = metric['limit']['min'] / float(1000000)

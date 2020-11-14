@@ -1,7 +1,7 @@
 <template>
   <td>
     <template v-if="route">
-      <router-link class="casual-link" :to="{ name: route, query: query }"
+      <router-link class="casual-link" :to="{ name: route, query: query }" append
         ><slot></slot
       ></router-link>
     </template>

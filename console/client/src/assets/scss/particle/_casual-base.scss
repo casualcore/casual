@@ -45,28 +45,44 @@ a:visited {
 }
 
 .float {
+    box-shadow: 0 1px 4px 0 rgba(0, 0, 0, 0.1);
     //position: relative;
     background-color: $color-white;
     box-sizing: border-box;
     border-radius: 2px;
-    margin: 10px 4px 10px 0;
+    margin: 5px 4px 5px 0;
     //padding: 7px 7px 10px 7px;
-    box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.2);
 }
-.p-1 {
-    padding: 1em;
+.p {
+    &-1 {
+        padding: 1em;
+    }
+    &-2 {
+        padding: 2em;
+    }
+    &l-1 {
+        padding-left: 1em;
+    }
+
 }
+
+
 .ptb-1 {
     padding-top: 1em;
     padding-bottom: 1em;
-    
 }
 .w-100 {
     width: 100%;
     display: block;
 }
-
-
+.m {
+    &b-1 {
+        margin-bottom: 1em;
+    }
+    &b-2 {
+        margin-bottom: 2em;
+    }
+}
 .card-body {
     .card-sub-body-head {
         font-weight: bold;

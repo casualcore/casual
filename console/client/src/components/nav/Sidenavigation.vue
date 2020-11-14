@@ -51,7 +51,8 @@ export default defineComponent({
   methods: {
     collapse: function(): void {
       this.$emit("collapse");
-    }
+    },
+
   }
 });
 </script>

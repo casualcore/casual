@@ -1,28 +1,33 @@
 <template>
   <div>
-    <div class="float">
-      <div class="p-1">
-        <div class="big">Services </div>
-        <c-input class="right" placeholder="Filter" @changeInput="filter"> </c-input>
+    <div class="row">
+      <div class="col-12">
+        <div class="float">
+          <div class="p-1">
+            <div class="big">Services</div>
+            <c-input class="right" placeholder="Filter" @changeInput="filter">
+            </c-input>
+          </div>
+          <loading v-if="cservices.length == 0 && loading" />
+          <c-table :key="filteredServices">
+            <c-table-head :headitems="headitems" />
+            <c-table-body>
+              <c-table-row v-for="(service, index) in cservices" :key="index">
+                <c-table-cell route="Service" :query="{ name: service.name }">{{
+                  service.name
+                }}</c-table-cell>
+                <c-table-cell>{{ service.category }}</c-table-cell>
+                <c-table-cell>{{ service.called }}</c-table-cell>
+                <c-table-cell>{{ service.invoked.min }}</c-table-cell>
+                <c-table-cell>{{ service.invoked.max }}</c-table-cell>
+                <c-table-cell>{{ service.invoked.avg }}</c-table-cell>
+                <c-table-cell>{{ service.invoked.total }}</c-table-cell>
+                <c-table-cell>{{ service.pending.total }}</c-table-cell>
+              </c-table-row>
+            </c-table-body>
+          </c-table>
+        </div>
       </div>
-      <loading v-if="cservices.length == 0 && loading" />
-      <c-table :key="filteredServices">
-        <c-table-head :headitems="headitems" />
-        <c-table-body>
-          <c-table-row v-for="(service, index) in cservices" :key="index">
-            <c-table-cell route="Service" :query="{ name: service.name }">{{
-              service.name
-            }}</c-table-cell>
-            <c-table-cell>{{ service.category }}</c-table-cell>
-            <c-table-cell>{{ service.called }}</c-table-cell>
-            <c-table-cell>{{ service.invoked.min }}</c-table-cell>
-            <c-table-cell>{{ service.invoked.max }}</c-table-cell>
-            <c-table-cell>{{ service.invoked.avg }}</c-table-cell>
-            <c-table-cell>{{ service.invoked.total }}</c-table-cell>
-            <c-table-cell>{{ service.pending.total }}</c-table-cell>
-          </c-table-row>
-        </c-table-body>
-      </c-table>
     </div>
   </div>
 </template>
@@ -84,14 +89,14 @@ export default defineComponent({
       this.services = await ApiService.getAllServices();
     },
     filter: function(filter: string): void {
-    if (filter.length > 0) {
-      this.filteredServices = this.services.filter(service =>
-        service.name.includes(filter)
-      );
-      this.isFiltered = true;
-    } else {
-      this.isFiltered = false;
-    }
+      if (filter.length > 0) {
+        this.filteredServices = this.services.filter(service =>
+          service.name.includes(filter)
+        );
+        this.isFiltered = true;
+      } else {
+        this.isFiltered = false;
+      }
     }
   }
 });

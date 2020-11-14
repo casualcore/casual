@@ -13,10 +13,12 @@
         .card {
             padding: 3px;
             min-height: 25px;
-            width: 135px;
             //margin: 3px 5px 3px 0;
             &.value-card {
+                width: 206px;
                 //min-height: 35px;
+                //box-shadow: none;
+                //background-color: transparent;
                 .value {
                     font-size: 14pt;
                 }
@@ -29,21 +31,23 @@
 }
 .card {
     @extend .float;
+
+    background-color: #ffffff;
     width: 417px;
     //display: flex;
     //flex-direction: column;
     //margin: 5px 8px 5px 0;
     padding: 5px;
     position: relative;
-    align-content: center;
-    align-self: stretch;
+    // align-content: center;
+    // align-self: stretch;
 
     .card-head {
-        font-size: 16pt;
+        font-size: 14pt;
         font-weight: bold;
         padding-top: 0;
-        margin-bottom: 5px;
-        border-bottom: 1px solid $color-theme-tint-4;
+        margin-bottom: 10px;
+        //        border-bottom: 1px solid $color-accent-tint-1;
 
         &.small {
             font-size: 13pt;
@@ -54,10 +58,10 @@
         text-align: right;
         min-height: 85px;
         position: relative;
-        background-color: $color-theme-tint-1;
-        color: $color-text-tint-2;
+        //background-color: $color-theme-tint-1;
+        color: $color-text-tint-1;
         padding: 10px;
-        
+
         //background: linear-gradient($color-theme-tint-1, $color-theme-tint-4,$color-theme-tint-1);
         .value {
             position: relative;
@@ -76,5 +80,9 @@
                 bottom: 10px;
             }
         }
+    }
+
+    &.lg {
+        width: 650px;
     }
 }

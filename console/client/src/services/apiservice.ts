@@ -2,6 +2,7 @@ import http from "@/../http.config";
 import { Gateway, Group, Server, Service, Transaction } from "@/models";
 import { ServerExtended, ServiceExtended } from '@/models';
 import { Metric } from '@/models/service';
+import moment from "moment";
 
 class ApiServiceImpl {
     async getAllGroups(): Promise<Group[]> {
@@ -122,7 +123,7 @@ class ApiServiceImpl {
             const response = await http().get(`/api/v1/executables/get/executable?alias=${alias}`)
             const execState = response.data;
             execExt.alias = execState.alias;
-            
+
             return execState
         } catch (error) {
             console.log(error);
@@ -139,17 +140,23 @@ class ApiServiceImpl {
             serviceExt.called = met.invoked.count;
             serviceExt.name = s.name;
             serviceExt.category = s.category;
-            
-            
+            serviceExt.parent = s.parent;
+
             const invoked = new Metric(
                 met.invoked.min, met.invoked.max, met.invoked.avg, met.invoked.total
             )
-            
+
             const pending = new Metric(
                 met.pending.min, met.pending.max, met.pending.avg, met.pending.total
             )
             serviceExt.invoked = invoked;
             serviceExt.pending = pending;
+
+            let last = "-";
+            if (met.last > 0) {
+                last = moment(met.last).format("YYYY-MM-DD hh:mm:ss");
+            }
+            serviceExt.last = last;
 
             return serviceExt
         } catch (error) {

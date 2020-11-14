@@ -38,7 +38,6 @@ export default defineComponent({
         this.menuActive = false;
       } else {
         this.menuActive = true;
-        //this.refs['userMenu'].focus();
       }
     },
     run: function(): void {
