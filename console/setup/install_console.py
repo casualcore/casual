@@ -57,10 +57,10 @@ os.mkdir(server_dest + "/lib")
 print(subprocess.check_output([
 'ls', '-lart', server_dest
 ]))
-print("Installing python dependencies for admin console")
-print("Running pip install")
-print(subprocess.check_output([
-  'pip', 'install', '--no-cache-dir', '--target=./lib', '-r', './requirements.txt'
-]))
-print("Installed")
+#print("Installing python dependencies for admin console")
+#print("Running pip install")
+#print(subprocess.check_output([
+#  'pip', 'install', '--no-cache-dir', '--target=./lib', '-r', './requirements.txt'
+#]))
+#print("Installed")
 
