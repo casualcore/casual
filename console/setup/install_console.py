@@ -13,7 +13,7 @@ import subprocess
 print("Installing casual admin console backend")
 
 if not os.getenv("CASUAL_BUILD_HOME") or not os.getenv("CASUAL_HOME"):
-	raise SystemError, "CASUAL-environment need to be set"
+	raise SystemError("CASUAL-environment need to be set")
 
 
 

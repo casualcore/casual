@@ -131,8 +131,6 @@ export CASUAL_OPTIONAL_LIBRARY_PATHS="${CASUAL_THIRDPARTY}/googletest/bin"
 export CASUAL_HOME=/opt/casual
 export PATH=$CASUAL_BUILD_HOME/tools/bin:$CASUAL_TOOLS_HOME/bin:$CASUAL_HOME/bin:$PATH
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CASUAL_HOME/lib:$CASUAL_BUILD_HOME/configuration/bin:$CASUAL_BUILD_HOME/common/bin:$CASUAL_BUILD_HOME/serviceframework/bin:$CASUAL_BUILD_HOME/xatmi/bin:/usr/local/lib
-yum install -y epel-release
-yum install -y python-pip
 cd /git/casual 
 find . -name "*.gc*" -print | xargs rm > /dev/null
 find . -name "report.xml" -print | xargs rm > /dev/null
@@ -146,8 +144,8 @@ cd $CASUAL_REPO_ROOT && \
       casual-make --no-colors link && \
       casual-make --no-colors install && \
       cd $CASUAL_REPO_ROOT && python thirdparty/setup/install_nginx.py && \
-      cd $CASUAL_REPO_ROOT && python console/setup/install_console.py && \
-      cd $CASUAL_REPO_ROOT/console/server && pip install --no-cache-dir --target=${CASUAL_HOME}/console/server/lib -r ${CASUAL_HOME}/console/server/requirements.txt && \
+      cd $CASUAL_REPO_ROOT && python3 console/setup/install_console.py && \
+      cd $CASUAL_REPO_ROOT/console/server && pip3 install --no-cache-dir --target=${CASUAL_HOME}/console/server/lib -r ${CASUAL_HOME}/console/server/requirements.txt && \
       cp $CASUAL_REPO_ROOT/package/casual-middleware.spec /root/rpmbuild/SPECS/. && \
       rpmbuild -bb --noclean --define "casual_version $CASUAL_VERSION" --define "casual_release $CASUAL_RELEASE" --define "distribution $DISTRIBUTION" /root/rpmbuild/SPECS/casual-middleware.spec  && \
       cp /root/rpmbuild/RPMS/x86_64/casual-middleware*.rpm $CASUAL_REPO_ROOT/. && \
