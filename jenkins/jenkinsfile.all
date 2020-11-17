@@ -146,6 +146,7 @@ cd $CASUAL_REPO_ROOT && \
       casual-make --no-colors link && \
       casual-make --no-colors install && \
       cd $CASUAL_REPO_ROOT && python thirdparty/setup/install_nginx.py && \
+      cd $CASUAL_REPO_ROOT && python console/setup/install_console.py && \
       cd $CASUAL_REPO_ROOT/console/server && pip install --no-cache-dir --target=${CASUAL_HOME}/console/server/lib -r ${CASUAL_HOME}/console/server/requirements.txt && \
       cp $CASUAL_REPO_ROOT/package/casual-middleware.spec /root/rpmbuild/SPECS/. && \
       rpmbuild -bb --noclean --define "casual_version $CASUAL_VERSION" --define "casual_release $CASUAL_RELEASE" --define "distribution $DISTRIBUTION" /root/rpmbuild/SPECS/casual-middleware.spec  && \
