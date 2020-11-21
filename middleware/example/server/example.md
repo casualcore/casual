@@ -1,7 +1,7 @@
 # casual-example-server
 
 An `XATMI` example server that provides a few general services that serves 
-as an example how to produce a server and services.
+as an example of how to produce a server and services.
 
 These services can also be used in test/exploration scenarios.
 
@@ -37,7 +37,7 @@ or something similar
 The service `sleeps` for a fixed amount of time.
 
 The _sleep amount_ is provided via server argument `--sleep` and the unit 
-is default `seconds`, but can be provided. 
+default is `seconds`, but can be provided. 
 
 Exeample:
 ```
@@ -57,7 +57,7 @@ The work consist of trying to utilize one core of the cpu as much as possible fo
 the duration of the `work` 
 
 The _work amount_ is provided via server argument `--work` and the unit
-is default `seconds`, but can be provided. 
+default is `seconds`, but can be provided. 
 
 Exeample:
 ```

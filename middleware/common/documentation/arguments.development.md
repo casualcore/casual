@@ -14,12 +14,12 @@ provide an option to print an easy to parse list of all available option.
 
 * Exactly one white space between the values
 * If an option has several _aliases_ the last one is used
-* The cardinality represent the number of values the specific option expects
+* The cardinality represents the number of values the specific option expects
 
 ### example:
 
 ```bash
-host$ casual casual-bash-completion
+>$ casual casual-bash-completion
 domain 1 18446744073709551615
 service 1 18446744073709551615
 queue 1 18446744073709551615

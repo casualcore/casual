@@ -4,7 +4,7 @@
 Attention, this documentation refers to **version 1000** (aka, version 1)
 
 
-Defines what messages is sent between domains and exactly what they contain. 
+Defines what messages are sent between domains and exactly what they contain. 
 
 ## definitions:
 
@@ -16,7 +16,7 @@ data is part of an element in a container. You should read it as `container.elem
 
 ## sizes 
 
-`casual` it self does not impose any size restriction on anything. Whatever the platform support
+`casual` it self does not impose any size restriction on anything. Whatever the platform supports,
 `casual` is fine with.
 There are however restrictions from the `xatmi` specifcation, regarding service names and such.
 
@@ -33,7 +33,7 @@ This header will be the first part of every message below, hence it's name, _Hea
 
 message.type is used to dispatch to handler for that particular message, and knows how to (un)marshal and act on the message.
 
-It's probably a good idea (probably the only way) to read the header only, to see how much more one has to read to get
+It's probably a good idea (probably the only way) to read the header only, to see how much more you have to read to get
 the rest of the message.
 
 
@@ -45,7 +45,7 @@ header.size        | uint64         |            8 | the size of the payload tha
 
 ## domain connect messages
 
-messages that is used to set up a connection
+Messages that is used to set up a connection
 
 
 ### common::message::gateway::domain::connect::Request
@@ -84,7 +84,7 @@ protocol.version | uint64         |                        8 | the chosen protoc
 
 #### message::gateway::domain::discover::Request
 
-Sent to and received from other domains when one domain wants discover information abut the other.
+Sent to and received from other domains when one domain wants to discover information abut the other.
 
 message type: **7300**
 
@@ -103,7 +103,7 @@ queues.element.data   | dynamic string | [0..4611686018427387897] | dynamic byte
 
 #### message::gateway::domain::discover::Reply
 
-Sent to and received from other domains when one domain wants discover information abut the other.
+Sent to and received from other domains when one domain wants to discover information abut the other.
 
 message type: **7301**
 

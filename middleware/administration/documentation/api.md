@@ -1,5 +1,5 @@
 
-# API definitions of all the administration services casual have
+# API definitions of all the administration services casual has
 
 ## Describe services
 To describe a casaul-sf-service just use the following command:

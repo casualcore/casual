@@ -31,4 +31,4 @@ name                        | type      | default | description
 `CASUAL_TERMINAL_VERBOSE`   | `bool`    | `false` | if verbose mode is on or not. If true, additional information will printed (were possible)
 `CASUAL_TERMINAL_PORCELAIN` | `bool`    | `false` | if output should be in an easy to parse format (overrides `CASUAL_TERMINAL_COLOR` and `CASUAL_TERMINAL_HEADER`)
 
-These can be overridden with options when `CLI` is invoked.
+These can be overridden with options when the `CLI` is invoked.

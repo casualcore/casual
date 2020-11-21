@@ -12,7 +12,7 @@ Since the XATMI spec is plain C-functions we need to keep global state.
 Every part that needs global state implements a 'context', which is just a singleton. 
 With this we can keep the state together with the implementation.
 
-We could, in the future, lock access to these 'context' if we want to support user using XATMI 
+We could, in the future, lock access to these 'contexts' if we want to support users using XATMI 
 functions from different threads. But since we're not big fans of threads in genereal, especially in
 business code, this is highly unlikely to happen.
 
@@ -22,7 +22,7 @@ business code, this is highly unlikely to happen.
 ### Threads 
 We try to avoid threads as much as possible, since it's way to error prone and hard to reason about.
 
-We only use threads in mockup for unittest, and we'll probably use threads in the gateway.
+We only use threads in mockups for unit testing, and we'll probably use threads in the gateway.
 
 Hence, very few parts are thread safe.
 

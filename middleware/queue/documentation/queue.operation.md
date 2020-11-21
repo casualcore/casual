@@ -1,10 +1,10 @@
 # casual-queue
 
-`casual-queue` is a simple and lightwait _queue manager_.
+`casual-queue` is a simple and lightweight _queue manager_.
 
 
-`casual-queue` differ from other _xa-resources_ in the form that `casual-queue` is 'known' to `casual`, 
-hence `casual` can, and do, take shortcuts regarding transaction semantics. User code does not have 
+`casual-queue` differs from other _xa-resources_ in the form that `casual-queue` is 'known' to `casual`, 
+hence `casual` can, and does, take shortcuts regarding transaction semantics. User code does not have 
 to bind/link to `casual-queue` as a _xa-resource_, it works more like _service calls_ 
 
 ## groups
@@ -12,7 +12,7 @@ to bind/link to `casual-queue` as a _xa-resource_, it works more like _service c
 `casual-queue` groups _queues_ into _groups_, both logically and physically. This enables possibilities to
 have different storage for different _groups_ (and their _queues_).
 
-_group names_ can be anyting as long as they're unique within the `domain`.
+_group names_ can be anything as long as they're unique within the `domain`.
 
 ### queuebase
 `casual-queue` stores the _group_ in a _queuebase_ file (a sqlite database file) at the configured path.
@@ -30,8 +30,8 @@ _groups_ can be configured to have a _non persistance in memory storage_, this i
 
 Every _queue_ gets a corresponding _error-queue_, which takes the name: `<queue-name>.error`
 
-_queues_ can be named to anything as long as they're unique whithin the `domain`, this includes the generated error queues.
-Hence, it's not possible to create `foo` _and_ `foo.error`, since the latter will colide with the generated.
+_queues_ can be named to anything as long as they're unique within the `domain`, this includes the generated error queues.
+Hence, it's not possible to create `foo` _and_ `foo.error`, since the latter will collide with the generated.
 
 _queues_ can be configured to have `retry.count` and `retry.delay`:
 
@@ -39,14 +39,17 @@ _queues_ can be configured to have `retry.count` and `retry.delay`:
 * `retry.delay`: how long time should the message be _not available_ after a dequeue and rollback.
 
 _error-queues_ can be accessed exactly like any other _queue_. The only difference is that `retry`
-will always be `retry.count = 0` and `retry.delay = 0s`, or rather, the `retry` will not be taking into account for _error-queues_. 
+will always be `retry.count = 0` and `retry.delay = 0s`, or rather, the `retry` will not be taken into account for _error-queues_. 
 
 The only way to remove messages from an _error-queue_ is to consume the messages (dequeue [successful commit]), if a rollback
 takes place the message will remain on the _error-queue_. 
 
 ### clear
 
-To clear a queue, that is, remove and discard messages, use `casual queue --consume <some-queue> > /dev/null`
+To clear a queue, that is, remove and discard messages, use 
+```bash
+>$ casual queue --consume <some-queue> > /dev/null
+```
 
 ## configuration
 
@@ -105,7 +108,7 @@ domain:
 
 ```
 
-For a more accurate configuration example (generated example), look at [domain][queue-configuration-example]
+For a more accurate configuration example (generated example), see [domain][queue-configuration-example]
 
 
 

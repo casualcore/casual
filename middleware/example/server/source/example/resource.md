@@ -2,13 +2,13 @@
 
 ## configuration 
 
-When using `casual-example-resource-server` one needs to configure the _domain configuration_ 
+When using `casual-example-resource-server` you need to configure the _domain configuration_ 
 so `casual-example-resource-server` gets the configuration it needs.
 
 `casual-example-resource-server` is compiled and linked with a _resource name_, hence `casual`
 expect to find the same _configuration name_ in the configuration (from `casual-domain-manager`).
 
-the _resource_name_ is, and has to be, `example-resource-server`
+The _resource_name_ is, and has to be, `example-resource-server`
 
 ### example domain configuration
 
@@ -32,7 +32,7 @@ domain:
 
 ## precondition
 
-`casual`needs to have _configuration_ for the _resource-proxy-server_. 
+`casual` needs to have _configuration_ for the _resource-proxy-server_. 
 
 TODO: link to _CASUAL_RESOURCE_CONFIGURATION_FILE_ ?
 

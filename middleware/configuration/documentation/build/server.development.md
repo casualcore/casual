@@ -11,20 +11,20 @@ Each service can have different `transaction` semantics:
 
 type         | description
 -------------|----------------------------------------------------------------------
-automatic    | join transaction if present else start a new transaction (default type)
-join         | join transaction if present else execute outside transaction
+automatic    | join transaction if present otherwise start a new transaction (default type)
+join         | join transaction if present otherwise execute outside transaction
 atomic       | start a new transaction regardless
 none         | execute outside transaction regardless
 
 ### resources
 
-Defines which `xa` resources to link and use runtime. If a name is provided for a given
-resource, then startup configuration phase will ask for resource configuration for that 
+Defines which `xa` resources to link and use at runtime. If a name is provided for a given
+resource, then the startup configuration phase will ask for resource configuration for that 
 given name. This is the preferred way, since it is a lot more explicit.
 
 ## examples 
 
-Below follows examples in human readable formats that `casual` can handle
+Below are examples in human readable formats that `casual` can handle
 
 ### yaml
 ```` yaml

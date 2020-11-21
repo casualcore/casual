@@ -1,18 +1,18 @@
 # field string serialization
 
-Functionality to serialize fielded buffer to and from string representation
+Functionality to serialize a fielded buffer to and from a string representation
 
 
 ## semantics
 
 Developer creates a _mapping-file_ that defines a set of transformations/serializations 
-for `field <-> string` bound to an arbitrary and unique key.
+for `field <-> string` bound to an arbitrary unique key.
 
-From this _mapping-file_ the developer generates a `cpp file`, and then compiles and link
+From this _mapping-file_ the developer generates a `cpp file`, and then compiles and links
 the implementation to the executable. This can of course be done via a shared object.
 
 From the code that is going to perform the serialization, the developer uses the `C-api` 
-to invoke a specifik transformation/serialization by provide the arbitrary key (and the
+to invoke a specific transformation/serialization by providing the arbitrary key (and the
 input/output - buffer/string)
 
 ## mapping file
@@ -66,8 +66,8 @@ mapping:
 _as always, use option `--help` to get additional information on what's possible_
 
 **Example:**
-```
-host# $CASUAL_HOME/bin/casual-buffer-field-serialize --files some-mapping-file.yaml --output some-implementation.cpp
+```bash
+>$ $CASUAL_HOME/bin/casual-buffer-field-serialize --files some-mapping-file.yaml --output some-implementation.cpp
 ```
 
 ### compile and link
@@ -75,20 +75,20 @@ host# $CASUAL_HOME/bin/casual-buffer-field-serialize --files some-mapping-file.y
 Compile and link the implementation.
 
 **Example:**
-```
-host# g++ -o some-implementation.o some-implementation.cpp –I$CASUAL_HOME/include -pthread -c -O3 -fpic -std=c++14
+```bash
+>$ g++ -o some-implementation.o some-implementation.cpp –I$CASUAL_HOME/include -pthread -c -O3 -fpic -std=c++14
 ```
 
 Link the object file to the lib/executable to the lib/executable that uses the _serialization_. 
 
 ### possible build scenarios
 
-* one _mapping-file_ for all mappings, that generate one cpp implementation file.
-  - the compiled object file could be linked directly, or via a library.
-* many _mapping-files_ that generate one cpp implementation file.
-  - the compiled object file could be linked directly, or via a library.
-* many _mapping-files_ that generates many implementation files.
-  - these could be linked to one shared object file (lib), that is linked to the executable
+* One _mapping-file_ for all mappings, that generate one cpp implementation file.
+  - The compiled object file could be linked directly, or via a library.
+* Many _mapping-files_ that generate one cpp implementation file.
+  - The compiled object file could be linked directly, or via a library.
+* Many _mapping-files_ that generates many implementation files.
+  - These could be linked to one shared object file (lib), that is linked to the executable
 
 
 ## invoke the serialization

@@ -6,7 +6,7 @@
 
 ## overview
 
-This buffer-type additionally supports 3 subtypes ("JSON", "XML" and "YAML") but it doesn't imply any magic but are just a mean to achieve some application-dispatch (or such)
+This buffer-type additionally supports 3 subtypes ("JSON", "XML" and "YAML") but it doesn't imply any magic it's just a means to achieve some application-dispatch (or such)
 
 ### remarks
 

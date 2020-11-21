@@ -7,34 +7,34 @@
 
 In general the semantics of the `casual` `CLI` is:
 
-```
-casual <category group> <group specific options>...
+```bash
+>$ casual <category group> <group specific options>...
 ```
 
 ## help
 
 To get an overview help for what options is possible use:
 
-``` shell
-host$ casual --help
+```bash
+>$ casual --help
 ```
 
 To get detailed help for a specific category/option, use:
 
-``` shell
-host$ casual --help service
+```bash
+>$ casual --help service
 ```
 
-It's possible to get detailed help for several categories/options at once 
+It's possible to get detailed help for several categories/options at once: 
 
 ``` shell
-host$ casual --help service domain gateway
+>$ casual --help service domain gateway
 ```
 
 To see all possible _help options_ use:
 
 ``` shell
-host$ casual --help --help
+>$ casual --help --help
 ```
 
 ### help output
@@ -42,7 +42,7 @@ host$ casual --help --help
 `casual cli` shows the cardinality for the _option_ it self and if the _option_ takes values the
 cardinality of the values.
 
-* The cardinality of the _option_ dictates the possible number of usage of that particular 
+* The cardinality of the _option_ dictates the possible number of usages of that particular 
 _option_. A common cardinality for an _option_ is `[0..1]` -> zero-to-one usage (optional).
 * The cardinality of the _values_ for an _option_ dictates the number of values that particular
 _option_ takes.
@@ -66,8 +66,8 @@ notation example  | description
 ## bash completion
 
 `casual` provides _bash-auto-completion_ on the command `casual`. Hence, it should help 
-users to _tab_ guidance to appropriate options for their intention. It will certainly 
-reduce the amount of options one needs to memorize.  
+users to _tab_ for guidance to appropriate options for their intention. Reducing the amount 
+of options you needs to memorize.  
 
 ## unix friendly
 
@@ -75,8 +75,8 @@ reduce the amount of options one needs to memorize.
 
 What do we mean with _unix friendly_? 
 
-* every human readable output to stdout should be parsable line by line, hence no composite information
-* users should be able to combine other _unix_ tools to achieve their goals (_grep, sort, cut, |, etc..._) 
+* Every human readable output to stdout should be parsable line by line, hence no composite information
+* Users should be able to combine other _unix_ tools to achieve their goals (_grep, sort, cut, |, etc..._) 
 * `casual` cli commands should be as composable as possible
 
 ### example
@@ -93,24 +93,24 @@ To enable true transaction support in a cli context `casual` has its own 'intern
 This only applies for cli commands that consumes/invokes buffer/queues/services - hence, business execution.
 These cli commands are annotated with 'casual-pipe' in the help.
 
-The 'causal-pipe' has to be _terminated_ to be able to consume `stdout` with cli commands that is not part
+The 'causal-pipe' has to be _terminated_ to be able to consume `stdout` with cli commands that are not part
 of 'casual-pipe'.
 
 If `casual` detects that `stdout` is tied to a _terminal_ `casual` will try to make it _human readable_
 
 #### example
 
-```shell
-host# echo "some paylaod" | casual buffer --compose "X_OCTET/" | casual buffer --duplicate 2 | casual buffer --extract
+```bash
+>$ echo "some payload" | casual buffer --compose "X_OCTET/" | casual buffer --duplicate 2 | casual buffer --extract
 ```
-* creates an `X_OCTET/`  buffer with the payload 'some paylad' and send it downstream
-* duplicates this buffer twice and send it downstream
-* extract the payload of the buffer and sends it downstream, which is the terminal in this case.
-   * in ths case the payload is human readable.
+* Creates an `X_OCTET/`  buffer with the payload 'some payload' and send it downstream
+* Duplicates this buffer twice and send it downstream
+* Extracts the payload of the buffer and sends it downstream, which is the terminal in this case.
+   * In ths case the payload is human readable.
 
 
 
-```shell
+```bash
 host# casual transaction --compound \
  | casual queue --consume b2 \
  | casual call --service casual/example/echo \
@@ -118,27 +118,27 @@ host# casual transaction --compound \
  | casual transaction --commit
 ```
 
-* starts a _transaction directive_ that will associate all actions with a new transaction, and sends this downstream
-    * starts wating on transactions to commit/rollback from downstream
-* consumes all messages on queue `b2`, each _dequeue_ in a separate transaction according to the _directive_
-    * each message (payload) will be associated with its transaction and sent downstream  
-* calls the service `casual/example/echo` with each payload and associated transaction
-    * the reply (payload) will have the original transaction associated with it, and sent downstream
-    * if the service fails (rollback) the individual transaction will be set to _abort only_
-* enqueue's each payload with associated transaction (which might be in _abort only_)
-    * the message id with associated transaction is sent downstream
-* commits all _commitable_ transactions (and rollback the _uncomittable_)
-    * sends notification for each transaction to the owner of the transaction (in this case `casual transaction --compound`)
+* Starts a _transaction directive_ that will associate all actions with a new transaction, and sends this downstream
+    * Starts waiting on transactions to commit/rollback from downstream
+* Consumes all messages on queue `b2`, each _dequeue_ in a separate transaction according to the _directive_
+    * Each message (payload) will be associated with its transaction and sent downstream  
+* Calls the service `casual/example/echo` with each payload and associated transaction
+    * The reply (payload) will have the original transaction associated with it, and sent downstream
+    * If the service fails (rollback) the individual transaction will be set to _abort only_
+* Enqueue's each payload with associated transaction (which might be in _abort only_)
+    * The message id with associated transaction is sent downstream
+* Commits all _commitable_ transactions (and rollback the _uncomittable_)
+    * Sends notification for each transaction to the owner of the transaction (in this case `casual transaction --compound`)
         * `casual transaction --compound` is the cli command that actually commits or rollback each transaction (in this example)
-    * terminates the transaction-directive by sending a _cli-transaction-termination-message_ to `casual transaction --compound`
+    * Terminates the transaction-directive by sending a _cli-transaction-termination-message_ to `casual transaction --compound`
         * `casual transaction --compound` knows that it's work is done, and can exit. 
-    * the above is done with internal _ipc communication_ 
-    * sends message id's downstream, without the associated transaction (since it has been completed)
-    * in this case, `casual` detects that `stdout` is tied to a terminal and 'transform' the id's to human readable
+    * The above is done with internal _ipc communication_ 
+    * Sends message id's downstream, without the associated transaction (since it has been completed)
+    * In this case, `casual` detects that `stdout` is tied to a terminal and 'transform' the id's to be human readable
 
 
 ##### attention
-if transaction is used in cli it's paramount to terminate the transaction directive with `casual transaction --commit`
+If a transaction is used in the cli it's paramount to terminate the transaction directive with `casual transaction --commit`
 or `casual transaction --rollback`.
 Otherwise the transaction(s) will never be committed/rolled back, and manually recovery is needed.
 The information/data will be safe and protected by the transaction semantics though, so no data will 
@@ -152,44 +152,43 @@ A complete list of all _categories_ and a brief description
 
 ### domain
 
-Responsible for the current local domain. Scales servers and executable, and the
-lifetime of domain.
+Responsible for the current local domain. Scales servers and executables, and the
+lifetime of the domain.
 
-see [domain.operation.md](domain.operation.md)
+See [domain.operation.md](domain.operation.md)
 
 ### service
 
 Responsible for all the services in the local domain.
 
-see [service.operation.md](service.operation.md)
+See [service.operation.md](service.operation.md)
 
 ### gateway
 
 Responsible for all inbound and outbound connections for the local domain.
 
-see [gateway.operation.md](gateway.operation.md)
+See [gateway.operation.md](gateway.operation.md)
 
 ### transaction
 
 Administration of transactions.
 
-see [transaction.operation.md](transaction.operation.md)
+See [transaction.operation.md](transaction.operation.md)
 
 ### queue
 
 Administration for `casual-queue`.
 
-see [queue.operation.md](queue.operation.md)
-
+See [queue.operation.md](queue.operation.md)
 
 ### call
 
 A generic `XATMI` service caller
 
-see [call.operation.md](call.operation.md)
+See [call.operation.md](call.operation.md)
 
 ### describe
 
 A `casual` specific service describer
 
-see [describe.operation.md](describe.operation.md)
+See [describe.operation.md](describe.operation.md)

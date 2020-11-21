@@ -30,7 +30,7 @@ extern "C"
 ```
 
 We use a _executable-definition-file_ to define the resources and `entrypoint`. We name this `my-executable.yaml`, 
-See [casual/middleware/configuration/example](../../../configuration/example/readme.md) for more information.
+See *missing link?* [casual/middleware/configuration/example](../../../configuration/example/readme.md) for more information.
 
 ```yaml
 executable:
@@ -54,8 +54,8 @@ _see [build-executable-example](../../../configuration/example/build/executable.
 * Use the _definition-file_ to define the executable (which adds a dependency to a resource with the name `resource-1` and the key `rm-mockup` )
 * Pass the source file _main.cpp_ to `casual-build-executable` to be compiled at the same time as _building_ the server.
 
-```shell
-host$ casual-build-executable --output my-executable --definition my-executable.yaml --build-directives main.cpp 
+```bash
+>$ casual-build-executable --output my-executable --definition my-executable.yaml --build-directives main.cpp 
 ```
 
 ### custom
@@ -65,14 +65,14 @@ opt in **not** to use default include/library-paths and so on.
 
 **note:** you need to provide all paths, libraries and such 
 
-```shell
-host$ casual-build-executable --no-defaults --output my-executable --definition my-executable.yaml --build-directives main.cpp <all other stuff your compiler needs>
+```bash
+>$ casual-build-executable --no-defaults --output my-executable --definition my-executable.yaml --build-directives main.cpp <all other stuff your compiler needs>
 ```
 
 ## options
 
-```shell
-host# casual-build-executable --help
+```bash
+>$ casual-build-executable --help
 NAME
    casual-build-executable
 

@@ -2,9 +2,9 @@
 
 This is the runtime configuration for a casual domain.
 
-Most of the _sections_ has a property `note` for the user to provide descriptions of the documentation. 
-The examples further down uses this to make it easier to understand the examples by them self. But can of
-course be used as a mean to help document actual production configuration.  
+Most of the _sections_ have a property `note` for the user to provide descriptions of the documentation. 
+The examples further down uses this to make it easier to understand the examples by themselves. But they can of
+course be used as a means to help document actual production configuration.  
 
 The following _sections_ can be used:
 
@@ -15,7 +15,7 @@ Defines transaction related configuration.
 ### log
 
 The path of the distributed transactions log file. When a distributed transaction reaches prepare,
-this state is persistent stored, before the actual commit stage.
+this state is persistently stored, before the actual commit stage.
 
 if `:memory:` is used, the log is non-persistent. 
 
@@ -34,7 +34,7 @@ closeinfo      | resources specific _close_ configurations for the particular re
 
 ## groups
 
-Defines the groups in the configuration. Groups are used to associate `resources` to serveres/executables
+Defines the groups in the configuration. Groups are used to associate `resources` to servers/executables
 and to define the dependency order.
 
 property       | description
@@ -76,7 +76,7 @@ memberships    | which groups are the server member of (dictates order)
 
 Defines service related configuration. 
 
-Note that this configuration is tied to the service, regardless who has advertised the service.
+Note that this configuration is tied to the service, regardless of who has advertised the service.
 
 property       | description
 ---------------|----------------------------------------------------
@@ -104,7 +104,7 @@ limit.messages | the maximum allowed number of inflight messages. If reached _in
 
 Defines all _outbound_ connections that this configuration should try to connect to.
 
-The order in which connections are defined matters. services and queues found in the first connection has higher priority
+The order in which connections are defined matters. Services and queues found in the first connection have higher priority
 than the last, hence if several remote domains exposes the the same service, the first connection will be used as long as
 the service is provided. When a connection is lost, the next connection that exposes the service will be used.
 
@@ -116,7 +116,7 @@ restart        | if true, the connection will be restarted if connection is lost
 services       | services we're expecting to find on the other side 
 queues         | queues we're expecting to find on the other side 
 
-`services` and `queues` is used as an _optimization_ to do a _build_ discovery during startup. `casual`
+`services` and `queues` are used as an _optimization_ to do a _build_ discovery during startup. `casual`
 will find these services later lazily otherwise. It can also be used to do some rudimentary load balancing 
 to make sure lower prioritized connections are used for `services` and `queues` that could be discovered in
 higher prioritized connections.
@@ -147,10 +147,10 @@ retry.delay    | if message is rolled backed, how long delay before message is a
 
 ## examples 
 
-Below follows examples in human readable formats that `casual` can handle
+Below follows some examples in human readable formats that `casual` can handle.
 
 ### yaml
-```` yaml
+```yaml
 ---
 domain:
   name: domain.A42
@@ -458,7 +458,7 @@ domain:
 
 ````
 ### json
-```` json
+```json
 {
     "domain": {
         "name": "domain.A42",
@@ -776,9 +776,9 @@ domain:
         }
     }
 }
-````
+```
 ### ini
-```` ini
+```ini
 
 [domain]
 name=domain.A42
@@ -1022,9 +1022,9 @@ name=event-queue
 note=this resource is named 'event-queue' - overrides rm-key - using default rm-instances
 openinfo=some-mq-specific-stuff
 
-````
+```
 ### xml
-```` xml
+```xml
 <?xml version="1.0"?>
 <domain>
  <name>domain.A42</name>
@@ -1342,5 +1342,4 @@ openinfo=some-mq-specific-stuff
 </note>
  </queue>
 </domain>
-
-````
+```

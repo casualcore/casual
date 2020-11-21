@@ -2,7 +2,7 @@
 
 ## implementation
 
-The main idea is to keep the buffer "ready to go" without the need for extra marshalling when transported and thus data is stored in network byteorder etc from start
+The main idea is to keep the buffer "ready to go" without the need for extra marshalling when transported, so the data is stored in network byteorder etc from start
 
 The inserted-parameter is offset just past last write
 

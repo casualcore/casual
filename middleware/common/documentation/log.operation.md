@@ -2,9 +2,9 @@
 
 ## environment
 
-An arbitrary category model is used and can be activated with regular expression selection
+An arbitrary category model is used and can be activated with regular expression selection.
 
-casual has of today the following categories for internal logging:
+`casual` has, as of today, the following categories for internal logging:
 
 category             | description
 ---------------------|----------------------------------
@@ -20,7 +20,7 @@ casual.queue         | logs details about casual-queue
 casual.debug         | logs general debug stuff.
 
 
-This is all based on just the category model, before the insight with regular expression selection, and we'll most likely start to introduce levels of verbosity
+This is all based on just the category model, before the insight with regular expression selection, and we'll most likely start to introduce levels of verbosity.
 
 ### example
 

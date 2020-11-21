@@ -9,4 +9,4 @@ The build product in the casual suite.
 
 ## Objectives
 * To make a simple and easy to understand layer on top of make. 
-* To use python as language to describe what actions to take in the build process ( i.e. Compile, Link etc)
+* To use python as the language to describe what actions to take in the build process ( i.e. Compile, Link etc)
