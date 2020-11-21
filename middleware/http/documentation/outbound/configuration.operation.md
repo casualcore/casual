@@ -1,6 +1,6 @@
 # http outbound configuration
 
-Intended for operation
+Intended for operations
 
 The example below should be self explanatory.
 
@@ -13,7 +13,7 @@ The example below should be self explanatory.
 
 http:
   default:
-     headers: # will be applied to all services that does not _override_
+     headers: # will be applied to all services that do not _override_
        - name: some-header-name
          value: some-header-value
          

@@ -11,14 +11,14 @@ This is an example of how to run casual in two docker containers.
 
 ## Configuration
 
-The configuration files used for `casual-middleware` is located in `${CASUAL_BUILD_HOME}/docker/config/domain{A,B}-config.yaml`
+The configuration files used for `casual-middleware` are located in `${CASUAL_BUILD_HOME}/docker/config/domain{A,B}-config.yaml`
 and is based on [`${CASUAL_BUILD_HOME}/middleware/example/domain/multiple/minimal/`](./../middleware/example/domain/multiple/minimal/readme.md).
 
 ## Start
 
-```
-cd ${CASUAL_BUILD_HOME}/docker
-docker-compose up
+```bash
+>$ cd ${CASUAL_BUILD_HOME}/docker
+>$ docker-compose up
 ```
 
 ## Test
@@ -26,8 +26,8 @@ docker-compose up
 First you need to know the IP addresses for the `domainA` and `domainB` containers, this can be done with `docker inspect`.
 Example:
 
-```
-> docker inspect -f '{{ .NetworkSettings.Networks.docker_isolated_nw.IPAddress }}' \
+```bash
+>$ docker inspect -f '{{ .NetworkSettings.Networks.docker_isolated_nw.IPAddress }}' \
     $(docker ps | awk '/docker_domain[A-B]/ {print $1}')
 172.22.0.3
 172.22.0.2
@@ -35,15 +35,15 @@ Example:
 
 Call `casual/example/echo` on either container (the actual service is running on `domainA`):
 
-```
-curl -d "Hello world" http://172.22.0.2:8080/casual?service=casual/example/echo
-curl -d "Hello world" http://172.22.0.3:8080/casual?service=casual/example/echo
+```bash
+>$ curl -d "Hello world" http://172.22.0.2:8080/casual?service=casual/example/echo
+>$ curl -d "Hello world" http://172.22.0.3:8080/casual?service=casual/example/echo
 ```
 
 Attach to one of the domains, and play around with `casual`. Example:
 
-```
-> docker exec -it docker_domainA_1 bash
+```bash
+>$ docker exec -it docker_domainA_1 bash
 [casual@domainA casual]$ casual gateway --list-connections
 name     id                                bound  pid  queue   type  runlevel  address
 -------  --------------------------------  -----  ---  ------  ----  --------  -----------------------------------------

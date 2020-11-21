@@ -25,7 +25,7 @@ The main product in the casual suite.
 * Asynchronous pattern gives massive concurrency without the hassle of threads
 * Using single threaded servers gives linear scalability and execution encapsulation 
 * Services can be exposed as REST services (JSONP, SOAP…), non intrusive out of the box\*
-* Built on specifications that is proven to work for large scale applications with high performance demand
+* Built on specifications that are proven to work for large scale applications with high performance demand
 
 \*) If the service is implemented via the C++ abstraction layer.
 
@@ -68,7 +68,7 @@ Responsible for communications with other domains
 
 A queue implementation.
 
-[documentation](./queue/documentation/api.md)
+*Missing link?* [documentation](./queue/documentation/api.md) 
 
 ### common
 
@@ -80,7 +80,7 @@ Functionality that is common and in some way shared with other modules.
 
 Service abstraction layer, to hide transportation details.
 
-[documentation](./serviceframework/readme.md)
+*Missing link?* [documentation](./serviceframework/readme.md)
 
 
 

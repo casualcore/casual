@@ -6,7 +6,7 @@ casual has a few 'products' that could be split into separate repos in the futur
 we keep them all in this repository.
 
 ### middleware
-casual main purpose is [casual-middelware](middleware/readme.md), which is an XATMI implementation
+The main purpose of casual is [casual-middelware](middleware/readme.md), which is an XATMI implementation
 
 ### make
 [casual-make](make/readme.md) is the 'build system' that is used to build casual
@@ -30,7 +30,7 @@ See [examples](middleware/example/domain/readme.md)
 
 #### Whats left to do?
 * _conversation_ conformant on all platforms
-* some redesign of internal parts (for maintainability)
+* Some redesign of internal parts (for maintainability)
 
 
 ### field tests
@@ -47,7 +47,7 @@ We've done some field tests
 ### Contribution guidelines ###
 
 * We have to get this whole project documented and organized before we define these guidelines.
-* But if you made improvements, please keep the same look and feel of the code.
+* But if you make improvements, please keep the same look and feel of the code.
 
 ### Contact ###
 
@@ -59,7 +59,7 @@ We've done some field tests
 
 ### License
 Our intention is that everything in this repository is licensed under the [MIT licence](https://opensource.org/licenses/MIT),
-with the exception of stuff under [thirdparty](thirdparty/readme.md), which has their own licenses.
+with the exception of stuff under [thirdparty](thirdparty/readme.md), which have their own licenses.
 
 We (think we) show this by the file [licence.md](license.md). If this is not enough legally, please enlighten us!
 

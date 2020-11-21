@@ -25,7 +25,7 @@ variable        | used for
 if you're planning on trying some of the examples there might be a good idea to use `$HOME/git` as your repo-root, then 
 the examples correspond exactly to your setup.
 
-``` shell
+```bash
 host$ git clone https://bitbucket.org/casualcore/casual.git
 host$ git clone https://bitbucket.org/casualcore/casual-thirdparty.git
 ```
@@ -41,30 +41,24 @@ platform specific preperations
 
 Enable EPEL, Software Collections and install stuff
 
-``` shell
+```bash
 sudo yum install epel-release centos-release-scl
 sudo yum install libuuid-devel sqlite-devel python libcurl-devel devtoolset-8
 scl enable devtoolset-8 bash
-```
-
-### install dependencies with puppet
-
-``` shell
-host$ sudo puppet apply $HOME/git/casual/thirdparty/setup/casual.pp
 ```
 
 ## set up the environment
 
 Enter the casual repo.
 
-```shell
+```bash
 host$ cd $HOME/git/casual
 ```
 
 It should be enough to just source the example environment set up file.
 (if the casual and casual-thirdparty repo's are next to eachother)
 
-```shell
+```bash
 host$ source middleware/example/env/casual.env
 ```
 
@@ -73,7 +67,7 @@ host$ source middleware/example/env/casual.env
 If you got another setup or there are some platform specific problem, you need
 to edit the _casual.env_ file to suit your platform setup.
 
-```shell
+```bash
 host$ cp middleware/example/env/casual.env .
 host$ vim casual.env # edit to suit your needs
 host$ source casual.env
@@ -82,19 +76,19 @@ host$ source casual.env
 
 ## build casual
      
-```shell
+```bash
 host$ casual-make
 ```
      
 If you want to compile as much as possible in parallel you can use:
 
-```shell
+```bash
 host$ casual-make compile && casual-make link
 ```
 
 ## test casual
 
-```shell
+```bash
 host$ casual-make test
 ```
 

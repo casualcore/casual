@@ -85,7 +85,7 @@ output
 
 ## .casual.transaction.update.instances
 
-Updates insstances of 0..* resource proxies
+Updates instances of 0..* resource proxies
 
 ### definition
 ```bash

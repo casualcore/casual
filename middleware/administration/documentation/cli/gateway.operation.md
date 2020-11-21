@@ -1,7 +1,7 @@
 # casual gateway
 
-```shell
-host# casual --help gateway
+```bash
+>$ casual --help gateway
 
   gateway [0..1]
         gateway related administration

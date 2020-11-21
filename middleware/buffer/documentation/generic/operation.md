@@ -8,41 +8,41 @@ buffer from `stdin` and stream it to `stdout`
 
 ### example
 
-``` shell
-host# echo "poop" |  casual-buffer-generic-compose --type "X_OCTET/" | casual call --service casual/example/echo > /dev/null
+```bash
+>$ echo "poop" |  casual-buffer-generic-compose --type "X_OCTET/" | casual call --service casual/example/echo > /dev/null
 ```
 
 ## casual-buffer-generic-extract
 
-A generic _buffer extractor_ that extract the payload of a generic buffer from `stdin` and stream it to `stdout`
+A generic _buffer extractor_ that extracts the payload of a generic buffer from `stdin` and stream it to `stdout`
 
 ### example
 
-``` shell
-host# casual queue --dequeue foo | casual-buffer-generic-extract
+```bash
+>$ casual queue --dequeue foo | casual-buffer-generic-extract
 ```
 
 
 ## combination
 
-in the spirit of being _unix friendly_ one can combine these stuff in ways that the _casual crew_ could not predict,
+In the spirit of being _unix friendly_ one can combine this stuff in ways that the _casual crew_ could not predict,
 which is the point of being _unix friendly_
 
 ### example
 
-``` shell
-host# cat some-important-file.yaml | casual-buffer-generic-compose | casual call --service casual/example/echo | casual-buffer-generic-extract | tee payload.log.txt | casual-buffer-generic-compose |  casual queue --enqueue foo 
+```bash
+>$ cat some-important-file.yaml | casual-buffer-generic-compose | casual call --service casual/example/echo | casual-buffer-generic-extract | tee payload.log.txt | casual-buffer-generic-compose |  casual queue --enqueue foo 
 ```
 
 ... and so on...
 
 ## further information
 
-Use the _--help_ option on the stuff you want to know more about. As every other `casual` executable
+Use the _--help_ option on the stuff you want to know more about. As with every other `casual` executable
 
 ## attention
 
-These _commands_ in the examples does **NOT** guarantee transactional semantics in general, although `casual` will do 
-it's best to make as safe as possible, but it's not possible to maintain total transactional concistency.
+The _commands_ in the examples do **NOT** guarantee transactional semantics in general, although `casual` will do 
+it's best to make it as safe as possible, but it's not possible to maintain total transactional consistency.
 
 

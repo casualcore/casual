@@ -90,6 +90,8 @@ table of contents
    :titlesonly:
    
    summary <README>
+   components <middleware/documentation/components>
+   user particles <middleware/documentation/user-particles>
 
 .. toctree::
    :caption: sections

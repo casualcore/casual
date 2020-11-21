@@ -1,7 +1,7 @@
 # casual domain
 
-```shell
-host# casual --help domain
+```bash
+>$ casual --help domain
 
   domain [0..1]
         local casual domain related administration

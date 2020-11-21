@@ -4,7 +4,7 @@ Builds a `causal-server`. That is, an executable that exposes `XATMI` services i
 with possible `XA-resources` linked in that will be initialized on boot.
 
 
-## prerequisite
+## prerequisites
 
 `casual` is installed and `CASUAL_HOME` is set to the install path.
 
@@ -35,13 +35,13 @@ The `echo` service will have `auto` transaction semantics, see below.
 
 
 ```bash
-host$ casual-build-server --output simple-server --service echo --link-directives echo.cpp
+>$ casual-build-server --output simple-server --service echo --link-directives echo.cpp
 ```
 
 ### advanced
 
 We use a _server-definition-file_ to define the server in it's services. We name this `example.server.yaml`, 
-See [casual/middleware/configuration/example](../../../configuration/example/readme.md) for more information.
+See *Missing link?* [casual/middleware/configuration/example](../../../configuration/example/readme.md) for more information.
 
 ```yaml
 server:
@@ -72,21 +72,21 @@ server:
       transaction: join
 ```
 
-_see [build-server-example](../../../configuration/example/build/server.yaml) for further details._
+_See *Missing link?* [build-server-example](../../../configuration/example/build/server.yaml) for further details._
 
 
 * We want the server to be named `advanced-server`
 * Use the _definition-file_ to define the server (which adds a dependency to a resource with the name `resource-1` and the key `rm-mockup` )
-* Pass the source file _echo.cpp_ to `casual-build-server` to be compiled at the same time as _building_ the server.
+* Pass the source file `echo.cpp` to `casual-build-server` to be compiled at the same time as _building_ the server.
 
-```shell
-host$ casual-build-server --output advanced-server --definition example.server.yaml --build-directives echo.cpp 
+```bash
+>$ casual-build-server --output advanced-server --definition example.server.yaml --build-directives echo.cpp 
 ```
 
 We can see that `advanced-server` has a dependency to the `XA-structure` for `rm-mockup`: __casual_mockup_xa_switch_static_
 
-```shell
-host$ nm advanced-server 
+```bash
+>$ nm advanced-server 
                  U _casual_mockup_xa_switch_static
                  U _casual_start_server
 0000000100000f30 T _echo
@@ -99,29 +99,29 @@ host$ nm advanced-server
 
 ### custom
 
-`casual-build-server` assumes _gcc/g++_ option compatibility for default stuff. If you use another compiler you can
-opt in **not** to use default include/library-paths and so on.
+`casual-build-server` assumes _gcc/g++_ option compatibility for defaults. If you use another compiler you can
+opt to **not** use the default include/library-paths and so on.
 
-**note:** you need to provide all paths, libraries and such 
+**Note:** you need to provide all paths, libraries etc.
 
-```shell
-host$ casual-build-server --no-defaults --output advanced-server --definition example.server.yaml --build-directives echo.cpp <all other stuff your compiler needs>
+```bash
+>$ casual-build-server --no-defaults --output advanced-server --definition example.server.yaml --build-directives echo.cpp <all other stuff your compiler needs>
 ```
 
 ### casual-build-server-generate
 
 `casual-build-server-generate` only generate the _intermediate main file_, that has the 'magic' to bootstrap a `casual` server.
 
-```shell
-host$ casual-build-server-generate --output your-name-on-the-source-file.cpp --definition example.server.yaml
+```bash
+>$ casual-build-server-generate --output your-name-on-the-source-file.cpp --definition example.server.yaml
 ```
 
 This might be easier to use, depending och your build system.
 
 ## options
 
-```shell
-host# casual-build-server --help
+```bash
+>$ casual-build-server --help
 NAME
    casual-build-server
 

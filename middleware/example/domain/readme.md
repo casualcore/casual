@@ -1,14 +1,15 @@
 
 # casual domain examples
 
-## pre requirements
+## prerequisites
 
-Make sure you have casual installed and `CASUAL_HOME` set to the installed directory
+Make sure you have casual installed and `CASUAL_HOME` set to the installed directory.
 
-Make sure you have a resource configuration. If not, copy the example resorce file:
-    
-    host$ cp $CASUAL_HOME/configuration/example/resources.yaml $CASUAL_HOME/configuration/
-    
+Make sure you have a resource configuration. If not, copy the example resource file:
+
+```bash    
+>$ cp $CASUAL_HOME/configuration/example/resources.yaml $CASUAL_HOME/configuration/
+```
     
 
 ## examples

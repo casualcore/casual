@@ -5,8 +5,11 @@
 
 Explore the abillity of casual to discover resources in remote domains.
 
-We'll set up two domains, **A** and **B**. From within **A** we'll enqueue a message to a queue in **B**. in **B**, a queue-service forward will dequeue the message and call a service in **A** and the reply is enqueued in another queue in **B**. in **B**, a queue-queue forward will dequeue the reply and enqueue it at a queue in **A**.
-A queue service forward dequeue the message and call a service that will abort the transaction, hence the message is moved 
+We'll set up two domains, **A** and **B**. 
+* From within **A** we'll enqueue a message to a queue in **B**. 
+* In **B**, a queue-service forward will dequeue the message and call a service in **A** and the reply is enqueued in another queue in **B**.
+* in **B**, a queue-queue forward will dequeue the reply and enqueue it at a queue in **A**.
+A queue service forward dequeues the message and calls a service that will abort the transaction, hence the message is moved 
 to the corresponding error queue.
 
 
@@ -18,27 +21,27 @@ A simplified sequence diagram on what's going on (discovery and transaction rela
 
 
 
-## pre requirements
+## prerequisites
 
-see [domain example]( ../../readme.md)
+See [domain example]( ../../readme.md)
 
 
 ## create domains
 
-Create a directory where you want your domains to "live" 
+Create a directory where you want your domains to "live".
 
-*in production one probably wants to have a dedicated user for each domain and just use the "domain-user" home directory as the domain root*
+**In production you probably want to have a dedicated user for each domain and just use the "domain-user" home directory as the domain root**
 
 The following will be used in this example.
 
 ```bash
-host$ mkdir -p $HOME/casual/example/domain/multiple/medium
+>$ mkdir -p $HOME/casual/example/domain/multiple/medium
 ```
     
 Copy the domains setup from the example:
 
 ```bash
-host$ cp -r $CASUAL_HOME/example/domain/multiple/medium/* $HOME/casual/example/domain/multiple/medium/
+>$ cp -r $CASUAL_HOME/example/domain/multiple/medium/* $HOME/casual/example/domain/multiple/medium/
 ```
 
 ### configuration
@@ -48,7 +51,7 @@ Each domain has it's configuration in `$CASUAL_DOMAIN_HOME/configuration/domain.
 * `$HOME/casual/example/domain/multiple/medium/domainA/configuration/domain.yaml`
 * `$HOME/casual/example/domain/multiple/medium/domainB/configuration/domain.yaml`
 
-_The environment variable_ `CASUAL_DOMAIN_HOME` _is the only thing that dictate which domain you're using and working with_
+_The environment variable_ `CASUAL_DOMAIN_HOME` _is the only thing that dictates which domain you're using and working with_
 
  * [domainA/configuration/domain.yaml](domainA/configuration/domain.yaml)    
  * [domainB/configuration/domain.yaml](domainB/configuration/domain.yaml) 
@@ -63,44 +66,44 @@ If you chose another base directore for this example, please update the followin
 
 ## start domainA
 
-In terminal A    
+In the terminal for domainA.   
 
 ### prepare
 
-Make sure we have the _few_ requered environment settings sourced.
+Make sure the required environment settings are sourced.
 
-You only have to do this once, of course.
+*You only have to do this once.*
  
 ```bash
-host$ cd $HOME/casual/example/domain/multiple/medium/domainA
-host:domainA$ source domain.env
+domainA>$ cd $HOME/casual/example/domain/multiple/medium/domainA
+domainA>$ source domain.env
 ```
 
 ### boot
 
-We privide our configuration for the domain
+We provide our configuration for the domain:
 
 ```bash
-host:domainA$ casual domain --boot configuration/domain.yaml
+domainA>$ casual domain --boot configuration/domain.yaml
 ``` 
 
     
 ## start domainB
 
-In terminal B
+In the terminal for domainB.
 
 ### prepare
 
 ```bash
-host$ cd $HOME/casual/example/domain/multiple/medium/domainB
-host:domainB$ source domain.env
+domainB>$ cd $HOME/casual/example/domain/multiple/medium/domainB
+domainB>$ source domain.env
 ```
 ### boot
 
-We privide our configuration for the domain
+We provide our configuration for the domain:
 
 ```bash
-host:domainB$ casual domain --boot configuration/domain.yaml
+domainB>$ casual domain --boot configuration/domain.yaml
 ```
 
 
@@ -109,27 +112,28 @@ host:domainB$ casual domain --boot configuration/domain.yaml
 
 ### current state
 
-View current state in the two domains
+View current state in the two domains.
 
 #### domain A
 
-List connections
+List connections:
 
 ```bash
-host:domainA$ casual gateway --list-connections
+domainA>$ casual gateway --list-connections
 name               id                                bound  pid    queue    type  runlevel  address        
 -----------------  --------------------------------  -----  -----  -------  ----  --------  ---------------
 md-medium-domainB  b0cf47002d4642f7a72913d40cde6a92  out    22351  8060933  tcp   online    localhost:7772 
 md-medium-domainB  b0cf47002d4642f7a72913d40cde6a92  in     22376   917521  tcp   online    localhost:64495
 ```
 
-We have one inbound and one outbound connection to `domain B
+We have one inbound and one outbound connection to `domainB`.
 
 
 
-List services
+List services:
+
 ```bash
-host:domainA$ casual service --list-services
+domainA>$ casual service --list-services
 name                         category  mode  timeout   I  C  AT        P  PAT       RI  RC  last                   
 ---------------------------  --------  ----  --------  -  -  --------  -  --------  --  --  -----------------------
 casual/example/conversation  example   join  0.000000  1  0  0.000000  0  0.000000   0   0  0000-00-00T00:00:00.000
@@ -147,9 +151,10 @@ casual/example/work          example   join  0.000000  1  0  0.000000  0  0.0000
 `casual/example/echo` and `casual/example/rollback` is advertised from one **local** instance, and no one has requested the services yet.
 
 
-List queus
+List queues:
+
 ```bash
-host:domainA$ casual queue --list-queues 
+domainA>$ casual queue --list-queues 
 name                  count  size  avg  uc  updated                  r  t  group   
 --------------------  -----  ----  ---  --  -----------------------  -  -  --------
 queueA1                   0     0    0   0  2018-04-11T23:03:47.853  0  q  domain-A
@@ -159,34 +164,35 @@ domain-A.group.error      0     0    0   0  2018-04-11T23:03:47.848  0  g  domai
 
 #### domain B
 
-List connections
+List connections:
 
 ```bash
-host:domainB$ casual gateway --list-connections 
+domainB>$ casual gateway --list-connections 
 name               id                                bound  pid    queue     type  runlevel  address        
 -----------------  --------------------------------  -----  -----  --------  ----  --------  ---------------
 md-medium-domainA  0e483f8393da4ebc8da6978a07493213  out    17509  13828096  tcp   online    localhost:7771 
 md-medium-domainA  0e483f8393da4ebc8da6978a07493213  in     17522    655380  tcp   online    localhost:51175
 ```
 
-We have one inbound and one outbound connection to `domain A
+We have one inbound and one outbound connection to `domainA`.
 
 
-List services
+List services:
 
 ```bash
-host:domainB$ casual service --list-services
+domainB>$ casual service --list-services
 name  category  mode  timeout  I  C  AT  P  PAT  RI  RC  last
 ----  --------  ----  -------  -  -  --  -  ---  --  --  ----
 ```
 
 
-`casual/example/echo` is not yet known in this domain
+`casual/example/echo` is not yet known in this domain.
 
 
-List queus
+List queues:
+
 ```bash
-host:domainB$ casual queue --list-queues 
+domainB>$ casual queue --list-queues 
 name                  count  size  avg  uc  updated                  r  t  group   
 --------------------  -----  ----  ---  --  -----------------------  -  -  --------
 queueB1                   0     0    0   0  2018-04-11T23:06:15.916  0  q  domain-B
@@ -199,17 +205,17 @@ domain-B.group.error      0     0    0   0  2018-04-11T23:06:15.910  0  g  domai
 
 ### enqueue a message
 
-In `domain A`, enqueue some characters to `queueB1` that is located in `domain B`
+In `domainA`, enqueue some characters to `queueB1` that is located in `domainB`
 
 ```bash
-host:domainA$ echo "test" | casual queue --enqueue queueB1
+domainA>$ echo "test" | casual queue --enqueue queueB1
 bec3b4b3cccd4f3b89faee970518ab7d
 ```
 
-The message should be enqueued to `queueA1` and then dequeued and rollbacked, hence end up in `queueA1.error` pretty much directly
+The message should be enqueued to `queueA1` and then dequeued and rollbacked, hence end up in `queueA1.error` pretty much directly.
 
 ```bash
-host:domainA$ casual queue --list-queues 
+domainA>$ casual queue --list-queues 
 name                  count  size  avg  uc  updated                  r  t  group   
 --------------------  -----  ----  ---  --  -----------------------  -  -  --------
 queueA1                   0     0    0   0  2018-04-11T23:07:25.602  0  q  domain-A
@@ -219,11 +225,11 @@ domain-A.group.error      0     0    0   0  2018-04-11T23:03:47.848  0  g  domai
 
 
 
-The service `casual/example/echo` should be reqeusted once (the call from remote domain B).
+The service `casual/example/echo` should be reqeusted once (the call from remote `domainB`).
 The service `casual/example/rollback` should be reqeusted once from the forward in this domain.
 
 ```bash
-host:domainA$ casual service --list-services
+domainA>$ casual service --list-services
 name                         category  mode  timeout   I  C  AT        P  PAT       RI  RC  last                   
 ---------------------------  --------  ----  --------  -  -  --------  -  --------  --  --  -----------------------
 casual/example/conversation  example   join  0.000000  1  0  0.000000  0  0.000000   0   0  0000-00-00T00:00:00.000
@@ -238,10 +244,10 @@ casual/example/work          example   join  0.000000  1  0  0.000000  0  0.0000
 ```
 
 
-In `domain B`, `casual/example/echo` should be known with no local instances:
+In `domainB`, `casual/example/echo` should be known with no local instances:
 
 ```bash
-host:domainB$ casual service --list-services
+domainB>$ casual service --list-services
 name                 category  mode  timeout   I  C  AT        P  PAT       RI  RC  last                   
 -------------------  --------  ----  --------  -  -  --------  -  --------  --  --  -----------------------
 casual/example/echo  example   join  0.000000  0  0  0.000000  0  0.000000   1   1  0000-00-00T00:00:00.000

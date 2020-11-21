@@ -17,7 +17,7 @@ Current abstractions are
 
 ### Remarks
 
-- All buffer-types are size-agnostic meaning that, if respectively abstractions are used, it is almost non relevant what size are applied to functions like `tpalloc()`, `tprealloc()`, `tpcall()`, `tpacall()`, `tpreturn()`. See respectively abstraction for details
+- All buffer-types are size-agnostic meaning that, if the respective abstractions are used, it is almost irrelevant what sizes are applied to functions like `tpalloc()`, `tprealloc()`, `tpcall()`, `tpacall()`, `tpreturn()`. See the respective abstraction for details
 
 - All interfaces handling "binary-data" uses the arithmetic-agnostic-byte-type 'char' (in favour for various void-, signed- and unsigned-types)
 

@@ -1,30 +1,37 @@
 
 # minimal single domain example
 
-## pre requirements
+## prerequisites
 
-see [domain example]( ../../readme.md)
+See [domain example]( ../../readme.md)
 
 
 ## create domain
 
-Create a directory where you want your domain to "live" *in production one probably wants to have a dedicated user for a domain and just use the "domain-user" home directory as the domain root*
+Create a directory where you want your domain to "live".
+
+**In production you probably want to have a dedicated user for a domain and just use the "domain-user" home directory as the domain root**
 
 Copy the domain setup from the example:
 
-    >$ cd <your domain directory>
-    >$ cp -r $CASAUL_HOME/example/domain/minimal/* .
+```bash
+>$ cd <your domain directory>
+>$ cp -r $CASAUL_HOME/example/domain/minimal/* .
+```
 
-Edit domain.env so it corresponds to your setup. It's just a few lines.
+Edit `domain.env` so it corresponds to your setup.
 
-source the env file:
-     
-    >$ source domain.env 
+Source the env file:
+
+```bash     
+>$ source domain.env 
+```
 
 ## start domain
 
-    >$ casual domain --boot configuration/domain.yaml
-
+```bash
+>$ casual domain --boot configuration/domain.yaml
+```
 
 
 

@@ -1,7 +1,7 @@
 # casual call
 
-```shell
-host# casual --help call
+```bash
+>$ casual --help call
 
   call [0..1]
         generic service call

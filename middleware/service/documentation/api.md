@@ -57,9 +57,9 @@ output
 
 ## .casual/service/metric/reset
 
-resets the metric for provided services.
+Resets the metric for provided services.
 
-resets all services if non is provided.
+Resets all services if none are provided.
 
 ### definition
 

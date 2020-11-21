@@ -1,7 +1,7 @@
 # casual
 
-```shell
-host# casual --help 
+```bash
+>$ casual --help 
 
 DESCRIPTION
   
