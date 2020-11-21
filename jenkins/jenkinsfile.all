@@ -119,8 +119,6 @@ catch (Exception e)
 
 def common_backend_builder = '''
 umask 000
-mkdir -p /git/casual/dumps
-
 export CASUAL_REPO_ROOT=/git/casual/casual
 export CASUAL_TOOLS_HOME=$CASUAL_REPO_ROOT
 export PYTHONPATH=$CASUAL_REPO_ROOT/..
@@ -132,18 +130,16 @@ export CASUAL_HOME=/opt/casual
 export PATH=$CASUAL_BUILD_HOME/tools/bin:$CASUAL_TOOLS_HOME/bin:$CASUAL_HOME/bin:$PATH
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CASUAL_HOME/lib:$CASUAL_BUILD_HOME/configuration/bin:$CASUAL_BUILD_HOME/common/bin:$CASUAL_BUILD_HOME/serviceframework/bin:$CASUAL_BUILD_HOME/xatmi/bin:/usr/local/lib
 
-cd /git/casual 
-find . -name "*.gc*" -print | xargs rm > /dev/null
-find . -name "report.xml" -print | xargs rm > /dev/null
-rm -rf middleware/.casual/unittest/.singleton/.domain-singleton > /dev/null
+find $CASUAL_REPO_ROOT -name "*.gc*" -print | xargs rm > /dev/null
+find $CASUAL_REPO_ROOT -name "report.xml" -print | xargs rm > /dev/null
+rm -rf $CASUAL_REPO_ROOT/middleware/.casual/unittest/.singleton/.domain-singleton > /dev/null
 
-export CASUAL_THIRDPARTY=/git/casual/casual-thirdparty
 cd $CASUAL_REPO_ROOT && \
       casual-make --no-colors -d -a --use-valgrind make && \
       casual-make --no-colors clean && \
       casual-make --no-colors -d -a --use-valgrind compile && \
       casual-make --no-colors -d -a --use-valgrind link && \
-      ISOLATED_UNITTEST_DIRECTIVES="--gtest_output='xml:report.xml'" casual-make --no-colors test && \
+      ISOLATED_UNITTEST_DIRECTIVES="--gtest_color=no --gtest_output='xml:report.xml'" casual-make --no-colors test && \
       mkdir -p $CASUAL_REPO_ROOT/coverage && \
       casual-make --no-colors make && \
       casual-make --no-colors clean && \
@@ -154,11 +150,13 @@ cd $CASUAL_REPO_ROOT && \
       cp $CASUAL_REPO_ROOT/package/casual-middleware.spec /root/rpmbuild/SPECS/. && \
       rpmbuild -bb --noclean --define "casual_version $CASUAL_VERSION" --define "casual_release $CASUAL_RELEASE" --define "distribution $DISTRIBUTION" /root/rpmbuild/SPECS/casual-middleware.spec  && \
       cp /root/rpmbuild/RPMS/x86_64/casual-middleware*.rpm $CASUAL_REPO_ROOT/. && \
-      performCoverageMeasuring 
-      returncode=$?
+      performCoverageMeasuring && \
+      cd $CASUAL_REPO_ROOT && \
+      casual-make --no-colors clean
+returncode=$?
 
 cd /git/casual/
-find /git/casual -user root | xargs chmod 777
+find $CASUAL_REPO_ROOT/.. -user root | xargs chmod 777
  
 exit $returncode
 '''
@@ -216,9 +214,9 @@ def dockerfile = '''FROM centos:latest
 MAINTAINER flurig <flurig@localhost>
 
 RUN yum  -y install wget cmake make python rsync libuuid-devel sqlite-devel gcc-c++ zlib-devel unzip rpm-build
-RUN wget http://dl.fedoraproject.org/pub/epel/7/x86_64/Packages/e/epel-release-7-11.noarch.rpm
-RUN rpm -Uvh epel-release*rpm
-RUN yum -y install pugixml yaml-cpp03
+#RUN wget http://dl.fedoraproject.org/pub/epel/7/x86_64/Packages/e/epel-release-7-13.noarch.rpm
+#RUN rpm -Uvh epel-release*rpm
+#RUN yum -y install pugixml yaml-cpp03
 
 ARG CASUAL_RPM
 COPY ${CASUAL_RPM} /tmp/casual-middleware.rpm
@@ -248,7 +246,7 @@ WORKDIR $CASUAL_DOMAIN_HOME
 ENTRYPOINT ["casual-domain-manager", "-c", "configuration/domain.yaml"]
 '''
 
-def build( name, image, content)
+def legacy_build( name, image, content)
 {
    def current_dir = pwd()
    writeFile file: 'builder.sh', text: content
@@ -258,6 +256,16 @@ def build( name, image, content)
    docker pull $image
    docker run --rm -v $current_dir:/git/casual:Z $image /git/casual/builder.sh
    """
+}
+
+def build( name, image, content)
+{
+   def builder_image = docker.image(image)
+   builder_image.pull()
+
+   builder_image.inside {
+      sh content
+   }
 }
 
 try
@@ -275,7 +283,7 @@ try
             {
                checkout scm
                
-               build( 'casualfrontend', 'casual/frontend-builder', frontend_builder)
+               legacy_build( 'casualfrontend', 'casual/frontend-builder', frontend_builder)
 
                stash includes: '**/casual-webapp.zip', name: 'frontend'
             }
@@ -286,7 +294,7 @@ try
       {
          node( "documentation")
          {
-            if ( true || isPublishable() )
+            if ( isPublishable() )
             {
                deleteDir()
                stage('Documentation')
@@ -308,11 +316,7 @@ try
                         export CASUAL_RELEASE=$CASUAL_RELEASE
                         make html
                      """
-
-                     def path = "${WORKSPACE}"
-                     def directories = path.split("/")
-                     echo "http://casual.laz.se/documentation/workspace/" + directories[-1] + "/casual-documentation/casual/casual-middleware/build/html/"
-
+                     stash includes: '**', name: 'casual-documentation'
                   }
                }
             }
@@ -321,49 +325,6 @@ try
    )    
    
    parallel(
-      "suse" :
-      {
-         node( "cplusplus" && "suse")
-         {
-            try
-            { 
-
-               deleteDir()
-
-               stage( "checkout repos")
-               {
-
-                  dir("casual-thirdparty")
-                  {
-                     // casual-thirdparty
-                     git branch: 'master', url: 'https://bitbucket.org/casualcore/casual-thirdparty.git'
-                  }
-
-                  dir("casual")
-                  {
-                     // casual
-                     checkout scm
-                  }
-               }
-
-               stage('Build backend - Unittest - Suse')
-               {                  
-                  unstash 'frontend'
-                  
-                  build( 'susecompile', 'casual/suse-builder'.concat(':').concat(retrieve_major_minor()), backend_builder_suse)
-
-                  archive includes: '**/casual-middleware*.rpm'
-                  
-                  stash includes: '**/casual-middleware*.rpm', name: 'suse_backend'
-               }
-            }
-            catch (Exception e)
-            {
-               archive includes: '**/casual.log'
-               throw e
-            }
-         }
-      },
       "centos" :
       {
          node( "cplusplus" && "centos")
@@ -392,7 +353,7 @@ try
                {
                   unstash 'frontend'
                   
-                  build( 'centoscompile', 'casual/centos-builder'.concat(':').concat(retrieve_major_minor()), backend_builder_centos)
+                  legacy_build( 'centoscompile', 'casual/centos-builder'.concat(':').concat(retrieve_major_minor()), backend_builder_centos)
 
                   step([$class: 'XUnitBuilder',
                      thresholds: [[$class: 'FailedThreshold', failureThreshold: '1']],
@@ -427,9 +388,18 @@ try
 
                   stage('Publishing to dockerhub - Centos')
                   {
+                     if (isRelease())
+                     {
+                        tag = totalVersion()
+                     }
+                     else
+                     {
+                        tag = retrieve_major_minor().concat('-beta')
+                     }
+
                      sh """
-                     docker tag casual/middleware-centos casual/middleware:latest
-                     docker push casual/middleware
+                     docker tag casual/middleware-centos casual/middleware:$tag
+                     docker push casual/middleware:$tag
                      """
                   }
 
@@ -445,6 +415,49 @@ try
                      fi
                      """
                   } 
+               }
+            }
+            catch (Exception e)
+            {
+               archive includes: '**/casual.log'
+               throw e
+            }
+         }
+      },
+      "suse" :
+      {
+         node( "cplusplus" && "suse")
+         {
+            try
+            { 
+
+               deleteDir()
+
+               stage( "checkout repos")
+               {
+
+                  dir("casual-thirdparty")
+                  {
+                     // casual-thirdparty
+                     git branch: 'master', url: 'https://bitbucket.org/casualcore/casual-thirdparty.git'
+                  }
+
+                  dir("casual")
+                  {
+                     // casual
+                     checkout scm
+                  }
+               }
+
+               stage('Build backend - Unittest - Suse')
+               {                  
+                  unstash 'frontend'
+                  
+                  legacy_build( 'susecompile', 'casual/suse-builder'.concat(':').concat(retrieve_major_minor()), backend_builder_suse)
+
+                  archive includes: '**/casual-middleware*.rpm'
+                  
+                  stash includes: '**/casual-middleware*.rpm', name: 'suse_backend'
                }
             }
             catch (Exception e)
@@ -479,7 +492,7 @@ try
             }
          }
 
-         stage('publish')
+         stage('publish rpm')
          {
             unstash "suse_backend"
             unstash "centos_backend"
@@ -494,6 +507,18 @@ try
                   curl -X POST --user "${USERPASS}" "https://api.bitbucket.org/2.0/repositories/casualcore/casual/downloads" --form files=@"\$filename"
                done
                """
+            }
+         }
+
+         stage('publish documentation')
+         {
+            deleteDir()
+            dir("casual-documentation")
+            {
+               unstash "casual-documentation"
+               def path = "${WORKSPACE}"
+               def directories = path.split("/")
+               echo "http://casual.laz.se/documentation/workspace/" + directories[-1] + "/casual-documentation/casual/casual-middleware/build/html/"
             }
          }
       }
