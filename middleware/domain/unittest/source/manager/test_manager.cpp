@@ -371,27 +371,19 @@ domain:
             {
                auto get_global_state = []( auto& process)
                {
-                  common::message::domain::instance::global::state::Request message;
-                  message.process = common::process::handle();
-                  return common::communication::ipc::call( process.ipc, message);
-
+                  return common::communication::ipc::call( 
+                     process.ipc,
+                     common::message::domain::instance::global::state::Request{ common::process::handle()});
                };
 
                auto get_variable_checker = []( auto& process)
                {
                   return [reply = get_global_state( process)]( std::string key, std::string value)
                   {
-                     auto found = common::algorithm::find_if( reply.environment.variables, [&key]( auto& v){ return v.name() == key;});
-
-                     EXPECT_TRUE( found) << "key: " << key << ", value: " << value << ", " << CASUAL_NAMED_VALUE( reply.environment.variables);
+                     auto has_name = [&key]( auto& value){ return value.name() == key;};
                      
-                     if( found)
-                     {
-                        if( found->value() == value)
-                           return true;
-                        else
-                           ADD_FAILURE() << "found: " << *found;
-                     }
+                     if( auto found = common::algorithm::find_if( reply.environment.variables, has_name))
+                        return found->value() == value;
                      
                      return false;
                   };
