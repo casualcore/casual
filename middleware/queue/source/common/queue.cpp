@@ -42,17 +42,7 @@ namespace casual
       common::message::queue::lookup::Reply Lookup::operator () () const
       {
          message::queue::lookup::Reply reply;
-
-         auto& device = communication::ipc::inbound::device();
-
-         auto handler = common::message::dispatch::handler( device,
-            common::message::handle::assign( reply),
-            common::message::handle::Shutdown{});
-
-         auto condition = message::dispatch::condition::compose( 
-            message::dispatch::condition::done( [&]( ){ return ! reply.correlation.empty();}));
-
-         message::dispatch::relaxed::pump( condition, handler, device);
+         common::communication::device::blocking::receive( communication::ipc::inbound::device(), reply);
 
          return reply;
       }

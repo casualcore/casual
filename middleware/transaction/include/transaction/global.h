@@ -19,7 +19,8 @@ namespace casual
       namespace global
       {
          struct ID 
-         {            
+         {         
+            inline ID()= default;   
             inline ID( const common::transaction::ID& trid) 
                : trid{ trid} {}
 

@@ -29,15 +29,12 @@ namespace casual
             auto result = common::message::reverse::type( message);
 
             auto partition = algorithm::partition( dequeues, [&message]( auto& m){ return m.correlation != message.correlation;});
-
+            log::line( verbose::log, "found: ", std::get< 1>( partition));
+            
             if( std::get< 1>( partition))
                result.found = true;
             else
-            {
-               log::line( log::category::error, "failed to correlate pending dequeue from: ", message.process);
-               log::line( log::category::verbose::error, "message: ", message);
-               log::line( log::category::verbose::error, "dequeues: ", dequeues);
-            }
+               result.found = false;
 
             algorithm::trim( dequeues, std::get< 0>( partition));
 

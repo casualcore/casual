@@ -638,7 +638,7 @@ namespace casual
 
             void Policy::configure( common::server::Arguments& arguments)
             {
-               m_state.connect_manager( arguments.services);
+               m_state->connect_manager( arguments.services);
             }
 
             void Policy::reply( common::strong::ipc::id id, common::message::service::call::Reply& message)
@@ -648,7 +648,7 @@ namespace casual
 
             void Policy::ack( const common::message::service::call::ACK& ack)
             {
-               local::ack( m_state)( ack);
+               local::ack( *m_state)( ack);
             }
 
             void Policy::transaction(

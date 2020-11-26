@@ -73,7 +73,7 @@ domain:
                         outbound.runlevel = decltype( outbound.runlevel)::online;
                      }
 
-                     return state;
+                     return std::move( state);
                   }
                } // running
             } // <unnamed>

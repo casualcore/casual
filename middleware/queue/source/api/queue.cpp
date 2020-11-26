@@ -84,67 +84,40 @@ namespace casual
                   return id;
                }
 
-               std::vector< Message> dequeue( const queue::Lookup& lookup, const Selector& selector, bool block = false)
+               namespace dequeue
                {
-                  Trace trace{ "casual::queue::local::dequeue"};
-
-                  auto& transaction = common::transaction::context().current();
-
-                  auto group = lookup();
-
-                  if( ! group)
-                     queue::raise( queue::code::no_queue);
-
-                  const auto correlation = common::uuid::make();
-
-                  auto& ipc = common::communication::ipc::inbound::device();
-
-                  auto forget_blocking = common::execute::scope( [&]()
+                  auto request = []( auto& lookup, auto& selector, auto& trid, auto block)
                   {
-                     common::message::queue::dequeue::forget::Request request{ common::process::handle()};
-                     request.correlation = correlation;
-                     request.queue = group.queue;
-
-                     if( common::communication::device::blocking::optional::send( group.process.ipc, request))
-                     {
-                        auto handler = common::message::dispatch::handler( ipc,
-                           []( common::message::queue::dequeue::forget::Request& request) {}, // no-op
-                           []( common::message::queue::dequeue::forget::Reply& request) {} // no-op
-                        );
-
-                        handler( common::communication::device::blocking::next( ipc, handler.types()));
-                     }
-                  });
-
-                  // Send request
-                  {
-                     common::message::queue::dequeue::Request request;
-                     request.correlation = correlation;
-                     request.trid = transaction.trid;
-
-                     request.process = common::process::handle();
-
-                     request.queue = group.queue;
+                     common::message::queue::dequeue::Request request{ common::process::handle()};
+                     request.trid = trid;
+                     request.queue = lookup.queue;
                      request.block = block;
-                     request.name = lookup.name();
+                     request.name = lookup.name;
                      request.selector.id = selector.id;
                      request.selector.properties = selector.properties;
 
                      common::log::line( verbose::log, "request: ", request);
 
-                     common::communication::device::blocking::send( group.process.ipc, request);
+                     return request;
                   };
 
-                  std::vector< Message> result;
-
-                  // We need to listen to shutdown-message.
-                  // TODO: Don't know if we really should do this here, but otherwise we have
-                  // no way of "interrupt" if it's a blocking request. We could rely only on terminate-signal
-                  // (which we now also do) but it isn't really coherent with how casual otherwise works
-
-                  auto handler = common::message::dispatch::handler( ipc,
-                     [&]( common::message::queue::dequeue::Reply& reply)
+                  namespace non
+                  {
+                     auto blocking( const queue::Lookup& lookup, const Selector& selector)
                      {
+                        Trace trace{ "casual::queue::local::dequeue::non::blocking"};
+
+                        auto& transaction = common::transaction::context().current();
+                        auto group = lookup();
+
+                        if( ! group)
+                           queue::raise( queue::code::no_queue);
+
+                        // 'call' non-blocking dequeue
+                        auto reply = common::communication::ipc::call( 
+                           group.process.ipc,  
+                           dequeue::request( group, selector, transaction.trid, false));
+
                         if( ! reply.message.empty() && transaction)
                         {
                            // Make sure we trigger an interaction with the TM.
@@ -153,46 +126,139 @@ namespace casual
                            transaction.external();
                         }
 
-                        if( reply.correlation != correlation)
+                        return common::algorithm::transform( reply.message, queue::transform::Message{});
+                     }  
+                  } // non
+
+
+
+                  auto blocking( const queue::Lookup& lookup, const Selector& selector)
+                  {
+                     Trace trace{ "casual::queue::local::dequeue::blocking"};
+
+                     auto& transaction = common::transaction::context().current();
+                     auto group = lookup();
+
+                     if( ! group)
+                        queue::raise( queue::code::no_queue);
+
+                     // 'request' blocking dequeue
+                     auto correlation = common::communication::device::blocking::send( 
+                        group.process.ipc, 
+                        dequeue::request( group, selector, transaction.trid, true));
+
+                     auto& ipc = common::communication::ipc::inbound::device();
+
+                     struct 
+                     {
+                        bool done = false;
+                        std::vector< Message> result;
+                     } state;
+
+                     // handles deque-reply - used for the normal reply, and also when we send dequeue::forget::Request
+                     auto handle_dequeue_reply = [&]( common::message::queue::dequeue::Reply& message)
+                     {
+                        Trace trace{ "casual::queue::local::dequeue::blocking handler - dequeue::Reply"};
+                        common::log::line( verbose::log, "message: ", message);
+
+                        if( ! message.message.empty() && transaction)
+                        {
+                           // Make sure we trigger an interaction with the TM.
+                           // Since the queue-groups act as 'external resources' to
+                           // the TM
+                           transaction.external();
+                        }
+
+                        if( message.correlation != correlation)
                            queue::error( code::system, "correlation mismatch");
 
-                        common::algorithm::transform( reply.message, result, queue::transform::Message{});
+                        common::algorithm::transform( message.message, state.result, queue::transform::Message{});
+                     };
 
-                     },
-                     [&]( common::message::queue::dequeue::forget::Request& request)
-                     {
-                        // The group we're waiting for is going off-line, we just
-                        // return an empty message.
-                        //
-                        // We don't need to send forget to group ( since that is exactly what
-                        // it is telling us...)
-                        forget_blocking.release();
-                     },
-                     // TODO semantics - should we re-"push" the shutdown message to our 
-                     // inbound queue so the _callers server_ (if any) will get the shutdown
-                     // later?
-                     common::message::handle::Shutdown{}
-                  );
 
-                  // to make sure we don't consume any messages we aren't looking for
-                  // this has to be exact the same messages types as the handlers
-                  // above.
-                  constexpr auto types = common::array::make( 
-                     common::message::queue::dequeue::Reply::type(),
-                     common::message::queue::dequeue::forget::Request::type(),
-                     common::message::shutdown::Request::type());
+                     auto handler = common::message::dispatch::handler( ipc,
+                        // the normal case - when we get a message
+                        [&]( common::message::queue::dequeue::Reply& reply)
+                        {
+                           handle_dequeue_reply( reply);
+                           state.done = true;
+                        },
+                        // queue-group want's to end the blockin dequeue for some reason
+                        [&]( common::message::queue::dequeue::forget::Request& message)
+                        {
+                           Trace trace{ "casual::queue::local::dequeue::blocking handler - forget::Request"};
+                           common::log::line( verbose::log, "message: ", message);
 
-                  // wait for the reply
-                  handler( common::communication::device::blocking::next( ipc, types));
+                           state.done = true;
+                        },
+                        // domain-manager want's us to shut down.
+                        [&]( common::message::shutdown::Request& message)
+                        {
+                           Trace trace{ "casual::queue::local::dequeue::blocking handler - shutdown::Request"};
+                           common::log::line( verbose::log, "message: ", message);
 
-                  // We don't need to send forget, since it went as it should.
-                  forget_blocking.release();
+                           // domain manager want this process to shutdown, we send forget-request
+                           // AND make sure we 're-push' the shutdown request so casual can act on it later, hence
+                           // actually shut down this process (when we get to the real message pump)
+                           ipc.push( std::move( message));
 
-                  if( ! result.empty())
-                     common::log::line( verbose::log, "message: ", result.front());
+                           // we need to send forget-dequeue
+                           {
+                              common::message::queue::dequeue::forget::Request request{ common::process::handle()};
+                              request.correlation = correlation;
+                              request.queue = group.queue;
 
-                  return result;
-               }
+                              if( common::communication::device::blocking::optional::send( group.process.ipc, request))
+                              {
+                                 // there could be race-conditions when the queue-group has either sent the
+                                 // dequeue-reply already, or instigated a dequeue::forget for some reason.
+                                 auto handler = common::message::dispatch::handler( ipc,
+                                    [&state]( common::message::queue::dequeue::forget::Reply& message)
+                                    {
+                                       Trace trace{ "casual::queue::local::dequeue::blocking handler - forget::Request - forget::Reply"};
+                                       common::log::line( verbose::log, "message: ", message);
+
+                                       // This is either way the 'last' message from the group in this
+                                       // 'session', but the two below might have been consumed.
+                                       state.done = true;
+                                    }, 
+                                    []( common::message::queue::dequeue::forget::Request& request) {}, // no-op
+                                    [&]( common::message::queue::dequeue::Reply& message)
+                                    {
+                                       Trace trace{ "casual::queue::local::dequeue::blocking handler - forget::Request - dequeue::Reply"};
+                                       common::log::line( verbose::log, "message: ", message);
+
+                                       handle_dequeue_reply( message);
+                                       // we wait for the forget-reply
+                                    }
+                                 );
+
+                                 common::message::dispatch::relaxed::pump(
+                                    common::message::dispatch::condition::compose( 
+                                       common::message::dispatch::condition::done( [&state](){ return state.done;})
+                                    ),
+                                    handler,
+                                    ipc);
+                              }
+                           }
+
+                           state.done = true;
+                        }
+                     );
+
+
+                     // start listen on messages.
+                     common::message::dispatch::relaxed::pump(
+                        common::message::dispatch::condition::compose( 
+                           common::message::dispatch::condition::done( [&state](){ return state.done;})
+                        ),
+                        handler,
+                        ipc);
+
+                     return std::move( state.result);
+                  }
+                  
+               } // dequeue
 
             } // <unnamed>
          } // local
@@ -212,7 +278,7 @@ namespace casual
 
             queue::Lookup lookup( queue);
 
-            return local::dequeue( lookup, selector, false);
+            return local::dequeue::non::blocking( lookup, selector);
          }
 
          std::vector< Message> dequeue( const std::string& queue)
@@ -236,7 +302,7 @@ namespace casual
 
                queue::Lookup lookup( queue);
 
-               auto message = local::dequeue( lookup, selector, true);
+               auto message = local::dequeue::blocking( lookup, selector);
 
                if( message.empty())
                   queue::raise( code::no_message);

@@ -249,7 +249,7 @@ namespace casual
                         // move append the variables
                         algorithm::move( not_overridden, variables);
 
-                        return variables;
+                        return std::move( variables);
                      }
                   } // copy
 

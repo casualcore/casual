@@ -183,7 +183,7 @@ namespace casual
          struct from_string< std::string, void> 
          { 
             static const std::string& get( const std::string& value) { return value;} 
-            static std::string get( std::string&& value) { return value;} 
+            static std::string get( std::string&& value) { return std::move( value);} 
             static std::string get( view::String value) { return { std::begin( value), std::end( value)};} 
          };
 

@@ -62,10 +62,10 @@ namespace casual
             struct Policy
             {
 
-               Policy( manager::State& state) : m_state( state) {}
+               Policy( manager::State& state) : m_state( &state) {}
 
-               Policy( Policy&&) = default;
-               Policy& operator = ( Policy&&) = default;
+               Policy( Policy&&) noexcept = default;
+               Policy& operator = ( Policy&&) noexcept = default;
 
 
                void configure( common::server::Arguments&);
@@ -85,7 +85,7 @@ namespace casual
                void statistics( common::strong::ipc::id, common::message::event::service::Call&);
 
             private:
-               manager::State& m_state;
+               manager::State* m_state;
             };
 
             using Call = common::server::handle::basic_call< manager::handle::Policy>;

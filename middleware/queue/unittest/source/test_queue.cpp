@@ -33,6 +33,7 @@
 
 
 #include <fstream>
+#include <future>
 
 namespace casual
 {
@@ -728,18 +729,88 @@ domain:
 
       }
 
-/*
-      TEST( casual_queue, queue_forward_dequeue_not_available_queue__expect_gracefull_shutdown)
+      TEST( casual_queue, shutdown_during_non_blocking_queue_lookup__expect_shutdown_not_consumed)
       {
          common::unittest::Trace trace;
 
          local::Domain domain;
 
-         local::Forward forward{ "non-existent-A", "non-existent-B"};
+         auto& inbound = common::communication::ipc::inbound::device();
 
-         EXPECT_TRUE( forward.process() != common::process::handle());
+         // prepare the fake shutdown 
+         inbound.push( common::message::shutdown::Request{ common::process::handle()});
+
+         queue::Message message;
+         {
+            message.payload.type = common::buffer::type::binary();
+            message.payload.data = common::unittest::random::binary( 43);
+         }
+
+         auto id = queue::enqueue( "queueA1", message);
+         EXPECT_TRUE( id) << "id: " << id;
+
+         {
+            common::message::shutdown::Request message;
+            EXPECT_TRUE( common::communication::device::blocking::receive( inbound, message));
+         }
+
       }
-      */
+
+      TEST( casual_queue, shutdown_during_blocking_dequeue__expect_shutdown_not_consumed)
+      {
+         common::unittest::Trace trace;
+
+         local::Domain domain;
+
+         auto& inbound = common::communication::ipc::inbound::device();
+
+         // prepare the fake shutdown 
+         inbound.push( common::message::shutdown::Request{ common::process::handle()});
+
+         EXPECT_CODE( 
+         {  
+            queue::blocking::dequeue( "queueA1");
+         }, queue::code::no_message);
+
+         // expect shutdown to 'stay'
+         {
+            common::message::shutdown::Request message;
+            EXPECT_TRUE( common::communication::device::blocking::receive( inbound, message));
+         }
+      }
+
+      TEST( casual_queue, enqueue_message__shutdown_during_blocking_dequeue___expect__message_and_shutdown_not_consumed)
+      {
+         common::unittest::Trace trace;
+
+         local::Domain domain;
+
+         {
+            queue::Message message;
+            {
+               message.payload.type = common::buffer::type::binary();
+               message.payload.data = common::unittest::random::binary( 43);
+            }
+            queue::enqueue( "queueA1", message);
+         }
+
+         auto& inbound = common::communication::ipc::inbound::device();
+
+         // prepare the fake shutdown 
+         inbound.push( common::message::shutdown::Request{ common::process::handle()});
+
+         EXPECT_NO_THROW(
+         {  
+            queue::blocking::dequeue( "queueA1");
+         });
+
+         // expect shutdown to 'stay'
+         {
+            common::message::shutdown::Request message;
+            EXPECT_TRUE( common::communication::device::blocking::receive( inbound, message));
+         }
+      }
+
 
    } // queue
 } // casual
