@@ -76,6 +76,26 @@ namespace casual
             std::longjmp( m_state.jump.environment, state::Jump::Location::c_return);
          }
 
+         void Context::normal_return( flag::xatmi::Return rval, long rcode, char* data, long len)
+         {
+            // Prepare buffer.
+            // Essentially the same as jump_return above, but instead of a longjmp
+            // this variant returns to the caller. Used by the COBOL api TPRETURN
+            // function that is expected to return to its caller, that ultimately
+            // returns to the "communications manager" (Casual) without bypassing 
+            // the COBOL runtime. 
+
+            m_state.jump.state.value = rval;
+            m_state.jump.state.code = rcode;
+            m_state.jump.buffer.data = data;
+            m_state.jump.buffer.size = len;
+            m_state.jump.forward.service.clear();
+
+            m_state.TPRETURN_called = true;
+
+            log::line( log::debug, "Context::normal_return - jump state: ", m_state.jump);
+         }
+
 
          void Context::forward( const char* service, char* data, long size)
          {

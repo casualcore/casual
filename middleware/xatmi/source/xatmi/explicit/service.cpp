@@ -194,6 +194,14 @@ void casual_service_return( const int rval, const long rcode, char* const data, 
    });
 }
 
+void casual_normal_service_return( const int rval, const long rcode, char* const data, const long len, const long /* flags for future use */)
+{
+   casual::xatmi::internal::error::wrap( [&](){
+      casual::common::server::context().normal_return( 
+         static_cast< casual::common::flag::xatmi::Return>( rval), rcode, data, len);
+   });
+}
+
 int casual_service_advertise( const char* service, void (*function)( TPSVCINFO *))
 {
    return casual::xatmi::internal::error::wrap( [&](){
@@ -206,4 +214,27 @@ int casual_service_unadvertise( const char* const service)
    return casual::xatmi::internal::error::wrap( [&](){
       casual::common::server::context().unadvertise( service);
    });
+}
+
+// COBOL API support routine. Returns a pointer to saved arguments to
+// an invoked service. Allows the COBOL api TPSVCSTART to find
+// service input, and the buffer type and subtype
+int casual_tpsvcinfo_cobol_support(const TPSVCINFO** tpsvcinfo,
+                                   const char** buffer_type,
+                                   const char** buffer_subtype)
+{
+   // is an internal error wrap needed? Should not fail in normal
+   // cases. Possibly if COBOL api TPSVCSTART is called in a context
+   // that isn't an invoked service.
+   // should perhaps add a method to context that verifies that
+   // there is an active service call, and generates an error
+   // if not (TBD !). Then use that method instead of state()
+   // (or in additon to state()).
+   //return casual::xatmi::internal::error::wrap( [&](){
+   //   something...
+   //});
+   *tpsvcinfo = &casual::common::server::context().state().information.argument;
+   *buffer_type=casual::common::server::context().state().buffer_type.c_str();
+   *buffer_subtype=casual::common::server::context().state().buffer_subtype.c_str();
+   return 0; //Assumne OK. Only for know!!!! prototyping! 
 }

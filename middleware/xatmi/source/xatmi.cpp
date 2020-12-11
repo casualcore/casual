@@ -108,3 +108,18 @@ void tpsvrdone()
    tx_close();
 }
 
+// TODO cobol - move to own TU
+// Support routines for COBOL API
+// Perhaps should avoid this intermediate step, and instead call 
+// directly into the "explicit" routines from TPSVCSTART.
+int tpsvcinfo_cobol_support(const TPSVCINFO** tpsvcinfo,
+                            const char** buffer_type,
+                            const char** buffer_subtype)
+{
+  return casual_tpsvcinfo_cobol_support(tpsvcinfo, buffer_type, buffer_subtype);
+}
+
+void tpreturn_cobol_support( int rval, long rcode, char* data, long len, long flags)
+{
+   casual_normal_service_return(rval, rcode, data, len, flags);
+}

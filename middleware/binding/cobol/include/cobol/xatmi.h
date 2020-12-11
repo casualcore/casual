@@ -21,7 +21,7 @@
  * Map COBOL record to C struct
  * Application specific data record
 */
-/* Not needed. Use char * or void * for buffers from COBOL */ 
+/* Not needed. Use char * or void * for buffers from COBOL */
 #if 0
 struct DATA_REC_s {
   char    *DATA;
@@ -196,6 +196,14 @@ extern "C" void TPRECV(struct TPSVCDEF_REC_s *TPSVCDEF_REC,
                        struct TPSTATUS_REC_s *TPSTATUS_REC);
 
 extern "C" void TPRETURN(struct TPSVCRET_REC_s *TPSVCRET_REC,
+          struct TPTYPE_REC_s *TPTYPE_REC,
+          char *DATA_REC,
+          struct TPSTATUS_REC_s *TPSTATUS_REC);
+
+/* TPFORWARD Tuxedo extension? Should it be in a separate header and
+ * implementation file?
+*/ 
+extern "C" void TPFORWARD(struct TPSVCDEF_REC_s *TPSVCDEF_REC,
           struct TPTYPE_REC_s *TPTYPE_REC,
           char *DATA_REC,
           struct TPSTATUS_REC_s *TPSTATUS_REC);
