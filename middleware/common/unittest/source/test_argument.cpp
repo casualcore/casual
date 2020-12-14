@@ -379,6 +379,38 @@ namespace casual
          EXPECT_TRUE( v_bool == true);
       }
 
+      TEST( common_argument_parse, option_any_cardinality__vector_value___4_arguments___expect_accumulated_values)
+      {
+         unittest::Trace trace;
+
+         std::vector< std::string> values;
+         argument::Parse parse{ "description", 
+            argument::Option{ std::tie( values), { "-a"}, ""}( argument::cardinality::any{}),
+         };
+          
+         EXPECT_NO_THROW({
+            parse( { "-a", "1", "2", "-a", "3", "4", "-a", "5", "6", "-a", "7", "8"});
+         });
+
+         EXPECT_TRUE(( values == std::vector< std::string>{ "1", "2", "3", "4", "5", "6", "7", "8", }));
+      }
+
+      TEST( common_argument_parse, option_any_cardinality__vector_value__argument_has_ws___expect_accumulated_values)
+      {
+         unittest::Trace trace;
+
+         std::vector< std::string> values;
+         argument::Parse parse{ "description", 
+            argument::Option{ std::tie( values), { "-a"}, ""}( argument::cardinality::any{}),
+         };
+          
+         EXPECT_NO_THROW({
+            parse( { "-a", "1 2", "-a", "3 4"});
+         });
+
+         EXPECT_TRUE(( values == std::vector< std::string>{ "1 2", "3 4"})) << "values: " << values;
+      }
+
       TEST( common_argument_parse, option_deprecated_keys)
       {
          unittest::Trace trace;

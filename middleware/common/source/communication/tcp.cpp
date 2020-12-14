@@ -90,27 +90,11 @@ namespace casual
 
                      namespace address
                      {
-                        const char* null_if_empty( const std::string& content)
-                        {
-                           if( content.empty()) { return nullptr;}
-                           return content.c_str();
-                        }
-
-                        const char* host( const Address& address)
-                        {
-                           return null_if_empty( address.host);
-                        }
-
-                        const char* port( const Address& address)
-                        {
-                           return null_if_empty( address.port);
-                        }
-
                         struct Native 
                         {
                            explicit Native( const tcp::Address& address, Flags< Flag> flags = {})
                            {
-                              Trace trace( "common::communication::tcp::local::socket::address::Natice::Native");
+                              Trace trace( "common::communication::tcp::local::socket::address::Native::Native");
                               log::line( verbose::log, "address: ", address, ", flags: ", flags);
 
                               struct addrinfo hints{};
@@ -123,7 +107,10 @@ namespace casual
                               flags |= Flag::canonical;
                               hints.ai_flags = flags.underlaying();
 
-                              if( const int result = getaddrinfo( address::host( address), address::port( address), &hints, &information.value))
+                              std::string host{ address.host()};
+                              std::string port{ address.port()};
+
+                              if( const int result = ::getaddrinfo( host.data(), port.data(), &hints, &information.value))
                                  code::raise::log( code::casual::invalid_argument, gai_strerror( result), " address: ", address);
                            }
 
@@ -252,7 +239,7 @@ namespace casual
                               serv, NI_MAXSERV,
                               flags));
 
-                        return { Address::Host{ host}, Address::Port{ serv}};
+                        return { string::compose( host, ':', serv)};
                      }
 
                      Socket accept( const descriptor_type descriptor)
@@ -270,44 +257,22 @@ namespace casual
 
             } // local
 
-            Address::Address( const std::string& address)
+            std::string_view Address::host() const
             {
-               auto parts = common::string::split( address, ':');
+               if( auto found = algorithm::find( m_address, ':'))
+                  return std::string_view( m_address.data(), std::distance( std::begin( m_address), std::begin( found)));
 
-               switch( parts.size())
+               return { m_address};
+            }
+
+            std::string_view Address::port() const
+            {
+               if( auto found = algorithm::find( m_address, ':'))
                {
-                  case 1:
-                  {
-                     port = std::move( parts.front());
-                     break;
-                  }
-                  case 2:
-                  {
-                     host = std::move( parts[ 0]);
-                     port = std::move( parts[ 1]);
-                     break;
-                  }
-                  default:
-                  {
-                     code::raise::error( code::casual::invalid_argument, "address: ", address);
-                  }
+                  ++found;
+                  return std::string_view( found.data(), found.size());
                }
-            }
-
-            Address::Address( Port port) : port{ std::move( port)}
-            {
-            }
-
-            Address::Address( Host host, Port port) : host{ std::move( host)}, port{ std::move( port)}
-            {
-            }
-
-            std::ostream& operator << ( std::ostream& out, const Address& value)
-            {
-               return out << "{ host: " << value.host
-                  << ", port: " << value.port
-                  << '}';
-
+               return {};
             }
 
             namespace socket
@@ -376,6 +341,27 @@ namespace casual
 
                return local::socket::connect( address);
             }
+
+            namespace non::blocking
+            {
+               Socket connect( const Address& address)
+               {
+                  Trace trace( "common::communication::tcp::non::blocking::connect");
+
+                  try
+                  {
+                     return tcp::connect( address);
+                  }
+                  catch( ...)
+                  {
+                     // if refused we return 'nil' socket
+                     if( exception::code() != code::casual::communication_refused)
+                        throw;
+                  }
+                  return {};
+
+               }
+            } // non::blocking
 
             namespace retry
             {

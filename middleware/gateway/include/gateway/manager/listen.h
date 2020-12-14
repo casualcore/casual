@@ -19,7 +19,7 @@ namespace casual
       {
          namespace listen
          {
-            using Limit = message::inbound::Limit;
+            using Limit = casual::configuration::model::gateway::Limit;
 
             struct Connection
             {

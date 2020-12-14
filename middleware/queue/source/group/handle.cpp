@@ -15,6 +15,7 @@
 #include "common/execute.h"
 #include "common/code/casual.h"
 #include "common/code/category.h"
+#include "common/signal/timer.h"
 
 #include "common/communication/instance.h"
 
@@ -257,7 +258,7 @@ namespace casual
                               auto wanted = available.value() - now;
                               auto current = common::signal::timer::get();
                               log::line( verbose::log, "wanted: ", wanted, ", current: ", current);
-                              if( current == platform::time::unit::min() || wanted < current)
+                              if( ! current || wanted < current)
                                  common::signal::timer::set( wanted);
                            }
 

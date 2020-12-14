@@ -154,7 +154,7 @@ namespace casual
                      }
 
                      std::ostringstream m_output;
-                     std::vector< common::view::String> m_prefix;
+                     std::vector< std::string_view> m_prefix;
                   };
                } // <unnamed>
             } // local

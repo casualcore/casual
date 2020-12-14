@@ -16,6 +16,7 @@
 #include "common/file.h"
 #include "common/log.h"
 #include "common/signal.h"
+#include "common/signal/timer.h"
 #include "common/string.h"
 #include "common/environment.h"
 #include "common/environment/normalize.h"
@@ -157,7 +158,7 @@ namespace casual
             // We check signals before we sleep
             signal::dispatch();
 
-            if( nanosleep( &posix_time, nullptr) == -1)
+            if( ::nanosleep( &posix_time, nullptr) == -1)
             {
                switch( code::system::last::error())
                {

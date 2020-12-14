@@ -7,6 +7,7 @@
 #include "common/unittest.h"
 
 #include "common/signal.h"
+#include "common/signal/timer.h"
 #include "common/process.h"
 
 #include "common/code/signal.h"
@@ -60,7 +61,7 @@ namespace casual
       };
 
       template <typename H>
-      struct casual_common_signal_types : public ::testing::Test, public H
+      struct common_signal_types : public ::testing::Test, public H
       {
 
       };
@@ -75,10 +76,10 @@ namespace casual
             holder< code::signal::child>
        >;
 
-      TYPED_TEST_SUITE( casual_common_signal_types, signal_type);
+      TYPED_TEST_SUITE( common_signal_types, signal_type);
 
 
-      TYPED_TEST( casual_common_signal_types, send_signal__expect_throw)
+      TYPED_TEST( common_signal_types, send_signal__expect_throw)
       {
          common::unittest::Trace trace;
 
@@ -91,7 +92,7 @@ namespace casual
 
 
 
-      TYPED_TEST( casual_common_signal_types, block_all_signals__send_signal_X___expect_no_throw)
+      TYPED_TEST( common_signal_types, block_all_signals__send_signal_X___expect_no_throw)
       {
          common::unittest::Trace trace;
 
@@ -114,7 +115,7 @@ namespace casual
       }
 
 
-      TYPED_TEST( casual_common_signal_types, send_signal_X__block_all_signals___expect_no_throw)
+      TYPED_TEST( common_signal_types, send_signal_X__block_all_signals___expect_no_throw)
       {
          common::unittest::Trace trace;
 
@@ -135,7 +136,7 @@ namespace casual
          local::expect_signal_raised_sleep( TestFixture::get_signal());
       }
 
-      TYPED_TEST( casual_common_signal_types, block_signal_X__send_signal_X___expect_no_throw)
+      TYPED_TEST( common_signal_types, block_signal_X__send_signal_X___expect_no_throw)
       {
          common::unittest::Trace trace;
 
@@ -156,7 +157,7 @@ namespace casual
          local::expect_signal_raised_sleep( TestFixture::get_signal());
       }
 
-      TYPED_TEST( casual_common_signal_types, send_signal_X__block_signal_X___expect_no_throw)
+      TYPED_TEST( common_signal_types, send_signal_X__block_signal_X___expect_no_throw)
       {
          common::unittest::Trace trace;
 
@@ -178,7 +179,7 @@ namespace casual
          local::expect_signal_raised_sleep( TestFixture::get_signal());
       }
 
-      TYPED_TEST( casual_common_signal_types, send_signal_twice___expect_1_pending)
+      TYPED_TEST( common_signal_types, send_signal_twice___expect_1_pending)
       {
          common::unittest::Trace trace;
 
@@ -190,7 +191,7 @@ namespace casual
          EXPECT_TRUE( signal::current::pending() == 1);
       }
 
-      TYPED_TEST( casual_common_signal_types, send_signal_twice__expect_1_throw)
+      TYPED_TEST( common_signal_types, send_signal_twice__expect_1_throw)
       {
          common::unittest::Trace trace;
 
@@ -210,7 +211,7 @@ namespace casual
       }
 
 
-      TEST( casual_common_signal, send_terminate__expect_throw)
+      TEST( common_signal, send_terminate__expect_throw)
       {
          common::unittest::Trace trace;
 
@@ -220,7 +221,7 @@ namespace casual
       }
 
 
-      TEST( casual_common_signal, send_terminate_1__child_1___expect_2_pending_signal)
+      TEST( common_signal, send_terminate_1__child_1___expect_2_pending_signal)
       {
          common::unittest::Trace trace;
 
@@ -230,7 +231,7 @@ namespace casual
          EXPECT_TRUE( signal::current::pending() == 2);
       }
 
-      TEST( casual_common_signal, send_terminate_1__child_1___expect_2_throws)
+      TEST( common_signal, send_terminate_1__child_1___expect_2_throws)
       {
          common::unittest::Trace trace;
 
@@ -245,7 +246,7 @@ namespace casual
       }
 
 
-      TEST( casual_common_signal, scope_timeout)
+      TEST( common_signal, scope_timeout)
       {
          common::unittest::Trace trace;
 
@@ -256,7 +257,23 @@ namespace casual
          local::expect_signal_raised_sleep( code::signal::alarm);
       }
 
-      TEST( casual_common_signal, nested_timeout)
+      TEST( common_signal, scope_timeout__dtor_expect_no_timeouts)
+      {
+         common::unittest::Trace trace;
+
+         EXPECT_NO_THROW( signal::dispatch());
+
+         EXPECT_TRUE( ! signal::timer::get());
+         
+         {
+            signal::timer::Scoped timer{ std::chrono::milliseconds{ 1}};
+            EXPECT_TRUE( signal::timer::get());
+         }
+
+         EXPECT_TRUE( ! signal::timer::get());
+      }
+
+      TEST( common_signal, scope_timeout_nested)
       {
          common::unittest::Trace trace;
 

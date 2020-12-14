@@ -196,6 +196,7 @@ domain:
             } // service
          } // <unnamed>
       } // local
+      
       TEST( gateway_manager_tcp, connect_to_our_self__remote1_call__expect_service_remote1)
       {
          common::unittest::Trace trace;

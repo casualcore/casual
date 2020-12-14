@@ -18,6 +18,7 @@
 #include "casual/buffer/admin/cli.h"
 #include "tools/service/call/cli.h"
 #include "tools/service/describe/cli.h"
+#include "configuration/admin/cli.h"
 
 namespace casual
 {
@@ -129,6 +130,7 @@ valid directives:
             tools::service::call::cli service_call;
             tools::service::describe::cli describe;
             casual::buffer::admin::CLI buffer;
+            configuration::admin::CLI configuration;
          } cli;
 
          auto parser() 
@@ -152,6 +154,7 @@ Where <option> is one of the listed below
                cli.service_call.options(),
                cli.describe.options(),
                cli.buffer.options(),
+               cli.configuration.options(),
                common::terminal::output::directive().options(),
             };
          }

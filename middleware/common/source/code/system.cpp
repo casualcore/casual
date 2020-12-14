@@ -34,7 +34,8 @@ namespace casual
 
             void raise( const std::string& context) noexcept( false)
             {
-               code::raise::log( code::convert::to::casual( last::error()), context);
+               auto error = last::error();
+               code::raise::log( code::convert::to::casual( error), context, " - ", error);
             }
 
          } // system

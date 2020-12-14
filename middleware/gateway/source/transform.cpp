@@ -57,44 +57,23 @@ namespace casual
                }
 
 
-               namespace vo
+               auto connection( manager::admin::model::Connection::Bound bound)
                {
-                  struct Connection
+                  return [bound]( auto& connection)
                   {
-                     manager::admin::model::Connection operator() ( const manager::state::inbound::Connection& value) const
-                     {
-                        auto result = transform( value);
-                        result.bound = manager::admin::model::Connection::Bound::in;
+                     manager::admin::model::Connection result;
 
-                        return result;
-                     }
+                     result.bound = bound;
+                     result.process = connection.process;
+                     result.remote = connection.remote;
+                     result.runlevel = static_cast< manager::admin::model::Connection::Runlevel>( connection.runlevel);
+                     result.address.local = connection.address.local;
+                     result.address.peer = connection.address.peer;
 
-                     manager::admin::model::Connection operator() ( const manager::state::outbound::Connection& value) const
-                     {
-                        auto result = transform( value);
-                        result.bound = manager::admin::model::Connection::Bound::out;
-
-                        return result;
-                     }
-
-                  private:
-
-                     template< typename T>
-                     manager::admin::model::Connection transform( const T& value) const
-                     {
-                        manager::admin::model::Connection result;
-
-                        result.process = value.process;
-                        result.remote = value.remote;
-                        result.runlevel = static_cast< manager::admin::model::Connection::Runlevel>( value.runlevel);
-                        result.address.local = value.address.local;
-                        result.address.peer = value.address.peer;
-
-                        return result;
-                     }
-
+                     return result;
                   };
-               } // vo
+               }
+
             } // <unnamed>
          } // local
 
@@ -104,38 +83,81 @@ namespace casual
 
             manager::State state;
 
+            auto set_order = [ order = platform::size::type{ 0}]( auto& outbound) mutable
+            {
+               outbound.order = ++order;
+            };
+
             for( auto& listener : configuration.listeners)
                state.add( local::listener()( std::move( listener)));
+
+            
+            state.reverse.outbounds = algorithm::transform( configuration.reverse.outbounds, [&set_order](  auto& model)
+            {
+               manager::state::reverse::Outbound result;
+               result.configuration = model;
+               set_order( result);
+               return result;
+            });
+
+            state.reverse.inbounds = algorithm::transform( configuration.reverse.inbounds, [](  auto& model)
+            {
+               manager::state::reverse::Inbound result;
+               result.configuration = model;
+               return result;
+            });
 
             state.connections.outbound = algorithm::transform( configuration.connections, local::connection());
 
             // Define the order, hence the priority
-            algorithm::for_each( state.connections.outbound, [order = platform::size::type{ 0}]( auto& outbound) mutable
-            {
-               outbound.order = ++order;
-            });
+            algorithm::for_each( state.connections.outbound, set_order);
 
             log::line( verbose::log, "state: ", state);
 
             return state;
          }
 
-         manager::admin::model::State state( const manager::State& state)
+         manager::admin::model::State state( const manager::State& state,
+            std::vector< message::reverse::inbound::state::Reply> inbounds, 
+            std::vector< message::reverse::outbound::state::Reply> outbounds)
          {
             Trace trace{ "gateway::transform::state service"};
 
             manager::admin::model::State result;
 
 
-            algorithm::transform( state.connections.outbound, result.connections, local::vo::Connection{});
-            algorithm::transform( state.connections.inbound, result.connections, local::vo::Connection{});
+            algorithm::transform( state.connections.outbound, result.connections, local::connection( manager::admin::model::Connection::Bound::out));
+            algorithm::transform( state.connections.inbound, result.connections, local::connection( manager::admin::model::Connection::Bound::in));
+
+            algorithm::for_each( outbounds, [&result]( auto& outbound)
+            {
+               algorithm::transform( outbound.state.connections, result.connections, [&outbound]( auto& connection)
+               {
+                  manager::admin::model::Connection result;
+                  result.address.local = connection.address.local;
+                  result.address.peer = connection.address.peer;
+                  result.remote = connection.domain;
+                  result.process = outbound.process;
+                  result.runlevel = decltype( result.runlevel)::online;
+                  return result;
+               });
+
+               algorithm::transform( outbound.state.listeners, result.listeners, []( auto& listener)
+               {
+                  manager::admin::model::Listener result;
+                  result.address.host = listener.address.host();
+                  result.address.port = listener.address.port();
+                  return result;
+               });
+
+            });
 
 
-            auto transform_listener = []( const manager::listen::Entry& entry)
+            auto transform_listener = []( const auto& entry)
             {
                manager::admin::model::Listener result;
-               result.address.host = entry.address().host;
-               result.address.port = entry.address().port;
+               result.address.host = entry.address().host();
+               result.address.port = entry.address().port();
                result.limit.size = entry.limit().size;
                result.limit.messages = entry.limit().messages;
                

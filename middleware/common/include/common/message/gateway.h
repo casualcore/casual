@@ -114,6 +114,8 @@ namespace casual
                      using Service = service::concurrent::advertise::Service;
                      using Queue = queue::concurrent::advertise::Queue;
 
+                     using base_reply::base_reply;
+
                      common::domain::Identity domain;
                      std::vector< Service> services;
                      std::vector< Queue> queues;

@@ -13,31 +13,28 @@
 
 namespace casual
 {
-   namespace common
+   namespace common::communication
    {
-      namespace communication
+      //! Log with category 'casual.communication'
+      extern common::log::Stream log;
+
+      namespace verbose
       {
-         //! Log with category 'casual.communication'
          extern common::log::Stream log;
+      } // verbose
 
-         namespace verbose
-         {
-            extern common::log::Stream log;
-         } // verbose
+      namespace trace
+      {
+         extern common::log::Stream log;
+      } // trace
 
-         namespace trace
-         {
-            extern common::log::Stream log;
-         } // trace
+      struct Trace : common::log::Trace
+      {
+         template< typename T>
+         Trace( T&& value) : common::log::Trace( std::forward< T>( value), trace::log) {}
+      };
 
-         struct Trace : common::log::Trace
-         {
-            template< typename T>
-            Trace( T&& value) : common::log::Trace( std::forward< T>( value), trace::log) {}
-         };
-
-      } // communication
-   } // common
+   } // common::communication
 } // casual
 
 

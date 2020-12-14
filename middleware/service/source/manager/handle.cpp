@@ -53,7 +53,7 @@ namespace casual
                   namespace optional
                   {
                      template< typename D, typename M>
-                     bool send( D&& device, M&& message)
+                     auto send( D&& device, M&& message)
                      {
                         log::line( verbose::log, "send message: ", message);
                         return communication::device::blocking::optional::send( device, message);

@@ -40,7 +40,7 @@ namespace casual
                         template< typename D, typename M>
                         bool send( D&& device, M&& message)
                         {
-                           return communication::device::blocking::optional::send( std::forward< D>( device), std::forward< M>( message));
+                           return ! communication::device::blocking::optional::send( std::forward< D>( device), std::forward< M>( message)).empty();
                         }
                      } // optional
                   }

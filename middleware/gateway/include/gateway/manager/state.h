@@ -19,6 +19,8 @@
 
 #include "common/message/coordinate.h"
 
+#include "configuration/model.h"
+
 
 namespace casual
 {
@@ -187,11 +189,10 @@ namespace casual
                            std::string description;
 
                            CASUAL_LOG_SERIALIZE(
-                           { 
                               CASUAL_SERIALIZE( correlation);
                               CASUAL_SERIALIZE( request);
                               CASUAL_SERIALIZE( description);
-                           })
+                           )
                         };
 
 
@@ -216,6 +217,64 @@ namespace casual
 
                } // outbound
             } // coordinate
+
+            namespace reverse
+            {
+               
+               struct base
+               {
+                  common::process::Handle process;
+
+                  friend inline bool operator == ( const base& lhs, common::strong::process::id rhs) { return lhs.process == rhs;}
+                  inline explicit operator bool () const { return static_cast< bool>( process);}
+
+
+                  CASUAL_LOG_SERIALIZE(
+                     CASUAL_SERIALIZE( process);
+                  )
+               };
+
+               struct Outbound : base
+               {
+                  using base::base;
+                  
+                  configuration::model::gateway::reverse::Outbound configuration;
+                  platform::size::type order{};
+
+                  constexpr static auto alias = "casual-gateway-reverse-outbound";
+
+                  CASUAL_LOG_SERIALIZE(
+                     base::serialize( archive);
+                     CASUAL_SERIALIZE( configuration);
+                     CASUAL_SERIALIZE( order);
+                  )
+               };
+
+               struct Inbound : base
+               {
+                  using base::base;
+
+                  configuration::model::gateway::reverse::Inbound configuration;
+
+                  constexpr static auto alias = "casual-gateway-reverse-inbound";
+
+                  CASUAL_LOG_SERIALIZE(
+                     base::serialize( archive);
+                     CASUAL_SERIALIZE( configuration);
+                  )
+               };
+            } // reverse
+
+            struct Reverse
+            {
+               std::vector< reverse::Outbound> outbounds;
+               std::vector< reverse::Inbound> inbounds;
+
+               CASUAL_LOG_SERIALIZE(
+                  CASUAL_SERIALIZE( outbounds);
+                  CASUAL_SERIALIZE( inbounds);
+               )
+            };
          } // state
 
          struct State
@@ -267,11 +326,16 @@ namespace casual
 
             Runlevel runlevel = Runlevel::startup;
 
+            state::Reverse reverse;
+
             CASUAL_LOG_SERIALIZE(
             { 
                CASUAL_SERIALIZE( directive);
                CASUAL_SERIALIZE( connections);
                CASUAL_SERIALIZE( discover);
+               CASUAL_SERIALIZE( rediscover);
+               CASUAL_SERIALIZE( runlevel);
+               CASUAL_SERIALIZE( reverse);
                CASUAL_SERIALIZE_NAME( m_listeners, "listeners");
                CASUAL_SERIALIZE_NAME( m_descriptors, "descriptors");
             })

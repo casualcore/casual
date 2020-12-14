@@ -198,7 +198,9 @@ namespace casual
                   if( ! domain.gateway)
                      return result;
 
-                  result.listeners = common::algorithm::transform( domain.gateway.value().listeners, []( const auto& l)
+                  auto& gateway = domain.gateway.value();
+
+                  result.listeners = common::algorithm::transform( gateway.listeners, []( const auto& l)
                   {
                      gateway::Listener result;
 
@@ -213,7 +215,7 @@ namespace casual
                      return result;
                   });
 
-                  result.connections = common::algorithm::transform( domain.gateway.value().connections, []( const auto& value)
+                  result.connections = common::algorithm::transform( gateway.connections, []( const auto& value)
                   {
                      gateway::Connection result;
 
@@ -228,6 +230,63 @@ namespace casual
 
                      return result;
                   });
+
+                  if( gateway.reverse)
+                  {
+                     auto& source = gateway.reverse.value();
+
+                     gateway::Reverse target;
+
+                     if( source.inbounds)
+                     {
+                        target.inbounds = algorithm::transform( source.inbounds.value(), []( auto& inbound)
+                        {
+                           gateway::reverse::Inbound result;
+                           result.alias = inbound.alias.value_or( "");
+                           result.note = inbound.note.value_or( "");
+
+                           if( inbound.limit)
+                           {
+                              result.limit.messages = inbound.limit.value().messages.value_or( result.limit.messages);
+                              result.limit.size = inbound.limit.value().size.value_or( result.limit.size);
+                           }
+
+                           result.connections = algorithm::transform( inbound.connections, []( auto& value)
+                           {
+                              gateway::reverse::inbound::Connection result;
+                              result.note = value.note.value_or( "");
+                              result.address = value.address;
+                              return result;
+                           });
+
+                           return result;
+                        });
+                     }
+
+                     if( source.outbounds)
+                     {
+                        target.outbounds = algorithm::transform( source.outbounds.value(), []( auto& outbound)
+                        {
+                           gateway::reverse::Outbound result;
+                           result.alias = outbound.alias.value_or( "");
+                           result.note = outbound.note.value_or( "");
+
+                           result.connections = algorithm::transform( outbound.connections, []( auto& value)
+                           {
+                              gateway::reverse::outbound::Connection result;
+                              result.note = value.note.value_or( "");
+                              result.address = value.address;
+                              result.services = value.services.value_or( result.services);
+                              result.queues = value.queues.value_or( result.queues);
+                              return result;
+                           });
+
+                           return result;
+                        });
+                     }
+
+                     result.reverse = std::move( target);
+                  }
 
                   return result;
                }
@@ -479,18 +538,23 @@ namespace casual
 
                      user::gateway::Manager result;
 
-                     result.listeners = algorithm::transform( model.gateway.listeners, []( auto& value)
+                     auto assign_limit = []( auto& source, auto& target)
+                     {
+                        if( source.size > 0 || source.messages > 0)
+                        {
+                           user::gateway::listener::Limit limit;
+                           limit.messages = null_if_empty( source.messages);
+                           limit.size = null_if_empty( source.size);
+                           target = std::move( limit);
+                        };
+                     };
+
+                     result.listeners = algorithm::transform( model.gateway.listeners, [&assign_limit]( auto& value)
                      {
                         user::gateway::Listener result;
                         result.address = value.address;
-                        
-                        if( value.limit.size > 0 || value.limit.messages > 0)
-                        {
-                           user::gateway::listener::Limit limit;
-                           limit.messages = null_if_empty( value.limit.messages);
-                           limit.size = null_if_empty( value.limit.size);
-                           result.limit = std::move( limit);
-                        };
+
+                        assign_limit( value.limit, result.limit);
 
                         result.note  = null_if_empty( value.note);
                         return result;
@@ -508,6 +572,56 @@ namespace casual
                         return result;
                      });
 
+                     // reverse
+                     if( ! model.gateway.reverse.empty())
+                     {
+                        auto reverse = configuration::user::gateway::Reverse{};
+
+                        auto inbounds = algorithm::transform( model.gateway.reverse.inbounds, [&assign_limit]( auto& inbound)
+                        {
+                           configuration::user::gateway::reverse::Inbound result;
+                           result.alias = null_if_empty( inbound.alias);
+                           result.note = null_if_empty( inbound.note);
+                           assign_limit( inbound.limit, result.limit);
+
+                           result.connections = algorithm::transform( inbound.connections, []( auto& value)
+                           {
+                              configuration::user::gateway::reverse::inbound::Connection result;
+                              result.address = value.address;
+                              result.note = null_if_empty( value.note);
+                              return result;
+                           });
+                           
+                           return result;
+                        });
+
+                        if( ! inbounds.empty())
+                           reverse.inbounds = std::move( inbounds);
+
+
+                        auto outbounds = algorithm::transform( model.gateway.reverse.outbounds, []( auto& outbound)
+                        {
+                           configuration::user::gateway::reverse::Outbound result;
+                           result.alias = null_if_empty( outbound.alias);
+                           result.note = null_if_empty( outbound.note);
+                           
+                           result.connections = algorithm::transform( outbound.connections, []( auto& value)
+                           {
+                              configuration::user::gateway::reverse::outbound::Connection result;
+                              result.address = value.address;
+                              result.services = null_if_empty( value.services);
+                              result.queues = null_if_empty( value.queues);
+                              result.note = null_if_empty( value.note);
+                              return result;
+                           });
+                           return result;
+                        });
+
+                        if( ! outbounds.empty())
+                           reverse.outbounds = std::move( outbounds);
+
+                        result.reverse = std::move( reverse);
+                     }
 
                      return result;
                   }

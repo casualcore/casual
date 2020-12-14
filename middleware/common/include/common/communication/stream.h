@@ -16,90 +16,82 @@
 
 namespace casual
 {
-   namespace common
+   namespace common::communication::stream
    {
-      namespace communication
+
+      // Forwards
+      namespace inbound
       {
-         namespace stream
+         struct Connector;
+      } // inbound
+
+      namespace outbound
+      {
+         struct Connector;
+      } // inbound
+
+      namespace policy
+      {
+         using cache_type = device::inbound::cache_type;
+         using cache_range_type = device::inbound::cache_range_type;
+
+         struct Blocking
          {
+            cache_range_type receive( inbound::Connector& connector, cache_type& cache);
+            Uuid send( outbound::Connector& connector, const communication::message::Complete& complete);
+         };
 
-            // Forwards
-            namespace inbound
+         namespace non
+         {
+            struct Blocking
             {
-               struct Connector;
-            } // inbound
+               cache_range_type receive( inbound::Connector& connector, cache_type& cache);
+            };  
+         } // non
+         
+      } // policy
 
-            namespace outbound
-            {
-               struct Connector;
-            } // inbound
+      namespace outbound
+      {
+         struct Connector
+         {
+            using blocking_policy = policy::Blocking;
 
-            namespace policy
-            {
-               using cache_type = device::inbound::cache_type;
-               using cache_range_type = device::inbound::cache_range_type;
+            inline Connector( std::ostream& out) : m_out{ &out} {}
 
-               struct Blocking
-               {
-                  cache_range_type receive( inbound::Connector& connector, cache_type& cache);
-                  Uuid send( outbound::Connector& connector, const communication::message::Complete& complete);
-               };
+            inline std::ostream& stream() { return *m_out;}
 
-               namespace non
-               {
-                  struct Blocking
-                  {
-                     cache_range_type receive( inbound::Connector& connector, cache_type& cache);
-                  };  
-               } // non
-               
-            } // policy
+            CASUAL_LOG_SERIALIZE(
+               CASUAL_SERIALIZE_NAME( m_out, "out");
+            )
 
-            namespace outbound
-            {
-               struct Connector
-               {
-                  using blocking_policy = policy::Blocking;
+         private:
+            std::ostream* m_out;
+         };
 
-                  inline Connector( std::ostream& out) : m_out{ &out} {}
+         using Device = communication::device::Outbound< Connector,  serialize::native::binary::network::create::Writer>;
+      } // outbound
 
-                  inline std::ostream& stream() { return *m_out;}
+      namespace inbound
+      {
+         struct Connector
+         {
+            using blocking_policy = policy::Blocking;
+            using non_blocking_policy = policy::non::Blocking;
+            inline Connector( std::istream& in) : m_in{ &in} {}
 
-                  CASUAL_LOG_SERIALIZE(
-                     CASUAL_SERIALIZE_NAME( m_out, "out");
-                  )
+            inline std::istream& stream() { return *m_in;}
 
-               private:
-                  std::ostream* m_out;
-               };
+            CASUAL_LOG_SERIALIZE(
+               CASUAL_SERIALIZE_NAME( m_in, "in");
+            )
 
-               using Device = communication::device::Outbound< Connector,  serialize::native::binary::network::create::Writer>;
-            } // outbound
+         private:
+            std::istream* m_in;
+         };
 
-            namespace inbound
-            {
-               struct Connector
-               {
-                  using blocking_policy = policy::Blocking;
-                  using non_blocking_policy = policy::non::Blocking;
-                  inline Connector( std::istream& in) : m_in{ &in} {}
+         using Device = communication::device::Inbound< Connector, serialize::native::binary::network::create::Reader>;
+      } // outbound
 
-                  inline std::istream& stream() { return *m_in;}
-
-                  CASUAL_LOG_SERIALIZE(
-                     CASUAL_SERIALIZE_NAME( m_in, "in");
-                  )
-
-               private:
-                  std::istream* m_in;
-               };
-
-               using Device = communication::device::Inbound< Connector, serialize::native::binary::network::create::Reader>;
-            } // outbound
-
-
-         } // stream
-
-      } // communication
-   } // common
+   } // common::communication::stream
 } // casual

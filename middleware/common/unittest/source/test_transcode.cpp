@@ -15,16 +15,20 @@
 namespace casual
 {
 
-   namespace
+   namespace local
    {
-      namespace local
+      namespace 
       {
-         std::vector<char> from_string( const std::string& string)
+         namespace string
          {
-            return std::vector<char>( string.begin(), string.end());
-         }
-      }
-   }
+            std::vector<char> from( const std::string& string)
+            {
+               return std::vector<char>( string.begin(), string.end());
+            }
+         } // from
+
+      } // <unnamed>
+   } // local
 
    namespace common
    {
@@ -43,22 +47,22 @@ namespace casual
       {
          common::unittest::Trace trace;
 
-         EXPECT_TRUE( transcode::base64::encode( local::from_string( "")) == "");
-         EXPECT_TRUE( transcode::base64::encode( local::from_string( "A")) == "QQ==");
-         EXPECT_TRUE( transcode::base64::encode( local::from_string( "AB")) == "QUI=");
-         EXPECT_TRUE( transcode::base64::encode( local::from_string( "ABC")) == "QUJD");
-         EXPECT_TRUE( transcode::base64::encode( local::from_string( "ABCD")) == "QUJDRA==");
+         EXPECT_TRUE( transcode::base64::encode( local::string::from( "")) == "");
+         EXPECT_TRUE( transcode::base64::encode( local::string::from( "A")) == "QQ==");
+         EXPECT_TRUE( transcode::base64::encode( local::string::from( "AB")) == "QUI=");
+         EXPECT_TRUE( transcode::base64::encode( local::string::from( "ABC")) == "QUJD");
+         EXPECT_TRUE( transcode::base64::encode( local::string::from( "ABCD")) == "QUJDRA==");
       }
 
       TEST( casual_common_transcode_base64, decode)
       {
          common::unittest::Trace trace;
 
-         EXPECT_TRUE( transcode::base64::decode( "") == local::from_string( ""));
-         EXPECT_TRUE( transcode::base64::decode( "QQ==") == local::from_string( "A"));
-         EXPECT_TRUE( transcode::base64::decode( "QUI=") == local::from_string( "AB"));
-         EXPECT_TRUE( transcode::base64::decode( "QUJD") == local::from_string( "ABC"));
-         EXPECT_TRUE( transcode::base64::decode( "QUJDRA==") == local::from_string( "ABCD"));
+         EXPECT_TRUE( transcode::base64::decode( "") == local::string::from( ""));
+         EXPECT_TRUE( transcode::base64::decode( "QQ==") == local::string::from( "A"));
+         EXPECT_TRUE( transcode::base64::decode( "QUI=") == local::string::from( "AB"));
+         EXPECT_TRUE( transcode::base64::decode( "QUJD") == local::string::from( "ABC"));
+         EXPECT_TRUE( transcode::base64::decode( "QUJDRA==") == local::string::from( "ABCD"));
       }
 
       TEST( casual_common_transcode_base64, decode_to_same_as_source)

@@ -43,25 +43,8 @@ namespace casual
             //! @return
             std::mutex& mutex();
 
-            bool exists( const char* name);
-            inline bool exists( const std::string& name) { return exists( name.c_str());}
+            bool exists( std::string_view name);
 
-
-            namespace detail
-            {
-               inline const char* get_name( const char* name) { return name;}
-               inline view::String get_name( view::String name) { return name;}
-               inline const char* get_name( const std::string& name) { return name.c_str();}
-
-
-               std::string get( const char* name);
-               std::string get( view::String name);
-               std::string get( const char* name, std::string alternative);
-
-               void set( const char* name, const std::string& value);
-               void unset( const char* name);
-
-            } // detail
 
             namespace native
             {
@@ -72,17 +55,17 @@ namespace casual
 
             //! @return value of environment variable with @p name
             //! @throws exception::EnvironmentVariableNotFound if not found
-            template< typename String>
-            std::string get( String&& name) { return detail::get( detail::get_name( name));}
+            std::string get( std::string_view name);
 
 
-            template< typename T, typename String>
-            T get( String&& name)
+            template< typename T>
+            auto get( std::string_view name)
+               -> decltype( common::string::from< T>( std::string_view{}))
             {
-               auto value = detail::get( detail::get_name( name));
+               auto value = variable::get( name);
                try 
                {
-                  return common::from_string< T>( std::move( value));
+                  return common::string::from< T>( std::move( value));
                }
                catch( ...)
                {
@@ -93,79 +76,91 @@ namespace casual
             namespace detail
             {
 
-               template< typename S, typename A>
-               auto alternative( S&& name, A&& alternative, traits::priority::tag< 2>)
-                  -> decltype( detail::get( detail::get_name( name), std::move( alternative)))
+               template< typename A>
+               auto get( std::string_view name, A&& alternative, traits::priority::tag< 2>)
+                  -> std::enable_if_t< std::is_convertible_v< A, std::string>, std::string>
                {
-                  return detail::get( detail::get_name( name), std::move( alternative));
+                  if( variable::exists( name))
+                     return variable::get( name);
+
+                  return alternative;
                }
 
                // callable alternative
-               template< typename S, typename A>
-               auto alternative( S&& name, A&& alternative, traits::priority::tag< 1>)
-                  -> decltype( common::from_string< decltype( alternative())>( std::string{}))
+               template< typename A>
+               auto get( std::string_view name, A&& alternative, traits::priority::tag< 1>)
+                  -> decltype( common::string::from< decltype( alternative())>( variable::get( name)))
                {
                   if( variable::exists( name))
-                     return common::from_string< decltype( alternative())>( variable::get( name));
+                     return common::string::from< decltype( alternative())>( variable::get( name));
 
                   return alternative();
                }
 
-               template< typename S, typename A>
-               auto alternative( S&& name, A&& alternative, traits::priority::tag< 0>)
-                  -> decltype( common::from_string< A>( std::string{}))
+               template< typename A>
+               auto get( std::string_view name, A alternative, traits::priority::tag< 0>)
+                  -> decltype( common::string::from< A>( variable::get( name)))
                {
                   if( variable::exists( name))
-                     return common::from_string< A>( variable::get( name));
+                     return common::string::from< A>( variable::get( name));
 
                   return alternative;
                }
 
+               void set( std::string_view name, std::string_view value);
+
+               template< typename T>
+               auto set( std::string_view name, T&& value, traits::priority::tag< 1>) 
+                  -> decltype( set( name, std::forward< T>( value)))
+               {
+                  set( name, std::forward< T>( value));
+               }
+
+               template< typename T>
+               auto set( std::string_view name, T&& value, traits::priority::tag< 0>) 
+                  -> decltype( void( common::string::to( std::forward< T>( value))))
+               {
+                  auto&& string = common::string::to( std::forward< T>( value));
+                  set( name, string);
+               }
+
             } // detail
+
 
             //! @return value of environment variable with @p name or `alternative` if
             //!   variable isn't found
-            template< typename String, typename A>
-            auto get( String&& name, A&& alternative) 
-               -> decltype( detail::alternative( std::forward< String>( name), std::forward< A>( alternative), traits::priority::tag< 2>{}))
+            template< typename A>
+            auto get( std::string_view name, A&& alternative) 
+               -> decltype( detail::get( name, std::forward< A>( alternative), traits::priority::tag< 2>{}))
             {
-               return detail::alternative( std::forward< String>( name), std::forward< A>( alternative), traits::priority::tag< 2>{});
+               return detail::get( name, std::forward< A>( alternative), traits::priority::tag< 2>{});
             }
 
 
-            template< typename String>
-            void set( String&& name, const std::string& value) { detail::set( detail::get_name( name), value);}
-
-
-            template< typename String, typename T>
-            void set( String&& name, T&& value)
+            template< typename T>
+            auto set( std::string_view name, T&& value) 
+               -> decltype( detail::set( name, std::forward< T>( value), traits::priority::tag< 1>{}))
             {
-               const std::string& string = common::to_string( value);;
-               set( name, string);
+               detail::set( name, std::forward< T>( value), traits::priority::tag< 1>{});
             }
 
-            template< typename String>
-            void unset( String&& name) { detail::unset( detail::get_name( name));}
+            void unset( std::string_view name);
 
             //! consumes an environment variable (get and then unset)
-            template< typename String>
-            std::string consume( String&& name, std::string alternative) 
+            inline std::string consume( std::string_view name, std::string alternative) 
             { 
                if( ! exists( name))
                   return alternative;
 
-               auto result = detail::get( detail::get_name( name));
+               auto result = variable::get( name);
                unset( name);
                return result;
             }
 
             namespace process
             {
-               common::process::Handle get( const char* name);
-               inline common::process::Handle get( const std::string& name) { return get( name.c_str());}
-
-               void set( const char* name, const common::process::Handle& process);
-               inline void set( const std::string& name, const common::process::Handle& process) { return set( name.c_str(), process);}
+               common::process::Handle get( std::string_view name);
+               void set( std::string_view, const common::process::Handle& process);
 
             } // process
 

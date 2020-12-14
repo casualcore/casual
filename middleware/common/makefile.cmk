@@ -108,10 +108,11 @@ casual_common_objectfiles = [
     Compile( 'source/code/tx.cpp'),
     Compile( 'source/code/xa.cpp'),
     Compile( 'source/code/system.cpp'),
-    Compile( 'source/code/signal.cpp'),
     Compile( 'source/code/casual.cpp'),
+    Compile( 'source/code/signal.cpp'),
     Compile( 'source/code/convert.cpp'),
     Compile( 'source/code/serialize.cpp'),
+
     
     Compile( 'source/exception/handle.cpp'),
 
@@ -121,7 +122,9 @@ casual_common_objectfiles = [
     Compile( 'source/uuid.cpp'),
     Compile( 'source/file.cpp'),
     Compile( 'source/string.cpp'),
+
     Compile( 'source/signal.cpp'),
+    Compile( 'source/signal/timer.cpp'),
     
     Compile( 'source/chronology.cpp'),
     Compile( 'source/process.cpp'),
@@ -230,8 +233,6 @@ unittest_objectfiles = [
     Compile( 'unittest/source/test_traits.cpp'),
     Compile( 'unittest/source/test_chronology.cpp'),
     Compile( 'unittest/source/test_transcode.cpp'),
-    
-    Compile( 'unittest/source/view/test_string.cpp'),
     
     Compile( 'unittest/source/communication/test_tcp.cpp'),
     Compile( 'unittest/source/communication/test_ipc.cpp'),

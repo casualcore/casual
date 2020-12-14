@@ -49,11 +49,7 @@ namespace casual
                   auto has_correlation = [&correlation]( auto& point){ return point.correlation == correlation;};
 
                   if( auto found = common::algorithm::find_if( m_points, has_correlation))
-                  {
-                     auto result = std::move( *found);
-                     m_points.erase( std::begin( found));
-                     return result;
-                  }
+                     return common::algorithm::extract( m_points, std::begin( found));
 
                   return point_type{};
                }
@@ -66,9 +62,8 @@ namespace casual
                bool empty() const { return m_points.empty();}
 
                CASUAL_LOG_SERIALIZE(
-               { 
                   CASUAL_SERIALIZE_NAME( m_points, "points");
-               })
+               )
 
             private:
                container_type m_points;

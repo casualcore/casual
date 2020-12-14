@@ -54,11 +54,28 @@ namespace casual
                tcp::Address address()
                {
                   static long port = 23666;
-                  return { { "127.0.0.1"}, { ++port}};
+                  return { string::compose(  "127.0.0.1:", ++port)};
                }
 
             } // <unnamed>
          } // local
+
+         TEST( common_communication_tcp, address_host_port)
+         {   
+            common::unittest::Trace trace;
+
+            {
+               tcp::Address address{ "127.0.0.1:666"};
+               EXPECT_TRUE( address.host() == "127.0.0.1") << "host: " << address.host();
+               EXPECT_TRUE( address.port() == "666") << "port: " << address.host();
+            }
+
+            {
+               tcp::Address address{ "127.0.0.1"};
+               EXPECT_TRUE( address.host() == "127.0.0.1") << "host: " << address.host();
+               EXPECT_TRUE( address.port().empty()) << "port: " << address.host();
+            }
+         }
 
          TEST( common_communication_tcp, connect_to_non_existent_port__expect_connection_refused)
          {   

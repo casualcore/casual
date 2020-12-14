@@ -171,14 +171,14 @@ namespace casual
 
                platform::buffer::raw::type allocate( const std::string& type, const platform::binary::size::type size)
                {
-                  m_pool.emplace_back( type, 0);
+                  auto& buffer = m_pool.emplace_back( type, 0);
 
                   // GCC returns null for std::vector::data with capacity zero
-                  m_pool.back().capacity( size ? size : 1);
+                  buffer.capacity( size ? size : 1);
 
-                  common::log::line( verbose::log, "allocated buffer: ", m_pool.back());
+                  common::log::line( verbose::log, "allocated buffer: ", buffer);
 
-                  return m_pool.back().handle();
+                  return buffer.handle();
                }
 
                platform::buffer::raw::type reallocate( const platform::buffer::raw::immutable::type handle, const platform::binary::size::type size)

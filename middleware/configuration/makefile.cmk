@@ -17,7 +17,7 @@ LibraryPaths([
     '$(CASUAL_OPTIONAL_LIBRARY_PATHS)',
     ])
 
-intall_libs = []
+install_libs = []
 
 
 lib_configuration = LinkLibrary( 'bin/casual-configuration',
@@ -39,7 +39,19 @@ lib_configuration = LinkLibrary( 'bin/casual-configuration',
     'casual-serviceframework'])
 
 
-intall_libs.append( lib_configuration)
+install_libs.append( lib_configuration)
+
+
+target = LinkLibrary( 'bin/casual-configuration-cli',
+   [
+      Compile( 'source/admin/cli.cpp'),
+   ],
+   [
+      lib_configuration,
+      'casual-common'
+   ]
+)
+install_libs.append( target)
 
 
 example_archive = LinkArchive( 'bin/casual-configuration-example', 
@@ -81,7 +93,7 @@ LinkExecutable( 'bin/casual-configuration-documentation',
    ])  
 
 # Install
-Install( intall_libs, '$(CASUAL_HOME)/lib')
+Install( install_libs, '$(CASUAL_HOME)/lib')
 Install( 'resources.yaml', '$(CASUAL_HOME)/configuration/example')
 
 

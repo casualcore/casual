@@ -19,6 +19,7 @@
 
 namespace casual
 {
+   using namespace common;
    namespace gateway
    {
       namespace manager
@@ -35,9 +36,30 @@ namespace casual
                      {
                         return [&state]( common::service::invoke::Parameter&& parameter)
                         {
+                           auto get_state = []( auto& state)
+                           {
+                              auto request_reverse_state = []( auto& range, auto&& message)
+                              {
+                                 return algorithm::transform( range, [&message]( auto& reverse)
+                                 {
+                                    return communication::device::async::call( reverse.process.ipc, message);
+                                 });
+                              };
+
+                              auto inbounds = request_reverse_state( state.reverse.inbounds, message::reverse::inbound::state::Request{ process::handle()});
+                              auto outbounds = request_reverse_state( state.reverse.outbounds, message::reverse::outbound::state::Request{ process::handle()});
+
+                              auto get_reply = []( auto& future){ return future.get( manager::ipc::device());};
+
+                              return gateway::transform::state( state, 
+                                    algorithm::transform( inbounds, get_reply),
+                                    algorithm::transform( outbounds, get_reply));
+                           };
+
                            return serviceframework::service::user( 
                               std::move( parameter),
-                              [&state](){ return gateway::transform::state( state);});
+                              get_state,
+                              state);
                         };
                      }
 

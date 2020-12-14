@@ -30,8 +30,7 @@ namespace casual
 
                friend inline bool operator == ( const Variable& l, const Variable& r) { return l.key == r.key && l.value == r.value;}
 
-               CASUAL_CONST_CORRECT_SERIALIZE
-               (
+               CASUAL_CONST_CORRECT_SERIALIZE(
                   CASUAL_SERIALIZE( key);
                   CASUAL_SERIALIZE( value);
                )
@@ -46,8 +45,7 @@ namespace casual
 
             Environment& operator += ( Environment rhs);
 
-            CASUAL_CONST_CORRECT_SERIALIZE
-            (
+            CASUAL_CONST_CORRECT_SERIALIZE(
                CASUAL_SERIALIZE( files);
                CASUAL_SERIALIZE( variables);
             )
@@ -66,12 +64,11 @@ namespace casual
                friend inline bool operator == ( const Group& l, const std::string& r) { return l.name == r;}
 
                CASUAL_CONST_CORRECT_SERIALIZE(
-               {
                   CASUAL_SERIALIZE( name);
                   CASUAL_SERIALIZE( note);
                   CASUAL_SERIALIZE( resources);
                   CASUAL_SERIALIZE( dependencies);
-               })
+               )
             };
 
             namespace executable
@@ -83,8 +80,7 @@ namespace casual
                   Environment environment;
                   bool restart = false;
 
-                  CASUAL_CONST_CORRECT_SERIALIZE
-                  (
+                  CASUAL_CONST_CORRECT_SERIALIZE(
                      CASUAL_SERIALIZE( instances);
                      CASUAL_SERIALIZE( restart);
                      CASUAL_SERIALIZE( memberships);
@@ -107,8 +103,7 @@ namespace casual
                std::optional< Environment> environment;
                std::optional< bool> restart;
 
-               CASUAL_CONST_CORRECT_SERIALIZE
-               (
+               CASUAL_CONST_CORRECT_SERIALIZE(
                   CASUAL_SERIALIZE( path);
                   CASUAL_SERIALIZE( alias);
                   CASUAL_SERIALIZE( note);
@@ -126,8 +121,7 @@ namespace casual
                std::optional< std::vector< std::string>> restrictions;
                std::optional< std::vector< std::string>> resources;
 
-               CASUAL_CONST_CORRECT_SERIALIZE
-               (
+               CASUAL_CONST_CORRECT_SERIALIZE(
                   Executable::serialize( archive);
                   CASUAL_SERIALIZE( restrictions);
                   CASUAL_SERIALIZE( resources);
@@ -142,8 +136,7 @@ namespace casual
             {
                std::string timeout;
 
-               CASUAL_CONST_CORRECT_SERIALIZE
-               (
+               CASUAL_CONST_CORRECT_SERIALIZE(
                   CASUAL_SERIALIZE( timeout);
                )
             };
@@ -155,8 +148,7 @@ namespace casual
             std::optional< std::string> timeout;
             std::optional< std::vector< std::string>> routes;
 
-            CASUAL_CONST_CORRECT_SERIALIZE
-            (
+            CASUAL_CONST_CORRECT_SERIALIZE(
                CASUAL_SERIALIZE( name);
                CASUAL_SERIALIZE( timeout);
                CASUAL_SERIALIZE( routes);
@@ -172,8 +164,7 @@ namespace casual
                   std::optional< std::string> key;
                   std::optional< platform::size::type> instances = 1;
 
-                  CASUAL_CONST_CORRECT_SERIALIZE
-                  (
+                  CASUAL_CONST_CORRECT_SERIALIZE(
                      CASUAL_SERIALIZE( key);
                      CASUAL_SERIALIZE( instances);
                   )
@@ -191,8 +182,7 @@ namespace casual
                std::optional< std::string> openinfo;
                std::optional< std::string> closeinfo;
 
-               CASUAL_CONST_CORRECT_SERIALIZE
-               (
+               CASUAL_CONST_CORRECT_SERIALIZE(
                   CASUAL_SERIALIZE( name);
                   CASUAL_SERIALIZE( key);
                   CASUAL_SERIALIZE( instances);
@@ -208,8 +198,7 @@ namespace casual
                {
                   resource::Default resource;
 
-                  CASUAL_CONST_CORRECT_SERIALIZE
-                  (
+                  CASUAL_CONST_CORRECT_SERIALIZE(
                      CASUAL_SERIALIZE( resource);
                   )
                };
@@ -228,8 +217,7 @@ namespace casual
                //! normalizes the 'manager', mostly to set default values
                void normalize();
 
-               CASUAL_CONST_CORRECT_SERIALIZE
-               (
+               CASUAL_CONST_CORRECT_SERIALIZE(
                   CASUAL_SERIALIZE_NAME( defaults, "default");
                   CASUAL_SERIALIZE( log);
                   CASUAL_SERIALIZE( resources);
@@ -248,8 +236,7 @@ namespace casual
                   std::optional< platform::size::type> size;
                   std::optional< platform::size::type> messages;
 
-                  CASUAL_CONST_CORRECT_SERIALIZE
-                  (
+                  CASUAL_CONST_CORRECT_SERIALIZE(
                      CASUAL_SERIALIZE( size);
                      CASUAL_SERIALIZE( messages);
                   )
@@ -259,8 +246,7 @@ namespace casual
                {
                   Limit limit;
 
-                  CASUAL_CONST_CORRECT_SERIALIZE
-                  (
+                  CASUAL_CONST_CORRECT_SERIALIZE(
                      CASUAL_SERIALIZE( limit);
                   )
                };
@@ -269,15 +255,14 @@ namespace casual
 
             struct Listener
             {
+               std::optional< std::string> note;
                std::string address;
                std::optional< listener::Limit> limit;
-               std::optional< std::string> note;
-
-               CASUAL_CONST_CORRECT_SERIALIZE
-               (
+               
+               CASUAL_CONST_CORRECT_SERIALIZE(
+                  CASUAL_SERIALIZE( note);
                   CASUAL_SERIALIZE( address);
                   CASUAL_SERIALIZE( limit);
-                  CASUAL_SERIALIZE( note);
                )
             };
 
@@ -290,8 +275,7 @@ namespace casual
                   //! @deprecated Makes "no sense" to have a default address. 
                   std::string address;
 
-                  CASUAL_CONST_CORRECT_SERIALIZE
-                  (
+                  CASUAL_CONST_CORRECT_SERIALIZE(
                      CASUAL_SERIALIZE( restart);
                      CASUAL_SERIALIZE( address);
                   )
@@ -300,20 +284,96 @@ namespace casual
 
             struct Connection
             {
+               std::optional< std::string> note;
                std::string address;
                std::optional< std::vector< std::string>> services;
                std::optional< std::vector< std::string>> queues;
-               std::optional< std::string> note;
                std::optional< bool> restart;
 
-               CASUAL_CONST_CORRECT_SERIALIZE
-               (
+               CASUAL_CONST_CORRECT_SERIALIZE(
+                  CASUAL_SERIALIZE( note);
                   CASUAL_SERIALIZE( address);
                   CASUAL_SERIALIZE( services);
                   CASUAL_SERIALIZE( queues);
                   CASUAL_SERIALIZE( restart);
-                  CASUAL_SERIALIZE( note);
                )               
+            };
+
+            namespace reverse
+            {
+               namespace inbound
+               {
+                  struct Connection
+                  {
+                     std::optional< std::string> note;
+                     std::string address;
+
+                     CASUAL_CONST_CORRECT_SERIALIZE(
+                        CASUAL_SERIALIZE( note);
+                        CASUAL_SERIALIZE( address);
+                     )
+                  };
+               }
+               struct Inbound
+               {
+                  std::optional< std::string> note;
+                  std::optional< std::string> alias;
+                  std::optional< listener::Limit> limit;
+                  std::vector< inbound::Connection> connections;
+
+                  CASUAL_CONST_CORRECT_SERIALIZE(
+                     CASUAL_SERIALIZE( note);
+                     CASUAL_SERIALIZE( alias);
+                     CASUAL_SERIALIZE( limit);
+                     CASUAL_SERIALIZE( connections);
+                  )
+               };
+
+               namespace outbound
+               {
+                  struct Connection
+                  {
+                     std::optional< std::string> note;
+                     std::string address;
+                     std::optional< std::vector< std::string>> services;
+                     std::optional< std::vector< std::string>> queues;
+
+                     CASUAL_CONST_CORRECT_SERIALIZE(
+                        CASUAL_SERIALIZE( note);
+                        CASUAL_SERIALIZE( address);
+                        CASUAL_SERIALIZE( services);
+                        CASUAL_SERIALIZE( queues);
+                     ) 
+                  };
+               }
+
+               struct Outbound
+               {
+                  std::optional< std::string> note;
+                  std::optional< std::string> alias;
+                  std::vector< outbound::Connection> connections;
+
+                  CASUAL_CONST_CORRECT_SERIALIZE(
+                     CASUAL_SERIALIZE( note);
+                     CASUAL_SERIALIZE( alias);
+                     CASUAL_SERIALIZE( connections);
+                  )
+               };
+
+               
+            } // reverse
+
+            struct Reverse
+            {
+               std::optional< std::vector< reverse::Inbound>> inbounds;
+               std::optional< std::vector< reverse::Outbound>> outbounds;
+
+                Reverse& operator += ( Reverse rhs);
+
+               CASUAL_CONST_CORRECT_SERIALIZE(
+                  CASUAL_SERIALIZE( inbounds);
+                  CASUAL_SERIALIZE( outbounds);
+               )
             };
 
             namespace manager
@@ -323,8 +383,7 @@ namespace casual
                   std::optional< listener::Default> listener;
                   std::optional< connection::Default> connection;
 
-                  CASUAL_CONST_CORRECT_SERIALIZE
-                  (
+                  CASUAL_CONST_CORRECT_SERIALIZE(
                      CASUAL_SERIALIZE( listener);
                      CASUAL_SERIALIZE( connection);
                   )
@@ -335,6 +394,7 @@ namespace casual
             struct Manager
             {
                std::optional< manager::Default> defaults;
+               std::optional< Reverse> reverse;
                std::vector< gateway::Listener> listeners;
                std::vector< gateway::Connection> connections;
 
@@ -343,9 +403,9 @@ namespace casual
                //! normalizes the 'manager', mostly to set default values
                void normalize();
 
-               CASUAL_CONST_CORRECT_SERIALIZE
-               (
+               CASUAL_CONST_CORRECT_SERIALIZE(
                   CASUAL_SERIALIZE_NAME( defaults, "default");
+                  CASUAL_SERIALIZE( reverse);
                   CASUAL_SERIALIZE( listeners);
                   CASUAL_SERIALIZE( connections);
                )
@@ -362,8 +422,7 @@ namespace casual
                   std::optional< platform::size::type> count;
                   std::optional< std::string> delay;
 
-                  CASUAL_CONST_CORRECT_SERIALIZE
-                  (
+                  CASUAL_CONST_CORRECT_SERIALIZE(
                      CASUAL_SERIALIZE( count);
                      CASUAL_SERIALIZE( delay);
                   )
@@ -376,8 +435,7 @@ namespace casual
                   //! @deprecated
                   std::optional< platform::size::type> retries;
 
-                  CASUAL_CONST_CORRECT_SERIALIZE
-                  (
+                  CASUAL_CONST_CORRECT_SERIALIZE(
                      CASUAL_SERIALIZE( retry);
 
                      CASUAL_SERIALIZE( retries);
@@ -391,8 +449,7 @@ namespace casual
                //! @deprecated
                std::optional< platform::size::type> retries;
 
-               CASUAL_CONST_CORRECT_SERIALIZE
-               (
+               CASUAL_CONST_CORRECT_SERIALIZE(
                   CASUAL_SERIALIZE( name);
                   CASUAL_SERIALIZE( retry);
                   CASUAL_SERIALIZE( note);
@@ -408,8 +465,7 @@ namespace casual
                std::optional< std::string> note;
                std::vector< Queue> queues;
 
-               CASUAL_CONST_CORRECT_SERIALIZE
-               (
+               CASUAL_CONST_CORRECT_SERIALIZE(
                   CASUAL_SERIALIZE( name);
                   CASUAL_SERIALIZE( queuebase);
                   CASUAL_SERIALIZE( note);
@@ -533,8 +589,7 @@ namespace casual
                std::vector< Service> services;
                std::vector< Queue> queues;
 
-               CASUAL_CONST_CORRECT_SERIALIZE
-               (
+               CASUAL_CONST_CORRECT_SERIALIZE(
                   CASUAL_SERIALIZE( services);
                   CASUAL_SERIALIZE( queues);
                )
@@ -548,8 +603,7 @@ namespace casual
                   Forward::Default forward;
                   std::string directory;
 
-                  CASUAL_CONST_CORRECT_SERIALIZE
-                  (
+                  CASUAL_CONST_CORRECT_SERIALIZE(
                      CASUAL_SERIALIZE( queue);
                      CASUAL_SERIALIZE( forward);
                      CASUAL_SERIALIZE( directory);
@@ -567,8 +621,7 @@ namespace casual
                //! normalizes the 'manager', mostly to set default values
                void normalize();
 
-               CASUAL_CONST_CORRECT_SERIALIZE
-               (
+               CASUAL_CONST_CORRECT_SERIALIZE(
                   CASUAL_SERIALIZE_NAME( defaults, "default");
                   CASUAL_SERIALIZE( groups);
                   CASUAL_SERIALIZE( forward);
@@ -590,8 +643,7 @@ namespace casual
 
                Default& operator += ( Default rhs);
 
-               CASUAL_CONST_CORRECT_SERIALIZE
-               (
+               CASUAL_CONST_CORRECT_SERIALIZE(
                   CASUAL_SERIALIZE( environment);
                   CASUAL_SERIALIZE( server);
                   CASUAL_SERIALIZE( executable);
@@ -623,8 +675,7 @@ namespace casual
             //! normalizes the 'manager', mostly to set default values
             void normalize();
 
-            CASUAL_CONST_CORRECT_SERIALIZE
-            (
+            CASUAL_CONST_CORRECT_SERIALIZE(
                CASUAL_SERIALIZE( name);
                CASUAL_SERIALIZE( note);
                CASUAL_SERIALIZE_NAME( defaults, "default");

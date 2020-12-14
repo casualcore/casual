@@ -102,25 +102,6 @@ namespace casual
          EXPECT_TRUE( algorithm::is::sorted( values, pred));
       }
 
-      TEST( casual_common_predicate, order__two_lambda)
-      {
-         common::unittest::Trace trace;
-
-         auto pred = predicate::make_order(
-            []( int l, int r){ return l % 2 == 0 && r % 2 == 1;},
-            []( int l, int r){ return l < r;}
-         ); 
-
-
-         std::vector< int> values{ 4, 3, 2, 1, 6, 8, 5, 7};
-         EXPECT_TRUE( ! algorithm::is::sorted( values, pred));
-
-         algorithm::sort( values, pred);
-
-         EXPECT_TRUE( algorithm::is::sorted( values, pred)) << range::make( values);
-         EXPECT_TRUE(( values == std::vector< int>{ 2, 4, 6, 8, 1, 3, 5, 7}));
-      }
-
       namespace local
       {
          namespace
@@ -266,78 +247,6 @@ namespace casual
          EXPECT_TRUE( filtered == expected) << "filtered: " << filtered;
       }
 
-      namespace local
-      {
-         namespace
-         {
-            
-            struct Value
-            {
-               std::string name;
-               long age;
-               double height;
-            };
-
-            namespace order
-            {
-               auto name = []( const Value& lhs, const Value& rhs){ return lhs.name < rhs.name;};
-               auto age = []( const Value& lhs, const Value& rhs){ return lhs.age < rhs.age;};
-               auto height = []( const Value& lhs, const Value& rhs) { return lhs.height < rhs.height;};
-            } // order
-
-            std::vector< Value> values()
-            {
-               return { { "Tom", 29, 1.75}, { "Charlie", 23, 1.63 }, { "Charlie", 29, 1.90}, { "Tom", 30, 1.63} };
-            }
-
-         } // <unnamed>
-      } // local
-
-
-      TEST( casual_common_predicate, order_name_asc)
-      {
-         common::unittest::Trace trace;
-
-         auto values = local::values();
-
-         auto sorted = algorithm::sort( values, predicate::make_order( local::order::name));
-
-         EXPECT_TRUE( std::begin( sorted)->name == "Charlie");
-      }
-
-
-      TEST( casual_common_predicate, order_name_desc__age_asc)
-      {
-         common::unittest::Trace trace;
-
-         auto values = local::values();
-
-         auto sorted = algorithm::sort( values, predicate::make_order(
-               predicate::inverse( local::order::name),
-               local::order::age));
-
-         EXPECT_TRUE( std::begin( sorted)->name == "Tom");
-         EXPECT_TRUE( std::begin( sorted)->age == 29);
-         EXPECT_TRUE( ( std::begin( sorted) + 3)->name == "Charlie");
-         EXPECT_TRUE( ( std::begin( sorted) + 3)->age == 29);
-
-      }
-
-      TEST( casual_common_algorithm, order_age_desc__height_asc)
-      {
-         common::unittest::Trace trace;
-
-         auto values = local::values();
-
-         auto sorted = algorithm::sort( values, predicate::make_order(
-               predicate::inverse( local::order::age),
-               local::order::height));
-
-         EXPECT_TRUE( ( std::begin( sorted) + 1)->age == 29);
-         EXPECT_TRUE( ( std::begin( sorted) + 1)->height == 1.75);
-         EXPECT_TRUE( ( std::begin( sorted) + 2)->age == 29);
-         EXPECT_TRUE( ( std::begin( sorted) + 2)->height == 1.90);
-      }
       
    
    } // common

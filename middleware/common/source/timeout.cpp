@@ -17,24 +17,21 @@ namespace casual
    namespace common
    {
 
-      Timeout::Timeout() : start{ platform::time::point::limit::zero()}, timeout{ 0} {}
-
       Timeout::Timeout( platform::time::point::type start, platform::time::unit timeout)
-         : start{ std::move( start)}, timeout{ timeout} {}
+         : m_start{ start}, m_timeout{ timeout} {}
 
-      void Timeout::set( platform::time::point::type start_, platform::time::unit timeout_)
+      void Timeout::set( platform::time::point::type start, platform::time::unit timeout)
       {
-         start = std::move( start_);
-         timeout = timeout_;
+         m_start = start;
+         m_timeout = timeout;
       }
 
-      platform::time::point::type Timeout::deadline() const
+      signal::timer::point::type Timeout::deadline() const
       {
-         if( timeout == platform::time::unit::zero())
-         {
-            return platform::time::point::type::max();
-         }
-         return start + timeout;
+         if( m_timeout == platform::time::unit::zero())
+            return {};
+
+         return m_start + m_timeout;
       }
 
    } // common

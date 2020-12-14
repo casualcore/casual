@@ -48,7 +48,7 @@ namespace casual
                //!
                //! @return true if the message was handled.
                template< typename M>
-               bool operator () ( M&& complete) const
+               auto operator () ( M&& complete) const
                {
                   return dispatch( complete);
                }
@@ -82,27 +82,25 @@ namespace casual
                   return std::move( lhs);
                }
 
-               // for logging only
                CASUAL_LOG_SERIALIZE(
-               {
                   CASUAL_SERIALIZE_NAME( m_handlers, "handlers");
-               })
+               )
 
             private:
 
-               bool dispatch( communication::message::Complete& complete) const
+               Uuid dispatch( communication::message::Complete& complete) const
                {
                   if( ! complete)
-                     return false;
+                     return {};
 
                   if( auto found = algorithm::find( m_handlers, complete.type))
                   {
                      found->second->dispatch( complete);
-                     return true;
+                     return complete.correlation;
                   }
 
                   log::line( log::category::error, code::casual::internal_unexpected_value, " message type: ", complete.type, " not recognized - action: discard");
-                  return false;
+                  return {};
                }
 
                struct concept
@@ -240,26 +238,8 @@ namespace casual
                   template< typename Tag, typename T>
                   auto make_strong( T&& callable) { return strong_t< std::decay_t< T>, Tag>{ std::forward< T>( callable)};}
 
-                  // TODO c++17 - we can use the _overloaded_ idiom
-                  template< typename... Ts>
-                  struct composition_t{};
-
-                  template< typename T, typename... Ts>
-                  struct composition_t< T, Ts...> : T, composition_t< Ts...>
-                  {
-                     using base_type = composition_t< Ts...>;
-                     composition_t( T head, Ts... tail) : T{ head}, base_type{ tail...} {}
-
-                     using T::operator();
-                     using base_type::operator();
-                  };
-
-                  template< typename T>
-                  struct composition_t< T> : T
-                  {
-                     composition_t( T head) : T{ head} {}
-                     using T::operator();
-                  };
+                  template< typename... Ts> struct overloaded : Ts... { using Ts::operator()...;};
+                  template< typename... Ts> overloaded( Ts...) -> overloaded<Ts...>;
 
                   namespace dispatch
                   {
@@ -366,7 +346,7 @@ namespace casual
                template< typename... Ts> 
                auto compose( Ts&&... ts) 
                {
-                  return detail::composition_t< Ts...>{ std::forward< Ts>( ts)...};
+                  return detail::overloaded{ std::forward< Ts>( ts)...};
                };
 
             } // condition

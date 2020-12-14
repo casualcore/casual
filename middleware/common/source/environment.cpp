@@ -11,7 +11,7 @@
 #include "common/range/adapter.h"
 #include "common/log.h"
 #include "common/string.h"
-#include "common/view/string.h"
+#include "common/string/view.h"
 
 #include "common/code/convert.h"
 #include "common/code/system.h"
@@ -49,18 +49,18 @@ namespace casual
                         return singleton;
                      }
 
-                     bool exists( const char* name) const
+                     bool exists( std::string_view name) const
                      {
                         lock_type lock { m_mutex};
 
-                        return getenv( name) != nullptr;
+                        return getenv( name.data()) != nullptr;
                      }
 
-                     std::string get( const char* name) const
+                     std::string get( std::string_view name) const
                      {
                         lock_type lock { m_mutex};
 
-                        auto result = getenv( name);
+                        auto result = getenv( name.data());
 
                         // We need to return by value and copy the variable while
                         // we have the lock
@@ -70,19 +70,19 @@ namespace casual
                         return {};
                      }
 
-                     void set( const char* name, const std::string& value) const
+                     void set( std::string_view name, std::string_view value) const
                      {
                         lock_type lock { m_mutex};
 
-                        if( setenv( name, value.c_str(), 1) == -1)
+                        if( setenv( name.data(), value.data(), 1) == -1)
                            code::raise::log( code::convert::to::casual( code::system::last::error()), "environment::set");
                      }
 
-                     void unset( const char* name) const
+                     void unset( std::string_view name) const
                      {
                         lock_type lock { m_mutex};
 
-                        if( ::unsetenv( name) == -1)
+                        if( ::unsetenv( name.data()) == -1)
                            code::raise::log( code::convert::to::casual( code::system::last::error()), "environment::unset");
                      }
 
@@ -111,53 +111,36 @@ namespace casual
 
          namespace variable
          {
+            namespace detail
+            {
+               void set( std::string_view name, std::string_view value)
+               {
+                  local::native::Variable::instance().set( name, value);
+               }
+
+            } // detail
             std::mutex& mutex()
             {
                return local::native::Variable::instance().mutex();
             }
 
-            bool exists( const char* name)
+            bool exists( std::string_view name)
             {
                return local::native::Variable::instance().exists( name);
             }
 
-            namespace detail
+            std::string get( std::string_view name)
             {
-               std::string get( const char* name)
-               {
-                  if( ! exists( name))
-                     code::raise::error( code::casual::invalid_argument, "failed to get variable: ",name);
+               // make sure we got null terminator
+               assert( *std::end( name) == '\0');
 
-                  return local::native::Variable::instance().get( name);
-               }
+               return local::native::Variable::instance().get( name);
+            }
 
-               std::string get( const char* name, std::string alternative)
-               {
-                  if( exists( name))
-                     return get( name);
-
-                  return alternative;
-               }
-
-               std::string get( view::String name)
-               {
-                  // make sure we got null terminator
-                  assert( *std::end( name) == '\0');
-
-                  return get( name.data());
-               }
-
-               void set( const char* name, const std::string& value)
-               {
-                  local::native::Variable::instance().set( name, value);
-               }
-
-               void unset( const char* name)
-               {
-                  local::native::Variable::instance().unset( name);
-               }
-
-            } // detail
+            void unset( std::string_view name)
+            {
+               local::native::Variable::instance().unset( name);
+            }
 
             namespace native
             {
@@ -182,7 +165,7 @@ namespace casual
 
             namespace process
             {
-               common::process::Handle get( const char* variable)
+               common::process::Handle get( std::string_view variable)
                {
                   auto value = common::environment::variable::get( variable);
 
@@ -192,23 +175,19 @@ namespace casual
 
                      auto pid = std::get < 0 > ( split);
                      if( common::string::integer( pid))
-                     {  
                         result.pid = strong::process::id{ std::stoi( std::string( std::begin( pid), std::end( pid)))};
-                     }
 
                      auto ipc = std::get< 1>( split);
                      if( ! ipc.empty())
-                     {
-                        result.ipc = strong::ipc::id{ Uuid( ipc)};
-                     }
+                        result.ipc = strong::ipc::id{ Uuid( string::view::make( ipc))};
                   }
 
                   return result;
                }
 
-               void set( const char* variable, const common::process::Handle& process)
+               void set( std::string_view variable, const common::process::Handle& process)
                {
-                  variable::set( variable, string::compose( process.pid, '|', process.ipc));
+                  variable::detail::set( variable, string::compose( process.pid, '|', process.ipc));
                }
 
             } // process

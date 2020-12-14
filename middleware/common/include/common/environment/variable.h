@@ -6,11 +6,10 @@
 
 #pragma once
 
-
-#include "common/view/string.h"
 #include "common/traits.h"
 
 #include <string>
+#include <string_view>
 #include <algorithm>
 
 namespace casual
@@ -26,15 +25,15 @@ namespace casual
                : std::string( std::move( variable))
             {}
 
-            inline view::String name() const { return { data(), data() + find_pivot( *this)};}
-            inline view::String value() const
+            inline std::string_view name() const { return { data(), find_pivot( *this)};}
+            inline std::string_view value() const
             {  
-               auto pivot = find_pivot( *this);
+               auto pivot = find_pivot( *this) + 1;
 
-               if( pivot == size()) 
+               if( pivot > size()) 
                   return {};
 
-               return { data() + pivot + 1,  data() + size()};
+               return { data() + pivot, size() - pivot};
             }
 
          private:

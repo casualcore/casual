@@ -55,7 +55,7 @@ namespace casual
                if( found)
                {
                   found->active = true;
-                  found->timeout.timeout = platform::time::unit{ 0};
+                  found->timeout = {};
                   return *found;
                }
                else
@@ -75,12 +75,9 @@ namespace casual
 
             bool State::Pending::active( descriptor_type descriptor) const
             {
-               auto found = algorithm::find( m_descriptors, descriptor);
-
-               if( found)
-               {
+               if( auto found = algorithm::find( m_descriptors, descriptor))
                   return found->active;
-               }
+               
                return false;
             }
 
@@ -110,7 +107,7 @@ namespace casual
                   return { desc.timeout.deadline(), now};
                }
 
-               return { platform::time::point::type::max(), now};
+               return { std::nullopt, now};
             }
 
             void State::Pending::discard( descriptor_type descriptor)

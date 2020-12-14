@@ -9,6 +9,7 @@
 
 #include "casual/platform.h"
 #include "common/serialize/macro.h"
+#include "common/signal/timer.h"
 
 #include <iosfwd>
 #include <chrono>
@@ -18,24 +19,26 @@ namespace casual
 {
    namespace common
    {
-
       struct Timeout
       {
 
-         Timeout();
+         Timeout() = default;
          Timeout( platform::time::point::type start, platform::time::unit timeout);
 
          void set( platform::time::point::type start, platform::time::unit timeout);
 
-         platform::time::point::type deadline() const;
+         signal::timer::point::type deadline() const;
 
-         platform::time::point::type start;
-         platform::time::unit timeout;
-         
+         inline auto timeout() const noexcept { return m_timeout;}
+
          CASUAL_LOG_SERIALIZE({
-            CASUAL_SERIALIZE( start);
-            CASUAL_SERIALIZE( timeout);
+            CASUAL_SERIALIZE_NAME( m_start, "start");
+            CASUAL_SERIALIZE_NAME( m_timeout, "timeout");
          })
+
+      private:
+         platform::time::point::type m_start{};
+         platform::time::unit m_timeout{};
       };
 
    } // common

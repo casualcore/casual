@@ -26,12 +26,12 @@ namespace casual
             {
                namespace
                {
-                  template< typename String, typename V> 
-                  auto get( String&& environment, V value)
+                  template< typename V> 
+                  auto get( std::string_view environment, V value)
                   {
                      return exception::guard( [&]()
                      {
-                        return environment::variable::get( std::forward< String>( environment), value);
+                        return environment::variable::get( environment, value);
                      }, value);
                   }
 

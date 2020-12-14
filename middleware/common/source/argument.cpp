@@ -149,7 +149,7 @@ namespace casual
                            if( r.cardinality == cardinality::zero_one{}) return "?";
                            if( r.cardinality == cardinality::one_many{}) return "+";
                            if( r.cardinality == cardinality::any{}) return "*";
-                           if( r.cardinality.fixed()) return to_string( r.cardinality.min());
+                           if( r.cardinality.fixed()) return string::to( r.cardinality.min());
                            return string::compose( r.cardinality);
                         };
 
@@ -160,7 +160,7 @@ namespace casual
                            if( cardinality == cardinality::zero_one{}) return "?";
                            if( cardinality == cardinality::one_many{}) return "+";
                            if( cardinality == cardinality::any{}) return "*";
-                           if( cardinality.fixed()) return to_string( cardinality.min());
+                           if( cardinality.fixed()) return string::to( cardinality.min());
                            return string::compose( cardinality);
                         };
 

@@ -220,8 +220,31 @@ namespace casual
             gateway_outbound_connect_done,
 
             gateway_outbound_rediscover_request,
-            gateway_outbound_rediscover_reply, 
+            gateway_outbound_rediscover_reply,
 
+            // reverse 
+
+            // sent from inbound
+            gateway_reverse_inbound_connect = GATEWAY_BASE + 100,
+
+            // sent from gateway-manager - at least after inbound_connect
+            gateway_reverse_inbound_configuration_update_request,
+            gateway_reverse_inbound_configuration_update_reply,
+
+            gateway_reverse_inbound_state_request,
+            gateway_reverse_inbound_state_reply, 
+
+            // sent from outbound
+            gateway_reverse_outbound_connect,
+
+            // sent from gateway-manager - at least after outbound_connect
+            gateway_reverse_outbound_configuration_update_request, 
+            gateway_reverse_outbound_configuration_update_reply,
+
+            gateway_reverse_outbound_state_request,
+            gateway_reverse_outbound_state_reply, 
+
+            // interdomain 
 
             gateway_domain_connect_request  = 7200,
             gateway_domain_connect_reply    = 7201,

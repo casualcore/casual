@@ -16,59 +16,25 @@ namespace casual
    {
       namespace predicate 
       {
-         namespace detail 
-         {
-            template< typename P>
-            auto variadic_predicate( P&& predicate)
-            {
-               return [=]( auto&&... param){
-                  return predicate( std::forward< decltype( param)>( param)...);
-               };
-            }
-         } // detail 
-         
-         template< typename P>
-         auto make_and( P&& predicate) { return detail::variadic_predicate( std::forward< P>( predicate));}
 
-         template< typename P, typename... Ts>
-         auto make_and( P&& predicate, Ts&&... ts)
+         template< typename... Ps>
+         auto make_and( Ps&&... predicates)
          {
             return [=]( auto&&... param){
-               return predicate( param...) && make_and( std::move( ts)...)( param...);
+               return ( ... && predicates( param...));
             };
          }
 
-         
-         template< typename P>
-         auto make_or( P&& predicate) { return detail::variadic_predicate( std::forward< P>( predicate));}
-
-         template< typename P, typename... Ts>
-         auto make_or( P&& predicate, Ts&&... ts)
+         template< typename... Ps>
+         auto make_or( Ps&&... predicates)
          {
             return [=]( auto&&... param){
-               return predicate( param...) || make_or( std::move( ts)...)( param...);
-            };
-         }
-
-
-         template< typename P>
-         auto make_order( P&& predicate) { return detail::variadic_predicate( std::forward< P>( predicate));}
-
-         template< typename P, typename... Ts>
-         auto make_order( P&& predicate, Ts&&... ts)
-         {
-            return [=]( auto&& l, auto&& r){
-               if( predicate( l, r))
-                  return true;
-               if( predicate( r, l))
-                  return false;
-
-               return make_order( std::move( ts)...)( l, r);
+               return ( ... || predicates( param...));
             };
          }
 
          template< typename P>
-         auto make_nested( P&& predicate) { return detail::variadic_predicate( std::forward< P>( predicate));}
+         auto make_nested( P&& predicate) { return std::forward< P>( predicate);}
 
          template< typename P, typename... Ts>
          auto make_nested( P&& predicate, Ts&&... ts)
@@ -92,10 +58,31 @@ namespace casual
             return [functor]( auto&&... param){ return ! functor( param...);};
          }
 
+         template< typename T>
+         auto boolean( T&& value)
+         {
+            return static_cast< bool>( value);
+         }
+
          inline auto boolean()
          {
-            return []( auto&& value){ return static_cast< bool>( value);};
+            return []( auto&& value){ return boolean( value);};
          }
+
+         namespace adapter
+         {
+            //! wraps and invoke `predicate` with `value.second`
+            //! useful for iterate over map-like containers. 
+            template< typename P>
+            auto second( P&& predicate)
+            {
+               return [=]( auto& pair)
+               {
+                  return predicate( pair.second); 
+               };
+            }
+         } // adapter
+
 
       } // predicate 
    } // common 

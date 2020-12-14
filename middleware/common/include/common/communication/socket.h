@@ -8,8 +8,10 @@
 
 
 #include "common/strong/id.h"
+#include "common/compare.h"
 
 #include <fcntl.h>
+#include <sys/socket.h>
 
 namespace casual
 {
@@ -45,13 +47,8 @@ namespace casual
 
                   auto value()
                   {
-                     struct
-                     {
-                           int l_onoff;
-                           int l_linger;
-                     } linger{ 1, static_cast< int>( m_time.count())};
-
-                     return linger;
+                     // using linger defined in sys/socket.h
+                     return ::linger{ 1, static_cast< int>( m_time.count())};
                   }
                   std::chrono::seconds m_time;
                };
@@ -65,7 +62,7 @@ namespace casual
 
          } // socket
 
-         class Socket
+         class Socket : compare::Equality< Socket>
          {
          public:
 
@@ -95,7 +92,6 @@ namespace casual
             //! return SO_ERROR from getsockopt
             std::errc error() const;
 
-
             template< typename Option>
             void set( Option&& option)
             {
@@ -106,11 +102,11 @@ namespace casual
             void set( socket::option::File option);
             void unset( socket::option::File option);
 
-            // for logging only
             CASUAL_LOG_SERIALIZE(
-            {
                CASUAL_SERIALIZE_NAME( m_descriptor, "descriptor");
-            })
+            )
+
+            inline auto tie() const { return std::tie( m_descriptor);}
 
          private:
 

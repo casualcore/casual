@@ -86,8 +86,8 @@ namespace casual
                return common::algorithm::transform( variables, []( auto& variable)
                {
                   Variable result;
-                  result.key = variable.name().value();
-                  result.value = variable.value().value();
+                  result.key = variable.name();
+                  result.value = variable.value();
                   return result;
                });
             }

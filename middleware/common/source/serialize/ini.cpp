@@ -361,7 +361,7 @@ namespace casual
                         template<typename T>
                         void read( T& value)
                         {
-                           value = common::from_string< T>( *m_data_stack.back());
+                           value = common::string::from< T>( *m_data_stack.back());
                         }
 
                         void read( bool& value)

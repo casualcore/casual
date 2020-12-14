@@ -58,7 +58,7 @@ namespace casual
                   namespace optional
                   {
                      template< typename D, typename M>
-                     bool send( D&& device, M&& message)
+                     auto send( D&& device, M&& message)
                      {
                         return common::communication::device::blocking::optional::send( std::forward< D>( device), std::forward< M>( message));
                      }
@@ -636,12 +636,7 @@ namespace casual
 
                            auto descriptor() const { return communication::ipc::inbound::handle().socket().descriptor();}
 
-                           void operator () ( strong::file::descriptor::id descriptor)
-                           {
-                              consume();
-                           }
-
-                           bool consume()
+                           auto consume()
                            {
                               return m_handler( communication::device::non::blocking::next( common::communication::ipc::inbound::device()));
                            } 

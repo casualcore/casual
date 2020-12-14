@@ -110,10 +110,10 @@ resources:
                      common::environment::variable::set( "CASUAL_RESOURCE_CONFIGURATION_FILE", resource);
 
                      if( ! common::environment::variable::exists( environment::rm1))
-                        common::environment::variable::set( environment::rm1, {});
+                        common::environment::variable::set( environment::rm1, "");
 
                      if( ! common::environment::variable::exists( environment::rm2))
-                        common::environment::variable::set( environment::rm2, {});
+                        common::environment::variable::set( environment::rm2, "");
                   }
 
                   ~Environment() 

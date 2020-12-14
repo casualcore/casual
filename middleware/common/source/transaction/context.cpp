@@ -195,8 +195,7 @@ namespace casual
                   {
                      Transaction transaction{ common::transaction::id::create( process::handle())};
                      transaction.state = Transaction::State::active;
-                     transaction.timeout.start = start;
-                     transaction.timeout.timeout = std::chrono::seconds{ timeout};
+                     transaction.timeout.set( start, std::chrono::seconds{ timeout});
 
                      return transaction;
                   }

@@ -161,6 +161,30 @@ domain:
       connection:
         restart: true
 
+    reverse:
+      inbounds:
+         - alias: unique-alias-name
+           note: connect to other reverse outbound that is listening on this port - then treat it as a regular inbound
+           limit:
+              messages: 42
+           connections:
+              - note: one of possible many addresses to connect to
+                address: localhost:7780
+
+      outbounds:
+         - alias: primary
+           note: listen for connection from reverse inbound - then treat it as a regular outbound
+           connections:
+            - note: one of possible many listining addresses.
+              address: localhost:7780
+
+         - alias: secondary
+           note: onther instance (proces) that handles (multiplexed) traffic on it's own
+           connections:
+            - note: one of possible many listining addresses.
+              address: localhost:7781
+
+
     listeners:
       - address: localhost:7779
         limit:

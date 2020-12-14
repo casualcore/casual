@@ -239,6 +239,18 @@ namespace casual
 
       }
 
+      TEST( common_algorithm, rotate)
+      {
+         common::unittest::Trace trace;
+
+         auto container = std::vector< int>{ 1, 2, 3, 4, 5, 6, 7, 8};
+
+         auto result = algorithm::rotate( container, std::begin( container) + 1);
+
+         EXPECT_TRUE(( std::get< 0>( result) == std::vector< int>{ 2, 3, 4, 5, 6, 7, 8})) << std::get< 0>( result);
+         EXPECT_TRUE(( std::get< 1>( result) == std::vector< int>{ 1})) << std::get< 1>( result);
+      }
+
       TEST( common_algorithm, partition)
       {
          common::unittest::Trace trace;

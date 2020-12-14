@@ -31,7 +31,7 @@ namespace casual
             Variable variable{ "NAME=VALUE"};
             EXPECT_TRUE( ! variable.empty());
             EXPECT_TRUE( variable.name() == "NAME");
-            EXPECT_TRUE( variable.value() == "VALUE");
+            EXPECT_TRUE( variable.value() == "VALUE") << "value: '" << variable.value() << "'";
          }
 
          TEST( common_environment_variable, string_name_value)
@@ -50,6 +50,16 @@ namespace casual
             common::unittest::Trace trace;
 
             Variable variable{ "NAME="};
+            EXPECT_TRUE( ! variable.empty());
+            EXPECT_TRUE( variable.name() == "NAME");
+            EXPECT_TRUE( variable.value().empty());
+         }
+
+         TEST( common_environment_variable, only_name)
+         {
+            common::unittest::Trace trace;
+
+            Variable variable{ "NAME"};
             EXPECT_TRUE( ! variable.empty());
             EXPECT_TRUE( variable.name() == "NAME");
             EXPECT_TRUE( variable.value().empty());

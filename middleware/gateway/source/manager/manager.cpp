@@ -66,12 +66,7 @@ namespace casual
                      
                      auto descriptor() const { return communication::ipc::inbound::handle().socket().descriptor();}
 
-                     void operator () ( strong::file::descriptor::id descriptor)
-                     {
-                        consume();
-                     }
-
-                     bool consume()
+                     auto consume()
                      {
                         return m_handler( communication::device::non::blocking::next( ipc::device()));
                      } 

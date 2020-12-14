@@ -314,7 +314,7 @@ namespace casual
 
                      static range_type assign( range_type values, T& value) 
                      { 
-                         value = from_string< T>( *values);
+                         value = string::from< T>( *values);
                          return ++values;
                      }
                   };

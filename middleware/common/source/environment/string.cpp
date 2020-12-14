@@ -7,6 +7,7 @@
 #include "common/environment/string.h"
 #include "common/environment.h"
 
+#include "common/string/view.h"
 #include "common/algorithm.h"
 #include "common/range/adapter.h"
 #include "common/log.h"
@@ -32,7 +33,7 @@ namespace casual
                   // split the range to the next beginning of the variable, if any
                   auto next_range = []( auto range)
                   { 
-                     const auto delimiter = view::String{ "${"};
+                     const auto delimiter = std::string_view{ "${"};
 
                      auto result = algorithm::divide_search( range, delimiter);
                      if( std::get< 0>( result).empty() && ! std::get< 1>( result).empty())
@@ -53,12 +54,12 @@ namespace casual
                         if( range.size() < 4)
                            return false;
 
-                        return algorithm::equal( range::make( std::begin( range), 2), view::String{ "${"});
+                        return algorithm::equal( range::make( std::begin( range), 2), std::string_view{ "${"});
                      };
 
                      if( ! is_variable_declaration( range))
                      {
-                        out << view::String{ range};
+                        out << string::view::make( range);
                         return;
                      }
 
@@ -68,7 +69,7 @@ namespace casual
                      if( ! found)
                      {
                         // not a correct variable, we dont replace
-                        out << view::String{ range};
+                        out << string::view::make( range);
                         return;
                      }
 
@@ -80,15 +81,15 @@ namespace casual
                      // replace '}' with '\0' to be c-compatible, for variable 'lookup'
                      *found = '\0';
 
-                     auto variable = view::String{ range::make( std::begin( range), std::begin( found))};
+                     auto variable = string::view::make( std::begin( range), std::begin( found));
 
                      // let the functor take care of extracting the variable
                      // it might be from a "local repository"
-                     // `variable` is now a view::String with null termination.
+                     // `variable` is now a std::string_view with null termination.
                      get_variable( out, variable);
 
                      // handle the rest, which might be _noting_
-                     out << view::String{ range::make( std::begin( found + 1), std::end( range))};
+                     out << string::view::make( std::begin( found + 1), std::end( range));
                   };
 
                   algorithm::for_each( 

@@ -184,24 +184,32 @@ namespace casual
 
             namespace output
             {
-               template< typename C, std::enable_if_t< traits::has::push_back< C>::value, int> = 0> 
-               auto iterator( C& value)
+               template< typename C> 
+               auto iterator( C& value, traits::priority::tag< 2>)
+                 -> std::enable_if_t< traits::has::push_back< C>::value, decltype( std::back_inserter( value))>
                {
                   return std::back_inserter( value);
                }
 
-               template< typename I, std::enable_if_t< traits::is::output::iterator< I>::value, int> = 0> 
-               auto iterator( I value)
-               {
-                  return value;
-               }
-
-               template< typename C, std::enable_if_t< 
-                  ! traits::has::push_back< C>::value 
-                  && traits::is::iterable< C>::value, int> = 0> 
-               auto iterator( C& value)
+               template< typename C> 
+               auto iterator( C& value, traits::priority::tag< 1>)
+                  -> decltype( std::begin( value))
                {
                   return std::begin( value);
+               }
+
+               template< typename I> 
+               auto iterator( I&& value, traits::priority::tag< 0>)
+                  -> decltype( void( *value++ = *value), std::forward< I>( value))
+               {
+                  return std::forward< I>( value);
+               }
+
+               template< typename C>
+               auto iterator( C&& value)
+                  -> decltype( iterator( std::forward< C>( value), traits::priority::tag< 2>{}))
+               {
+                  return iterator( std::forward< C>( value), traits::priority::tag< 2>{});
                }
             } // output
 
@@ -246,9 +254,9 @@ namespace casual
 
 
          template< typename R, typename Out, typename P> 
-         auto copy_if( R&& range, Out output, P predicate)
+         auto copy_if( R&& range, Out&& output, P predicate)
          {
-            return std::copy_if( std::begin( range), std::end( range), detail::output::iterator( output), predicate);
+            return std::copy_if( std::begin( range), std::end( range), detail::output::iterator( std::forward< Out>( output)), predicate);
          }
 
       
@@ -462,15 +470,15 @@ namespace casual
          //! Erases occurrences from an associative container that
          //! fulfill the predicate
          //!
-         //! @param container associative
-         //! @param predicate that takes C::mapped_type as parameter and returns bool
+         //! @param container a container
+         //! @param predicate that takes C::value_type as parameter and returns bool
          //! @return the container
          template< typename C, typename P>
          C& erase_if( C& container, P&& predicate)
          {
             for( auto current = std::begin( container); current != std::end( container);)
             {
-               if( predicate( current->second))
+               if( predicate( *current))
                   current = container.erase( current);
                else
                   ++current;

@@ -12,7 +12,7 @@
 #include "queue/common/transform.h"
 
 #include "common/argument.h"
-#include "common/exception/handle.h"
+#include "common/exception/guard.h"
 
 #include "common/buffer/pool.h"
 #include "common/service/call/context.h"

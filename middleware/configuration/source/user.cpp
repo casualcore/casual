@@ -116,13 +116,25 @@ namespace casual
                   
                };
 
-               auto optional_add = []( auto&& source, auto& target)
+               template< typename S, typename T, typename P>
+               auto optional_add( S&& source, T& target, P&& predicate)
                {
                   if( target && source)
-                     target.value() += std::move( source.value());
+                     predicate( std::move( source.value()), target.value());
                   else if( source)
                      target = std::move( source);
+               }
+
+               template< typename S, typename T>
+               auto optional_add( S&& source, T& target)
+               {
+                  optional_add( std::forward< S>( source), target, []( auto&& source, auto& target)
+                  {  
+                     target += std::move( source);
+                  });
                };
+
+
 
                
             } // <unnamed>
@@ -164,12 +176,27 @@ namespace casual
 
          namespace gateway
          {
+            Reverse& Reverse::operator += ( Reverse rhs)
+            {
+               auto add_or_replace = []( auto&& source, auto& target)
+               {
+                  local::add_or_replace( std::move( source), target, local::equal::alias());
+               };
+
+               local::optional_add( std::move( rhs.inbounds), inbounds, add_or_replace);
+               local::optional_add( std::move( rhs.outbounds), outbounds, add_or_replace);
+               
+               return *this;
+            }
+
             Manager& Manager::operator += ( Manager rhs)
             {
                auto equal_address = []( auto& l, auto& r){ return l.address == r.address;};
 
                local::add_or_replace( std::move( rhs.listeners), listeners, equal_address);
                local::add_or_replace( std::move( rhs.connections), connections, equal_address);
+
+               local::optional_add( std::move( rhs.reverse), reverse);
 
                return *this;
             }  

@@ -37,7 +37,7 @@ target = LinkServer( 'server/bin/casual-example-server',
 install_bin.append( target)
 
 # make sure we got a resource property file available when we build with a resource 
-Environment( 'CASUAL_RESOURCE_CONFIGURATION_FILE', '$(CASUAL_REPOSITORY_ROOT)/test/home/configuration/resources.yaml')
+Environment( 'CASUAL_RESOURCE_CONFIGURATION_FILE', '$(CASUAL_REPOSITORY_ROOT)/middleware/example/resources/resources.yaml')
 
 target = LinkServer( 'server/bin/casual-example-resource-server',
     [ 

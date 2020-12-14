@@ -67,7 +67,7 @@ namespace casual
                   template< typename T>
                   T at( const std::string& key) const
                   {
-                     return from_string< T>( at( key));
+                     return string::from< T>( at( key));
                   }
 
                   //! @param key to be found
@@ -77,7 +77,7 @@ namespace casual
                   template< typename T>
                   T at( const std::string& key, const std::string& default_value) const
                   {
-                     return from_string< T>( at( key, default_value));
+                     return string::from< T>( at( key, default_value));
                   }
 
 		  std::optional< std::string> find( const std::string& key) const;

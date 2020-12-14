@@ -121,9 +121,7 @@ namespace casual
                            auto& descriptor = state.pending.reserve( message.correlation);
 
                            if( ! flags.exist( async::Flag::no_time))
-                           {
                               descriptor.timeout.set( start, lookup.service.timeout);
-                           }
 
                            auto& transaction = common::transaction::context().current();
 
@@ -133,11 +131,11 @@ namespace casual
                               transaction.associate( message.correlation);
 
                               // We use the transaction deadline if it's earlier
-                              if( transaction.timeout.deadline() < descriptor.timeout.deadline())
-                                 descriptor.timeout.set( start, std::chrono::duration_cast< platform::time::unit>( transaction.timeout.deadline() - start));
+                              if( auto deadline = transaction.timeout.deadline(); deadline && deadline < descriptor.timeout.deadline())
+                                 descriptor.timeout.set( start, std::chrono::duration_cast< platform::time::unit>( deadline.value() - start));
                            }
 
-                           message.service.timeout = descriptor.timeout.timeout;
+                           message.service.timeout = descriptor.timeout.timeout();
 
                            return Reply{ descriptor.descriptor, std::move( message) };
                         }

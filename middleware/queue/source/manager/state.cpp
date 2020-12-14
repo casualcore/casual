@@ -62,9 +62,9 @@ namespace casual
          {
             Trace trace{ "queue::manager::State::remove_queues"};
 
-            common::algorithm::erase_if( queues, [pid]( auto& instances){
+            common::algorithm::erase_if( queues, common::predicate::adapter::second( [pid]( auto& instances){
                return common::algorithm::trim( instances, common::algorithm::remove( instances, pid)).empty();
-            });
+            }));
 
             log::line( log, "queues: ", queues);
          }

@@ -251,9 +251,7 @@ namespace casual
 
                platform::buffer::raw::type allocate( const std::string& type, platform::binary::size::type size)
                {
-                  m_pool.emplace_back( type, size);
-
-                  auto& payload = m_pool.back().payload;
+                  auto& payload = m_pool.emplace_back( type, size).payload;
 
                   // Make sure we've got a handle
                   if( ! payload.memory.data())

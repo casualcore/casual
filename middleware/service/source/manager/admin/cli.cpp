@@ -6,11 +6,6 @@
 
 #include "service/manager/admin/cli.h"
 
-
-#include "common/serialize/macro.h"
-#include "common/serialize/create.h"
-#include "serviceframework/service/protocol/call.h"
-
 #include "service/manager/admin/model.h"
 #include "service/manager/admin/server.h"
 #include "service/manager/admin/api.h"
@@ -18,15 +13,19 @@
 #include "domain/manager/admin/model.h"
 #include "domain/manager/admin/server.h"
 
-
 #include "common/file.h"
 #include "common/argument.h"
 #include "common/chronology.h"
 #include "common/terminal.h"
 #include "common/server/service.h"
 #include "common/exception/handle.h"
+#include "common/algorithm/compare.h"
+#include "common/serialize/macro.h"
+#include "common/serialize/create.h"
 
-// std
+#include "serviceframework/service/protocol/call.h"
+
+
 #include <iostream>
 #include <iomanip>
 #include <limits>

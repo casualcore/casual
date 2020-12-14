@@ -208,7 +208,7 @@ namespace casual
                               log::line( common::log::category::error, "failed to deduce buffer type for content-type: ", content.value());
 
                               if( std::regex_match( content.value(), local::global::loggable_content_type_regexp))
-                                 log::line( common::log::category::verbose::error, "payload: ", view::String{ range::make( request.state().payload.memory)});
+                                 log::line( common::log::category::verbose::error, "payload: ", string::view::make( request.state().payload.memory));
 
                               return {};
                            }

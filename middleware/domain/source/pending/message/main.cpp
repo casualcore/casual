@@ -12,6 +12,7 @@
 #include "common/communication/instance.h"
 #include "common/message/handle.h"
 #include "common/exception/handle.h"
+#include "common/signal/timer.h"
 
 namespace casual
 {
@@ -44,7 +45,7 @@ namespace casual
                      {
                         if( state.messages.empty())
                            signal::timer::unset();
-                        else if( signal::timer::get() == platform::time::unit::min())
+                        else if( ! signal::timer::get())
                            signal::timer::set( std::chrono::milliseconds{ 500});
                      }
 

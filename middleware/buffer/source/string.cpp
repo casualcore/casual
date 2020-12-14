@@ -92,11 +92,11 @@ namespace casual
 
                platform::buffer::raw::type allocate( const std::string& type, const platform::binary::size::type size)
                {
-                  m_pool.emplace_back( type, size ? size : 1);
+                  auto& buffer = m_pool.emplace_back( type, size ? size : 1);
 
-                  m_pool.back().payload.memory.front() = '\0';
+                  buffer.payload.memory.front() = '\0';
 
-                  return m_pool.back().payload.memory.data();
+                  return buffer.payload.memory.data();
                }
 
                platform::buffer::raw::type reallocate( const platform::buffer::raw::immutable::type handle, const platform::binary::size::type size)
@@ -118,9 +118,7 @@ namespace casual
                   // Validate it before we move it
                   local::validate( payload);
 
-                  m_pool.emplace_back( std::move( payload));
-
-                  return m_pool.back().payload.memory.data();
+                  return m_pool.emplace_back( std::move( payload)).payload.memory.data();
                }
 
             };

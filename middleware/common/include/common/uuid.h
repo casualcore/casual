@@ -11,14 +11,13 @@
 #include <uuid/uuid.h>
 
 #include "casual/platform.h"
-#include "common/view/string.h"
 #include "common/view/binary.h"
 #include "common/range.h"
 
 #include "common/serialize/macro.h"
-//#include "common/serialize/value.h"
 
 #include <string>
+#include <string_view>
 
 namespace casual
 {
@@ -38,7 +37,7 @@ namespace casual
          Uuid& operator = ( const Uuid&) = default;
 
          Uuid( const uuid_type& uuid);
-         explicit Uuid( view::String string);
+         explicit Uuid( std::string_view string);
 
          inline const uuid_type& get() const { return m_uuid;}
          inline uuid_type& get() { return m_uuid;}

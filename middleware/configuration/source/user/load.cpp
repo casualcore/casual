@@ -24,7 +24,7 @@ namespace casual
             {
                auto load( Domain current, const std::string& file)
                {
-                  Trace trace{ "configuration::model::local::load"};
+                  Trace trace{ "configuration::user::local::load"};
                   log::line( verbose::log, "file: ", file);
 
                   user::Domain domain;

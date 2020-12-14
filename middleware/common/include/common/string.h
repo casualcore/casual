@@ -7,21 +7,21 @@
 
 #pragma once
 
-
 #include "casual/platform.h"
+#include "common/string/view.h"
 #include "common/traits.h"
 #include "common/algorithm.h"
 #include "common/stream.h"
-#include "common/view/string.h"
+#include "common/code/raise.h"
+#include "common/code/casual.h"
 
 #include <string>
 #include <locale>
-
+#include <charconv>
 #include <regex>
 #include <algorithm>
 #include <sstream>
 
-#include <cstdlib>
 
 namespace casual
 {
@@ -69,10 +69,23 @@ namespace casual
             return std::move( out).str();
          }
 
+         namespace detail
+         {
+            template< typename R, typename Iter>
+            auto create( Iter first, Iter last, traits::priority::tag< 1>) -> decltype( R{ first, last}) { return R{ first, last};}
+
+            template< typename R, typename Iter>
+            auto create( Iter first, Iter last, traits::priority::tag< 0>) -> decltype( R( first, std::distance( first, last))) 
+            { 
+               return R( first, std::distance( first, last));
+            }
+         } // detail
+
          template< typename R>
          auto trim( R&& range) -> traits::remove_cvref_t< decltype( range)>
          {
-            const auto ws = [] (const auto character){ 
+            const auto ws = [] ( const auto character)
+            { 
                return std::isspace( character, std::locale::classic()); 
             };
 
@@ -82,7 +95,8 @@ namespace casual
             for( ; last != first && ws( *( last -1)); --last)
                ;
 
-            return traits::remove_cvref_t< decltype( range)>{ first, last};
+            // TODO maintainence: remove dispatch when string_view get ctor with only iterators - C++20
+            return detail::create< traits::remove_cvref_t< decltype( range)>>( first, last, traits::priority::tag< 1>{});
          }
 
 
@@ -93,7 +107,7 @@ namespace casual
          template< typename R>
          bool integer( R&& value)
          {
-            view::String view( value);
+            auto view = string::view::make( value);
             
             if( view.empty())
                return false;
@@ -109,120 +123,80 @@ namespace casual
             stream::write( out, std::forward< Parts>( parts)...);
             return std::move( out).str();
          }
-      } // string
 
-      namespace detail
-      {
-         template< typename F, typename... B>
-         auto c_wrapper( view::String value, F&& function, B... base) noexcept
+         namespace detail
          {
-            char* end = nullptr;
-            return function( std::begin( value), &end, base...);
-         }
-
-         namespace from
-         {
-            //! last resort, use stream operator
-            template< typename R>
-            auto string( view::String value, R& result, traits::priority::tag< 0>) 
-               -> decltype( void( std::declval< std::istream&>() >> result))
-            { 
-               std::istringstream in{ value.value()};
-               in >> result;
-            }
-
-            template< typename R>
-            auto string( view::String value, R& result, traits::priority::tag< 1>) 
-               -> std::enable_if_t< std::is_integral< R>::value &&  std::is_signed< R>::value>
-            { 
-               result = c_wrapper( value, &std::strtol, 10);
-            }
-
-            template< typename R>
-            auto string( view::String value, R& result, traits::priority::tag< 1>) 
-               -> std::enable_if_t< std::is_integral< R>::value &&  ! std::is_signed< R>::value>
-            { 
-               result = c_wrapper( value, &std::strtoul, 10);
-            }
-
-            template< typename R>
-            auto string( view::String value, R& result, traits::priority::tag< 1>) 
-               -> std::enable_if_t< std::is_floating_point< R>::value>
-            { 
-               result = c_wrapper( value, &std::strtod);
-            }
-
-            template< typename R>
-            auto string( view::String value, R& result, traits::priority::tag< 2>) 
-               -> std::enable_if_t< std::is_same< R, bool>::value>
+            inline void from( std::string_view value, bool& result, traits::priority::tag< 2>) 
             { 
                if( value == "true") result = true; 
                else if( value == "false") result = false; 
                else result = ! ( value == "0");
             }
 
-         } // from
-
-
-         template< typename R, typename Enable = void>
-         struct from_string;
-
-         template< typename T >
-         struct from_string< T, void>
-         { 
-            static T get( view::String value) 
+            inline void from( std::string_view value, std::string& result, traits::priority::tag< 2>)
             {
-               T result;
-               from::string( value, result, traits::priority::tag< 2>{});
-               return result;
-            } 
-         };
+               result = value;
+            }
 
-         //! strings just go through
-         template<>
-         struct from_string< std::string, void> 
-         { 
-            static const std::string& get( const std::string& value) { return value;} 
-            static std::string get( std::string&& value) { return std::move( value);} 
-            static std::string get( view::String value) { return { std::begin( value), std::end( value)};} 
-         };
+            template< typename R>
+            auto from( std::string_view value, R& result, traits::priority::tag< 1>) 
+               -> decltype( void( std::from_chars( value.data(), value.data() + value.size(), result)))
+            { 
+               if( std::from_chars( value.data(), value.data() + value.size(), result).ec == std::errc::invalid_argument)
+                  code::raise::error( code::casual::invalid_argument, "failed to convert from string: ", value);
+            }
+
+            //! last resort, use stream operator
+            template< typename R>
+            auto from( std::string_view value, R& result, traits::priority::tag< 0>) 
+               -> decltype( void( std::declval< std::istream&>() >> result))
+            { 
+               std::istringstream in{ std::string{ value}};
+               in >> result;
+            }
 
 
+            //inline std::string to_string( std::string value) { return value;}
+            inline const std::string& to( const std::string& value) { return value;}
+
+            inline std::string to( const bool value) 
+            {
+               std::ostringstream out; 
+               out << std::boolalpha << value; 
+               return std::move( out).str();
+            }
 
 
-         //inline std::string to_string( std::string value) { return value;}
-         inline const std::string& to_string( const std::string& value) { return value;}
+            template< typename T>
+            std::string to( const T& value) 
+            { 
+               std::ostringstream out; 
+               out << value;
+               return std::move( out).str();
+            }
 
-         inline std::string to_string( const bool value) 
+         } // detail
+
+
+         template< typename R>
+         auto from( std::string_view string) 
+            -> decltype( void( detail::from( string, std::declval< R&>(), traits::priority::tag< 2>{})), R{})
          {
-            std::ostringstream out; 
-            out << std::boolalpha << value; 
-            return std::move( out).str();
+            R result{};
+            detail::from( string, result, traits::priority::tag< 2>{});
+            return result;
          }
 
 
          template< typename T>
-         std::string to_string( const T& value) 
-         { 
-            std::ostringstream out; 
-            out << value;
-            return std::move( out).str();
+         auto to( T&& value)
+            -> decltype( detail::to( std::forward< T>( value)))
+         {
+            return detail::to( std::forward< T>( value));
          }
 
-      } // detail
+      } // string
 
-      template< typename R, typename T>
-      auto from_string( T&& value) 
-         -> decltype( detail::from_string< std::decay_t< R>>::get( std::forward< T>( value)))
-      {
-         return detail::from_string< std::decay_t< R>>::get( std::forward< T>( value));
-      }
-
-      template< typename T>
-      decltype( auto) to_string( T&& value)
-      {
-         return detail::to_string( std::forward< T>( value));
-      }
 
 
       namespace type

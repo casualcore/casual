@@ -8,6 +8,7 @@
 #pragma once
 
 #include <utility>
+#include <iosfwd>
 
 namespace casual
 {
@@ -63,6 +64,9 @@ namespace casual
             auto release() noexcept { return std::exchange( value, policy_type::moved());}
 
             T value = policy_type::active();
+
+            inline friend std::ostream& operator << ( std::ostream& out, const basic_active& value) { return out << value.value;}
+            
          };
 
          //! indicator type to deduce if it has been moved or not.
