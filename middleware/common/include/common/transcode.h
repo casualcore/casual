@@ -46,9 +46,9 @@ namespace casual
             {
                constexpr platform::size::type encoded( platform::size::type bytes) 
                {
-                  return ( ( bytes + 2) / 3) * 4 + 1;
+                  return ( ( bytes + 2) / 3) * 4;
                }
-            } // size
+            } // capacity
 
 
 

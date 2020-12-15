@@ -42,7 +42,9 @@ def paths():
                thirdparty + '/yaml-cpp/include',
                thirdparty + '/pugixml/src'
             ]
+            self.cppcodec = [ thirdparty + '/cppcodec/include']
             self.gtest = [ thirdparty + '/googletest/include']
+
 
       include = Include( thirdparty)
 

@@ -11,17 +11,17 @@ if sys.platform.startswith('darwin'):
     
     #(sysname, nodename, release, version, machine) = os.uname()
     
-    release = os.uname()[ 2]    
-    platform_specific_libs = [ 'c', 'iconv', 'resolv']
+    release = os.uname()[ 2]
+    platform_specific_libs = [ 'c', 'iconv', ]
     
     if release < '16.3.0':
         platform_specific_lib_paths = [ '/opt/local/lib' ]
         platform_specific_include_paths = [ '/opt/local/include' ]
 
-elif sys.platform.startswith('win') or sys.platform.startswith('cygwin'):
-    platform_specific_libs = ['uuid', 'resolv', 'iconv']
+elif sys.platform.startswith('cygwin'):
+    platform_specific_libs = ['uuid', 'iconv', ]
 else:
-    platform_specific_libs = ['uuid', 'resolv']
+    platform_specific_libs = ['uuid', ]
 
 make.IncludePaths( [ 
         'include',
@@ -30,6 +30,7 @@ make.IncludePaths( [
    + platform_specific_include_paths
    + make.optional_include_paths()
    + dsl.paths().include.serialization
+   + dsl.paths().include.cppcodec
    + dsl.paths().include.gtest
 )
 

@@ -14,9 +14,7 @@
 
 #include "common/result.h"
 
-
-
-#include <resolv.h>
+#include <cppcodec/base64_rfc4648.hpp>
 
 #include <locale>
 #include <algorithm>
@@ -45,34 +43,31 @@ namespace casual
          {
             namespace detail
             {
-
                platform::size::type encode( const Data source, Data target)
                {
-                  const auto length =
-                     b64_ntop(
-                        static_cast<const unsigned char*>( source.memory),
-                        source.bytes,
-                        static_cast< char*>( target.memory),
-                        target.bytes);
-
-                  if( length < 0)
-                     code::raise::error( code::casual::failed_transcoding, "base64 encode failed");
-
-                  return length;
+                  // calls abort() if target size is insufficient
+                  return cppcodec::base64_rfc4648::encode(
+                     static_cast<char*>(target.memory),
+                     target.bytes,
+                     static_cast<const char*>(source.memory),
+                     source.bytes); 
                }
 
                platform::size::type decode( const char* first, const char* last, char* dest_first, char* dest_last)
                {
-                  const auto length =
-                     b64_pton(
+                  try
+                  {
+                     // calls abort() if target size is insufficient
+                     return cppcodec::base64_rfc4648::decode(
+                        dest_first,
+                        std::distance( dest_first, dest_last),
                         first,
-                        reinterpret_cast<unsigned char*>( dest_first),
-                        std::distance( dest_first, dest_last));
-
-                  if( length < 0)
+                        std::distance( first, last));
+                  }
+                  catch( const std::exception& e)
+                  {
                      code::raise::error( code::casual::failed_transcoding, "base64 decode failed");
-
-                  return length;
+                  }
                }
 
             } // detail
