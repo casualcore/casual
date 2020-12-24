@@ -420,6 +420,8 @@ try
 
    node( "publishing")
    {
+      deleteDir()
+      
       if ( isPublishable() )
       {
          stage('Tag')
