@@ -873,7 +873,12 @@ RECURSIVE              = YES
 # Note that relative paths are relative to the directory from which doxygen is
 # run.
 
-EXCLUDE                = ./thirdparty ./_book
+# TODO: For some reason doxygen is killed when handling some file under 
+# ./middleware/common/include/common/message 
+# With this path excluded, doxygen is working again.
+# It is a separate issue to figure out which file causing the problem
+# and what is wrong. Issue #195 addressing this problem.
+EXCLUDE                = ./thirdparty ./middleware/common/include/common/message
 
 # The EXCLUDE_SYMLINKS tag can be used to select whether or not files or
 # directories that are symbolic links (a Unix file system feature) are excluded

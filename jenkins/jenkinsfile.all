@@ -318,6 +318,15 @@ try
                      """
                      stash includes: '**', name: 'casual-documentation'
                   }
+                  dir("casual")
+                  {
+                     sh """
+                        mkdir doxygen
+                        DOCUMENT_ROOT=doxygen doxygen documentation/Doxyfile 2> /dev/null                
+                     """
+                     stash includes: 'doxygen/**', name: 'casual-doxygen'
+                      
+                  }
                }
             }
          }
@@ -509,16 +518,20 @@ try
                """
             }
          }
-
+      }
+      if ( isPublishable())
+      {
          stage('publish documentation')
          {
             deleteDir()
             dir("casual-documentation")
             {
                unstash "casual-documentation"
+               unstash "casual-doxygen"
                def path = "${WORKSPACE}"
                def directories = path.split("/")
                echo "http://casual.laz.se/documentation/workspace/" + directories[-1] + "/casual-documentation/casual/casual-middleware/build/html/"
+               echo "http://casual.laz.se/documentation/workspace/" + directories[-1] + "/casual-documentation/doxygen/html/"
             }
          }
       }
