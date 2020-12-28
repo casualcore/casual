@@ -26,7 +26,7 @@ namespace casual
                   {
                      std::string type = common::buffer::type::x_octet();
 
-                     constexpr auto information = R"([deprecated] use `casual buffer --consume` instead)";
+                     constexpr auto information = R"([deprecated] use `casual buffer --compose` instead)";
 
                      argument::Parse{ information,
                         argument::Option{ std::tie( type), { "--type"}, "type of the composed buffer"}

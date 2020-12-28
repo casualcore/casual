@@ -120,10 +120,10 @@ List connections:
 
 ```bash
 domainA>$ casual gateway --list-connections
-name               id                                bound  pid    queue    type  runlevel  address        
------------------  --------------------------------  -----  -----  -------  ----  --------  ---------------
-md-medium-domainB  b0cf47002d4642f7a72913d40cde6a92  out    22351  8060933  tcp   online    localhost:7772 
-md-medium-domainB  b0cf47002d4642f7a72913d40cde6a92  in     22376   917521  tcp   online    localhost:64495
+name               id                                bound  pid    ipc                               runlevel  local            peer           
+-----------------  --------------------------------  -----  -----  --------------------------------  --------  ---------------  ---------------
+md-medium-domainB  0f8a801678b84bc8b068ba94f9de9a08  out    44779  e83f4bb1d45647c6b15d2623ead42242  online    127.0.0.1:59981  127.0.0.1:7772 
+md-medium-domainB  0f8a801678b84bc8b068ba94f9de9a08  in     44793  e3c61a13d97444f5bcc9b5b2de9dcfcf  online    127.0.0.1:7771   127.0.0.1:59980
 ```
 
 We have one inbound and one outbound connection to `domainB`.
@@ -134,17 +134,21 @@ List services:
 
 ```bash
 domainA>$ casual service --list-services
-name                         category  mode  timeout   I  C  AT        P  PAT       RI  RC  last                   
----------------------------  --------  ----  --------  -  -  --------  -  --------  --  --  -----------------------
-casual/example/conversation  example   join  0.000000  1  0  0.000000  0  0.000000   0   0  0000-00-00T00:00:00.000
-casual/example/echo          example   join  0.000000  1  0  0.000000  0  0.000000   0   0  2018-04-11T22:54:02.185
-casual/example/lowercase     example   join  0.000000  1  0  0.000000  0  0.000000   0   0  0000-00-00T00:00:00.000
-casual/example/rollback      example   join  0.000000  1  0  0.000000  0  0.000000   0   0  2018-04-11T22:54:02.197
-casual/example/sink          example   join  0.000000  1  0  0.000000  0  0.000000   0   0  0000-00-00T00:00:00.000
-casual/example/sleep         example   join  0.000000  1  0  0.000000  0  0.000000   0   0  0000-00-00T00:00:00.000
-casual/example/terminate     example   join  0.000000  1  0  0.000000  0  0.000000   0   0  0000-00-00T00:00:00.000
-casual/example/uppercase     example   join  0.000000  1  0  0.000000  0  0.000000   0   0  0000-00-00T00:00:00.000
-casual/example/work          example   join  0.000000  1  0  0.000000  0  0.000000   0   0  0000-00-00T00:00:00.000
+name                              category  mode  timeout  I  C  AT     min    max    P  PAT    RI  RC  last
+--------------------------------  --------  ----  -------  -  -  -----  -----  -----  -  -----  --  --  ----
+casual/example/advertised/echo    example   join    0.000  1  0  0.000  0.000  0.000  0  0.000   0   0  -   
+casual/example/conversation       example   join    0.000  1  0  0.000  0.000  0.000  0  0.000   0   0  -   
+casual/example/echo               example   join    0.000  1  0  0.000  0.000  0.000  0  0.000   0   0  -   
+casual/example/error/system       example   join    0.000  1  0  0.000  0.000  0.000  0  0.000   0   0  -   
+casual/example/forward/echo       example   auto    0.000  1  0  0.000  0.000  0.000  0  0.000   0   0  -   
+casual/example/forward/join/echo  example   join    0.000  1  0  0.000  0.000  0.000  0  0.000   0   0  -   
+casual/example/lowercase          example   join    0.000  1  0  0.000  0.000  0.000  0  0.000   0   0  -   
+casual/example/rollback           example   join    0.000  1  0  0.000  0.000  0.000  0  0.000   0   0  -   
+casual/example/sink               example   join    0.000  1  0  0.000  0.000  0.000  0  0.000   0   0  -   
+casual/example/sleep              example   join    0.000  1  0  0.000  0.000  0.000  0  0.000   0   0  -   
+casual/example/terminate          example   join    0.000  1  0  0.000  0.000  0.000  0  0.000   0   0  -   
+casual/example/uppercase          example   join    0.000  1  0  0.000  0.000  0.000  0  0.000   0   0  -   
+casual/example/work               example   join    0.000  1  0  0.000  0.000  0.000  0  0.000   0   0  -   
 ```
 
 
@@ -155,11 +159,10 @@ List queues:
 
 ```bash
 domainA>$ casual queue --list-queues 
-name                  count  size  avg  uc  updated                  r  t  group   
---------------------  -----  ----  ---  --  -----------------------  -  -  --------
-queueA1                   0     0    0   0  2018-04-11T23:03:47.853  0  q  domain-A
-queueA1.error             0     0    0   0  2018-04-11T23:03:47.853  0  e  domain-A
-domain-A.group.error      0     0    0   0  2018-04-11T23:03:47.848  0  g  domain-A
+name           group     rc  rd     count  size  avg  EQ  DQ  UC  last
+-------------  --------  --  -----  -----  ----  ---  --  --  --  ----
+queueA1        domain-A   0  0.000      0     0    0   0   0   0  -   
+queueA1.error  domain-A   0  0.000      0     0    0   0   0   0  -   
 ```
 
 #### domain B
@@ -168,10 +171,10 @@ List connections:
 
 ```bash
 domainB>$ casual gateway --list-connections 
-name               id                                bound  pid    queue     type  runlevel  address        
------------------  --------------------------------  -----  -----  --------  ----  --------  ---------------
-md-medium-domainA  0e483f8393da4ebc8da6978a07493213  out    17509  13828096  tcp   online    localhost:7771 
-md-medium-domainA  0e483f8393da4ebc8da6978a07493213  in     17522    655380  tcp   online    localhost:51175
+name               id                                bound  pid    ipc                               runlevel  local            peer           
+-----------------  --------------------------------  -----  -----  --------------------------------  --------  ---------------  ---------------
+md-medium-domainA  473c23883eac40d0867170cb2fa49830  out    44960  026a2c488d6b4a3d90106cee04f3783a  online    127.0.0.1:60018  127.0.0.1:7771 
+md-medium-domainA  473c23883eac40d0867170cb2fa49830  in     44975  64e60b840a8b4e41a10cec6f14a07707  online    127.0.0.1:7772   127.0.0.1:60017
 ```
 
 We have one inbound and one outbound connection to `domainA`.
@@ -181,8 +184,8 @@ List services:
 
 ```bash
 domainB>$ casual service --list-services
-name  category  mode  timeout  I  C  AT  P  PAT  RI  RC  last
-----  --------  ----  -------  -  -  --  -  ---  --  --  ----
+name  category  mode  timeout  I  C  AT  min  max  P  PAT  RI  RC  last
+----  --------  ----  -------  -  -  --  ---  ---  -  ---  --  --  ----
 ```
 
 
@@ -193,13 +196,12 @@ List queues:
 
 ```bash
 domainB>$ casual queue --list-queues 
-name                  count  size  avg  uc  updated                  r  t  group   
---------------------  -----  ----  ---  --  -----------------------  -  -  --------
-queueB1                   0     0    0   0  2018-04-11T23:06:15.916  0  q  domain-B
-queueB1.error             0     0    0   0  2018-04-11T23:06:15.916  0  e  domain-B
-queueB2                   0     0    0   0  2018-04-11T23:06:15.918  0  q  domain-B
-queueB2.error             0     0    0   0  2018-04-11T23:06:15.918  0  e  domain-B
-domain-B.group.error      0     0    0   0  2018-04-11T23:06:15.910  0  g  domain-B
+name           group     rc  rd     count  size  avg  EQ  DQ  UC  last
+-------------  --------  --  -----  -----  ----  ---  --  --  --  ----
+queueB1        domain-B   0  0.000      0     0    0   0   0   0  -   
+queueB2        domain-B   0  0.000      0     0    0   0   0   0  -   
+queueB1.error  domain-B   0  0.000      0     0    0   0   0   0  -   
+queueB2.error  domain-B   0  0.000      0     0    0   0   0   0  -   
 ```
 
 
@@ -208,7 +210,7 @@ domain-B.group.error      0     0    0   0  2018-04-11T23:06:15.910  0  g  domai
 In `domainA`, enqueue some characters to `queueB1` that is located in `domainB`
 
 ```bash
-domainA>$ echo "test" | casual queue --enqueue queueB1
+domainA>$ echo "test" | casual buffer --compose | casual queue --enqueue queueB1
 bec3b4b3cccd4f3b89faee970518ab7d
 ```
 
@@ -216,13 +218,10 @@ The message should be enqueued to `queueA1` and then dequeued and rollbacked, he
 
 ```bash
 domainA>$ casual queue --list-queues 
-name                  count  size  avg  uc  updated                  r  t  group   
---------------------  -----  ----  ---  --  -----------------------  -  -  --------
-queueA1                   0     0    0   0  2018-04-11T23:07:25.602  0  q  domain-A
-queueA1.error             1     6    6   0  2018-04-11T23:03:47.853  0  e  domain-A
-domain-A.group.error      0     0    0   0  2018-04-11T23:03:47.848  0  g  domain-A
-```
-
+name           group     rc  rd     count  size  avg  EQ  DQ  UC  last                            
+-------------  --------  --  -----  -----  ----  ---  --  --  --  --------------------------------
+queueA1        domain-A   0  0.000      0     0    0   1   1   0  2020-12-28T21:25:25.169911+01:00
+queueA1.error  domain-A   0  0.000      1     5    5   1   0   0  2020-12-28T21:25:25.169911+01:00
 
 
 The service `casual/example/echo` should be reqeusted once (the call from remote `domainB`).
@@ -230,17 +229,21 @@ The service `casual/example/rollback` should be reqeusted once from the forward 
 
 ```bash
 domainA>$ casual service --list-services
-name                         category  mode  timeout   I  C  AT        P  PAT       RI  RC  last                   
----------------------------  --------  ----  --------  -  -  --------  -  --------  --  --  -----------------------
-casual/example/conversation  example   join  0.000000  1  0  0.000000  0  0.000000   0   0  0000-00-00T00:00:00.000
-casual/example/echo          example   join  0.000000  1  1  0.001463  0  0.000000   0   0  2018-04-11T23:07:25.593
-casual/example/lowercase     example   join  0.000000  1  0  0.000000  0  0.000000   0   0  0000-00-00T00:00:00.000
-casual/example/rollback      example   join  0.000000  1  1  0.001282  0  0.000000   0   0  2018-04-11T23:07:25.608
-casual/example/sink          example   join  0.000000  1  0  0.000000  0  0.000000   0   0  0000-00-00T00:00:00.000
-casual/example/sleep         example   join  0.000000  1  0  0.000000  0  0.000000   0   0  0000-00-00T00:00:00.000
-casual/example/terminate     example   join  0.000000  1  0  0.000000  0  0.000000   0   0  0000-00-00T00:00:00.000
-casual/example/uppercase     example   join  0.000000  1  0  0.000000  0  0.000000   0   0  0000-00-00T00:00:00.000
-casual/example/work          example   join  0.000000  1  0  0.000000  0  0.000000   0   0  0000-00-00T00:00:00.000
+name                              category  mode  timeout  I  C  AT     min    max    P  PAT    RI  RC  last                            
+--------------------------------  --------  ----  -------  -  -  -----  -----  -----  -  -----  --  --  --------------------------------
+casual/example/advertised/echo    example   join    0.000  1  0  0.000  0.000  0.000  0  0.000   0   0  -                               
+casual/example/conversation       example   join    0.000  1  0  0.000  0.000  0.000  0  0.000   0   0  -                               
+casual/example/echo               example   join    0.000  1  1  0.001  0.001  0.001  1  0.000   0   0  2020-12-28T21:25:25.156694+01:00
+casual/example/error/system       example   join    0.000  1  0  0.000  0.000  0.000  0  0.000   0   0  -                               
+casual/example/forward/echo       example   auto    0.000  1  0  0.000  0.000  0.000  0  0.000   0   0  -                               
+casual/example/forward/join/echo  example   join    0.000  1  0  0.000  0.000  0.000  0  0.000   0   0  -                               
+casual/example/lowercase          example   join    0.000  1  0  0.000  0.000  0.000  0  0.000   0   0  -                               
+casual/example/rollback           example   join    0.000  1  1  0.001  0.001  0.001  1  0.000   0   0  2020-12-28T21:25:25.188741+01:00
+casual/example/sink               example   join    0.000  1  0  0.000  0.000  0.000  0  0.000   0   0  -                               
+casual/example/sleep              example   join    0.000  1  0  0.000  0.000  0.000  0  0.000   0   0  -                               
+casual/example/terminate          example   join    0.000  1  0  0.000  0.000  0.000  0  0.000   0   0  -                               
+casual/example/uppercase          example   join    0.000  1  0  0.000  0.000  0.000  0  0.000   0   0  -                               
+casual/example/work               example   join    0.000  1  0  0.000  0.000  0.000  0  0.000   0   0  -      
 ```
 
 
@@ -248,9 +251,9 @@ In `domainB`, `casual/example/echo` should be known with no local instances:
 
 ```bash
 domainB>$ casual service --list-services
-name                 category  mode  timeout   I  C  AT        P  PAT       RI  RC  last                   
--------------------  --------  ----  --------  -  -  --------  -  --------  --  --  -----------------------
-casual/example/echo  example   join  0.000000  0  0  0.000000  0  0.000000   1   1  0000-00-00T00:00:00.000
+name                 category  mode  timeout  I  C  AT     min    max    P  PAT    RI  RC  last                            
+-------------------  --------  ----  -------  -  -  -----  -----  -----  -  -----  --  --  --------------------------------
+casual/example/echo  example   join    0.000  0  1  0.005  0.005  0.005  1  0.000   1   1  2020-12-28T21:25:25.158197+01:00
 ```
 
 
