@@ -254,6 +254,21 @@ domain:
          EXPECT_TRUE( messages.size() == 1);
       }
 
+      TEST( casual_queue, enqueue_1_message_with_no_payload___expect_1_message_in_queue)
+      {
+         common::unittest::Trace trace;
+
+         local::Domain domain;
+
+         queue::Message message;
+
+         queue::enqueue( "queueA1", message);
+         auto messages = local::call::messages( "queueA1");
+
+         EXPECT_TRUE( messages.size() == 1);
+      }
+
+
       TEST( casual_queue, enqueue_5_message___expect_5_message_in_queue)
       {
          common::unittest::Trace trace;
@@ -372,6 +387,51 @@ domain:
             EXPECT_TRUE( common::algorithm::equal( message.payload.data, payload));
          }
       }
+
+      TEST( casual_queue, enqueue_1_message_with_no_payload__peek_message__expect_1_peeked)
+      {
+         common::unittest::Trace trace;
+
+         local::Domain domain;
+
+         auto now = platform::time::clock::type::now();
+
+         auto enqueue = [&](){
+            queue::Message message;
+            {
+               message.attributes.available = now;
+               message.attributes.properties = "poop";
+               message.attributes.reply = "queueA2";
+            }
+
+            return queue::enqueue( "queueA1", message);
+         };
+
+         auto id = enqueue();
+
+         auto messages = queue::peek::messages( "queueA1", { id});
+
+         ASSERT_TRUE( messages.size() == 1);
+         auto& message = messages.at( 0);
+         EXPECT_TRUE( message.id == id) << "message: " << CASUAL_NAMED_VALUE( message);
+         EXPECT_TRUE( local::compare( message.attributes.available, now));
+         EXPECT_TRUE( message.attributes.properties == "poop");
+         EXPECT_TRUE( message.attributes.reply == "queueA2");
+
+         const decltype( message.payload.data) empty{};
+         EXPECT_TRUE( message.payload.data == empty);
+
+         // message should still be there
+         {
+            auto messages = queue::dequeue( "queueA1");
+            EXPECT_TRUE( ! messages.empty());
+            auto& message = messages.at( 0);
+            EXPECT_TRUE( message.id == id);
+            EXPECT_TRUE( message.payload.data == empty);
+         }
+      }
+
+
 
       TEST( casual_queue, peek_remote_message___expect_throw)
       {

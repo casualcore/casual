@@ -83,7 +83,7 @@ BEGIN
    UPDATE queue SET
       last = new.timestamp,
       count = count + 1,
-      size = size + length( new.payload),
+      size = size + coalesce( length( new.payload), 0),
       metric_enqueued = metric_enqueued + 1
    WHERE id = new.queue AND new.state = 2;
 
@@ -94,7 +94,7 @@ BEGIN
    UPDATE queue SET
       count = count + 1,
       metric_enqueued = metric_enqueued + 1,
-      size = size + length( new.payload),
+      size = size + coalesce( length( new.payload), 0),
       uncommitted_count = uncommitted_count - 1,
       last = new.timestamp
    WHERE id = new.queue AND old.state = 1 AND new.state = 2;
@@ -106,14 +106,14 @@ BEGIN
    UPDATE queue SET  -- 'queue move' update the new queue
       count = count + 1,
       metric_enqueued = metric_enqueued + 1,
-      size = size + length( new.payload),
+      size = size + coalesce( length( new.payload), 0),
       last = MAX( last, new.timestamp)
    WHERE id = new.queue AND new.queue != old.queue;
 
    UPDATE queue SET  -- 'queue move' update the old queue
       count = count - 1,
       metric_dequeued = metric_dequeued + 1,
-      size = size - length( old.payload),
+      size = size - coalesce( length( old.payload), 0),
       last = MAX( last, new.timestamp)
    WHERE id = old.queue AND old.queue != new.queue;
 
@@ -124,7 +124,7 @@ BEGIN
    UPDATE queue SET 
       count = count - 1,
       metric_dequeued = metric_dequeued + 1,
-      size = size - length( old.payload),
+      size = size - coalesce( length( old.payload), 0),
       last = old.timestamp
    WHERE id = old.queue AND old.state IN ( 2, 3);
 
