@@ -353,11 +353,14 @@ namespace casual
                      using base_request::base_request;
 
                      std::string requested;
+                     //! if caller want's a reply or not, default: true
+                     bool reply = true;
 
                      CASUAL_CONST_CORRECT_SERIALIZE(
                      {
                         base_request::serialize( archive);
                         CASUAL_SERIALIZE( requested);
+                        CASUAL_SERIALIZE( reply);
                      })
                   };
 

@@ -27,16 +27,14 @@ namespace casual
             template< message::Type type>
             struct basic_transaction : basic_request< type>
             {
-               using base_type = basic_request< type>;
-               using base_type::base_type;
+               using basic_request< type>::basic_request;
 
                common::transaction::ID trid;
 
                CASUAL_CONST_CORRECT_SERIALIZE(
-               {
-                  base_type::serialize( archive);
+                  basic_request< type>::serialize( archive);
                   CASUAL_SERIALIZE( trid);
-               })
+               )
             };
 
             template< message::Type type>
@@ -46,16 +44,14 @@ namespace casual
             template< typename State, message::Type type>
             struct basic_reply : basic_transaction< type>
             {
-               using base_type = basic_transaction< type>;
-               using base_type::base_type;
+               using basic_transaction< type>::basic_transaction;
 
                State state = State::ok;
 
                CASUAL_CONST_CORRECT_SERIALIZE(
-               {
-                  base_type::serialize( archive);
+                  basic_transaction< type>::serialize( archive);
                   CASUAL_SERIALIZE( state);
-               })
+               )
             };
 
 
@@ -63,7 +59,6 @@ namespace casual
             namespace commit
             {
                using base_request = basic_request< Type::transaction_commit_request>;
-
                struct Request : base_request
                {
                   using base_request::base_request;
@@ -71,12 +66,10 @@ namespace casual
                   std::vector< strong::resource::id> involved;
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
-                  {
                      base_request::serialize( archive);
                      CASUAL_SERIALIZE( involved);
-                  })
+                  )
                };
-               static_assert( traits::is_movable< Request>::value, "not movable");
 
                namespace reply
                {
@@ -108,10 +101,9 @@ namespace casual
                   reply::Stage stage = reply::Stage::prepare;
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
-                  {
                      reply::base::serialize( archive);
                      CASUAL_SERIALIZE( stage);
-                  })
+                  )
                };
 
             } // commit
@@ -126,16 +118,13 @@ namespace casual
                   std::vector< strong::resource::id> involved;
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
-                  {
                      base_request::serialize( archive);
                      CASUAL_SERIALIZE( involved);
-                  })
+                  )
                };
-               static_assert( traits::is_movable< Request>::value, "not movable");
 
 
                using base_reply = basic_reply< code::tx, Type::transaction_rollback_reply>;
-
                struct Reply : base_reply
                {
                   enum class Stage : short
@@ -147,10 +136,9 @@ namespace casual
                   Stage stage = Stage::rollback;
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
-                  {
                      base_reply::serialize( archive);
                      CASUAL_SERIALIZE( stage);
-                  })
+                  )
 
                   inline friend std::ostream& operator << ( std::ostream& out, Stage value)
                   {
@@ -161,9 +149,8 @@ namespace casual
                      }
                      return out << "unknown";
                   }
-
                };
-               static_assert( traits::is_movable< Reply>::value, "not movable");
+
             } // rollback
 
             namespace configuration
@@ -196,8 +183,7 @@ namespace casual
                      //! named resources
                      std::vector< std::string> resources;
 
-                     CASUAL_CONST_CORRECT_SERIALIZE
-                     (
+                     CASUAL_CONST_CORRECT_SERIALIZE(
                         base_request::serialize( archive);
                         CASUAL_SERIALIZE( alias);
                         CASUAL_SERIALIZE( resources);
@@ -211,8 +197,7 @@ namespace casual
 
                      std::vector< Resource> resources;
 
-                     CASUAL_CONST_CORRECT_SERIALIZE
-                     (
+                     CASUAL_CONST_CORRECT_SERIALIZE(
                         base_reply::serialize( archive);
                         CASUAL_SERIALIZE( resources);
                      ) 
@@ -238,11 +223,10 @@ namespace casual
                   Statistics statistics;
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
-                  {
                      base_type::serialize( archive);
                      CASUAL_SERIALIZE( resource);
                      CASUAL_SERIALIZE( statistics);
-                  })
+                  )
                };
 
                namespace involved
@@ -256,10 +240,9 @@ namespace casual
                      std::vector< strong::resource::id> involved;
 
                      CASUAL_CONST_CORRECT_SERIALIZE(
-                     {
                         base_request::serialize( archive);
                         CASUAL_SERIALIZE( involved);
-                     })
+                     )
                   };
 
                   using base_reply = basic_message< Type::transaction_resource_involved_reply>;
@@ -269,10 +252,9 @@ namespace casual
                      std::vector< strong::resource::id> involved;
 
                      CASUAL_CONST_CORRECT_SERIALIZE(
-                     {
                         base_reply::serialize( archive);
                         CASUAL_SERIALIZE( involved);
-                     })
+                     )
                   };
                } // involve
 
@@ -285,11 +267,10 @@ namespace casual
                   flag::xa::Flags flags = flag::xa::Flag::no_flags;
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
-                  {
                      basic_transaction< type>::serialize( archive);
                      CASUAL_SERIALIZE( resource);
                      CASUAL_SERIALIZE( flags);
-                  })
+                  )
                };
 
                namespace configuration
@@ -302,10 +283,9 @@ namespace casual
                      id::type id;
 
                      CASUAL_CONST_CORRECT_SERIALIZE(
-                     {
                         base_request::serialize( archive);
                         CASUAL_SERIALIZE( id);
-                     })
+                     )
                   };
 
                   using base_reply = message::basic_reply< Type::transaction_resource_proxy_configuration_reply>;
@@ -316,10 +296,9 @@ namespace casual
                      transaction::configuration::Resource resource;
 
                      CASUAL_CONST_CORRECT_SERIALIZE(
-                     {
                         base_reply::serialize( archive);
                         CASUAL_SERIALIZE( resource);
-                     })
+                     )
                   };
                } // configuration
 
@@ -334,10 +313,9 @@ namespace casual
                   id::type id;
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
-                  {
                      base_ready::serialize( archive);
                      CASUAL_SERIALIZE( id);
-                  })
+                  )
                };
 
                namespace prepare

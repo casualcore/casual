@@ -483,8 +483,9 @@ namespace casual
                                  }
                               }
 
-                              // We allways send reply
-                              local::optional::send( message.process.ipc, reply);
+                              // We only send reply if caller want's it
+                              if( message.reply)
+                                 local::optional::send( message.process.ipc, reply);
                            };
                         }
                      } // discard

@@ -229,7 +229,7 @@ namespace casual
 
          namespace gateway
          {
-            namespace listener
+            namespace inbound
             {
                struct Limit
                {
@@ -242,9 +242,93 @@ namespace casual
                   )
                };
 
+               struct Connection
+               {
+                  std::optional< std::string> note;
+                  std::string address;
+
+                  CASUAL_CONST_CORRECT_SERIALIZE(
+                     CASUAL_SERIALIZE( note);
+                     CASUAL_SERIALIZE( address);
+                  )
+               };
+
                struct Default
                {
-                  Limit limit;
+                  std::optional< inbound::Limit> limit; 
+
+                  CASUAL_CONST_CORRECT_SERIALIZE(
+                     CASUAL_SERIALIZE( limit);
+                  )
+               };
+            }
+            struct Inbound
+            {
+               std::optional< std::string> alias;
+               std::optional< std::string> note;
+               std::optional< inbound::Limit> limit;
+               std::vector< inbound::Connection> connections;
+
+               CASUAL_CONST_CORRECT_SERIALIZE(
+                  CASUAL_SERIALIZE( alias);
+                  CASUAL_SERIALIZE( note);
+                  CASUAL_SERIALIZE( limit);
+                  CASUAL_SERIALIZE( connections);
+               )
+            };
+
+            namespace outbound
+            {
+               struct Connection
+               {
+                  std::optional< std::string> note;
+                  std::string address;
+                  std::optional< std::vector< std::string>> services;
+                  std::optional< std::vector< std::string>> queues;
+
+                  CASUAL_CONST_CORRECT_SERIALIZE(
+                     CASUAL_SERIALIZE( note);
+                     CASUAL_SERIALIZE( address);
+                     CASUAL_SERIALIZE( services);
+                     CASUAL_SERIALIZE( queues);
+                  ) 
+               };
+            }
+
+            struct Outbound
+            {
+               std::optional< std::string> note;
+               std::optional< std::string> alias;
+               std::vector< outbound::Connection> connections;
+
+               CASUAL_CONST_CORRECT_SERIALIZE(
+                  CASUAL_SERIALIZE( note);
+                  CASUAL_SERIALIZE( alias);
+                  CASUAL_SERIALIZE( connections);
+               )
+            };
+
+
+            struct Reverse
+            {
+               std::optional< std::vector< gateway::Inbound>> inbounds;
+               std::optional< std::vector< gateway::Outbound>> outbounds;
+
+                Reverse& operator += ( Reverse rhs);
+
+               CASUAL_CONST_CORRECT_SERIALIZE(
+                  CASUAL_SERIALIZE( inbounds);
+                  CASUAL_SERIALIZE( outbounds);
+               )
+            };
+
+
+             //! @deprecated
+            namespace listener
+            {
+               struct Default
+               {
+                  inbound::Limit limit;
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
                      CASUAL_SERIALIZE( limit);
@@ -253,11 +337,12 @@ namespace casual
 
             } // listener
 
+            //! @deprecated
             struct Listener
             {
                std::optional< std::string> note;
                std::string address;
-               std::optional< listener::Limit> limit;
+               std::optional< inbound::Limit> limit;
                
                CASUAL_CONST_CORRECT_SERIALIZE(
                   CASUAL_SERIALIZE( note);
@@ -268,6 +353,7 @@ namespace casual
 
             namespace connection
             {
+               //! @deprecated
                struct Default
                {
                   bool restart = true;
@@ -282,6 +368,7 @@ namespace casual
                };
             } // connection
 
+            //! @deprecated
             struct Connection
             {
                std::optional< std::string> note;
@@ -299,91 +386,21 @@ namespace casual
                )               
             };
 
-            namespace reverse
-            {
-               namespace inbound
-               {
-                  struct Connection
-                  {
-                     std::optional< std::string> note;
-                     std::string address;
-
-                     CASUAL_CONST_CORRECT_SERIALIZE(
-                        CASUAL_SERIALIZE( note);
-                        CASUAL_SERIALIZE( address);
-                     )
-                  };
-               }
-               struct Inbound
-               {
-                  std::optional< std::string> note;
-                  std::optional< std::string> alias;
-                  std::optional< listener::Limit> limit;
-                  std::vector< inbound::Connection> connections;
-
-                  CASUAL_CONST_CORRECT_SERIALIZE(
-                     CASUAL_SERIALIZE( note);
-                     CASUAL_SERIALIZE( alias);
-                     CASUAL_SERIALIZE( limit);
-                     CASUAL_SERIALIZE( connections);
-                  )
-               };
-
-               namespace outbound
-               {
-                  struct Connection
-                  {
-                     std::optional< std::string> note;
-                     std::string address;
-                     std::optional< std::vector< std::string>> services;
-                     std::optional< std::vector< std::string>> queues;
-
-                     CASUAL_CONST_CORRECT_SERIALIZE(
-                        CASUAL_SERIALIZE( note);
-                        CASUAL_SERIALIZE( address);
-                        CASUAL_SERIALIZE( services);
-                        CASUAL_SERIALIZE( queues);
-                     ) 
-                  };
-               }
-
-               struct Outbound
-               {
-                  std::optional< std::string> note;
-                  std::optional< std::string> alias;
-                  std::vector< outbound::Connection> connections;
-
-                  CASUAL_CONST_CORRECT_SERIALIZE(
-                     CASUAL_SERIALIZE( note);
-                     CASUAL_SERIALIZE( alias);
-                     CASUAL_SERIALIZE( connections);
-                  )
-               };
-
-               
-            } // reverse
-
-            struct Reverse
-            {
-               std::optional< std::vector< reverse::Inbound>> inbounds;
-               std::optional< std::vector< reverse::Outbound>> outbounds;
-
-                Reverse& operator += ( Reverse rhs);
-
-               CASUAL_CONST_CORRECT_SERIALIZE(
-                  CASUAL_SERIALIZE( inbounds);
-                  CASUAL_SERIALIZE( outbounds);
-               )
-            };
-
             namespace manager
             {
                struct Default
                {
+                  std::optional< inbound::Default> inbound;
+
+
+                   //! @deprecated
+                   //! @{
                   std::optional< listener::Default> listener;
                   std::optional< connection::Default> connection;
+                  //! @}
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
+                     CASUAL_SERIALIZE( inbound);
                      CASUAL_SERIALIZE( listener);
                      CASUAL_SERIALIZE( connection);
                   )
@@ -394,9 +411,17 @@ namespace casual
             struct Manager
             {
                std::optional< manager::Default> defaults;
+
+               std::optional< std::vector< gateway::Inbound>> inbounds;
+               std::optional< std::vector< gateway::Outbound>> outbounds;
+
                std::optional< Reverse> reverse;
+
+                //! @deprecated
+               //! @{
                std::vector< gateway::Listener> listeners;
                std::vector< gateway::Connection> connections;
+               //! @}
 
                Manager& operator += ( Manager rhs);
 
@@ -406,6 +431,9 @@ namespace casual
                CASUAL_CONST_CORRECT_SERIALIZE(
                   CASUAL_SERIALIZE_NAME( defaults, "default");
                   CASUAL_SERIALIZE( reverse);
+                  CASUAL_SERIALIZE( inbounds);
+                  CASUAL_SERIALIZE( outbounds);
+
                   CASUAL_SERIALIZE( listeners);
                   CASUAL_SERIALIZE( connections);
                )

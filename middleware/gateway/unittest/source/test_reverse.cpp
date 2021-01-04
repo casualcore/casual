@@ -6,6 +6,7 @@
 
 #include "common/unittest.h"
 
+#include "gateway/unittest/utility.h"
 #include "gateway/manager/admin/model.h"
 #include "gateway/manager/admin/server.h"
 
@@ -60,6 +61,9 @@ domain:
          outbounds:
             - connections:
                - address: 127.0.0.1:6669
+                 services:
+                   - a
+                   - b
 
          inbounds:
             - connections: 
@@ -132,6 +136,9 @@ domain:
 
          casual::service::unittest::advertise( { "a"});
 
+         // discover to make sure outbound(s) knows about wanted services
+         auto discovered = unittest::discover( { "a"}, {});
+
          auto state = local::state::until( []( auto& state)
          { 
             return ! state.connections.empty() && ! state.connections[ 0].remote.name.empty();
@@ -189,6 +196,9 @@ domain:
 
          casual::service::unittest::advertise( { "a"});
 
+         // discover to make sure outbound(s) knows about wanted services
+         auto discovered = unittest::discover( { "a"}, {});
+
          auto state = local::state::until( []( auto& state)
          { 
             return ! state.connections.empty() && ! state.connections[ 0].remote.name.empty();
@@ -201,8 +211,13 @@ domain:
             auto correlation = communication::device::blocking::send( communication::instance::outbound::gateway::manager::device(), message);
             communication::device::blocking::receive( communication::ipc::inbound::device(), reply, correlation);
          }
+
+         auto equal_name = []( auto& lhs, auto& rhs){ return lhs.name == rhs;};
+
+         ASSERT_TRUE( reply.replies.size() == 1);
+         EXPECT_TRUE( algorithm::equal( reply.replies[ 0].services, unittest::to::vector( { "a"}), equal_name)) << CASUAL_NAMED_VALUE( reply.replies[ 0].services);
             
-         ASSERT_TRUE( ! reply.replies.empty());
+
          auto& process = reply.replies.at( 0).process;
 
          const auto data = common::unittest::random::binary( 128);
@@ -210,7 +225,6 @@ domain:
          algorithm::for_n< 10>( [&]()
          {
             common::message::service::call::callee::Request request{ common::process::handle()};
-            //request.process = common::process::handle();
             request.service.name = "a";
             request.buffer.memory = data;
             
@@ -224,8 +238,7 @@ domain:
 
             EXPECT_TRUE( reply.buffer.memory ==  data);
          });
-
-
       }
+
    } // gateway
 } // casual

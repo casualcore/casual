@@ -20,8 +20,8 @@ namespace casual
             {
                namespace detail
                {
-                  void fill( common::message::gateway::domain::connect::Request& message);
-                  void fill( common::message::gateway::domain::connect::Reply& message);
+                  void fill( gateway::message::domain::connect::Request& message);
+                  void fill( gateway::message::domain::connect::Reply& message);
 
                   void fill( common::message::gateway::domain::discover::Request& message);
                   void fill( common::message::gateway::domain::discover::Reply& message);

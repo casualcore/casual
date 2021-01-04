@@ -6,6 +6,8 @@
 
 #include "common/unittest.h"
 
+#include "gateway/unittest/utility.h"
+
 #include "gateway/manager/admin/model.h"
 #include "gateway/manager/admin/server.h"
 
@@ -62,10 +64,14 @@ domain:
       - path: "./bin/casual-gateway-manager"
         memberships: [ gateway]
    gateway:
-      listeners: 
-         - address: 127.0.0.1:6669
-      connections:
-         - address: 127.0.0.1:6669
+      inbounds:
+         - alias: inbound-1
+           connections: 
+            - address: 127.0.0.1:6669
+      outbounds: 
+         - alias: outbound-1
+           connections:
+            - address: 127.0.0.1:6669
 )";
 
             };
@@ -86,6 +92,21 @@ domain:
                   return result;
                }
 
+               template< typename P>
+               auto state( P&& predicate)
+               {
+                  auto state = local::call::state();
+                  auto count = 200;
+
+                  while( ! predicate( state) && count-- > 0)
+                  {
+                     common::process::sleep( std::chrono::milliseconds{ 10});
+                     state = local::call::state();
+                  }
+
+                  return state;
+               }
+
                auto rediscover()
                {
                   serviceframework::service::protocol::binary::Call call;
@@ -97,35 +118,24 @@ domain:
                   return result;
                }
 
-
                namespace wait
                {
                   namespace ready
                   {
-                     manager::admin::model::State state()
+                     auto state()
                      {
-                        auto state = local::call::state();
-
-                        auto count = 100;
-
                         auto ready = []( auto& state)
                         {
                            if( state.connections.empty())
                               return false;
 
-                           return algorithm::all_of( state.connections, []( auto& connection){
-                              return connection.runlevel >= manager::admin::model::Connection::Runlevel::online &&
-                                 connection.process == communication::instance::ping( connection.process.ipc);
+                           return algorithm::all_of( state.connections, []( auto& connection)
+                           {
+                              return connection.remote.id && ! connection.remote.name.empty();
                            });
                         };
 
-                        while( ! ready( state) && count-- > 0)
-                        {
-                           common::process::sleep( std::chrono::milliseconds{ 10});
-                           state = local::call::state();
-                        }
-
-                        return state;
+                        return local::call::state( std::move( ready));
                      }
 
                   } // ready
@@ -156,8 +166,8 @@ domain:
          auto state = local::call::wait::ready::state();
 
          EXPECT_TRUE( state.connections.size() == 2);
-         EXPECT_TRUE( algorithm::any_of( state.connections, []( const manager::admin::model::Connection& c){
-            return c.bound == manager::admin::model::Connection::Bound::out;
+         EXPECT_TRUE( algorithm::any_of( state.connections, []( const auto& connection){
+            return connection.bound == decltype( connection.bound)::out;
          }));
       }
 
@@ -172,7 +182,7 @@ domain:
                   common::message::service::call::callee::Request request;
                   communication::device::blocking::receive( communication::ipc::inbound::device(), request);
                   
-                  auto reply = message::reverse::type( request);
+                  auto reply = common::message::reverse::type( request);
                   reply.buffer = std::move( request.buffer);
                   reply.transaction.trid = std::move( request.trid);
 
@@ -205,15 +215,16 @@ domain:
          local::Domain domain;
 
          // we exposes service "remote1"
-         casual::service::unittest::advertise( { "remote1"});
-
-         EXPECT_TRUE( common::communication::instance::fetch::handle( common::communication::instance::identity::gateway::manager));
+         casual::service::unittest::advertise( { "a"});
 
          auto state = local::call::wait::ready::state();
-
          ASSERT_TRUE( state.connections.size() == 2);
 
          algorithm::sort( state.connections);
+
+         // discover to make sure outbound(s) knows about wanted services
+         auto discovered = unittest::discover( { "a"}, {});
+         ASSERT_TRUE( discovered.replies.size() == 1);
 
          auto data = common::unittest::random::binary( 128);
 
@@ -223,7 +234,7 @@ domain:
             {
                common::message::service::call::callee::Request request;
                request.process = common::process::handle();
-               request.service.name = "remote1";
+               request.service.name = "a";
                request.buffer.memory = data;
                
                common::communication::device::blocking::send( state.connections.at( 0).process.ipc, request);
@@ -247,27 +258,30 @@ domain:
 
          local::Domain domain;
 
-         // we exposes service "remote1"
-         casual::service::unittest::advertise( { "remote1"});
-
-         EXPECT_TRUE( common::communication::instance::fetch::handle( common::communication::instance::identity::gateway::manager));
+         // we exposes service "a"
+         casual::service::unittest::advertise( { "a"});
 
          auto state = local::call::wait::ready::state();
+
+         // discover to make sure outbound(s) knows about wanted services
+         auto discovered = unittest::discover( { "a"}, {});
+         ASSERT_TRUE( discovered.replies.size() == 1);
 
          ASSERT_TRUE( state.connections.size() == 2);
 
          algorithm::sort( state.connections);
 
-         auto data = common::unittest::random::binary( 128);
-
-         auto trid = common::transaction::id::create( common::process::handle());
+      
+         const auto trid = common::transaction::id::create( common::process::handle());
 
          // Expect us to reach service remote1 via outbound -> inbound -> <service remote1>
-         {   
+         {
+            const auto data = common::unittest::random::binary( 128);   
+            
             {
                common::message::service::call::callee::Request request;
                request.process = common::process::handle();
-               request.service.name = "remote1";
+               request.service.name = "a";
                request.trid = trid;
                request.buffer.memory = data;
                
@@ -281,23 +295,21 @@ domain:
             common::communication::device::blocking::receive( common::communication::ipc::inbound::device(), reply);
 
             EXPECT_TRUE( reply.buffer.memory == data);
-            EXPECT_TRUE( reply.transaction.trid == trid)  << "reply.transaction.trid: " << reply.transaction.trid << "\ntrid: " << trid;
+            EXPECT_TRUE( reply.transaction.trid == trid) << "reply.transaction.trid: " << reply.transaction.trid << "\ntrid: " << trid;
          }
 
-         // send prepare
+         // send commit
          {
-            common::message::transaction::resource::prepare::Request request;
+            common::message::transaction::commit::Request request{ common::process::handle()};
             request.trid = trid;
-            request.process = common::process::handle();
-            request.resource = common::strong::resource::id{ 42};
-            common::communication::device::blocking::send( state.connections.at( 0).process.ipc, request);
+            communication::device::blocking::send( communication::instance::outbound::transaction::manager::device(), request);
          }
 
-         // get prepare reply
+         // get commit reply
          {
-            common::message::transaction::resource::prepare::Reply reply;
-            common::communication::device::blocking::receive( common::communication::ipc::inbound::device(), reply);
-            EXPECT_TRUE( reply.trid == trid);
+            common::message::transaction::commit::Reply reply;
+            communication::device::blocking::receive( common::communication::ipc::inbound::device(), reply);
+            EXPECT_TRUE( reply.trid == trid) << CASUAL_NAMED_VALUE( reply.trid) << "\n" << CASUAL_NAMED_VALUE( trid);
          }
       }
 
@@ -325,16 +337,19 @@ domain:
       - path: "./bin/casual-gateway-manager"
         memberships: [ gateway]
    gateway:
-      listeners: 
-         - address: 127.0.0.1:6666
-      connections:
-         - address: 127.0.0.1:6666
+      inbounds:
+         - connections:
+            - address: 127.0.0.1:6666
+      outbounds: 
+         - connections:
+            - address: 127.0.0.1:6666
+              queues: [ a]
    queue:
       groups:
-         - name: groupA
+         - name: A
            queuebase: ":memory:"
            queues:
-            - name: queue1
+            - name: a
 )";
 
 
@@ -349,15 +364,15 @@ domain:
          // Gateway is connected to it self. Hence we can send a request to the outbound, and it
          // will send it to the corresponding inbound, and back in the current (mockup) domain
 
-         ASSERT_TRUE( state.connections.at( 0).bound == manager::admin::model::Connection::Bound::out);
+         ASSERT_TRUE( state.connections.at( 0).bound == manager::admin::model::connection::Bound::out);
          auto outbound =  state.connections.at( 0).process;
 
          const auto payload = unittest::random::binary( 1000);
 
          // enqueue
          {
-            message::queue::enqueue::Request request{ process::handle()};
-            request.name = "queue1";
+            common::message::queue::enqueue::Request request{ process::handle()};
+            request.name = "a";
             request.message.type = "json";
             request.message.payload = payload;
 
@@ -368,8 +383,8 @@ domain:
 
          // dequeue
          {
-            message::queue::dequeue::Request request{ process::handle()};
-            request.name = "queue1";
+            common::message::queue::dequeue::Request request{ process::handle()};
+            request.name = "a";
 
             auto reply = communication::ipc::call( outbound.ipc, request);
             ASSERT_TRUE( ! reply.message.empty());
@@ -413,7 +428,7 @@ domain:
                {
                   log::line( log::debug, "event: ", event);
                   // we're done if outbound spawns
-                  done = event.alias == "casual-gateway-outbound";
+                  done = event.alias == "outbound-1";
                });
          }
       }
@@ -483,7 +498,7 @@ domain:
 
          // send signal, inbound terminates, wait for inbound and outbound to spawn again (via event::Spawn)
          {
-            auto done = std::make_tuple( false, false);
+            auto done = false;
             event::listen( 
                event::condition::compose( 
                   event::condition::prelude( [pid = inbound.process.pid]()
@@ -492,23 +507,19 @@ domain:
                   }),
                   event::condition::done( [&done]()
                   {
-                     return std::get< 0>( done) && std::get< 1>( done);
+                     return done;
                   })
                ),
                [&done]( const common::message::event::process::Spawn& event)
                {
                   log::line( log::debug, "event: ", event);
 
-                  if( event.alias == "casual-gateway-inbound")
-                     std::get< 0>( done) = true;
-
-                  if( event.alias == "casual-gateway-outbound")
-                     std::get< 1>( done) = true;
+                  done = event.alias == "inbound-1";
                });
          }
       }
 
-      TEST( gateway_manager_tcp, outbound_to_non_existent_listener)
+      TEST( gateway_manager_tcp, outbound_to_non_existent_inbound)
       {
          common::unittest::Trace trace;
 
@@ -529,8 +540,9 @@ domain:
       - path: "./bin/casual-gateway-manager"
         memberships: [ gateway]
    gateway:
-      connections:
-         - address: 127.0.0.1:6666
+      outbounds:
+         - connections:
+            - address: 127.0.0.1:6666
 )";
 
 
@@ -588,12 +600,6 @@ domain:
 
                         if( task.done())
                            correlation = {};
-                     },
-                     [&correlation]( const common::message::event::sub::Task& task)
-                     {
-                        if( task.correlation != correlation)
-                           return;
-                        common::message::event::terminal::print( std::cout, task);
                      }
                   );
                }
@@ -624,9 +630,10 @@ domain:
       - path: "./bin/casual-gateway-manager"
         memberships: [ gateway]
    gateway:
-      connections:
-         - address: 127.0.0.1:6666
-         - address: 127.0.0.1:6667
+      outbounds: 
+         - connections:
+            - address: 127.0.0.1:6666
+            - address: 127.0.0.1:6667
 )";
 
 
@@ -658,11 +665,13 @@ domain:
       - path: "./bin/casual-gateway-manager"
         memberships: [ gateway]
    gateway:
-      listeners: 
-         - address: 127.0.0.1:6666
-      connections:
-         - address: 127.0.0.1:6666
-         - address: 127.0.0.1:6667
+      inbounds:
+         - connections: 
+            - address: 127.0.0.1:6666
+      outbounds:
+         - connections:
+            - address: 127.0.0.1:6666
+            - address: 127.0.0.1:6667
 )";
 
 
@@ -687,8 +696,12 @@ domain:
 
          local::wait_for_outbounds( 1);
 
-         // we exposes service "remote1"
-         casual::service::unittest::advertise( { "remote1"});
+         // we exposes service "a"
+         casual::service::unittest::advertise( { "a"});
+
+         // discover to make sure outbound(s) knows about wanted services
+         auto discovered = unittest::discover( { "a"}, {});
+         ASSERT_TRUE( discovered.replies.size() == 1);
 
          auto outbound = []() -> process::Handle
          {
@@ -708,7 +721,7 @@ domain:
          ASSERT_TRUE( outbound);
 
          // subscribe to metric events
-         event::subscribe( common::process::handle(), { message::event::service::Calls::type()});
+         event::subscribe( common::process::handle(), { common::message::event::service::Calls::type()});
 
          
 
@@ -722,7 +735,7 @@ domain:
             {
                common::message::service::call::callee::Request request;
                request.process = common::process::handle();
-               request.service.name = "remote1";
+               request.service.name = "a";
                request.buffer.memory = data;
                
                ASSERT_TRUE( common::communication::device::blocking::optional::send( outbound.ipc, request)) 
@@ -746,7 +759,7 @@ domain:
 
          // consume the metric events (most likely from inbound cache)
          {
-            std::vector< message::event::service::Metric> metrics;
+            std::vector< common::message::event::service::Metric> metrics;
 
             while( metrics.size() < count)
             {

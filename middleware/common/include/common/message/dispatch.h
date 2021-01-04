@@ -13,6 +13,7 @@
 #include "common/serialize/native/complete.h"
 #include "common/communication/device.h"
 #include "common/log/stream.h"
+#include "common/functional.h"
 
 #include <map>
 #include <memory>
@@ -48,12 +49,12 @@ namespace casual
                //!
                //! @return true if the message was handled.
                template< typename M>
-               auto operator () ( M&& complete) const
+               auto operator () ( M&& complete)
                {
                   return dispatch( complete);
                }
 
-               platform::size::type size() const { return m_handlers.size();}
+               platform::size::type size() const noexcept { return m_handlers.size();}
 
                //! @return all message-types that this instance handles
                auto types() const
@@ -88,14 +89,14 @@ namespace casual
 
             private:
 
-               Uuid dispatch( communication::message::Complete& complete) const
+               Uuid dispatch( communication::message::Complete& complete)
                {
                   if( ! complete)
                      return {};
 
                   if( auto found = algorithm::find( m_handlers, complete.type))
                   {
-                     found->second->dispatch( complete);
+                     found->second( complete);
                      return complete.correlation;
                   }
 
@@ -103,15 +104,11 @@ namespace casual
                   return {};
                }
 
-               struct concept
-               {
-                  virtual ~concept() = default;
-                  virtual void dispatch( communication::message::Complete& complete) = 0;
-               };
+               using concept_t = common::unique_function< void( communication::message::Complete&)>;
 
 
                template< typename H>
-               struct model final : public concept
+               struct model final
                {
                   using handler_type = H;
                   using traits_type = traits::function< H>;
@@ -130,32 +127,42 @@ namespace casual
 
                   model( handler_type&& handler) : m_handler( std::move( handler)) {}
 
-                  void dispatch( communication::message::Complete& complete) override
+                  void operator() ( communication::message::Complete& complete)
                   {
                      message_type message;
 
                      serialize::native::complete( complete, message, unmarshal_type{});
                      execution::id( message.execution);
 
-                     m_handler( message);
+                     model::invoke( m_handler, message, traits::priority::tag< 1>{});
                   }
 
                private:
+
+                  template< typename M>
+                  static auto invoke( handler_type& handler, M& message, traits::priority::tag< 1>) -> decltype( void( handler( std::move( message))))
+                  {
+                     handler( std::move( message));
+                  }
+
+                  template< typename M>
+                  static auto invoke( handler_type& handler, M& message, traits::priority::tag< 0>) -> decltype( void( handler( message)))
+                  {
+                     handler( message);
+                  }
+
                   handler_type m_handler;
                };
 
 
-               using handlers_type = std::map< message_type, std::unique_ptr< concept>>;
+               using handlers_type = std::map< message_type, concept_t>;
 
 
                template< typename H>
                static void add( handlers_type& result, H&& handler)
                {
                   using handle_type = model< typename std::decay< H>::type>;
-
-                  auto holder = std::make_unique< handle_type>( std::forward< H>( handler));
-
-                  result[ handle_type::message_type::type()] = std::move( holder);
+                  result[ handle_type::message_type::type()] = handle_type{ std::forward< H>( handler)};
                }
 
 
@@ -225,19 +232,16 @@ namespace casual
                   } // tag
 
 
-                  template< typename T, typename Tag>
-                  struct strong_t
+                  template< typename Tag, typename C>
+                  struct tagged
                   {
-                     strong_t( T value) : callable{ std::move( value)} {}
+                     tagged( C callable) : callable{ std::move( callable)} {}
 
                      auto operator() ( Tag tag) { return callable();}
 
-                     T callable;
+                     C callable;
                   };
                   
-                  template< typename Tag, typename T>
-                  auto make_strong( T&& callable) { return strong_t< std::decay_t< T>, Tag>{ std::forward< T>( callable)};}
-
                   template< typename... Ts> struct overloaded : Ts... { using Ts::operator()...;};
                   template< typename... Ts> overloaded( Ts...) -> overloaded<Ts...>;
 
@@ -327,20 +331,20 @@ namespace casual
 
                //! provided `callable` will be invoked before the message pump starts
                template< typename T>
-               auto prelude( T&& callable) { return detail::make_strong< detail::tag::prelude>( std::forward< T>( callable));}
+               auto prelude( T callable) { return detail::tagged< detail::tag::prelude, T>{ std::move( callable)};}
 
                //! provided `callable` will be invoked once every time the _inbound device_ is empty
                template< typename T>
-               auto idle( T&& callable) { return detail::make_strong< detail::tag::idle>( std::forward< T>( callable));}
+               auto idle( T callable) { return detail::tagged< detail::tag::idle, T>{ std::move( callable)};}
 
                //! provided `callable` will be invoked and if the result is `true` the control is return to caller
                template< typename T>
-               auto done( T&& callable) { return detail::make_strong< detail::tag::done>( std::forward< T>( callable));}
+               auto done( T callable) { return detail::tagged< detail::tag::done, T>{ std::move( callable)};}
 
                //! provided `callable` will be invoked if an exception is thrown, the `callable` needs to rethrow the
                //! ongoing exception to do a _dispatch_
                template< typename T>
-               auto error( T&& callable) { return detail::make_strong< detail::tag::error>( std::forward< T>( callable));}
+               auto error( T callable) { return detail::tagged< detail::tag::error, T>{ std::move( callable)};}
 
 
                template< typename... Ts> 

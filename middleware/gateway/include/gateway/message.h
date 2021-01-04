@@ -20,11 +20,7 @@
 #include "common/serialize/value/customize.h"
 #include "common/communication/tcp.h"
 
-#include "configuration/message.h"
-
-#include <thread>
-
-
+#include "configuration/model.h"
 
 
 namespace casual
@@ -33,124 +29,193 @@ namespace casual
    {
       using size_type = platform::size::type;
 
-      struct Address
+      namespace domain
       {
-         std::string local;
-         std::string peer;
-
-         CASUAL_CONST_CORRECT_SERIALIZE(
+         namespace protocol
          {
-            CASUAL_SERIALIZE( local);
-            CASUAL_SERIALIZE( peer);
-         })
-      };
+            enum class Version : size_type
+            {
+               invalid = 0,
+               version_1 = 1000,
+               version_1_1 = 1001,
 
-      namespace state
-      {
-         struct Connection
-         {
-            Address address;
+               // make sure this 'points' to the latest version
+               latest = version_1_1
+            };
 
-         };
-      } // state
-
-
-      template< common::message::Type type>
-      struct basic_connect : common::message::basic_request< type>
-      {
-         using base_connect = common::message::basic_request< type>;
-         using base_connect::base_connect;
-
-         common::domain::Identity domain;
-         common::message::gateway::domain::protocol::Version version;
-         Address address;
-
-         CASUAL_CONST_CORRECT_SERIALIZE({
-            base_connect::serialize( archive);
-            CASUAL_SERIALIZE( domain);
-            CASUAL_SERIALIZE( version);
-            CASUAL_SERIALIZE( address);
-         })
-      };
-
-      namespace outbound
-      {
-         template< typename Base>
-         struct basic_configuration : Base
-         {
-            using Base::Base;
-
-            std::vector< std::string> services;
-            std::vector< std::string> queues;
-
-            CASUAL_CONST_CORRECT_SERIALIZE(
-               Base::serialize( archive);
-               CASUAL_SERIALIZE( services);
-               CASUAL_SERIALIZE( queues);
-            )
-         };
-
-         namespace configuration
-         {
-            using Request = common::message::basic_request< common::message::Type::gateway_outbound_configuration_request>;
-            using Reply = basic_configuration< common::message::basic_reply< common::message::Type::gateway_outbound_configuration_reply>>;
-
-         } // configuration
-
-         using Connect  = basic_connect< common::message::Type::gateway_outbound_connect>;
+            //! an array with all versions ordered by highest to lowest
+            constexpr auto versions = std::array< Version, 2>{ Version::version_1_1, Version::version_1};
+         } // protocol
 
          namespace connect
          {
-            using Done = common::message::basic_message< common::message::Type::gateway_outbound_connect_done>;
+            using base_request = common::message::basic_message< common::message::Type::gateway_domain_connect_request>;
+            struct Request : base_request
+            {
+               using base_request::base_request;
 
+               common::domain::Identity domain;
+               std::vector< protocol::Version> versions;
+
+               CASUAL_CONST_CORRECT_SERIALIZE(
+               {
+                  base_request::serialize( archive);
+                  CASUAL_SERIALIZE( domain);
+                  CASUAL_SERIALIZE( versions);
+               })
+            };
+
+            using base_reply = common::message::basic_message< common::message::Type::gateway_domain_connect_reply>;
+            struct Reply : base_reply
+            {
+               using base_reply::base_reply;
+
+               common::domain::Identity domain;
+               protocol::Version version = protocol::Version::invalid;
+
+               CASUAL_CONST_CORRECT_SERIALIZE(
+               {
+                  base_reply::serialize( archive);
+                  CASUAL_SERIALIZE( domain);
+                  CASUAL_SERIALIZE( version);
+               })
+            };
          } // connect
 
-         namespace rediscover
-         {
-            using Request = basic_configuration< common::message::basic_request< common::message::Type::gateway_outbound_rediscover_request>>;
-            using Reply = common::message::basic_reply< common::message::Type::gateway_outbound_rediscover_reply>;
-         } // rediscover
+      } // domain
 
-      } // outbound
+      namespace state
+      {
+         struct Address
+         {
+            common::communication::tcp::Address local;
+            common::communication::tcp::Address peer;
+            common::strong::file::descriptor::id descriptor;
+
+            CASUAL_CONST_CORRECT_SERIALIZE(
+               CASUAL_SERIALIZE( local);
+               CASUAL_SERIALIZE( peer);
+               CASUAL_SERIALIZE( descriptor);
+            )
+         };
+
+         struct Listener
+         {
+            common::communication::tcp::Address address;
+            common::strong::file::descriptor::id descriptor;
+
+            CASUAL_CONST_CORRECT_SERIALIZE(
+               CASUAL_SERIALIZE( address);
+               CASUAL_SERIALIZE( descriptor);
+            )
+         };
+
+         template< typename Configuration>
+         struct basic_connection
+         {
+            Address address;
+            common::strong::file::descriptor::id descriptor;
+            common::domain::Identity domain;
+            Configuration configuration;
+
+            CASUAL_CONST_CORRECT_SERIALIZE(
+               CASUAL_SERIALIZE( address);
+               CASUAL_SERIALIZE( descriptor);
+               CASUAL_SERIALIZE( domain);
+               CASUAL_SERIALIZE( configuration);
+            )
+         };
+         
+      } // state
 
       namespace inbound
       {
-         using Connect = basic_connect< common::message::Type::gateway_inbound_connect>;
-         
-      } // inbound
-
-
-      namespace reverse
-      {
-         namespace inbound
+         namespace state
          {
-            struct State
+            using Connection = message::state::basic_connection< casual::configuration::model::gateway::inbound::Connection>;
+            
+         } // state
+
+         struct base_state
+         {
+            std::string alias;
+            std::string note;
+            casual::configuration::model::gateway::inbound::Limit limit;
+            std::vector< state::Connection> connections;
+
+            CASUAL_CONST_CORRECT_SERIALIZE(
             {
+               CASUAL_SERIALIZE( alias);
+               CASUAL_SERIALIZE( note);
+               CASUAL_SERIALIZE( limit);
+               CASUAL_SERIALIZE( connections);
+            })
+         };
+
+         struct State : base_state
+         {
+            using base_state::base_state;
+
+            std::vector< message::state::Listener> listeners;
+
+            CASUAL_CONST_CORRECT_SERIALIZE(
+               base_state::serialize( archive);
+               CASUAL_SERIALIZE( listeners);
+            )
+
+         };
+
+         using Connect = common::message::basic_request< common::message::Type::gateway_inbound_connect>;
+
+         namespace configuration::update
+         {
+            using base_request = common::message::basic_request< common::message::Type::gateway_inbound_configuration_update_request>;
+            struct Request : base_request
+            {
+               using base_request::base_request;
+
+               casual::configuration::model::gateway::Inbound model;
+
                CASUAL_CONST_CORRECT_SERIALIZE(
-              
+                  base_request::serialize( archive);
+                  CASUAL_SERIALIZE( model);
                )
             };
 
-            using Connect = common::message::basic_request< common::message::Type::gateway_reverse_inbound_connect>;
+            using Reply = common::message::basic_request< common::message::Type::gateway_inbound_configuration_update_reply>;
+            
+         } // configuration::update
 
-            namespace configuration::update
+         namespace state
+         {            
+            using Request = common::message::basic_request< common::message::Type::gateway_inbound_state_request>;
+
+            using base_reply = common::message::basic_request< common::message::Type::gateway_inbound_state_reply>;
+            struct Reply : base_reply
             {
-               using base_request = common::message::basic_request< common::message::Type::gateway_reverse_inbound_configuration_update_request>;
-               struct Request : base_request
-               {
-                  using base_request::base_request;
+               using base_reply::base_reply;
 
-                  casual::configuration::model::gateway::reverse::Inbound model;
+               State state;
 
-                  CASUAL_CONST_CORRECT_SERIALIZE(
-                     base_request::serialize( archive);
-                     CASUAL_SERIALIZE( model);
-                  )
-               };
+               CASUAL_CONST_CORRECT_SERIALIZE(
+                  base_reply::serialize( archive);
+                  CASUAL_SERIALIZE( state);
+               )
+            };
+            
+         } // state
 
-               using Reply = common::message::basic_message< common::message::Type::gateway_reverse_inbound_configuration_update_reply>;
-               
-            } // configuration::update
+         //! different state for reverse
+         namespace reverse
+         {
+            struct State : inbound::base_state
+            {
+               using inbound::base_state::base_state;
+
+               CASUAL_CONST_CORRECT_SERIALIZE(
+                  inbound::base_state::serialize( archive);
+               )
+            };
 
             namespace state
             {
@@ -168,98 +233,100 @@ namespace casual
                      CASUAL_SERIALIZE( state);
                   )
                };
-               
             } // state
+         } // reverse
 
+      } // inbound
 
-         } // inbound
-
-         namespace outbound
+      namespace outbound
+      {
+         namespace state
          {
-            namespace state
+            using Connection = message::state::basic_connection< casual::configuration::model::gateway::outbound::Connection>;
+            
+         } // state
+
+         struct State
+         {
+            std::string alias;
+            std::string note;
+            platform::size::type order{};
+
+            std::vector< state::Connection> connections;
+
+            CASUAL_CONST_CORRECT_SERIALIZE(
+               CASUAL_SERIALIZE( alias);
+               CASUAL_SERIALIZE( note);
+               CASUAL_SERIALIZE( order);
+               CASUAL_SERIALIZE( connections);
+            )
+         };
+
+
+         using Connect = common::message::basic_request< common::message::Type::gateway_outbound_connect>;
+
+         namespace configuration::update
+         {
+            using base_request = common::message::basic_request< common::message::Type::gateway_outbound_configuration_update_request>;
+            struct Request : base_request
             {
-               struct Listener
-               {
-                  common::communication::tcp::Address address;
-                  common::strong::file::descriptor::id descriptor;
+               using base_request::base_request;
 
-                  CASUAL_CONST_CORRECT_SERIALIZE(
-                  {
-                     CASUAL_SERIALIZE( address);
-                     CASUAL_SERIALIZE( descriptor);
-                  })
-               };
-
-               struct Address
-               {
-                  common::communication::tcp::Address local;
-                  common::communication::tcp::Address peer;
-
-                  CASUAL_CONST_CORRECT_SERIALIZE(
-                  {
-                     CASUAL_SERIALIZE( local);
-                     CASUAL_SERIALIZE( peer);
-                  })
-               };
-
-               struct Connection
-               {
-                  Address address;
-                  common::strong::file::descriptor::id descriptor;
-                  common::domain::Identity domain;
-                  configuration::model::gateway::reverse::outbound::Connection configuration;
-
-                  CASUAL_CONST_CORRECT_SERIALIZE(
-                  {
-                     CASUAL_SERIALIZE( address);
-                     CASUAL_SERIALIZE( descriptor);
-                     CASUAL_SERIALIZE( domain);
-                     CASUAL_SERIALIZE( configuration);
-                  })
-               };
-               
-            } // state
-
-            struct State
-            {
-               std::string alias;
+               casual::configuration::model::gateway::Outbound model;
                platform::size::type order{};
 
-               std::vector< state::Connection> connections;
-               std::vector< state::Listener> listeners;
+               CASUAL_CONST_CORRECT_SERIALIZE(
+                  base_request::serialize( archive);
+                  CASUAL_SERIALIZE( model);
+                  CASUAL_SERIALIZE( order);
+               )
+            };
+
+            using Reply = common::message::basic_request< common::message::Type::gateway_outbound_configuration_update_reply>;
+            
+         } // configuration::update
+
+         namespace state
+         {
+            using Request = common::message::basic_request< common::message::Type::gateway_outbound_state_request>;
+
+            using base_reply = common::message::basic_request< common::message::Type::gateway_outbound_state_reply>;
+            struct Reply : base_reply
+            {
+               using base_reply::base_reply;
+
+               State state;
+
+               CASUAL_CONST_CORRECT_SERIALIZE(
+                  base_reply::serialize( archive);
+                  CASUAL_SERIALIZE( state);
+               )
+            };
+            
+         } // state
+
+         namespace rediscover
+         {
+            using Request = common::message::basic_request< common::message::Type::gateway_outbound_rediscover_request>;
+            using Reply = common::message::basic_reply< common::message::Type::gateway_outbound_rediscover_reply>;
+         } // rediscover
+
+
+         //! different state for reverse
+         namespace reverse
+         {
+            struct State : message::outbound::State
+            {
+               using message::outbound::State::State;
+
+               std::vector< message::state::Listener> listeners;
 
                CASUAL_CONST_CORRECT_SERIALIZE(
                {
-                  CASUAL_SERIALIZE( alias);
-                  CASUAL_SERIALIZE( order);
-                  CASUAL_SERIALIZE( connections);
+                  message::outbound::State::serialize( archive);
                   CASUAL_SERIALIZE( listeners);
                })
             };
-
-
-            using Connect = common::message::basic_request< common::message::Type::gateway_reverse_outbound_connect>;
-
-            namespace configuration::update
-            {
-               using base_request = common::message::basic_request< common::message::Type::gateway_reverse_outbound_configuration_update_request>;
-               struct Request : base_request
-               {
-                  using base_request::base_request;
-
-                  casual::configuration::model::gateway::reverse::Outbound model;
-                  platform::size::type order{};
-
-                  CASUAL_CONST_CORRECT_SERIALIZE(
-                     base_request::serialize( archive);
-                     CASUAL_SERIALIZE( model);
-                     CASUAL_SERIALIZE( order);
-                  )
-               };
-
-               using Reply = common::message::basic_request< common::message::Type::gateway_reverse_outbound_configuration_update_reply>;
-               
-            } // configuration::update
 
             namespace state
             {
@@ -279,10 +346,10 @@ namespace casual
                };
                
             } // state
-            
-         } // outbound
+         } // resverse
+         
+      } // outbound
 
-      } // reverse
 
    } // gateway::message
 
@@ -290,23 +357,30 @@ namespace casual
    {
       namespace message::reverse
       {
+
          template<>
-         struct type_traits< casual::gateway::message::outbound::configuration::Request> : detail::type< casual::gateway::message::outbound::configuration::Reply> {};
+         struct type_traits< casual::gateway::message::domain::connect::Request> : detail::type<  casual::gateway::message::domain::connect::Reply> {};
 
          template<>
          struct type_traits< casual::gateway::message::outbound::rediscover::Request> : detail::type< casual::gateway::message::outbound::rediscover::Reply> {};
 
          template<>
-         struct type_traits< casual::gateway::message::reverse::inbound::configuration::update::Request> : detail::type< casual::gateway::message::reverse::inbound::configuration::update::Reply> {};
+         struct type_traits< casual::gateway::message::inbound::configuration::update::Request> : detail::type< casual::gateway::message::inbound::configuration::update::Reply> {};
 
          template<>
-         struct type_traits< casual::gateway::message::reverse::outbound::configuration::update::Request> : detail::type< casual::gateway::message::reverse::outbound::configuration::update::Reply> {};
+         struct type_traits< casual::gateway::message::outbound::configuration::update::Request> : detail::type< casual::gateway::message::outbound::configuration::update::Reply> {};
 
          template<>
-         struct type_traits< casual::gateway::message::reverse::outbound::state::Request> : detail::type< casual::gateway::message::reverse::outbound::state::Reply> {};
+         struct type_traits< casual::gateway::message::outbound::state::Request> : detail::type< casual::gateway::message::outbound::state::Reply> {};
 
          template<>
-         struct type_traits< casual::gateway::message::reverse::inbound::state::Request> : detail::type< casual::gateway::message::reverse::inbound::state::Reply> {};
+         struct type_traits< casual::gateway::message::inbound::state::Request> : detail::type< casual::gateway::message::inbound::state::Reply> {};
+
+         template<>
+         struct type_traits< casual::gateway::message::outbound::reverse::state::Request> : detail::type< casual::gateway::message::outbound::reverse::state::Reply> {};
+
+         template<>
+         struct type_traits< casual::gateway::message::inbound::reverse::state::Request> : detail::type< casual::gateway::message::inbound::reverse::state::Reply> {};
       } // message::reverse
 
       namespace serialize::customize::composit
@@ -325,14 +399,14 @@ template< typename A> struct Value< type, A, std::enable_if_t< common::serialize
 
 #define CASUAL_CUSTOMIZATION_POINT_SERIALIZE( role) CASUAL_SERIALIZE_NAME( value.role, #role)
 
-         CASUAL_CUSTOMIZATION_POINT_NETWORK( common::message::gateway::domain::connect::Request,
+         CASUAL_CUSTOMIZATION_POINT_NETWORK( casual::gateway::message::domain::connect::Request,
          {
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( execution);
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( domain);
             CASUAL_SERIALIZE_NAME( value.versions, "protocol.versions");
          })
 
-         CASUAL_CUSTOMIZATION_POINT_NETWORK( common::message::gateway::domain::connect::Reply,
+         CASUAL_CUSTOMIZATION_POINT_NETWORK( casual::gateway::message::domain::connect::Reply,
          {
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( execution);
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( domain);

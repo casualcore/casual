@@ -4,24 +4,23 @@
 //! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-#include "gateway/reverse/outbound/state.h"
+#include "gateway/outbound/state.h"
 
 #include "common/predicate.h"
 
 namespace casual
 {
-   namespace gateway::reverse::outbound
-   {
-      using namespace ::casual::common;
+   using namespace common;
 
+   namespace gateway::outbound
+   {
       namespace local
       {
          namespace
          {
             namespace global
             {
-               const common::transaction::ID trid;
-               
+               const transaction::ID trid;
             } // global
 
             namespace predicate
@@ -72,7 +71,7 @@ namespace casual
                   auto resource = algorithm::find( resources, key);
 
                   if( ! resource)
-                     return{};
+                     return {};
 
                   auto connections = range::make( resource->second);
 
@@ -102,19 +101,17 @@ namespace casual
             namespace add
             {
                template< typename R>
-               auto resource( common::strong::file::descriptor::id descriptor, R& resources, const std::vector< std::string>& keys) 
+               auto resource( common::strong::file::descriptor::id descriptor, R& resources, std::vector< std::string> keys) 
                {
-                  std::vector< std::string> result;
-
-                  algorithm::copy_if( keys, result, [descriptor, &resources]( auto& key)
+                  algorithm::trim( keys, algorithm::remove_if( keys, [descriptor, &resources]( auto& key)
                   {
                      auto& connections = resources[ key];
                      connections.push_back( descriptor);
 
-                     return range::size( connections) == 1;
-                  });
+                     return range::size( connections) > 1;
+                  }));
 
-                  return result;
+                  return keys;
                }
                
             } // add
@@ -171,6 +168,16 @@ namespace casual
 
       namespace state
       {
+         std::ostream& operator << ( std::ostream& out, Runlevel value)
+         {
+            switch( value)
+            {
+               case Runlevel::running: return out << "running";
+               case Runlevel::shutdown: return out << "shutdown";
+               case Runlevel::error: return out << "error";
+            }
+            return out << "<unknown>";
+         }
 
          const Lookup::Mapping::External& Lookup::Mapping::branch( common::strong::file::descriptor::id connection)
          {
@@ -216,19 +223,27 @@ namespace casual
             return {};
          }
 
+         Lookup::Resources Lookup::resources() const
+         {
+            return {
+               algorithm::transform( services, predicate::adapter::first()),
+               algorithm::transform( queues, predicate::adapter::first())
+            };
+         }
 
-         Lookup::Advertise Lookup::add( 
+
+         Lookup::Resources Lookup::add( 
             common::strong::file::descriptor::id descriptor, 
             std::vector< std::string> services, 
             std::vector< std::string> queues)
          {
             return {
-               local::add::resource( descriptor, Lookup::services, services),
-               local::add::resource( descriptor, Lookup::queues, queues)
+               local::add::resource( descriptor, Lookup::services, std::move( services)),
+               local::add::resource( descriptor, Lookup::queues, std::move( queues))
             };
          }
 
-         Lookup::Advertise Lookup::remove( common::strong::file::descriptor::id descriptor)
+         Lookup::Resources Lookup::remove( common::strong::file::descriptor::id descriptor)
          {
             return {
                local::remove::connection( descriptor, services),
@@ -236,13 +251,23 @@ namespace casual
             };
          }
 
-         Lookup::Advertise Lookup::remove( common::strong::file::descriptor::id descriptor, std::vector< std::string> services, std::vector< std::string> queues)
+         Lookup::Resources Lookup::remove( common::strong::file::descriptor::id descriptor, std::vector< std::string> services, std::vector< std::string> queues)
          {
             return {
                local::remove::connection( descriptor, Lookup::services, services),
                local::remove::connection( descriptor, Lookup::queues, queues)
             };
          }
+
+         Lookup::Resources Lookup::clear()
+         {
+            auto result = resources();
+
+            services.clear();
+            queues.clear();
+
+            return result;
+         }  
 
          void Lookup::remove( const common::transaction::ID& internal)
          {
@@ -254,6 +279,14 @@ namespace casual
 
       } // state
 
-   } // gateway::reverse::inbound
+      bool State::done() const
+      {
+         if( runlevel <= state::Runlevel::running)
+            return false;
+
+         return route.empty();
+      }
+
+   } // gateway::outbound
 
 } // casual

@@ -20,81 +20,81 @@
 namespace casual
 {
    using namespace common;
-   namespace gateway
+   namespace gateway::manager::admin
    {
-      namespace manager
+      namespace local
       {
-         namespace admin
+         namespace
          {
-            namespace local
+            namespace service
             {
-               namespace
+               auto state( manager::State& state)
                {
-                  namespace service
+                  return [&state]( common::service::invoke::Parameter&& parameter)
                   {
-                     auto state( manager::State& state)
+                     auto get_state = []( auto& state)
                      {
-                        return [&state]( common::service::invoke::Parameter&& parameter)
+                        auto request_state = []( auto&& range, auto&& message)
                         {
-                           auto get_state = []( auto& state)
+                           return algorithm::transform( range, [&message]( auto& reverse)
                            {
-                              auto request_reverse_state = []( auto& range, auto&& message)
-                              {
-                                 return algorithm::transform( range, [&message]( auto& reverse)
-                                 {
-                                    return communication::device::async::call( reverse.process.ipc, message);
-                                 });
-                              };
-
-                              auto inbounds = request_reverse_state( state.reverse.inbounds, message::reverse::inbound::state::Request{ process::handle()});
-                              auto outbounds = request_reverse_state( state.reverse.outbounds, message::reverse::outbound::state::Request{ process::handle()});
-
-                              auto get_reply = []( auto& future){ return future.get( manager::ipc::device());};
-
-                              return gateway::transform::state( state, 
-                                    algorithm::transform( inbounds, get_reply),
-                                    algorithm::transform( outbounds, get_reply));
-                           };
-
-                           return serviceframework::service::user( 
-                              std::move( parameter),
-                              get_state,
-                              state);
+                              return communication::device::async::call( reverse.process.ipc, message);
+                           });
                         };
-                     }
 
-                     auto rediscover( manager::State& state)
-                     {
-                        return [&state]( common::service::invoke::Parameter&& parameter)
-                        {
-                           return serviceframework::service::user( 
-                              std::move( parameter),
-                              [&state](){ return gateway::manager::handle::rediscover( state);});
+                        auto is_reverse = []( auto& bound){ return bound.configuration.connect == decltype( bound.configuration.connect)::reversed;};
+                        auto is_regular = predicate::negate( is_reverse);
 
-                        };
-                     }
-                  }
+                        auto inbounds = request_state( algorithm::filter( state.inbounds, is_regular), message::inbound::state::Request{ process::handle()});
+                        auto reverse_inbounds = request_state( algorithm::filter( state.inbounds, is_reverse), message::inbound::reverse::state::Request{ process::handle()});
 
+                        auto outbounds = request_state( algorithm::filter( state.outbounds, is_regular), message::outbound::state::Request{ process::handle()});
+                        auto reverse_outbounds = request_state( algorithm::filter( state.outbounds, is_reverse), message::outbound::reverse::state::Request{ process::handle()});
 
-               } // <unnamed>
-            } // local
+                        auto get_reply = []( auto& future){ return future.get( manager::ipc::inbound());};
 
-            common::server::Arguments services( manager::State& state)
-            {
-               return { {
-                     { service::name::state,
-                        local::service::state( state),
-                        common::service::transaction::Type::none,
-                        common::service::category::admin
-                     },
-                     { service::name::rediscover,
-                        local::service::rediscover( state),
-                        common::service::transaction::Type::none,
-                        common::service::category::admin
-                     }
-               }};
+                        return gateway::transform::state( state, 
+                           std::make_tuple( algorithm::transform( inbounds, get_reply), algorithm::transform( reverse_inbounds, get_reply)),
+                           std::make_tuple( algorithm::transform( outbounds, get_reply), algorithm::transform( reverse_outbounds, get_reply)));
+                     };
+
+                     return serviceframework::service::user( 
+                        std::move( parameter),
+                        get_state,
+                        state);
+                  };
+               }
+
+               auto rediscover( manager::State& state)
+               {
+                  return [&state]( common::service::invoke::Parameter&& parameter)
+                  {
+                     return serviceframework::service::user( 
+                        std::move( parameter),
+                        [&state](){ return gateway::manager::handle::rediscover( state);});
+
+                  };
+               }
             }
-         } // admin
-      } // manager
-   } // gateway
+
+
+         } // <unnamed>
+      } // local
+
+      common::server::Arguments services( manager::State& state)
+      {
+         return { {
+               { service::name::state,
+                  local::service::state( state),
+                  common::service::transaction::Type::none,
+                  common::service::category::admin
+               },
+               { service::name::rediscover,
+                  local::service::rediscover( state),
+                  common::service::transaction::Type::none,
+                  common::service::category::admin
+               }
+         }};
+      }
+   } // gateway::manager::admin
 } // casual

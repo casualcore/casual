@@ -744,10 +744,10 @@ messages that is used to set up a connection
 )";     
 
                   {
-                     using message_type = common::message::gateway::domain::connect::Request;
+                     using message_type = gateway::message::domain::connect::Request;
                      
                      out << R"(
-### common::message::gateway::domain::connect::Request
+### gateway::message::domain::connect::Request
       
 Connection requests from another domain that wants to connect
       
@@ -756,7 +756,7 @@ Connection requests from another domain that wants to connect
                         local::message_type( out, message_type{}) << "\n\n";
       
                         message_type message;
-                        message.versions = { common::message::gateway::domain::protocol::Version::version_1};
+                        message.versions = { gateway::message::domain::protocol::Version::version_1};
                         message.domain.name = "domain-A";
 
                         local::format::type( out, message, {
@@ -771,10 +771,10 @@ Connection requests from another domain that wants to connect
                   }
 
                   {
-                     using message_type = common::message::gateway::domain::connect::Reply;
+                     using message_type = gateway::message::domain::connect::Reply;
                      
                      out << R"(
-### common::message::gateway::domain::connect::Reply
+### gateway::message::domain::connect::Reply
       
 Connection reply
       
@@ -783,7 +783,7 @@ Connection reply
                         local::message_type( out, message_type{}) << "\n\n";
       
                         message_type message;
-                        message.version = common::message::gateway::domain::protocol::Version::version_1;
+                        message.version = gateway::message::domain::protocol::Version::version_1;
                         message.domain.name = "domain-A";
 
                         local::format::type( out, message, {

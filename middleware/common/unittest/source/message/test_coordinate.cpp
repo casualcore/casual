@@ -12,192 +12,200 @@
 
 #include "common/message/coordinate.h"
 #include "common/message/gateway.h"
+#include "common/communication/ipc.h"
 
 
 namespace casual
 {
-   namespace common
+   namespace common::message
    {
-      namespace message
+      namespace local
       {
-
-         namespace local
+         namespace
          {
-            namespace
+            using Coordinate = message::coordinate::fan::Out< message::gateway::domain::discover::Reply, strong::process::id>;
+         } // <unnamed>
+      } // local
+
+
+      TEST( common_message_coordinate, instantiation)
+      {
+         common::unittest::Trace trace;
+
+         EXPECT_NO_THROW({
+            local::Coordinate coordinate;
+         });
+      }
+
+      TEST( common_message_coordinate, add_empty_pending__expect_direct_invoke)
+      {
+         common::unittest::Trace trace;
+
+         local::Coordinate coordinate;
+         bool invoked = false;
+
+         coordinate( {}, [&invoked]( auto received, auto failed)
+         {
+            invoked = true;
+         });
+
+         EXPECT_TRUE( invoked);
+      }
+
+      TEST( common_message_coordinate, add_1_pending__expect_no_direct_invoke)
+      {
+         common::unittest::Trace trace;
+
+
+         local::Coordinate coordinate;
+         bool invoked = false;
+
+         auto correlation = uuid::make();
+
+         coordinate( { { correlation, process::id()}}, [&invoked]( auto received, auto failed)
+         {
+            invoked = true;
+         });
+
+         EXPECT_TRUE( ! invoked);
+      }
+
+      TEST( common_message_coordinate, add_1_pending__add_message___expect_invoke)
+      {
+         common::unittest::Trace trace;
+
+
+         local::Coordinate coordinate;
+         bool invoked = false;
+
+         auto correlation = uuid::make();
+
+         coordinate( { { correlation, process::id()}}, [&invoked]( auto received, auto failed)
+         {
+            invoked = true;
+         });
+
+         {
+            message::gateway::domain::discover::Reply message{ process::handle()};
+            message.correlation = correlation;
+            coordinate( message);
+         }
+
+         EXPECT_TRUE( invoked);
+      }
+
+
+      TEST( common_message_coordinate, add_10_pending__add_10_message___expect_invoke)
+      {
+         common::unittest::Trace trace;
+
+         bool invoked = false;
+
+         // fill the messages
+         const auto origin = algorithm::generate_n< 10>( []( auto index)
+         {
+            message::gateway::domain::discover::Reply message{ process::Handle{ strong::process::id( process::id().value() + index), communication::ipc::inbound::ipc()}};
+            message.correlation = uuid::make();
+            return message;
+         });
+
+         local::Coordinate coordinate;
+
+         // fill with fan out entries.
+         coordinate(
+            algorithm::transform( origin, []( auto& message)
             {
-               struct Policy
-               {
-                  using message_type = gateway::domain::discover::Reply;
-
-                  template< typename M, typename R>
-                  void operator() ( M&& request, R&& reply)
-                  {
-                     correlation = request.correlation;
-                  }
-
-                  Uuid correlation;
-
-                  CASUAL_LOG_SERIALIZE(
-                  {
-                     CASUAL_SERIALIZE( correlation);
-                  })
-               };
-
-               using Coordinate = message::Coordinate< Policy>;
-
-               struct Send
-               {
-                  template< typename M>
-                  void operator() ( strong::ipc::id queue, M&& message)
-                  {
-                     sent = true;
-                  }
-                  bool sent = false;
-               };
-
-            } // <unnamed>
-         } // local
-
-
-         TEST( common_message_coordinate, instantiation)
-         {
-            common::unittest::Trace trace;
-
-            EXPECT_NO_THROW({
-               local::Coordinate coordinate;
+               return local::Coordinate::Pending{ message.correlation, message.process.pid};
+            }),
+            [&invoked, &origin]( auto received, auto failed)
+            {
+               EXPECT_TRUE( algorithm::equal( origin, received, []( auto& l, auto& r){ return l.correlation == r.correlation;}));
+               invoked = true;
             });
-         }
 
-         TEST( common_message_coordinate, send__expect_no_coordination)
+
+         EXPECT_TRUE( ! coordinate.empty());
+
+         // accumulate all messages
+         algorithm::for_each( origin, std::ref( coordinate));
+         
+
+         EXPECT_TRUE( invoked);
+         EXPECT_TRUE( coordinate.empty()) << CASUAL_NAMED_VALUE( coordinate);
+      }
+
+      TEST( common_message_coordinate, add_10_pending__add_9_message___expect_not_invoke)
+      {
+         common::unittest::Trace trace;
+
+         bool invoked = false;
+
+         // fill the messages
+         const auto origin = algorithm::generate_n< 10>( []()
          {
-            common::unittest::Trace trace;
+            message::gateway::domain::discover::Reply message{ process::handle()};
+            message.correlation = uuid::make();
+            return message;
+         });
 
-            auto correlation = uuid::make();
+         local::Coordinate coordinate;
 
-            local::Coordinate coordinate;
-            local::Send send;
-            coordinate.add( correlation, strong::ipc::id{ uuid::make()}, send, std::vector< common::process::Handle>{ { strong::process::id{ 10}, strong::ipc::id{ uuid::make()}}});
+         // fill with fan out entries.
+         coordinate(
+            algorithm::transform( origin, []( auto& message)
+            {
+               return local::Coordinate::Pending{ message.correlation, message.process.pid};
+            }),
+            [&invoked]( auto received, auto failed)
+            {
+               invoked = true;
+            });
 
-            EXPECT_TRUE( send.sent == false);
-         }
 
-         TEST( common_message_coordinate, send__accumulate__expect_coordination)
+         // accumulate first 9 messages
+         algorithm::for_each( range::make( std::begin( origin), 9), std::ref( coordinate));
+         
+         EXPECT_TRUE( ! invoked);
+         EXPECT_TRUE( ! coordinate.empty()) << CASUAL_NAMED_VALUE( coordinate);
+
+         coordinate.failed( process::id());         
+
+         EXPECT_TRUE( invoked);
+         EXPECT_TRUE( coordinate.empty()) << CASUAL_NAMED_VALUE( coordinate);
+      }
+
+      TEST( common_message_coordinate, add_10_pending__same_pid__failed_pid___expect_invoked)
+      {
+         common::unittest::Trace trace;
+
+         bool invoked = false;
+
+         // fill the messages
+         const auto origin = algorithm::generate_n< 10>( []()
          {
-            common::unittest::Trace trace;
+            message::gateway::domain::discover::Reply message{ process::handle()};
+            message.correlation = uuid::make();
+            return message;
+         });
 
-            local::Coordinate coordinate;
-            local::Send send;
+         local::Coordinate coordinate;
 
-            const auto correlation = uuid::make();
-            const auto ipc = strong::ipc::id{ uuid::make()};
-
+         // fill with fan out entries.
+         coordinate(
+            algorithm::transform( origin, []( auto& message)
             {
-               coordinate.add( correlation, strong::ipc::id{ uuid::make()}, send, std::vector< common::process::Handle>{ { strong::process::id{ 42}, ipc}});
-            }
-
+               return local::Coordinate::Pending{ message.correlation, message.process.pid};
+            }),
+            [&invoked]( auto received, auto failed)
             {
-               gateway::domain::discover::Reply reply;
-               reply.process.pid = strong::process::id{ 42};
-               reply.process.ipc = ipc;
-               reply.correlation = correlation;
-               coordinate.accumulate( reply, send);
-            }
+               invoked = true;
+            });
 
-            EXPECT_TRUE( send.sent == true) << CASUAL_NAMED_VALUE( coordinate); 
-         }
+         coordinate.failed( process::id());         
 
-         TEST( common_message_coordinate, send_2_destination__accumulate_1__expect_no_coordination)
-         {
-            common::unittest::Trace trace;
+         EXPECT_TRUE( invoked);
+         EXPECT_TRUE( coordinate.empty()) << CASUAL_NAMED_VALUE( coordinate);
+      }
 
-            local::Coordinate coordinate;
-            local::Send send;
-
-            auto correlation = uuid::make();
-            const auto ipc_1 = strong::ipc::id{ uuid::make()};
-            const auto ipc_2 = strong::ipc::id{ uuid::make()};
-
-            {
-               coordinate.add( correlation, strong::ipc::id{ uuid::make()}, send, std::vector< common::process::Handle>{ 
-                  {  strong::process::id{ 42}, ipc_1}, {  strong::process::id{ 77}, ipc_2}});
-            }
-
-            {
-               gateway::domain::discover::Reply reply;
-               reply.process.pid = strong::process::id{ 42};
-               reply.process.ipc = ipc_1;
-               reply.correlation = correlation;
-               coordinate.accumulate( reply, send);
-            }
-
-            EXPECT_TRUE( send.sent == false);
-            EXPECT_TRUE( coordinate.size() == 1);
-         }
-
-         TEST( common_message_coordinate, send_2_destination__accumulate_2__expect_coordination)
-         {
-            common::unittest::Trace trace;
-
-            local::Coordinate coordinate;
-            local::Send send;
-
-            auto correlation = uuid::make();
-
-            const auto ipc_1 = strong::ipc::id{ uuid::make()};
-            const auto ipc_2 = strong::ipc::id{ uuid::make()};
-
-            {
-               coordinate.add( correlation, strong::ipc::id{ uuid::make()}, send,
-                  std::vector< common::process::Handle>{ 
-                     {  strong::process::id{ 42}, ipc_1}, 
-                     {  strong::process::id{ 77}, ipc_2}});
-            }
-
-            {
-               gateway::domain::discover::Reply reply;
-               reply.process.pid = strong::process::id{ 42};
-               reply.process.ipc = ipc_1;
-               reply.correlation = correlation;
-               coordinate.accumulate( reply, send);
-
-               EXPECT_TRUE( send.sent == false);
-               EXPECT_TRUE( coordinate.size() == 1);
-
-               reply.process.pid = strong::process::id{ 77};
-               reply.process.ipc = ipc_2;
-               coordinate.accumulate( reply, send);
-
-               EXPECT_TRUE( send.sent == true);
-               EXPECT_TRUE( coordinate.size() == 0);
-            }
-
-
-         }
-
-
-         TEST( common_message_coordinate, add_pid_42__remove_pid_42__expect__send)
-         {
-            common::unittest::Trace trace;
-
-            local::Coordinate coordinate;
-            local::Send send;
-
-            auto correlation = uuid::make();
-
-            {
-               coordinate.add( correlation, strong::ipc::id{ uuid::make()}, send, std::vector< strong::process::id>{ strong::process::id{ 42}}) ;
-               EXPECT_TRUE( send.sent == false);
-            }
-
-            {
-               coordinate.remove( strong::process::id{ 42}, send);
-               EXPECT_TRUE( send.sent == true) << CASUAL_NAMED_VALUE( coordinate);
-            }
-
-
-         }
-
-      } // message
-
-   } // common
+   } // common::message
 } // casual

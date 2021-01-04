@@ -212,37 +212,38 @@ namespace casual
             
             // gateway
             GATEWAY_BASE = 7000,
-            gateway_outbound_configuration_request = GATEWAY_BASE,
-            gateway_outbound_configuration_reply, 
-            gateway_outbound_connect, 
-            gateway_inbound_connect, 
 
-            gateway_outbound_connect_done,
-
-            gateway_outbound_rediscover_request,
-            gateway_outbound_rediscover_reply,
-
-            // reverse 
-
-            // sent from inbound
-            gateway_reverse_inbound_connect = GATEWAY_BASE + 100,
+            // Inbounds
+            gateway_inbound_connect = GATEWAY_BASE,
 
             // sent from gateway-manager - at least after inbound_connect
-            gateway_reverse_inbound_configuration_update_request,
-            gateway_reverse_inbound_configuration_update_reply,
+            gateway_inbound_configuration_update_request,
+            gateway_inbound_configuration_update_reply,
 
+            gateway_inbound_state_request,
+            gateway_inbound_state_reply, 
+
+            // reverse inbounds have different state than 'regular' (no listeners)
             gateway_reverse_inbound_state_request,
             gateway_reverse_inbound_state_reply, 
 
-            // sent from outbound
-            gateway_reverse_outbound_connect,
+            // Outbounds
+            gateway_outbound_connect,
 
             // sent from gateway-manager - at least after outbound_connect
-            gateway_reverse_outbound_configuration_update_request, 
-            gateway_reverse_outbound_configuration_update_reply,
+            gateway_outbound_configuration_update_request, 
+            gateway_outbound_configuration_update_reply,
 
+            gateway_outbound_state_request,
+            gateway_outbound_state_reply, 
+
+            // reverse outbounds have different state than 'regular' (listeners)
             gateway_reverse_outbound_state_request,
             gateway_reverse_outbound_state_reply, 
+
+            // redescover
+            gateway_outbound_rediscover_request,
+            gateway_outbound_rediscover_reply,
 
             // interdomain 
 
@@ -394,21 +395,13 @@ namespace casual
             })
          };
 
-         //! Message to "force" exit/termination.
-         //! useful in unittest, to force exit on blocking read
+         //! Message to pollitely ask a 'server' to exit/termination.
          namespace shutdown
          {
             using base_request = basic_request< Type::shutdown_request>;
             struct Request : base_request
             {
                using base_request::base_request;
-               bool reply = false;
-
-               CASUAL_CONST_CORRECT_SERIALIZE(
-               {
-                  base_request::serialize( archive);
-                  CASUAL_SERIALIZE( reply);
-               })
             };
 
          } // shutdown

@@ -8,9 +8,6 @@
 #include "domain/transform.h"
 #include "domain/manager/task.h"
 
-//#include "configuration/domain.h"
-//#include "configuration/model/transform.h"
-
 #include "common/domain.h"
 #include "common/message/gateway.h"
 
@@ -292,12 +289,6 @@ namespace casual
 #elif __GNUC__
                      result.compiler = string::compose( "g++: ", __GNUC__, '.', __GNUC_MINOR__, '.', __GNUC_PATCHLEVEL__);
 #endif
-
-                     // gateway protocols
-                     result.gateway.protocols = { 
-                        cast::underlying( message::gateway::domain::protocol::Version::version_1)
-                     };
-                     static_assert( message::gateway::domain::protocol::Version::version_1 == message::gateway::domain::protocol::Version::latest, "fix versions...");
 
                      return result;
                   }

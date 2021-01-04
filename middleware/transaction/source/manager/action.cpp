@@ -96,17 +96,19 @@ namespace casual
                      {
                         switch( instance.state())
                         {
-                           case state::resource::Proxy::Instance::State::absent:
-                           case state::resource::Proxy::Instance::State::started:
+                           using State = decltype( instance.state());
+
+                           case State::absent:
+                           case State::started:
                            {
 
                               log::line( log, "Instance has not register yet. We, kill it...: ", instance);
 
                               process::lifetime::terminate( { instance.process.pid});
-                              instance.state( state::resource::Proxy::Instance::State::shutdown);
+                              instance.state( State::shutdown);
                               break;
                            }
-                           case state::resource::Proxy::Instance::State::shutdown:
+                           case State::shutdown:
                            {
                               log::line( log, "instance already in shutdown state - ", instance);
                               break;
@@ -115,7 +117,7 @@ namespace casual
                            {
                               log::line( log, "shutdown instance: ", instance);
 
-                              instance.state( state::resource::Proxy::Instance::State::shutdown);
+                              instance.state( State::shutdown);
 
                               if( ! communication::device::non::blocking::send( instance.process.ipc, message::shutdown::Request{}))
                               {

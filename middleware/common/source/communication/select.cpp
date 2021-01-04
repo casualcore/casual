@@ -30,46 +30,57 @@ namespace casual
 #endif 
                   }
 
-                  template< typename T>
-                  auto& print_fd( std::ostream& out, const T& set, traits::priority::tag< 0>) { return out;}
-
-                  template< typename T>
-                  auto print_fd( std::ostream& out, const T& set, traits::priority::tag< 1>) 
-                     -> decltype( stream::write( out, set.fds_bits))
-                  {
-                     return stream::write( out, set.fds_bits);
-                  }
-
                } // <unnamed>
             } // local
             namespace directive
             {
-               Set::Set()
+               namespace native
                {
-                  local::fd_zero( m_set);
-               }
+            
+                  Set::Set()
+                  {
+                     local::fd_zero( m_set);
+                  }
+
+                  void Set::add( strong::file::descriptor::id descriptor) noexcept 
+                  { 
+                     assert( descriptor);
+                     FD_SET( descriptor.value(), &m_set);
+                  }
+                  void Set::remove( strong::file::descriptor::id descriptor) noexcept
+                  {
+                     assert( descriptor);
+                     FD_CLR( descriptor.value(), &m_set);
+                  }
+
+                  bool Set::ready( strong::file::descriptor::id descriptor) const noexcept
+                  {
+                     assert( descriptor);
+                     return FD_ISSET( descriptor.value(), &m_set);
+                  }
+                     
+               } // native
+
+               
           
-               void Set::add( strong::file::descriptor::id descriptor)
+               void Set::add( strong::file::descriptor::id descriptor) noexcept
                {
-                  FD_SET( descriptor.value(), &m_set);
+                  m_descriptors.push_back( descriptor);
+                  m_set.add( descriptor);
                }
 
-               void Set::remove( strong::file::descriptor::id descriptor)
+               void Set::remove( strong::file::descriptor::id descriptor) noexcept
                {
-                  FD_CLR( descriptor.value(), &m_set);
+                  if( auto found = algorithm::find( m_descriptors, descriptor))
+                  {
+                     m_descriptors.erase( std::begin( found)),
+                     m_set.remove( descriptor);
+                  }
                }
 
-               bool Set::ready( strong::file::descriptor::id descriptor) const
+               bool Set::ready( strong::file::descriptor::id descriptor) const noexcept
                {
-                  return FD_ISSET( descriptor.value(), &m_set);
-               }
-
-               std::ostream& operator << ( std::ostream& out, const Set& value)
-               {
-                  if( out)
-                     local::print_fd( out, value.m_set, traits::priority::tag< 1>{});
-
-                  return out;
+                  return m_set.ready( descriptor);
                }
   
             } // directive
@@ -78,28 +89,23 @@ namespace casual
             {
                namespace detail
                {
-                  Directive select( const Directive& directive)
+                  directive::native::Set select( const directive::native::Set& read)
                   {
                      Trace trace{ "common::communication::select::dispatch::detail::select"};
-                     log::line( verbose::log, "directive: ", directive);
 
-                     auto result = directive;
+                     auto result = read;
 
-                     // block all signals, just local in this scope, not when we do the dispatch 
-                     // further down.
+                     // block all signals
                      signal::thread::scope::Block block;
 
                      // check pending signals
                      if( signal::pending( block.previous()))
                         code::raise::log( code::casual::interupted);
-
-                     log::line( verbose::log, "pselect - blocked signals: ", block.previous());
                     
                      posix::result( 
                          // will set previous signal mask atomically 
-                        ::pselect( FD_SETSIZE, result.read.native(), nullptr, nullptr, nullptr, &block.previous().set));
+                        ::pselect( FD_SETSIZE, result.native(), nullptr, nullptr, nullptr, &block.previous().set));
 
-                     log::line( verbose::log, "result: ", result);
                      return result;
                   }
 
@@ -120,9 +126,9 @@ namespace casual
             {
                void read( strong::file::descriptor::id descriptor)
                {
-                  Directive directive;
-                  directive.read.add( descriptor);
-                  dispatch::detail::select( directive);
+                  directive::native::Set read;
+                  read.add( descriptor);
+                  dispatch::detail::select( read);
                }
             } // block
 

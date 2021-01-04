@@ -139,17 +139,17 @@ namespace casual
                      {
                         // add "known" dependencies
 
-                        common::algorithm::push_back_unique( "casual-xatmi", settings.directive.libraries);
+                        common::algorithm::append_unique_value( "casual-xatmi", settings.directive.libraries);
 
                         if( common::environment::variable::exists( "CASUAL_HOME"))
                         {
                            auto casual_home = common::environment::variable::get( "CASUAL_HOME");
 
                            if( common::directory::exists( casual_home + "/include"))
-                              common::algorithm::push_back_unique( casual_home + "/include", settings.directive.paths.include);
+                              common::algorithm::append_unique_value( casual_home + "/include", settings.directive.paths.include);
 
                            if( common::directory::exists( casual_home + "/lib"))
-                              common::algorithm::push_back_unique( casual_home + "/lib", settings.directive.paths.library);
+                              common::algorithm::append_unique_value( casual_home + "/lib", settings.directive.paths.library);
                         }
 
                         // add resource stuff

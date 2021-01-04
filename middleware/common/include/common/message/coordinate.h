@@ -1,170 +1,157 @@
-//! 
-//! Copyright (c) 2015, The casual project
+//!
+//! Copyright (c) 2018, The casual project
 //!
 //! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-
 #pragma once
 
+#include "common/functional.h"
 
-#include "common/process.h"
-#include "common/stream.h"
+#include "common/uuid.h"
+#include "common/algorithm.h"
+#include "common/serialize/macro.h"
 
 #include <vector>
 
 namespace casual
 {
-   namespace common
+   namespace common::message::coordinate
    {
-      namespace message
+      namespace fan
       {
-         namespace coordinate
+
+         template< typename M, typename ID>
+         struct Out
          {
-            namespace policy
+            using message_type = M;
+            using id_type = ID;
+
+            //! type to correlate the pending fan out request with the upcoming replies
+            struct Pending
             {
-               struct Message
-               {
-                  inline Message( std::vector< strong::process::id> pids) : m_pids{ std::move( pids)} {}
-                  inline Message( const std::vector< common::process::Handle>& processes)
-                     : m_pids{ algorithm::transform( processes, []( const common::process::Handle& h){ return h.pid;})} {}
+               inline Pending( common::Uuid correlation, id_type id)
+                  : correlation{ std::move( correlation)}, id{ id} {}
 
-                  inline bool consume( strong::process::id pid)
-                  {
-                     auto found = algorithm::find( m_pids, pid);
+               common::Uuid correlation;
+               id_type id;
 
-                     if( ! found)
-                        return false;
-                     
-                     m_pids.erase( std::begin( found));
-                     return true;
-                  }
+               inline friend bool operator == ( const Pending& lhs, const common::Uuid& rhs) { return lhs.correlation == rhs;}
+               inline friend bool operator == ( const Pending& lhs, id_type rhs) { return lhs.id == rhs;}
 
-                  inline bool done() const { return m_pids.empty();}
+               CASUAL_LOG_SERIALIZE(
+                  CASUAL_SERIALIZE( correlation);
+                  CASUAL_SERIALIZE( id);
+               )
+            };
 
-                  // for logging only
-                  CASUAL_LOG_SERIALIZE(
-                  {
-                     CASUAL_SERIALIZE_NAME( m_pids, "pids");
-                  })
+            Out() = default;
+            Out( Out&&) noexcept = default;
+            Out& operator = ( Out&&) noexcept = default;
 
-               private:
-                  std::vector< strong::process::id> m_pids;
-               };
-
-            } // policy
-         } // coordinate
-
-         template< typename Policy, typename MP = coordinate::policy::Message>
-         struct Coordinate
-         {
-            using policy_type = Policy;
-            using message_type = typename policy_type::message_type;
-            using message_policy_type = MP;
-
-            template< typename... Args>
-            explicit Coordinate( Args&&... args) : m_policy{ std::forward< Args>( args)...} {}
-
-
-            template< typename Send, typename... Requested>
-            void add( const Uuid& correlation, strong::ipc::id destination, Send&& send, Requested&&... requested)
+            //! register pending 'fan outs' and a callback which is invoked when all pending
+            //! has been 'received'.
+            template< typename C>
+            auto operator () ( std::vector< Pending> pending, C&& callback)
+               -> decltype( void( callback( std::vector< message_type>{}, std::vector< id_type>{})))
             {
-               m_messages.emplace_back(
-                     destination,
-                     correlation,
-                     std::forward< Requested>( requested)...);
+               auto& entry = m_entries.emplace_back( std::move( pending), std::forward< C>( callback));
 
-
-               if( m_messages.back().policy.done())
-               {
-                  send( m_messages.back().ipc, m_messages.back().message);
-                  m_messages.pop_back();
-               }
+               // to make it symmetrical and 'impossible' to add 'dead letters'.
+               if( entry.done())
+                  m_entries.pop_back();
             }
 
-            template< typename Reply, typename Send>
-            bool accumulate( Reply&& message, Send&& send)
+            //! 'pipe' the `message` to the 'fan-out-coordination'. Will invoke callback if `message` is
+            //! the last pending message for an entry.
+            inline void operator () ( message_type message)
             {
-               auto found = algorithm::find( m_messages, message.correlation);
-
-               if( found && found->policy.consume( message.process.pid))
-               {
-                  // Accumulate message
-                  m_policy( found->message, std::forward< Reply>( message));
-
-                  if( found->policy.done())
-                  {
-                     // We're done, send reply...
-                     send( found->ipc, found->message);
-                     m_messages.erase( std::begin( found));
-                  }
-
-                  return true;
-               }
-               return false;
+               if( auto found = algorithm::find( m_entries, message.correlation))
+                  if( found->coordinate( std::move( message)))
+                     m_entries.erase( std::begin( found));
             }
 
-            template< typename Send>
-            void remove( strong::process::id pid, Send&& send)
+            inline void failed( id_type id)
             {
-               algorithm::trim( m_messages, algorithm::remove_if( m_messages, [pid, &send]( auto& h)
+               algorithm::trim( m_entries, algorithm::remove_if( m_entries, [id]( auto& message)
                {
-                  if( h.policy.consume( pid) && h.policy.done())
-                  {
-                     send( h.ipc, h.message);
-                     return true;
-                  }
-                  return false;
+                  return message.failed( id);
                }));
             }
 
-            Policy& policy() { return m_policy;}
-            const Policy& policy() const { return m_policy;}
+            inline auto empty() const noexcept { return m_entries.empty();}
 
-            platform::size::type size() const { return m_messages.size();}
+            //! @returns an empty 'pending_type' vector
+            //! convince function to get 'the right type' 
+            inline auto empty_pendings() { return std::vector< Pending>{};}
 
             CASUAL_LOG_SERIALIZE(
-            {
-               CASUAL_SERIALIZE_NAME( m_messages, "messages");
-               CASUAL_SERIALIZE_NAME( m_policy, "policy");
-            })
+               CASUAL_SERIALIZE_NAME( m_entries, "entries");
+            )
 
          private:
 
-            struct holder_type
+            struct Entry
             {
-               template< typename... Args>
-               holder_type( strong::ipc::id ipc, const Uuid& correlation, Args&&... args)
-                  : ipc{ ipc}, policy{ std::forward< Args>( args)...}
+               using callback_t = common::function< void( std::vector< message_type> received, std::vector< id_type> failed)>;
+
+               inline Entry( std::vector< Pending> pending, callback_t callback)
+                  : m_pending{ std::move( pending)}, m_callback{ std::move( callback)} {}
+
+               inline bool coordinate( message_type message)
                {
-                  message.correlation = correlation;
+                  algorithm::trim( m_pending, algorithm::remove( m_pending, message.correlation));
+
+                  m_received.push_back( std::move( message));
+
+                  return done();
                }
 
-               bool done() const { return policy.done();}
-
-               strong::ipc::id ipc;
-               message_policy_type policy;
-               message_type message;
-
-               inline friend bool operator == ( const holder_type& lhs, const Uuid& rhs) { return lhs.message.correlation == rhs;}
-
-               // for logging only
-               CASUAL_LOG_SERIALIZE(
+               inline bool failed( id_type id)
                {
-                  CASUAL_SERIALIZE( ipc);
-                  CASUAL_SERIALIZE( policy);
-                  CASUAL_SERIALIZE( message);
-               })
+                  auto [ keep, removed] = algorithm::partition( m_pending, predicate::negate( predicate::value::equal( id)));
+                  if( removed)
+                  {
+                     m_failed.push_back( id);
+                     algorithm::trim( m_pending, keep);
+                  }
+                  return done();
+               }
+
+               inline friend bool operator == ( const Entry & lhs, const common::Uuid& rhs) 
+               { 
+                  return ! algorithm::find( lhs.m_pending, rhs).empty();
+               }
+
+               CASUAL_LOG_SERIALIZE(
+                  CASUAL_SERIALIZE_NAME( m_pending, "pending");
+                  CASUAL_SERIALIZE_NAME( m_received, "received");
+                  CASUAL_SERIALIZE_NAME( m_failed, "failed");
+               )
+
+
+               bool done()
+               {
+                  if( ! m_pending.empty())
+                     return false;
+
+                  log::line( verbose::log, "entry: ", *this);
+
+                  m_callback( std::move( m_received), std::move( m_failed));
+                  return true;
+               }
+
+            private:
+               std::vector< Pending> m_pending;
+               std::vector< message_type> m_received;
+               std::vector< id_type> m_failed;
+               callback_t m_callback;
+               
             };
 
+            std::vector< Entry> m_entries;
+         };            
+      } // fan
 
-            std::vector< holder_type> m_messages;
-            Policy m_policy;
-         };
-
-
-      } // message
-   } // common
+   } //common::message::coordinate
 } // casual
-
-

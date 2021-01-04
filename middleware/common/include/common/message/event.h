@@ -208,13 +208,16 @@ namespace casual
                   )
                };
 
-               struct Calls : basic_event< Type::event_service_calls>
+               using base_calls = basic_event< Type::event_service_calls>;
+               struct Calls : base_calls
                {
+                  using base_calls::base_calls;
+
                   std::vector< Metric> metrics;
 
                   CASUAL_CONST_CORRECT_SERIALIZE
                   (
-                     basic_event< Type::event_service_calls>::serialize( archive);
+                     base_calls::serialize( archive);
                      CASUAL_SERIALIZE( metrics);
                   )
                };

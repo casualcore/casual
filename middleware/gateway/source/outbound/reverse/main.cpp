@@ -4,19 +4,20 @@
 //! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-#include "gateway/inbound/handle.h"
-#include "gateway/inbound/state.h"
+#include "gateway/outbound/handle.h"
+#include "gateway/outbound/state.h"
+#include "gateway/outbound/error/reply.h"
 #include "gateway/message.h"
 
 #include "common/exception/guard.h"
 #include "common/log/stream.h"
 #include "common/communication/instance.h"
-#include "common/argument.h"
+#include  "common/argument.h"
 
 
 namespace casual
 {
-   namespace gateway::inbound
+   namespace gateway::outbound::reverse
    {
       using namespace common;
 
@@ -38,12 +39,12 @@ namespace casual
 
 
             // local state to keep additional stuff for reverse connections...
-            struct State : inbound::State
+            struct State : outbound::State
             {
                struct Listener
                {
                   communication::tcp::Socket socket;
-                  configuration::model::gateway::inbound::Connection configuration;
+                  configuration::model::gateway::outbound::Connection configuration;
 
                   inline friend bool operator == ( const Listener& lhs, common::strong::file::descriptor::id rhs) { return lhs.socket.descriptor() == rhs;}
 
@@ -54,12 +55,10 @@ namespace casual
                };
 
                std::vector< Listener> listeners;
-               std::vector< configuration::model::gateway::inbound::Connection> offline;
                
                CASUAL_LOG_SERIALIZE(
-                  inbound::State::serialize( archive);
+                  outbound::State::serialize( archive);
                   CASUAL_SERIALIZE( listeners);
-                  CASUAL_SERIALIZE( offline);
                )
             };
 
@@ -67,12 +66,12 @@ namespace casual
 
             State initialize( Arguments arguments)
             {
-               Trace trace{ "gateway::inbound::local::initialize"};
+               Trace trace{ "casual::gateway::outbound::reverse::local::initialize"};
                log::line( verbose::log, "arguments: ", arguments);
 
                // 'connect' to gateway-manager - will send configuration-update-request as soon as possible
                // that we'll handle in the main message pump
-               communication::device::blocking::send( ipc::gateway(), gateway::message::inbound::Connect{ process::handle()});
+               communication::device::blocking::send( ipc::gateway(), gateway::message::outbound::Connect{ process::handle()});
 
                // 'connect' to our local domain
                common::communication::instance::connect();
@@ -82,21 +81,22 @@ namespace casual
 
             namespace internal
             {
-               // handles that are specific to the inbound
+               // handles that are specific to the reverse-outbound
                namespace handle
                {
                   namespace configuration::update
                   {
                      auto request( State& state)
                      {
-                        return [&state]( gateway::message::inbound::configuration::update::Request& message)
+                        return [&state]( gateway::message::outbound::configuration::update::Request& message)
                         {
-                           Trace trace{ "gateway::inbound::local::internal::handle::configuration::update::request"};
+                           Trace trace{ "gateway::outbound::reverse::local::internal::handle::configuration::update::request"};
                            log::line( verbose::log, "message: ", message);
 
                            // TODO maintainece - make sure we can handle runtime updates...
 
                            state.alias = message.model.alias;
+                           state.order = message.order;
 
                            state.listeners = algorithm::transform( message.model.connections, []( auto& information)
                            {
@@ -104,15 +104,14 @@ namespace casual
                                   communication::tcp::socket::listen( information.address),
                                   information};
 
-                              // we need the socket to not block if outbound dies in the 'connection-phase'
+                              // we need the socket to not block if reverse-inbound dies in the 'connection-phase'
                               result.socket.set( communication::socket::option::File::no_block);
+
                               return result;
                            });
 
                            state.directive.read.add( 
                               algorithm::transform( state.listeners, []( auto& listener){ return listener.socket.descriptor();}));
-
-                           log::line( verbose::log, "state: ", state);
                         };
                      }
                   } // configuration::update
@@ -121,14 +120,14 @@ namespace casual
                   {
                      auto request( State& state)
                      {
-                        return [&state]( message::inbound::state::Request& message)
+                        return [&state]( message::outbound::reverse::state::Request& message)
                         {
-                           Trace trace{ "gateway::inbound::local::handle::internal::state::request"};
+                           Trace trace{ "gateway::outbound::reverse::local::handle::internal::state::request"};
                            log::line( verbose::log, "message: ", message);
                            log::line( verbose::log, "state: ", state);
 
                            auto reply = state.reply( message);
-                           
+
                            reply.state.listeners = algorithm::transform( state.listeners, []( auto& listener)
                            {
                               message::state::Listener result;
@@ -137,8 +136,6 @@ namespace casual
 
                               return result;
                            });
-
-                           log::line( verbose::log, "reply: ", reply);
 
                            communication::device::blocking::optional::send( message.process.ipc, reply);
                         };
@@ -152,17 +149,17 @@ namespace casual
                      {
                         return [&state]( const common::message::shutdown::Request& message)
                         {
-                           Trace trace{ "gateway::inbound::local::handle::internal::shutdown::request"};
+                           Trace trace{ "gateway::outbound::reverse::local::internal::handle::shutdown::request"};
                            log::line( verbose::log, "message: ", message);
 
-                           state.runlevel = decltype( state.runlevel())::shutdown;
+                           // remove all listeners
+                           {
+                              state.directive.read.remove( algorithm::transform( state.listeners, []( auto& listener){ return listener.socket.descriptor();}));
+                              state.listeners.clear();
+                           }
+                           
 
-                           // remove listeners
-                           state.directive.read.remove( 
-                              algorithm::transform( state.listeners, []( auto& listener){ return listener.socket.descriptor();}));
-
-                           state.offline = algorithm::transform( state.listeners, []( auto& listener){ return listener.configuration;});
-                           state.listeners.clear();
+                           outbound::handle::shutdown( state);
                         };
                      }
                   } // shutdown
@@ -171,8 +168,7 @@ namespace casual
 
                auto handler( State& state)
                {
-                  // we add the common/general inbound logic
-                  return inbound::handle::internal( state) + common::message::dispatch::handler( ipc::inbound(),
+                  return outbound::handle::internal( state) + common::message::dispatch::handler( ipc::inbound(),
                      handle::configuration::update::request( state),
                      handle::state::request( state),
                      handle::shutdown::request( state)
@@ -182,74 +178,43 @@ namespace casual
                namespace dispatch
                {
                   auto create( State& state) 
-                  {
+                  { 
                      state.directive.read.add( ipc::inbound().connector().descriptor());
                      return [handler = internal::handler( state)]() mutable
                      {
-                        return common::predicate::boolean( handler( common::communication::device::non::blocking::next( ipc::inbound())));
-
+                        return predicate::boolean( handler( communication::device::non::blocking::next( ipc::inbound())));
                      };
                   }
                } // dispatch
-
             } // internal
 
 
+
             namespace external
-            {  
-               namespace listener
-               {
-                  namespace dispatch
-                  {
-                     auto create( State& state)
-                     {
-                        return [&state]( strong::file::descriptor::id descriptor)
-                        {
-                           Trace trace{ "gateway::inbound::local::external::listener::dispatch"};
-
-                           if( auto found = algorithm::find( state.listeners, descriptor))
-                           {
-                              log::line( verbose::log, "found: ", *found);
-
-                              if( auto socket = communication::tcp::socket::accept( found->socket))
-                              {
-                                 state.external.add( 
-                                    state.directive, 
-                                    std::move( socket),
-                                    found->configuration);
-                              }
-                              else 
-                                 log::line( log::category::error, code::casual::communication_protocol, " failed to accept connection: ", *found);
-
-                              return true;
-                           }
-                           return false;
-                        };
-                     }
-                  } // dispatch
-               } // listener
-
+            {
                namespace dispatch
                {
                   auto create( State& state) 
-                  { 
-                     return [&state, handler = inbound::handle::external( state)]( common::strong::file::descriptor::id descriptor) mutable
+                  {
+                     return [&state, handler = gateway::outbound::handle::external( state)]( strong::file::descriptor::id descriptor) mutable
                      {
-                        if( auto found = algorithm::find( state.external.connections, descriptor))
+                        auto is_connection = [descriptor]( auto& connection)
+                        {
+                           return connection.device.connector().descriptor() == descriptor;
+                        };
+
+                        if( auto found = algorithm::find_if( state.external.connections, is_connection))
                         {
                            try
                            {
-                              if( auto correlation = handler( communication::device::blocking::next( found->device)))
-                                 state.correlations.emplace_back( std::move( correlation), descriptor);
-                              else
-                                 log::line( log::category::error, code::casual::invalid_semantics, " failed to handle next message for device: ", found->device);
+                              handler( communication::device::blocking::next( found->device));
                            }
                            catch( ...)
                            {
                               if( exception::code() != code::casual::communication_unavailable)
                                  throw;
                               
-                              handle::connection::lost( state, descriptor);
+                              outbound::handle::connection::lost( state, descriptor);
                            }
                            return true;
                         }
@@ -257,6 +222,66 @@ namespace casual
                      };
                   }
                } // dispatch
+
+               namespace listener
+               {
+                  struct Dispatch
+                  {
+                     Dispatch( State& state) : m_state{ &state}
+                     {
+                     }
+                     
+                     std::vector< strong::file::descriptor::id> descriptors() const 
+                     { 
+                        std::vector< strong::file::descriptor::id> result;
+                        algorithm::transform( m_state->listeners, result, []( auto& listener){ return listener.socket.descriptor();});
+                        return result;
+                     }
+
+                     void read( strong::file::descriptor::id descriptor)
+                     {
+                        Trace trace{ "gateway::outbound::reverse::local::external::listener::Dispatch::read"};
+
+                        if( auto found = algorithm::find( m_state->listeners, descriptor))
+                        {
+                           log::line( verbose::log, "found: ", *found);
+
+                           if( auto socket = communication::tcp::socket::accept( found->socket))
+                           {
+                              // start the connection phase against the other inbound
+                              outbound::handle::connect( *m_state, std::move( socket), found->configuration);
+                           }
+                        }
+                     }
+
+                  private:
+                     State* m_state;
+                  };
+
+                  namespace dispatch
+                  {
+                     auto create( State& state)
+                     {
+                        return [&state]( strong::file::descriptor::id descriptor)
+                        {
+                           Trace trace{ "gateway::outbound::reverse::local::external::listener::dispatch"};
+
+                           if( auto found = algorithm::find( state.listeners, descriptor))
+                           {
+                              log::line( verbose::log, "found: ", *found);
+
+                              if( auto socket = communication::tcp::socket::accept( found->socket))
+                              {
+                                 // start the connection phase against the other inbound
+                                 outbound::handle::connect( state, std::move( socket), found->configuration);
+                              }
+                              return true;
+                           }
+                           return false;
+                        };
+                     }
+                  } // dispatch
+               } // listener
                
             } // external
 
@@ -264,41 +289,38 @@ namespace casual
             {
                return communication::select::dispatch::condition::compose(
                   communication::select::dispatch::condition::done( [&state](){ return state.done();})
-                  );
+               );
             }
 
             void run( State state)
             {
-               Trace trace{ "gateway::inbound::local::run"};
+               Trace trace{ "casual::gateway::outbound::reverse::local::run"};
                log::line( verbose::log, "state: ", state);
 
                auto abort_guard = execute::scope( [&state]()
                {
-                  gateway::inbound::handle::abort( state);
+                  gateway::outbound::handle::abort( state);
                });
 
-               {
-                  Trace trace{ "gateway::inbound::local::run dispatch pump"};
-
-                  // start the message dispatch
-                  communication::select::dispatch::pump( 
-                     local::condition( state),
-                     state.directive, 
-                     internal::dispatch::create( state),
-                     external::dispatch::create( state),
-                     external::listener::dispatch::create( state)
-                  );
-               }
-
+               // start the message dispatch
+               communication::select::dispatch::pump( 
+                  local::condition( state),
+                  state.directive, 
+                  internal::dispatch::create( state),
+                  external::dispatch::create( state),
+                  external::listener::dispatch::create( state)
+               );
+               
+               abort_guard.release();
             }
 
             void main( int argc, char** argv)
             {
-               Trace trace{ "gateway::inbound::local::main"};
+               Trace trace{ "casual::gateway::outbound::reverse::local::main"};
 
                Arguments arguments;
 
-               argument::Parse{ "inbound",
+               argument::Parse{ "reverse outbound",
                }( argc, argv);
 
                run( initialize( std::move( arguments)));
@@ -307,7 +329,7 @@ namespace casual
          } // <unnamed>
       } // local
 
-   } // gateway::inbound
+   } // gateway::outbound::reverse
 
 } // casual
 
@@ -316,6 +338,6 @@ int main( int argc, char** argv)
 {
    return casual::common::exception::main::guard( [=]()
    {
-      casual::gateway::inbound::local::main( argc, argv);
+      casual::gateway::outbound::reverse::local::main( argc, argv);
    });
 } // main

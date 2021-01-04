@@ -22,6 +22,15 @@ namespace casual
          {
             namespace
             {
+
+               template< typename T>
+               T empty_if_null( std::optional< T> value)
+               {
+                  if( value)
+                     return std::move( value.value());
+                  return {};
+               }
+
                namespace normalize
                {
                   template< typename P>
@@ -29,7 +38,7 @@ namespace casual
                   {
                      return [ &state, prospect = std::forward< P>( prospect)]( auto& value)
                      {
-                        if( ! value.alias || value.alias.value().empty())
+                        if( value.alias.empty())
                            value.alias = prospect( value);
                         
                         auto potentally_add_index = []( auto& state, auto& alias)
@@ -43,27 +52,59 @@ namespace casual
                            return true;
                         };
 
-                        while( potentally_add_index( state, value.alias.value()))
+                        while( potentally_add_index( state, value.alias))
                            ; // no-op
                      };
                   }
-                  void aliases( user::Domain& domain)
+                  void aliases( configuration::Model& model)
                   {
                      {
                         auto state = std::map< std::string, std::size_t>{};
                         auto normalizer = normalize::mutator( state, []( auto& value){ return file::name::base( value.path);});
-                        algorithm::for_each( domain.executables, normalizer);
-                        algorithm::for_each( domain.servers, normalizer);
+                        algorithm::for_each( model.domain.executables, normalizer);
+                        algorithm::for_each( model.domain.servers, normalizer);
                      }
 
-                     if( domain.queue)
                      {
                         auto state = std::map< std::string, std::size_t>{};
                         auto normalizer = normalize::mutator( state, []( auto& value){ return value.source;});
-                        algorithm::for_each( domain.queue.value().forward.services, normalizer);
-                        algorithm::for_each( domain.queue.value().forward.queues, normalizer);
+                        algorithm::for_each( model.queue.forward.services, normalizer);
+                        algorithm::for_each( model.queue.forward.queues, normalizer);
                      }
 
+                     {
+                        auto state = std::map< std::string, std::size_t>{};
+                        
+                        {
+                           auto normalizer = normalize::mutator( state, []( auto& value)
+                           { 
+                              if( value.connect == decltype( value.connect)::reversed)
+                                 return "reverse.inbound";
+                              return "inbound";
+                           
+                           });
+                           algorithm::for_each( model.gateway.inbounds, normalizer);
+                        }
+
+                        {
+                           auto normalizer = normalize::mutator( state, []( auto& value)
+                           { 
+                              if( value.connect == decltype( value.connect)::reversed)
+                                 return "reverse.outbound";
+                              return "outbound";
+                           
+                           });
+                           algorithm::for_each( model.gateway.outbounds, normalizer);
+                        }
+                     }
+                  }
+
+                  auto order()
+                  {
+                     return [ order = platform::size::type{ 0}]( auto& value) mutable
+                     {
+                        value.order = order++;
+                     };
                   }
                } // normalize
 
@@ -127,9 +168,7 @@ namespace casual
 
                   auto assign_executable = []( auto& entity, auto& result)
                   {
-                     // we assume normalize::aliases has been done
-                     assert( entity.alias);
-                     result.alias = entity.alias.value();
+                     result.alias = entity.alias.value_or( "");
                      result.arguments = entity.arguments.value_or( result.arguments);
                      result.instances = entity.instances.value_or( result.instances);
                      result.note = entity.note.value_or( "");
@@ -200,93 +239,132 @@ namespace casual
 
                   auto& gateway = domain.gateway.value();
 
-                  result.listeners = common::algorithm::transform( gateway.listeners, []( const auto& l)
+                  // first we take care of deprecated stuff
+
+                  if( ! gateway.listeners.empty())
                   {
-                     gateway::Listener result;
+                     log::line( log::category::warning, code::casual::invalid_configuration, " domain.gateway.listeners are deprecated - use domain.gateway.inbounds");
 
-                     result.address = l.address;
-
-                     if( l.limit.has_value())
+                     gateway::Inbound inbound;
+                     inbound.connect = decltype( inbound.connect)::regular;
+                     inbound.connections = common::algorithm::transform( gateway.listeners, []( const auto& listener)
                      {
-                        result.limit.messages = l.limit.value().messages.value_or( 0);
-                        result.limit.size = l.limit.value().size.value_or( 0);
-                     }
+                        gateway::inbound::Connection result;
+                        result.note = listener.note.value_or( "");
+                        result.address = listener.address;
+                        return result;
+                     });
 
-                     return result;
-                  });
 
-                  result.connections = common::algorithm::transform( gateway.connections, []( const auto& value)
+                     inbound.limit = algorithm::accumulate( gateway.listeners, gateway::inbound::Limit{}, [&]( auto current, auto& listener)
+                     {
+                        if( ! listener.limit)
+                           return current;
+
+                        auto size = listener.limit.value().size.value_or( 0);
+                        auto messages = listener.limit.value().messages.value_or( 0);
+
+                       if( size > 0 && current.size > size)
+                           current.size = size;
+
+                        if( messages > 0 && current.messages > messages)
+                           current.messages = messages;
+
+                        return current;
+                     });
+
+                     result.inbounds.push_back( std::move( inbound));
+                  }
+
+                  if( ! gateway.connections.empty())
                   {
-                     gateway::Connection result;
+                     log::line( log::category::warning, code::casual::invalid_configuration, " domain.gateway.connections are deprecated - use domain.gateway.outbounds");
 
-                     result.note = value.note.value_or( "");
-                     result.lifetime.restart = value.restart.value_or( true);
-                     result.address = value.address;
-                     
-                     if( value.services)
-                        result.services = value.services.value();
-                     if( value.queues)
-                        result.queues = value.queues.value();
+                     gateway::Outbound outbound;
+                     outbound.connect = decltype( outbound.connect)::regular;
+                     outbound.connections = common::algorithm::transform( gateway.connections, []( const auto& value)
+                     {
+                        gateway::outbound::Connection result;
 
-                     return result;
-                  });
+                        result.note = value.note.value_or( "");
+                        result.address = value.address;
+                        
+                        if( value.services)
+                           result.services = value.services.value();
+                        if( value.queues)
+                           result.queues = value.queues.value();
+
+                        return result;
+                     });
+                     result.outbounds.push_back( std::move( outbound));
+                  }
+
+                  auto append_inbounds = []( auto& source, auto& target, auto connect)
+                  { 
+                     if( ! source)
+                        return;
+
+                     algorithm::transform( source.value(), std::back_inserter( target), [connect]( auto& source)
+                     {
+                        gateway::Inbound result;
+                        result.alias = source.alias.value_or( "");
+                        result.note = source.note.value_or( "");
+                        result.connect = connect;
+
+                        if( source.limit)
+                        {
+                           result.limit.size = source.limit.value().size.value_or( result.limit.size);
+                           result.limit.messages = source.limit.value().messages.value_or( result.limit.messages);
+                        }
+
+                        result.connections = algorithm::transform( source.connections, []( auto& connection)
+                        {
+                           gateway::inbound::Connection result;
+                           result.note = connection.note.value_or( "");
+                           result.address = connection.address;
+                           return result;
+                        });
+
+                        return result;
+                     });
+                  };
+
+                  auto append_outbounds = []( auto& source, auto& target, auto connect)
+                  { 
+                     if( ! source)
+                        return;
+
+                     algorithm::transform( source.value(), std::back_inserter( target), [connect]( auto& source)
+                     {
+                        gateway::Outbound result;
+                        result.alias = source.alias.value_or( "");
+                        result.note = source.note.value_or( "");
+                        result.connect = connect;
+                        result.connections = algorithm::transform( source.connections, []( auto& connection)
+                        {
+                           gateway::outbound::Connection result;
+                           result.note = connection.note.value_or( "");
+                           result.address = connection.address;
+                           result.services = local::empty_if_null( std::move( connection.services));
+                           result.queues = local::empty_if_null( std::move( connection.queues));
+                           return result;
+                        });
+
+                        return result;
+                     });
+                  };
+
+                  append_inbounds( gateway.inbounds, result.inbounds, model::gateway::connect::Semantic::regular);
+                  append_outbounds( gateway.outbounds, result.outbounds, model::gateway::connect::Semantic::regular);
 
                   if( gateway.reverse)
                   {
-                     auto& source = gateway.reverse.value();
-
-                     gateway::Reverse target;
-
-                     if( source.inbounds)
-                     {
-                        target.inbounds = algorithm::transform( source.inbounds.value(), []( auto& inbound)
-                        {
-                           gateway::reverse::Inbound result;
-                           result.alias = inbound.alias.value_or( "");
-                           result.note = inbound.note.value_or( "");
-
-                           if( inbound.limit)
-                           {
-                              result.limit.messages = inbound.limit.value().messages.value_or( result.limit.messages);
-                              result.limit.size = inbound.limit.value().size.value_or( result.limit.size);
-                           }
-
-                           result.connections = algorithm::transform( inbound.connections, []( auto& value)
-                           {
-                              gateway::reverse::inbound::Connection result;
-                              result.note = value.note.value_or( "");
-                              result.address = value.address;
-                              return result;
-                           });
-
-                           return result;
-                        });
-                     }
-
-                     if( source.outbounds)
-                     {
-                        target.outbounds = algorithm::transform( source.outbounds.value(), []( auto& outbound)
-                        {
-                           gateway::reverse::Outbound result;
-                           result.alias = outbound.alias.value_or( "");
-                           result.note = outbound.note.value_or( "");
-
-                           result.connections = algorithm::transform( outbound.connections, []( auto& value)
-                           {
-                              gateway::reverse::outbound::Connection result;
-                              result.note = value.note.value_or( "");
-                              result.address = value.address;
-                              result.services = value.services.value_or( result.services);
-                              result.queues = value.queues.value_or( result.queues);
-                              return result;
-                           });
-
-                           return result;
-                        });
-                     }
-
-                     result.reverse = std::move( target);
+                     append_inbounds( gateway.reverse.value().inbounds, result.inbounds, model::gateway::connect::Semantic::reversed);
+                     append_outbounds( gateway.reverse.value().outbounds, result.outbounds, model::gateway::connect::Semantic::reversed);
                   }
+
+                  // make sure we keep track of the order.
+                  algorithm::for_each( result.outbounds, normalize::order());
 
                   return result;
                }
@@ -532,97 +610,85 @@ namespace casual
                      return result;
                   }
 
-                  auto gateway( const configuration::Model& model)
+                  auto gateway( configuration::model::gateway::Model model)
                   {
                      Trace trace{ "configuration::model::local::model::gateway"};
 
                      user::gateway::Manager result;
 
-                     auto assign_limit = []( auto& source, auto& target)
+                     auto transform_inbound = []( auto& value) 
                      {
-                        if( source.size > 0 || source.messages > 0)
+                        configuration::user::gateway::Inbound result;
+                        result.alias = value.alias;
+                        result.note = null_if_empty( value.note);
+                        
+                        if( value.limit.size > 0 || value.limit.messages > 0)
                         {
-                           user::gateway::listener::Limit limit;
-                           limit.messages = null_if_empty( source.messages);
-                           limit.size = null_if_empty( source.size);
-                           target = std::move( limit);
+                           user::gateway::inbound::Limit limit;
+                           limit.messages = null_if_empty( value.limit.messages);
+                           limit.size = null_if_empty( value.limit.size);
+                           result.limit = std::move( limit);
                         };
+
+                        result.connections = algorithm::transform( value.connections, []( auto& value)
+                        {
+                           configuration::user::gateway::inbound::Connection result;
+                           result.address = value.address;
+                           result.note = null_if_empty( value.note);
+                           return result;
+                        });
+                        return result;
                      };
 
-                     result.listeners = algorithm::transform( model.gateway.listeners, [&assign_limit]( auto& value)
+                     auto transform_outbound = []( auto& value) 
                      {
-                        user::gateway::Listener result;
-                        result.address = value.address;
-
-                        assign_limit( value.limit, result.limit);
-
-                        result.note  = null_if_empty( value.note);
-                        return result;
-                     });
-
-                     result.connections = algorithm::transform( model.gateway.connections, []( auto& value)
-                     {
-                        user::gateway::Connection result;
-                        result.address = value.address;
-                        result.services = null_if_empty( value.services);
-                        result.queues = null_if_empty( value.queues);
-                        result.restart = value.lifetime.restart;
-
-                        result.note  = null_if_empty( value.note);
-                        return result;
-                     });
-
-                     // reverse
-                     if( ! model.gateway.reverse.empty())
-                     {
-                        auto reverse = configuration::user::gateway::Reverse{};
-
-                        auto inbounds = algorithm::transform( model.gateway.reverse.inbounds, [&assign_limit]( auto& inbound)
+                        configuration::user::gateway::Outbound result;
+                        result.alias = value.alias;
+                        result.note = null_if_empty( value.note);
+                        result.connections = algorithm::transform( value.connections, []( auto& value)
                         {
-                           configuration::user::gateway::reverse::Inbound result;
-                           result.alias = null_if_empty( inbound.alias);
-                           result.note = null_if_empty( inbound.note);
-                           assign_limit( inbound.limit, result.limit);
-
-                           result.connections = algorithm::transform( inbound.connections, []( auto& value)
-                           {
-                              configuration::user::gateway::reverse::inbound::Connection result;
-                              result.address = value.address;
-                              result.note = null_if_empty( value.note);
-                              return result;
-                           });
-                           
+                           configuration::user::gateway::outbound::Connection result;
+                           result.address = value.address;
+                           result.note = null_if_empty( value.note);
+                           result.services = null_if_empty( value.services);
+                           result.queues = null_if_empty( value.queues);
                            return result;
                         });
+                        return result;
+                     };
 
-                        if( ! inbounds.empty())
-                           reverse.inbounds = std::move( inbounds);
+                     auto is_reversed = []( auto& value){ return value.connect == decltype( value.connect)::reversed;};
+                     
+                     auto reverse = configuration::user::gateway::Reverse{};
 
 
-                        auto outbounds = algorithm::transform( model.gateway.reverse.outbounds, []( auto& outbound)
-                        {
-                           configuration::user::gateway::reverse::Outbound result;
-                           result.alias = null_if_empty( outbound.alias);
-                           result.note = null_if_empty( outbound.note);
-                           
-                           result.connections = algorithm::transform( outbound.connections, []( auto& value)
-                           {
-                              configuration::user::gateway::reverse::outbound::Connection result;
-                              result.address = value.address;
-                              result.services = null_if_empty( value.services);
-                              result.queues = null_if_empty( value.queues);
-                              result.note = null_if_empty( value.note);
-                              return result;
-                           });
-                           return result;
-                        });
+                     // inbounds
+                     {
+                        auto [ reversed, regular] = algorithm::stable_partition( model.inbounds, is_reversed);
 
-                        if( ! outbounds.empty())
-                           reverse.outbounds = std::move( outbounds);
+                        if( reversed)
+                           reverse.inbounds = algorithm::transform( reversed, transform_inbound);
 
-                        result.reverse = std::move( reverse);
+                        if( regular)
+                           result.inbounds = algorithm::transform( regular, transform_inbound);
                      }
 
+                     // outbounds
+                     {
+                        auto less_order = []( auto& lhs, auto& rhs){ return lhs.order < rhs.order;};
+
+                        auto [ reversed, regular] = algorithm::stable_partition( model.outbounds, is_reversed);
+
+                        if( reversed)
+                           reverse.outbounds = algorithm::transform( algorithm::sort( reversed, less_order), transform_outbound);
+
+                        if( regular)
+                           result.outbounds = algorithm::transform( algorithm::sort( regular, less_order), transform_outbound);
+                     }
+
+                     if( reverse.inbounds || reverse.outbounds)
+                        result.reverse = std::move( reverse);
+                     
                      return result;
                   }
 
@@ -712,15 +778,15 @@ namespace casual
             Trace trace{ "configuration::model::transform domain"};
             log::line( verbose::log, "domain: ", domain);
 
-            // make sure to normalize all aliases
-            local::normalize::aliases( domain);
-
             configuration::Model result;
             result.domain = local::domain( domain);
             result.service = local::service( domain);
             result.transaction = local::transaction( domain);
             result.gateway = local::gateway( domain);
             result.queue = local::queue( domain);
+
+            // make sure to normalize all aliases
+            local::normalize::aliases( result);
 
             return result;
          }
@@ -732,7 +798,7 @@ namespace casual
             auto result = local::model::domain( domain);
             result.services = local::model::service( domain);
             result.transaction = local::model::transaction( domain);
-            result.gateway = local::model::gateway( domain);
+            result.gateway = local::model::gateway( domain.gateway);
             result.queue = local::model::queue( domain);
 
             return result;

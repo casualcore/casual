@@ -171,6 +171,9 @@ namespace casual
             return complete == correlation;
          }
 
+         friend inline bool operator == ( const Complete& lhs, common::message::Type rhs) { return lhs.type == rhs;}
+         friend inline bool operator == ( common::message::Type lhs, const Complete& rhs) { return lhs == rhs.type;}
+
       private:
          std::vector< range_type> m_unhandled;
       };

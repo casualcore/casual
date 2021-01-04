@@ -69,6 +69,15 @@ namespace casual
             return []( auto&& value){ return boolean( value);};
          }
 
+         namespace value
+         {
+            template< typename T>
+            auto equal( T&& wanted)
+            {
+               return [ wanted = std::forward< T>( wanted)]( auto&& value){ return value == wanted;};
+            }
+         } // value
+
          namespace adapter
          {
             //! wraps and invoke `predicate` with `value.second`
@@ -76,9 +85,17 @@ namespace casual
             template< typename P>
             auto second( P&& predicate)
             {
-               return [=]( auto& pair)
+               return [ predicate = std::forward< P>( predicate)]( auto& pair)
                {
                   return predicate( pair.second); 
+               };
+            }
+
+            inline auto first()
+            {
+               return []( auto& pair) -> decltype( pair.first)
+               {
+                  return pair.first;
                };
             }
          } // adapter

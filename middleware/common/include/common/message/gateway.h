@@ -31,53 +31,6 @@ namespace casual
             {
                using size_type = platform::size::type;
 
-               namespace protocol
-               {
-                  enum class Version : size_type
-                  {
-                     invalid = 0,
-                     version_1 = 1000,
-
-                     // make sure this 'points' to the latest version
-                     latest = version_1
-                  };
-               } // protocol
-
-               namespace connect
-               {
-                  using base_request = basic_message< Type::gateway_domain_connect_request>;
-                  struct Request : base_request
-                  {
-                     using base_request::base_request;
-
-                     common::domain::Identity domain;
-                     std::vector< protocol::Version> versions;
-
-                     CASUAL_CONST_CORRECT_SERIALIZE(
-                     {
-                        base_request::serialize( archive);
-                        CASUAL_SERIALIZE( domain);
-                        CASUAL_SERIALIZE( versions);
-                     })
-                  };
-
-                  using base_reply = basic_message< Type::gateway_domain_connect_reply>;
-                  struct Reply : base_reply
-                  {
-                     using base_reply::base_reply;
-
-                     common::domain::Identity domain;
-                     protocol::Version version = protocol::Version::invalid;
-
-                     CASUAL_CONST_CORRECT_SERIALIZE(
-                     {
-                        base_reply::serialize( archive);
-                        CASUAL_SERIALIZE( domain);
-                        CASUAL_SERIALIZE( version);
-                     })
-                  };
-               } // connect
-
                namespace discover
                {
                   //! Request from another domain to the local gateway, that's then
@@ -157,9 +110,6 @@ namespace casual
          {
             template<>
             struct type_traits< gateway::domain::discover::Request> : detail::type< gateway::domain::discover::Reply> {};
-
-            template<>
-            struct type_traits< gateway::domain::connect::Request> : detail::type< gateway::domain::connect::Reply> {};
 
          } // reverse
 

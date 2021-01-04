@@ -48,7 +48,7 @@ header.size        | uint64         |            8 | the size of the payload tha
 Messages that is used to set up a connection
 
 
-### common::message::gateway::domain::connect::Request
+### gateway::message::domain::connect::Request
       
 Connection requests from another domain that wants to connect
       
@@ -63,7 +63,7 @@ domain.name.data          | dynamic string | [0..4611686018427387897] | dynamic 
 protocol.versions.size    | uint64         |                        8 | number of protocol versions outbound domain can 'speak'
 protocol.versions.element | uint64         |                        8 | a protocol version                                     
 
-### common::message::gateway::domain::connect::Reply
+### gateway::message::domain::connect::Reply
       
 Connection reply
       

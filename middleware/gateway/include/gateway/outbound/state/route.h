@@ -16,7 +16,8 @@
 
 namespace casual
 {
-   namespace gateway::reverse::outbound::state
+   using namespace common;
+   namespace gateway::outbound::state
    {
       namespace route
       {
@@ -34,6 +35,11 @@ namespace casual
             {
                emplace( message.correlation, message.process, common::message::type( message), connection);
             }
+
+            void add( Point&& point)
+            {
+               m_points.push_back( std::move( point));
+            }
             
             //! consumes and @returns the point - 'empty' point if not found 
             Point consume( const common::Uuid& correlation)
@@ -42,6 +48,20 @@ namespace casual
                   return common::algorithm::extract( m_points, std::begin( found));
 
                return Point{};
+            }
+
+            //! consumes and @returns all associated 'points' to the connection.
+            auto consume( common::strong::file::descriptor::id connection)
+            {
+               auto consume = std::get< 1>( algorithm::partition( m_points, predicate::negate( predicate::value::equal( connection))));
+
+               return common::algorithm::extract( m_points, consume);
+            }
+
+            //! consumes and @returns all 'points'
+            auto consume() 
+            {
+               return std::exchange( m_points, {});
             }
 
             const auto& points() const { return m_points;}
@@ -74,6 +94,7 @@ namespace casual
 
             inline explicit operator bool () const noexcept { return ! correlation.empty();}
             inline friend bool operator == ( const Point& lhs, const common::Uuid& rhs) { return lhs.correlation == rhs;}
+            inline friend bool operator == ( const Point& lhs, common::strong::file::descriptor::id rhs) { return lhs.connection == rhs;}
             
             CASUAL_LOG_SERIALIZE(
                CASUAL_SERIALIZE( correlation);
@@ -110,6 +131,7 @@ namespace casual
 
                inline explicit operator bool () const noexcept { return ! correlation.empty();}
                inline friend bool operator == ( const Point& lhs, const common::Uuid& rhs) { return lhs.correlation == rhs;}
+               inline friend bool operator == ( const Point& lhs, common::strong::file::descriptor::id rhs) { return lhs.connection == rhs;}
 
                CASUAL_LOG_SERIALIZE(
                   CASUAL_SERIALIZE( correlation);
@@ -126,5 +148,5 @@ namespace casual
          } // service
       } // route
 
-   } // gateway::reverse::outbound::state
+   } // gateway::outbound::state
 } // casual

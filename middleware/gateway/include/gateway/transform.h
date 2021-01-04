@@ -24,8 +24,8 @@ namespace casual
          manager::State state( configuration::model::gateway::Model configuration);
 
          manager::admin::model::State state( const manager::State& state, 
-            std::vector< message::reverse::inbound::state::Reply> inbounds, 
-            std::vector< message::reverse::outbound::state::Reply> outbounds);
+            std::tuple< std::vector< message::inbound::state::Reply>, std::vector< message::inbound::reverse::state::Reply>> inbounds, 
+            std::tuple< std::vector< message::outbound::state::Reply>, std::vector< message::outbound::reverse::state::Reply>> outbounds);
 
       } // transform
    } // gateway

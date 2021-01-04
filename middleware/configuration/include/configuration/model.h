@@ -204,141 +204,116 @@ namespace casual::configuration
       } // transaction
 
       namespace gateway
-      {  
-         struct Limit : common::Compare< Limit>
+      {
+         namespace connect
          {
-            platform::size::type size = 0;
-            platform::size::type messages = 0;
-
-            CASUAL_CONST_CORRECT_SERIALIZE(
-               CASUAL_SERIALIZE( size);
-               CASUAL_SERIALIZE( messages);
-            )
-
-            inline auto tie() const { return std::tie( size, messages);}
-         };
-
-         struct Listener : common::Compare< Listener>
-         {
-            std::string address;
-            Limit limit;
-            std::string note;
-
-            CASUAL_CONST_CORRECT_SERIALIZE(
-               CASUAL_SERIALIZE( address);
-               CASUAL_SERIALIZE( limit);
-               CASUAL_SERIALIZE( note);
-            )
-
-            inline auto tie() const 
-            { 
-               return std::tie( address, limit, note);
-            }
-         };
-
-         struct Connection : common::Compare< Connection>
-         {
-            std::string address;
-            std::string note;
-            std::vector< std::string> services;
-            std::vector< std::string> queues;
-            model::domain::Lifetime lifetime;
-
-            CASUAL_CONST_CORRECT_SERIALIZE(
-               CASUAL_SERIALIZE( address);
-               CASUAL_SERIALIZE( note);
-               CASUAL_SERIALIZE( services);
-               CASUAL_SERIALIZE( queues);
-               CASUAL_SERIALIZE( lifetime);
-            )
-
-            inline auto tie() const { return std::tie( address, note, services, queues, lifetime);}
-         };
-
-         namespace reverse
-         {
-            namespace inbound
+            enum struct Semantic : short
             {
-               struct Connection : common::Compare< Connection>
-               {
-                  std::string address;
-                  std::string note;
+               unknown,
+               regular,
+               reversed
+            };
+         } // connection
 
-                  CASUAL_CONST_CORRECT_SERIALIZE(
-                     CASUAL_SERIALIZE( address);
-                     CASUAL_SERIALIZE( note);
-                  )
 
-                  inline auto tie() const { return std::tie( address, note);}
-               };
-            }
-            struct Inbound : common::Compare< Inbound>
+         namespace inbound
+         {
+            struct Limit : common::Compare< Limit>
             {
-               std::string alias;
-               gateway::Limit limit;
-               std::vector< inbound::Connection> connections;
-               std::string note;
+               platform::size::type size = 0;
+               platform::size::type messages = 0;
 
-               inline bool empty() const { return connections.empty();}
+               constexpr operator bool() const noexcept { return size > 0 || messages > 0;}
 
                CASUAL_CONST_CORRECT_SERIALIZE(
-                  CASUAL_SERIALIZE( alias);
-                  CASUAL_SERIALIZE( limit);
-                  CASUAL_SERIALIZE( connections);
-                  CASUAL_SERIALIZE( note);
+                  CASUAL_SERIALIZE( size);
+                  CASUAL_SERIALIZE( messages);
                )
 
-               inline auto tie() const { return std::tie( alias, limit, connections, note);}
+               inline auto tie() const { return std::tie( size, messages);}
             };
-
-            namespace outbound
-            {
-               struct Connection : common::Compare< Connection>
-               {
-                  std::string address;
-                  std::vector< std::string> services;
-                  std::vector< std::string> queues;
-                  std::string note;
-
-                  CASUAL_CONST_CORRECT_SERIALIZE(
-                     CASUAL_SERIALIZE( note);
-                     CASUAL_SERIALIZE( address);
-                     CASUAL_SERIALIZE( services);
-                     CASUAL_SERIALIZE( queues);
-                  )
-
-                  inline explicit operator bool () const { return ! ( services.empty() && queues.empty());}
-
-                  inline auto tie() const { return std::tie( address, services, queues, note);}
-               };
-            }
-
-            struct Outbound : common::Compare< Outbound>
-            {
-               std::string alias;
-               std::vector< outbound::Connection> connections;
-               std::string note;
-
-               inline bool empty() const { return connections.empty();}
-
-               CASUAL_CONST_CORRECT_SERIALIZE(
-                  CASUAL_SERIALIZE( connections);
-                  CASUAL_SERIALIZE( alias);
-                  CASUAL_SERIALIZE( note);
-               )
-
-               inline auto tie() const { return std::tie( alias, connections, note);}
-            };
-
             
-         } // reverse
+            struct Connection : common::Compare< Connection>
+            {
+               std::string address;
+               std::string note;
 
-         struct Reverse : common::Compare< Reverse>
+               CASUAL_CONST_CORRECT_SERIALIZE(
+                  CASUAL_SERIALIZE( address);
+                  CASUAL_SERIALIZE( note);
+               )
+
+               inline auto tie() const { return std::tie( address, note);}
+            };
+         }
+         struct Inbound : common::Compare< Inbound>
          {
-            std::vector< reverse::Inbound> inbounds;
-            std::vector< reverse::Outbound> outbounds;
+            connect::Semantic connect = connect::Semantic::unknown;
+            std::string alias;
+            inbound::Limit limit;
+            std::vector< inbound::Connection> connections;
+            std::string note;
 
-            inline bool empty() const { return inbounds.empty() && outbounds.empty();}
+            inline bool empty() const { return connections.empty();}
+
+            CASUAL_CONST_CORRECT_SERIALIZE(
+               CASUAL_SERIALIZE( connect);
+               CASUAL_SERIALIZE( alias);
+               CASUAL_SERIALIZE( limit);
+               CASUAL_SERIALIZE( connections);
+               CASUAL_SERIALIZE( note);
+            )
+
+            inline auto tie() const { return std::tie( connect, alias, limit, connections, note);}
+         };
+
+         namespace outbound
+         {
+            struct Connection : common::Compare< Connection>
+            {
+               std::string address;
+               std::vector< std::string> services;
+               std::vector< std::string> queues;
+               std::string note;
+
+               CASUAL_CONST_CORRECT_SERIALIZE(
+                  CASUAL_SERIALIZE( note);
+                  CASUAL_SERIALIZE( address);
+                  CASUAL_SERIALIZE( services);
+                  CASUAL_SERIALIZE( queues);
+               )
+
+               inline explicit operator bool () const { return ! ( services.empty() && queues.empty());}
+
+               inline auto tie() const { return std::tie( address, services, queues, note);}
+            };
+         }
+
+         struct Outbound : common::Compare< Outbound>
+         {
+            connect::Semantic connect = connect::Semantic::unknown;
+            platform::size::type order{};
+            std::string alias;
+            std::vector< outbound::Connection> connections;
+            std::string note;
+
+            inline bool empty() const { return connections.empty();}
+
+            CASUAL_CONST_CORRECT_SERIALIZE(
+               CASUAL_SERIALIZE( connect);
+               CASUAL_SERIALIZE( order);
+               CASUAL_SERIALIZE( alias);
+               CASUAL_SERIALIZE( connections);
+               CASUAL_SERIALIZE( note);
+            )
+
+            inline auto tie() const { return std::tie( connect, order, alias, connections, note);}
+         };
+
+         struct Model : common::Compare< Model>
+         {
+            std::vector< Inbound> inbounds;
+            std::vector< Outbound> outbounds;
 
             CASUAL_CONST_CORRECT_SERIALIZE(
                CASUAL_SERIALIZE( inbounds);
@@ -346,21 +321,6 @@ namespace casual::configuration
             )
 
             inline auto tie() const { return std::tie( inbounds, outbounds);}
-         };
-
-         struct Model : common::Compare< Model>
-         {
-            Reverse reverse;
-            std::vector< gateway::Listener> listeners;
-            std::vector< gateway::Connection> connections;
-
-            CASUAL_CONST_CORRECT_SERIALIZE(
-               CASUAL_SERIALIZE( reverse);
-               CASUAL_SERIALIZE( listeners);
-               CASUAL_SERIALIZE( connections);
-            )
-
-            inline auto tie() const { return std::tie( reverse, listeners, connections);}
          };
          
       } // gateway

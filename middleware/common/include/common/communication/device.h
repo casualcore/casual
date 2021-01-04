@@ -77,6 +77,7 @@ namespace casual
          using connector_type = Connector;
          using deserialize_type = Deserialize;
 
+
          template< typename... Args>
          Inbound( Args&&... args) : m_connector{ std::forward< Args>( args)...} {}
 
@@ -348,6 +349,17 @@ namespace casual
          std::vector< Uuid> m_discarded;
          Connector m_connector;
       };
+
+      template< typename Inbound>
+      auto operator == ( const Inbound& lhs, strong::file::descriptor::id rhs) noexcept -> decltype( lhs.connector().descriptor() == rhs)
+      { 
+         return lhs.connector().descriptor() == rhs;
+      }
+      template< typename Inbound>
+      auto operator == ( strong::file::descriptor::id lhs, const Inbound& rhs) noexcept -> decltype( lhs == rhs.connector().descriptor())
+      { 
+         return lhs == rhs.connector().descriptor();
+      }
 
       template< typename Connector>
       struct base_connector

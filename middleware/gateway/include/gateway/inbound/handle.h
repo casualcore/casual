@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include "gateway/reverse/inbound/state.h"
+#include "gateway/inbound/state.h"
 
 #include "common/message/dispatch.h"
 #include "common/communication/ipc.h"
@@ -14,7 +14,7 @@
 
 namespace casual
 {
-   namespace gateway::reverse::inbound::handle
+   namespace gateway::inbound::handle
    {
       using internal_handler = decltype( common::message::dispatch::handler( common::communication::ipc::inbound::device()));
       internal_handler internal( State& state);
@@ -22,5 +22,15 @@ namespace casual
       using external_handler = decltype( common::message::dispatch::handler( std::declval< common::communication::tcp::Duplex&>()));
       external_handler external( State& state);
 
-   } // gateway::reverse::inbound::handle
+      namespace connection
+      {
+         //! tries to compensate for the lost connection
+         std::optional< configuration::model::gateway::inbound::Connection> lost( State& state, common::strong::file::descriptor::id descriptor);
+         
+      } // connection 
+
+      //! hard shutdown - try to cancel stuff directly with best effort.
+      void abort( State& state);
+
+   } // gateway::inbound::handle
 } // casual

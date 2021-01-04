@@ -371,7 +371,7 @@ namespace casual
          //! @return first value
          //! @throws std::out_of_range if range is empty
          template< typename R>
-         decltype( auto) front( R&& range)
+         auto front( R&& range) -> decltype( range.front())
          {
             assert( ! empty( range));
 
@@ -379,7 +379,7 @@ namespace casual
          }
 
          template< typename R>
-         decltype( auto) back( R&& range)
+         auto back( R&& range) -> decltype( range.back())
          {
             assert( ! empty( range));
             

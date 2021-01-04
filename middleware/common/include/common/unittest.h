@@ -100,6 +100,16 @@ namespace casual
          } // random
 
 
+         namespace to
+         {
+            template< typename T>
+            auto vector( std::initializer_list< T> values)
+            {
+               return std::vector< T>{ std::move( values)};
+            }
+         } // to
+
+
          namespace capture
          {
             namespace output

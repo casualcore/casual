@@ -36,12 +36,12 @@ namespace casual
 
          void Transaction::involve( strong::resource::id id)
          {
-            algorithm::push_back_unique( id, m_involved);
+            algorithm::append_unique_value( id, m_involved);
          }
 
          bool Transaction::associate_dynamic( strong::resource::id id)
          {
-            return algorithm::push_back_unique( id, m_dynamic); 
+            return algorithm::append_unique_value( id, m_dynamic); 
          }
 
          bool Transaction::disassociate_dynamic( strong::resource::id id)

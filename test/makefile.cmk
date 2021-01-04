@@ -4,6 +4,7 @@ IncludePaths( ['include',
    '../middleware/common/include',
    '../middleware/serviceframework/include',
    '../middleware/domain/include',
+   '../middleware/gateway/include',
    '../middleware/xatmi/include',
    '../middleware/queue/include',
    '../middleware/buffer/include',
@@ -53,6 +54,7 @@ unittest_object = [
    Compile( 'unittest/source/domain/xatmi/test_conversation.cpp'),
    Compile( 'unittest/source/domain/xatmi/test_start.cpp'),
    Compile( 'unittest/source/domain/test_transaction.cpp'),
+   Compile( 'unittest/source/domain/gateway/test_reverse.cpp'),
 ]
 
 # only build http test cases if the enviornment is set up
@@ -64,12 +66,12 @@ LinkUnittest( 'unittest/bin/test-casual-basic',
    [ 
       test_archive,
       'casual-common', 
-      #'casual-serviceframework', 
       'casual-buffer',
       'casual-xatmi', 
       'casual-unittest',
       'casual-mockup-rm',
-      'casual-domain-unittest'
+      'casual-domain-unittest',
+      'casual-serviceframework',
    ])
 	
 

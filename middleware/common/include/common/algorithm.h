@@ -396,6 +396,29 @@ namespace casual
             return transform_if( range, std::move( result), transformer, predicate);
          }
 
+         //! @returns a 'generated' vector of size `N`
+         template< platform::size::type N, typename G>
+         auto generate_n( G generator) 
+            -> std::vector< std::remove_reference_t< decltype( generator())>>
+         {
+            std::vector< std::remove_reference_t< decltype( generator())>> result;
+            result.reserve( N);
+            std::generate_n( std::back_inserter( result), N, std::move( generator));
+            return result;
+         }
+
+         //! @returns a 'generated' vector of size `N`
+         template< platform::size::type N, typename G>
+         auto generate_n( G generator) 
+            -> std::vector< std::remove_reference_t< decltype( generator( N))>>
+         {
+            std::vector< std::remove_reference_t< decltype( generator( N))>> result;
+
+            for( auto count = ( N - N); count < N; ++count)
+               result.push_back( generator( count));
+
+            return result;
+         }
 
          //! Applies std::unique on [std::begin( range), std::end( range) )
          //!
@@ -488,22 +511,38 @@ namespace casual
 
          namespace detail
          {
-            // preparing for future 'specializations'
+            // take care of iterator
             template< typename C, typename Iter>
-            auto extract( C& container, Iter where, traits::priority::tag< 0>)
+            auto extract( C& container, Iter where, traits::priority::tag< 1>)
                -> traits::remove_cvref_t< decltype( *container.erase( where))>
             {
                auto result = std::move( *where);
                container.erase( where);
                return result;
             }
+
+            // take care of a range
+            template< typename C, typename R>
+            auto extract( C& container, R range, traits::priority::tag< 0>)
+               -> decltype( void( container.erase( std::begin( range), std::end( range))), C{})
+            {
+               C result;
+               result.resize( range.size());
+               std::move( std::begin( range), std::end( range), std::begin( result));
+               container.erase( std::begin( range), std::end( range));
+               return result;
+            }
          } // detail
 
+         //! extracts `where` from the `container`.
+         //! @returns 
+         //!   * a value if `where` is an iterator
+         //!   * a vector with the extracted values if `where` is a range.
          template< typename C, typename W>
          auto extract( C& container, W&& where)
-            -> decltype( detail::extract( container, std::forward< W>( where), traits::priority::tag< 0>{}))
+            -> decltype( detail::extract( container, std::forward< W>( where), traits::priority::tag< 1>{}))
          {
-            return detail::extract( container, std::forward< W>( where), traits::priority::tag< 0>{});
+            return detail::extract( container, std::forward< W>( where), traits::priority::tag< 1>{});
          }
 
          namespace detail
@@ -775,55 +814,119 @@ namespace casual
          //! @}
 
 
+         namespace detail
+         {
+            template< typename C, typename T>
+            auto append( C& container, T&& value, traits::priority::tag< 0>) 
+               -> decltype( void( container.push_back( std::forward< T>( value))))
+            {
+               container.push_back( std::forward< T>( value));
+            }
+
+            template< typename C, typename T>
+            auto append( C& container, T&& value) 
+               -> decltype( append( container, std::forward< T>( value), traits::priority::tag< 0>{}))
+            {
+               append( container, std::forward< T>( value), traits::priority::tag< 0>{});
+            }
+         } // detail
+
          //! push_back `value` to `output` if it's not allready present
          //! @return true if push_back
-         template< typename T, typename Out> 
-         bool push_back_unique( const T& value, Out& output)
+         //! @{
+         template< typename T, typename O, typename P> 
+         auto append_unique_value( T&& value, O& output, P predicate)
+            -> decltype( detail::append( output, std::forward< T>( value)), bool())
          {
-            if( ! algorithm::find( output, value))
-            {
-               output.push_back( value);
-               return true;
-            }
-            return false;
+            auto equal = [&value, predicate]( auto& existing){ return predicate( value, existing);};
+            if( algorithm::find_if( output, equal))
+               return false;
+            
+            detail::append( output, std::forward< T>( value));
+            return true;
          }
 
-         template< typename R, typename Out> 
-         void append_unique( R&& range, Out& output)
+         template< typename T, typename O> 
+         auto append_unique_value( T&& value, O&& output)
+            -> decltype( detail::append( output, std::forward< T>( value)), bool())
          {
-            auto current = range::make( range);
-
-            while( current)
-               push_back_unique( *current++, output);
+            if( algorithm::find( output, value))
+               return false;
+            
+            detail::append( output, std::forward< T>( value));
+            return true;
          }
+         //! @}
 
-         template< typename T, typename Out> 
-         void push_back_replace( T&& value, Out& output)
+
+         template< typename T, typename O, typename P>
+         auto append_replace_value( T&& value, O& output, P predicate)
+            -> decltype( void( detail::append( output, std::forward< T>( value))))
          {
-            auto found = algorithm::find( output, value);
-            if( found)
+            auto equal = [&value, predicate]( auto& existing){ return predicate( value, existing);};
+            if( auto found = algorithm::find_if( output, equal))
                *found = std::forward< T>( value);
             else
-               output.push_back( std::forward< T>( value));
+               detail::append( output, std::forward< T>( value));
          }
 
-         template< typename R, typename Out> 
-         void append_replace( R&& range, Out& output)
+         template< typename T, typename O> 
+         auto append_replace_value( T&& value, O& output) 
+            -> decltype( void( detail::append( output, std::forward< T>( value))))
          {
-            auto current = range::make( range);
-
-            while( current)
-               push_back_replace( *current++, output);
+            if( auto found = algorithm::find( output, value))
+               *found = std::forward< T>( value);
+            else
+               detail::append( output, std::forward< T>( value));
          }
 
 
-        template< typename R, typename P, typename = std::enable_if_t< common::traits::is::iterable< R>::value>>
+         template< typename R, typename O, typename P> 
+         auto append_unique( R& range, O&& output, P predicate)
+            -> decltype( void( append_unique_value( range::front( range), output, predicate)), std::forward< O>( output))
+         {
+            for( auto& value : range)
+               append_unique_value( value, output, predicate);
+
+            return std::forward< O>( output);
+         }
+
+         template< typename R, typename O> 
+         auto append_unique( R&& range, O&& output) 
+         -> decltype( void( append_unique_value( range::front( range), output)), std::forward< O>( output))
+         {
+            for( auto& value : range)
+               append_unique_value( value, output);
+
+            return std::forward< O>( output);
+         }
+         
+         template< typename R, typename O, typename P> 
+         auto append_replace( R&& range, O&& output, P predicate)
+            -> decltype( void( append_replace_value( range::front( range), output, predicate)), std::forward< O>( output))
+         {
+            for( auto& value : range)
+               append_replace_value( value, output, predicate);
+
+            return std::forward< O>( output);
+         }
+
+         template< typename R, typename O> 
+         auto append_replace( R&& range, O&& output) 
+            -> decltype( void( append_replace_value( range::front( range), output)), std::forward< O>( output))
+         {
+            for( auto& value : range)
+               append_replace_value( value, output);
+
+            return std::forward< O>( output);
+         }
+
+         template< typename R, typename P, typename = std::enable_if_t< common::traits::is::iterable< R>::value>>
          auto partition( R&& range, P predicate)
          {
             auto middle = std::partition( std::begin( range), std::end( range), predicate);
             return std::make_tuple( range::make( std::begin( range), middle), range::make( middle, std::end( range)));
          }
-
 
          template< typename R, typename P, typename = std::enable_if_t< common::traits::is::iterable< R>::value>>
          auto stable_partition( R&& range, P predicate)

@@ -287,10 +287,14 @@ namespace casual
                            auto create_select_handler = [&directive]( auto fd, auto&& handler, auto& device)
                            {
                               directive.read.add( fd);
-                              return communication::select::dispatch::create::reader( fd, [handler = std::move( handler), &device]( auto fd)
+                              return [fd, handler = std::move( handler), &device]( auto descriptor) mutable
                               {
+                                 if( fd != descriptor)
+                                    return false;
+                                    
                                  handler( communication::device::blocking::next( device));
-                              });
+                                 return true;
+                              };
                            };
 
                            communication::select::dispatch::pump(

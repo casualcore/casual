@@ -26,7 +26,7 @@ namespace casual
 
             State state;
 
-            EXPECT_TRUE( state.running() == false) << CASUAL_NAMED_VALUE( state);
+            EXPECT_TRUE( state.done() == false) << CASUAL_NAMED_VALUE( state);
          }
 
          namespace local

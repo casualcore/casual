@@ -29,12 +29,12 @@ namespace casual
       {
          namespace ipc
          {
-            common::communication::ipc::inbound::Device& device();
+            common::communication::ipc::inbound::Device& inbound();
          } // ipc
 
          namespace handle
          {
-            using dispatch_type = decltype( common::message::dispatch::handler( ipc::device()));
+            using dispatch_type = decltype( common::message::dispatch::handler( ipc::inbound()));
 
             void shutdown( State& state);
 
@@ -47,20 +47,6 @@ namespace casual
                void exit( const common::process::lifetime::Exit& exit);
             } // process
 
-            namespace listen
-            {
-               struct Accept
-               {
-                  inline Accept( State& state) : m_state( state) {}
-
-                  using descriptor_type = common::strong::file::descriptor::id;
-
-                  void read( descriptor_type descriptor);
-                  const std::vector< descriptor_type>& descriptors() const;
-               private:
-                  std::reference_wrapper< State> m_state;
-               };
-            } // listen
          } // handle
 
          handle::dispatch_type handler( State& state);

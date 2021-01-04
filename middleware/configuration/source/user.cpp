@@ -196,7 +196,18 @@ namespace casual
                local::add_or_replace( std::move( rhs.listeners), listeners, equal_address);
                local::add_or_replace( std::move( rhs.connections), connections, equal_address);
 
+               auto append_replace_alias = []( auto&& source, auto& target)
+               {
+                  algorithm::append_replace( source, target, local::equal::alias());
+               };
+
+               local::optional_add( std::move( rhs.inbounds), inbounds, append_replace_alias);
+               local::optional_add( std::move( rhs.outbounds), outbounds, append_replace_alias);
+
+
                local::optional_add( std::move( rhs.reverse), reverse);
+
+
 
                return *this;
             }  
@@ -206,13 +217,10 @@ namespace casual
                if( ! defaults)
                   return;
 
-               
+               // TODO deprecated remove on 2.0
                if( defaults.value().connection)
                {
-                  // TODO deprecated remove on 2.0
-                  if( ! defaults.value().connection.value().address.empty())
-                     log::line( log::category::error, "configuration - gateway.default.connection.address is deprecated - specify addresses explicitly");
-
+                  log::line( log::category::warning, code::casual::invalid_configuration, " domain.gateway.default.connection is deprecated - there is no replacement");
 
                   auto update_connection = [&defaults = defaults.value().connection.value()]( auto& connection)
                   {
@@ -224,6 +232,8 @@ namespace casual
 
                if( defaults.value().listener)
                {
+                  log::line( log::category::warning, code::casual::invalid_configuration, " domain.gateway.default.listener is deprecated - use domain.gateway.default.inbound");
+
                   auto update_listener = [&defaults = defaults.value().listener.value()]( auto& listener)
                   {
                      if( ! listener.limit)

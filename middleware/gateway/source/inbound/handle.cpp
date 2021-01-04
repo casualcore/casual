@@ -4,20 +4,22 @@
 //! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-#include "gateway/reverse/inbound/handle.h"
+#include "gateway/inbound/handle.h"
 
 #include "gateway/message.h"
+#include "gateway/common.h"
 
 #include "common/communication/device.h"
 #include "common/communication/instance.h"
 #include "common/message/handle.h"
+#include "common/event/listen.h"
 
 
 namespace casual
 {
    using namespace common;
 
-   namespace gateway::reverse::inbound::handle
+   namespace gateway::inbound::handle
    {   
       namespace local
       {
@@ -38,7 +40,7 @@ namespace casual
             namespace tcp
             {
                template< typename M>
-               void send( State& state, M&& message)
+               strong::file::descriptor::id send( State& state, M&& message)
                {
                   try
                   {
@@ -48,16 +50,17 @@ namespace casual
                            connection->device,
                            std::forward< M>( message));
 
-                        return;
+                        return connection->device.connector().descriptor();
                      }
                      
-                     log::line( log::category::error, code::casual::communication_unavailable, " connection absent when trying to send reply - ", message.type());
-                     log::line( log::category::verbose::error, code::casual::communication_unavailable, " message: ", message);
+                     log::line( log, code::casual::communication_unavailable, " connection absent when trying to send reply - ", message.type());
+                     log::line( verbose::log, code::casual::communication_unavailable, " message: ", message);
                   }
                   catch( ...)
                   {
                      exception::sink::error();
                   }
+                  return {};
                }
                
             } // tcp
@@ -69,7 +72,7 @@ namespace casual
                {
                   return [&state]( Message& message)
                   {
-                     Trace trace{ "gateway::reverse::inbound::handle::local::basic_forward"};
+                     Trace trace{ "gateway::inbound::handle::local::basic_forward"};
                      common::log::line( verbose::log, "forward message: ", message);
 
                      tcp::send( state, message);
@@ -81,23 +84,46 @@ namespace casual
                   //! pushed/forward from the external side, to enable correlation
                   auto request( State& state)
                   {
-                     return [&state]( common::message::gateway::domain::connect::Request& message)
+                     return [&state]( gateway::message::domain::connect::Request& message)
                      {
-                        Trace trace{ "gateway::reverse::inbound::handle::local::internal::connect::request"};
+                        Trace trace{ "gateway::inbound::handle::local::internal::connect::request"};
                         common::log::line( verbose::log, "message: ", message);
 
                         auto reply = common::message::reverse::type( message);
-                        if( common::algorithm::find( message.versions, decltype( reply.version)::version_1))
-                           reply.version = decltype( reply.version)::version_1;
+
+                        if( auto found = algorithm::find_first_of( message::domain::protocol::versions, message.versions))
+                           reply.version = *found;
 
                         reply.domain = common::domain::identity();
 
-                        tcp::send( state, reply);
+                        if( auto connection = state.external.connection( tcp::send( state, reply)))
+                        {
+                           connection->protocol = reply.version;
+                           if( auto found = algorithm::find( state.external.information, connection->descriptor()))
+                              found->domain = message.domain;
+                        }
                      };
                   }
                } // connect
 
-               namespace call
+               namespace event
+               {
+                  namespace process
+                  {
+                     auto exit( State& state)
+                     {
+                        return [&state]( common::message::event::process::Exit& message)
+                        {
+                           Trace trace{ "gateway::inbound::handle::local::internal::event::process::exit"};
+                           common::log::line( verbose::log, "message: ", message);
+
+                           state.coordinate.discovery.failed( message.state.pid);
+                        };
+                     }
+                  } // process
+               } // event
+
+               namespace service
                {
                   namespace lookup
                   {
@@ -105,7 +131,7 @@ namespace casual
                      {
                         return [&state]( common::message::service::lookup::Reply& message)
                         {
-                           Trace trace{ "gateway::reverse::inbound::handle::local::internal::call::lookup::reply"};
+                           Trace trace{ "gateway::inbound::handle::local::internal::call::lookup::reply"};
                            common::log::line( verbose::log, "message: ", message);
 
                            auto send_error_reply = [&state, &message]( auto code)
@@ -116,7 +142,7 @@ namespace casual
                               tcp::send( state, reply);
                            };
 
-                           auto request = state.messages.consume( message.correlation, message.pending);
+                           auto request = state.pending.requests.consume( message.correlation, message.pending);
 
                            switch( message.state)
                            {
@@ -138,8 +164,8 @@ namespace casual
                               }
                               default:
                               {
-                                 log::line( common::log::category::error, common::code::xatmi::service_error, " unexpected state on lookup reply: ", message, " - action: reply with: ", common::code::xatmi::service_error);
-                                 send_error_reply( common::code::xatmi::service_error);
+                                 log::line( common::log::category::error, common::code::xatmi::system, " unexpected state on lookup reply: ", message, " - action: reply with: ", common::code::xatmi::service_error);
+                                 send_error_reply( common::code::xatmi::system);
                                  break;
                               }
                            }
@@ -148,9 +174,12 @@ namespace casual
 
                   } // lookup
 
-                  auto reply = basic_forward< common::message::service::call::Reply>;
+                  namespace call
+                  {
+                     auto reply = basic_forward< common::message::service::call::Reply>;
+                  } // call
 
-               } // call
+               } // service
 
                namespace queue
                {
@@ -160,10 +189,10 @@ namespace casual
                      {
                         return [&state]( common::message::queue::lookup::Reply& message)
                         {
-                           Trace trace{ "gateway::reverse::inbound::handle::local::internal::queue::lookup::reply"};
+                           Trace trace{ "gateway::inbound::handle::local::internal::queue::lookup::reply"};
                            common::log::line( verbose::log, "message: ", message);
 
-                           auto request = state.messages.consume( message.correlation);
+                           auto request = state.pending.requests.consume( message.correlation);
 
                            if( message.process)
                            {
@@ -249,24 +278,6 @@ namespace casual
                   } // resource
                } // transaction
 
-               namespace state
-               {
-                  auto request( State& state)
-                  {
-                     return [&state]( message::reverse::inbound::state::Request& message)
-                     {
-                        Trace trace{ "gateway::reverse::inbound::local::handle::internal::state::request"};
-                        log::line( verbose::log, "message: ", message);
-
-                        auto reply = common::message::reverse::type( message);
-                        log::line( verbose::log, "state: ", state);
-
-                        communication::device::blocking::optional::send( message.process.ipc, reply);
-                     };
-                  }
-
-               } // state
-
             } // internal
 
             namespace external
@@ -275,9 +286,9 @@ namespace casual
                {
                   auto request( State& state)
                   {
-                     return []( common::message::gateway::domain::connect::Request& message)
+                     return []( gateway::message::domain::connect::Request& message)
                      {
-                        Trace trace{ "gateway::reverse::inbound::handle::local::external::connect::request"};
+                        Trace trace{ "gateway::inbound::handle::local::external::connect::request"};
                         common::log::line( verbose::log, "message: ", message);
 
                         // we push it to the internal side, so it's possible to correlate the message.
@@ -289,35 +300,38 @@ namespace casual
                   }
                } // connect
 
-               namespace call
+               namespace service
                {
-                  auto request( State& state)
+                  namespace call
                   {
-                     return [&state]( common::message::service::call::callee::Request& message)
+                     auto request( State& state)
                      {
-                        Trace trace{ "gateway::reverse::inbound::handle::local::external::call::request"};
-                        common::log::line( verbose::log, "message: ", message);
-
-                        // Change 'sender' so we get the reply
-                        message.process = common::process::handle();
-
-                        // Prepare lookup
-                        common::message::service::lookup::Request request;
+                        return [&state]( common::message::service::call::callee::Request& message)
                         {
-                           request.correlation = message.correlation;
-                           request.requested = message.service.name;
-                           request.context = decltype( request.context)::no_busy_intermediate;
-                           request.process = common::process::handle();
-                        }
+                           Trace trace{ "gateway::inbound::handle::local::external::service::call::request"};
+                           common::log::line( verbose::log, "message: ", message);
 
-                        // Add message to buffer
-                        state.messages.add( std::move( message));
+                           // Change 'sender' so we get the reply
+                           message.process = common::process::handle();
 
-                        // Send lookup
-                        communication::device::blocking::send( ipc::manager::service(), request);  
-                     };
-                  }
-               } // call
+                           // Prepare lookup
+                           common::message::service::lookup::Request request;
+                           {
+                              request.correlation = message.correlation;
+                              request.requested = message.service.name;
+                              request.context = decltype( request.context)::no_busy_intermediate;
+                              request.process = common::process::handle();
+                           }
+
+                           // Add message to buffer
+                           state.pending.requests.add( std::move( message));
+
+                           // Send lookup
+                           communication::device::blocking::send( ipc::manager::service(), request);  
+                        };
+                     }
+                  } // call
+               } // service
 
                namespace queue
                {
@@ -326,7 +340,7 @@ namespace casual
                      template< typename M>
                      bool send( State& state, M&& message)
                      {
-                        Trace trace{ "gateway::reverse::inbound::handle::local::external::queue::lookup::send"};
+                        Trace trace{ "gateway::inbound::handle::local::external::queue::lookup::send"};
 
                         // Prepare queue lookup
                         common::message::queue::lookup::Request request{ common::process::handle()};
@@ -341,7 +355,7 @@ namespace casual
                            message.process = common::process::handle();
 
                            // Add message to buffer
-                           state.messages.add( std::forward< M>( message));
+                           state.pending.requests.add( std::forward< M>( message));
 
                            return true;
                         }
@@ -357,7 +371,7 @@ namespace casual
                      {
                         return [&state]( common::message::queue::enqueue::Request& message)
                         {
-                           Trace trace{ "gateway::reverse::inbound::handle::local::external::queue::enqueue::Request"};
+                           Trace trace{ "gateway::inbound::handle::local::external::queue::enqueue::Request"};
 
                            common::log::line( verbose::log, "message: ", message);
 
@@ -416,7 +430,7 @@ namespace casual
                      {
                         return [&state]( common::message::gateway::domain::discover::Request& message)
                         {
-                           Trace trace{ "gateway::reverse::inbound::handle::local::external::connection::discover::request"};
+                           Trace trace{ "gateway::inbound::handle::local::external::connection::discover::request"};
                            common::log::line( verbose::log, "message: ", message);
                            
                            // Make sure we get the reply
@@ -426,8 +440,7 @@ namespace casual
                            auto correlation = std::exchange( message.correlation, {});
 
                            // Forward to service-manager and possible queue-manager
-
-                           std::vector< state::coordinate::discovery::Message::Pending> pending;
+                           auto pending = state.coordinate.discovery.empty_pendings();
 
                            if( ! message.services.empty())
                            {
@@ -448,7 +461,7 @@ namespace casual
 
                            state.coordinate.discovery( std::move( pending), [&state, correlation]( auto received, auto failed)
                            {
-                              Trace trace{ "gateway::reverse::inbound::handle::local::external::connection::discover::request coordinate"};
+                              Trace trace{ "gateway::inbound::handle::local::external::connection::discover::request coordinate"};
 
                               common::message::gateway::domain::discover::Reply message;
                               message.correlation = correlation;
@@ -510,9 +523,9 @@ namespace casual
 
             local::internal::connect::request( state),
 
-            // service call
-            local::internal::call::lookup::reply( state),
-            local::internal::call::reply( state),
+            // service
+            local::internal::service::lookup::reply( state),
+            local::internal::service::call::reply( state),
 
             // queue
             local::internal::queue::lookup::reply( state),
@@ -527,7 +540,9 @@ namespace casual
             // domain discovery
             local::internal::domain::discover::reply( state),
 
-            local::internal::state::request( state)
+            // events
+            common::event::listener( local::internal::event::process::exit( state)),
+
          };
       }
 
@@ -539,7 +554,7 @@ namespace casual
             local::external::connect::request( state),
 
             // service call
-            local::external::call::request( state),
+            local::external::service::call::request( state),
 
             // queue
             local::external::queue::enqueue::request( state),
@@ -554,8 +569,57 @@ namespace casual
             local::external::transaction::resource::rollback::request()
          };
       }
+
+
+      namespace connection
+      {
+         std::optional< configuration::model::gateway::inbound::Connection> lost( State& state, common::strong::file::descriptor::id descriptor)
+         {
+            Trace trace{ "gateway::inbound::handle::connection::lost"};
+
+            auto result = state.external.remove( state.directive, descriptor);
+
+            // find possible pending 'lookup' requests
+            auto lost = algorithm::extract( state.correlations, algorithm::filter( state.correlations, predicate::value::equal( descriptor)));
+            log::line( verbose::log, "lost: ", lost);
+
+            auto pending = state.pending.requests.consume( algorithm::transform( lost, []( auto& lost){ return lost.correlation;}));
+            
+            // discard service lookup
+            algorithm::for_each( pending.services, []( auto& call)
+            {
+               common::message::service::lookup::discard::Request request{ process::handle()};
+               request.correlation = call.correlation;
+               request.requested = call.service.name;
+               // we don't need the reply
+               request.reply = false;
+
+               communication::device::blocking::optional::send( local::ipc::manager::service(), request);
+            });
+
+            // There is no other pending we need to discard at the moment.
+
+            return result;
+         }
+         
+      } // connection 
+
+      void abort( State& state)
+      {
+         Trace trace{ "gateway::inbound::handle::abort"};
+
+         state.runlevel = decltype( state.runlevel())::error;
+
+         auto descriptors = state.external.descriptors;
+
+         // 'kill' all sockets, and try to take care of pending stuff.
+         algorithm::for_each( descriptors, [&state]( auto descriptor)
+         {
+            handle::connection::lost( state, descriptor);
+         });
+      }
       
-      
-   } // gateway::reverse::inbound::handle
+
+   } // gateway::inbound::handle
 
 } // casual

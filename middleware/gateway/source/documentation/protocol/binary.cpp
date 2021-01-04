@@ -36,7 +36,7 @@ namespace casual
                   {
                      return std::ofstream{ common::string::compose( 
                         base,
-                        '.', common::message::gateway::domain::protocol::Version::version_1,
+                        '.', gateway::message::domain::protocol::Version::version_1,
                         '.', common::message::type( message), 
                         '.', extension), std::ios::binary | std::ios::trunc};
                   }
@@ -71,8 +71,8 @@ namespace casual
                   template< typename G>
                   void generate( G&& generator, const std::string& basename)
                   {
-                     generator( example::message< common::message::gateway::domain::connect::Request>(), basename + "message.gateway.domain.connect.Request");
-                     generator( example::message< common::message::gateway::domain::connect::Reply>(), basename + "message.gateway.domain.connect.Reply");
+                     generator( example::message< gateway::message::domain::connect::Request>(), basename + "message.gateway.domain.connect.Request");
+                     generator( example::message< gateway::message::domain::connect::Reply>(), basename + "message.gateway.domain.connect.Reply");
                      generator( example::message< common::message::gateway::domain::discover::Request>(), basename + "message.gateway.domain.discovery.Request");
                      generator( example::message< common::message::gateway::domain::discover::Reply>(), basename + "message.gateway.domain.discovery.Reply");
                      generator( example::message< common::message::service::call::callee::Request>(), basename + "message.service.call.Request");

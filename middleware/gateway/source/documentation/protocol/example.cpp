@@ -92,22 +92,22 @@ namespace casual
 
                      } // <unnamed>
                   } // local
-                  void fill( common::message::gateway::domain::connect::Request& message)
+                  void fill( gateway::message::domain::connect::Request& message)
                   {
                      local::set_general( message);
 
                      message.domain.id = 0x315dacc6182e4c12bf9877efa924cb86_uuid;
                      message.domain.name = "domain A";
-                     message.versions = { common::message::gateway::domain::protocol::Version::version_1};
+                     message.versions = { gateway::message::domain::protocol::Version::version_1};
                   }
 
-                  void fill( common::message::gateway::domain::connect::Reply& message)
+                  void fill( gateway::message::domain::connect::Reply& message)
                   {
                      local::set_general( message);
 
                      message.domain.id = 0x315dacc6182e4c12bf9877efa924cb86_uuid;
                      message.domain.name = "domain A";
-                     message.version = common::message::gateway::domain::protocol::Version::version_1;
+                     message.version = gateway::message::domain::protocol::Version::version_1;
                   }
 
                   void fill( common::message::gateway::domain::discover::Request& message)

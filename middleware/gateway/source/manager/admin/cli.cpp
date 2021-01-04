@@ -81,54 +81,54 @@ namespace casual
 
          auto connections()
          {
-            using vo = manager::admin::model::Connection;
-
-            auto format_domain_name = []( const vo& c) -> std::string
+            auto format_domain_name = []( auto& value) -> std::string
             { 
-               return dash_if_empty( c.remote.name);
+               return dash_if_empty( value.remote.name);
             };
-            auto format_domain_id = []( const vo& c) -> std::string
+            auto format_domain_id = []( auto& value) -> std::string
             {
-               if( c.remote.id) 
-                  return transcode::hex::encode( c.remote.id.get());
+               if( value.remote.id) 
+                  return transcode::hex::encode( value.remote.id.get());
                return "-";
             };
 
-            auto format_pid = []( const vo& c){ return c.process.pid;};
-            auto format_ipc = []( const vo& c){ return c.process.ipc;};
+            auto format_pid = []( auto& value){ return value.process.pid;};
+            auto format_ipc = []( auto& value){ return value.process.ipc;};
 
-            auto format_bound = []( const vo& c)
+            auto format_bound = []( auto& value)
             {
-               switch( c.bound)
+               switch( value.bound)
                {
-                  case vo::Bound::in: return "in";
-                  case vo::Bound::out: return "out";
-                  case vo::Bound::unknown: return "unknown";
+                  using Enum = decltype( value.bound);
+                  case Enum::in: return "in";
+                  case Enum::out: return "out";
+                  case Enum::unknown: return "unknown";
                }
                return "<unknown>";
             };
 
-            auto format_runlevel = []( const vo& c)
+            auto format_runlevel = []( auto& value)
             {
-               switch( c.runlevel)
+               switch( value.runlevel)
                {
-                  case vo::Runlevel::connecting: return "connecting";
-                  case vo::Runlevel::online: return "online";
-                  case vo::Runlevel::shutdown: return "shutdown";
-                  case vo::Runlevel::error: return "error";
-                  case vo::Runlevel::absent: return "absent";
+                  using Enum = decltype( value.runlevel);
+                  case Enum::connecting: return "connecting";
+                  case Enum::online: return "online";
+                  case Enum::shutdown: return "shutdown";
+                  case Enum::error: return "error";
+                  case Enum::absent: return "absent";
                }
                return "<unknown>";
             };
 
-            auto format_local_address = []( const vo& c)
+            auto format_local_address = []( auto& value)
             {
-               return dash_if_empty( c.address.local);
+               return dash_if_empty( value.address.local);
             };
 
-            auto format_peer_address = []( const vo& c)
+            auto format_peer_address = []( auto& value)
             {
-               return dash_if_empty( c.address.peer);
+               return dash_if_empty( value.address.peer);
             };
 
             return terminal::format::formatter<  manager::admin::model::Connection>::construct( 

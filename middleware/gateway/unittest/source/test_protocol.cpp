@@ -61,13 +61,13 @@ namespace casual
       TEST( gateway_protocol_v1, connect_request)
       {
          constexpr auto expected = R"(cHPL9BRESkGHswCG8UP8YDFdrMYYLkwSv5h376kky4YAAAAAAAAACGRvbWFpbiBBAAAAAAAAAAEAAAAAAAAD6A==)";
-         local::compare( local::fill< common::message::gateway::domain::connect::Request>(), expected);
+         local::compare( local::fill< gateway::message::domain::connect::Request>(), expected);
       }
 
       TEST( gateway_protocol_v1, connect_reply)
       {
          constexpr auto expected = R"(cHPL9BRESkGHswCG8UP8YDFdrMYYLkwSv5h376kky4YAAAAAAAAACGRvbWFpbiBBAAAAAAAAA+g=)";
-         local::compare( local::fill< common::message::gateway::domain::connect::Reply>(), expected);
+         local::compare( local::fill< gateway::message::domain::connect::Reply>(), expected);
       }
 
       TEST( gateway_protocol_v1, discover_request)

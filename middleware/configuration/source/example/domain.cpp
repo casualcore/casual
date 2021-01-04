@@ -161,6 +161,54 @@ domain:
       connection:
         restart: true
 
+    inbounds: 
+      - alias: inbound.1
+        limit:
+           size: 2097152
+        note: if threshold of 2MB of total payload 'in flight' is reach inbound will stop consume from socket until we're below
+
+        connections: 
+          - address: localhost:7779
+            note: can be several listening host:port per inbound instance
+          - address: some.host.org:7779
+
+      - alias: inbound.2
+        limit:
+           size: 10485760
+           messages: 10
+        note: listeners - threshold of either 10 messages OR 10MB - the first that is reach, inbound will stop consume
+
+        connections:
+          - address: some.host.org:7780
+          - address: some.host.org:4242
+
+      - alias: inbound.3
+        note: listeners - no limits
+        connections:
+           - address: some.host.org:4242
+        
+
+    outbounds: 
+      - alias: primary
+        connections:
+         - address: a45.domain.host.org:7779
+           note: connection to domain 'a45' - we expect to find service 's1' and 's2' there.
+           services:
+             - s1
+             - s2
+         - address: a46.domain.host.org:7779
+           note: connection to domain 'a46' - we expect to find queues 'q1' and 'q2' and service 's1' - casual will only route 's1' to a46 if it's not accessible in a45 (or local)
+           services:
+             - s1
+           queues:
+             - q1
+             - q2
+
+      - alias: fallback
+        connections:
+           - address: a99.domain.host.org:7780
+             note: will be chosen if _resources_ are not found at connections in the 'primary' outbound
+
     reverse:
       inbounds:
          - alias: unique-alias-name
@@ -183,53 +231,6 @@ domain:
            connections:
             - note: one of possible many listining addresses.
               address: localhost:7781
-
-
-    listeners:
-      - address: localhost:7779
-        limit:
-          size: 2097152
-
-        note: local host - if threshold of 2MB of total payload 'in flight' is reach inbound will stop consume from socket until we're below
-
-      - address: some.host.org:7779
-        limit:
-          messages: 200
-
-        note: listener that is bound to some 'external ip' - limit to max 200 calls 'in flight'
-
-      - address: some.host.org:9999
-        limit:
-          size: 10485760
-          messages: 10
-
-        note: listener - threshold of either 10 messages OR 10MB - the first that is reach, inbound will stop consume
-
-      - address: some.host.org:4242
-        note: listener - no limits
-
-
-    connections:
-      - address: a45.domain.host.org:7779
-        services:
-          - s1
-          - s2
-
-        note: connection to domain 'a45' - we expect to find service 's1' and 's2' there.
-
-      - address: a46.domain.host.org:7779
-        services:
-          - s1
-
-        queues:
-          - q1
-          - q2
-
-        note: connection to domain 'a46' - we expect to find queues 'q1' and 'q2' and service 's1' - casual will only route 's1' to a46 if it's not accessible in a45 (or local)
-
-      - address: a99.domain.host.org:7780
-        restart: false
-        note: connection to domain 'a99' - if the connection is closed from a99, casual will not try to reestablish the connection
 
 )";
 

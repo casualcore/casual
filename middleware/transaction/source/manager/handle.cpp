@@ -266,7 +266,7 @@ namespace casual
                               common::log::line( verbose::log, "resources: ", resources);
 
                               // send request to all resources associated with this branch
-                              common::algorithm::for_each( branch.resources, resource_request);
+                              common::algorithm::for_each( resources, resource_request);
                            };
 
                            // send request to all resources associated to all branches
@@ -1056,6 +1056,9 @@ namespace casual
                auto position = local::transaction::find_or_add_and_involve( m_state, message);
                auto& transaction = *position;
 
+               // make sure we use the same 'global' as the request. 
+               transaction.global.trid = message.trid;
+
                common::log::line( verbose::log, "transaction: ", transaction);
                
                switch( transaction.stage())
@@ -1141,6 +1144,9 @@ namespace casual
 
                auto location = local::transaction::find_or_add_and_involve( m_state, message);
                auto& transaction = *location;
+
+               // make sure we use the same 'global' as the request. 
+               transaction.global.trid = message.trid;
 
                // Local normal rollback phase
                transaction.implementation = local::dispatch::localized::get();
@@ -1335,16 +1341,10 @@ namespace casual
                   Trace trace{ "transaction::handle::domain::commit request"};
                   common::log::line( log, "message: ", message);
 
-                  // Find the transaction
-                  auto found = common::algorithm::find( m_state.transactions, message.trid);
-
-                  if( found)
+                  if( auto found = common::algorithm::find( m_state.transactions, message.trid))
                   {
                      if( Commit::handle( message, *found) == Directive::remove_transaction)
-                     {
-                        // We remove the transaction
                         m_state.transactions.erase( std::begin( found));
-                     }
                   }
                   else
                   {
@@ -1376,6 +1376,14 @@ namespace casual
 
                   if( transaction.implementation)
                   {
+                     // check if we're already in the commit_requested stage. This can happen
+                     // if the transaction has been used in a cyclic interdomain pattern.
+                     if( transaction.stage() >= decltype( transaction.stage())::commit_requested)
+                     {
+                        local::send::read_only( message);
+                        return Directive::keep_transaction;
+                     }
+
                      // We've completed the prepare stage, now it's time for the commit stage
 
                      local::send::resource::request< common::message::transaction::resource::commit::Request>(
@@ -1437,7 +1445,7 @@ namespace casual
                         }
                      }
                   }
-                  return Directive::keep_transaction;;
+                  return Directive::keep_transaction;
                }
 
                void Rollback::operator () ( message_type& message)
@@ -1445,16 +1453,10 @@ namespace casual
                   Trace trace{ "transaction::handle::domain::rollback request"};
                   common::log::line( verbose::log, "message: ", message);
 
-                  // Find the transaction
-                  auto found = common::algorithm::find( m_state.transactions, message.trid);
-
-                  if( found)
+                  if( auto found = common::algorithm::find( m_state.transactions, message.trid))
                   {
                      if( Rollback::handle( message, *found) == Directive::remove_transaction)
-                     {
-                        // We remove the transaction
                         m_state.transactions.erase( std::begin( found));
-                     }
                   }
                   else
                   {

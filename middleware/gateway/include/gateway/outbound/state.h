@@ -6,14 +6,16 @@
 
 #pragma once
 
-#include "gateway/reverse/outbound/state/route.h"
-#include "gateway/reverse/outbound/state/coordinate.h"
+#include "gateway/outbound/state/route.h"
+#include "gateway/message.h"
 
 #include "common/serialize/macro.h"
 #include "common/communication/select.h"
 #include "common/communication/tcp.h"
 #include "common/domain.h"
-#include "common/message/service.h"
+#include "common/message/coordinate.h"
+#include "common/message/gateway.h"
+#include "common/state/machine.h"
 
 #include "configuration/model.h"
 
@@ -22,10 +24,20 @@
 
 namespace casual
 {
-   namespace gateway::reverse::outbound
+   namespace gateway::outbound
    {
       namespace state
       {
+
+         enum struct Runlevel : short
+         {
+            running,
+            shutdown,
+            error,
+         };
+
+         std::ostream& operator << ( std::ostream& out, Runlevel value);
+
          namespace external
          {
             struct Connection
@@ -51,7 +63,7 @@ namespace casual
                {
                   common::strong::file::descriptor::id connection;
                   common::domain::Identity domain;
-                  configuration::model::gateway::reverse::outbound::Connection configuration;
+                  configuration::model::gateway::outbound::Connection configuration;
 
                   inline friend bool operator == ( const Information& lhs, common::strong::file::descriptor::id rhs) { return lhs.connection == rhs;} 
 
@@ -70,7 +82,7 @@ namespace casual
             inline void add( 
                common::communication::select::Directive& directive, 
                common::communication::tcp::Duplex&& device, 
-               configuration::model::gateway::reverse::outbound::Connection configuration)
+               configuration::model::gateway::outbound::Connection configuration)
             {
                auto descriptor = device.connector().descriptor();
 
@@ -91,6 +103,27 @@ namespace casual
                if( auto found = common::algorithm::find( connections, descriptor))
                   return found.data();
                return nullptr;
+            }
+
+            inline std::optional< configuration::model::gateway::outbound::Connection> remove( 
+               common::communication::select::Directive& directive, 
+               common::strong::file::descriptor::id descriptor)
+            {
+               directive.read.remove( descriptor);
+               common::algorithm::trim( connections, common::algorithm::remove( connections, descriptor));
+               common::algorithm::trim( descriptors, common::algorithm::remove( descriptors, descriptor));
+               if( auto found = algorithm::find( information, descriptor))
+                  return common::algorithm::extract( information, std::begin( found)).configuration;
+               
+               return {};
+            }
+
+            inline void clear( common::communication::select::Directive& directive)
+            {
+               directive.read.remove( descriptors);
+               connections.clear();
+               descriptors.clear();
+               information.clear();
             }
 
             std::vector< state::external::Connection> connections;
@@ -157,20 +190,35 @@ namespace casual
             //! @returns the associated connection from the external branch
             common::strong::file::descriptor::id connection( const common::transaction::ID& external) const;
 
-            struct Advertise
+
+            struct Resources
             {
                std::vector< std::string> services;
                std::vector< std::string> queues;
+
+               inline explicit operator bool() const noexcept { return ! services.empty() || ! queues.empty();}
+
+               CASUAL_LOG_SERIALIZE( 
+                  CASUAL_SERIALIZE( services);
+                  CASUAL_SERIALIZE( queues);
+               )
             };
 
+            //! @returns all lookup resources
+            Resources resources() const;
 
-            Advertise add( common::strong::file::descriptor::id descriptor, std::vector< std::string> services, std::vector< std::string> queues);
+
+            Resources add( common::strong::file::descriptor::id descriptor, std::vector< std::string> services, std::vector< std::string> queues);
 
             //! removes the connection and @return the resources that should be un-advertised 
-            Advertise remove( common::strong::file::descriptor::id descriptor);
+            Resources remove( common::strong::file::descriptor::id descriptor);
 
             //! remove the connection for the provided services and queues, @returns all that needs to be un-advertised.
-            Advertise remove( common::strong::file::descriptor::id descriptor, std::vector< std::string> services, std::vector< std::string> queues);
+            Resources remove( common::strong::file::descriptor::id descriptor, std::vector< std::string> services, std::vector< std::string> queues);
+
+            //! clears all 'resources' but keep the transaction mapping (if there are messages in flight).
+            //! @returns all resources that should be unadvertised
+            Resources clear();
             
             void remove( const common::transaction::ID& internal);
 
@@ -181,12 +229,11 @@ namespace casual
             )
          };
 
-
-
       } // state
 
       struct State
       {
+         common::state::Machine< state::Runlevel, state::Runlevel::running> runlevel;
          common::communication::select::Directive directive;
          state::External external;
 
@@ -195,7 +242,7 @@ namespace casual
             struct
             {
                state::route::service::Message message;
-               common::message::event::service::Calls metric;
+               common::message::event::service::Calls metric{ common::process::handle()};
 
                CASUAL_LOG_SERIALIZE( 
                   CASUAL_SERIALIZE( message);
@@ -204,6 +251,8 @@ namespace casual
             } service;
 
             state::route::Message message;
+
+            inline bool empty() const { return message.empty() && service.message.empty();}
 
             CASUAL_LOG_SERIALIZE( 
                CASUAL_SERIALIZE( service);
@@ -215,7 +264,7 @@ namespace casual
          
          struct
          {
-            state::coordinate::Discovery discovery;
+            common::message::coordinate::fan::Out< common::message::gateway::domain::discover::Reply, common::strong::file::descriptor::id> discovery;
 
             CASUAL_LOG_SERIALIZE( 
                CASUAL_SERIALIZE( discovery);
@@ -224,9 +273,38 @@ namespace casual
 
          std::string alias;
          platform::size::type order{};
+
+         bool done() const;
+
+         //! @returns a reply message to `request` that is filled with what's possible
+         template< typename M>
+         auto reply( M&& request)
+         {
+            auto reply = common::message::reverse::type( request, common::process::handle());
+            reply.state.alias = alias;
+            reply.state.order = order;
+
+            reply.state.connections = common::algorithm::transform( external.connections, [&]( auto& connection)
+            {
+               auto descriptor = connection.device.connector().descriptor();
+               message::outbound::state::Connection result;
+               result.descriptor = descriptor;
+               result.address.local = common::communication::tcp::socket::address::host( descriptor);
+               result.address.peer = common::communication::tcp::socket::address::peer( descriptor);
+
+               if( auto found = common::algorithm::find( external.information, descriptor))
+               {
+                  result.domain = found->domain;
+               }
+
+               return result;
+            });
+            return reply;
+         }
          
 
          CASUAL_LOG_SERIALIZE( 
+            CASUAL_SERIALIZE( runlevel);
             CASUAL_SERIALIZE( directive);
             CASUAL_SERIALIZE( external);
             CASUAL_SERIALIZE( route);
@@ -237,5 +315,5 @@ namespace casual
          )
       };
 
-      } // gateway::reverse::outbound
+      } // gateway::outbound
 } // casual

@@ -21,39 +21,70 @@ namespace casual
    {
       namespace directive
       {
+         namespace native
+         {
+            struct Set
+            {
+               Set();
+
+               void add( strong::file::descriptor::id descriptor) noexcept;
+               void remove( strong::file::descriptor::id descriptor) noexcept;
+               bool ready( strong::file::descriptor::id descriptor) const noexcept;
+               
+               inline ::fd_set* native() noexcept { return &m_set;}
+
+            private:
+               ::fd_set m_set;
+            };
+         } // native
+         
          struct Set
          {
-            Set();
+            void add( strong::file::descriptor::id descriptor) noexcept;
+            void remove( strong::file::descriptor::id descriptor) noexcept;
+            bool ready( strong::file::descriptor::id descriptor) const noexcept;
 
-            void add( strong::file::descriptor::id descriptor);
+            //! @returns a range of descriptors that are found 'ready' in the set
+            inline auto ready( const native::Set& set) const noexcept
+            {
+               return algorithm::filter( m_descriptors, [&set]( auto descriptor){ return set.ready( descriptor);});
+            }
             
-            template< typename D>
-            void add( const std::vector< D>& descriptors)
+            template< typename Range>
+            auto add( Range&& descriptors) noexcept
+               -> decltype( add( range::front( descriptors)))
             {
                algorithm::for_each( descriptors, [&]( auto descriptor){ add( descriptor);});
             }
 
-            void remove( strong::file::descriptor::id descriptor);
+            template< typename Range>
+            auto remove( Range&& descriptors) noexcept
+               -> decltype( remove( range::front( descriptors)))
+            {
+               algorithm::for_each( descriptors, [&]( auto descriptor){ remove( descriptor);});
+            }
             
-            inline ::fd_set* native() { return &m_set;}
+            inline const native::Set& set() const noexcept { return m_set;}
 
-            bool ready( strong::file::descriptor::id descriptor) const;
-
-            friend std::ostream& operator << ( std::ostream& out, const Set& value);
+            CASUAL_LOG_SERIALIZE(
+               CASUAL_SERIALIZE_NAME( m_descriptors, "descriptors");
+            )
 
          private:
-            ::fd_set m_set;
+            // mutable so we can 'filter' for ready - semantically we don't change the state
+            mutable std::vector< strong::file::descriptor::id> m_descriptors;
+            native::Set m_set;
          };
       } // directive
+
       struct Directive 
       {
          directive::Set read;
          // directive::Set write; no need for write as of now
 
          CASUAL_LOG_SERIALIZE(
-         { 
             CASUAL_SERIALIZE( read);
-         })
+         )
       };
 
       namespace dispatch
@@ -65,66 +96,57 @@ namespace casual
 
          namespace detail
          {
-            template< typename C> 
-            struct basic_reader 
+            directive::native::Set select( const directive::native::Set& read);
+            
+            namespace consume
             {
-               basic_reader( strong::file::descriptor::id descriptor, C&& callback)
-                  : m_descriptor( std::move( descriptor)), m_callback( std::move( callback)) {}
-
-               inline void read( strong::file::descriptor::id descriptor) { m_callback( descriptor);}
-               inline strong::file::descriptor::id descriptor() const { return m_descriptor;}
-
-            private:
-               strong::file::descriptor::id m_descriptor;
-               C m_callback;
-            };
-
-            Directive select( const Directive& directive);
-
-
-            namespace descriptor
-            {
-               template< typename H, typename F> 
-               auto dispatch( H& handler, F&& functor, traits::priority::tag< 0>) -> decltype( void( handler.descriptor()))
+               template< typename H>
+               auto handle( H& handler, traits::priority::tag< 1>) -> decltype( handler())
                {
-                  functor( handler, handler.descriptor());
+                  return handler();
                }
                
-               template< typename H, typename F> 
-               auto dispatch( H& handler, F&& functor, traits::priority::tag< 1>) -> decltype( void( handler.descriptors()))
-               {
-                  for( auto descriptor : handler.descriptors())
-                     functor( handler, descriptor);
+               //! no-op for 'blocking'
+               template< typename H> 
+               constexpr auto handle( H& handler, traits::priority::tag< 0>)
+                  -> decltype( handler( strong::file::descriptor::id{}))
+               { 
+                  return false;
                }
-            } // descriptor
-            
+
+               //! sentinel
+               constexpr bool dispatch() { return false;}
+
+               template< typename H, typename... Hs> 
+               bool dispatch( H& handler, Hs&... handlers)
+               {
+                  return handle( handler, traits::priority::tag< 1>{}) || dispatch( handlers...);
+               }
+            } // consume
 
             namespace handle
             {
-               //! for handlers that has a single descriptor and has a consume, we just use the consume
-               template< typename H> 
-               auto read( H& handler, strong::file::descriptor::id descriptor, traits::priority::tag< 0>)
-                  -> decltype( void( handler.descriptor()), void( handler.consume()))
+               //! blocking handler
+               template< typename R, typename H> 
+               auto read( R&& ready, H& handler, traits::priority::tag< 1>)
+                  -> decltype( handler( range::front( ready)))
                {
-                  handler.consume();
-               }
-               
-               template< typename H> 
-               auto read( H& handler, strong::file::descriptor::id descriptor, traits::priority::tag< 1>)
-                  -> decltype( handler.read( descriptor), void()) 
-               {
-                  handler.read( descriptor);
+                  return algorithm::any_of( ready, std::ref( handler));
                }
 
-               template< typename H>
-               void dispatch( const Directive& directive, H& handler)
-               {
-                  descriptor::dispatch( handler, [&directive]( auto& handler, auto descriptor)
-                  {
-                     if( directive.read.ready( descriptor))
-                        handle::read( handler, descriptor, traits::priority::tag< 1>{});
+               //! no-op for 'consume'
+               template< typename R, typename H> 
+               auto read( R&& ready, H& handler, traits::priority::tag< 0>) 
+                  -> decltype( handler())
+               { 
+                  return false;
+               }
 
-                  }, traits::priority::tag< 1>{});
+               template< typename R, typename H> 
+               auto dispatch( R&& ready, H& handler)
+                  -> decltype( handle::read( ready, handler, traits::priority::tag< 1>{}))
+               {
+                  return handle::read( ready, handler, traits::priority::tag< 1>{});
                }
             } // handle
 
@@ -138,39 +160,25 @@ namespace casual
             void iterate( F&& functor, H& handler, Hs&... handlers)
             {
                functor( handler);
-               iterate( std::forward< F>( functor), handlers...);
+               iterate( functor, handlers...);
+            }
+
+            template< typename R, typename... Hs> 
+            void dispatch( R&& ready, Hs&... handlers)
+            {
+               // take care of blocking, if any
+               iterate( 
+                  [ready = std::forward< R>( ready)]( auto& handler)
+                  {
+                     handle::dispatch( ready, handler);
+                  }, 
+                  handlers...);
+
+               // take care of consume, if any.
+               consume::dispatch( handlers...);
             }
 
 
-            template< typename... Hs> 
-            void dispatch( const Directive& directive, Hs&... handlers)
-            {
-               auto invoke = [&directive]( auto& handler){
-                  handle::dispatch( directive, handler);
-               };
-               iterate( invoke, handlers...);
-            }
-
-            namespace consume
-            {
-               template< typename H> 
-               auto handle( H& handler, traits::priority::tag< 0>) { return false;}
-
-               template< typename H>
-               auto handle( H& handler, traits::priority::tag< 1>) -> decltype( handler.consume())
-               {
-                  return handler.consume();
-               }
-               
-               //! sentinel
-               constexpr bool dispatch() { return false;}
-
-               template< typename H, typename... Hs> 
-               bool dispatch( H& handler, Hs&... handlers)
-               {
-                  return handle( handler, traits::priority::tag< 1>{}) || dispatch( handlers...);
-               }
-            } // consume
 
             namespace handle
             {
@@ -202,9 +210,10 @@ namespace casual
                         if( condition::detail::invoke< condition::detail::tag::done>( condition))
                            return;
 
-                        // we block
-                        auto result = detail::select( directive);
-                           detail::dispatch( result, handlers...);
+                        // we block in `detail::select` with the read set.
+                        detail::dispatch( 
+                           directive.read.ready( detail::select( directive.read.set())), 
+                           handlers...);
                      }
                      catch( ...)
                      {
@@ -216,22 +225,13 @@ namespace casual
 
          } // detail
 
-         namespace create
-         {
-            template< typename C>
-            auto reader( strong::file::descriptor::id descriptor, C&& callback)
-            {
-               return detail::basic_reader< std::decay_t< C>>{ descriptor, std::forward< C>( callback)};
-            }
-         } // create
-
 
          //! handlers has to comply with the following
-         //! * either `descriptor descriptor()` or `std::vector< descriptor> descriptors()` has to be defined
-         //!      * ie either _single descriptor_ or _multi descriptor_ handler
-         //! * one or both of `bool consume()` and `void read( descriptor)` has to be defined
-         //! * `bool consume()` has to be non blocking
-         //! * `void read( descriptor)` can be blocking, and has to be defined for _multi descriptor_ handler
+         //! * either:
+         //!   * `bool <callable>( descriptor)`
+         //!      *  return true if descriptor is one that <callable> handled - can be blocking
+         //!   * `bool <callable>()`
+         //!      *  return true if descriptor is one that <callable> handled - can be NON blocking
          //! @{
          template< typename C, typename... Ts>  
          void pump( C&& condition, const Directive& directive, Ts&&... handlers)

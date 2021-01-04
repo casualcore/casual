@@ -73,7 +73,7 @@ domain:
          EXPECT_TRUE( origin.domain.groups == result.domain.groups);
          EXPECT_TRUE( origin.service == result.service) << CASUAL_NAMED_VALUE( origin.service) << "\n" << CASUAL_NAMED_VALUE( result.service);
          EXPECT_TRUE( origin.transaction == result.transaction) << CASUAL_NAMED_VALUE( origin.transaction) << "\n" << CASUAL_NAMED_VALUE( result.transaction);
-         EXPECT_TRUE( origin.gateway == result.gateway);
+         EXPECT_TRUE( origin.gateway == result.gateway) << CASUAL_NAMED_VALUE( origin.gateway) << "\n" << CASUAL_NAMED_VALUE( result.gateway);
          EXPECT_TRUE( origin.queue == result.queue) << CASUAL_NAMED_VALUE( origin.queue) << "\n" << CASUAL_NAMED_VALUE( result.queue);
          
 

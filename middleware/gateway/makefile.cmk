@@ -4,6 +4,7 @@ from casual.middleware.make.dsl import *
 
 IncludePaths([
    'include',
+   'unittest/include',
    '../common/include',
    '../configuration/include',
    '../domain/include',
@@ -34,15 +35,9 @@ install_example_bin = []
 common_archive = LinkArchive( 'bin/casual-gateway-common',
     [
         Compile( 'source/environment.cpp'),
-        Compile( 'source/outbound/error/reply.cpp'),
-        Compile( 'source/inbound/buffer.cpp'),
         Compile( 'source/transform.cpp'),
-        Compile( 'source/manager/listen.cpp'),
         Compile( 'source/common.cpp'),
         Compile( 'source/manager/state.cpp'),
-
-        Compile( 'source/reverse/outbound/state.cpp'),
-        Compile( 'source/reverse/inbound/state.cpp'),
     ])
         
 
@@ -50,7 +45,6 @@ common_archive = LinkArchive( 'bin/casual-gateway-common',
 target = LinkExecutable( 'bin/casual-gateway-manager',
     [
         Compile( 'source/manager/main.cpp'),
-        Compile( 'source/manager/manager.cpp'),
         Compile( 'source/manager/handle.cpp'),
         Compile( 'source/manager/admin/server.cpp'),
     ],
@@ -75,51 +69,71 @@ target = LinkLibrary( 'bin/casual-gateway-admin-cli',
 
 install_lib.append( target)
 
-# The outbound tcp connector
+# Outbound
+
+outbound_archive = LinkArchive( 'bin/casual-gateway-outbound-archive',
+    [
+        Compile( 'source/outbound/state.cpp'),
+        Compile( 'source/outbound/handle.cpp'),
+        Compile( 'source/outbound/error/reply.cpp'),
+    ]
+)
+
+## regular outbound
 target = LinkExecutable( 'bin/casual-gateway-outbound',
     [
         Compile( 'source/outbound/main.cpp'),
     ],
     [
+        outbound_archive,
         common_archive, 
         'casual-common',  
     ])
      
 install_bin.append( target)
 
-# The inbound tcp connector
+## reverse outbound
+target = LinkExecutable( 'bin/casual-gateway-outbound-reverse',
+    [
+        Compile( 'source/outbound/reverse/main.cpp'),
+    ],
+    [
+        outbound_archive,
+        common_archive, 
+        'casual-common',  
+    ])
+     
+install_bin.append( target)
+
+# Inbound
+
+inbound_archive = LinkArchive( 'bin/casual-gateway-inbound-archive',
+    [
+        Compile( 'source/inbound/handle.cpp'),
+        Compile( 'source/inbound/state.cpp'),
+    ]
+)
+
+##  regular inbound
 target = LinkExecutable( 'bin/casual-gateway-inbound',
 [
     Compile( 'source/inbound/main.cpp'),
 ],
 [
+    inbound_archive,
     common_archive, 
     'casual-common', 
 ])
 
 install_bin.append( target)
 
-
-# The reverse connection outbound tcp connector
-target = LinkExecutable( 'bin/casual-gateway-reverse-outbound',
+# reverse inbound
+target = LinkExecutable( 'bin/casual-gateway-inbound-reverse',
     [
-        Compile( 'source/reverse/outbound/handle.cpp'),
-        Compile( 'source/reverse/outbound/main.cpp'),
+        Compile( 'source/inbound/reverse/main.cpp'),
     ],
     [
-        common_archive, 
-        'casual-common',  
-    ])
-     
-install_bin.append( target)
-
-# The reverse connection inbound tcp connector
-target = LinkExecutable( 'bin/casual-gateway-reverse-inbound',
-    [
-        Compile( 'source/reverse/inbound/handle.cpp'),
-        Compile( 'source/reverse/inbound/main.cpp'),
-    ],
-    [
+        inbound_archive,
         common_archive, 
         'casual-common',  
     ])
@@ -137,12 +151,13 @@ protocol_objects = [
 target_unittest = LinkUnittest( 'bin/test-casual-gateway',
    [
         Compile( 'unittest/source/test_manager.cpp'),
-        Compile( 'unittest/source/test_state.cpp'),
+        #Compile( 'unittest/source/test_state.cpp'),
         Compile( 'unittest/source/test_protocol.cpp'),
-        Compile( 'unittest/source/reverse/outbound/test_state.cpp'),
+        Compile( 'unittest/source/outbound/test_state.cpp'),
         Compile( 'unittest/source/test_reverse.cpp'),
    ] + protocol_objects, 
    [ 
+       outbound_archive,
        common_archive, 
        'casual-serviceframework',
        'casual-common',
