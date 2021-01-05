@@ -82,6 +82,12 @@ namespace casual
             };
          } // connect
 
+         namespace disconnect
+         {
+            using Request = common::message::basic_message< common::message::Type::gateway_domain_disconnect_request>;
+            using Reply = common::message::basic_message< common::message::Type::gateway_domain_disconnect_reply>;
+         } // disconnect
+
       } // domain
 
       namespace state
@@ -362,6 +368,9 @@ namespace casual
          struct type_traits< casual::gateway::message::domain::connect::Request> : detail::type<  casual::gateway::message::domain::connect::Reply> {};
 
          template<>
+         struct type_traits< casual::gateway::message::domain::disconnect::Request> : detail::type<  casual::gateway::message::domain::disconnect::Reply> {};
+
+         template<>
          struct type_traits< casual::gateway::message::outbound::rediscover::Request> : detail::type< casual::gateway::message::outbound::rediscover::Reply> {};
 
          template<>
@@ -411,6 +420,16 @@ template< typename A> struct Value< type, A, std::enable_if_t< common::serialize
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( execution);
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( domain);
             CASUAL_SERIALIZE_NAME( value.version, "protocol.version");
+         })
+
+         CASUAL_CUSTOMIZATION_POINT_NETWORK( casual::gateway::message::domain::disconnect::Request,
+         {
+            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( execution);
+         })
+
+         CASUAL_CUSTOMIZATION_POINT_NETWORK( casual::gateway::message::domain::disconnect::Reply,
+         {
+            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( execution);
          })
 
          CASUAL_CUSTOMIZATION_POINT_NETWORK( common::message::gateway::domain::discover::Request,

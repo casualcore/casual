@@ -104,7 +104,7 @@ namespace casual
                                   communication::tcp::socket::listen( information.address),
                                   information};
 
-                              // we need the socket to not block if outbound dies in the 'connection-phase'
+                              // we need the socket to not block in 'accept'
                               result.socket.set( communication::socket::option::File::no_block);
                               return result;
                            });
@@ -163,6 +163,8 @@ namespace casual
 
                            state.offline = algorithm::transform( state.listeners, []( auto& listener){ return listener.configuration;});
                            state.listeners.clear();
+
+                           inbound::handle::shutdown( state);
                         };
                      }
                   } // shutdown
@@ -213,6 +215,9 @@ namespace casual
 
                               if( auto socket = communication::tcp::socket::accept( found->socket))
                               {
+                                 // the socket needs to be 'blocking'
+                                 socket.unset( communication::socket::option::File::no_block);
+
                                  state.external.add( 
                                     state.directive, 
                                     std::move( socket),
@@ -263,7 +268,8 @@ namespace casual
             auto condition( State& state)
             {
                return communication::select::dispatch::condition::compose(
-                  communication::select::dispatch::condition::done( [&state](){ return state.done();})
+                  communication::select::dispatch::condition::done( [&state](){ return state.done();}),
+                  communication::select::dispatch::condition::idle( [&state](){ inbound::handle::idle( state);})
                   );
             }
 
@@ -290,6 +296,7 @@ namespace casual
                   );
                }
 
+               abort_guard.release();
             }
 
             void main( int argc, char** argv)

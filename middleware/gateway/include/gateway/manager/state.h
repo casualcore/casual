@@ -77,7 +77,7 @@ namespace casual
 
             struct
             {
-               common::message::coordinate::fan::Out< common::message::gateway::domain::discover::Reply, common::strong::process::id> discovery;
+               common::message::coordinate::fan::Out< common::message::gateway::domain::discover::accumulated::Reply, common::strong::process::id> discovery;
                common::message::coordinate::fan::Out< message::outbound::rediscover::Reply, common::strong::process::id> rediscovery;
 
                CASUAL_LOG_SERIALIZE(

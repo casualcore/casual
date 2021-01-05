@@ -74,6 +74,7 @@ namespace casual
                      algorithm::transform( reply.state.connections, result.connections, [&reply, bound]( auto& connection)
                      {
                         manager::admin::model::Connection result;
+                        result.alias = reply.state.alias;
                         result.bound = bound;
                         result.address.local = connection.address.local;
                         result.address.peer = connection.address.peer;

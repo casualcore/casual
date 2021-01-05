@@ -30,12 +30,19 @@ namespace casual
          //! send error replies to all pending in-flight messages that is associated with the connection
          //! removes all state associated with the connection.
          std::optional< configuration::model::gateway::outbound::Connection> lost( State& state, common::strong::file::descriptor::id descriptor);
+
+         //! unadvertise all associated resources to descriptor, mark the connection as 'disconnecting'
+         void disconnect( State& state, common::strong::file::descriptor::id descriptor);
          
       } // connection
 
       //! connect to the other domain, add the device to external
       void connect( State& state, communication::tcp::Duplex&& device, configuration::model::gateway::outbound::Connection configuration);
 
+      //! take care of pending tasks, when message dispatch is idle.
+      std::vector< configuration::model::gateway::outbound::Connection> idle( State& state);
+
+      //! soft shutdown - tries to disconnect all connections
       void shutdown( State& state);
 
       //! hard shutdown - try to cancel stuff directly with best effort.

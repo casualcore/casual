@@ -244,12 +244,19 @@ namespace casual
 
                      Socket accept( const descriptor_type descriptor)
                      {
-                        Socket result{ descriptor_type{
-                              posix::result( ::accept( descriptor.value(), nullptr, nullptr))}};
-                        
-                        result.set( socket::option::no_delay{});
+                        auto result = ::accept( descriptor.value(), nullptr, nullptr);
 
-                        return result;
+                        if( result == -1)
+                        {
+                           if( algorithm::compare::any( code::system::last::error(), std::errc::resource_unavailable_try_again, std::errc::operation_would_block))
+                              return {};
+
+                           code::system::raise( "accept");
+                        }
+
+                        Socket socket{ descriptor_type{ result}};
+                        socket.set( socket::option::no_delay{});
+                        return socket;
                      }
                   } // socket
 

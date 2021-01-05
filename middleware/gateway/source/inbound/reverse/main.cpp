@@ -115,14 +115,25 @@ namespace casual
 
                   if( auto min = algorithm::min( pending, min_attempts))
                   {
-                     constexpr platform::size::type factor = 3;
-                     if( min->metric.attempts < factor * ( 1000 - factor))
-                        common::signal::timer::set( std::chrono::milliseconds{ min->metric.attempts + factor});
-                     else 
-                        common::signal::timer::set( std::chrono::seconds{ factor});
+                     if( min->metric.attempts < 200)
+                        common::signal::timer::set( std::chrono::milliseconds{ 10});
+                     else
+                        common::signal::timer::set( std::chrono::seconds{ 3});
                   }
 
                   log::line( verbose::log, "state: ", state);
+               }
+
+               void reconnect( State& state, configuration::model::gateway::inbound::Connection configuration)
+               {
+                  Trace trace{ "casual::gateway::inbound::local::external::reconnect"};
+
+                  if( state.runlevel == decltype( state.runlevel())::running)
+                  {
+                     log::line( log::category::information, code::casual::communication_unavailable, " lost connection ", configuration.address, " - action: try to reconnect");
+                     state.reverse.connections.emplace_back( std::move( configuration));
+                     external::connect( state);
+                  }
                }
 
                namespace dispatch
@@ -145,14 +156,9 @@ namespace casual
                               if( exception::code() != code::casual::communication_unavailable)
                                  throw;
                               
-                              auto configuration = handle::connection::lost( state, descriptor);
-
-                              if( configuration && state.runlevel == decltype( state.runlevel())::running)
-                              {
-                                 log::line( log::category::information, code::casual::communication_unavailable, " lost connection ", configuration.value().address, " - action: try to reconnect");
-                                 state.reverse.connections.emplace_back( std::move( configuration.value()));
-                                 external::connect( state);
-                              }
+                              // Do we try to reconnect?
+                              if( auto configuration = handle::connection::lost( state, descriptor))
+                                 external::reconnect( state, std::move( configuration.value()));
                            }
                            return true;
                         }
@@ -217,6 +223,21 @@ namespace casual
 
                   } // state
 
+                  namespace shutdown
+                  {
+                     auto request( State& state)
+                     {
+                        return [&state]( const common::message::shutdown::Request& message)
+                        {
+                           Trace trace{ "gateway::inbound::reverse::local::handle::internal::shutdown::request"};
+                           log::line( verbose::log, "message: ", message);
+
+                           state.runlevel = decltype( state.runlevel())::shutdown;
+                           inbound::handle::shutdown( state);
+                        };
+                     }
+                  } // shutdown
+
                } // handle
 
                auto handler( State& state)
@@ -224,7 +245,8 @@ namespace casual
                   // we add the common/general inbound handlers
                   return inbound::handle::internal( state) + common::message::dispatch::handler( ipc::inbound(),
                      handle::configuration::update::request( state),
-                     handle::state::request( state)
+                     handle::state::request( state),
+                     handle::shutdown::request( state)
                   );
                }
 
@@ -259,7 +281,8 @@ namespace casual
             auto condition( State& state)
             {
                return communication::select::dispatch::condition::compose(
-                  communication::select::dispatch::condition::done( [&state](){ return state.done();})
+                  communication::select::dispatch::condition::done( [&state](){ return state.done();}),
+                  communication::select::dispatch::condition::idle( [&state](){ inbound::handle::idle( state);})
                   );
             }
 
@@ -283,6 +306,8 @@ namespace casual
                   internal::dispatch::create( state),
                   external::dispatch::create( state)
                );
+
+               abort_guard.release();
             }
 
             void main( int argc, char** argv)

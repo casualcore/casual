@@ -116,9 +116,6 @@ namespace casual
          {
             Trace trace{ "gateway::manager::handle::shutdown"};
 
-            // We only want to handle child-signals during this stage
-            common::signal::thread::scope::Mask mask{ signal::set::filled( code::signal::child)};
-
             state.runlevel = state::Runlevel::shutdown;
 
             log::line( verbose::log, "state: ", state);
@@ -131,25 +128,30 @@ namespace casual
          {
             Trace trace{ "gateway::manager::handle::boot"};
 
-            algorithm::for_each( state.outbounds, local::spawn::bound());
-            algorithm::for_each( state.inbounds, local::spawn::bound());
-            
-            // make sure we got connected stuff before we continue
-            common::message::dispatch::relaxed::pump(
-               common::message::dispatch::condition::compose(
-                  common::message::dispatch::condition::done( [&state]()
-                  {
-                     auto connected = []( auto& bound)
-                     {
-                        return predicate::boolean( bound.process);
-                     };
+            auto boot = [handler = manager::handler( state)]( auto& bounds) mutable
+            {
+               algorithm::for_each( bounds, local::spawn::bound());
 
-                     return algorithm::all_of( state.outbounds, connected)
-                        && algorithm::all_of( state.inbounds, connected);
-                  })
-               ),
-               manager::handler( state),
-               ipc::inbound());
+               common::message::dispatch::relaxed::pump(
+                  common::message::dispatch::condition::compose(
+                     common::message::dispatch::condition::done( [&bounds]()
+                     {
+                        auto connected = []( auto& bound)
+                        {
+                           return predicate::boolean( bound.process);
+                        };
+
+                        return algorithm::all_of( bounds, connected);
+                     })
+                  ),
+                  handler,
+                  ipc::inbound());
+            };
+
+            // make sure we boot 'in order' and got connected stuff before we continue
+            boot( state.outbounds);
+            boot( state.inbounds);
+            
          }
 
          namespace process
@@ -246,7 +248,7 @@ namespace casual
 
                         if( auto found = algorithm::find( state.inbounds, pid))
                         {
-                           log::line( log::category::information, "inbound terminated");
+                           log::line( log::category::information, "inbound terminated - alias: ", found->configuration.alias);
                            log::line( verbose::log, "connection: ", *found);
 
                            if( ! restart( *found, "inbound"))
@@ -255,7 +257,7 @@ namespace casual
                         
                         if( auto found = algorithm::find( state.outbounds, pid))
                         {
-                           log::line( log::category::information, "outbound terminated");
+                           log::line( log::category::information, "outbound terminated - alias: ", found->configuration.alias);
                            log::line( verbose::log, "connection: ", *found);
 
                            if( ! restart( *found, "outbound"))
@@ -285,12 +287,15 @@ namespace casual
                               ipc = message.process.ipc, 
                               execution = message.execution, 
                               correlation = std::exchange( message.correlation, {})
-                           ]( auto&& received, auto failed)
+                           ]( auto&& received, auto outcome)
                            {
                               common::message::gateway::domain::discover::accumulated::Reply reply;
                               reply.execution = execution;
                               reply.correlation = correlation;
-                              reply.replies = std::move( received);
+                              
+                              for( auto& message : received)
+                                 algorithm::move( message.replies, std::back_inserter( reply.replies));
+
                               communication::device::blocking::optional::send( ipc, reply);
                            };
 
@@ -313,7 +318,7 @@ namespace casual
 
                      auto reply( State& state)
                      {
-                        return [&state]( common::message::gateway::domain::discover::Reply&& message)
+                        return [&state]( common::message::gateway::domain::discover::accumulated::Reply&& message)
                         {
                            Trace trace{ "gateway::manager::handle::local::domain::discover::reply"};
                            log::line( verbose::log, "message: ", message);

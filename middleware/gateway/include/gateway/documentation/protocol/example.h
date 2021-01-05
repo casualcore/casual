@@ -23,6 +23,9 @@ namespace casual
                   void fill( gateway::message::domain::connect::Request& message);
                   void fill( gateway::message::domain::connect::Reply& message);
 
+                  void fill( gateway::message::domain::disconnect::Request& message);
+                  void fill( gateway::message::domain::disconnect::Reply& message);
+
                   void fill( common::message::gateway::domain::discover::Request& message);
                   void fill( common::message::gateway::domain::discover::Reply& message);
 

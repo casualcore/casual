@@ -247,13 +247,13 @@ namespace casual
 
             // interdomain 
 
-            gateway_domain_connect_request  = 7200,
-            gateway_domain_connect_reply    = 7201,
-            gateway_domain_discover_request = 7300,
-            gateway_domain_discover_reply   = 7301,
+            gateway_domain_connect_request    = 7200,
+            gateway_domain_connect_reply      = 7201,
+            gateway_domain_disconnect_request = 7202,  // 1.1
+            gateway_domain_disconnect_reply   = 7203,  // 1.1
+            gateway_domain_discover_request   = 7300,
+            gateway_domain_discover_reply     = 7301,
             gateway_domain_discover_accumulated_reply,
-            gateway_domain_advertise,
-            gateway_domain_id,
 
             CONFIGURATION_BASE = 8000,
             configuration_request = CONFIGURATION_BASE,

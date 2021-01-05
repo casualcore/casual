@@ -64,6 +64,11 @@ namespace casual
                return std::exchange( m_points, {});
             }
 
+            auto associated( common::strong::file::descriptor::id connection) const
+            {
+               return predicate::boolean( algorithm::find( m_points, connection));
+            }
+
             const auto& points() const { return m_points;}
             bool empty() const { return m_points.empty();}
 

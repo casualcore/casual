@@ -117,14 +117,25 @@ namespace casual
 
                   if( auto min = algorithm::min( pending, min_attempts))
                   {
-                     constexpr platform::size::type factor = 3;
-                     if( min->metric.attempts < factor * ( 1000 - factor))
-                        common::signal::timer::set( std::chrono::milliseconds{ min->metric.attempts + factor});
-                     else 
-                        common::signal::timer::set( std::chrono::seconds{ factor});
+                     if( min->metric.attempts < 200)
+                        common::signal::timer::set( std::chrono::milliseconds{ 10});
+                     else
+                        common::signal::timer::set( std::chrono::seconds{ 3});
                   }
 
                   log::line( verbose::log, "state: ", state);
+               }
+
+               void reconnect( State& state, configuration::model::gateway::outbound::Connection configuration)
+               {
+                  Trace trace{ "casual::gateway::outbound::local::external::reconnect"};
+
+                  if( state.runlevel == decltype( state.runlevel())::running)
+                  {
+                     log::line( log::category::information, code::casual::communication_unavailable, " lost connection ", configuration.address, " - action: try to reconnect");
+                     state.pending.connections.emplace_back( std::move( configuration));
+                     external::connect( state);
+                  }
                }
 
 
@@ -143,6 +154,7 @@ namespace casual
                         {
                            try
                            {
+                              state.external.last = descriptor;
                               handler( communication::device::blocking::next( found->device));
                            }
                            catch( ...)
@@ -150,15 +162,10 @@ namespace casual
                               if( exception::code() != code::casual::communication_unavailable)
                                  throw;
 
-                              auto configuration = handle::connection::lost( state, descriptor);
-
                               // Do we try to reconnect?
-                              if( configuration && state.runlevel == decltype( state.runlevel())::running)
-                              {
-                                 log::line( log::category::information, code::casual::communication_unavailable, " lost connection ", configuration.value().address, " - action: try to reconnect");
-                                 state.pending.connections.emplace_back( std::move( configuration.value()));
-                                 external::connect( state);
-                              }
+                              if( auto configuration = handle::connection::lost( state, descriptor))
+                                 external::reconnect( state, std::move( configuration.value()));
+
                            }
                            return true;
                         }
@@ -166,9 +173,6 @@ namespace casual
                      };
                   }
                } // dispatch
-
-
-
             } // external
 
             namespace internal
@@ -186,6 +190,9 @@ namespace casual
                            log::line( verbose::log, "message: ", message);
 
                            // TODO maintainece - make sure we can handle runtime updates...
+
+                           state.alias = message.model.alias;
+                           state.order = message.order;
 
                            state.pending.connections = algorithm::transform( message.model.connections, []( auto& configuration)
                            {
@@ -285,7 +292,16 @@ namespace casual
             auto condition( State& state)
             {
                return communication::select::dispatch::condition::compose(
-                  communication::select::dispatch::condition::done( [&state](){ return state.done();})
+                  communication::select::dispatch::condition::done( [&state](){ return state.done();}),
+                  communication::select::dispatch::condition::idle( [&state]()
+                  {
+                     if( !  state.disconnecting.empty())
+                     {
+                        // we might get some connection lost, and need to reconnect. 
+                        for( auto& configuration : outbound::handle::idle( state))
+                           external::reconnect( state, std::move( configuration));
+                     }
+                  })
                );
             }
 

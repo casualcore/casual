@@ -110,6 +110,16 @@ namespace casual
                      message.version = gateway::message::domain::protocol::Version::version_1;
                   }
 
+                  void fill( gateway::message::domain::disconnect::Request& message)
+                  {
+                     local::set_general( message);
+                  }
+
+                  void fill( gateway::message::domain::disconnect::Reply& message)
+                  {
+                     local::set_general( message);
+                  }
+
                   void fill( common::message::gateway::domain::discover::Request& message)
                   {
                      local::set_general( message);

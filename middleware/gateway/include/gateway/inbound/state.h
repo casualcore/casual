@@ -100,8 +100,8 @@ namespace casual
                pending::Limit m_limits;
                
             };
-         } // pending
 
+         } // pending
 
 
          namespace external
@@ -120,6 +120,7 @@ namespace casual
                
                CASUAL_LOG_SERIALIZE( 
                   CASUAL_SERIALIZE( device);
+                  CASUAL_SERIALIZE( protocol);
                )
             };
 
@@ -235,8 +236,12 @@ namespace casual
          struct
          {
             state::pending::Requests requests;
+            std::vector< common::strong::file::descriptor::id> disconnects;
             
-            CASUAL_LOG_SERIALIZE( CASUAL_SERIALIZE( requests);)
+            CASUAL_LOG_SERIALIZE( 
+               CASUAL_SERIALIZE( requests);
+               CASUAL_SERIALIZE( disconnects);
+            )
          } pending;
          
 
@@ -259,7 +264,7 @@ namespace casual
          //! @return true if the state is ready to 'terminate'
          bool done() const noexcept;
 
-         //! @returns a reply message to `request` that is filled with what's possible
+         //! @returns a reply message to state `request` that is filled with what's possible
          template< typename M>
          auto reply( M&& request)
          {

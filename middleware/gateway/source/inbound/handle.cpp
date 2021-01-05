@@ -101,6 +101,8 @@ namespace casual
                            connection->protocol = reply.version;
                            if( auto found = algorithm::find( state.external.information, connection->descriptor()))
                               found->domain = message.domain;
+
+                           common::log::line( verbose::log, "connection: ", *connection);
                         }
                      };
                   }
@@ -286,7 +288,7 @@ namespace casual
                {
                   auto request( State& state)
                   {
-                     return []( gateway::message::domain::connect::Request& message)
+                     return []( gateway::message::domain::connect::Request&& message)
                      {
                         Trace trace{ "gateway::inbound::handle::local::external::connect::request"};
                         common::log::line( verbose::log, "message: ", message);
@@ -299,6 +301,37 @@ namespace casual
                      };
                   }
                } // connect
+
+               namespace disconnect
+               {
+                  auto reply( State& state)
+                  {
+                     return [&state]( const gateway::message::domain::disconnect::Reply& message)
+                     {
+                        Trace trace{ "gateway::inbound::handle::local::external::disconnect::reply"};
+                        common::log::line( verbose::log, "message: ", message);
+
+                        if( auto connection = state.consume( message.correlation))
+                        {
+                           common::log::line( verbose::log, "connection: ", *connection);
+
+                           auto descriptor = connection->descriptor();
+
+                           if( algorithm::find( state.correlations, descriptor))
+                           {
+                              // connection still got pending stuff to do, we keep track until its 'idle'.
+                              state.pending.disconnects.push_back( descriptor);
+                           }
+                           else 
+                           {
+                              // connection is 'idle', we just 'loose' the connection
+                              handle::connection::lost( state, descriptor);
+                           }
+                        }
+                     };
+                  }
+                  
+               } // disconnect
 
                namespace service
                {
@@ -432,6 +465,16 @@ namespace casual
                         {
                            Trace trace{ "gateway::inbound::handle::local::external::connection::discover::request"};
                            common::log::line( verbose::log, "message: ", message);
+
+                           if( state.runlevel > decltype( state.runlevel())::running)
+                           {
+                              common::log::line( verbose::log, "inbound in ", state.runlevel, " mode - action: empty reply");
+
+                              auto reply = common::message::reverse::type( message);
+                              reply.domain = common::domain::identity();
+                              tcp::send( state, reply);
+                              return;
+                           }
                            
                            // Make sure we get the reply
                            message.process = common::process::handle();
@@ -552,6 +595,7 @@ namespace casual
             
             // just a forward to the internal connect::request
             local::external::connect::request( state),
+            local::external::disconnect::reply( state),
 
             // service call
             local::external::service::call::request( state),
@@ -576,6 +620,7 @@ namespace casual
          std::optional< configuration::model::gateway::inbound::Connection> lost( State& state, common::strong::file::descriptor::id descriptor)
          {
             Trace trace{ "gateway::inbound::handle::connection::lost"};
+            log::line( verbose::log, "descriptor: ", descriptor);
 
             auto result = state.external.remove( state.directive, descriptor);
 
@@ -597,12 +642,75 @@ namespace casual
                communication::device::blocking::optional::send( local::ipc::manager::service(), request);
             });
 
+            algorithm::trim( state.pending.disconnects, algorithm::remove( state.pending.disconnects, descriptor));
+
             // There is no other pending we need to discard at the moment.
 
             return result;
          }
+
+         void disconnect( State& state, common::strong::file::descriptor::id descriptor)
+         {
+            Trace trace{ "gateway::inbound::handle::connection::disconnect"};
+            log::line( verbose::log, "descriptor: ", descriptor);
+
+            if( auto found = algorithm::find( state.external.connections, descriptor))
+            {
+               log::line( verbose::log, "found: ", *found);
+
+               if( found->protocol == decltype( found->protocol)::version_1_1)
+               {
+                  try 
+                  {
+                     state.correlations.emplace_back( 
+                        communication::device::blocking::send( 
+                           found->device,
+                           message::domain::disconnect::Request{}),
+                        descriptor
+                     );
+                  }
+                  catch( ...)
+                  {
+                     exception::sink::log();
+                     handle::connection::lost( state, descriptor);
+                  }
+               }
+               else
+               {
+                  handle::connection::lost( state, descriptor);
+               }
+            }
+         }
          
-      } // connection 
+      } // connection
+
+      void idle( State& state)
+      {
+         // take care of pending disconnects
+         if( ! state.pending.disconnects.empty())
+         {
+            auto connection_done = [&state]( auto descriptor)
+            {
+               return algorithm::find( state.correlations, descriptor).empty();
+            };
+
+            auto& pending = state.pending.disconnects;
+
+            auto done = algorithm::extract( pending, algorithm::filter( pending, connection_done));
+
+            for( auto descriptor : done)
+               handle::connection::lost( state, descriptor);
+         }
+      }
+
+      void shutdown( State& state)
+      {
+         Trace trace{ "gateway::inbound::handle::shutdown"};
+
+         // try to do a 'soft' disconnect. copy - connection::disconnect mutates external
+         for( auto descriptor : range::to_vector( state.external.descriptors))
+            handle::connection::disconnect( state, descriptor);
+      }
 
       void abort( State& state)
       {
@@ -610,13 +718,9 @@ namespace casual
 
          state.runlevel = decltype( state.runlevel())::error;
 
-         auto descriptors = state.external.descriptors;
-
-         // 'kill' all sockets, and try to take care of pending stuff.
-         algorithm::for_each( descriptors, [&state]( auto descriptor)
-         {
+         // 'kill' all sockets, and try to take care of pending stuff. copy - connection::lost mutates external
+         for( auto descriptor : range::to_vector( state.external.descriptors))
             handle::connection::lost( state, descriptor);
-         });
       }
       
 

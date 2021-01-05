@@ -91,7 +91,7 @@ namespace casual
             coordinate( message);
          }
 
-         EXPECT_TRUE( invoked);
+         EXPECT_TRUE( invoked) << CASUAL_NAMED_VALUE( coordinate);
       }
 
 

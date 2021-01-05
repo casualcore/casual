@@ -104,7 +104,7 @@ namespace casual
                                   communication::tcp::socket::listen( information.address),
                                   information};
 
-                              // we need the socket to not block if reverse-inbound dies in the 'connection-phase'
+                              // we need the socket to not block in accept. 
                               result.socket.set( communication::socket::option::File::no_block);
 
                               return result;
@@ -198,6 +198,8 @@ namespace casual
                   {
                      return [&state, handler = gateway::outbound::handle::external( state)]( strong::file::descriptor::id descriptor) mutable
                      {
+                        Trace trace{ "gateway::outbound::reverse::local::external::dispatch"};
+
                         auto is_connection = [descriptor]( auto& connection)
                         {
                            return connection.device.connector().descriptor() == descriptor;
@@ -207,6 +209,7 @@ namespace casual
                         {
                            try
                            {
+                              state.external.last = descriptor;
                               handler( communication::device::blocking::next( found->device));
                            }
                            catch( ...)
@@ -225,39 +228,6 @@ namespace casual
 
                namespace listener
                {
-                  struct Dispatch
-                  {
-                     Dispatch( State& state) : m_state{ &state}
-                     {
-                     }
-                     
-                     std::vector< strong::file::descriptor::id> descriptors() const 
-                     { 
-                        std::vector< strong::file::descriptor::id> result;
-                        algorithm::transform( m_state->listeners, result, []( auto& listener){ return listener.socket.descriptor();});
-                        return result;
-                     }
-
-                     void read( strong::file::descriptor::id descriptor)
-                     {
-                        Trace trace{ "gateway::outbound::reverse::local::external::listener::Dispatch::read"};
-
-                        if( auto found = algorithm::find( m_state->listeners, descriptor))
-                        {
-                           log::line( verbose::log, "found: ", *found);
-
-                           if( auto socket = communication::tcp::socket::accept( found->socket))
-                           {
-                              // start the connection phase against the other inbound
-                              outbound::handle::connect( *m_state, std::move( socket), found->configuration);
-                           }
-                        }
-                     }
-
-                  private:
-                     State* m_state;
-                  };
-
                   namespace dispatch
                   {
                      auto create( State& state)
@@ -272,6 +242,9 @@ namespace casual
 
                               if( auto socket = communication::tcp::socket::accept( found->socket))
                               {
+                                 // the socket needs to be 'blocking'
+                                 socket.unset( communication::socket::option::File::no_block);
+
                                  // start the connection phase against the other inbound
                                  outbound::handle::connect( state, std::move( socket), found->configuration);
                               }
@@ -288,7 +261,8 @@ namespace casual
             auto condition( State& state)
             {
                return communication::select::dispatch::condition::compose(
-                  communication::select::dispatch::condition::done( [&state](){ return state.done();})
+                  communication::select::dispatch::condition::done( [&state](){ return state.done();}),
+                  communication::select::dispatch::condition::idle( [&state](){ outbound::handle::idle( state);})
                );
             }
 

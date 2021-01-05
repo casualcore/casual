@@ -56,7 +56,7 @@ namespace casual
 
       void point( const state::route::Point& point)
       {
-         Trace trace{ "gateway::reverse::outbound::error::reply::point"};
+         Trace trace{ "gateway::outbound::error::reply::point"};
          log::line( verbose::log, "point: ", point);
 
          switch( point.type)
@@ -91,6 +91,10 @@ namespace casual
                local::send::empty< common::message::gateway::domain::discover::Reply>( point);
                break;
             }
+            case message::domain::connect::Request::type():
+            {
+               break; // no op.
+            }
             default: 
             {
                log::line( log::category::error, "unexpected route point: ", point);
@@ -101,7 +105,7 @@ namespace casual
 
       void point( const state::route::service::Point& point)
       {
-         Trace trace{ "gateway::reverse::outbound::error::reply::point service"};
+         Trace trace{ "gateway::outbound::error::reply::point service"};
          log::line( verbose::log, "point: ", point);
 
          common::message::service::call::Reply message;

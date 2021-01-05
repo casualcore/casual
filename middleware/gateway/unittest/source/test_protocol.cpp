@@ -70,6 +70,18 @@ namespace casual
          local::compare( local::fill< gateway::message::domain::connect::Reply>(), expected);
       }
 
+      TEST( gateway_protocol_v1_1, disconnect_request)
+      {
+         constexpr auto expected = R"(cHPL9BRESkGHswCG8UP8YA==)";
+         local::compare( local::fill< gateway::message::domain::disconnect::Request>(), expected);
+      }
+
+      TEST( gateway_protocol_v1_1, disconnect_reply)
+      {
+         constexpr auto expected = R"(cHPL9BRESkGHswCG8UP8YA==)";
+         local::compare( local::fill< gateway::message::domain::disconnect::Reply>(), expected);
+      }
+
       TEST( gateway_protocol_v1, discover_request)
       {
          constexpr auto expected = R"(cHPL9BRESkGHswCG8UP8YDFdrMYYLkwSv5h376kky4YAAAAAAAAACGRvbWFpbiBBAAAAAAAAAAMAAAAAAAAACHNlcnZpY2UxAAAAAAAAAAhzZXJ2aWNlMgAAAAAAAAAIc2VydmljZTMAAAAAAAAAAwAAAAAAAAAGcXVldWUxAAAAAAAAAAZxdWV1ZTIAAAAAAAAABnF1ZXVlMw==)";

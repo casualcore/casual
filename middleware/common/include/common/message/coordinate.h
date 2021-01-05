@@ -30,18 +30,40 @@ namespace casual
             //! type to correlate the pending fan out request with the upcoming replies
             struct Pending
             {
+               enum struct State : short
+               {
+                  pending,
+                  received,
+                  failed,
+               };
+
+               inline friend std::ostream& operator << ( std::ostream& out, State state)
+               {
+                  switch( state)
+                  {
+                     case State::pending: return out << "pending";
+                     case State::received: return out << "received";
+                     case State::failed: return out << "failed";
+                  }
+                  return out << "<unknown>";
+               }
+
+               Pending() = default;
                inline Pending( common::Uuid correlation, id_type id)
-                  : correlation{ std::move( correlation)}, id{ id} {}
+                  : id{ id}, correlation{ std::move( correlation)}{}
 
-               common::Uuid correlation;
+               State state = State::pending;
                id_type id;
-
+               common::Uuid correlation;
+               
                inline friend bool operator == ( const Pending& lhs, const common::Uuid& rhs) { return lhs.correlation == rhs;}
                inline friend bool operator == ( const Pending& lhs, id_type rhs) { return lhs.id == rhs;}
+               inline friend bool operator == ( const Pending& lhs, State rhs) { return lhs.state == rhs;}
 
                CASUAL_LOG_SERIALIZE(
-                  CASUAL_SERIALIZE( correlation);
+                  CASUAL_SERIALIZE( state);
                   CASUAL_SERIALIZE( id);
+                  CASUAL_SERIALIZE( correlation);
                )
             };
 
@@ -53,7 +75,7 @@ namespace casual
             //! has been 'received'.
             template< typename C>
             auto operator () ( std::vector< Pending> pending, C&& callback)
-               -> decltype( void( callback( std::vector< message_type>{}, std::vector< id_type>{})))
+               -> decltype( void( callback( std::vector< message_type>{}, std::vector< Pending>{})))
             {
                auto& entry = m_entries.emplace_back( std::move( pending), std::forward< C>( callback));
 
@@ -73,9 +95,9 @@ namespace casual
 
             inline void failed( id_type id)
             {
-               algorithm::trim( m_entries, algorithm::remove_if( m_entries, [id]( auto& message)
+               algorithm::trim( m_entries, algorithm::remove_if( m_entries, [id]( auto& entry)
                {
-                  return message.failed( id);
+                  return entry.failed( id);
                }));
             }
 
@@ -93,15 +115,16 @@ namespace casual
 
             struct Entry
             {
-               using callback_t = common::function< void( std::vector< message_type> received, std::vector< id_type> failed)>;
+               using callback_t = common::function< void( std::vector< message_type> received, std::vector< Pending> outcome)>;
 
                inline Entry( std::vector< Pending> pending, callback_t callback)
                   : m_pending{ std::move( pending)}, m_callback{ std::move( callback)} {}
 
                inline bool coordinate( message_type message)
                {
-                  algorithm::trim( m_pending, algorithm::remove( m_pending, message.correlation));
-
+                  if( auto found = algorithm::find( m_pending, message.correlation))
+                     found->state = Pending::State::received;
+                  
                   m_received.push_back( std::move( message));
 
                   return done();
@@ -109,12 +132,11 @@ namespace casual
 
                inline bool failed( id_type id)
                {
-                  auto [ keep, removed] = algorithm::partition( m_pending, predicate::negate( predicate::value::equal( id)));
-                  if( removed)
-                  {
-                     m_failed.push_back( id);
-                     algorithm::trim( m_pending, keep);
-                  }
+                  auto is_pending = [id]( auto& pending){ return pending.id == id && pending.state == Pending::State::pending;};
+                  
+                  for( auto& pending : algorithm::filter( m_pending, is_pending))
+                     pending.state = Pending::State::failed;
+
                   return done();
                }
 
@@ -126,25 +148,23 @@ namespace casual
                CASUAL_LOG_SERIALIZE(
                   CASUAL_SERIALIZE_NAME( m_pending, "pending");
                   CASUAL_SERIALIZE_NAME( m_received, "received");
-                  CASUAL_SERIALIZE_NAME( m_failed, "failed");
                )
 
 
                bool done()
                {
-                  if( ! m_pending.empty())
+                  if( algorithm::any_of( m_pending, predicate::value::equal( Pending::State::pending)))
                      return false;
 
                   log::line( verbose::log, "entry: ", *this);
 
-                  m_callback( std::move( m_received), std::move( m_failed));
+                  m_callback( std::move( m_received), std::move( m_pending));
                   return true;
                }
 
             private:
                std::vector< Pending> m_pending;
                std::vector< message_type> m_received;
-               std::vector< id_type> m_failed;
                callback_t m_callback;
                
             };

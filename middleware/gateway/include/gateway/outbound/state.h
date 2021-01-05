@@ -130,11 +130,18 @@ namespace casual
             std::vector< common::strong::file::descriptor::id> descriptors;
             std::vector< state::external::connection::Information> information;
 
+            //! holds the last external connection that was used
+            common::strong::file::descriptor::id last;
+
             CASUAL_LOG_SERIALIZE( 
                CASUAL_SERIALIZE( connections);
                CASUAL_SERIALIZE( descriptors);
                CASUAL_SERIALIZE( information);
+               CASUAL_SERIALIZE( last);
             )
+
+         private:
+            
          };
 
          struct Lookup
@@ -261,6 +268,9 @@ namespace casual
          } route;
          
          state::Lookup lookup;
+
+         //! holds all connections that has been requested to disconnect.
+         std::vector< common::strong::file::descriptor::id> disconnecting;
          
          struct
          {
@@ -276,7 +286,7 @@ namespace casual
 
          bool done() const;
 
-         //! @returns a reply message to `request` that is filled with what's possible
+         //! @returns a reply message to state `request` that is filled with what's possible
          template< typename M>
          auto reply( M&& request)
          {
@@ -309,6 +319,7 @@ namespace casual
             CASUAL_SERIALIZE( external);
             CASUAL_SERIALIZE( route);
             CASUAL_SERIALIZE( lookup);
+            CASUAL_SERIALIZE( disconnecting);
             CASUAL_SERIALIZE( coordinate);
             CASUAL_SERIALIZE( alias);
             CASUAL_SERIALIZE( order);

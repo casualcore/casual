@@ -162,7 +162,7 @@ domain:
         restart: true
 
     inbounds: 
-      - alias: inbound.1
+      - alias: unique-inbound-alias
         limit:
            size: 2097152
         note: if threshold of 2MB of total payload 'in flight' is reach inbound will stop consume from socket until we're below
@@ -172,18 +172,16 @@ domain:
             note: can be several listening host:port per inbound instance
           - address: some.host.org:7779
 
-      - alias: inbound.2
-        limit:
+      - limit:
            size: 10485760
            messages: 10
-        note: listeners - threshold of either 10 messages OR 10MB - the first that is reach, inbound will stop consume
+        note: (generated alias) listeners - threshold of either 10 messages OR 10MB - the first that is reach, inbound will stop consume
 
         connections:
           - address: some.host.org:7780
           - address: some.host.org:4242
 
-      - alias: inbound.3
-        note: listeners - no limits
+      - note: (generated alias) listeners - no limits
         connections:
            - address: some.host.org:4242
         

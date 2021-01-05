@@ -256,25 +256,53 @@ namespace casual
                   {
                      namespace detail
                      {
-                        auto coordinate( const strong::ipc::id& destination, const Uuid& correlation)
+                        namespace advertise
                         {
-                           return [destination, correlation]( auto replies, auto failed)
+                           template< typename R, typename O>
+                           auto replies( State& state, R& replies, const O& outcome)
                            {
-                              Trace trace{ "gateway::outbound::handle::local::internal::domain::discover::detail::coordinate"};
+                              Trace trace{ "gateway::outbound::handle::local::internal::domain::discover::detail::advertise::replies"};
 
-                              common::message::gateway::domain::discover::Reply message{ process::handle()};
-                              message.correlation = correlation;
-
-                              algorithm::for_each( replies, [&message]( auto& reply)
+                              auto advertise_connection = [&state]( auto& reply, auto connection)
                               {
-                                 auto equal_name = []( auto& lhs, auto& rhs){ return lhs.name == rhs.name;};
-                                 algorithm::append_unique( reply.services, message.services, equal_name);
-                                 algorithm::append_unique( reply.queues, message.queues, equal_name);
-                              });
+                                 auto get_name = []( auto& resource){ return resource.name;};
 
-                              communication::device::blocking::optional::send( destination, message);
+                                 auto advertise = state.lookup.add( 
+                                    connection, 
+                                    algorithm::transform( reply.services, get_name), 
+                                    algorithm::transform( reply.queues, get_name));
+
+
+                                 auto equal_name = []( auto& lhs, auto& rhs){ return lhs.name == rhs;};
+
+                                 // we need to intersect whit the actual 'resource' information with what the state says we should advertise.
+                                 // (we do not know the _information_, and don't really care)
+
+                                 if( auto services = std::get< 0>( algorithm::intersection( reply.services, advertise.services, equal_name)))
+                                 {
+                                    common::message::service::concurrent::Advertise request{ common::process::handle()};
+                                    request.order = state.order;
+                                    algorithm::copy( services, request.services.add);
+
+                                    communication::device::blocking::send( ipc::manager::service(), request);
+                                 }
+
+                                 if( auto queues = std::get< 0>( algorithm::intersection( reply.queues, advertise.queues, equal_name)))
+                                 {
+                                    common::message::queue::concurrent::Advertise request{ common::process::handle()};
+                                    request.order = state.order;
+                                    algorithm::copy( queues, request.queues.add);
+
+                                    communication::device::blocking::send( ipc::manager::optional::queue(), request);
+                                 }
+                              };
+
+                              for( auto& reply : replies)
+                                 if( auto found = algorithm::find( outcome, reply.correlation))
+                                    advertise_connection( reply, found->id);
+
                            };
-                        }
+                        } // advertise
                         
                      } // detail
 
@@ -304,12 +332,13 @@ namespace casual
 
                               algorithm::for_each( state.external.connections, [&state, &result, &message]( auto& connection)
                               {
+                                 auto descriptor = connection.device.connector().descriptor();
+
+                                 if( algorithm::find( state.disconnecting, descriptor))
+                                    return;
+
                                  if( auto correlation = communication::device::blocking::optional::send( connection.device, message))
-                                 {
-                                    auto descriptor = connection.device.connector().descriptor();
-                                    state.route.message.emplace( correlation, message.process, message.type(), descriptor);
                                     result.emplace_back( correlation, descriptor);
-                                 }
                               });
 
                               log::line( verbose::log, "pending: ", result);
@@ -317,9 +346,24 @@ namespace casual
                               return result;
                            };
 
+                           auto callback = [&state, destination = message.process.ipc, correlation]( auto replies, auto outcome)
+                           {
+                              Trace trace{ "gateway::outbound::handle::local::internal::domain::discover::request callback"};
+
+                              detail::advertise::replies( state, replies, outcome);
+
+                              common::message::gateway::domain::discover::accumulated::Reply message;
+                              message.correlation = correlation;
+                              message.replies = std::move( replies);
+                              // make sure we're the replier...
+                              algorithm::for_each( message.replies, []( auto& reply){ reply.process = process::handle();});
+
+                              communication::device::blocking::optional::send( destination, message);
+                           };
+                           
                            state.coordinate.discovery( 
                               send_requests( state, message),
-                              detail::coordinate( message.process.ipc, correlation)
+                              std::move( callback)
                            );
 
                         };
@@ -343,16 +387,15 @@ namespace casual
                               return;
                            }
 
-                           // clears and unadvertise all 'resources', if any.
-                           handle::unadvertise( state.lookup.clear());
-
                            auto pending = [&state]()
                            {
                               auto result = state.coordinate.discovery.empty_pendings();
 
                               auto call = [&]( auto& information)
                               {
-                                 if( information.configuration.services.empty() && information.configuration.queues.empty())
+                                 if( ( information.configuration.services.empty() 
+                                    && information.configuration.queues.empty())
+                                    || algorithm::find( state.disconnecting, information.connection))
                                     return;
 
                                  common::message::gateway::domain::discover::Request request;
@@ -368,8 +411,16 @@ namespace casual
                               return result;
                            };
 
-                           auto callback = [message]( auto&& received, auto failed)
-                           {  
+                           auto callback = [&state, message]( auto&& replies, auto&& outcome)
+                           { 
+                              Trace trace{ "gateway::outbound::handle::local::internal::domain::rediscover::request callback"};
+
+                              // clears and unadvertise all 'resources', if any.
+                              handle::unadvertise( state.lookup.clear());
+
+                              // advertise the newly found, if any.
+                              discover::detail::advertise::replies( state, replies, outcome);
+
                               auto reply = common::message::reverse::type( message, process::handle());
                               communication::device::blocking::optional::send( message.process.ipc, reply);
                            } ;
@@ -458,17 +509,32 @@ namespace casual
                            // should we do discovery
                            if( information->configuration)
                            {
-                              // We make sure we get the reply (hence not forwarding to some other process)
-                              common::message::gateway::domain::discover::Request request{ common::process::handle()};
+                              auto send_request = []( auto& state, auto& message, auto& configuration, auto& destination)
+                              {
+                                 auto result = state.coordinate.discovery.empty_pendings();
 
-                              request.correlation = message.correlation;
+                                 common::message::gateway::domain::discover::Request request{ common::process::handle()};
+                                 request.correlation = message.correlation;
+                                 request.domain = common::domain::identity();
+                                 request.services = configuration.services;
+                                 request.queues = configuration.queues;
+                                 result.emplace_back( tcp::send( state, destination.connection, request), destination.connection);
 
-                              request.domain = common::domain::identity();
-                              request.services = information->configuration.services;
-                              request.queues = information->configuration.queues;
+                                 return result;
+                              };
 
-                              state.route.message.add( request, destination.connection);
-                              tcp::send( state, destination.connection, request);
+                              auto callback = [&state]( auto&& replies, auto&& outcome)
+                              {
+                                 Trace trace{ "gateway::outbound::handle::local::external::connect::reply callback"};
+
+                                 // since we've instigated the request, we just advertise and we're done.
+                                 internal::domain::discover::detail::advertise::replies( state, replies, outcome);
+                              };
+                              
+                              state.coordinate.discovery( 
+                                 send_request( state, message, information->configuration, destination),
+                                 std::move( callback)
+                              );
                            }                              
 
                            log::line( verbose::log, "information: ", *information);
@@ -476,6 +542,25 @@ namespace casual
                      };
                   }
                } // connect
+
+               namespace disconnect
+               {
+                  auto request( State& state)
+                  {
+                     return [&state]( const gateway::message::domain::disconnect::Request& message)
+                     {
+                        Trace trace{ "gateway::outbound::handle::local::external::disconnect::request"};
+                        log::line( verbose::log, "message: ", message);
+
+                        auto descriptor = state.external.last;
+
+                        handle::connection::disconnect( state, descriptor);
+
+                        tcp::send( state, descriptor, common::message::reverse::type( message));
+                     };
+                  }
+                  
+               } // disconnect
 
                namespace service
                {
@@ -599,46 +684,6 @@ namespace casual
                {
                   namespace discover
                   {
-                     namespace detail
-                     {
-                        void advertise( State& state, strong::file::descriptor::id connection, common::message::gateway::domain::discover::Reply& message)
-                        {
-                           Trace trace{ "gateway::outbound::handle::local::external::domain::discover::detail::advertise"};
-
-                           auto get_name = []( auto& resource){ return resource.name;};
-
-                           auto advertise = state.lookup.add( 
-                              connection, 
-                              algorithm::transform( message.services, get_name), 
-                              algorithm::transform( message.queues, get_name));
-
-
-                           auto equal_name = []( auto& lhs, auto& rhs){ return lhs.name == rhs;};
-
-                           // we need to intersect whit the actual 'resource' information with what the state says we should advertise.
-                           // (we do not know the _information_, and don't really care)
-
-                           if( auto services = std::get< 0>( algorithm::intersection( message.services, advertise.services, equal_name)))
-                           {
-                              common::message::service::concurrent::Advertise request{ common::process::handle()};
-                              request.order = state.order;
-                              algorithm::copy( services, request.services.add);
-
-                              communication::device::blocking::send( ipc::manager::service(), request);
-                           }
-
-                           if( auto queues = std::get< 0>( algorithm::intersection( message.queues, advertise.queues, equal_name)))
-                           {
-                              common::message::queue::concurrent::Advertise request{ common::process::handle()};
-                              request.order = state.order;
-                              algorithm::copy( queues, request.queues.add);
-
-                              communication::device::blocking::send( ipc::manager::optional::queue(), request);
-                           }
-                        }                        
-                     } // detail
-
-
                      auto reply( State& state)
                      {
                         return [&state]( common::message::gateway::domain::discover::Reply& message)
@@ -646,26 +691,7 @@ namespace casual
                            Trace trace{ "gateway::outbound::handle::local::external::domain::discover::reply"};
                            log::line( verbose::log, "message: ", message);
 
-                           auto destination = state.route.message.consume( message.correlation);
-
-                           if( ! destination)
-                           {
-                              log::line( log::category::error, code::casual::internal_correlation, " failed to correlate [", message.correlation, "] reply with a destination - action: ignore");
-                              return;
-                           }
-
-                           // advertise services and/or queues, if any.
-                           detail::advertise( state, destination.connection, message);
-
-                           // coordinate only if we're not the caller (we use this in the configuration step)
-                           if( destination.process != process::handle())
-                           {
-                              Trace trace{ "gateway::outbound::handle::local::external::domain::discover::reply forward reply"};
-
-                              message.process = common::process::handle();
-                              state.coordinate.discovery( std::move( message));
-                           }
-                         
+                           state.coordinate.discovery( std::move( message));                         
                         };
                      }
                   } // discover
@@ -706,6 +732,7 @@ namespace casual
       {
          return {
             local::external::connect::reply( state),
+            local::external::disconnect::request( state),
             
             // service
             local::external::service::call::reply( state),
@@ -763,8 +790,25 @@ namespace casual
             algorithm::for_each( state.route.message.consume( descriptor), error_reply);
             algorithm::for_each( state.route.service.message.consume( descriptor), error_reply);
 
+            // connection might have been in 'disconnecting phase'
+            algorithm::trim( state.disconnecting, algorithm::remove( state.disconnecting, descriptor));
+
             // remove the information about the 'connection'.
             return state.external.remove( state.directive, descriptor);
+         }
+
+         void disconnect( State& state, common::strong::file::descriptor::id descriptor)
+         {
+            Trace trace{ "gateway::outbound::error::reply::connection::disconnect"};
+            log::line( verbose::log, "descriptor: ", descriptor);
+
+            // unadvertise all 'orphanage' services and queues, if any.
+            handle::unadvertise( state.lookup.remove( descriptor));
+
+            // take care of aggregated replies, if any.
+            state.coordinate.discovery.failed( descriptor);
+
+            state.disconnecting.push_back( descriptor);
          }
          
       } // connection
@@ -793,6 +837,26 @@ namespace casual
 
       }
 
+      std::vector< configuration::model::gateway::outbound::Connection> idle( State& state)
+      {
+         if( state.disconnecting.empty())
+            return {};
+
+         auto no_pending = [&state]( auto& descriptor)
+         {
+            return ! state.route.service.message.associated( descriptor) 
+               && ! state.route.message.associated( descriptor);
+         };
+
+         std::vector< configuration::model::gateway::outbound::Connection> result;
+
+         for( auto descriptor : algorithm::extract( state.disconnecting, algorithm::filter( state.disconnecting, no_pending)))
+            if( auto configuration = handle::connection::lost( state, descriptor))
+               result.push_back( std::move( configuration.value()));
+
+         return result;
+      }
+
       void shutdown( State& state)
       {
          Trace trace{ "gateway::outbound::handle::shutdown"};
@@ -808,6 +872,9 @@ namespace casual
             communication::device::blocking::optional::send( local::ipc::manager::service(), state.route.service.metric);
             state.route.service.metric.metrics.clear();
          }
+
+         for( auto descriptor : range::to_vector( state.external.descriptors))
+            handle::connection::disconnect( state, descriptor);
 
          log::line( verbose::log, "state: ", state);
       }

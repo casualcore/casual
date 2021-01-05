@@ -136,23 +136,15 @@ domain:
 
          casual::service::unittest::advertise( { "a"});
 
-         // discover to make sure outbound(s) knows about wanted services
-         auto discovered = unittest::discover( { "a"}, {});
-
          auto state = local::state::until( []( auto& state)
          { 
             return ! state.connections.empty() && ! state.connections[ 0].remote.name.empty();
          });
 
-         common::message::gateway::domain::discover::accumulated::Reply reply;
-         {
-            common::message::gateway::domain::discover::Request message{ process::handle()};
-            message.services = { "a"};
-            auto correlation = communication::device::blocking::send( communication::instance::outbound::gateway::manager::device(), message);
-            communication::device::blocking::receive( communication::ipc::inbound::device(), reply, correlation);
-         }
+         // should be found
+         auto discovered = unittest::discover( { "a"}, {});
             
-         EXPECT_TRUE( ! reply.replies.empty());
+         EXPECT_TRUE( ! discovered.replies.empty());
       }
 
       namespace local
@@ -196,29 +188,21 @@ domain:
 
          casual::service::unittest::advertise( { "a"});
 
-         // discover to make sure outbound(s) knows about wanted services
-         auto discovered = unittest::discover( { "a"}, {});
 
          auto state = local::state::until( []( auto& state)
          { 
             return ! state.connections.empty() && ! state.connections[ 0].remote.name.empty();
          });
 
-         common::message::gateway::domain::discover::accumulated::Reply reply;
-         {
-            common::message::gateway::domain::discover::Request message{ process::handle()};
-            message.services = { "a"};
-            auto correlation = communication::device::blocking::send( communication::instance::outbound::gateway::manager::device(), message);
-            communication::device::blocking::receive( communication::ipc::inbound::device(), reply, correlation);
-         }
+         auto discovered = unittest::discover( { "a"}, {});
 
          auto equal_name = []( auto& lhs, auto& rhs){ return lhs.name == rhs;};
 
-         ASSERT_TRUE( reply.replies.size() == 1);
-         EXPECT_TRUE( algorithm::equal( reply.replies[ 0].services, unittest::to::vector( { "a"}), equal_name)) << CASUAL_NAMED_VALUE( reply.replies[ 0].services);
+         ASSERT_TRUE( discovered.replies.size() == 4) << CASUAL_NAMED_VALUE( discovered);
+         EXPECT_TRUE( algorithm::equal( discovered.replies[ 0].services, unittest::to::vector( { "a"}), equal_name)) << CASUAL_NAMED_VALUE( discovered.replies[ 0].services);
             
-
-         auto& process = reply.replies.at( 0).process;
+         auto& process = discovered.replies.at( 0).process;
+         ASSERT_TRUE( process) << CASUAL_NAMED_VALUE( process);
 
          const auto data = common::unittest::random::binary( 128);
 

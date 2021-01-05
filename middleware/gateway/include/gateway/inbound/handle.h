@@ -26,8 +26,17 @@ namespace casual
       {
          //! tries to compensate for the lost connection
          std::optional< configuration::model::gateway::inbound::Connection> lost( State& state, common::strong::file::descriptor::id descriptor);
+
+         //! will try to disconnect the socket, depending on the protocoll version it's either 'smooth' or 'abrupt'
+         void disconnect( State& state, common::strong::file::descriptor::id descriptor);
          
-      } // connection 
+      } // connection
+
+      //! take care of pending tasks, when message dispatch is idle.
+      void idle( State& state);
+      
+      //! soft shutdown - tries to ask pollitely to outbounds, and then disconnect.
+      void shutdown( State& state);
 
       //! hard shutdown - try to cancel stuff directly with best effort.
       void abort( State& state);
