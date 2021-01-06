@@ -57,9 +57,7 @@ namespace casual
             template< typename P>
             Protocol( P&& protocol)
                : Protocol{ std::make_unique< model< P>>( std::move( protocol))}
-            {
-            }
-
+            {}
 
             ~Protocol();
 
@@ -67,18 +65,13 @@ namespace casual
             Protocol& operator = ( Protocol&&);
 
 
-            bool call() const { return m_implementation->call();}
+            bool call() const { return m_concept->call();}
 
-            protocol::result_type finalize() { return m_implementation->finalize();}
-            void exception() { m_implementation->exception();}
-            const std::string& type() const { return m_implementation->type();}
+            protocol::result_type finalize() { return m_concept->finalize();}
+            void exception() { m_concept->exception();}
+            const std::string& type() const { return m_concept->type();}
 
-            template< typename T>
-            Protocol& operator >> ( T&& value)
-            {
-               serialize( std::forward< T>( value), m_implementation->input());
-               return *this;
-            }
+
 
             template< typename R, typename N> 
             auto extract( N&& name)
@@ -89,9 +82,36 @@ namespace casual
             }
 
             template< typename T>
+            Protocol& operator >> ( T&& value)
+            {
+               serialize( std::forward< T>( value), m_concept->input());
+               return *this;
+            }
+
+            template< typename T>
             Protocol& operator << ( T&& value)
             {
-               serialize( std::forward< T>( value), m_implementation->output());
+               // check if user uses const lvalues for _result_. Don't really see a
+               // use case when this would be natural, based on the intent of the 
+               // `Protocol` type. But apparently there are... 
+               if constexpr ( std::is_const_v< std::remove_reference_t< T>>)
+               {
+                  auto& io = m_concept->output();
+
+                  if( io.readers.empty())
+                  {
+                     for( auto& archive : io.writers)
+                        *archive << value;
+                  }
+                  else
+                  {
+                     // need to copy to enable protocols that mutates the value (describe is one).
+                     auto non_const = value;
+                     serialize( non_const, io);
+                  }
+               }
+               else // use the effective, normal branch
+                  serialize( std::forward< T>( value), m_concept->output());
                return *this;
             }
 
@@ -105,8 +125,8 @@ namespace casual
 
             //! @attention internal use only
             //! @{
-            auto& input() { return m_implementation->input();}
-            auto& output() { return m_implementation->output();}
+            auto& input() { return m_concept->input();}
+            auto& output() { return m_concept->output();}
             //! @}
 
          private:
@@ -124,7 +144,7 @@ namespace casual
             };
 
             template< typename P>
-            Protocol( std::unique_ptr< P>&& implementation) : m_implementation( std::move( implementation)) {}
+            Protocol( std::unique_ptr< P>&& concept) : m_concept( std::move( concept)) {}
 
             template< typename Protocol>
             struct model : concept
@@ -147,11 +167,13 @@ namespace casual
             template< typename T, typename A>
             void serialize( T&& value, A& io)
             {
-               common::algorithm::for_each( io.readers, [&value]( auto& archive){ *archive >> value;});
-               common::algorithm::for_each( io.writers, [&value]( auto& archive){ *archive << value;});
+               for( auto& archive : io.readers)
+                  *archive >> value;
+               for( auto& archive : io.writers)
+                  *archive << value;
             }
 
-            std::unique_ptr< concept> m_implementation;
+            std::unique_ptr< concept> m_concept;
          };
 
          namespace protocol

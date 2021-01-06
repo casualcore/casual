@@ -165,6 +165,46 @@ namespace casual
          }
       }
 
+      TEST_P( protocol, input_output_serialize_const_unnamed)
+      {
+         common::unittest::Trace trace;
+
+         auto type = GetParam();
+
+         //! TODO maintainence: fix ini so it can handle unnamed stuff...
+         if( type == common::buffer::type::ini())
+            return;
+
+         auto protocol = service::protocol::deduce( local::prepare( type));
+
+         {
+            const auto value  = []()
+            {
+               test::SimpleVO value;
+               value.m_bool = false;
+               value.m_long = 42;
+               value.m_string = "poop";
+               return value;
+            }();
+
+            protocol << value;
+         }
+
+         auto result = protocol.finalize();
+
+         {
+            test::SimpleVO value;
+
+            auto reader = common::serialize::create::reader::strict::from( result.payload.type, result.payload.memory);
+            reader >> value;
+
+            EXPECT_TRUE( value.m_bool == false);
+            EXPECT_TRUE( value.m_long == 42);
+            EXPECT_TRUE( value.m_string == "poop");
+         }
+      }
+
+      
       namespace local
       {
          namespace
