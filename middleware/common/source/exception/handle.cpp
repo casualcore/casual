@@ -26,7 +26,6 @@ namespace casual
          {
             namespace
             {
-              
                std::error_code handle() noexcept
                {
                   try
@@ -35,12 +34,10 @@ namespace casual
                   }
                   catch( std::error_code code)
                   {
-                     common::log::line( log::debug, "code: ", code);
                      return code;
                   }
                   catch( const std::system_error& exception)
                   {
-                     common::log::line( log::debug, "exception: ", exception);
                      return exception.code();
                   }
                   catch( const std::exception& exception)
@@ -74,12 +71,14 @@ namespace casual
 
             void error() noexcept
             {
-               common::log::line( common::log::category::error, local::handle());
+               auto code = local::handle();
+               common::log::line( common::log::category::error, code);
             }
             
             void silent() noexcept
             {
-               common::log::line( common::log::debug, local::handle());
+               auto code = local::handle();
+               common::log::line( common::log::debug, code);
             }
          } // sink
 

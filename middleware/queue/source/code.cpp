@@ -8,9 +8,12 @@
 
 #include "common/cast.h"
 #include "common/code/serialize.h"
+#include "common/code/category.h"
+#include "common/code/log.h"
 
 namespace casual
 {
+
    namespace queue
    {
       namespace local
@@ -35,6 +38,28 @@ namespace casual
                      case code::system: return "system";
                   }
                   return "unknown";
+               }
+
+               // defines the log condition equivalence, so we can compare for logging
+               bool equivalent( int code, const std::error_condition& condition) const noexcept override
+               {
+                  if( ! common::code::is::category< common::code::log>( condition))
+                     return false;
+
+                  switch( static_cast< queue::code>( code))
+                  {
+                     case code::ok:
+                     case code::argument:
+                     case code::no_message: 
+                        return condition == common::code::log::user;
+
+                     case code::no_queue: 
+                        return condition == common::code::log::warning;
+
+                     // rest is error
+                     default: 
+                        return condition == common::code::log::error;
+                  }
                }
             };
 

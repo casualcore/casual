@@ -28,19 +28,13 @@ namespace casual
 
             auto result = common::message::reverse::type( message);
 
-            if( auto found = algorithm::find( dequeues, message.correlation))
-            {
+            auto partition = algorithm::partition( dequeues, [&message]( auto& m){ return m.correlation != message.correlation;});
+            log::line( verbose::log, "found: ", std::get< 1>( partition));
+            
+            if( std::get< 1>( partition))
                result.found = true;
-               dequeues.erase( std::begin( found));
-            }
-            else 
-            {
-               // we assume that we've sent the dequeue already, but caller hasn't consumed the message yet...
+            else
                result.found = false;
-               log::line( verbose::log, "failed to correlate pending dequeue from: ", message.process);
-               log::line( verbose::log, "message: ", message);
-               log::line( verbose::log, "dequeues: ", dequeues);
-            }
 
             return result;
          }
