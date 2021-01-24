@@ -366,6 +366,10 @@ domain:
          ASSERT_TRUE( state.connections.size() == 2);
          algorithm::sort( state.connections);
 
+         // discover to make sure outbound(s) knows about wanted queues
+         auto discovered = unittest::discover( { }, { "a"});
+         ASSERT_TRUE( discovered.replies.size() == 1);
+
          // Gateway is connected to it self. Hence we can send a request to the outbound, and it
          // will send it to the corresponding inbound, and back in the current (mockup) domain
 
