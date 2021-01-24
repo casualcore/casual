@@ -110,7 +110,7 @@ namespace casual
 
             namespace rollback
             {
-               using base_request = basic_request< Type::transaction_Rollback_request>;
+               using base_request = basic_request< Type::transaction_rollback_request>;
                struct Request : base_request
                {
                   using base_request::base_request;

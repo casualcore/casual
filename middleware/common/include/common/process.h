@@ -38,8 +38,11 @@ namespace casual
          //! @return the basename of the current process
          const std::string& basename();
 
+         //! @return the directory of the current process
+         const std::string& directory();
+
          //! Holds pid and ipc-queue for a given process
-         struct Handle
+         struct Handle : Compare< Handle>
          {
 
             Handle() = default;
@@ -50,10 +53,6 @@ namespace casual
 
             //! unique identifier for this process
             strong::ipc::id ipc;
-
-            friend bool operator == ( const Handle& lhs, const Handle& rhs);
-            inline friend bool operator != ( const Handle& lhs, const Handle& rhs) { return !( lhs == rhs);}
-            friend bool operator < ( const Handle& lhs, const Handle& rhs);
 
             //! extended equality
             inline friend bool operator == ( const Handle& lhs, strong::process::id rhs) { return lhs.pid == rhs;}
@@ -67,12 +66,14 @@ namespace casual
             {
                return pid && ipc;
             }
+            
+            //! for Compare
+            inline auto tie() const { return std::tie( pid, ipc);}
 
             CASUAL_CONST_CORRECT_SERIALIZE(
-            {
                CASUAL_SERIALIZE( pid);
                CASUAL_SERIALIZE( ipc);
-            })
+            )
          };
 
          //! @return the process handle for current process

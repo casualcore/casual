@@ -7,10 +7,12 @@
 
 #pragma once
 
+#include "queue/common/ipc/message.h"
+
 #include "common/communication/ipc.h"
-#include "common/message/queue.h"
-#include "common/message/gateway.h"
 #include "common/domain.h"
+#include "common/state/machine.h"
+
 
 #include "configuration/model.h"
 
@@ -20,123 +22,178 @@
 
 namespace casual
 {
-   namespace queue
+   namespace queue::manager
    {
-      namespace manager
+
+      namespace state
       {
-         using size_type = platform::size::type;
-
-         struct State
+         namespace entity
          {
-
-            State();
-
-            struct Group
+            enum struct Lifetime : short
             {
-               Group();
-               Group( std::string name, common::process::Handle process);
-
-               std::string name;
-               common::process::Handle process;
-
-               std::string queuebase;
-
-               inline bool connected() const { return process.ipc && process.pid;}
-
-               friend bool operator == ( const Group& lhs, common::strong::process::id pid);
-
-               CASUAL_LOG_SERIALIZE({
-                  CASUAL_NAMED_VALUE( name);
-                  CASUAL_NAMED_VALUE( process);
-                  CASUAL_NAMED_VALUE( queuebase);
-                  CASUAL_NAMED_VALUE_NAME( connected(), "connected");
-               })
+               absent,
+               spawned,
+               connected,
+               running,
+               shutdown,
             };
-
-            //! Represent a remote gateway that exports 0..* queues
-            struct Remote
-            {
-               Remote();
-               Remote( common::process::Handle process);
-
-               common::process::Handle process;
-               size_type order = 0;
-
-               friend bool operator == ( const Remote& lhs, const common::process::Handle& rhs);
-               friend bool operator == ( const Remote& lhs, common::strong::process::id pid);
-
-               CASUAL_LOG_SERIALIZE({
-                  CASUAL_NAMED_VALUE( process);
-                  CASUAL_NAMED_VALUE( order);
-               })
-
-            };
-
-            struct Queue
-            {
-               Queue() = default;
-               Queue( common::process::Handle process, common::strong::queue::id queue, size_type order = 0)
-                  : process{ std::move( process)}, queue{ queue}, order{ order} {}
-
-               common::process::Handle process;
-               common::strong::queue::id queue;
-               size_type order = 0;
-
-               friend bool operator < ( const Queue& lhs, const Queue& rhs);
-               inline friend bool operator == ( const Queue& lhs, common::strong::process::id rhs) { return lhs.process == rhs;}
-
-               CASUAL_LOG_SERIALIZE({
-                  CASUAL_SERIALIZE( process);
-                  CASUAL_SERIALIZE( queue);
-                  CASUAL_SERIALIZE( order);
-               })
-            };
-
-            std::unordered_map< std::string, std::vector< Queue>> queues;
-
-            struct
-            {
-               std::deque< common::message::queue::lookup::Request> lookups;
-
-               CASUAL_LOG_SERIALIZE({
-                  CASUAL_SERIALIZE( lookups);
-               })
-            } pending;
+            std::ostream& operator << ( std::ostream& out, Lifetime value);
             
+         } // entity
 
-            std::vector< Group> groups;
-            std::vector< Remote> remotes;
-            std::vector< common::process::Handle> forwards;
+         template< typename C>
+         struct Entity : common::Compare< Entity< C>>
+         {
+            explicit Entity( C configuration) : configuration{ std::move( configuration)}
+            {}
 
+            common::state::Machine< entity::Lifetime> state;
+            common::process::Handle process;
+            C configuration;
 
-            struct
-            {
-               //! where to find casual-queue-group and forwards
-               std::string path;
-            } executable;
+            inline friend bool operator == ( const Entity& lhs, common::strong::process::id pid) { return lhs.process.pid == pid;}
 
+            auto tie() const { return std::tie( configuration);}
 
-            std::vector< common::strong::process::id> processes() const noexcept;
-
-            //! Removes all queues associated with the process
-            //!
-            //! @param pid process id
-            void remove_queues( common::strong::process::id pid);
-
-            //! Removes the process (group/gateway) and all queues associated with the process
-            //!
-            //! @param pid process id
-            void remove( common::strong::process::id pid);
-
-            void update( common::message::queue::concurrent::Advertise& message);
-
-            //const common::message::configuration::queue::model::Group* group_configuration( const std::string& name);
-            casual::configuration::model::queue::Model model;
-
+            CASUAL_LOG_SERIALIZE(
+               CASUAL_SERIALIZE( state);
+               CASUAL_SERIALIZE( process);
+               CASUAL_SERIALIZE( configuration);
+            )
          };
 
-      } // manager
-   } // queue
+         using Group = Entity< configuration::model::queue::Group>;
+         namespace forward
+         {
+            using Group = Entity< configuration::model::queue::forward::Group>;
+         }
+
+         namespace entity
+         {
+            inline auto path( const Group&) { return common::string::compose( common::process::directory(), "casual-queue-group");};
+            inline auto path( const forward::Group&) { return common::string::compose( common::process::directory(), "casual-queue-forward-group");};
+            
+         } // entity
+
+
+         //! Represent a remote gateway that exports 0..* queues
+         struct Remote
+         {
+            common::process::Handle process;
+            platform::size::type order{};
+
+            inline friend bool operator == ( const Remote& lhs, const common::process::Handle& rhs) { return lhs.process == rhs;}
+            inline friend bool operator == ( const Remote& lhs, common::strong::process::id pid) { return lhs.process == pid;}
+
+            CASUAL_LOG_SERIALIZE(
+               CASUAL_SERIALIZE( process);
+               CASUAL_SERIALIZE( order);
+            )
+         };
+
+
+         struct Queue
+         {
+            Queue() = default;
+            inline Queue( common::process::Handle process, common::strong::queue::id queue, platform::size::type order = 0)
+               : process{ std::move( process)}, queue{ queue}, order{ order} {}
+
+            common::process::Handle process;
+            common::strong::queue::id queue;
+            platform::size::type order{};
+
+            inline auto remote() const { return order > 0;}
+
+            inline friend bool operator < ( const Queue& lhs, const Queue& rhs) { return lhs.order < rhs.order;};
+            inline friend bool operator == ( const Queue& lhs, common::strong::process::id rhs) { return lhs.process == rhs;}
+
+            CASUAL_LOG_SERIALIZE(
+               CASUAL_SERIALIZE( process);
+               CASUAL_SERIALIZE( queue);
+               CASUAL_SERIALIZE( order);
+            )
+         };
+
+         enum struct Runlevel : short
+         {
+            running,
+            shutdown,
+            error,
+         };
+         std::ostream& operator << ( std::ostream& out, Runlevel value);
+         
+      } // state
+
+      struct State
+      {
+         common::state::Machine< state::Runlevel> runlevel;
+
+         std::unordered_map< std::string, std::vector< state::Queue>> queues;
+
+         struct
+         {
+            std::deque< ipc::message::lookup::Request> lookups;
+
+            CASUAL_LOG_SERIALIZE(
+               CASUAL_SERIALIZE( lookups);
+            )
+         } pending;
+         
+         std::vector< state::Group> groups;
+         
+         struct
+         {
+            std::vector< state::forward::Group> groups;
+            
+            CASUAL_LOG_SERIALIZE( CASUAL_SERIALIZE( groups);)
+         } forward;
+
+
+         std::vector< state::Remote> remotes;
+         
+         //! @returns 0..1 queue (providers) that provides the queue
+         //! @{
+         const state::Queue* queue( const std::string& name) const noexcept;
+         const state::Queue* queue( common::strong::queue::id id) const noexcept;
+         //! @}
+
+         void update( queue::ipc::message::group::configuration::update::Reply group);
+         void update( queue::ipc::message::Advertise& message);
+
+         std::vector< common::strong::process::id> processes() const noexcept;
+
+         //! Removes all queues associated with the process
+         //!
+         //! @param pid process id
+         void remove_queues( common::strong::process::id pid);
+
+         //! Removes the process (group/gateway) and all queues associated with the process
+         //!
+         //! @param pid process id
+         void remove( common::strong::process::id pid);
+
+         
+
+         //! return true if no forwards and queues are running
+         bool done() const;
+
+         //! return true if all forwards and queues are at least in running mode.
+         bool ready() const;
+
+         std::string note;
+
+         CASUAL_LOG_SERIALIZE(
+            CASUAL_SERIALIZE( runlevel);
+            CASUAL_SERIALIZE( queues);
+            CASUAL_SERIALIZE( pending);
+            CASUAL_SERIALIZE( groups);
+            CASUAL_SERIALIZE( forward);
+            CASUAL_SERIALIZE( remotes);
+            CASUAL_SERIALIZE( note);
+         )
+
+      };
+   } // queue::manager
 } // casual
 
 

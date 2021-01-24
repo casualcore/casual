@@ -43,13 +43,12 @@ namespace casual
                   constexpr auto configuration = R"(
 domain:
   name: domain-a
-  default:
-    environment:
-      variables:
-        - key: domain-a
-          value: value-a
-      files:
-        - file-a
+  environment:
+    variables:
+      - key: domain-a
+        value: value-a
+    files:
+      - file-a
   transaction:
      default:
         resource:
@@ -70,15 +69,16 @@ domain:
                   constexpr auto configuration = R"(
 domain:
   name: domain-b
-  default:
-    environment:
-      variables:
-        - key: domain-b
-          value: value-b
-        - key: domain-a
-          value: value-a-2
-      files:
-        - file-b
+
+  environment:
+    variables:
+      - key: domain-b
+        value: value-b
+      - key: domain-a
+        value: value-a-2
+    files:
+      - file-b
+
   transaction:
      log: b
      default:
@@ -177,9 +177,11 @@ domain:
 
             auto value = user::load( { file_a.path(), file_b.path()});
 
-            auto& tran = local::instansiate_optional( value.transaction);
+            ASSERT_TRUE( value.transaction);
+            auto& tran = value.transaction.value();
+            
             EXPECT_TRUE( tran.log == "b");
-            ASSERT_TRUE( tran.resources.size() == 2);
+            ASSERT_TRUE( tran.resources.size() == 2) << CASUAL_NAMED_VALUE( tran);
             {
                auto& resource = tran.resources[ 0];
                EXPECT_TRUE( resource.name == "rm-a");
@@ -200,7 +202,7 @@ domain:
 
             auto value =  local::domain_a() + local::domain_b();
 
-            auto& environment = local::instansiate_optional( value.defaults).environment;
+            auto& environment = local::instansiate_optional( value.environment);
 
             ASSERT_TRUE( environment.variables.size() == 2);
             EXPECT_TRUE( environment.variables[ 0].key == "domain-b");

@@ -6,19 +6,13 @@
 
 namespace casual
 {
-   namespace queue
+   namespace queue::group::queuebase::schema
    {
-      namespace group
+      namespace table
       {
-         namespace database
+         inline namespace v3_0
          {
-            namespace schema
-            {
-               namespace table
-               {
-                  inline namespace v3_0
-                  {
-                     constexpr auto queue = R"( CREATE TABLE IF NOT EXISTS queue 
+            constexpr auto queue = R"( CREATE TABLE IF NOT EXISTS queue 
 (
    id                INTEGER  PRIMARY KEY,
    name              TEXT     UNIQUE,
@@ -35,7 +29,7 @@ namespace casual
 ); )";
 
 
-                     constexpr auto message = R"( CREATE TABLE IF NOT EXISTS message 
+         constexpr auto message = R"( CREATE TABLE IF NOT EXISTS message 
 (  id            BLOB PRIMARY KEY,
    queue         INTEGER  NOT NULL,
    origin        NUMBER   NOT NULL, -- the first queue a message is enqueued to
@@ -50,14 +44,14 @@ namespace casual
    payload       BLOB,
    FOREIGN KEY (queue) REFERENCES queue( id)
 ); )";
-                     namespace index
-                     {
-                        constexpr auto queue = R"( 
+            namespace index
+            {
+               constexpr auto queue = R"( 
 CREATE INDEX IF NOT EXISTS i_id_queue ON queue ( id);
 CREATE INDEX IF NOT EXISTS i_queue_count ON queue ( count);
 )";
 
-                        constexpr auto message = R"( 
+               constexpr auto message = R"( 
 CREATE INDEX IF NOT EXISTS i_message_id  ON message ( id);
 CREATE INDEX IF NOT EXISTS i_message_queue  ON message ( queue);
 CREATE INDEX IF NOT EXISTS i_dequeue_message  ON message ( queue, state, available ASC, timestamp ASC);
@@ -66,13 +60,13 @@ CREATE INDEX IF NOT EXISTS i_message_timestamp ON message ( timestamp ASC);
 CREATE INDEX IF NOT EXISTS i_message_available ON message ( available ASC);
 CREATE INDEX IF NOT EXISTS i_gtrid_message  ON message ( gtrid, state);
 )";
-                     } // index
-                  } // inline v2_0
-               } // table
+            } // index
+         } // inline v2_0
+      } // table
 
-               inline namespace v3_0
-               {
-                  constexpr auto triggers = R"(
+      inline namespace v3_0
+      {
+         constexpr auto triggers = R"(
 CREATE TRIGGER IF NOT EXISTS insert_message INSERT ON message 
 BEGIN
    UPDATE queue SET
@@ -135,20 +129,17 @@ BEGIN
 END;
                
 )";
-                  namespace drop
-                  {
-                     constexpr auto triggers = R"(
+         namespace drop
+         {
+            constexpr auto triggers = R"(
 DROP TRIGGER IF EXISTS insert_message;
 DROP TRIGGER IF EXISTS update_message_state;
 DROP TRIGGER IF EXISTS update_message_queue;
 DROP TRIGGER IF EXISTS delete_message;
 )";
-                  } // drop
-                  
-               } // inline v2_0
+         } // drop
+         
+      } // inline v2_0
 
-            } // schema
-         } // database
-      } // group
-   } // queue
+   } // queue::group::queuebase::schema
 } // casual

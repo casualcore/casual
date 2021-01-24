@@ -67,7 +67,7 @@ domain:
          // roundtrip
          const auto result = model::transform( model::transform( origin));
 
-         EXPECT_TRUE( origin.domain.environment == result.domain.environment);
+         EXPECT_TRUE( origin.domain.environment == result.domain.environment) << CASUAL_NAMED_VALUE( origin.domain.environment) << "\n" << CASUAL_NAMED_VALUE( result.domain.environment);
          EXPECT_TRUE( origin.domain.servers == result.domain.servers) << CASUAL_NAMED_VALUE( origin.domain.servers) << "\n" << CASUAL_NAMED_VALUE( result.domain.servers);
          EXPECT_TRUE( origin.domain.executables == result.domain.executables);
          EXPECT_TRUE( origin.domain.groups == result.domain.groups);

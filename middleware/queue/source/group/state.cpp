@@ -12,38 +12,50 @@
 namespace casual
 {
    using namespace common;
-   namespace queue
+   namespace queue::group
    {
-      namespace group
+      namespace state
       {
-         void State::Pending::add( common::message::queue::dequeue::Request&& message)
+         std::ostream& operator << ( std::ostream& out, Runlevel value)
+         {
+            switch( value)
+            {
+               case Runlevel::running: return out << "running";
+               case Runlevel::shutdown:  return out << "shutdown";
+               case Runlevel::error: return out << "error";
+            }
+            return out << "<unknown>";
+         }
+
+         
+         void Pending::add( ipc::message::group::dequeue::Request&& message)
          {
             dequeues.push_back( std::move( message));
          }
 
-         common::message::queue::dequeue::forget::Reply State::Pending::forget( const common::message::queue::dequeue::forget::Request& message)
+         ipc::message::group::dequeue::forget::Reply Pending::forget( const ipc::message::group::dequeue::forget::Request& message)
          {
-            queue::Trace trace{ "queue::group::State::Pending::forget"};
+            queue::Trace trace{ "queue::group::state::Pending::forget"};
             log::line( verbose::log, "message: ", message);
 
             auto result = common::message::reverse::type( message);
 
-            auto partition = algorithm::partition( dequeues, [&message]( auto& m){ return m.correlation != message.correlation;});
-            log::line( verbose::log, "found: ", std::get< 1>( partition));
+            auto [ keep, remove] = algorithm::partition( dequeues, [&message]( auto& m){ return m.correlation != message.correlation;});
+
+            log::line( verbose::log, "found: ", remove);
             
-            if( std::get< 1>( partition))
-               result.found = true;
-            else
-               result.found = false;
+            result.found = ! remove.empty();
+
+            algorithm::trim( dequeues, keep);
 
             return result;
          }
 
-         std::vector< common::message::pending::Message> State::Pending::forget()
+         std::vector< common::message::pending::Message> Pending::forget()
          {
             return algorithm::transform( std::exchange( dequeues, {}), []( auto&& request)
             {
-               common::message::queue::dequeue::forget::Request result{ process::handle()};
+               ipc::message::group::dequeue::forget::Request result{ process::handle()};
                result.correlation = request.correlation;
                result.queue = request.queue;
                result.name = request.name;
@@ -52,9 +64,9 @@ namespace casual
             });
          }
 
-         std::vector< common::message::queue::dequeue::Request> State::Pending::extract( std::vector< common::strong::queue::id> queues)
+         std::vector< ipc::message::group::dequeue::Request> Pending::extract( std::vector< common::strong::queue::id> queues)
          {
-            queue::Trace trace{ "queue::group::State::Pending::extract"};
+            queue::Trace trace{ "queue::group::state::Pending::extract"};
 
             auto partition = algorithm::partition( dequeues, [&queues]( auto& v)
             {
@@ -69,9 +81,9 @@ namespace casual
             return result;
          }
 
-         void State::Pending::remove( common::strong::process::id pid)
+         void Pending::remove( common::strong::process::id pid)
          {
-            queue::Trace trace{ "queue::group::State::Pending::remove"};
+            queue::Trace trace{ "queue::group::state::Pending::remove"};
             log::line( verbose::log, "pid: ", pid);
 
             auto remove = []( auto& container, auto predicate)
@@ -87,6 +99,16 @@ namespace casual
                return m.sent();
             });
          }
-      } // group
-   } // queue
+      } // state
+
+      bool State::done() const noexcept
+      {
+         // likely branch
+         if( runlevel == state::Runlevel::running)
+            return false;
+
+         return pending.empty() && involved.empty();
+      }
+
+   } // queue::group
 } // casual

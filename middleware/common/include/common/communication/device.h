@@ -605,7 +605,7 @@ namespace casual
                }
             }
          } // optional
-      }
+      } // blocking
 
       namespace non::blocking
       {
@@ -643,18 +643,18 @@ namespace casual
             //! (for example. the process has died) `false` is returned
             //! @returns true if sent, false otherwise or if Unavailable
             template< typename... Ts>
-            auto send( Ts&&... ts) -> decltype( void( blocking::send( std::forward< Ts>( ts)...)), bool())
+            auto send( Ts&&... ts) -> decltype( blocking::send( std::forward< Ts>( ts)...))
             {
                try 
                {
-                  return ! non::blocking::send( std::forward< Ts>( ts)...).empty();
+                  return non::blocking::send( std::forward< Ts>( ts)...);
                }
                catch( ...)
                {
                   if( exception::code() == code::casual::communication_unavailable)
                   {
                      log::line( communication::log, code::casual::communication_unavailable, " failed to send message - action: ignore");
-                     return false;
+                     return {};
                   }
                   // propagate other errors
                   throw;

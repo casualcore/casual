@@ -102,11 +102,10 @@ namespace casual
                inline const ipc::Address& destination() const { return m_connector.destination();}
 
                CASUAL_LOG_SERIALIZE(
-               {
                   CASUAL_SERIALIZE_NAME( m_process, "process");
                   CASUAL_SERIALIZE_NAME( m_connector, "connector");
                   CASUAL_SERIALIZE_NAME( m_socket, "socket");
-               })
+               )
 
             protected:
                inline void reset( process::Handle process)
@@ -131,11 +130,10 @@ namespace casual
                void clear();
 
                CASUAL_LOG_SERIALIZE(
-               {
                   base_connector::serialize( archive);
                   CASUAL_SERIALIZE_NAME( m_identity, "identity");
                   CASUAL_SERIALIZE_NAME( m_environment, "environment");
-               })
+               )
                
             private:
                Uuid m_identity;

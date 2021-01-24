@@ -361,21 +361,21 @@ namespace casual::configuration
 
          struct Group : common::Compare< Group>
          {
-            std::string name;
+            std::string alias;
             std::string queuebase;
             std::string note;
             std::vector< Queue> queues;
 
-            inline friend bool operator == ( const Group& lhs, const std::string& name) { return lhs.name == name;}
+            inline friend bool operator == ( const Group& lhs, const std::string& alias) { return lhs.alias == alias;}
 
             CASUAL_CONST_CORRECT_SERIALIZE(
-               CASUAL_SERIALIZE( name);
+               CASUAL_SERIALIZE( alias);
                CASUAL_SERIALIZE( queuebase);
                CASUAL_SERIALIZE( note);
                CASUAL_SERIALIZE( queues);
             )
 
-            inline auto tie() const { return std::tie( name, queuebase, note, queues);}
+            inline auto tie() const { return std::tie( alias, queuebase, note, queues);}
             
          };
 
@@ -448,19 +448,34 @@ namespace casual::configuration
 
                inline auto tie() const { return std::tuple_cat( forward_base::tie(), std::tie( target, reply));}
             };
+
+            struct Group : common::Compare< Group>
+            {
+               std::string alias;
+               std::vector< forward::Service> services;
+               std::vector< forward::Queue> queues;
+               std::string note;
+
+               CASUAL_CONST_CORRECT_SERIALIZE(
+                  CASUAL_SERIALIZE( alias);
+                  CASUAL_SERIALIZE( services);
+                  CASUAL_SERIALIZE( queues);
+                  CASUAL_SERIALIZE( note);
+               )
+
+               inline auto tie() const { return std::tie( alias, services, queues);}
+            };
          } // forward
 
          struct Forward : common::Compare< Forward>
          {
-            std::vector< forward::Service> services;
-            std::vector< forward::Queue> queues;
+            std::vector< forward::Group> groups;
 
             CASUAL_CONST_CORRECT_SERIALIZE(
-               CASUAL_SERIALIZE( services);
-               CASUAL_SERIALIZE( queues);
+               CASUAL_SERIALIZE( groups);
             )
 
-            inline auto tie() const { return std::tie( services, queues);}
+            inline auto tie() const { return std::tie( groups);}
          };
 
          struct Model : common::Compare< Model>

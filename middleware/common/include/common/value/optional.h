@@ -75,22 +75,44 @@ namespace casual
          template< typename T, T empty_value, typename Tag = optional::policy::default_tag, typename S = optional::policy::stream>
          using Optional = basic_optional< T, optional::policy::value_empty< T, empty_value, Tag>, S>;
 
+         namespace detail
+         {
+            // some stuff to only enable std::hash specialization if the value type of
+            // the option can be used with std::hash
+            // if needed somewere else, maybe move this to traits?
+            // @{
+            template< typename T>
+            using detail_has_hash = decltype( std::hash< T>{}( std::declval< T&>()));
+
+            template< typename T>
+            using has_hash = traits::detect::is_detected< detail_has_hash, T>;
+
+            template< typename Type, typename>
+            using enable_hash_helper = Type;
+
+            template< typename Type, typename Key>
+            using enable_hash = enable_hash_helper< Type, std::enable_if_t< has_hash< Key>::value>>;
+            // @}
+
+         } // detail
       } // value
 
    } // common
 } // casual
 
+
 namespace std 
 {
    template< typename T, typename P, typename S>
-   struct hash< casual::common::value::basic_optional< T, P, S>>
+   struct hash< casual::common::value::detail::enable_hash< casual::common::value::basic_optional< T, P, S>, std::remove_const_t< T>>>
    {
       using option_type = casual::common::value::basic_optional< T, P, S>;
 
      auto operator()( const option_type& value) const
      {
-         return std::hash< typename option_type::value_type>{}( value.value());
+         return std::hash< std::remove_const_t< T>>{}( value.value());
      }
    };
 }
+
 

@@ -9,7 +9,6 @@
 
 #include "queue/common/log.h"
 #include "queue/api/queue.h"
-#include "queue/common/transform.h"
 
 #include "common/argument.h"
 #include "common/exception/guard.h"
@@ -102,7 +101,7 @@ namespace casual
          {
             Settings settings;
 
-            common::log::line( common::log::category::warning, "casual-queue-forward-service is deprecated - configure forwards under the queue section in domain configuration");
+            common::log::line( common::log::category::warning, code::casual::invalid_configuration, " casual-queue-forward-service is deprecated - configure forwards under the queue section in domain configuration");
 
             using namespace casual::common::argument;
             Parse{ "queue forward to service",

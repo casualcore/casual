@@ -12,10 +12,12 @@
 #include "common/process.h"
 #include "common/server/lifetime.h"
 #include "common/server/handle/call.h"
-#include "common/message/handle.h"
 #include "common/event/listen.h"
 #include "common/event/send.h"
 #include "common/algorithm/compare.h"
+#include "common/message/handle.h"
+#include "common/message/gateway.h"
+
 
 #include "common/code/raise.h"
 #include "common/code/casual.h"
@@ -27,104 +29,137 @@ namespace casual
 {
    using namespace common;
 
-   namespace queue
+   namespace queue::manager
    {
-      namespace manager
+
+      namespace handle
       {
 
-         namespace handle
+         namespace local
          {
-
-            namespace local
+            namespace
             {
-               namespace
+               namespace ipc::manager::optional
                {
-                  template< typename G, typename M>
-                  void send( State& state, G&& groups, M&& message)
+                  auto& gateway() { return communication::instance::outbound::gateway::manager::optional::device();}
+               } // ipc::manager::optional
+
+               template< typename G, typename M>
+               void send( State& state, G&& groups, M&& message)
+               {
+                  // Try to send it first with no blocking.
+                  auto busy = common::algorithm::filter( groups, [&message]( auto& group)
                   {
-                     // Try to send it first with no blocking.
-                     auto busy = common::algorithm::filter( groups, [&message]( auto& group)
-                     {
-                        return ! communication::device::non::blocking::send( group.queue, message);
-                     });
+                     return ! communication::device::non::blocking::send( group.queue, message);
+                  });
 
-                     // Block for the busy ones, if any
-                     algorithm::for_each( busy, [&message]( auto& group)
-                     {
-                        communication::device::blocking::send( group.queue, message);
-                     });
-                  }
-               } // <unnamed>
-            } // local
-
-            namespace process
-            {
-               void exit( const common::process::lifetime::Exit& exit)
-               {
-                  Trace trace{ "handle::process::exit"};
-                  common::log::line( verbose::log, "exit: ", exit);
-
-                  // one of our own children has died, we send the event.
-                  // we'll later receive the event from domain-manager
-                  common::event::send( common::message::event::process::Exit{ exit});
+                  // Block for the busy ones, if any
+                  algorithm::for_each( busy, [&message]( auto& group)
+                  {
+                     communication::device::blocking::send( group.queue, message);
+                  });
                }
-            } // process
 
-
-            namespace local
-            {
-               namespace
+               namespace check::pending
                {
-                  namespace process
+       
+                  //! check if there are pending lookups that can be replied 
+                  void lookups( State& state)
                   {
-                     auto exit( State& state)
+                     Trace trace{ "queue::manager::handle::local::check::pending::lookups"};
+                     log::line( verbose::log, "pending: ", state.pending.lookups);
+
+                     auto lookup_replied = [&state]( auto& lookup)
                      {
-                        return [&state]( const common::message::event::process::Exit& message)
+                        if( auto queue = state.queue( lookup.name))
                         {
-                           Trace trace{ "queue::manager::handle::local::process::exit"};
-                           common::log::line( verbose::log, "message: ", message);
-                           state.remove( message.state.pid);
-                        };
-                     }
+                           auto reply = common::message::reverse::type( lookup);
+                           reply.name = lookup.name;
+                           reply.queue = queue->queue;
+                           reply.process = queue->process;
+                           reply.order = queue->order;
 
-                  } // process
+                           return predicate::boolean( communication::device::blocking::optional::send( lookup.process.ipc, reply));
+                        }
+                        return false;
+                     };
 
-                  namespace shutdown
+                     algorithm::trim( state.pending.lookups, algorithm::remove_if( state.pending.lookups, lookup_replied));
+                  }
+       
+               } // check::pending
+            } // <unnamed>
+         } // local
+
+         namespace process
+         {
+            void exit( const common::process::lifetime::Exit& exit)
+            {
+               Trace trace{ "handle::process::exit"};
+               common::log::line( verbose::log, "exit: ", exit);
+
+               // one of our own children has died, we send the event.
+               // we'll later receive the event from domain-manager, since
+               // we listen to process-exit-events
+               common::event::send( common::message::event::process::Exit{ exit});
+            }
+         } // process
+
+
+         namespace local
+         {
+            namespace
+            {
+               namespace process
+               {
+                  auto exit( State& state)
                   {
-                     auto request( State& state)
+                     return [&state]( const common::message::event::process::Exit& message)
                      {
-                        return [&state]( common::message::shutdown::Request& message)
-                        {
-                           Trace trace{ "queue::manager::handle::local::shutdown::request"};
-                           common::log::line( verbose::log, "message: ", message);
+                        Trace trace{ "queue::manager::handle::local::process::exit"};
+                        common::log::line( verbose::log, "message: ", message);
+                        state.remove( message.state.pid);
+                     };
+                  }
+               } // process
 
-                           auto shutdown = [&state]( auto&& processes)
+               namespace shutdown
+               {
+                  auto request( State& state)
+                  {
+                     return [&state]( common::message::shutdown::Request& message)
+                     {
+                        Trace trace{ "queue::manager::handle::local::shutdown::request"};
+                        common::log::line( verbose::log, "message: ", message);
+
+                        state.runlevel = decltype( state.runlevel())::shutdown;
+
+                        auto shutdown = [&]( auto& entity)
+                        {
+                           if( entity.process.ipc)
                            {
-                              algorithm::for_each(
-                                 common::server::lifetime::soft::shutdown( processes, std::chrono::seconds{ 1}),
-                                 [&state]( auto& exit)
-                                 {
-                                    state.remove( exit.pid);
-                                 });
-                           };
-
-                           // forwards 'needs' to go down first.
-                           shutdown( state.forwards);
-
-                           // before groups...
-                           shutdown( algorithm::transform( state.groups, []( auto& group){ return group.process;}));
-
-                           code::raise::condition( code::casual::shutdown);
+                              communication::device::blocking::optional::send( 
+                                 entity.process.ipc,
+                                 common::message::shutdown::Request{ common::process::handle()});
+                           }
+                           else
+                              signal::send( entity.process.pid, code::signal::terminate);
                         };
-                     }
 
-                  } // shutdown
+                        algorithm::for_each( state.forward.groups, shutdown);
+                        algorithm::for_each( state.groups, shutdown);
+                     };
+                  }
 
-                  namespace lookup
+               } // shutdown
+
+               namespace lookup
+               {
+                  auto request( State& state)
                   {
-                     void request( State& state, common::message::queue::lookup::Request& message)
+                     return [&state]( queue::ipc::message::lookup::Request& message)
                      {
-                        Trace trace{ "handle::lookup::Request"};
+                        Trace trace{ "handle::local::lookup::request"};
                         common::log::line( verbose::log, "message: ", message);
 
                         auto reply = common::message::reverse::type( message);
@@ -136,25 +171,18 @@ namespace casual
                            communication::device::blocking::optional::send( message.process.ipc, reply);
                         });
 
-                        auto found = common::algorithm::find( state.queues, message.name);
-
-                        if( found && ! found->second.empty())
+                        if( auto queue = state.queue( message.name))
                         {
-                           log::line( log, "queue found: ", found->second);
-
-                           auto& queue = found->second.front();
-                           reply.queue = queue.queue;
-                           reply.process = queue.process;
-                           reply.order = queue.order;
+                           log::line( log, "queue provider found: ", *queue);
+                           reply.queue = queue->queue;
+                           reply.process = queue->process;
+                           reply.order = queue->order;
                         }
                         else
                         {
-                           common::log::line( log, "queue not found - ", message.name);
-                           // TODO: Check if we have already have pending request for this queue.
-                           // If so, we don't need to ask again.
-                           // not sure if the semantics holds, so I don't implement it until we know.
+                           // We didn't find the queue, let's try to ask our neighbors.
 
-                           // We didn't find the queue, let's ask our neighbors.
+                           common::log::line( log, "queue not found - ", message.name);
 
                            common::message::gateway::domain::discover::Request request;
                            request.correlation = message.correlation;
@@ -162,296 +190,254 @@ namespace casual
                            request.process = common::process::handle();
                            request.queues.push_back(  message.name);
 
-                           if( communication::device::blocking::optional::send( 
-                              common::communication::instance::outbound::gateway::manager::optional::device(), std::move( request)))
+                           if( communication::device::blocking::optional::send( ipc::manager::optional::gateway(), std::move( request)) 
+                              || message.context == decltype( message.context)::wait)
                            {
+                              // either we've sent a discovery or the lookup want's to wait (possible for ever).
                               state.pending.lookups.push_back( std::move( message));
 
-                              log::line( log, "pending request added to pending: " , state.pending);
+                              log::line( log, "pending request added: " , state.pending);
 
-                              // We don't send reply, we'll do it when we get the reply from the gateway.
+                              // We don't send the 'absent reply'.
                               send_reply.release();
                            }
                         }
-                     }
+                     };
+                  }
 
-                     auto request( State& state)
-                     {
-                        return [&state]( common::message::queue::lookup::Request& message)
-                        {
-                           request( state, message);
-                        };
-                     }
-
-                     namespace discard
-                     {
-                        auto request( State& state)
-                        {
-                           return [&state]( const common::message::queue::lookup::discard::Request& message)
-                           {
-                              Trace trace{ "handle::lookup::discard::Request"};
-                              common::log::line( verbose::log, "message: ", message);
-
-                              auto reply = message::reverse::type( message);
-
-                              if( auto found = algorithm::find( state.pending.lookups, message.correlation))
-                              {
-                                 reply.state = decltype( reply.state)::discarded;
-                                 state.pending.lookups.erase( std::begin( found));
-                              }
-                              else
-                                 reply.state = decltype( reply.state)::replied;
-
-                              communication::device::blocking::optional::send( message.process.ipc, reply);
-                           };
-                        }
-                     } // discard
-
-                  } // lookup
-
-                  namespace connect
+                  namespace discard
                   {
                      auto request( State& state)
                      {
-                        return [&state]( queue::ipc::message::group::connect::Request& message)
+                        return [&state]( const queue::ipc::message::lookup::discard::Request& message)
                         {
-                           Trace trace{ "queue::manager::handle::local::connect::request"};
+                           Trace trace{ "handle::lookup::discard::Request"};
+                           common::log::line( verbose::log, "message: ", message);
+
+                           auto reply = message::reverse::type( message);
+
+                           if( auto found = algorithm::find( state.pending.lookups, message.correlation))
+                           {
+                              reply.state = decltype( reply.state)::discarded;
+                              state.pending.lookups.erase( std::begin( found));
+                           }
+                           else
+                              reply.state = decltype( reply.state)::replied;
+
+                           communication::device::blocking::optional::send( message.process.ipc, reply);
+                        };
+                     }
+                  } // discard
+
+               } // lookup
+
+               namespace group
+               {
+                  auto connect( State& state)
+                  {
+                     return [&state]( queue::ipc::message::group::Connect& message)
+                     {
+                        Trace trace{ "queue::manager::handle::local::group::connect"};
+                        log::line( verbose::log, "message: ", message);
+
+                        if( auto found = common::algorithm::find( state.groups, message.process.pid))
+                        {
+                           found->state = decltype( found->state())::connected;
+                           found->process = message.process;
+
+                           // send configuration
+                           queue::ipc::message::group::configuration::update::Request request{ common::process::handle()};
+                           request.model = found->configuration;
+                           communication::device::blocking::send( message.process.ipc, request);
+                        }
+                        else
+                           common::log::line( common::log::category::error, "failed to correlate queue group - ", message.process.pid);
+                     };
+                  }
+
+                  namespace configuration::update
+                  {
+                     auto reply( State& state)
+                     {
+                        return [&state]( queue::ipc::message::group::configuration::update::Reply&& message)
+                        {
+                           Trace trace{ "queue::manager::handle::local::group::configuration::update::reply"};
                            log::line( verbose::log, "message: ", message);
 
-                           auto found = common::algorithm::find( state.groups, message.process.pid);
+                           state.update( std::move( message));
 
-                           if( ! found)
-                           {
-                              common::log::line( common::log::category::error, "failed to correlate queue group - ", message.process.pid);
-                              return;
-                           }
+                           check::pending::lookups( state);
+                        };
+                     }
+                  } // configuration::update
 
-                           auto& group = *found;
-                           log::line( verbose::log, "group: ", group);
+               } // group
+
+               namespace forward
+               {
+                  auto connect( State& state)
+                  {
+                     return [&state]( queue::ipc::message::forward::group::Connect& message)
+                     {
+                        Trace trace{ "queue::manager::handle::local::forward::connect"};
+                        log::line( verbose::log, "message: ", message);
+
+                        if( auto found = common::algorithm::find( state.forward.groups, message.process.pid))
+                        {
+                           log::line( verbose::log, "found: ", *found);
+
+                           found->state = decltype( found->state())::connected;
+                           found->process = message.process;
+
+                           // send configuration
+                           queue::ipc::message::forward::group::configuration::update::Request request{ common::process::handle()};
+                           request.model = found->configuration;
+                           communication::device::blocking::send( message.process.ipc, request);
+                        }
+                        else
+                           common::log::line( common::log::category::error, "failed to correlate forward group - ", message.process.pid);
+                     };
+                  }
+
+                  namespace configuration::update
+                  {
+                     auto reply( State& state)
+                     {
+                        return [&state]( queue::ipc::message::forward::group::configuration::update::Reply&& message)
+                        {
+                           Trace trace{ "queue::manager::handle::local::forward::configuration::update::reply"};
+                           log::line( verbose::log, "message: ", message);
+
+                           if( auto found = common::algorithm::find( state.forward.groups, message.process.pid))
+                              found->state = decltype( found->state())::running;
+                           else
+                              common::log::line( common::log::category::error, "failed to correlate forward group - ", message.process.pid);
+                        };
+                     }
+                  } // configuration::update
+                  
+               } // forward
+
+               auto advertise( State& state)
+               {
+                  return [&state]( queue::ipc::message::Advertise& message)
+                  {
+                     Trace trace{ "queue::manager::handle::local::concurrent::advertise"};
+                     log::line( verbose::log, "message: ", message);
+
+                     state.update( message);
+
+                     check::pending::lookups( state);
+                  }; 
+               }
+
+               namespace domain
+               {
+                  namespace discover
+                  {
+                     auto request( State& state)
+                     {
+                        return [&state]( common::message::gateway::domain::discover::Request& message)
+                        {
+                           Trace trace{ "handle::domain::discover::Request"};
+                           common::log::line( verbose::log, "message: ", message);
 
                            auto reply = common::message::reverse::type( message);
-                           reply.name = group.name;
 
-                           if( auto configuration = algorithm::find( state.model.groups, group.name))
+                           reply.process = common::process::handle();
+                           reply.domain = common::domain::identity();
+
+                           for( auto& queue : message.queues)
                            {
-                              common::algorithm::transform( configuration->queues, reply.queues, []( auto& value)
-                              {
-                                 using Queue = traits::iterable::value_t< decltype( reply.queues)>;
-                                 Queue result;
-                                 result.name = value.name;
-                                 result.retry.count = value.retry.count;
-                                 result.retry.delay = value.retry.delay;
-                                 return result;
-                              });
+                              if( common::algorithm::find( state.queues, queue))
+                                 reply.queues.emplace_back( queue);
                            }
-                           else
-                              common::log::line( common::log::category::error, "failed to correlate configuration for group - ", group.name);
+
+                           common::log::line( verbose::log, "reply: ", reply);
 
                            communication::device::blocking::send( message.process.ipc, reply);
-                        
                         };
                      }
 
-                     auto information( State& state)
+                     auto reply( State& state)
                      {
-                        return [&state]( common::message::queue::Information& message)
+                        return [&state]( common::message::gateway::domain::discover::accumulated::Reply& message)
                         {
-                           Trace trace{ "queue::manager::handle::local::connect::information"};
-                           log::line( verbose::log, "message: ", message);
+                           Trace trace{ "handle::domain::discover::Reply"};
+                           common::log::line( verbose::log, "message: ", message);
 
-                           if( auto found = common::algorithm::find( state.groups, message.process.pid))
+                           check::pending::lookups( state);
+
+                           // we need to remove the possible pending, that instigated the request, 
+                           // if it's correlated and in _direct-context_
+
+                           algorithm::trim( state.pending.lookups, algorithm::remove_if( state.pending.lookups, [&message]( auto& pending)
                            {
-                              found->process = message.process;
-                              log::line( verbose::log, "group: ", *found);
-                           }
-                           else
-                           {
-                              // We add the group
-                              state.groups.emplace_back( message.name, message.process);
-                           }
-
-                           auto add_queue = [&state, process = message.process]( auto& queue)
-                           {
-                              auto& instances = state.queues[ queue.name];
-
-                              instances.emplace_back( process, queue.id);
-                              common::algorithm::stable_sort( instances);
-                           };
-
-                           algorithm::for_each( message.queues, add_queue);
+                              return pending.correlation == message.correlation
+                                 && pending.context == decltype( pending.context)::direct;
+                           }));
                         };
                      }
-                  } // connect
+                  } // discover
+               } // domain  
+            } // <unnamed>
+         } // local
 
-                  namespace forward
-                  {
-                     namespace configuration
-                     {
-                        auto request( State& state)
-                        {
-                           return [&state]( const ipc::message::forward::configuration::Request& message)
-                           {
-                              Trace trace{ "queue::manager::handle::local::forward::connect"};
-                              log::line( verbose::log, "message: ", message);
-
-                              if( auto found = algorithm::find( state.forwards, message.process.pid))
-                              {
-                                 found->ipc = message.process.ipc;
-
-                                 auto reply = common::message::reverse::type( message);
-                                 reply.model = state.model;
-                                 communication::device::blocking::send( message.process.ipc, reply);
-                              }
-                              else
-                                 log::line( log::category::error, "failed to correlate forward connect ", message.process, " - action: discard");
-                           };
-                        }
-                     } // configuration
-                     
-                  } // forward
-
-                  namespace concurrent
-                  {
-                     auto advertise( State& state)
-                     {
-                        return [&state]( common::message::queue::concurrent::Advertise& message)
-                        {
-                           Trace trace{ "queue::manager::handle::local::concurrent::advertise"};
-                           log::line( verbose::log, "message: ", message);
-
-                           state.update( message);
-
-                           if( ! message.queues.add.empty())
-                           {
-                              // Queues has been added, we check if there are any pending lookups
-
-                              auto split = common::algorithm::stable_partition( state.pending.lookups,[&]( auto& pending)
-                              {
-                                 return ! common::algorithm::any_of( message.queues.add, [&]( auto& queue)
-                                 {
-                                    return queue.name == pending.name;
-                                 });
-                              });
-
-                              auto unmatched = std::get< 0>( split);
-                              auto matched = std::get< 1>( split);
-
-                             log::line( log, "pending to lookup: ", matched);
-
-                              common::algorithm::for_each( matched, [&]( auto& pending){
-                                 lookup::request( state, pending);
-                              });
-                              
-                              // we keep only unmatched
-                              common::algorithm::trim( state.pending.lookups, unmatched); 
-                           }
-                        }; 
-                     }
-                  } // concurrent
-
-
-                  namespace domain
-                  {
-                     namespace discover
-                     {
-                        auto request( State& state)
-                        {
-                           return [&state]( common::message::gateway::domain::discover::Request& message)
-                           {
-                              Trace trace{ "handle::domain::discover::Request"};
-                              common::log::line( verbose::log, "message: ", message);
-
-                              auto reply = common::message::reverse::type( message);
-
-                              reply.process = common::process::handle();
-                              reply.domain = common::domain::identity();
-
-                              for( auto& queue : message.queues)
-                              {
-                                 if( common::algorithm::find( state.queues, queue))
-                                    reply.queues.emplace_back( queue);
-                              }
-
-                              common::log::line( verbose::log, "reply: ", reply);
-
-                              communication::device::blocking::send( message.process.ipc, reply);
-                           };
-                        }
-
-                        auto reply( State& state)
-                        {
-                           return [&state]( common::message::gateway::domain::discover::accumulated::Reply& message)
-                           {
-                              Trace trace{ "handle::domain::discover::Reply"};
-                              common::log::line( verbose::log, "message: ", message);
-
-                              // outbound has already advertised the queues (if any), so we have that handled
-                              // check if there are any pending lookups for this reply
-
-                              auto is_correlated = [&message]( auto& pending){ return pending.correlation == message.correlation;};
-
-                              if( auto found = common::algorithm::find_if( state.pending.lookups, is_correlated))
-                              {
-                                 auto request = std::move( *found);
-                                 state.pending.lookups.erase( std::begin( found));
-
-                                 auto reply = common::message::reverse::type( request);
-                                 reply.name = request.name;
-
-                                 auto found_queue = common::algorithm::find( state.queues, request.name);
-
-                                 if( found_queue && ! found_queue->second.empty())
-                                 {
-                                    auto& queue = found_queue->second.front();
-                                    reply.process = queue.process;
-                                    reply.queue = queue.queue;
-                                 }
-
-                                 communication::device::blocking::optional::send( request.process.ipc, reply);
-                              }
-                              else
-                                 log::line( log, "no pending was found for discovery reply");
-                           };
-                        }
-                     } // discover
-                  } // domain  
-               } // <unnamed>
-            } // local
-
-         } // handle
-
-         namespace startup
+         namespace comply
          {
-            handle::dispatch_type handlers( State& state)
+            void configuration( State& state, casual::configuration::model::queue::Model model)
             {
-               return common::message::dispatch::handler( ipc::device(),
-                  common::message::handle::defaults( ipc::device()),
-                  handle::local::connect::request( state),
-                  handle::local::connect::information( state),
-                  handle::local::forward::configuration::request( state),
-                  common::event::listener( handle::local::process::exit( state))
-               );
+               Trace trace{ "queue::manager::handle::comply::configuration"};
+               log::line( verbose::log, "model: ", model);
+
+               // TODO maintainence: runtime configuration
+
+               state.groups = algorithm::transform( model.groups, []( auto& config){ return state::Group{ std::move( config)};});
+               state.forward.groups = algorithm::transform( model.forward.groups, []( auto& config){ return state::forward::Group{ std::move( config)};});
+
+               auto spawn = []( auto& entity)
+               {
+                  entity.process.pid = common::process::spawn( state::entity::path( entity), {});
+                  entity.state = decltype( entity.state())::spawned;
+               };
+
+               algorithm::for_each( state.groups, spawn);
+               algorithm::for_each( state.forward.groups, spawn);
+               
             }
-         } // startup
+         } // comply
+      } // handle
 
 
-         handle::dispatch_type handlers( State& state, handle::dispatch_type&& startup)
-         {
-            return common::message::dispatch::handler( ipc::device(),
-               std::move( startup),
-               handle::local::shutdown::request( state),
-               handle::local::lookup::request( state),
-               handle::local::lookup::discard::request( state),
-               handle::local::concurrent::advertise( state),
-               handle::local::domain::discover::request( state),
-               handle::local::domain::discover::reply( state),
+      handle::dispatch_type handlers( State& state)
+      {
+         return common::message::dispatch::handler( ipc::device(),
+            common::message::handle::defaults( ipc::device()),
 
-               common::server::handle::admin::Call{
-                  manager::admin::services( state)}
-            );
-         }
+            common::event::listener( handle::local::process::exit( state)),
+            
+            handle::local::group::connect( state),
+            handle::local::group::configuration::update::reply( state),
 
-      } // manager
-   } // queue
+            handle::local::forward::connect( state),
+            handle::local::forward::configuration::update::reply( state),
+            
+            handle::local::lookup::request( state),
+            handle::local::lookup::discard::request( state),
+            
+            handle::local::advertise( state),
+            
+            handle::local::domain::discover::request( state),
+            handle::local::domain::discover::reply( state),
+
+            handle::local::shutdown::request( state),
+            handle::local::process::exit( state),
+
+            common::server::handle::admin::Call{
+               manager::admin::services( state)}
+         );
+      }
+
+   } // queue::manager
 } // casual
 

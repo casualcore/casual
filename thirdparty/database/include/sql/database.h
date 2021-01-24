@@ -92,16 +92,12 @@ namespace sql
 {
    namespace database
    {
-
       namespace memory
       {
          constexpr auto file = ":memory:";
       } // memory
 
-
-
       using duration_type = std::chrono::microseconds;
-
 
       struct Blob
       {
@@ -119,7 +115,12 @@ namespace sql
 
       inline auto parameter_bind( sqlite3_stmt* statement, int index, const std::string& value)
       {
-         return code::make( sqlite3_bind_text( statement, index, value.c_str(), value.size(), SQLITE_STATIC));
+         return code::make( sqlite3_bind_text( statement, index, value.data(), value.size(), SQLITE_STATIC));
+      }
+
+      inline auto parameter_bind( sqlite3_stmt* statement, int index, std::string_view value)
+      {
+         return code::make( sqlite3_bind_text( statement, index, value.data(), value.size(), SQLITE_STATIC));
       }
 
       inline auto parameter_bind( sqlite3_stmt* statement, int index, const std::vector< char>& value)
@@ -529,44 +530,22 @@ namespace sql
 
       struct Connection
       {
-         Connection( std::string filename) : m_file( std::move( filename)), m_handle( open( m_file))
+         Connection() = default;
+
+         inline Connection( std::string filename) : m_handle( open( filename)), m_file( std::move( filename))
          {
             //sqlite3_exec( m_handle.get(), "PRAGMA journal_mode = WAL;", 0, 0, 0);
          }
 
-         std::shared_ptr< sqlite3> open( const std::string& file)
-         {
+         inline explicit operator bool() const noexcept { return m_handle && true;}
 
-            sqlite3* p_handle = nullptr;
-
-            auto code = code::make( sqlite3_open( file.c_str(), &p_handle));
-
-            std::shared_ptr< sqlite3> handle( p_handle, sqlite3_close);
-
-            if( code == code::sql::ok)
-               return handle;
-            
-            if( code == code::sql::cant_open)
-            {
-               if( casual::common::file::exists( file))
-                  code::raise( code, handle);
-
-               if( ! casual::common::directory::create( casual::common::directory::name::base( file)))
-                  code::raise( code, handle);
-
-               return open( file);
-            }
-
-            code::raise( code, handle);
-         }
-
-         std::string file() const
+         inline const std::string& file() const
          {
             return m_file;
          }
 
 
-         Statement precompile( const std::string& statement)
+         inline Statement precompile( const std::string& statement)
          {
             return Statement{ m_handle, statement};
          }
@@ -585,14 +564,14 @@ namespace sql
             query( statement, std::forward< Params>( params)...).execute();
          }
 
-         void statement( const char* sql)
+         inline void statement( const char* sql)
          {
             if( auto code = code::make( sqlite3_exec( m_handle.get(), sql, nullptr, nullptr, nullptr)))
                code::raise( code, m_handle);
          }
 
          //! executes the provided statement and streams the human readable output to `out`
-         void statement( const std::string& sql, std::ostream& out)
+         inline void statement( const std::string& sql, std::ostream& out)
          {
             auto callback = []( void* argument, int count, char** values, char** columns) -> int
             {
@@ -612,30 +591,55 @@ namespace sql
          }
 
          //! @returns true if the table exists
-         bool table( const std::string& name)
+         inline bool table( const std::string& name)
          {
             return ! query( R"( SELECT * FROM sqlite_master WHERE type = 'table' AND name = ?; )", name).fetch().empty();
          }
 
          //! @return last rowid
-         auto rowid() const -> decltype( sqlite3_last_insert_rowid( std::declval<sqlite3*>()))
+         inline auto rowid() const -> decltype( sqlite3_last_insert_rowid( std::declval<sqlite3*>()))
          {
             return sqlite3_last_insert_rowid( m_handle.get());
          }
 
-         auto affected() const -> decltype( sqlite3_changes( std::declval<sqlite3*>()))
+         inline auto affected() const -> decltype( sqlite3_changes( std::declval<sqlite3*>()))
          {
             return sqlite3_changes( m_handle.get());
          }
 
-         void begin() const { sqlite3_exec( m_handle.get(), "BEGIN", 0, 0, 0); }
-         void exclusive_begin() const { sqlite3_exec( m_handle.get(), "BEGIN EXCLUSIVE", 0, 0, 0); }
-         void rollback() const { sqlite3_exec( m_handle.get(), "ROLLBACK", 0, 0, 0); }
-         void commit() const { sqlite3_exec( m_handle.get(), "COMMIT", 0, 0, 0); }
+         inline void begin() const { sqlite3_exec( m_handle.get(), "BEGIN", 0, 0, 0); }
+         inline void exclusive_begin() const { sqlite3_exec( m_handle.get(), "BEGIN EXCLUSIVE", 0, 0, 0); }
+         inline void rollback() const { sqlite3_exec( m_handle.get(), "ROLLBACK", 0, 0, 0); }
+         inline void commit() const { sqlite3_exec( m_handle.get(), "COMMIT", 0, 0, 0); }
 
       private:
-         std::string m_file;
+         
+         inline static std::shared_ptr< sqlite3> open( const std::string& file)
+         {
+            sqlite3* handle = nullptr;
+            auto code = code::make( sqlite3_open( file.c_str(), &handle));
+
+            std::shared_ptr< sqlite3> result( handle, sqlite3_close);
+
+            if( code == code::sql::ok)
+               return result;
+            
+            if( code == code::sql::cant_open)
+            {
+               if( casual::common::file::exists( file))
+                  code::raise( code, result);
+
+               if( ! casual::common::directory::create( casual::common::directory::name::base( file)))
+                  code::raise( code, result);
+
+               return open( file);
+            }
+
+            code::raise( code, result);
+         }
+
          std::shared_ptr< sqlite3> m_handle;
+         std::string m_file;
       };
 
       namespace scoped

@@ -91,7 +91,8 @@ namespace casual
                         {
                            auto children( const Node& node)
                            {
-                              auto filter_child = []( const auto& child){
+                              auto filter_child = []( auto& child)
+                              {
                                  return child.type() == pugi::xml_node_type::node_element;
                               };
 
@@ -103,43 +104,64 @@ namespace casual
                         {
                            auto operator() ( const Node& document)
                            {
+                              Trace trace{ "xml::Parser::operator()"};
+
                               // take care of the document node
-                              for( const auto& child : filter::children( document))
-                              {
-                                 element( child);
-                              }
+                              element( document);
                               
                               return std::exchange( m_canonical, {});
                            }
 
                         private:
 
+                           static bool sequence( const Node& node)
+                           {
+                              return node.first_child().attribute( "sequence-value").as_bool();
+                           }
+
+                           static const char* name( const Node& node)
+                           {
+                              if( node.attribute( "sequence-value"))
+                                 return nullptr;
+                              return node.name();
+                           }
+
                            void element( const Node& node)
                            {
-                              const auto children = filter::children( node);
+                              common::log::line( verbose::log, "node.name(): ", node.name());
 
-                              if( children)
+                              common::log::line( verbose::log, "node - sequence: ", sequence( node), ":");
+                              node.print( verbose::log);
+
+                              if( auto children = filter::children( node))
                               {
-                                 m_canonical.composite_start( node.name());
+                                 auto is_container = sequence( node);
+                                 
+                                 if( is_container)
+                                    m_canonical.container_start( name( node));
+                                 else
+                                    m_canonical.composite_start( name( node));
 
-                                 for( const auto& child : children)
-                                 {
+                                 for( auto child : children)
                                     element( child);
-                                 }
-
-                                 m_canonical.composite_end();
+                                 
+                                 if( is_container)
+                                    m_canonical.container_end();
+                                 else
+                                    m_canonical.composite_end();
                               }
                               else 
                               {
                                  // we only add if there is something in it
                                  if( ! node.text().empty())
-                                    m_canonical.attribute( node.name());
+                                    m_canonical.attribute( name( node));
                               }
                            }
+
                            policy::canonical::Representation m_canonical;
                         };
 
-                        auto parse( const pugi::xml_node& document)
+                        auto parse( const Node& document)
                         {
                            return Parser{}( document);
                         }
@@ -160,90 +182,108 @@ namespace casual
                         template< typename... Ts>
                         explicit Implementation( Ts&&... ts) : m_document{ load::document( std::forward< Ts>( ts)...)} 
                         {
-                           m_stack.push_back(m_document);
+                           m_stack.push_back( m_document);
                         }
 
-                        std::tuple< platform::size::type, bool> container_start( const platform::size::type size, const char* const name)
+                        std::tuple< platform::size::type, bool> container_start( const platform::size::type size, const char* name)
                         {
-                           if( ! start( name))
-                              return std::make_tuple( 0, false);
+                           if( auto node = structured_node( name))
+                           {
+                              // Stack 'em backwards
+                              auto content = node.children( "element");
+                              for( auto child : range::reverse( content))
+                              {
+                                 // set attribute to help produce the canonical form.
+                                 child.append_attribute( "sequence-value") = true;
+                                 m_stack.push_back( std::move( child));
+                              }
 
-                           // Stack 'em backwards
-                           const auto content = m_stack.back().children( "element");
-                           std::reverse_copy( std::begin( content), std::end( content), std::back_inserter( m_stack));
+                              return std::make_tuple( std::distance( std::begin( content), std::end( content)), true);
+                           }
 
-                           return std::make_tuple( std::distance( std::begin( content), std::end( content)), true);
+                           return std::make_tuple( 0, false);
                         }
 
-                        void container_end( const char* const name)
+                        void container_end( const char* name)
                         {
-                           end( name);
+                           m_stack.pop_back();
                         }
 
-                        bool composite_start( const char* const name)
+                        bool composite_start( const char* name)
                         {
-                           return start( name);
+                           return predicate::boolean( structured_node( name));
                         }
 
-                        void composite_end(  const char* const name)
+                        void composite_end( const char* name)
                         {
-                           end( name);
+                           m_stack.pop_back();
                         }
 
 
                         template< typename T>
-                        bool read( T& value, const char* const name)
+                        bool read( T& value, const char* name)
                         {
-                           if( ! start( name))
-                              return false;
+                           if( ! name)
+                           {
+                              // we assume it is a value from a previous pushed sequence node.
+                              // and we consume it.
+                              read( m_stack.back(), value);
+                              m_stack.pop_back();
 
-                           read( value);
-                           end( name);
+                              return true;
+                           }
 
-                           return true;
+                           // it's a named child - does it exists?
+                           if( auto node = m_stack.back().child( name))
+                           {
+                              read( node, value);
+                              return true;
+                           }
+                           
+                           return false;
                         }
 
                         policy::canonical::Representation canonical()
                         {
+                           common::log::line( verbose::log, "stack.size(): ", m_stack.size());
                            return canonical::parse( m_document);
                         }
 
                      private:
 
-                        bool start( const char* const name)
+                        pugi::xml_node structured_node( const char* name)
                         {
-                           if( name)
+                           // if not named, we assume it is a value from a previous pushed sequence node, or root document
+                           if( ! name)
+                              return m_stack.back();
+
+                           // it's a named child - does it exists?
+                           if( auto node = m_stack.back().child( name))
                            {
-                              auto node =  m_stack.back().child( name);
-
-                              if( node)
-                                 m_stack.push_back( m_stack.back().child( name));
-                              else
-                                 return false;
+                              // we push it to promote the node to 'current scope'. 
+                              // composit_end/container_end will pop it.
+                              m_stack.push_back( node);
+                              return m_stack.back();
                            }
-                           return true;
-                        }
 
-                        void end( const char* name)
-                        {
-                           m_stack.pop_back();
+                           return {};
                         }
 
                         // Various stox-functions are more cumbersome to use if you
                         // wanna make sure the whole content is processed
-                        void read( bool& value) const
+                        static void read( const pugi::xml_node& node, bool& value)
                         {
-                           const std::string boolean = m_stack.back().text().get();
+                           const std::string boolean = node.text().get();
                            if( boolean == "true") 
                               value = true;
                            else if( boolean == "false") 
                               value = false;
                            else 
-                              code::raise::error( code::casual::invalid_node, "unexpected type");
+                              code::raise::error( code::casual::invalid_node, "unexpected type - node: ", node.name());
                         }
 
                         template<typename T>
-                        T extract( const pugi::xml_node& node) const
+                        static T extract( const pugi::xml_node& node)
                         {
                            std::istringstream stream( node.text().get());
                            T result;
@@ -251,36 +291,36 @@ namespace casual
                            if( ! stream.fail() && stream.eof())
                               return result;
 
-                           code::raise::error( code::casual::invalid_node, "unexpected type");
+                           code::raise::error( code::casual::invalid_node, "unexpected type - node: ", node.name(), ", type: ", node.type());
                         }
 
-                        void read( short& value) const
-                        { value = extract< short>( m_stack.back()); }
-                        void read( long& value) const
-                        { value = extract< long>( m_stack.back()); }
-                        void read( long long& value) const
-                        { value = extract< long long>( m_stack.back()); }
-                        void read( float& value) const
-                        { value = extract< float>( m_stack.back()); }
-                        void read( double& value) const
-                        { value = extract< double>( m_stack.back()); }
+                        static void read( const pugi::xml_node& node, short& value)
+                        { value = extract< short>( node); }
+                        static void read( const pugi::xml_node& node, long& value)
+                        { value = extract< long>( node); }
+                        static void read( const pugi::xml_node& node, long long& value)
+                        { value = extract< long long>( node); }
+                        static void read( const pugi::xml_node& node, float& value)
+                        { value = extract< float>( node); }
+                        static void read( const pugi::xml_node& node, double& value)
+                        { value = extract< double>( node); }
 
-                        void read( char& value) const
+                        static void read( const pugi::xml_node& node, char& value)
                         { 
                            // If empty string this should result in '\0'
-                           value = *common::transcode::utf8::decode( m_stack.back().text().get()).c_str(); 
+                           value = *common::transcode::utf8::decode( node.text().get()).c_str(); 
                         }
-                        void read( std::string& value) const
+                        static void read( const pugi::xml_node& node, std::string& value)
                         {
-                           value = common::transcode::utf8::decode( m_stack.back().text().get());
+                           value = common::transcode::utf8::decode( node.text().get());
                         }
                         
-                        void read( std::vector<char>& value) const
-                        { value = common::transcode::base64::decode( m_stack.back().text().get()); }
+                        static void read( const pugi::xml_node& node, std::vector<char>& value)
+                        { value = common::transcode::base64::decode( node.text().get()); }
 
-                        void read( view::Binary value) const
+                        static void read( const pugi::xml_node& node, view::Binary value)
                         { 
-                           auto binary = common::transcode::base64::decode( m_stack.back().text().get());
+                           auto binary = common::transcode::base64::decode( node.text().get());
 
                            if( range::size( binary) != range::size( value))
                               code::raise::error( code::casual::invalid_node, "binary size missmatch - wanted: ", range::size( value), " got: ", range::size( binary));
@@ -311,7 +351,7 @@ namespace casual
                         //! @note Any possible document has to outlive the writer
                         explicit Implementation() : m_stack{ document()} {}
 
-                        platform::size::type container_start( const platform::size::type size, const char* const name)
+                        platform::size::type container_start( const platform::size::type size, const char* name)
                         {
                            start( name);
 
@@ -324,23 +364,23 @@ namespace casual
                            return size;
                         }
 
-                        void container_end( const char* const name)
+                        void container_end( const char* name)
                         {
                            end( name);
                         }
 
-                        void composite_start( const char* const name)
+                        void composite_start( const char* name)
                         {
                            start( name);
                         }
 
-                        void composite_end(  const char* const name)
+                        void composite_end(  const char* name)
                         {
                            end( name);
                         }
 
                         template< typename T>
-                        void write( const T& value, const char* const name)
+                        void write( const T& value, const char* name)
                         {
                            start( name);
                            write( value);
@@ -357,7 +397,7 @@ namespace casual
 
                      private:
 
-                        void start( const char* const name)
+                        void start( const char* name)
                         {
                            if( name)
                            {
@@ -365,7 +405,7 @@ namespace casual
                            }
                         }
 
-                        void end( const char* const name)
+                        void end( const char* name)
                         {
                            m_stack.pop_back();
                         }

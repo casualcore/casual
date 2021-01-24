@@ -244,53 +244,73 @@ domain:
 
             static constexpr auto yaml = R"(
 queue:
-  default:
-    queue:
-      retry:
-        count: 3
-        delay: 20s
-    directory: ${CASUAL_DOMAIN_HOME}/queue/groups
+   default:
+      directory: ${CASUAL_DOMAIN_HOME}/queue/groups
+      queue:
+         retry:
+            count: 3
+            delay: 20s
+    
+   note: > 
+      retry.count - if number of rollbacks is greater, message is moved to error-queue 
+      retry.delay - the amount of time before the message is available for consumption, after rollback
 
-  note: > 
-   retry.count - if number of rollbacks is greater, message is moved to error-queue 
-   retry.delay - the amount of time before the message is available for consumption, after rollback
+   groups:
+      -  alias: A
+         note: "will get default queuebase: ${CASUAL_DOMAIN_HOME}/queue/groupA.gb"
+         queues:
+            -  name: a1
+            -  name: a2
+               retry:
+                  count: 10
+                  delay: 100ms
+               note: after 10 rollbacked dequeues, message is moved to a2.error
+            -  name: a3
+            -  name: a4
+      -  alias: B
+         queuebase: /some/fast/disk/queue/groupB.qb
+         queues:
+         -  name: b1
+         -  name: b2
+            retry:
+               count: 20
+            note: after 20 rollbacked dequeues, message is moved to b2.error. retry.delay is 'inherited' from default, if any
+      -  name: C
+         queuebase: ":memory:"
+         note: group is an in-memory queue, hence no persistence
+         queues:
+            -  name: c1
+            -  name: c2
 
-  groups:
-    - name: groupA
-      note: "will get default queuebase: ${CASUAL_DOMAIN_HOME}/queue/groupA.gb"
-      queues:
-        - name: q_A1
-        - name: q_A2
-          retry:
-            count: 10
-            delay: 100ms
-          note: after 10 rollbacked dequeues, message is moved to q_A2.error
-        - name: q_A3
-        - name: q_A4
-    - name: groupB
-      queuebase: /some/fast/disk/queue/groupB.qb
-      queues:
-        - name: q_B1
-        - name: q_B2
-          retry:
-            count: 20
-          note: after 20 rollbacked dequeues, message is moved to q_B2.error. retry.delay is 'inherited' from default, if any
-    - name: groupC
-      queuebase: ":memory:"
-      note: group is an in-memory queue, hence no persistence
-      queues:
-        - name: q_C1
-        - name: q_C2
-
-  forward:
-     services:
-        - source: q_B1
-          target: 
-            service: casual/example/echo
-          instances: 4
-          reply: 
-            queue: q_A4
-            delay: 10ms
+   forward:
+      default:
+         service:
+            instances: 3
+            reply:
+               delay: 2s
+         queue:
+            instances: 1
+            target:
+               delay: 500ms
+      groups:
+         -  alias: forward-group-1
+            services:
+               -  source: b1
+                  target: 
+                     service: casual/example/echo
+                  instances: 4
+                  reply: 
+                     queue: a3
+                     delay: 10ms
+            queues:
+               -  source: c1
+                  target:
+                     queue: a4
+         -  alias: forward-group-2
+            services:
+               -  source: b2
+                  target:
+                     service: casual/example/echo
 
 )";
 

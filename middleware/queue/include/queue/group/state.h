@@ -7,78 +7,93 @@
 #pragma once
 
 
-#include "queue/group/database.h"
+#include "queue/group/queuebase.h"
+#include "queue/common/ipc/message.h"
 
 #include "casual/platform.h"
+
+#include "common/state/machine.h"
 
 #include <string>
 
 namespace casual
 {
-   namespace queue
+   namespace queue::group
    {
-      namespace group
+      namespace state
       {
-         using queue_id_type = platform::size::type;
-         using size_type = platform::size::type;
-
-         struct State
+         struct Pending
          {
-            inline State( std::string filename, std::string name)
-               : queuebase( std::move( filename), std::move( name)) 
+            template< typename M>
+            void reply( M&& message, const common::process::Handle& destinations)
             {
-               queuebase.begin();
+               replies.emplace_back( std::forward< M>( message), destinations);
             }
 
-            inline ~State() 
-            {
-               queuebase.commit();
-            }
+            void add( ipc::message::group::dequeue::Request&& message);
 
-            //std::unordered_map< std::string, queue_id_type> queue_id;
+            ipc::message::group::dequeue::forget::Reply forget( const ipc::message::group::dequeue::forget::Request& message);
 
-            Database queuebase;
+            //! forgets all pending dequeue request.
+            //! @returns forget request that should be sent to pending callers
+            std::vector< common::message::pending::Message> forget();
 
-            inline const std::string& name() const { return queuebase.name();}
+            //! @returns dequeue-request that potentially has messages available for dequeue
+            std::vector< ipc::message::group::dequeue::Request> extract( std::vector< common::strong::queue::id> queues);
 
-            //! persist the queuebase ( commit and begin)
-            inline void persist()
-            {
-               queuebase.commit();
-               queuebase.begin();
-            }
-         
-            struct Pending
-            {
-               template< typename M>
-               void reply( M&& message, const common::process::Handle& destinations)
-               {
-                  replies.emplace_back( std::forward< M>( message), destinations);
-               }
+            void remove( common::strong::process::id pid);
 
-               void add( common::message::queue::dequeue::Request&& message);
-               common::message::queue::dequeue::forget::Reply forget( const common::message::queue::dequeue::forget::Request& message);
+            inline auto empty() const noexcept { return replies.empty() && dequeues.empty();}
 
-               //! forgets all pending dequeue request.
-               //! @returns forget request that should be sent to pending callers
-               std::vector< common::message::pending::Message> forget();
+            std::vector< common::message::pending::Message> replies;
+            std::vector< ipc::message::group::dequeue::Request> dequeues;
 
-               //! @returns dequeue-request that potentially has messages available for dequeue
-               std::vector< common::message::queue::dequeue::Request> extract( std::vector< common::strong::queue::id> queues);
-
-               void remove( common::strong::process::id pid);
-
-               std::vector< common::message::pending::Message> replies;
-               std::vector< common::message::queue::dequeue::Request> dequeues;
-               
-            } pending;
-
-            
-
-            //! A log to know if we already have notified TM about
-            //! a given transaction.
-            std::vector< common::transaction::ID> involved;
+            CASUAL_CONST_CORRECT_SERIALIZE(
+               CASUAL_SERIALIZE( replies);
+               CASUAL_SERIALIZE( dequeues);
+            )
          };
-      } // group
-   } // queue
+
+         enum struct Runlevel : short
+         {
+            running,
+            shutdown,
+            error,
+         };
+         std::ostream& operator << ( std::ostream& out, Runlevel value);
+         
+      } // state
+
+      struct State
+      {
+         inline State() = default;
+         inline State( std::string filename)
+            : queuebase{ std::move( filename)}
+         {}
+
+         State( State&&) = default;
+         State& operator = ( State&&) = default;
+
+         common::state::Machine< state::Runlevel> runlevel;
+         Queuebase queuebase;
+         state::Pending pending;
+
+         //! A log to know if we already have notified TM about
+         //! a given transaction.
+         std::vector< common::transaction::ID> involved;
+
+         std::string alias;
+         std::string note;
+
+         bool done() const noexcept;
+
+         CASUAL_CONST_CORRECT_SERIALIZE(
+            CASUAL_SERIALIZE( runlevel);
+            CASUAL_SERIALIZE( pending);
+            CASUAL_SERIALIZE( involved);
+            CASUAL_SERIALIZE( alias);
+            CASUAL_SERIALIZE( note);
+         )
+      };
+   } // queue::group
 } // casual

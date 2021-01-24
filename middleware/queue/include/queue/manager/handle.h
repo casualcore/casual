@@ -8,44 +8,39 @@
 #pragma once
 
 
-#include "queue/manager/manager.h"
+#include "queue/manager/state.h"
 #include "queue/common/ipc.h"
 
-#include "common/message/queue.h"
-#include "common/message/transaction.h"
-#include "common/message/gateway.h"
-#include "common/message/domain.h"
-#include "common/message/event.h"
 #include "common/message/dispatch.h"
-#include "common/communication/ipc.h"
 
 namespace casual
 {
-   namespace queue
+   namespace queue::manager
    {
-      namespace manager
+      namespace handle
       {
-         namespace handle
+         using dispatch_type = decltype( common::message::dispatch::handler( ipc::device()));
+
+         namespace process
          {
-            using dispatch_type = decltype( common::message::dispatch::handler( ipc::device()));
+            void exit( const common::process::lifetime::Exit& exit);
 
-            namespace process
-            {
-               void exit( const common::process::lifetime::Exit& exit);
+         } // process
 
-            } // process
-
-         } // handle
-
-         namespace startup
+         namespace comply
          {
-            handle::dispatch_type handlers( State& state);   
-         } // startup
+            void configuration( State& state, casual::configuration::model::queue::Model model);
+            
+         } // comply
 
-         handle::dispatch_type handlers( State& state, handle::dispatch_type&& startup);
+         //! hard shutdown - best effort shutdown
+         void abort( State& state);
 
-      } // manager
-   } // queue
+      } // handle
+
+      handle::dispatch_type handlers( State& state);
+
+   } // queue::manager
 } // casual
 
 

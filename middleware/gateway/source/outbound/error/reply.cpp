@@ -76,14 +76,14 @@ namespace casual
                local::send::transaction< common::message::transaction::resource::rollback::Reply>( point);
                break;
             }
-            case common::message::queue::enqueue::Request::type(): 
+            case casual::queue::ipc::message::group::enqueue::Request::type(): 
             {
-               local::send::queue< common::message::queue::enqueue::Reply>( point);
+               local::send::queue< casual::queue::ipc::message::group::enqueue::Reply>( point);
                break;
             }
-            case common::message::queue::dequeue::Request::type(): 
+            case casual::queue::ipc::message::group::dequeue::Request::type(): 
             {
-               local::send::queue< common::message::queue::dequeue::Reply>( point);
+               local::send::queue< casual::queue::ipc::message::group::dequeue::Reply>( point);
                break;
             }
             case common::message::gateway::domain::discover::Request::type():

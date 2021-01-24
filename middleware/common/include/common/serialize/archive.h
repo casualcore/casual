@@ -132,23 +132,19 @@ namespace casual
                bool read( view::Binary value, const char* name) override { return m_protocol.read( value, name);}
 
 
-               void validate() override { selective_validate( m_protocol);}
+               void validate() override { validate( m_protocol, traits::priority::tag< 1>{});}
 
             private:
-               template< typename T>
-               using has_validate = decltype( std::declval< T&>().validate());
 
                template< typename T>
-               static auto selective_validate( T& protocol) -> 
-                  std::enable_if_t< common::traits::detect::is_detected< has_validate, T>::value>
+               static auto validate( T& protocol, traits::priority::tag< 1>)
+                  -> decltype( void( protocol.validate()))
                {
                   protocol.validate();
                }
                template< typename T>
-               static auto selective_validate( T& protocol) -> 
-                  std::enable_if_t< ! common::traits::detect::is_detected< has_validate, T>::value>
-               {
-               }
+               static void validate( T& protocol, traits::priority::tag< 0>)
+               {}
 
                protocol_type m_protocol;
             };

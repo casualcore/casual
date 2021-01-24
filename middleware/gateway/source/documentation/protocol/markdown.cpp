@@ -888,7 +888,7 @@ Sent to and received from other domains when one domain wants discover informati
 )";
 
                   {
-                     using message_type = common::message::queue::enqueue::Request;
+                     using message_type = queue::ipc::message::group::enqueue::Request;
 
                      out << R"(
 #### message::queue::enqueue::Request
@@ -929,7 +929,7 @@ Represent enqueue request.
                   }
 
                   {
-                     using message_type = common::message::queue::enqueue::Reply;
+                     using message_type = queue::ipc::message::group::enqueue::Reply;
 
                      out << R"(
 #### message::queue::enqueue::Reply
@@ -950,7 +950,7 @@ Represent enqueue reply.
 
 
                   {
-                     using message_type = common::message::queue::dequeue::Request;
+                     using message_type = queue::ipc::message::group::dequeue::Request;
 
                      out << R"(
 ### dequeue 
@@ -985,7 +985,7 @@ Represent dequeue request.
                   }
 
                   {
-                     using message_type = common::message::queue::dequeue::Reply;
+                     using message_type = queue::ipc::message::group::dequeue::Reply;
 
                      out << R"(
 #### message::queue::dequeue::Reply

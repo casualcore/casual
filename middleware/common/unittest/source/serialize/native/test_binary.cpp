@@ -12,7 +12,6 @@
 #include "common/serialize/native/complete.h"
 
 #include "common/message/service.h"
-#include "common/message/queue.h"
 
 
 #include "common/transaction/id.h"
@@ -355,34 +354,6 @@ namespace casual
                   }
 
                }
-
-            }
-
-            TYPED_TEST( casual_serialize_native_binary, enqueue_request)
-            {
-               common::unittest::Trace trace;
-
-               using input_type = typename TestFixture::input_type;
-               using output_type = typename TestFixture::output_type;
-
-               common::message::queue::enqueue::Request source;
-
-               {
-                  source.process = process::handle();
-                  source.message.payload = { 0, 2, 3, 4, 2, 45, 45, 2, 3};
-               }
-
-               auto output = output_type{}();
-               output & source;
-
-               auto buffer = output.consume();
-               auto input = input_type{}( buffer);
-               common::message::queue::enqueue::Request target;
-
-               input & target;
-
-               EXPECT_TRUE( source.process == target.process);
-               EXPECT_TRUE( source.message.payload == target.message.payload);
 
             }
          } // native

@@ -5,7 +5,7 @@
 //!
 
 #include "queue/common/log.h"
-#include "queue/group/database/schema.h"
+#include "queue/group/queuebase/schema.h"
 
 #include "common/exception/handle.h"
 #include "common/argument.h"
@@ -17,51 +17,49 @@
 namespace casual
 {
    using namespace common;
-   namespace queue
+   namespace queue::upgrade
    {
-      namespace upgrade
+      namespace local
       {
-         namespace local
+         namespace
          {
-            namespace
+            struct Task
             {
-               struct Task
-               {
-                  sql::database::Version to;
-                  std::function< void( sql::database::Connection&)> action;
+               sql::database::Version to;
+               std::function< void( sql::database::Connection&)> action;
 
-                  //inline friend bool operator < ( const Task& lhs, const sql::database::Version& rhs) { return lhs.to < rhs;}
-                  inline friend bool operator < ( const sql::database::Version& lhs, const Task& rhs) { return lhs < rhs.to;}
-               };
+               //inline friend bool operator < ( const Task& lhs, const sql::database::Version& rhs) { return lhs.to < rhs;}
+               inline friend bool operator < ( const sql::database::Version& lhs, const Task& rhs) { return lhs < rhs.to;}
+            };
 
-               namespace global
-               {
-                  auto const tasks = std::vector< Task>{
-                     
-                     // from 1.x to 2.0
+            namespace global
+            {
+               auto const tasks = std::vector< Task>{
+                  
+                  // from 1.x to 2.0
+                  {
+                     sql::database::Version{ 2, 0},
+                     []( sql::database::Connection& connection)
                      {
-                        sql::database::Version{ 2, 0},
-                        []( sql::database::Connection& connection)
+                        Trace trace{ "queue::upgrade::local::global::tasks to version 2.0" };
+
+                        // disable FK
+                        connection.statement( "PRAGMA foreign_keys = OFF;");
+
+                        connection.exclusive_begin();
+
+                        auto rollback = common::execute::scope( [&connection](){ connection.rollback();});
+
+                        // we need to upgrade queue
                         {
-                           Trace trace{ "queue::upgrade::local::global::tasks to version 2.0" };
+                           // first we rename the current to queue_v1
+                           connection.statement( "ALTER TABLE queue RENAME TO queue_v1;");
 
-                           // disable FK
-                           connection.statement( "PRAGMA foreign_keys = OFF;");
-
-                           connection.exclusive_begin();
-
-                           auto rollback = common::execute::scope( [&connection](){ connection.rollback();});
-
-                           // we need to upgrade queue
-                           {
-                              // first we rename the current to queue_v1
-                              connection.statement( "ALTER TABLE queue RENAME TO queue_v1;");
-
-                              // create the new table
-                              connection.statement( group::database::schema::table::queue);
-                              
-                              // migrate data
-                              connection.statement( R"(
+                           // create the new table
+                           connection.statement( group::queuebase::schema::table::queue);
+                           
+                           // migrate data
+                           connection.statement( R"(
 INSERT INTO queue 
    SELECT
       id,  
@@ -78,23 +76,23 @@ INSERT INTO queue
 ;
 )");
                               
-                              // drop the old table
-                              connection.statement( "DROP TABLE queue_v1;");
-                           }
+                           // drop the old table
+                           connection.statement( "DROP TABLE queue_v1;");
+                        }
 
-                           // alter message.avalible to message.available
-                           {
-                              // not brand new versions of sqlite does not support renaming columns so 
-                              // we ned to do the v1 dance for this also.
-                              
-                              // first we rename the current to queue_v1
-                              connection.statement( "ALTER TABLE message RENAME TO message_v1;");
+                        // alter message.avalible to message.available
+                        {
+                           // not brand new versions of sqlite does not support renaming columns so 
+                           // we ned to do the v1 dance for this also.
+                           
+                           // first we rename the current to queue_v1
+                           connection.statement( "ALTER TABLE message RENAME TO message_v1;");
 
-                              // create the new table
-                              connection.statement( group::database::schema::table::message);
+                           // create the new table
+                           connection.statement( group::queuebase::schema::table::message);
 
-                              // migrate data
-                              connection.statement( R"(
+                           // migrate data
+                           connection.statement( R"(
 INSERT INTO message 
    SELECT
       id          ,
@@ -113,44 +111,44 @@ INSERT INTO message
       message_v1
 ;
 )");
-                              // drop the old table
-                              connection.statement( "DROP TABLE message_v1;");
-                           }
-
-                           sql::database::version::set( connection, sql::database::Version{ 2, 0});
-
-                           // everythin went ok, we commit.
-                           rollback.release();
-                           connection.commit();
+                           // drop the old table
+                           connection.statement( "DROP TABLE message_v1;");
                         }
-                     },
-                     // from 2.0 to 3.0
+
+                        sql::database::version::set( connection, sql::database::Version{ 2, 0});
+
+                        // everythin went ok, we commit.
+                        rollback.release();
+                        connection.commit();
+                     }
+                  },
+                  // from 2.0 to 3.0
+                  {
+                     sql::database::Version{ 3, 0},
+                     []( sql::database::Connection& connection)
                      {
-                        sql::database::Version{ 3, 0},
-                        []( sql::database::Connection& connection)
+                        Trace trace{ "queue::upgrade::local::global::tasks to version 3.0" };
+                        // disable FK
+                        connection.statement( "PRAGMA foreign_keys = OFF;");
+
+                        connection.exclusive_begin();
+
+                        auto rollback = common::execute::scope( [&connection](){ connection.rollback();});
+
+                        // drop all triggers (will be created on startup)
+                        connection.statement( group::queuebase::schema::drop::triggers);
+
+                        // we need to upgrade queue
                         {
-                           Trace trace{ "queue::upgrade::local::global::tasks to version 3.0" };
-                           // disable FK
-                           connection.statement( "PRAGMA foreign_keys = OFF;");
+                           // first we rename the current to queue_v2
+                           connection.statement( "ALTER TABLE queue RENAME TO queue_v2;");
 
-                           connection.exclusive_begin();
+                           // create the new table
+                           connection.statement( group::queuebase::schema::table::queue);
 
-                           auto rollback = common::execute::scope( [&connection](){ connection.rollback();});
-
-                           // drop all triggers (will be created on startup)
-                           connection.statement( group::database::schema::drop::triggers);
-
-                           // we need to upgrade queue
-                           {
-                              // first we rename the current to queue_v2
-                              connection.statement( "ALTER TABLE queue RENAME TO queue_v2;");
-
-                              // create the new table
-                              connection.statement( group::database::schema::table::queue);
-
-                              // migrate data
-                              // julianday('now') - 2440587.5) *86400.0 <- some magic that sqlite recommend for fraction of seconds
-                              connection.statement( R"(
+                           // migrate data
+                           // julianday('now') - 2440587.5) *86400.0 <- some magic that sqlite recommend for fraction of seconds
+                           connection.statement( R"(
 INSERT INTO queue 
    SELECT
       id,  
@@ -170,56 +168,55 @@ INSERT INTO queue
 ;
 )");
 
-                               // drop the old table
-                              connection.statement( "DROP TABLE queue_v2;");
-                           }
-                           sql::database::version::set( connection, sql::database::Version{ 3, 0});
-
-                           // everythin went ok, we commit.
-                           rollback.release();
-                           connection.commit();
+                              // drop the old table
+                           connection.statement( "DROP TABLE queue_v2;");
                         }
+                        sql::database::version::set( connection, sql::database::Version{ 3, 0});
+
+                        // everythin went ok, we commit.
+                        rollback.release();
+                        connection.commit();
                      }
+                  }
 
-                  };
-               } // global
+               };
+            } // global
 
-               void file( const std::string& file)
+            void file( const std::string& file)
+            {
+               common::log::line( queue::log, "file: ", file);
+
+               sql::database::Connection connection{ file};
+               
+               auto version = sql::database::version::get( connection);
+
+               auto run_task = [&connection, &file]( auto& task)
                {
-                  common::log::line( queue::log, "file: ", file);
+                  std::cout << "upgrade '" << file << "' to version: " << task.to << '\n';
+                  task.action( connection);
+               };
 
-                  sql::database::Connection connection{ file};
-                  
-                  auto version = sql::database::version::get( connection);
+               algorithm::for_each( 
+                  // get the 'right' range of upper_bound and upgrade with all steps that's necessary
+                  std::get< 1>( algorithm::sorted::upper_bound( global::tasks, version)), 
+                  run_task);
+            }
 
-                  auto run_task = [&connection, &file]( auto& task)
-                  {
-                     std::cout << "upgrade '" << file << "' to version: " << task.to << '\n';
-                     task.action( connection);
-                  };
+            void main( int argc, char* argv[])
+            {
+               std::vector< std::string> files;
 
-                  algorithm::for_each( 
-                     // get the 'right' range of upper_bound and upgrade with all steps that's necessary
-                     std::get< 1>( algorithm::sorted::upper_bound( global::tasks, version)), 
-                     run_task);
-               }
+               argument::Parse{ "upgrades queue-base files to latest version",
+                  argument::Option{ argument::option::one::many( files), { "-f", "--files"}, "queue-base files to upgrade" }( argument::cardinality::one{})
+               }( argc, argv);
+               
+               algorithm::for_each( files, &local::file);
+            }
+         } // <unnamed>
+      } // local
 
-               void main( int argc, char* argv[])
-               {
-                  std::vector< std::string> files;
-
-                  argument::Parse{ "upgrades queue-base files to latest version",
-                     argument::Option{ argument::option::one::many( files), { "-f", "--files"}, "queue-base files to upgrade" }( argument::cardinality::one{})
-                  }( argc, argv);
-                  
-                  algorithm::for_each( files, &local::file);
-               }
-            } // <unnamed>
-         } // local
-
-         
-      } // update
-   } // queue
+      
+   } // queue::update
 } // casual
 
 

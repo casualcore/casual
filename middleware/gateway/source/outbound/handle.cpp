@@ -289,9 +289,12 @@ namespace casual
 
                                  if( auto queues = std::get< 0>( algorithm::intersection( reply.queues, advertise.queues, equal_name)))
                                  {
-                                    common::message::queue::concurrent::Advertise request{ common::process::handle()};
+                                    casual::queue::ipc::message::Advertise request{ common::process::handle()};
                                     request.order = state.order;
-                                    algorithm::copy( queues, request.queues.add);
+                                    request.queues.add = algorithm::transform( queues, []( auto& queue)
+                                    {
+                                       return casual::queue::ipc::message::advertise::Queue{ queue.name, queue.retries};
+                                    });
 
                                     communication::device::blocking::send( ipc::manager::optional::queue(), request);
                                  }
@@ -469,12 +472,12 @@ namespace casual
 
                   namespace enqueue
                   {
-                     auto request = basic::request< common::message::queue::enqueue::Request>;
+                     auto request = basic::request< casual::queue::ipc::message::group::enqueue::Request>;
                   } // enqueue
 
                   namespace dequeue
                   {
-                     auto request = basic::request< common::message::queue::dequeue::Request>;
+                     auto request = basic::request< casual::queue::ipc::message::group::dequeue::Request>;
                   } // dequeue
                } // queue
                
@@ -630,12 +633,12 @@ namespace casual
 
                   namespace enqueue
                   {
-                     auto reply = basic::reply< common::message::queue::enqueue::Reply>;
+                     auto reply = basic::reply< casual::queue::ipc::message::group::enqueue::Reply>;
                   } // enqueue
 
                   namespace dequeue
                   {
-                     auto reply = basic::reply< common::message::queue::dequeue::Reply>;
+                     auto reply = basic::reply< casual::queue::ipc::message::group::dequeue::Reply>;
                   } // dequeue
                } // queue
 
@@ -765,7 +768,7 @@ namespace casual
 
          if( ! resources.queues.empty())
          {
-            common::message::queue::concurrent::Advertise request{ common::process::handle()};
+            casual::queue::ipc::message::Advertise request{ common::process::handle()};
             request.queues.remove = std::move( resources.queues);
             communication::device::blocking::send( local::ipc::manager::optional::queue(), request);
          }

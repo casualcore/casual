@@ -9,11 +9,12 @@
 
 #include "gateway/manager/admin/model.h"
 
+#include "queue/common/ipc/message.h"
+
 #include "common/message/type.h"
 #include "common/message/transaction.h"
 #include "common/message/service.h"
 #include "common/message/gateway.h"
-#include "common/message/queue.h"
 #include "common/message/conversation.h"
 #include "common/domain.h"
 #include "common/serialize/native/binary.h"
@@ -572,7 +573,7 @@ template< typename A> struct Value< type, A, std::enable_if_t< common::serialize
             detail::transaction_reply( value, archive);
          })
 
-         CASUAL_CUSTOMIZATION_POINT_NETWORK( common::message::queue::enqueue::Request,
+         CASUAL_CUSTOMIZATION_POINT_NETWORK( queue::ipc::message::group::enqueue::Request,
          {
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( execution);
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( name);
@@ -580,14 +581,14 @@ template< typename A> struct Value< type, A, std::enable_if_t< common::serialize
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( message);
          })
 
-         CASUAL_CUSTOMIZATION_POINT_NETWORK( common::message::queue::enqueue::Reply,
+         CASUAL_CUSTOMIZATION_POINT_NETWORK( queue::ipc::message::group::enqueue::Reply,
          {
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( execution);
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( id);
          })
       
 
-         CASUAL_CUSTOMIZATION_POINT_NETWORK( common::message::queue::dequeue::Request,
+         CASUAL_CUSTOMIZATION_POINT_NETWORK( queue::ipc::message::group::dequeue::Request,
          {
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( execution);
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( name);
@@ -597,7 +598,7 @@ template< typename A> struct Value< type, A, std::enable_if_t< common::serialize
          })
 
 
-         CASUAL_CUSTOMIZATION_POINT_NETWORK( common::message::queue::dequeue::Reply,
+         CASUAL_CUSTOMIZATION_POINT_NETWORK( queue::ipc::message::group::dequeue::Reply,
          {
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( execution);
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( message);

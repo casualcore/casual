@@ -22,28 +22,25 @@ namespace casual
       {
          namespace
          {
-            common::message::queue::lookup::Request request( const std::string& queue)
+            auto request( const std::string& queue)
             {
-               common::message::queue::lookup::Request request{ common::process::handle()};
+               ipc::message::lookup::Request request{ common::process::handle()};
                request.name = queue;
-               return request;
+               return communication::device::blocking::send(
+                  communication::instance::outbound::queue::manager::optional::device(),
+                  request);
             }
          } // <unnamed>
       } // local
 
       Lookup::Lookup( std::string queue)
-         : m_name( std::move( queue)), m_correlation{
-            common::communication::device::blocking::send(
-                  common::communication::instance::outbound::queue::manager::optional::device(),
-                  local::request( m_name))}
-      {
-      }
+         : m_name( std::move( queue)), m_correlation{ local::request( m_name)}
+      {}
 
-      common::message::queue::lookup::Reply Lookup::operator () () const
+      ipc::message::lookup::Reply Lookup::operator () () const
       {
-         message::queue::lookup::Reply reply;
-         common::communication::device::blocking::receive( communication::ipc::inbound::device(), reply);
-
+         ipc::message::lookup::Reply reply;
+         common::communication::device::blocking::receive( communication::ipc::inbound::device(), reply, m_correlation);
          return reply;
       }
 

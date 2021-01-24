@@ -61,7 +61,7 @@ namespace casual
                      } // check
 
                             
-                     const rapidjson::Document& parse( rapidjson::Document& document, const char* const json)
+                     const rapidjson::Document& parse( rapidjson::Document& document, const char* json)
                      {
                         // To support empty documents
                         if( ! json || json[ 0] == '\0')
@@ -92,7 +92,7 @@ namespace casual
                         return parse( document, json.c_str());
                      }
 
-                     const rapidjson::Document& parse( rapidjson::Document& document, const char* const json, const platform::size::type size)
+                     const rapidjson::Document& parse( rapidjson::Document& document, const char* json, const platform::size::type size)
                      {
                         // To ensure null-terminated string
                         const std::string buffer{ json, json + size};
@@ -141,43 +141,24 @@ namespace casual
 
                            void sequence( const Node& node, const char* name)
                            {
-                              start( name);
+                              m_canonical.container_start( name);
 
                               for( auto current = node.Begin(); current != node.End(); ++current)
-                              {
-                                 deduce( *current, "element");  
-                              }
+                                 deduce( *current, nullptr);  
                               
-                              end( name);
+                              m_canonical.container_end();
                            }
 
                            void map( const Node& node, const char* name)
                            {
-                              start( name);
+                              m_canonical.composite_start( name);
 
                               for( auto current = node.MemberBegin(); current != node.MemberEnd(); ++current)
-                              {
                                  deduce( current->value, current->name.GetString());
-                              }
                               
-                              end( name);
+                              m_canonical.composite_end();
                            }
 
-                           void start( const char* name)
-                           {
-                              // take care of the first node which doesn't have a name, and is
-                              // not a composite in an archive sense.
-                              if( name) 
-                                 m_canonical.composite_start( name);
-                           }
-
-                           void end( const char* name)
-                           {
-                              // take care of the first node which doesn't have a name, and is
-                              // not a composite in an archive sense.
-                              if( name)
-                                 m_canonical.composite_end();
-                           }
                            policy::canonical::Representation m_canonical;
                         };
 
@@ -203,125 +184,72 @@ namespace casual
                         }
                         ~Implementation() = default;
 
-                        std::tuple< platform::size::type, bool> container_start( platform::size::type size, const char* const name)
+                        std::tuple< platform::size::type, bool> container_start( platform::size::type size, const char* name)
                         {
-                           if( ! start( name))
+                           auto node = structured_node( name);
+
+                           if( ! node)
                               return std::make_tuple( 0, false);
 
-                           const auto& node = *m_stack.back();
-
                            // This check is to avoid terminate (via assert)
-                           if( ! node.IsArray())
+                           if( ! node->IsArray())
                               code::raise::error( code::casual::invalid_node, "expected array - name: ", name ? name : "");
 
                            // Stack 'em backwards
 
-                           size = node.Size();
+                           auto range = range::reverse( range::make( node->Begin(), node->End()));
 
-                           for( auto index = size; index > 0; --index)
-                              m_stack.push_back( &node[ index - 1]);
+                           for( auto& value : range)
+                              m_stack.push_back( &value);
 
-                           return std::make_tuple( size, true);
+                           return std::make_tuple( range.size(), true);
                         }
 
-                        void container_end( const char* const name)
-                        {
-                           end( name);
-                        }
-
-                        bool composite_start( const char* const name)
-                        {
-                           if( ! start( name))
-                              return false;
-
-                           // This check is to avoid terminate (via assert)
-                           if( ! m_stack.back()->IsObject())
-                              code::raise::error( code::casual::invalid_node, "expected object - name: ", name ? name : "");
-
-                           return true;
-                        }
-
-                        void composite_end( const char* const name)
-                        {
-                           end( name);
-                        }
-
-                        bool start( const char* const name)
-                        {
-                           if( name)
-                           {
-                              const auto result = m_stack.back()->FindMember( name);
-
-                              if( result != m_stack.back()->MemberEnd())
-                                 m_stack.push_back( &result->value);
-                              else
-                                 return false;
-                           }
-
-                           // Either we found the node or we assume it's an 'unnamed' container
-                           // element that is already pushed to the stack
-
-                           return true;
-                        }
-
-                        void end( const char* const name)
+                        void container_end( const char*)
                         {
                            m_stack.pop_back();
                         }
 
-                        template< typename T>
-                        bool read( T& value, const char* name)
+                        bool composite_start( const char* name)
                         {
-                           if( start( name))
+                           if( auto node = structured_node( name))
                            {
-                              if( m_stack.back()->IsNull())
-                              {
-                                 // Act (somehow) relaxed
-
-                                 // TODO maintainence: We mute callers state, why?
-                                 value = T{};
-                              }
-                              else
-                                 read( value);
-
-                              end( name);
+                              // This check is to avoid terminate (via assert)
+                              if( ! node->IsObject())
+                                 code::raise::error( code::casual::invalid_node, "expected object - name: ", name ? name : "");
 
                               return true;
                            }
-
                            return false;
                         }
 
-                        void read( bool& value) const
-                        { value = check::read( m_stack.back(), &rapidjson::Value::IsBool, &rapidjson::Value::GetBool); }
-                        void read( short& value) const
-                        { value = check::read( m_stack.back(), &rapidjson::Value::IsInt, &rapidjson::Value::GetInt); }
-                        void read( long& value) const
-                        { value = check::read( m_stack.back(), &rapidjson::Value::IsInt64, &rapidjson::Value::GetInt64); }
-                        void read( long long& value) const
-                        { value = check::read( m_stack.back(), &rapidjson::Value::IsInt64, &rapidjson::Value::GetInt64); }
-                        void read( float& value) const
-                        { value = check::read( m_stack.back(), &rapidjson::Value::IsNumber, &rapidjson::Value::GetDouble); }
-                        void read( double& value) const
-                        { value = check::read( m_stack.back(), &rapidjson::Value::IsNumber, &rapidjson::Value::GetDouble); }
-                        void read( char& value) const
-                        { value = *common::transcode::utf8::decode( check::read( m_stack.back(), &rapidjson::Value::IsString, &rapidjson::Value::GetString)).c_str(); }
-                        void read( std::string& value) const
-                        { value = common::transcode::utf8::decode( check::read( m_stack.back(), &rapidjson::Value::IsString, &rapidjson::Value::GetString)); }
-                        void read( platform::binary::type& value) const
-                        { value = common::transcode::base64::decode( check::read( m_stack.back(), &rapidjson::Value::IsString, &rapidjson::Value::GetString)); }
-
-                        void read( view::Binary value) const
-                        { 
-                           auto binary = common::transcode::base64::decode( 
-                              check::read( m_stack.back(), &rapidjson::Value::IsString, &rapidjson::Value::GetString));
-                           
-                           if( range::size( binary) != range::size( value))
-                              code::raise::error( code::casual::invalid_node, "binary size missmatch - wanted: ", range::size( value), " got: ", range::size( binary));
-
-                           algorithm::copy( binary, std::begin( value));
+                        void composite_end( const char*)
+                        {
+                           m_stack.pop_back();
                         }
-                     
+
+
+                        template< typename T>
+                        bool read( T& value, const char* name)
+                        {
+                           if( name)
+                           {
+                              if( auto child = named_child( name); child && ! child->IsNull())
+                              {
+                                 read( child, value);               
+                                 return true;
+                              }
+                              return false;
+                           }
+                           
+                           // we assume it is a value from a previous pushed sequence node.
+                           // and we consume it.
+                           read( m_stack.back(), value);
+                           m_stack.pop_back();
+                           
+                           return true;
+                        }
+
                         policy::canonical::Representation canonical()
                         {
                            return canonical::parse( m_document);
@@ -329,8 +257,68 @@ namespace casual
                      
                      private:
 
+                        const rapidjson::Value* named_child( const char* name)
+                        {
+                           assert( name);
+
+                           auto node = m_stack.back();
+
+                           if( auto found = node->FindMember( name); found != node->MemberEnd())
+                              return &found->value;
+
+                           return nullptr;
+                        }
+                        
+                        const rapidjson::Value* structured_node( const char* name)
+                        {
+                           // if not named, we assume it is a value from a previous pushed sequence node, or root document
+                           if( ! name)
+                              return m_stack.back();
+
+                           if( auto node = named_child( name))
+                           {
+                              // we push it to promote the node to 'current scope'. 
+                              // composit_end/container_end will pop it.
+                              m_stack.push_back( node);
+                              return m_stack.back();
+                           }
+
+                           return nullptr;
+                        }
+
+                        static void read( const rapidjson::Value* node, bool& value)
+                        { value = check::read( node, &rapidjson::Value::IsBool, &rapidjson::Value::GetBool); }
+                        static void read( const rapidjson::Value* node, short& value)
+                        { value = check::read( node, &rapidjson::Value::IsInt, &rapidjson::Value::GetInt); }
+                        static void read( const rapidjson::Value* node, long& value)
+                        { value = check::read( node, &rapidjson::Value::IsInt64, &rapidjson::Value::GetInt64); }
+                        static void read( const rapidjson::Value* node, long long& value)
+                        { value = check::read( node, &rapidjson::Value::IsInt64, &rapidjson::Value::GetInt64); }
+                        static void read( const rapidjson::Value* node, float& value)
+                        { value = check::read( node, &rapidjson::Value::IsNumber, &rapidjson::Value::GetDouble); }
+                        static void read( const rapidjson::Value* node, double& value)
+                        { value = check::read( node, &rapidjson::Value::IsNumber, &rapidjson::Value::GetDouble); }
+                        static void read( const rapidjson::Value* node, char& value)
+                        { value = *common::transcode::utf8::decode( check::read( node, &rapidjson::Value::IsString, &rapidjson::Value::GetString)).c_str(); }
+                        static void read( const rapidjson::Value* node, std::string& value)
+                        { value = common::transcode::utf8::decode( check::read( node, &rapidjson::Value::IsString, &rapidjson::Value::GetString)); }
+                        static void read( const rapidjson::Value* node, platform::binary::type& value)
+                        { value = common::transcode::base64::decode( check::read( node, &rapidjson::Value::IsString, &rapidjson::Value::GetString)); }
+
+                        static void read( const rapidjson::Value* node, view::Binary value)
+                        { 
+                           auto binary = common::transcode::base64::decode( 
+                              check::read( node, &rapidjson::Value::IsString, &rapidjson::Value::GetString));
+                           
+                           if( range::size( binary) != range::size( value))
+                              code::raise::error( code::casual::invalid_node, "binary size missmatch - wanted: ", range::size( value), " got: ", range::size( binary));
+
+                           algorithm::copy( binary, std::begin( value));
+                        }
+                  
+
                         rapidjson::Document m_document;
-                        std::vector<const rapidjson::Value*> m_stack;
+                        std::vector< const rapidjson::Value*> m_stack;
                      };
 
                   } // reader
@@ -353,7 +341,7 @@ namespace casual
                            m_document.SetObject();
                         }
 
-                        platform::size::type container_start( platform::size::type size, const char* const name)
+                        platform::size::type container_start( platform::size::type size, const char* name)
                         {
                            start( name);
                            m_stack.back()->SetArray();
@@ -361,22 +349,22 @@ namespace casual
                            return size;
                         }
 
-                        void container_end( const char* const name)
+                        void container_end( const char* name)
                         {
                            end( name);
                         }
 
-                        void composite_start( const char* const name)
+                        void composite_start( const char* name)
                         {
                            start( name);
                            m_stack.back()->SetObject();
                         }
-                        void composite_end(  const char* const name)
+                        void composite_end(  const char* name)
                         {
                            end( name);
                         }
 
-                        void start( const char* const name)
+                        void start( const char* name)
                         {
                            // Both AddMember and PushBack returns the parent (*this)
                            // instead of a reference to the added value (despite what

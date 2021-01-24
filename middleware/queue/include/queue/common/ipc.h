@@ -11,52 +11,70 @@
 
 namespace casual
 {
-   namespace queue
+   namespace queue::ipc
    {
-      namespace ipc
+
+      inline auto& device() { return common::communication::ipc::inbound::device();}
+
+      namespace queue
       {
-         inline auto& device() { return common::communication::ipc::inbound::device();}
+         inline auto& manager() { return common::communication::instance::outbound::queue::manager::device();}   
+      } // queue
 
-         namespace queue
+      namespace service
+      {
+         inline auto& manager() { return common::communication::instance::outbound::service::manager::device();}
+      } // service
+
+      namespace transaction
+      {
+         inline auto& manager() { return common::communication::instance::outbound::transaction::manager::device();}
+      } // transaction
+
+      namespace gateway::optional
+      {
+         inline auto& manager() { return common::communication::instance::outbound::gateway::manager::optional::device();}
+      } // gateway::optional
+
+
+      //! since we're sending a lot of messages in the same 'batch', we need to flush our inbound
+      //! to mitigate 'deadlocks' 
+      namespace flush
+      {
+         //! flushes inbound if non blocking send fails
+         template< typename D, typename M>
+         auto send( D&& destination, M&& message)
          {
-            inline auto& manager() { return common::communication::instance::outbound::queue::manager::device();}   
-         } // queue
+            auto result = common::communication::device::non::blocking::send( destination, message);
+            while( ! result)
+            {
+               ipc::device().flush();
+               result = common::communication::device::non::blocking::send( destination, message);
+            }
+            return result;
+         }
 
-         namespace service
-         {
-            inline auto& manager() { return common::communication::instance::outbound::service::manager::device();}
-         } // service
-
-         namespace transaction
-         {
-            inline auto& manager() { return common::communication::instance::outbound::transaction::manager::device();}
-         } // transaction
-
-         //! since we're sending a lot of messages at the same 'batch', we need to flush our inbound
-         //! to mitigate 'deadlocks' 
-         namespace flush
+         namespace optional
          {
             //! flushes inbound before blocking send
             template< typename D, typename M>
-            auto send( D&& destination, M&& message)
+            auto send( D&& destination, M&& message) -> decltype( flush::send( destination, message))
             {
-               ipc::device().flush();
-               return common::communication::device::blocking::send( destination, std::forward< M>( message));
-            }
-
-            namespace optional
-            {
-               //! flushes inbound before blocking send
-               template< typename D, typename M>
-               auto send( D&& destination, M&& message)
+               try 
                {
-                  ipc::device().flush();
-                  return common::communication::device::blocking::optional::send( destination, std::forward< M>( message));
+                  return flush::send( destination, std::forward< M>( message));
                }
-            } // optional
-         } // flush
+               catch( ...)
+               {
+                  if( common::exception::code() != common::code::casual::communication_unavailable)
+                     throw;
 
-      } // ipc
+                  common::log::line( common::communication::log, common::code::casual::communication_unavailable, " failed to send message - action: ignore");
+                     return {};
+               }
+            }
+         } // optional
+      } // flush
 
-   } // queue
+   } // queue::ipc
 } // casual

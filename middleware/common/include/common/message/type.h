@@ -146,7 +146,7 @@ namespace casual
             transaction_begin_reply,
             transaction_commit_request,
             transaction_commit_reply,
-            transaction_Rollback_request,
+            transaction_rollback_request,
             transaction_rollback_reply,
             transaction_generic_reply,
 
@@ -170,45 +170,49 @@ namespace casual
 
             // casual queue
             QUEUE_BASE = 6000,
-            queue_group_connect_request,
-            queue_group_connect_reply,
-            queue_forward_configuration_request,
-            queue_forward_configuration_reply,
-            queue_forward_state_request,
-            queue_forward_state_reply,
-            queue_advertise,
-            queue_enqueue_request  = 6100,
-            queue_enqueue_reply    = 6101,
-            queue_dequeue_request  = 6200,
-            queue_dequeue_reply    = 6201,
-            queue_dequeue_forget_request,
-            queue_dequeue_forget_reply,
 
-            queue_peek_information_request =  QUEUE_BASE + 300,
-            queue_peek_information_reply,
-            queue_peek_messages_request,
-            queue_peek_messages_reply,
+            queue_manager_queue_advertise = QUEUE_BASE,
+            queue_manager_queue_lookup_request,
+            queue_manager_queue_lookup_reply,
+            queue_manager_queue_lookup_discard_request,
+            queue_manager_queue_lookup_discard_reply,
 
-            queue_information = QUEUE_BASE + 400,
-            queue_queues_information_request,
-            queue_queues_information_reply,
-            queue_queue_information_request,
-            queue_queue_information_reply,
+            // pinned messages
+            queue_group_enqueue_request  = 6100,
+            queue_group_enqueue_reply    = 6101,
+            queue_group_dequeue_request  = 6200,
+            queue_group_dequeue_reply    = 6201,
+            queue_group_dequeue_forget_request, // might be part of interdomian protocol?
+            queue_group_dequeue_forget_reply, // might be part of interdomian protocol?
 
-            queue_lookup_request = QUEUE_BASE + 500,
-            queue_lookup_reply,
-            queue_lookup_discard_request,
-            queue_lookup_discard_reply,
+            queue_group_connect = QUEUE_BASE + 300,
+            queue_group_configuration_update_request,
+            queue_group_configuration_update_reply,
+            queue_group_state_request,
+            queue_group_state_reply,
+            queue_group_message_meta_request = QUEUE_BASE + 310,
+            queue_group_message_meta_reply,
+            queue_group_message_meta_peek_request,
+            queue_group_message_meta_peek_reply,
+            queue_group_message_peek_request = QUEUE_BASE + 320,
+            queue_group_message_peek_reply,
+            queue_group_message_remove_request = QUEUE_BASE + 330,
+            queue_group_message_remove_reply,
 
-            queue_restore_request = QUEUE_BASE + 600,
-            queue_restore_reply,
-            queue_clear_request,
-            queue_clear_reply,
-            queue_messages_remove_request,
-            queue_messages_remove_reply,
+            queue_group_queue_restore_request = QUEUE_BASE + 340,
+            queue_group_queue_restore_reply,
+            queue_group_queue_clear_request,
+            queue_group_queue_clear_reply,
 
-            queue_metric_reset_request = QUEUE_BASE + 700,
-            queue_metric_reset_reply,
+            queue_group_metric_reset_request = QUEUE_BASE + 350,
+            queue_group_metric_reset_reply,
+
+            queue_forward_group_connect = QUEUE_BASE + 400,
+            queue_forward_group_configuration_update_request,
+            queue_forward_group_configuration_update_reply,
+            queue_forward_group_state_request,
+            queue_forward_group_state_reply,
+
             
             // gateway
             GATEWAY_BASE = 7000,
@@ -381,19 +385,7 @@ namespace casual
          };
 
          template< message::Type type>
-         struct basic_reply : basic_message< type>
-         {
-            basic_reply() = default;
-            inline basic_reply( common::process::Handle process) : process{ std::move( process)} {}
-
-            common::process::Handle process;
-
-            CASUAL_CONST_CORRECT_SERIALIZE(
-            {
-               basic_message< type>::serialize( archive);
-               CASUAL_SERIALIZE( process);
-            })
-         };
+         using basic_reply = basic_request< type>;
 
          //! Message to pollitely ask a 'server' to exit/termination.
          namespace shutdown

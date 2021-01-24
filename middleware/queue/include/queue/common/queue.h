@@ -7,10 +7,8 @@
 
 #pragma once
 
-
-
-#include "common/message/queue.h"
-#include "common/value/optional.h"
+#include "queue/common/ipc/message.h"
+//#include "common/value/optional.h"
 
 #include <string>
 
@@ -18,17 +16,11 @@ namespace casual
 {
    namespace queue
    {
-      namespace tag
-      {
-         struct type{};
-      } // tag
-      using id = common::value::Optional< platform::size::type, 0, tag::type>;
-
       struct Lookup
       {
          explicit Lookup( std::string queue);
 
-         common::message::queue::lookup::Reply operator () () const;
+         ipc::message::lookup::Reply operator () () const;
 
          const std::string& name() const;
 

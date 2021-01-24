@@ -189,7 +189,7 @@ namespace casual
                   {
                      auto reply( State& state)
                      {
-                        return [&state]( common::message::queue::lookup::Reply& message)
+                        return [&state]( casual::queue::ipc::message::lookup::Reply& message)
                         {
                            Trace trace{ "gateway::inbound::handle::local::internal::queue::lookup::reply"};
                            common::log::line( verbose::log, "message: ", message);
@@ -213,14 +213,14 @@ namespace casual
                            switch( request.type)
                            {
                               using Enum = decltype( request.type);
-                              case Enum::queue_dequeue_request:
+                              case Enum::queue_group_dequeue_request:
                               {
-                                 send_error( common::message::queue::dequeue::Reply{});
+                                 send_error( casual::queue::ipc::message::group::dequeue::Reply{});
                                  break;
                               }
-                              case Enum::queue_enqueue_request:
+                              case Enum::queue_group_enqueue_request:
                               {
-                                 send_error( common::message::queue::enqueue::Reply{});
+                                 send_error( casual::queue::ipc::message::group::enqueue::Reply{});
                                  break;
                               }
                               default:
@@ -232,12 +232,12 @@ namespace casual
 
                   namespace dequeue
                   {
-                     auto reply = basic_forward< common::message::queue::dequeue::Reply>;
+                     auto reply = basic_forward< casual::queue::ipc::message::group::dequeue::Reply>;
                   } // dequeue
 
                   namespace enqueue
                   {
-                     auto reply = basic_forward< common::message::queue::enqueue::Reply>;
+                     auto reply = basic_forward< casual::queue::ipc::message::group::enqueue::Reply>;
                   } // enqueue
                } // queue
 
@@ -376,7 +376,7 @@ namespace casual
                         Trace trace{ "gateway::inbound::handle::local::external::queue::lookup::send"};
 
                         // Prepare queue lookup
-                        common::message::queue::lookup::Request request{ common::process::handle()};
+                        casual::queue::ipc::message::lookup::Request request{ common::process::handle()};
                         {
                            request.correlation = message.correlation;
                            request.name = message.name;
@@ -402,7 +402,7 @@ namespace casual
                   {
                      auto request( State& state)
                      {
-                        return [&state]( common::message::queue::enqueue::Request& message)
+                        return [&state]( casual::queue::ipc::message::group::enqueue::Request& message)
                         {
                            Trace trace{ "gateway::inbound::handle::local::external::queue::enqueue::Request"};
 
@@ -413,7 +413,7 @@ namespace casual
                            {
                               common::log::line( common::log::category::error, "failed to lookup queue - action: send error reply");
 
-                              common::message::queue::enqueue::Reply reply;
+                              casual::queue::ipc::message::group::enqueue::Reply reply;
                               reply.correlation = message.correlation;
                               reply.execution = message.execution;
 
@@ -430,7 +430,7 @@ namespace casual
                   {
                      auto request( State& state)
                      {
-                        return [&]( common::message::queue::dequeue::Request& message)
+                        return [&]( casual::queue::ipc::message::group::dequeue::Request& message)
                         {
                            Trace trace{ "gateway::inbound::handle::queue::dequeue::Request::operator()"};
 
@@ -441,7 +441,7 @@ namespace casual
                            {
                               common::log::line( common::log::category::error, "failed to lookup queue - action: send error reply");
 
-                              common::message::queue::enqueue::Reply reply;
+                              casual::queue::ipc::message::group::enqueue::Reply reply;
                               reply.correlation = message.correlation;
                               reply.execution = message.execution;
 

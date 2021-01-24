@@ -1,0 +1,33 @@
+//!
+//! Copyright (c) 2021, The casual project
+//!
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
+//!
+
+#pragma once
+
+#include "queue/manager/state.h"
+#include "queue/manager/admin/model.h"
+
+#include "queue/common/ipc/message.h"
+
+namespace casual
+{
+   namespace queue::manager::transform
+   {
+      namespace model
+      {
+         admin::model::State state(
+            std::vector< ipc::message::group::state::Reply> groups,
+            std::vector< ipc::message::forward::group::state::Reply> forwards);
+
+         namespace message
+         {
+            std::vector< admin::model::Message> meta( std::vector< ipc::message::group::message::meta::Reply> messages);
+            
+         } // message  
+
+         
+      } // admin
+   } // queue::manager::transform
+} // casual

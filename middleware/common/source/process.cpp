@@ -78,17 +78,6 @@ namespace casual
 #endif
                }
 
-               std::string& path()
-               {
-                  static std::string path = get_process_path();
-                  return path;
-               }
-
-               std::string& basename()
-               {
-                  static std::string basename = file::name::base( local::path());
-                  return basename;
-               }
 
                namespace global
                {
@@ -107,8 +96,9 @@ namespace casual
 
                namespace global
                {
-                  std::string& path = local::path();
-                  std::string& basename = local::basename();
+                  const std::string path = get_process_path();
+                  const std::string basename = file::name::base( path);
+                  const std::string directory = directory::name::base( path);
 
                } // global
 
@@ -120,9 +110,16 @@ namespace casual
             return local::global::path;
          }
 
+         // TODO maintenance: could be std::string_view
          const std::string& basename()
          {
             return local::global::basename;
+         }
+
+         // TODO maintenance: could be std::string_view
+         const std::string& directory()
+         {
+            return local::global::directory;
          }
 
          strong::process::id id()
@@ -133,17 +130,6 @@ namespace casual
          const Handle& handle()
          {
             return local::handle();
-         }
-
-
-         bool operator == ( const Handle& lhs, const Handle& rhs)
-         {
-            return lhs.pid == rhs.pid && lhs.ipc == rhs.ipc;
-         }
-
-         bool operator < ( const Handle& lhs, const Handle& rhs)
-         {
-            return std::tie( lhs.pid, lhs.ipc) < std::tie( rhs.pid, rhs.ipc);
          }
 
          void sleep( platform::time::unit time)

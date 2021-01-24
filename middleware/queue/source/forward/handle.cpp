@@ -22,515 +22,503 @@ namespace casual
 {
    using namespace common;
 
-   namespace queue
+   namespace queue::forward
    {
-      namespace forward
+      namespace local
       {
-
-         namespace local
+         namespace
          {
-            namespace
+            namespace transform::forward
             {
 
-               namespace transform
+               auto service()
                {
-                  namespace forward
+                  return []( auto& service)
                   {
-                     auto service()
+                     state::forward::Service result;
+                     result.alias = service.alias;
+                     result.source.queue = service.source;
+                     
+                     if( service.reply)
                      {
-                        return []( auto& service)
+                        state::forward::Service::Reply reply;
+                        reply.queue = service.reply.value().queue;
+                        reply.delay = service.reply.value().delay;
+                        result.reply = std::move( reply);
+                     }
+                     
+                     result.target.service = service.target.service;
+                     result.instances.configured = service.instances;
+                     return result;
+                  };
+               }
+               auto queue()
+               {
+                  return []( auto& queue)
+                  {
+                     state::forward::Queue result;
+                     result.alias = queue.alias;
+                     result.source.queue = queue.source;
+
+                     result.target.queue = queue.target.queue;
+                     result.target.delay = queue.target.delay;
+                     
+                     result.instances.configured = queue.instances;
+                     return result;
+                  };
+               } 
+            } // transform::forward
+
+            namespace queue::lookup
+            {
+
+               template< typename M>
+               auto assign( M&& message, state::forward::Service& forward)
+               {
+                  if( forward.source.queue == message.name)
+                  {
+                     if( message.remote())
+                        common::event::error::send( code::casual::invalid_configuration, "can't forward from a remote queue: ", message.name);
+                     else
+                     {
+                        forward.source.id = message.queue;
+                        forward.source.process = message.process;
+                     }
+                  }
+
+                  if( forward.reply)
+                  {
+                     auto& reply = forward.reply.value();
+
+                     if( reply.queue == message.name)
+                     {
+                        reply.id = message.queue;
+                        reply.process = message.process;
+                     }
+                  }
+
+                  return forward.source && ( ! forward.reply || forward.reply.value());
+               }
+
+               template< typename M>
+               auto assign( M&& message, state::forward::Queue& forward)
+               {
+                  if( forward.source.queue == message.name)
+                  {
+                     if( message.remote())
+                        common::event::error::send( code::casual::invalid_configuration, "can't forward from a remote queue: ", message.name);
+                     else
+                     {
+                        forward.source.id = message.queue;
+                        forward.source.process = message.process;
+                     }
+                  }
+
+                  if( forward.target.queue == message.name)
+                  {
+                     forward.target.id = message.queue;
+                     forward.target.process = message.process;
+                  }
+
+                  return forward.source && forward.target;
+               }
+
+               namespace detail
+               {
+                  auto send_request = []( auto id, auto& name)
+                  {
+                     ipc::message::lookup::Request request{ process::handle()};
+                     request.name = name;
+                     request.context = decltype( request.context)::wait;
+
+                     common::log::line( verbose::log, "request: ", request);
+
+                     state::pending::queue::Lookup pending;
+                     pending.id = id;
+                     pending.correlation = ipc::flush::send( ipc::queue::manager(), request);
+                     return pending;
+                  };
+
+                  void request( State& state, state::forward::Service& forward)
+                  {
+                     state.pending.queue.lookups.push_back( detail::send_request( forward.id, forward.source.queue));
+
+                     if( forward.reply)
+                        state.pending.queue.lookups.push_back( detail::send_request( forward.id, forward.reply.value().queue));
+                  }
+
+
+                  void request( State& state, state::forward::Queue& forward)
+                  {
+                     state.pending.queue.lookups.push_back( detail::send_request( forward.id, forward.source.queue));
+                     state.pending.queue.lookups.push_back( detail::send_request( forward.id, forward.target.queue));
+                  }
+
+               } // detail
+
+               auto request( State& state)
+               {
+                  return [&state]( auto& forward)
+                  {
+                     detail::request( state, forward);
+                  };
+               }
+               
+            } // queue::lookup
+
+            namespace pending
+            {
+               template< typename P>
+               auto consume( P& pending, const common::Uuid& correlation)
+               {
+                  auto found = common::algorithm::find( pending, correlation);
+                  assert( found);
+
+                  return algorithm::extract( pending, std::begin( found));
+               }
+            } // pending
+
+            namespace send
+            {
+               namespace dequeue
+               {
+                  template< typename F>
+                  void request( State& state, F& forward)
+                  {
+                     Trace trace{ "queue::forward::send::dequeue::request"};
+                     common::log::line( verbose::log, "forward: ", forward);
+
+                     auto send_request =[&]()
+                     {
+                        ipc::message::group::dequeue::Request request{ common::process::handle()};
+                        request.trid = common::transaction::id::create( common::process::handle());
+                        request.correlation = common::uuid::make();
+                        request.queue = forward.source.id;
+                        request.name = forward.source.queue;
+                        request.selector = forward.selector;
+                        request.block = true;
+
+                        if( ! ipc::flush::optional::send( forward.source.process.ipc, request))
+                           return;
+
+                        using Pending = common::traits::remove_cvref_t< decltype( state.pending.dequeues.back())>;
+
+                        Pending pending;
+                        pending.id = forward.id;
+                        pending.correlation = request.correlation;
+                        pending.trid = request.trid;
+
+                        state.pending.dequeues.push_back( std::move( pending));
+                        ++forward.instances.running;
+                     };
+
+                     common::algorithm::for_n( forward.instances.missing(), send_request);
+                  }
+               } // dequeue
+
+               namespace transaction
+               {
+                  namespace rollback
+                  {
+                     template< typename P>
+                     void request( State& state, P&& pending)
+                     {
+                        Trace trace{ "queue::forward::send::transaction::rollback::request"};
+                        common::log::line( verbose::log, "pending: ", pending);
+
+                        common::message::transaction::rollback::Request request{ common::process::handle()};
+                        request.correlation = pending.correlation;
+                        request.trid = pending.trid;
+
+                        ipc::flush::send( ipc::transaction::manager(), request);
+
+                        state.pending.transaction.rollbacks.emplace_back( std::forward< P>( pending));
+                     }
+                  } // rollback
+
+                  namespace commit
+                  {
+                     template<  typename P>
+                     void request( State& state, P&& pending)
+                     {
+                        Trace trace{ "queue::forward::send::transaction::commit::request"};
+                        common::log::line( verbose::log, "pending: ", pending);
+
+                        common::message::transaction::commit::Request request{ common::process::handle()};
+                        request.correlation = pending.correlation;
+                        request.trid = pending.trid;
+
+                        ipc::flush::send( ipc::transaction::manager(), request);
+
+                        state.pending.transaction.commits.emplace_back( std::forward< P>( pending));
+                     }
+                  } // rollback
+
+               } // transaction
+            } // send
+
+            namespace comply::to
+            {
+               void state( State& state)
+               {
+                  Trace trace{ "queue::forward::service::local::comply::to::state"};
+
+                  // to make it easy to comply, we just cancel everything we can cancel
+                  // and start over (for the forwards that has configured instances)
+                  // the only downside is that there is a chance that dequeued messages
+                  // will be rollbacked.
+
+                  // take care of pending lookups
+                  {
+                     Trace trace{ "queue::forward::service::local::comply::to::state send_discard_request"};
+
+                     auto send_discard_request = []( auto& pending)
+                     {
+                        ipc::device().flush();
+                        ipc::message::lookup::discard::Request request{ process::handle()};
+                        request.correlation = pending.correlation;
+                        ipc::flush::send( ipc::queue::manager(), request);
+                     };
+                     algorithm::for_each( state.pending.queue.lookups, send_discard_request);
+                  }
+
+                  // take care of pending dequeues 
+                  {
+                     Trace trace{ "queue::forward::service::local::comply::to::state send_forget_request"};
+
+                     auto send_forget_request = [&state]( auto& pending)
+                     {
+                        return state.forward_apply( pending.id, [&pending]( auto& forward)
                         {
-                           state::forward::Service result;
-                           result.alias = service.alias;
-                           result.source.queue = service.source;
+                           ipc::message::group::dequeue::forget::Request request{ process::handle()};
+                           request.correlation = pending.correlation;
                            
-                           if( service.reply)
+                           if( ipc::flush::optional::send( forward.source.process.ipc, request))
+                              return true;
+
+                           // there might be queue-groups that has died (extremely unlikely)
+                           // if so, just forget this pending dequeue
+                           --forward.instances.running;
+                           return false;
+                        });
+                     };
+
+                     auto& pending = state.pending.dequeues;
+
+                     // send dequeue forget to groups. We need to keep the pending for the forget reply
+                     algorithm::trim( pending, algorithm::filter( pending, send_forget_request));
+                  }
+
+                  // take care of pending service lookups
+                  {
+                     Trace trace{ "queue::forward::service::local::comply::to::state send_service_lookup_discard_request"};
+
+                     auto send_service_lookup_discard_request = [&state]( auto& pending)
+                     {
+                        // we know that this pending is from a service-forward
+                        auto& forward = *state.forward_service( pending.id);
+
+                        message::service::lookup::discard::Request request{ process::handle()};
+                        request.correlation = pending.correlation;
+                        request.requested = forward.target.service;
+                        
+                        // we assume service-manager are always 'online'...
+                        ipc::flush::send( ipc::service::manager(), request);
+                     };
+
+                     auto& pending = state.pending.service.lookups;
+                     algorithm::for_each( pending, send_service_lookup_discard_request);
+                  }
+
+
+                  // start the "flows" for configured forwards
+                  auto lookup_request = []( auto& state, auto& forwards)
+                  {
+                     auto is_configured = []( auto& forward)
+                     {
+                        return forward.instances.configured > 0;
+                     };
+
+                     algorithm::for_each( 
+                        algorithm::filter( forwards, is_configured), 
+                        local::queue::lookup::request( state));
+
+                  };
+
+                  // start lookups on queues, even if we got them already.
+                  lookup_request( state, state.forward.services);
+                  lookup_request( state, state.forward.queues);
+
+                  log::line( verbose::log, "state: ", state);
+
+               }
+            } // comply::to
+
+            namespace handle
+            {
+               namespace configuration::update
+               {
+                  auto request( State& state)
+                  {
+                     return [&state]( const ipc::message::forward::group::configuration::update::Request& message)
+                     { 
+                        Trace trace{ "queue::forward::service::local::handle::configuration::update::request"};
+                        log::line( verbose::log, "message: ", message);
+
+                        // TOOD maintenance we only update instances
+                        auto add_or_update = []( auto& source, auto& target, auto transform)
+                        {
+                           auto handle_source = [&]( auto& forward)
                            {
-                              state::forward::Service::Reply reply;
-                              reply.queue = service.reply.value().queue;
-                              reply.delay = service.reply.value().delay;
-                              result.reply = std::move( reply);
-                           }
-                           
-                           result.target.service = service.target.service;
-                           result.instances.configured = service.instances;
-                           return result;
+                              auto is_alias = [&alias = forward.alias]( auto& forward){ return forward.alias == alias;};
+
+                              if( auto found = algorithm::find_if( target, is_alias))
+                                 found->instances.configured = forward.instances;
+                              else
+                                 target.push_back( transform( forward));
+                           };
+
+                           algorithm::for_each( source, handle_source);
+                        };
+
+                        add_or_update( message.model.services, state.forward.services, transform::forward::service());
+                        add_or_update( message.model.queues, state.forward.queues, transform::forward::queue());
+
+                        comply::to::state( state);
+
+                        ipc::flush::send( message.process.ipc, common::message::reverse::type( message, process::handle()));                        
+                     };
+                  }
+
+               } // configuration::update
+
+               namespace queue::lookup
+               {
+                  auto reply( State& state)
+                  {
+                     return [&state]( const ipc::message::lookup::Reply& message)
+                     {
+                        Trace trace{ "queue::forward::service::local::handle::queue::lookup::reply"};
+                        log::line( verbose::log, "message: ", message);
+
+                        auto pending = pending::consume( state.pending.queue.lookups, message.correlation);
+
+                        log::line( verbose::log, "pending: ", pending);
+
+                        // if queue is absent we just discard this. This can only happen if we're in
+                        // 'shutdown mode'
+                        if( ! message.queue)
+                           return;
+
+                        state.forward_apply( pending.id, [&]( auto& forward)
+                        {
+                           // if the forward has it's queues we start the 'flow'
+                           if( local::queue::lookup::assign( message, forward))
+                              send::dequeue::request( state, forward);
+                        });                               
+                     };
+                  }
+                  namespace discard
+                  {
+                     auto reply( State& state)
+                     {
+                        return [&state]( const ipc::message::lookup::discard::Reply& message)
+                        {
+                           Trace trace{ "queue::forward::handle::queue::lookup::discard::reply"};
+                           common::log::line( verbose::log, "message: ", message);
+
+                           if( message.state == decltype( message.state)::replied)
+                              return; // we've received the queue already, and we let the 'flow' do it's thing...
+
+                           auto pending = pending::consume( state.pending.queue.lookups, message.correlation);
+                           common::log::line( verbose::log, "pending: ", pending);
+
+                           // we don't need to do anything, since the forward instance can't possible be 
+                           // started if we're waiting for lookup discards
+
                         };
                      }
-                     auto queue()
-                     {
-                        return []( auto& queue)
-                        {
-                           state::forward::Queue result;
-                           result.alias = queue.alias;
-                           result.source.queue = queue.source;
 
-                           result.target.queue = queue.target.queue;
-                           result.target.delay = queue.target.delay;
-                           
-                           result.instances.configured = queue.instances;
-                           return result;
-                        };
-                     } 
-                  } // forward
+                  } // discard
 
-               } // transform
+               } // queue::lookup
 
-               namespace queue
+               namespace dequeue
                {
-                  namespace lookup
+                  auto reply( State& state)
                   {
-                     template< typename M>
-                     auto assign( M&& message, state::forward::Service& forward)
+                     return [&state]( ipc::message::group::dequeue::Reply& message)
                      {
-                        if( forward.source.queue == message.name)
+                        Trace trace{ "queue::forward::service::local::handle::dequeue::reply"};
+                        log::line( verbose::log, "message: ", message);
+
+                        auto pending = pending::consume( state.pending.dequeues, message.correlation);
+                        
+                        if( message.message.empty())
                         {
-                           if( message.remote())
-                              common::event::error::send( code::casual::invalid_configuration, "can't forward from a remote queue: ", message.name);
-                           else
-                           {
-                              forward.source.id = message.queue;
-                              forward.source.process = message.process;
-                           }
+                           log::line( log::category::error, "empty dequeued message - action: rollback");
+                           send::transaction::rollback::request( state, std::move( pending));
                         }
-
-                        if( forward.reply)
+                        else if( auto forward = state.forward_service( pending.id))
                         {
-                           auto& reply = forward.reply.value();
 
-                           if( reply.queue == message.name)
-                           {
-                              reply.id = message.queue;
-                              reply.process = message.process;
-                           }
-                        }
-
-                        return forward.source && ( ! forward.reply || forward.reply.value());
-                     }
-
-                     template< typename M>
-                     auto assign( M&& message, state::forward::Queue& forward)
-                     {
-                        if( forward.source.queue == message.name)
-                        {
-                           if( message.remote())
-                              common::event::error::send( code::casual::invalid_configuration, "can't forward from a remote queue: ", message.name);
-                           else
-                           {
-                              forward.source.id = message.queue;
-                              forward.source.process = message.process;
-                           }
-                        }
-
-                        if( forward.target.queue == message.name)
-                        {
-                           forward.target.id = message.queue;
-                           forward.target.process = message.process;
-                        }
-
-                        return forward.source && forward.target;
-                     }
-
-                     namespace detail
-                     {
-                        auto send_request = []( auto id, auto& name)
-                        {
-                           message::queue::lookup::Request request{ process::handle()};
-                           request.name = name;
+                           // request service
+                           message::service::lookup::Request request{ process::handle()};
+                           request.correlation = pending.correlation;
+                           request.requested = forward->target.service;
+                           // we'll wait 'forever'
                            request.context = decltype( request.context)::wait;
 
-                           common::log::line( verbose::log, "request: ", request);
+                           ipc::flush::send( ipc::service::manager(), request);
 
-                           state::pending::queue::Lookup pending;
-                           pending.id = id;
-                           pending.correlation = ipc::flush::send( ipc::queue::manager(), request);
-                           return pending;
-                        };
+                           forward::state::pending::service::Lookup lookup{ std::move( pending)};
+                           lookup.buffer.type = std::move( message.message[ 0].type);
+                           lookup.buffer.memory = std::move( message.message[ 0].payload);
 
-                        void request( State& state, state::forward::Service& forward)
-                        {
-                           state.pending.queue.lookups.push_back( detail::send_request( forward.id, forward.source.queue));
+                           state.pending.service.lookups.push_back( std::move( lookup));
 
-                           if( forward.reply)
-                              state.pending.queue.lookups.push_back( detail::send_request( forward.id, forward.reply.value().queue));
+                           log::line( verbose::log, "state.pending.service.lookups: ", state.pending.service.lookups);
                         }
-
-
-                        void request( State& state, state::forward::Queue& forward)
+                        else if( auto forward = state.forward_queue( pending.id))
                         {
-                           state.pending.queue.lookups.push_back( detail::send_request( forward.id, forward.source.queue));
-                           state.pending.queue.lookups.push_back( detail::send_request( forward.id, forward.target.queue));
+                           ipc::message::group::enqueue::Request request{ process::handle()};
+                           request.correlation = pending.correlation;
+                           request.trid = pending.trid;
+                           request.queue = forward->target.id;
+                           request.name = forward->target.queue;
+                           request.message = std::move( message.message.front());
+
+                           // make sure we've got a new message-id
+                           request.message.id = uuid::make();
+
+                           
+                           if( forward->target.delay > platform::time::unit::zero())
+                              request.message.available = platform::time::clock::type::now() + forward->target.delay;
+
+                           log::line( verbose::log, "enqueue request: ", request);
+
+                           ipc::flush::send( forward->target.process.ipc, request);
+                           state.pending.enqueues.emplace_back( std::move( pending));
+
                         }
+                     };
+                  }
 
-                     } // detail
-
+                  namespace forget
+                  {
                      auto request( State& state)
                      {
-                        return [&state]( auto& forward)
-                        {
-                           detail::request( state, forward);
-                        };
-                     }
-                  } // lookup
-                  
-               } // queue
+                        // we get this from queue group if it's 'going down' or some other configuration
+                        // changes...
+                        return [&state]( const ipc::message::group::dequeue::forget::Request& message)
+                        {                                 
+                           Trace trace{ "queue::forward::handle::dequeue::forget::request"};
+                           common::log::line( verbose::log, "message: ", message);
 
-               namespace pending
-               {
-                  template< typename P>
-                  auto consume( P& pending, const common::Uuid& correlation)
-                  {
-                     auto found = common::algorithm::find( pending, correlation);
-                     assert( found);
-
-                     auto result = std::move( *found);
-                     pending.erase( std::begin( found));
-                     return result;
-                  }
-               } // pending
-
-               namespace send
-               {
-                  namespace dequeue
-                  {
-                     template< typename F>
-                     void request( State& state, F& forward)
-                     {
-                        Trace trace{ "queue::forward::concurrent::send::dequeue::request"};
-                        common::log::line( verbose::log, "forward: ", forward);
-
-                        auto send_request =[&]()
-                        {
-                           common::message::queue::dequeue::Request request{ common::process::handle()};
-                           request.trid = common::transaction::id::create( common::process::handle());
-                           request.correlation = common::uuid::make();
-                           request.queue = forward.source.id;
-                           request.name = forward.source.queue;
-                           request.selector = forward.selector;
-                           request.block = true;
-
-                           if( ! ipc::flush::optional::send( forward.source.process.ipc, request))
-                              return;
-
-                           using Pending = common::traits::remove_cvref_t< decltype( state.pending.dequeues.back())>;
-
-                           Pending pending;
-                           pending.id = forward.id;
-                           pending.correlation = request.correlation;
-                           pending.trid = request.trid;
-
-                           state.pending.dequeues.push_back( std::move( pending));
-                           ++forward.instances.running;
-                        };
-
-                        common::algorithm::for_n( forward.instances.missing(), send_request);
-                     }
-                  } // dequeue
-
-                  namespace transaction
-                  {
-                     namespace rollback
-                     {
-                        template< typename P>
-                        void request( State& state, P&& pending)
-                        {
-                           Trace trace{ "queue::forward::concurrent::send::transaction::rollback::request"};
-                           common::log::line( verbose::log, "pending: ", pending);
-
-                           common::message::transaction::rollback::Request request{ common::process::handle()};
-                           request.correlation = pending.correlation;
-                           request.trid = pending.trid;
-
-                           ipc::flush::send( ipc::transaction::manager(), request);
-
-                           state.pending.transaction.rollbacks.emplace_back( std::forward< P>( pending));
-                        }
-                     } // rollback
-
-                     namespace commit
-                     {
-                        template<  typename P>
-                        void request( State& state, P&& pending)
-                        {
-                           Trace trace{ "queue::forward::concurrent::send::transaction::commit::request"};
-                           common::log::line( verbose::log, "pending: ", pending);
-
-                           common::message::transaction::commit::Request request{ common::process::handle()};
-                           request.correlation = pending.correlation;
-                           request.trid = pending.trid;
-
-                           ipc::flush::send( ipc::transaction::manager(), request);
-
-                           state.pending.transaction.commits.emplace_back( std::forward< P>( pending));
-                        }
-                     } // rollback
-
-                  } // transaction
-               } // send
-
-               namespace comply
-               {
-                  namespace to
-                  {
-                     void state( State& state)
-                     {
-                        Trace trace{ "queue::forward::concurrent::service::local::comply::to::state"};
-
-                        // to make it easy to comply, we just cancel everything we can cancel
-                        // and start over (for the forwards that has configured instances)
-                        // the only downside is that there is a chance that dequeued messages
-                        // will be rollbacked.
-
-                        // take care of pending lookups
-                        {
-                           Trace trace{ "queue::forward::concurrent::service::local::comply::to::state send_discard_request"};
-
-                           auto send_discard_request = []( auto& pending)
+                           // TODO we'll always find it!
+                           if( auto found = algorithm::find( state.pending.dequeues, message.correlation))
                            {
-                              ipc::device().flush();
-                              message::queue::lookup::discard::Request request{ process::handle()};
-                              request.correlation = pending.correlation;
-                              ipc::flush::send( ipc::queue::manager(), request);
-                           };
-                           algorithm::for_each( state.pending.queue.lookups, send_discard_request);
-                        }
-
-                        // take care of pending dequeues 
-                        {
-                           Trace trace{ "queue::forward::concurrent::service::local::comply::to::state send_forget_request"};
-
-                           auto send_forget_request = [&state]( auto& pending)
-                           {
-                              return state.forward_apply( pending.id, [&pending]( auto& forward)
-                              {
-                                 message::queue::dequeue::forget::Request request{ process::handle()};
-                                 request.correlation = pending.correlation;
-                                 
-                                 if( ipc::flush::optional::send( forward.source.process.ipc, request))
-                                    return true;
-
-                                 // there might be queue-groups that has died (extremely unlikely)
-                                 // if so, just forget this pending dequeue
-                                 --forward.instances.running;
-                                 return false;
-                              });
-                           };
-
-                           auto& pending = state.pending.dequeues;
-
-                           // send dequeue forget to groups. We need to keep the pending for the forget reply
-                           algorithm::trim( pending, algorithm::filter( pending, send_forget_request));
-                        }
-
-                        // take care of pending service lookups
-                        {
-                           Trace trace{ "queue::forward::concurrent::service::local::comply::to::state send_service_lookup_discard_request"};
-
-                           auto send_service_lookup_discard_request = [&state]( auto& pending)
-                           {
-                              // we know that this pending is from a service-forward
-                              auto& forward = *state.forward_service( pending.id);
-
-                              message::service::lookup::discard::Request request{ process::handle()};
-                              request.correlation = pending.correlation;
-                              request.requested = forward.target.service;
-                              
-                              // we assume service-manager are always 'online'...
-                              ipc::flush::send( ipc::service::manager(), request);
-                           };
-
-                           auto& pending = state.pending.service.lookups;
-                           algorithm::for_each( pending, send_service_lookup_discard_request);
-                        }
-
-
-                        // start the "flows" for configured forwards
-                        auto lookup_request = []( auto& state, auto& forwards)
-                        {
-                           auto is_configured = []( auto& forward)
-                           {
-                              return forward.instances.configured > 0;
-                           };
-
-                           algorithm::for_each( 
-                              algorithm::filter( forwards, is_configured), 
-                              local::queue::lookup::request( state));
-
-                        };
-
-                        // start lookups on queues, even if we got them already.
-                        lookup_request( state, state.forward.services);
-                        lookup_request( state, state.forward.queues);
-
-                        log::line( verbose::log, "state: ", state);
-
-                     }
-                  } // to
-               } // comply
-
-               namespace handle
-               {
-                  namespace configuration
-                  {
-                     auto reply( State& state)
-                     {
-                        return [&state]( const ipc::message::forward::configuration::Reply& message)
-                        { 
-                           Trace trace{ "queue::forward::concurrent::service::local::handle::configuration::reply"};
-                           log::line( verbose::log, "message: ", message);
-
-                           // TOOD maintenance we only update instances
-                           auto add_or_update = []( auto& source, auto& target, auto transform)
-                           {
-                              auto handle_source = [&]( auto& forward)
-                              {
-                                 auto is_alias = [&alias = forward.alias]( auto& forward){ return forward.alias == alias;};
-
-                                 if( auto found = algorithm::find_if( target, is_alias))
-                                 {
-                                    found->instances.configured = forward.instances;
-                                 }
-                                 else
-                                    target.push_back( transform( forward));
-                              };
-
-                              algorithm::for_each( source, handle_source);
-                           };
-
-                           add_or_update( message.model.forward.services, state.forward.services, transform::forward::service());
-                           add_or_update( message.model.forward.queues, state.forward.queues, transform::forward::queue());
-
-                           comply::to::state( state);
-                        };
-                     }
-
-                  } // configuration
-
-                  namespace queue
-                  {
-                     namespace lookup
-                     {
-                        auto reply( State& state)
-                        {
-                           return [&state]( const message::queue::lookup::Reply& message)
-                           {
-                              Trace trace{ "queue::forward::concurrent::service::local::handle::queue::lookup::reply"};
-                              log::line( verbose::log, "message: ", message);
-
-                              auto pending = pending::consume( state.pending.queue.lookups, message.correlation);
-
-                              // if queue is absent we just discard this. This can only happen if we're in
-                              // 'shutdown mode'
-                              if( ! message.queue)
-                                 return;
-
-                              state.forward_apply( pending.id, [&]( auto& forward)
-                              {
-                                 // if the forward has it's queues we start the 'flow'
-                                 if( local::queue::lookup::assign( message, forward))
-                                    send::dequeue::request( state, forward);
-                              });                               
-                           };
-                        }
-                        namespace discard
-                        {
-                           auto reply( State& state)
-                           {
-                              return [&state]( const common::message::queue::lookup::discard::Reply& message)
-                              {
-                                 Trace trace{ "queue::forward::concurrent::handle::queue::lookup::discard::reply"};
-                                 common::log::line( verbose::log, "message: ", message);
-
-                                 if( message.state == decltype( message.state)::replied)
-                                    return; // we've received the queue already, and we let the 'flow' do it's thing...
-
-                                 auto pending = pending::consume( state.pending.queue.lookups, message.correlation);
-                                 common::log::line( verbose::log, "pending: ", pending);
-
-                                 // we don't need to do anything, since the forward instance can't possible be 
-                                 // started if we're waiting for lookup discards
-
-                              };
-                           }
-
-                        } // discard
-
-                     } // lookup
-                  } // queue
-
-                  namespace dequeue
-                  {
-                     auto reply( State& state)
-                     {
-                        return [&state]( message::queue::dequeue::Reply& message)
-                        {
-                           Trace trace{ "queue::forward::concurrent::service::local::handle::dequeue::reply"};
-                           log::line( verbose::log, "message: ", message);
-
-                           auto pending = pending::consume( state.pending.dequeues, message.correlation);
-                           
-                           if( message.message.empty())
-                           {
-                              log::line( log::category::error, "empty dequeued message - action: rollback");
-                              send::transaction::rollback::request( state, std::move( pending));
-                           }
-                           else if( auto forward = state.forward_service( pending.id))
-                           {
-
-                              // request service
-                              message::service::lookup::Request request{ process::handle()};
-                              request.correlation = pending.correlation;
-                              request.requested = forward->target.service;
-                              // we'll wait 'forever'
-                              request.context = decltype( request.context)::wait;
-
-                              ipc::flush::send( ipc::service::manager(), request);
-
-                              forward::state::pending::service::Lookup lookup{ std::move( pending)};
-                              lookup.buffer.type = std::move( message.message[ 0].type);
-                              lookup.buffer.memory = std::move( message.message[ 0].payload);
-
-                              state.pending.service.lookups.push_back( std::move( lookup));
-
-                              log::line( verbose::log, "state.pending.service.lookups: ", state.pending.service.lookups);
-                           }
-                           else if( auto forward = state.forward_queue( pending.id))
-                           {
-                              message::queue::enqueue::Request request{ process::handle()};
-                              request.correlation = pending.correlation;
-                              request.trid = pending.trid;
-                              request.queue = forward->target.id;
-                              request.name = forward->target.queue;
-                              request.message = std::move( message.message.front());
-
-                              // make sure we've got a new message-id
-                              request.message.id = uuid::make();
-
-                              
-                              if( forward->target.delay > platform::time::unit::zero())
-                                 request.message.available = platform::time::clock::type::now() + forward->target.delay;
-
-                              log::line( verbose::log, "enqueue request: ", request);
-
-                              ipc::flush::send( forward->target.process.ipc, request);
-                              state.pending.enqueues.emplace_back( std::move( pending));
-
-                           }
-                        };
-                     }
-
-                     namespace forget
-                     {
-                        auto request( State& state)
-                        {
-                           // we get this from queue group if it's 'going down' or some other configuration
-                           // changes...
-                           return [&state]( const common::message::queue::dequeue::forget::Request& message)
-                           {                                 
-                              Trace trace{ "queue::forward::concurrent::handle::dequeue::forget::request"};
-                              common::log::line( verbose::log, "message: ", message);
-
-                              auto pending = pending::consume( state.pending.dequeues, message.correlation);
+                              auto pending = algorithm::extract( state.pending.dequeues, std::begin( found));
 
                               state.forward_apply( pending.id, []( auto& forward)
                               {
@@ -538,332 +526,332 @@ namespace casual
                               });
 
                               common::log::line( verbose::log, "pending: ", pending);
-                           };
-                        }
+                           }
+                        };
+                     }
 
-                        auto reply( State& state)
-                        {
-                           // We've requested to forget the blocking dequeue. 
-                           return [&state]( const common::message::queue::dequeue::forget::Reply& message)
-                           {                                 
-                              Trace trace{ "queue::forward::concurrent::handle::dequeue::forget::reply"};
-                              common::log::line( verbose::log, "message: ", message);
-
-                              if( message.found)
-                              {
-                                 auto pending = pending::consume( state.pending.dequeues, message.correlation);
-                                 common::log::line( verbose::log, "pending: ", pending);
-
-                                 state.forward_apply( pending.id, []( auto& forward)
-                                 {
-                                    --forward.instances.running;
-                                    common::log::line( verbose::log, "forward: ", forward);
-                                 });  
-                              }
-
-                              // if not found, we've already got a dequeue, and we're mid 'state flow'.
-                              // the forward has been configured already, and we do nothing and let the
-                              // flow end/die of natural causes... 
-
-                           };
-                        }
-                     } // forget
-
-                  } // dequeue
-
-                  namespace service
-                  {
-                     namespace lookup
+                     auto reply( State& state)
                      {
-                        auto reply( State& state)
-                        {
-                           return [&state]( message::service::lookup::Reply& message)
+                        // We've requested to forget the blocking dequeue. 
+                        return [&state]( const ipc::message::group::dequeue::forget::Reply& message)
+                        {                                 
+                           Trace trace{ "queue::forward::handle::dequeue::forget::reply"};
+                           common::log::line( verbose::log, "message: ", message);
+
+                           if( message.found)
                            {
-                              Trace trace{ "queue::forward::concurrent::service::local::handle::service::lookup::reply"};
-                              log::line( verbose::log, "message: ", message);
+                              auto pending = pending::consume( state.pending.dequeues, message.correlation);
+                              common::log::line( verbose::log, "pending: ", pending);
 
-                              if( message.state == decltype( message.state)::busy)
-                                 return;
-
-
-                              auto pending = pending::consume( state.pending.service.lookups, message.correlation);
-
-                              if( message.state != decltype( message.state)::idle)
+                              state.forward_apply( pending.id, []( auto& forward)
                               {
-                                 log::line( log::category::error, "service not callable: ", message.service.name);
-                                 send::transaction::rollback::request( state, std::move( pending));
-                                 return;
-                              }
-
-                              message::service::call::caller::Request request{ pending.buffer};
-                              request.process = process::handle();
-                              request.correlation = pending.correlation;
-                              request.trid = pending.trid;
-                              request.service = std::move( message.service);
-
-                              ipc::flush::send( message.process.ipc, request);
-                              state.pending.service.calls.emplace_back( std::move( pending), message.process.pid);
-                           };
-                        }
-
-                        namespace discard
-                        {
-                           auto reply( State& state)
-                           {
-                              return [&state]( const message::service::lookup::discard::Reply& message)
-                              {
-                                 Trace trace{ "queue::forward::concurrent::service::local::handle::service::lookup::discard::reply"};
-                                 log::line( verbose::log, "message: ", message);
-
-                                 if( message.state == decltype( message.state)::replied)
-                                    return; // we've got the lookup reply already, let the 'flow' do it's thing...
-
-                                 auto pending = pending::consume( state.pending.service.lookups, message.correlation);
-                                 log::line( verbose::log, "pending: ", pending);
-
-                                 // rollback the 'flow'
-                                 send::transaction::rollback::request( state, std::move( pending));                                       
-                              };
+                                 --forward.instances.running;
+                                 common::log::line( verbose::log, "forward: ", forward);
+                              });  
                            }
 
-                        } // discard
-                     } // lookup
-                     
-                     namespace call
-                     {
-                        auto reply( State& state)
-                        {
-                           return [&state]( message::service::call::Reply& message)
-                           {
-                              Trace trace{ "queue::forward::concurrent::service::local::handle::service::call::reply"};
-                              log::line( verbose::log, "message: ", message);
+                           // if not found, we've already got a dequeue, and we're mid 'state flow'.
+                           // the forward has been configured already, and we do nothing and let the
+                           // flow end/die of natural causes... 
 
-                              auto call = pending::consume( state.pending.service.calls, message.correlation);
+                        };
+                     }
+                  } // forget
 
-                              if( message.code.result != code::xatmi::ok)
-                              {
-                                 send::transaction::rollback::request( state, std::move( call));
-                                 return;
-                              }
+               } // dequeue
 
-                              // we know that this is a service forward
-                              auto& forward = *state.forward_service( call.id);
-
-                              if( forward.reply)
-                              {
-                                 auto& reply = forward.reply.value();
-                                 message::queue::enqueue::Request request{ process::handle()};
-                                 request.correlation = call.correlation;
-                                 request.trid = call.trid;
-                                 request.queue = reply.id;
-                                 request.name = reply.queue;
-                                 request.message.type = std::move( message.buffer.type);
-                                 request.message.payload = std::move( message.buffer.memory);
-
-                                 if( reply.delay > platform::time::unit::zero())
-                                    request.message.available = platform::time::clock::type::now() + reply.delay;
-
-                                 log::line( verbose::log, "enqueue reply: ", request);
-
-                                 if( ipc::flush::optional::send( reply.process.ipc, request))
-                                    state.pending.enqueues.emplace_back( std::move( call));
-                                 else 
-                                    send::transaction::rollback::request( state, std::move( call));
-                              }
-                              else
-                                 send::transaction::commit::request( state, std::move( call));
-
-                           };
-                        }
-                     } // call
-                  } // service
-
-                  namespace enqueue
+               namespace service
+               {
+                  namespace lookup
                   {
                      auto reply( State& state)
                      {
-                        return [&state]( const common::message::queue::enqueue::Reply& message)
+                        return [&state]( message::service::lookup::Reply& message)
                         {
-                           Trace trace{ "queue::forward::concurrent::handle::enqueue::reply"};
-                           common::log::line( verbose::log, "message: ", message);
-
-                           auto pending = pending::consume( state.pending.enqueues, message.correlation);
-
-                           send::transaction::commit::request( state, std::move( pending));
-                        };
-                     }
-                  }
-
-                  namespace transaction
-                  {
-                     namespace rollback
-                     {
-                        auto reply( State& state)
-                        {
-                           return [&state]( const common::message::transaction::rollback::Reply& message)
-                           {                                    
-                              Trace trace{ "queue::forward::concurrent::handle::transaction::rollback::reply"};
-                              common::log::line( verbose::log, "message: ", message);
-
-                              auto pending = pending::consume( state.pending.transaction.rollbacks, message.correlation);
-
-                              if( message.stage != decltype( message.stage)::rollback)
-                                 common::log::line( common::log::category::error, message.state, "failed to rollback - trid: ", message.trid);
-
-
-                              state.forward_apply( pending.id, [&state]( auto& forward)
-                              {
-                                 --forward.instances.running;
-                                 ++forward.metric.rollback.count;
-                                 forward.metric.rollback.last = platform::time::clock::type::now();
-
-                                 // we try to dequeue again... 
-                                 send::dequeue::request( state, forward);
-                              });
-                           };
-                        }
-
-                     } // rollback
-
-                     namespace commit
-                     {
-                        auto reply( State& state)
-                        {
-                           return [&state]( const common::message::transaction::commit::Reply& message)
-                           {                                    
-                              Trace trace{ "queue::forward::concurrent::handle::transaction::commit::reply"};
-                              common::log::line( verbose::log, "message: ", message);
-
-                              if( message.stage == decltype( message.stage)::prepare)
-                                 return; // we wait for the next message
-
-                              auto pending = pending::consume( state.pending.transaction.commits, message.correlation);
-
-                              if( message.stage != decltype( message.stage)::commit)
-                                 common::log::line( common::log::category::error, message.state, "failed to commit - trid: ", message.trid);
-
-                              state.forward_apply( pending.id, [&state]( auto& forward)
-                              {
-                                 --forward.instances.running;
-                                 ++forward.metric.commit.count;
-                                 forward.metric.commit.last = platform::time::clock::type::now();
-
-                                 // we try to dequeue again... 
-                                 send::dequeue::request( state, forward);
-                              });
-                           };
-                        }
-                     } // rollback
-                  } // transaction
-
-                  namespace state
-                  {
-                     auto request( State& state)
-                     {
-                        return [&state]( const ipc::message::forward::state::Request& message)
-                        { 
-                           Trace trace{ "queue::forward::concurrent::service::local::handle::state::request"};
+                           Trace trace{ "queue::forward::service::local::handle::service::lookup::reply"};
                            log::line( verbose::log, "message: ", message);
 
-                           auto basic_assign = []( const auto& source, auto& target)
+                           if( message.state == decltype( message.state)::busy)
+                              return;
+
+
+                           auto pending = pending::consume( state.pending.service.lookups, message.correlation);
+
+                           if( message.state != decltype( message.state)::idle)
                            {
-                              target.alias = source.alias;
-                              target.source = source.source.queue;
-                              target.instances.configured = source.instances.configured;
-                              target.instances.running = source.instances.running;
-                              target.metric.commit.count = source.metric.commit.count;
-                              target.metric.commit.last = source.metric.commit.last;
-                              target.metric.rollback.count = source.metric.rollback.count;
-                              target.metric.rollback.last = source.metric.rollback.last;
-                              target.note = source.note;
-                           };
+                              log::line( log::category::error, "service not callable: ", message.service.name);
+                              send::transaction::rollback::request( state, std::move( pending));
+                              return;
+                           }
 
-                           auto transform_service = [basic_assign]( const auto& service)
-                           {
-                              ipc::message::forward::state::Reply::Service result;
-                              basic_assign( service, result);
-                              result.target.service = service.target.service;
+                           message::service::call::caller::Request request{ pending.buffer};
+                           request.process = process::handle();
+                           request.correlation = pending.correlation;
+                           request.trid = pending.trid;
+                           request.service = std::move( message.service);
 
-                              if( service.reply)
-                              {
-                                 ipc::message::forward::state::Reply::Service::Reply reply;
-                                 reply.queue = service.reply.value().queue;
-                                 reply.delay = service.reply.value().delay;
-                                 result.reply = std::move( reply);
-                              }
-
-                              return result;
-                           };
-
-                           auto transform_queue = [basic_assign]( const auto& queue)
-                           {
-                              ipc::message::forward::state::Reply::Queue result;
-                              basic_assign( queue, result);
-
-                              result.target.delay = queue.target.delay;
-
-                              return result;
-                           };
-
-                           auto reply = common::message::reverse::type( message, process::handle());
-                           reply.services = algorithm::transform( state.forward.services, transform_service);
-                           reply.queues = algorithm::transform( state.forward.queues, transform_queue);
-
-                           ipc::flush::optional::send( message.process.ipc, reply);
+                           ipc::flush::send( message.process.ipc, request);
+                           state.pending.service.calls.emplace_back( std::move( pending), message.process.pid);
                         };
                      }
-                  } // state
 
-                  auto shutdown( State& state)
-                  {
-                     return [&state]( const common::message::shutdown::Request& message)
+                     namespace discard
                      {
-                        Trace trace{ "queue::forward::concurrent::service::local::handle::shutdown"};
-                        log::line( verbose::log, "message: ", message);
+                        auto reply( State& state)
+                        {
+                           return [&state]( const message::service::lookup::discard::Reply& message)
+                           {
+                              Trace trace{ "queue::forward::service::local::handle::service::lookup::discard::reply"};
+                              log::line( verbose::log, "message: ", message);
 
-                        state.machine = decltype( state.machine)::shutdown;
+                              if( message.state == decltype( message.state)::replied)
+                                 return; // we've got the lookup reply already, let the 'flow' do it's thing...
 
-                        // configure zero instances for all forwards
-                        auto set_no_instances = []( auto& forward){ forward.instances.configured = 0;};
-                        algorithm::for_each( state.forward.services, set_no_instances);
-                        algorithm::for_each( state.forward.queues, set_no_instances);
+                              auto pending = pending::consume( state.pending.service.lookups, message.correlation);
+                              log::line( verbose::log, "pending: ", pending);
 
-                        local::comply::to::state( state);
+                              // rollback the 'flow'
+                              send::transaction::rollback::request( state, std::move( pending));                                       
+                           };
+                        }
+
+                     } // discard
+                  } // lookup
+                  
+                  namespace call
+                  {
+                     auto reply( State& state)
+                     {
+                        return [&state]( message::service::call::Reply& message)
+                        {
+                           Trace trace{ "queue::forward::service::local::handle::service::call::reply"};
+                           log::line( verbose::log, "message: ", message);
+
+                           auto call = pending::consume( state.pending.service.calls, message.correlation);
+
+                           if( message.code.result != code::xatmi::ok)
+                           {
+                              send::transaction::rollback::request( state, std::move( call));
+                              return;
+                           }
+
+                           // we know that this is a service forward
+                           auto& forward = *state.forward_service( call.id);
+
+                           if( forward.reply)
+                           {
+                              auto& reply = forward.reply.value();
+                              ipc::message::group::enqueue::Request request{ process::handle()};
+                              request.correlation = call.correlation;
+                              request.trid = call.trid;
+                              request.queue = reply.id;
+                              request.name = reply.queue;
+                              request.message.type = std::move( message.buffer.type);
+                              request.message.payload = std::move( message.buffer.memory);
+
+                              if( reply.delay > platform::time::unit::zero())
+                                 request.message.available = platform::time::clock::type::now() + reply.delay;
+
+                              log::line( verbose::log, "enqueue reply: ", request);
+
+                              if( ipc::flush::optional::send( reply.process.ipc, request))
+                                 state.pending.enqueues.emplace_back( std::move( call));
+                              else 
+                                 send::transaction::rollback::request( state, std::move( call));
+                           }
+                           else
+                              send::transaction::commit::request( state, std::move( call));
+
+                        };
+                     }
+                  } // call
+               } // service
+
+               namespace enqueue
+               {
+                  auto reply( State& state)
+                  {
+                     return [&state]( const ipc::message::group::enqueue::Reply& message)
+                     {
+                        Trace trace{ "queue::forward::handle::enqueue::reply"};
+                        common::log::line( verbose::log, "message: ", message);
+
+                        auto pending = pending::consume( state.pending.enqueues, message.correlation);
+
+                        send::transaction::commit::request( state, std::move( pending));
                      };
                   }
-                  
-               } // handle
-
-               auto handlers( State& state)
-               {
-                  return message::dispatch::handler( ipc::device(),
-                     message::handle::defaults( ipc::device()),
-                     handle::configuration::reply( state),
-                     handle::state::request( state),
-                     handle::queue::lookup::reply( state),
-                     handle::queue::lookup::discard::reply( state),
-                     handle::dequeue::reply( state),
-                     handle::dequeue::forget::request( state),
-                     handle::dequeue::forget::reply( state),
-                     handle::service::lookup::reply( state),
-                     handle::service::lookup::discard::reply( state),
-                     handle::service::call::reply( state),
-                     handle::enqueue::reply( state),
-                     handle::transaction::commit::reply( state),
-                     handle::transaction::rollback::reply( state),
-
-                     handle::shutdown( state)
-                  );
                }
 
-            } // <unnamed>
-         } // local
+               namespace transaction
+               {
+                  namespace rollback
+                  {
+                     auto reply( State& state)
+                     {
+                        return [&state]( const common::message::transaction::rollback::Reply& message)
+                        {                                    
+                           Trace trace{ "queue::forward::handle::transaction::rollback::reply"};
+                           common::log::line( verbose::log, "message: ", message);
 
-         auto handlers( State& state)
-         {
-            return local::handlers( state);
-         }
+                           auto pending = pending::consume( state.pending.transaction.rollbacks, message.correlation);
 
-      } // forward
-   } // queue
+                           if( message.stage != decltype( message.stage)::rollback)
+                              common::log::line( common::log::category::error, message.state, "failed to rollback - trid: ", message.trid);
+
+
+                           state.forward_apply( pending.id, [&state]( auto& forward)
+                           {
+                              --forward.instances.running;
+                              ++forward.metric.rollback.count;
+                              forward.metric.rollback.last = platform::time::clock::type::now();
+
+                              // we try to dequeue again... 
+                              send::dequeue::request( state, forward);
+                           });
+                        };
+                     }
+
+                  } // rollback
+
+                  namespace commit
+                  {
+                     auto reply( State& state)
+                     {
+                        return [&state]( const common::message::transaction::commit::Reply& message)
+                        {                                    
+                           Trace trace{ "queue::forward::handle::transaction::commit::reply"};
+                           common::log::line( verbose::log, "message: ", message);
+
+                           if( message.stage == decltype( message.stage)::prepare)
+                              return; // we wait for the next message
+
+                           auto pending = pending::consume( state.pending.transaction.commits, message.correlation);
+
+                           if( message.stage != decltype( message.stage)::commit)
+                              common::log::line( common::log::category::error, message.state, "failed to commit - trid: ", message.trid);
+
+                           state.forward_apply( pending.id, [&state]( auto& forward)
+                           {
+                              --forward.instances.running;
+                              ++forward.metric.commit.count;
+                              forward.metric.commit.last = platform::time::clock::type::now();
+
+                              // we try to dequeue again... 
+                              send::dequeue::request( state, forward);
+                           });
+                        };
+                     }
+                  } // rollback
+               } // transaction
+
+               namespace state
+               {
+                  auto request( State& state)
+                  {
+                     return [&state]( const ipc::message::forward::group::state::Request& message)
+                     { 
+                        Trace trace{ "queue::forward::service::local::handle::state::request"};
+                        log::line( verbose::log, "message: ", message);
+
+                        auto basic_assign = []( const auto& source, auto& target)
+                        {
+                           target.alias = source.alias;
+                           target.source = source.source.queue;
+                           target.instances.configured = source.instances.configured;
+                           target.instances.running = source.instances.running;
+                           target.metric.commit.count = source.metric.commit.count;
+                           target.metric.commit.last = source.metric.commit.last;
+                           target.metric.rollback.count = source.metric.rollback.count;
+                           target.metric.rollback.last = source.metric.rollback.last;
+                           target.note = source.note;
+                        };
+
+                        auto transform_service = [basic_assign]( const auto& service)
+                        {
+                           ipc::message::forward::group::state::Reply::Service result;
+                           basic_assign( service, result);
+                           result.target.service = service.target.service;
+
+                           if( service.reply)
+                           {
+                              ipc::message::forward::group::state::Reply::Service::Reply reply;
+                              reply.queue = service.reply.value().queue;
+                              reply.delay = service.reply.value().delay;
+                              result.reply = std::move( reply);
+                           }
+
+                           return result;
+                        };
+
+                        auto transform_queue = [basic_assign]( const auto& queue)
+                        {
+                           ipc::message::forward::group::state::Reply::Queue result;
+                           basic_assign( queue, result);
+
+                           result.target.delay = queue.target.delay;
+
+                           return result;
+                        };
+
+                        auto reply = common::message::reverse::type( message, process::handle());
+                        reply.services = algorithm::transform( state.forward.services, transform_service);
+                        reply.queues = algorithm::transform( state.forward.queues, transform_queue);
+
+                        ipc::flush::send( message.process.ipc, reply);
+                     };
+                  }
+               } // state
+
+               auto shutdown( State& state)
+               {
+                  return [&state]( const common::message::shutdown::Request& message)
+                  {
+                     Trace trace{ "queue::forward::service::local::handle::shutdown"};
+                     log::line( verbose::log, "message: ", message);
+
+                     state.machine = decltype( state.machine)::shutdown;
+
+                     // configure zero instances for all forwards
+                     auto set_no_instances = []( auto& forward){ forward.instances.configured = 0;};
+                     algorithm::for_each( state.forward.services, set_no_instances);
+                     algorithm::for_each( state.forward.queues, set_no_instances);
+
+                     local::comply::to::state( state);
+                  };
+               }
+               
+            } // handle
+
+            auto handlers( State& state)
+            {
+               return message::dispatch::handler( ipc::device(),
+                  message::handle::defaults( ipc::device()),
+                  handle::configuration::update::request( state),
+                  handle::state::request( state),
+                  handle::queue::lookup::reply( state),
+                  handle::queue::lookup::discard::reply( state),
+                  handle::dequeue::reply( state),
+                  handle::dequeue::forget::request( state),
+                  handle::dequeue::forget::reply( state),
+                  handle::service::lookup::reply( state),
+                  handle::service::lookup::discard::reply( state),
+                  handle::service::call::reply( state),
+                  handle::enqueue::reply( state),
+                  handle::transaction::commit::reply( state),
+                  handle::transaction::rollback::reply( state),
+
+                  handle::shutdown( state)
+               );
+            }
+
+         } // <unnamed>
+      } // local
+
+      auto handlers( State& state)
+      {
+         return local::handlers( state);
+      }
+
+   } // queue::forward
 } // casual

@@ -311,9 +311,29 @@ namespace casual
 
          ASSERT_TRUE( ! found.empty());
          EXPECT_TRUE( *found == 3);
-
       }
 
+      TEST( common_algorithm, contains_vector)
+      {
+         common::unittest::Trace trace;
+
+         auto values = std::vector< int>{ 0, 1, 2, 3, 5, 6, 7, 8, 9};
+
+         EXPECT_TRUE( algorithm::contains( values, 0));
+         EXPECT_TRUE( algorithm::contains( values, 9));
+         EXPECT_TRUE( ! algorithm::contains( values, 42));
+      }
+
+      TEST( common_algorithm, contains_map)
+      {
+         common::unittest::Trace trace;
+
+         auto values = std::map< int, int>{ { 0, 42}, { 1, 42}, { 2, 42}, { 3, 42}, { 5, 42}, { 6, 42}, { 7, 42}, { 8, 42}};
+
+         EXPECT_TRUE( algorithm::contains( values, 0));
+         EXPECT_TRUE( algorithm::contains( values, 8));
+         EXPECT_TRUE( ! algorithm::contains( values, 42));
+      }
 
       TEST( common_algorithm, search)
       {

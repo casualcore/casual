@@ -146,26 +146,26 @@ namespace casual
       TEST( gateway_protocol_v1, enqueue_request)
       {
          constexpr auto expected = R"(cHPL9BRESkGHswCG8UP8YAAAAAAAAAAGcXVldWVBAAAAAAAAACoAAAAAAAAAEAAAAAAAAAAQW2wb9vJLSA29vN71TDoIUVtsG/byS0gNvbze9Uw6CFLm/Z/PhqxH9KUlL1l+JfxqAAAAAAAAABVwcm9wZXJ0eSAxOnByb3BlcnR5IDIAAAAAAAAABnF1ZXVlQhWlY3jTqfCgAAAAAAAAAAguYmluYXJ5LwAAAAAAAACAgIGCg4SFhoeIiYqLjI2Oj5CRkpOUlZaXmJmam5ydnp+goaKjpKWmp6ipqqusra6vsLGys7S1tre4ubq7vL2+v8DBwsPExcbHyMnKy8zNzs/Q0dLT1NXW19jZ2tvc3d7f4OHi4+Tl5ufo6err7O3u7/Dx8vP09fb3+Pn6+/z9/v8=)";  
-         local::compare( local::fill< common::message::queue::enqueue::Request>(), expected);
+         local::compare( local::fill< queue::ipc::message::group::enqueue::Request>(), expected);
       }
 
       TEST( gateway_protocol_v1, enqueue_reply)
       {
          constexpr auto expected = R"(cHPL9BRESkGHswCG8UP8YDFdrMYYLkwSv5h376kky4c=)";
-         local::compare( local::fill< common::message::queue::enqueue::Reply>(), expected);
+         local::compare( local::fill< queue::ipc::message::group::enqueue::Reply>(), expected);
       }
 
 
       TEST( gateway_protocol_v1, dequeue_request)
       {
          constexpr auto expected = R"(cHPL9BRESkGHswCG8UP8YAAAAAAAAAAGcXVldWVBAAAAAAAAACoAAAAAAAAAEAAAAAAAAAAQW2wb9vJLSA29vN71TDoIUVtsG/byS0gNvbze9Uw6CFIAAAAAAAAAFXByb3BlcnR5IDE6cHJvcGVydHkgMjFdrMYYLkwSv5h376kky4cA)";
-         local::compare( local::fill< common::message::queue::dequeue::Request>(), expected);
+         local::compare( local::fill< queue::ipc::message::group::dequeue::Request>(), expected);
       }
 
       TEST( gateway_protocol_v1, dequeue_reply)
       {
          constexpr auto expected = R"(cHPL9BRESkGHswCG8UP8YAAAAAAAAAABUy+LbBV2Tcqf6CowAt5XngAAAAAAAAAVcHJvcGVydHkgMTpwcm9wZXJ0eSAyAAAAAAAAAAZxdWV1ZUIVpWN406nwoAAAAAAAAAAGLmpzb24vAAAAAAAAAAJ7fQAAAAAAAAABFaVjeNOp8KA=)";
-         local::compare( local::fill< common::message::queue::dequeue::Reply>(), expected);
+         local::compare( local::fill< queue::ipc::message::group::dequeue::Reply>(), expected);
       }
 
    }

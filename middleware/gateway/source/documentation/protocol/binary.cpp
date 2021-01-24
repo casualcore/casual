@@ -81,10 +81,10 @@ namespace casual
                      generator( example::message< common::message::conversation::connect::Reply>(), basename + "message.conversation.connect.Reply");
                      generator( example::message< common::message::conversation::callee::Send>(), basename + "message.conversation.Send");
                      generator( example::message< common::message::conversation::Disconnect>(), basename + "message.conversation.Disconnect");
-                     generator( example::message< common::message::queue::enqueue::Request>(), basename + "message.queue.enqueue.Request");
-                     generator( example::message< common::message::queue::enqueue::Reply>(), basename + "message.queue.enqueue.Reply");
-                     generator( example::message< common::message::queue::dequeue::Request>(), basename + "message.queue.dequeue.Request");
-                     generator( example::message< common::message::queue::dequeue::Reply>(), basename + "message.queue.dequeue.Reply");
+                     generator( example::message< queue::ipc::message::group::enqueue::Request>(), basename + "message.queue.enqueue.Request");
+                     generator( example::message< queue::ipc::message::group::enqueue::Reply>(), basename + "message.queue.enqueue.Reply");
+                     generator( example::message< queue::ipc::message::group::dequeue::Request>(), basename + "message.queue.dequeue.Request");
+                     generator( example::message< queue::ipc::message::group::dequeue::Reply>(), basename + "message.queue.dequeue.Reply");
                      generator( example::message< common::message::transaction::resource::prepare::Request>(), basename + "message.transaction.resource.prepare.Request");
                      generator( example::message< common::message::transaction::resource::prepare::Reply>(), basename + "message.transaction.resource.prepare.Reply");
                      generator( example::message< common::message::transaction::resource::commit::Request>(), basename + "message.transaction.resource.commit.Request");

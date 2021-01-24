@@ -10,11 +10,9 @@
 #include "queue/manager/admin/services.h"
 
 #include "queue/api/queue.h"
-#include "queue/common/transform.h"
 #include "queue/common/queue.h"
 
 #include "common/argument.h"
-#include "common/message/queue.h"
 #include "common/terminal.h"
 #include "common/chronology.h"
 #include "common/transcode.h"
@@ -207,6 +205,11 @@ namespace casual
                   {
                      return terminal::format::column( "alias", []( auto& forward){ return forward.alias;}, terminal::color::yellow);
                   };
+
+                  auto column_group = []()
+                  {
+                     return terminal::format::column( "group", []( auto& forward){ return forward.group;}, terminal::color::cyan);
+                  };
                   
                   auto column_configure_instances = []()
                   { 
@@ -277,8 +280,9 @@ namespace casual
                         }, terminal::color::cyan, terminal::format::Align::right);
                      };
 
-                     return terminal::format::formatter< manager::admin::model::Forward::Service>::construct(
+                     return terminal::format::formatter< manager::admin::model::forward::Service>::construct(
                         column_alias(),
+                        column_group(),
                         column_source(),
                         column_target(),
                         column_reply_name(),
@@ -306,8 +310,9 @@ namespace casual
                         }, terminal::color::white, terminal::format::Align::right);
                      };
 
-                     return terminal::format::formatter< manager::admin::model::Forward::Queue>::construct(
+                     return terminal::format::formatter< manager::admin::model::forward::Queue>::construct(
                         column_alias(),
+                        column_group(),
                         column_source(),
                         column_target(),
                         column_target_delay(),
@@ -576,7 +581,7 @@ use auto-complete to help which options has legends)"
                      {
                         associate( payload);
 
-                        common::message::queue::enqueue::Request request{ process::handle()};
+                        ipc::message::group::enqueue::Request request{ process::handle()};
                         request.trid = payload.transaction.trid;
                         request.name = name;
                         request.queue = destination.queue;
@@ -640,7 +645,7 @@ cat somefile.bin | casual queue --enqueue <queue-name>
                   log::line( verbose::log, "destination: ", destination);
                   log::line( verbose::log, "associate: ", associate);
 
-                  common::message::queue::dequeue::Request request{ process::handle()};
+                  ipc::message::group::dequeue::Request request{ process::handle()};
                   // associate the request to 'transaction', if no ongoing directive -> no-op
                   associate( request);
                   request.name = destination.name;
@@ -974,14 +979,14 @@ casual queue --clear a b c)"
                            if( range::size( values) % 2 == 1)
                               return { "<value>"};
 
+                           auto get_alias = []( auto& forward){ return forward.alias;};
+
                            auto state = call::state();
 
-                           auto transform_alias = []( auto& forward){ return forward.alias;};
+                           auto result = algorithm::transform( state.forward.services, get_alias);
+                           algorithm::transform( state.forward.services, std::back_inserter( result), get_alias);
 
-                           auto aliases = algorithm::transform( state.forward.services, transform_alias);
-                           algorithm::transform( state.forward.queues, aliases, transform_alias);
-
-                           return aliases;
+                           return result;
                         };
 
                         return argument::Option{
@@ -1109,6 +1114,7 @@ casual queue --metric-reset a b)"
                      { "queue.manager.error.queue.metric.dequeued", string::compose( accumulate( metric_dequeued)( errors))},
                      { "queue.manager.remote.domain.count", string::compose( state.remote.domains.size())},
                      { "queue.manager.remote.queue.count", string::compose( state.remote.queues.size())},
+                     { "queue.manager.forward.group.count", string::compose( state.forward.groups.size())},
                      { "queue.manager.forward.services.count", string::compose( state.forward.services.size())},
                      { "queue.manager.forward.services.metric.commit.count", string::compose( accumulate( commit_count)( state.forward.services))},
                      { "queue.manager.forward.services.metric.commit.last", string::compose( max( commit_last)( state.forward.services))},

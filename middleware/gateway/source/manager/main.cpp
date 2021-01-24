@@ -31,7 +31,7 @@ namespace casual
       {
          namespace
          {
-            State configure()
+            State initialize()
             {
                Trace trace{ "gateway::manager::local::connect"};
 
@@ -98,7 +98,7 @@ namespace casual
 )"
                }( argc, argv);
 
-               start( configure());
+               start( initialize());
             }
 
          } // <unnamed>

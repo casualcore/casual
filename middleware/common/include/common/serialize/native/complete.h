@@ -15,58 +15,53 @@ namespace casual
 {
    namespace common
    {
-      namespace serialize
+      namespace serialize::native
       {
-         namespace native
+         template< typename M, typename C = binary::create::Writer>
+         communication::message::Complete complete( M&& message, C creator = binary::create::Writer{})
          {
-            template< typename M, typename C = binary::create::Writer>
-            communication::message::Complete complete( M&& message, C creator = binary::create::Writer{})
-            {
-               if( ! message.execution)
-                  message.execution = execution::id();
+            if( ! message.execution)
+               message.execution = execution::id();
 
-               auto archive = creator();
-               archive << message;
+            auto archive = creator();
+            archive << message;
 
-               using casual::common::message::type;
-               return communication::message::Complete{
-                  type( message), 
-                  message.correlation ? message.correlation : uuid::make(),
-                  archive.consume()};
-            }
+            using casual::common::message::type;
+            return communication::message::Complete{
+               type( message), 
+               message.correlation ? message.correlation : uuid::make(),
+               archive.consume()};
+         }
 
-            template< typename M, typename C = binary::create::Reader>
-            void complete( communication::message::Complete& complete, M& message, C creator = binary::create::Reader{})
-            {
-               using casual::common::message::type;
-               assert( complete.type == type( message));
+         template< typename M, typename C = binary::create::Reader>
+         void complete( communication::message::Complete& complete, M& message, C creator = binary::create::Reader{})
+         {
+            using casual::common::message::type;
+            assert( complete.type == type( message));
 
-               message.correlation = complete.correlation;
+            message.correlation = complete.correlation;
 
-               auto archive = creator( complete.payload);
-               archive >> message;
-            }
-         } // native
-      } // serialize
+            auto archive = creator( complete.payload);
+            archive >> message;
+         }
 
-      namespace communication
+      } // serialize::native
+
+      namespace communication::message
       {
-         namespace message
+         template< typename M>
+         communication::message::Complete& operator >> ( communication::message::Complete& complete, M& message)
          {
-            template< typename M>
-            communication::message::Complete& operator >> ( communication::message::Complete& complete, M& message)
-            {
-               assert( complete.type == message.type());
+            assert( complete.type == message.type());
 
-               message.correlation = complete.correlation;
+            message.correlation = complete.correlation;
 
-               auto archive = serialize::native::binary::reader( complete.payload);
-               archive >> message;
+            auto archive = serialize::native::binary::reader( complete.payload);
+            archive >> message;
 
-               return complete;
-            }
-         } // message
-      } // communication
+            return complete;
+         }
+      } // communication::message
    } // common
 } // casual
 

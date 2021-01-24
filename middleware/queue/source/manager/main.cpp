@@ -4,41 +4,131 @@
 //! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-#include "queue/manager/manager.h"
+#include "queue/manager/state.h"
+#include "queue/manager/handle.h"
+#include "queue/common/log.h"
+
+
 #include "common/argument.h"
 #include "common/exception/handle.h"
+#include "common/message/dispatch.h"
+#include "common/environment.h"
+#include "common/environment/normalize.h"
+
+#include "domain/configuration/fetch.h"
 
 namespace casual
 {
-   namespace queue
+   using namespace common;
+   namespace queue::manager
    {
-      namespace manager
+      namespace local
       {
-         void main( int argc, char **argv)
+         namespace
          {
-            Settings settings;
+            struct Settings
             {
-               using namespace casual::common::argument;
-               Parse{ R"(
-Manages casual queue, the provided queue functionality.
-)",
-                  Option( std::tie( settings.executable.path), { "--executable-path"}, "path for unittest"),
-               }( argc, argv);
+            };
+
+            auto initialize( Settings settings)
+            {
+               Trace trace( "queue::manager::local::initialize");
+
+               // make sure we handle death of our children
+               signal::callback::registration< code::signal::child>( []()
+               {
+                  algorithm::for_each( process::lifetime::ended(), []( auto& exit)
+                  {
+                     manager::handle::process::exit( exit);
+                  });
+               }); 
+
+               // Set environment variable so children can find us easy
+               common::environment::variable::process::set(
+                  common::environment::variable::name::ipc::queue::manager,
+                  common::process::handle());
+
+               State state;
+
+               // We ask the domain manager for configuration, and 'comply' to it...
+               handle::comply::configuration( state, casual::domain::configuration::fetch().queue);
+
+               return state;
             }
 
-            queue::Manager manager( std::move( settings));
-            manager.start();
-         }
+            namespace wait
+            {
+               //! waits for the 'entities' to be running (or worse)
+               template< typename H>
+               void running( State& state, H& handler)
+               {
+                  Trace trace( "queue::manager::local::wait::running");
+                  
+                  auto condition = message::dispatch::condition::compose(
+                     message::dispatch::condition::done( [&state]() { return state.ready();})
+                  );
+
+                  message::dispatch::pump( 
+                     condition,
+                     handler, 
+                     ipc::device());
+
+                  // Connect to domain
+                  common::communication::instance::connect( common::communication::instance::identity::queue::manager);
+               }  
+            } // wait
+
+            auto condition( State& state)
+            {
+               return message::dispatch::condition::compose(
+                  message::dispatch::condition::done( [&state]() { return state.done();})
+               );
+            }
+
+            void start( State state)
+            {
+               Trace trace( "queue::manager::local::start");
+               common::log::line( log, "queue manager start");
+
+               auto handler = manager::handlers( state);
+
+               wait::running( state, handler);
+
+               common::log::line( common::log::category::information, "casual-queue-manager is on-line");
+               common::log::line( verbose::log, "state: ", state);
+               
+               message::dispatch::pump( 
+                  local::condition( state),
+                  handler, 
+                  ipc::device());
+
+            }
+
+            void main( int argc, char **argv)
+            {
+               Settings settings;
+               {
+                  using namespace casual::common::argument;
+                  Parse{ R"(
+Manages casual queue, the provided queue functionality.
+)",
+                  }( argc, argv);
+               }
+
+               start( initialize( std::move( settings)));
+            }
+
+         } // <unnamed>
+      } // local
          
-      } // manager
-   } // queue
+   } // queue::manager
 } // casual
 
 int main( int argc, char **argv)
 {
    return casual::common::exception::main::guard( [=]()
    {
-      casual::queue::manager::main( argc, argv);
+      casual::queue::manager::local::main( argc, argv);
    });
 }
 

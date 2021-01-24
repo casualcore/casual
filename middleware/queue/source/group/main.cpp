@@ -5,44 +5,98 @@
 //!
 
 
-#include "queue/group/group.h"
+#include "queue/group/state.h"
+#include "queue/group/handle.h"
+#include "queue/common/ipc/message.h"
 #include "queue/common/log.h"
 
 #include "common/argument.h"
 #include "common/process.h"
 #include "common/exception/handle.h"
+#include "common/communication/instance.h"
+#include "common/message/signal.h"
 
 namespace casual
 {
-   namespace queue
+   using namespace common;
+   namespace queue::group
    {
-      namespace group
-      {
          namespace local
          {
             namespace
-            {
+            { 
+               struct Settings
+               {
+                  CASUAL_LOG_SERIALIZE()
+               };
+
+               State initialize( Settings settings)
+               {
+                  Trace trace{ "queue::group::local::initialize"};
+
+                  // make sure we handle "alarms"
+                  signal::callback::registration< code::signal::alarm>( []()
+                  {
+                     // Timeout has occurred, we push the corresponding 
+                     // signal to our own "queue", and handle it "later"
+                     handle::ipc::device().push( common::message::signal::Timeout{});
+                  });
+
+                  // connect to queue-manager - it will send configuration::update::Reqest that we'll handle
+                  // in the main message pump
+                  communication::device::blocking::send( 
+                     communication::instance::outbound::queue::manager::device(),
+                     ipc::message::group::Connect{ process::handle()});
+
+                  return {};
+               }
+
+               auto condition( State& state)
+               {
+                  return common::message::dispatch::condition::compose(
+                     common::message::dispatch::condition::done( [&state](){ return state.done();}),
+                     common::message::dispatch::condition::idle( [&state]()
+                     {
+                        // make sure we persist when inbound is idle,
+                        handle::persist( state);
+                     })
+                  );
+               }
+
+               void start( State state)
+               {
+                  Trace trace{ "queue::group::local::start"};
+
+                  auto abort_guard = execute::scope( [&state]()
+                  {
+                     handle::abort( state);
+                  });
+
+                  common::message::dispatch::pump( 
+                     condition( state), 
+                     group::handler( state), 
+                     handle::ipc::device());
+
+                  abort_guard.release();
+               }
+
                void main( int argc, char **argv)
                {
-                  Settings settings;
+                  Trace trace{ "queue::group::local::main"};
 
-                  using namespace common::argument;
-                  Parse{ "queue group server",
-                     Option( std::tie( settings.queuebase), { "-qb", "--queuebase"}, "path to this queue server persistent storage"),
-                     Option( std::tie( settings.name), { "-n", "--name"}, "group name")
+                  Settings settings;
+                  argument::Parse{ "queue group server",
                   }( argc, argv);
 
-                  common::log::line( verbose::log, "group settings: ", settings);
+                  log::line( verbose::log, "settings: ", settings);
 
-                  Server server( std::move( settings));
-                  server.start();
+                  start( initialize( std::move( settings)));
                }
 
             } // <unnamed>
          } // local
 
-      } // group
-   } // queue
+   } // queue::group
 } // casual
 
 int main( int argc, char **argv)

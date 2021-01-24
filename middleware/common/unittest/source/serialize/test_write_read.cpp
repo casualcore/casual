@@ -58,6 +58,18 @@ namespace casual
             }
 
             template< typename T>
+            static auto validate( T& reader, traits::priority::tag< 1>) -> decltype( reader.validate())
+            {
+               reader.validate();
+            }
+
+            template< typename T>
+            static auto validate( T& reader, traits::priority::tag< 0>)
+            {
+               // no-op
+            }
+
+            template< typename T>
             static T write_read( const T& origin)
             {
                auto writer = policy_type::writer();
@@ -70,7 +82,7 @@ namespace casual
                   auto reader = policy_type::reader( buffer);
                   T value;
                   reader >> CASUAL_NAMED_VALUE( value);
-
+                  validate( reader, traits::priority::tag< 1>{});
                   return value;
                }
             }
@@ -91,6 +103,7 @@ namespace casual
                   auto reader = policy_type::reader( buffer);
                   T value;
                   reader >> value;
+                  validate( reader, traits::priority::tag< 1>{});
                   return value;
                }
             }
@@ -121,6 +134,16 @@ namespace casual
                   template< typename T>
                   static auto reader( T&& buffer) { return serialize::json::relaxed::reader( buffer);}
                };
+            } // relaxed
+
+            namespace consumed
+            {
+               template< typename B>
+               struct json : policy::json< B>
+               {
+                  template< typename T>
+                  static auto reader( T&& buffer) { return serialize::json::consumed::reader( buffer);}
+               };
             } // relaxed  
 
             template< typename B>
@@ -139,6 +162,16 @@ namespace casual
                {
                   template< typename T>
                   static auto reader( T&& buffer) { return serialize::yaml::relaxed::reader( buffer);}
+               };
+            } // relaxed
+
+            namespace consumed
+            {
+               template< typename B>
+               struct yaml : policy::yaml< B>
+               {
+                  template< typename T>
+                  static auto reader( T&& buffer) { return serialize::yaml::consumed::reader( buffer);}
                };
             } // relaxed  
 
@@ -185,12 +218,14 @@ namespace casual
             holder::basic< holder::policy::relaxed::json< std::string>>,
             holder::basic< holder::policy::relaxed::json< platform::binary::type>>,
             holder::basic< holder::policy::relaxed::json< std::stringstream>>,
+            holder::basic< holder::policy::consumed::json< std::string>>,
             holder::basic< holder::policy::yaml< std::string>>,
             holder::basic< holder::policy::yaml< platform::binary::type>>,
             holder::basic< holder::policy::yaml< std::stringstream>>,
             holder::basic< holder::policy::relaxed::yaml< std::string>>,
             holder::basic< holder::policy::relaxed::yaml< platform::binary::type>>,
             holder::basic< holder::policy::relaxed::yaml< std::stringstream>>,
+            holder::basic< holder::policy::consumed::yaml< std::string>>,
             holder::basic< holder::policy::xml< std::string>>,
             holder::basic< holder::policy::xml< platform::binary::type>>,
             holder::basic< holder::policy::xml< std::stringstream>>,

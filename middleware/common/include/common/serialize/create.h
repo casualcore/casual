@@ -19,159 +19,153 @@
 
 namespace casual
 {
-   namespace common
+   namespace common::serialize::create
    {
-      namespace serialize
+      namespace reader
       {
-         namespace create
+         namespace consumed 
          {
-            namespace reader
+            namespace detail
             {
+               void registration( reader::Creator&& creator, const std::vector< std::string>& keys);
+            } // detail
 
-               namespace consumed 
-               {
-                  namespace detail
-                  {
-                     void registration( reader::Creator&& creator, const std::vector< std::string>& keys);
-                  } // detail
+            template< typename I, typename S> 
+            auto create( S&& source) { return Reader::emplace< policy::Consumed< I>>( std::forward< S>( source));}
 
-                  template< typename I, typename S> 
-                  auto create( S&& source) { return Reader::emplace< policy::Consumed< I>>( std::forward< S>( source));}
+            serialize::Reader from( std::string_view key, std::istream& stream);
+            serialize::Reader from( std::string_view key, platform::binary::type& data);
+         }
 
-                  serialize::Reader from( const std::string& key, std::istream& stream);
-                  serialize::Reader from( const std::string& key, platform::binary::type& data);
-               }
-
-               namespace strict 
-               {
-                  namespace detail
-                  {
-                     void registration( reader::Creator&& creator, const std::vector< std::string>& keys);
-                  } // detail
-
-                  template< typename I, typename S> 
-                  auto create( S&& source) { return Reader::emplace< policy::Strict< I>>( std::forward< S>( source));}
-
-                  serialize::Reader from( const std::string& key, std::istream& stream);
-                  serialize::Reader from( const std::string& key, platform::binary::type& data);
-               }
-
-               namespace relaxed 
-               {
-                  namespace detail
-                  {
-                     void registration( reader::Creator&& creator, const std::vector< std::string>& keys);
-                  } // detail
-
-                  template< typename I, typename S> 
-                  auto create( S&& source) { return Reader::emplace< policy::Relaxed< I>>( std::forward< S>( source));}
-
-                  serialize::Reader from( const std::string& key, std::istream& stream);
-                  serialize::Reader from( const std::string& key, platform::binary::type& data);
-
-                  template< typename F>
-                  inline auto from( F&& file) -> decltype( from( file.extension(), file))
-                  { 
-                     return from( file.extension(), file);
-                  }
-               }
-
-               //! @returns all registred reader keys
-               std::vector< std::string> keys();
-
-               namespace detail
-               {
-                  namespace indirection
-                  {
-                     template< typename Implementation> 
-                     auto registration( const std::vector< std::string>& keys) 
-                        -> std::enable_if_t< Implementation::archive_type() != archive::Type::static_order_type>
-                     {
-                        relaxed::detail::registration( reader::Creator::construct< Implementation, policy::Relaxed>(), keys);
-                        strict::detail::registration( reader::Creator::construct< Implementation, policy::Strict>(), keys);
-                        consumed::detail::registration( reader::Creator::construct< Implementation, policy::Consumed>(), keys);
-                     }
-                  } // indirection
-               } // detail
-
-               template< typename Implementation>
-               auto registration()
-               {
-                  const auto keys = Implementation::keys();
-                  detail::indirection::registration< Implementation>( keys);
-                  return true;
-               }
-
-               template< typename P>
-               struct Registration
-               {
-               private:
-                  static CASUAL_MAYBE_UNUSED bool m_dummy;
-               };
-
-               template< typename I> 
-               CASUAL_MAYBE_UNUSED bool Registration< I>::m_dummy = reader::registration< I>();
-
-               namespace complete
-               {
-                  inline auto format() 
-                  {
-                     return []( auto values, bool)
-                     {
-                        return reader::keys();
-                     };
-                  }
-               } // complete
-
-            } // reader
-
-            namespace writer
+         namespace strict 
+         {
+            namespace detail
             {
-               namespace detail
+               void registration( reader::Creator&& creator, const std::vector< std::string>& keys);
+            } // detail
+
+            template< typename I, typename S> 
+            auto create( S&& source) { return Reader::emplace< policy::Strict< I>>( std::forward< S>( source));}
+
+            serialize::Reader from( std::string_view key, std::istream& stream);
+            serialize::Reader from( std::string_view key, platform::binary::type& data);
+         }
+
+         namespace relaxed 
+         {
+            namespace detail
+            {
+               void registration( reader::Creator&& creator, const std::vector< std::string>& keys);
+            } // detail
+
+            template< typename I, typename S> 
+            auto create( S&& source) { return Reader::emplace< policy::Relaxed< I>>( std::forward< S>( source));}
+
+            serialize::Reader from( std::string_view key, std::istream& stream);
+            serialize::Reader from( std::string_view key, platform::binary::type& data);
+
+            template< typename F>
+            inline auto from( F&& file) -> decltype( from( file.extension(), file))
+            { 
+               return from( file.extension(), file);
+            }
+         }
+
+         //! @returns all registred reader keys
+         std::vector< std::string> keys();
+
+         namespace detail
+         {
+            namespace indirection
+            {
+               template< typename Implementation> 
+               auto registration( const std::vector< std::string>& keys) 
+                  -> std::enable_if_t< Implementation::archive_type() != archive::Type::static_order_type>
                {
-                  void registration( writer::Creator&& creator, const std::vector< std::string>& keys);
-               } // detail
-               
-               serialize::Writer from( const std::string& key);
-
-               template< typename I> 
-               auto create() { return detail::create< I>();}
-
-               //! @returns all registred writer keys
-               std::vector< std::string> keys();
-
-               template< typename Implementation>
-               auto registration()
-               {
-                  detail::registration( writer::Creator::construct< Implementation>(), Implementation::keys());
-                  return true;
+                  relaxed::detail::registration( reader::Creator::construct< Implementation, policy::Relaxed>(), keys);
+                  strict::detail::registration( reader::Creator::construct< Implementation, policy::Strict>(), keys);
+                  consumed::detail::registration( reader::Creator::construct< Implementation, policy::Consumed>(), keys);
                }
+            } // indirection
+         } // detail
 
-               template< typename P>
-               struct Registration
+         template< typename Implementation>
+         auto registration()
+         {
+            const auto keys = Implementation::keys();
+            detail::indirection::registration< Implementation>( keys);
+            return true;
+         }
+
+         template< typename P>
+         struct Registration
+         {
+         private:
+            static CASUAL_MAYBE_UNUSED bool m_dummy;
+         };
+
+         template< typename I> 
+         CASUAL_MAYBE_UNUSED bool Registration< I>::m_dummy = reader::registration< I>();
+
+         namespace complete
+         {
+            inline auto format() 
+            {
+               return []( auto values, bool)
                {
-               private:
-                  static CASUAL_MAYBE_UNUSED bool m_dummy;
+                  return reader::keys();
                };
+            }
+         } // complete
 
-               template< typename I> 
-               CASUAL_MAYBE_UNUSED bool Registration< I>::m_dummy = writer::registration< I>();
+      } // reader
 
-  
+      namespace writer
+      {
+         namespace detail
+         {
+            void registration( writer::Creator&& creator, const std::vector< std::string>& keys);
+         } // detail
+         
+         serialize::Writer from( std::string_view key);
 
-               namespace complete
+         template< typename I> 
+         auto create() { return detail::create< I>();}
+
+         //! @returns all registred writer keys
+         std::vector< std::string> keys();
+
+         template< typename Implementation>
+         auto registration()
+         {
+            detail::registration( writer::Creator::construct< Implementation>(), Implementation::keys());
+            return true;
+         }
+
+         template< typename P>
+         struct Registration
+         {
+         private:
+            static CASUAL_MAYBE_UNUSED bool m_dummy;
+         };
+
+         template< typename I> 
+         CASUAL_MAYBE_UNUSED bool Registration< I>::m_dummy = writer::registration< I>();
+
+
+
+         namespace complete
+         {
+            inline auto format() 
+            {
+               return []( auto values, bool)
                {
-                  inline auto format() 
-                  {
-                     return []( auto values, bool)
-                     {
-                        return writer::keys();
-                     };
-                  }
-               } // complete
+                  return writer::keys();
+               };
+            }
+         } // complete
 
-            } // writer
-         } // create
-      } // serialize
-   } // common
+      } // writer
+
+   } // common::serialize::create
 } // casual

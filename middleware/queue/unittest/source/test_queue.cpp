@@ -7,9 +7,7 @@
 
 #include "common/unittest.h"
 
-#include "queue/group/group.h"
 #include "queue/common/queue.h"
-#include "queue/common/transform.h"
 #include "queue/api/queue.h"
 #include "queue/manager/admin/model.h"
 #include "queue/manager/admin/services.h"
@@ -194,7 +192,7 @@ domain:
 
          {
             // Send request
-            common::message::queue::lookup::Request request;
+            ipc::message::lookup::Request request;
             request.process = common::process::handle();
             request.name = "queueA1";
 
@@ -204,7 +202,7 @@ domain:
          }
 
          {
-            common::message::queue::lookup::Reply reply;
+            ipc::message::lookup::Reply reply;
             common::communication::device::blocking::receive( common::communication::ipc::inbound::device(), reply);
 
             EXPECT_TRUE( reply.queue) << CASUAL_NAMED_VALUE( reply);
@@ -219,7 +217,7 @@ domain:
 
          {
             // Send request
-            common::message::queue::lookup::Request request;
+            ipc::message::lookup::Request request;
             request.process = common::process::handle();
             request.name = "non-existence";
 
@@ -229,7 +227,7 @@ domain:
          }
 
          {
-            common::message::queue::lookup::Reply reply;
+            ipc::message::lookup::Reply reply;
             common::communication::device::blocking::receive( common::communication::ipc::inbound::device(), reply);
 
             EXPECT_FALSE( reply.queue) << CASUAL_NAMED_VALUE( reply);
@@ -442,7 +440,7 @@ domain:
 
          // make sure casual-manager-queue knows about a "remote queue"
          {
-            common::message::queue::concurrent::Advertise remote;
+            ipc::message::Advertise remote;
 
             remote.process.pid = common::strong::process::id{ 666};
             remote.process.ipc = common::strong::ipc::id{ common::uuid::make()};
@@ -568,7 +566,7 @@ domain:
                {
                   queue::Lookup lookup{ std::move( name)};
 
-                  common::message::queue::dequeue::Request message;
+                  ipc::message::group::dequeue::Request message;
                   message.name = lookup.name();
                   message.block = true;
                   message.process.pid = common::process::id();
@@ -619,7 +617,7 @@ domain:
          enqueue();
 
          auto dequeue = []( auto& ipc){
-            common::message::queue::dequeue::Reply message;
+            ipc::message::group::dequeue::Reply message;
             common::communication::device::blocking::receive( ipc, message);
             return message;
          };
@@ -729,17 +727,16 @@ domain:
 domain: 
    name: queue-domain
 
-   default:
-      environment:
-         variables:
-            - key: Q_GROUP_PREFIX
-              value: "group."
-            - key: Q_BASE
-              value: ":memory:"
-            - key: Q_PREFIX
-              value: "casual."
-            - key: Q_POSTFIX
-              value: ".queue"
+   environment:
+      variables:
+         -  key: Q_GROUP_PREFIX
+            value: "group."
+         -  key: Q_BASE
+            value: ":memory:"
+         -  key: Q_PREFIX
+            value: "casual."
+         -  key: Q_POSTFIX
+            value: ".queue"
 
    groups: 
       - name: base
@@ -756,12 +753,12 @@ domain:
 
    queue:
       groups:
-         - name: "${Q_GROUP_PREFIX}A"
-           queuebase: "${Q_BASE}"
-           queues:
-            - name: ${Q_PREFIX}a1${Q_POSTFIX}
-            - name: ${Q_PREFIX}a2${Q_POSTFIX}
-            - name: ${Q_PREFIX}a3${Q_POSTFIX}
+         -  alias: "${Q_GROUP_PREFIX}A"
+            queuebase: "${Q_BASE}"
+            queues:
+               - name: ${Q_PREFIX}a1${Q_POSTFIX}
+               - name: ${Q_PREFIX}a2${Q_POSTFIX}
+               - name: ${Q_PREFIX}a3${Q_POSTFIX}
 
 )";
 
@@ -772,7 +769,7 @@ domain:
 
          ASSERT_TRUE( state.groups.size() == 1) << CASUAL_NAMED_VALUE( state);
          auto& group = state.groups.at( 0);
-         EXPECT_TRUE( group.name == "group.A");
+         EXPECT_TRUE( group.name == "group.A") << CASUAL_NAMED_VALUE( group);
          EXPECT_TRUE( group.queuebase == ":memory:");
          
          auto order_queue = []( auto& l, auto& r){ return l.name < r.name;};

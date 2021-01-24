@@ -24,7 +24,7 @@ namespace casual
                namespace
                {
                   template< typename Map, typename... Ts>
-                  auto create( Map& map, const std::string& key, Ts&&... ts)
+                  auto create( Map& map, std::string_view key, Ts&&... ts)
                   {
                      if( auto found = common::algorithm::find( map, key))
                         return found->second.create( std::forward< Ts>( ts)...);
@@ -62,7 +62,7 @@ namespace casual
                         }
 
                         template< typename S>
-                        static decltype( auto) from( const std::string& key, S& source)
+                        static decltype( auto) from( std::string_view key, S& source)
                         {
                            return create::local::create( creators(), key, source);
                         }
@@ -72,9 +72,9 @@ namespace casual
                            return algorithm::transform( creators(), []( auto& pair){ return pair.first;});
                         }
 
-                        static std::map< std::string, reader::Creator>& creators() 
+                        static std::map< std::string, reader::Creator, std::less<>>& creators() 
                         {
-                           static std::map< std::string, reader::Creator> creators;
+                           static std::map< std::string, reader::Creator, std::less<>> creators;
                            return creators;
                         } 
                      };
@@ -92,8 +92,8 @@ namespace casual
                         Dispatch::registration( std::move( creator), keys);
                      }
                   } // detail
-                  serialize::Reader from( const std::string& key, std::istream& stream) { return Dispatch::from( key, stream);}
-                  serialize::Reader from( const std::string& key, platform::binary::type& data) { return Dispatch::from( key, data);}
+                  serialize::Reader from( std::string_view key, std::istream& stream) { return Dispatch::from( key, stream);}
+                  serialize::Reader from( std::string_view key, platform::binary::type& data) { return Dispatch::from( key, data);}
                }
 
                namespace strict 
@@ -106,8 +106,8 @@ namespace casual
                         Dispatch::registration( std::move( creator), keys);
                      }
                   } // detail
-                  serialize::Reader from( const std::string& key, std::istream& stream) { return Dispatch::from( key, stream);}
-                  serialize::Reader from( const std::string& key, platform::binary::type& data) { return Dispatch::from( key, data);}
+                  serialize::Reader from( std::string_view key, std::istream& stream) { return Dispatch::from( key, stream);}
+                  serialize::Reader from( std::string_view key, platform::binary::type& data) { return Dispatch::from( key, data);}
                }
 
                namespace relaxed 
@@ -120,8 +120,8 @@ namespace casual
                         Dispatch::registration( std::move( creator), keys);
                      }
                   } // detail
-                  serialize::Reader from( const std::string& key, std::istream& stream) { return Dispatch::from( key, stream);}
-                  serialize::Reader from( const std::string& key, platform::binary::type& data) { return Dispatch::from( key, data);}
+                  serialize::Reader from( std::string_view key, std::istream& stream) { return Dispatch::from( key, stream);}
+                  serialize::Reader from( std::string_view key, platform::binary::type& data) { return Dispatch::from( key, data);}
                }
 
                std::vector< std::string> keys()
@@ -138,9 +138,9 @@ namespace casual
                   {
                      namespace global
                      {
-                        static std::map< std::string, writer::Creator>& creators() 
+                        static std::map< std::string, writer::Creator, std::less<>>& creators() 
                         {
-                           static std::map< std::string, writer::Creator> creators;
+                           static std::map< std::string, writer::Creator, std::less<>> creators;
                            return creators;
                         } 
                      } // global
@@ -157,7 +157,7 @@ namespace casual
                } // detail
 
 
-               serialize::Writer from( const std::string& key)
+               serialize::Writer from( std::string_view key)
                {
                   return serialize::create::local::create( local::global::creators(), key);
                }

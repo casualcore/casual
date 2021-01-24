@@ -16,64 +16,63 @@
 namespace casual
 {
    using namespace common;
-
-   namespace queue
+   
+   namespace queue::forward
    {
-      namespace forward
+      namespace local
       {
-         namespace local
+         namespace
          {
-            namespace
+            auto initialize()
             {
-               void connect()
-               {
-                  Trace trace{ "queue::forward::concurrent::service::local::connect"};
+               Trace trace{ "queue::forward::concurrent::service::local::connect"};
 
-                  communication::device::blocking::send( 
-                     ipc::queue::manager(),
-                     ipc::message::forward::configuration::Request{ process::handle()});
-               }
+               communication::device::blocking::send( 
+                  ipc::queue::manager(),
+                  ipc::message::forward::group::Connect{ process::handle()});
 
-               auto condition( State& state)
-               {
-                  return message::dispatch::condition::compose(
-                     message::dispatch::condition::done( [&state]()
-                     {
-                        return state.done();
-                     })
-                  );
-               }
+               return State{};
+            }
+
+            auto condition( State& state)
+            {
+               return message::dispatch::condition::compose(
+                  message::dispatch::condition::done( [&state]()
+                  {
+                     return state.done();
+                  })
+               );
+            }
 
 
-               void start()
-               {
-                  Trace trace{ "queue::forward::concurrent::service::local::start"};
+            void start()
+            {
+               Trace trace{ "queue::forward::concurrent::service::local::start"};
 
-                  // connect, which will trigger manager to send configuration, that we'll
-                  // consume in the dispatch handler.
-                  connect();
-                  
-                  // see State::Pending documentation for the samantics.
-                  State state;
+               // initialize, which will trigger manager to send configuration, that we'll
+               // consume in the dispatch handler.
+               auto state = initialize();
 
-                  message::dispatch::pump( condition( state), forward::handlers( state), ipc::device());
+               message::dispatch::pump( 
+                  condition( state), 
+                  forward::handlers( state), 
+                  ipc::device());
 
-                  log::line( verbose::log, "state: ", state);
-               }
+               log::line( verbose::log, "state: ", state);
+            }
 
-               void main( int argc, char** argv)
-               {
-                  Trace trace{ "queue::forward::concurrent::service::local::main"};
+            void main( int argc, char** argv)
+            {
+               Trace trace{ "queue::forward::concurrent::service::local::main"};
 
-                  start();
-               
-               } // main
+               start();
+            
+            } // main
 
-            } // <unnamed>
-         } // local
+         } // <unnamed>
+      } // local
 
-      } // forward
-   } // queue
+   } // queue::forward
 } // casual
 
 

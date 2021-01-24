@@ -8,13 +8,9 @@
 #pragma once
 
 
-#include "queue/group/group.h"
+#include "queue/group/state.h"
 
-#include "common/message/queue.h"
-#include "common/message/signal.h"
 #include "common/message/dispatch.h"
-#include "common/message/transaction.h"
-#include "common/message/event.h"
 
 namespace casual
 {
@@ -34,6 +30,9 @@ namespace casual
             using dispatch_type = decltype( common::message::dispatch::handler( ipc::device()));
 
             void shutdown( State& state);
+
+            //! hard shutdown - best effort shutdown
+            void abort( State& state);
 
 
             //! * persist the queuebase

@@ -9,6 +9,7 @@ IncludePaths([
    '../configuration/include',
    '../domain/include',
    '../service/include',
+   '../queue/include',
    '../xatmi/include',
    '../serviceframework/include',
    '$(CASUAL_OPTIONAL_INCLUDE_PATHS)',

@@ -59,6 +59,8 @@ namespace casual
 
       TEST( common_serialize_xml_archive, write_read_vector_long)
       {
+         unittest::Trace trace;
+         
          std::string xml;
 
          {

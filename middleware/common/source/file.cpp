@@ -71,20 +71,20 @@ namespace casual
          std::string Output::extension() const { return file::name::extension( m_path);}
 
 
-         void remove( const std::string& path)
+         void remove( std::string_view path)
          {
             if( ! path.empty())
             {
-               if( std::remove( path.c_str()))
+               if( std::remove( path.data()))
                   log::line( log::category::error, code::casual::invalid_path, " failed to remove file: ", path);
                else
                   log::line( log::debug, "removed file: ", path);
             }
          }
 
-         void move( const std::string& source, const std::string& destination)
+         void move( std::string_view source, std::string_view destination)
          {
-            posix::result( ::rename( source.c_str(), destination.c_str()), "source: ", source, " destination: ", destination);
+            posix::result( ::rename( source.data(), destination.data()), "source: ", source, " destination: ", destination);
             log::line( log::debug, "moved file source: ", source, " -> destination: ", destination);
          }
 
@@ -123,6 +123,11 @@ namespace casual
                return path();
             }
 
+            Path::operator std::string_view() const &
+            {
+               return path();
+            }
+
 
             const std::string& Path::path() const &
             {
@@ -142,7 +147,7 @@ namespace casual
          } // scoped
 
 
-         std::vector< std::string> find( const std::string& pattern)
+         std::vector< std::string> find( std::string_view pattern)
          {
             Trace trace{ "common::file::find"};
             log::line( verbose::log, "pattern: ", pattern);
@@ -156,7 +161,7 @@ namespace casual
             ::glob_t buffer{};
             auto guard = memory::guard( &buffer, &::globfree);
 
-            ::glob( pattern.c_str(), 0, error_callback, &buffer);
+            ::glob( pattern.data(), 0, error_callback, &buffer);
 
             return { buffer.gl_pathv, buffer.gl_pathv + buffer.gl_pathc};
          }
@@ -172,34 +177,34 @@ namespace casual
          }
 
 
-         std::string find( const std::string& path, const std::regex& search)
+         std::string find( std::string_view path, const std::regex& search)
          {
             std::string result;
 
-            auto directory = memory::guard( opendir( path.c_str()), &closedir);
+            auto directory = memory::guard( opendir( path.data()), &closedir);
 
             if( directory)
             {
-               struct dirent* element = nullptr;
-               while( ( element = readdir( directory.get())) != nullptr)
+               while( auto element = readdir( directory.get()))
                {
-
                   if( std::regex_match( element->d_name, search))
                   {
                      if( path.back() != '/')
-                        result = path + "/";
+                     {
+                        result = path;
+                        result.push_back( '/');
+                     }
 
-                     result += element->d_name;
-                     break;
+                     return result + element->d_name;
                   }
                }
             }
             return result;
          }
 
-         std::string absolute( const std::string& path)
+         std::string absolute( std::string_view path)
          {
-            auto absolute = memory::guard( realpath( path.c_str(), nullptr), &free);
+            auto absolute = memory::guard( realpath( path.data(), nullptr), &free);
 
             if( absolute)
                return absolute.get();
@@ -210,7 +215,7 @@ namespace casual
          namespace name
          {
 
-            bool absolute( const std::string& path)
+            bool absolute( std::string_view path)
             {
                if( ! path.empty())
                   return path[ 0] == '/';
@@ -218,19 +223,19 @@ namespace casual
                return false;
             }
 
-            std::string unique( const std::string& prefix, const std::string& postfix)
+            std::string unique( std::string_view prefix, std::string_view postfix)
             {
-               return prefix + uuid::string( uuid::make()) + postfix;
+               return string::compose( prefix, uuid::string( uuid::make()), postfix);
             }
 
-            std::string base( const std::string& path)
+            std::string base( std::string_view path)
             {
                auto basenameStart = std::find( path.crbegin(), path.crend(), '/');
                return std::string( basenameStart.base(), path.end());
             }
 
 
-            std::string extension( const std::string& file)
+            std::string extension( std::string_view file)
             {
                std::string filename = base( file);
                auto extensionEnd = std::find( filename.crbegin(), filename.crend(), '.');
@@ -245,19 +250,19 @@ namespace casual
 
             namespace without
             {
-               std::string extension( const std::string& path)
+               std::string extension( std::string_view path)
                {
-                  auto extensionBegin = std::find( path.crbegin(), path.crend(), '.');
-                  return std::string( path.begin(), extensionBegin.base());
+                  auto found = std::find( std::crbegin( path), std::crend( path), '.');
+                  return std::string( path.begin(), found.base());
                }
 
             } // without
 
-            std::string link( const std::string& path)
+            std::string link( std::string_view path)
             {
                std::vector< char> link_name( PATH_MAX);
 
-               posix::result( ::readlink( path.c_str(), link_name.data(), link_name.size()), "file::name::link");
+               posix::result( ::readlink( path.data(), link_name.data(), link_name.size()), "file::name::link");
 
                if( link_name.data())
                   return link_name.data();
@@ -268,30 +273,27 @@ namespace casual
          } // name
 
 
-         bool exists( const std::string& path)
+         bool exists( std::string_view path)
          {
-            return access( path.c_str(), F_OK) == 0;
+            return access( path.data(), F_OK) == 0;
          }
 
          namespace permission
          {
-            bool execution( const std::string& path)
+            bool execution( std::string_view path)
             {
                // Check if path contains any directory, if so, we can check it directly
                if( algorithm::find( path, '/'))
-               {
-                  return access( path.c_str(), R_OK | X_OK) == 0;
-               }
+                  return access( path.data(), R_OK | X_OK) == 0;
                else
                {
                   // We need to go through PATH environment variable...
                   for( auto total_path : string::split( environment::variable::get( "PATH", ""), ':'))
                   {
-                     total_path += '/' + path;
-                     if( access( total_path.c_str(), F_OK) == 0)
-                     {
-                        return access( total_path.c_str(), X_OK) == 0;
-                     }
+                     total_path.push_back( '/');
+                     total_path += path;
+                     if( access( total_path.data(), F_OK) == 0)
+                        return access( total_path.data(), X_OK) == 0;
                   }
                }
                return false;
@@ -320,18 +322,18 @@ namespace casual
          }
 
 
-         std::string change( const std::string& path)
+         std::string change( std::string_view path)
          {
             auto current = directory::current();
 
-            posix::result( chdir( path.c_str()), "directory::change");
+            posix::result( chdir( path.data()), "directory::change");
 
             return current;
          }
 
          namespace scope
          {
-            Change::Change( const std::string& path) : m_previous{ change( path)} {}
+            Change::Change( std::string_view path) : m_previous{ change( path)} {}
             Change::~Change()
             {
                change( m_previous);
@@ -341,28 +343,28 @@ namespace casual
 
          namespace name
          {
-            std::string base( const std::string& path)
+            std::string base( std::string_view path)
             {
                // Remove trailing '/'
-               auto end = std::find_if( path.crbegin(), path.crend(), []( const char value) { return value != '/';});
+               auto end = std::find_if( std::crbegin( path), std::crend( path), []( const char value) { return value != '/';});
 
-               end = std::find( end, path.crend(), '/');
+               end = std::find( end, std::crend( path), '/');
 
                // To be conformant to dirname, we have to return at least '/'
-               if( end == path.crend())
+               if( end == std::crend( path))
                   return "/";
 
-               return std::string{ path.cbegin(), end.base()};
+               return std::string{ std::begin( path), end.base()};
             }
 
          } // name
 
-         bool exists( const std::string& path)
+         bool exists( std::string_view path)
          {
-            return memory::guard( opendir( path.c_str()), &closedir).get() != nullptr;
+            return memory::guard( opendir( path.data()), &closedir).get() != nullptr;
          }
 
-         bool create( const std::string& path)
+         bool create( std::string_view path)
          {
             auto parent = name::base( path);
 
@@ -372,15 +374,15 @@ namespace casual
                create( parent);
             }
 
-            if( mkdir( path.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) != 0 && errno != EEXIST)
+            if( mkdir( path.data(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) != 0 && errno != EEXIST)
                return false;
 
             return true;
          }
 
-         bool remove( const std::string& path)
+         bool remove( std::string_view path)
          {
-            if( rmdir( path.c_str()) != 0)
+            if( rmdir( path.data()) != 0)
                return false;
 
             return true;

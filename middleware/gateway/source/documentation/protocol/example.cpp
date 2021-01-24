@@ -140,20 +140,20 @@ namespace casual
 
                      message.services = {
                            [](){
-                              common::message::service::concurrent::advertise::Service s;
-                              s.name = "service1";
-                              s.category = "example";
-                              s.transaction = common::service::transaction::Type::join;
-                              s.timeout = std::chrono::seconds{ 90};
-                              return s;
+                              common::message::service::concurrent::advertise::Service service;
+                              service.name = "service1";
+                              service.category = "example";
+                              service.transaction = common::service::transaction::Type::join;
+                              service.timeout = std::chrono::seconds{ 90};
+                              return service;
                            }()
                      };
                      message.queues = {
                            [](){
-                              common::message::queue::concurrent::advertise::Queue q;
-                              q.name = "queue1";
-                              q.retries = 10;
-                              return q;
+                              common::message::gateway::domain::discover::Queue queue;
+                              queue.name = "queue1";
+                              queue.retries = 10;
+                              return queue;
                            }()
                      };
                   }
@@ -243,7 +243,7 @@ namespace casual
                      message.events = common::flag::service::conversation::Event::send_only;
                   }
 
-                  void fill( common::message::queue::enqueue::Request& message)
+                  void fill( casual::queue::ipc::message::group::enqueue::Request& message)
                   {
                      local::set_general( message);
 
@@ -258,14 +258,14 @@ namespace casual
                      message.message.payload = local::binary::value( 128);
                   }
 
-                  void fill( common::message::queue::enqueue::Reply& message)
+                  void fill( casual::queue::ipc::message::group::enqueue::Reply& message)
                   {
                      local::set_general( message);
 
                      message.id = 0x315dacc6182e4c12bf9877efa924cb87_uuid;
                   }
 
-                  void fill( common::message::queue::dequeue::Request& message)
+                  void fill( casual::queue::ipc::message::group::dequeue::Request& message)
                   {
                      local::set_general( message);
 
@@ -278,14 +278,14 @@ namespace casual
                      message.block = false;
                   }
 
-                  void fill( common::message::queue::dequeue::Reply& message)
+                  void fill( casual::queue::ipc::message::group::dequeue::Reply& message)
                   {
                      local::set_general( message);
 
                      message.message = { 
                         []()
                         {
-                           common::message::queue::dequeue::Reply::Message message;
+                           casual::queue::ipc::message::group::dequeue::Message message;
                            message.id =  0x532f8b6c15764dca9fe82a3002de579e_uuid;
                            message.properties = "property 1:property 2";
                            message.reply = "queueB";

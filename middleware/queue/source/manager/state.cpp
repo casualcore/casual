@@ -14,114 +14,156 @@ namespace casual
 {
    using namespace common;
 
-   namespace queue
+   namespace queue::manager
    {
-      namespace manager
+      namespace state
       {
-
-         State::State() = default;
-
-         State::Group::Group() = default;
-         State::Group::Group( std::string name, common::process::Handle process) 
-            : name( std::move( name)), process( std::move( process)) {}
-
-         bool operator == ( const State::Group& lhs, common::strong::process::id pid) { return lhs.process.pid == pid;}
-
-         static_assert( common::traits::is_movable< State::Group>::value, "not movable");
-
-         State::Remote::Remote() = default;
-         State::Remote::Remote( common::process::Handle process)
-            : process{ std::move( process)} {}
-
-
-         bool operator == ( const State::Remote& lhs, const common::process::Handle& rhs)
+         namespace entity
          {
-            return lhs.process == rhs;
+            std::ostream& operator << ( std::ostream& out, Lifetime value)
+            {
+               switch( value)
+               {
+                  case Lifetime::absent: return out << "absent";
+                  case Lifetime::spawned: return out << "spawned";
+                  case Lifetime::connected: return out << "connected";
+                  case Lifetime::running: return out << "running";
+                  case Lifetime::shutdown: return out << "shutdown";
+               }
+               return out << "<unknown>";
+            }  
+         } // entity
+
+         std::ostream& operator << ( std::ostream& out, Runlevel value)
+         {
+            switch( value)
+            {
+               case Runlevel::running: return out << "running";
+               case Runlevel::shutdown:  return out << "shutdown";
+               case Runlevel::error: return out << "error";
+            }
+            return out << "<unknown>";
          }
+      } // state
 
-         bool operator == ( const State::Remote& lhs, common::strong::process::id pid)
+      const state::Queue* State::queue( const std::string& name) const noexcept
+      {
+         if( auto found = algorithm::find( queues, name))
+            if( ! found->second.empty())
+               return &range::front( found->second);
+
+         return nullptr;
+      }
+
+      void State::update( queue::ipc::message::group::configuration::update::Reply reply)
+      {
+         Trace trace{ "queue::manager::State::update"};
+
+         // we'll make it easy - first we remove all queues associated with the pid, then we'll add 
+         // the 'configured' ones
+
+         remove_queues( reply.process.pid);
+
+         if( auto found = algorithm::find( groups, reply.process.pid))
+            found->state = decltype( found->state())::running;
+         else
+            log::line( log::category::error, "failed to correlate group", reply.process, " - action: discard");
+            
+
+         for( auto& queue : reply.queues)
          {
-            return lhs.process == pid;
+            auto& instances = queues[ queue.name];
+            instances.emplace_back( reply.process, queue.id);
+            algorithm::sort( instances);
          }
+      }
 
-         static_assert( common::traits::is_movable< State::Remote>::value, "not movable");
+      std::vector< common::strong::process::id> State::processes() const noexcept
+      {
+         return algorithm::transform( groups, []( auto& group){ return group.process.pid;});
+      }
 
 
-         bool operator < ( const State::Queue& lhs, const State::Queue& rhs)
+      void State::remove_queues( common::strong::process::id pid)
+      {
+         Trace trace{ "queue::manager::State::remove_queues"};
+
+         common::algorithm::erase_if( queues, common::predicate::adapter::second( [pid]( auto& instances){
+            return common::algorithm::trim( instances, common::algorithm::remove( instances, pid)).empty();
+         }));
+
+         log::line( log, "queues: ", queues);
+      }
+
+      void State::remove( common::strong::process::id pid)
+      {
+         Trace trace{ "queue::manager::State::remove"};
+
+         remove_queues( pid);
+
+         common::algorithm::trim( groups, common::algorithm::remove( groups, pid));
+         common::algorithm::trim( forward.groups, common::algorithm::remove( forward.groups, pid));
+         common::algorithm::trim( pending.lookups, common::algorithm::remove( pending.lookups, pid));
+         common::algorithm::trim( remotes, common::algorithm::remove( remotes, pid));
+      }
+
+      void State::update( queue::ipc::message::Advertise& message)
+      {
+         Trace trace{ "queue::manager::State::update"};
+
+         if( message.reset)
+            remove_queues( message.process.pid);
+
+         auto order = message.order + 1;
+
+         // make sure we've got the instance
+         if( ! common::algorithm::find( remotes, message.process))
+            remotes.push_back( state::Remote{ message.process, order});
+
+         auto add_queue = [&]( auto& queue)
          {
-            return lhs.order < rhs.order;
-         }
+            auto& instances = queues[ queue.name];
 
-         std::vector< common::strong::process::id> State::processes() const noexcept
+            // outbound order is zero-based, we add 1 to distinguish local from remote
+            instances.emplace_back( message.process, common::strong::queue::id{}, order);
+
+            // Make sure we prioritize local queue
+            common::algorithm::stable_sort( instances);
+         };
+
+         algorithm::for_each( message.queues.add, add_queue);
+
+
+         auto remove_queue = [&]( auto& name)
          {
-            return algorithm::transform( groups, []( auto& group){ return group.process.pid;});
-         }
+            auto& instances = queues[ name];
 
-
-         void State::remove_queues( common::strong::process::id pid)
-         {
-            Trace trace{ "queue::manager::State::remove_queues"};
-
-            common::algorithm::erase_if( queues, common::predicate::adapter::second( [pid]( auto& instances){
-               return common::algorithm::trim( instances, common::algorithm::remove( instances, pid)).empty();
+            common::algorithm::trim( instances, common::algorithm::remove_if( instances, [&]( auto& queue)
+            {
+               return message.process.pid == queue.process.pid;
             }));
 
-            log::line( log, "queues: ", queues);
-         }
+            if( instances.empty())
+               queues.erase( name);
+         };
 
-         void State::remove( common::strong::process::id pid)
-         {
-            Trace trace{ "queue::manager::State::remove"};
+         algorithm::for_each( message.queues.remove, remove_queue);
+      }
 
-            remove_queues( pid);
+      bool State::done() const
+      {
+         if( runlevel <= decltype( runlevel())::running)
+            return false;
 
-            common::algorithm::trim( groups, common::algorithm::remove( groups, pid));
-            common::algorithm::trim( remotes, common::algorithm::remove( remotes, pid));
-            common::algorithm::trim( forwards, common::algorithm::remove( forwards, pid));
-            common::algorithm::trim( pending.lookups, common::algorithm::remove( pending.lookups, pid));
-         }
+         return groups.empty() && forward.groups.empty();
+      }
 
-         void State::update( common::message::queue::concurrent::Advertise& message)
-         {
-            Trace trace{ "queue::manager::State::update"};
+      bool State::ready() const
+      {
+         auto is_running = []( auto& entity){ return entity.state >= decltype( entity.state())::running;};
+         
+         return algorithm::all_of( groups, is_running) && algorithm::all_of( forward.groups, is_running);
+      }
 
-            if( message.reset)
-               remove_queues( message.process.pid);
-
-            // make sure we've got the instance
-            if( ! common::algorithm::find( remotes, message.process))
-               remotes.emplace_back( message.process);
-
-            auto add_queue = [&]( auto& queue)
-            {
-               auto& instances = queues[ queue.name];
-
-               // outbound order is zero-based, we add 1 to distinguish local from remote
-               instances.emplace_back( message.process, common::strong::queue::id{}, message.order + 1);
-
-               // Make sure we prioritize local queue
-               common::algorithm::stable_sort( instances);
-            };
-
-            algorithm::for_each( message.queues.add, add_queue);
-
-
-            auto remove_queue = [&]( auto& name)
-            {
-               auto& instances = queues[ name];
-
-               common::algorithm::trim( instances, common::algorithm::remove_if( instances, [&]( auto& queue)
-               {
-                  return message.process.pid == queue.process.pid;
-               }));
-
-               if( instances.empty())
-                  queues.erase( name);
-            };
-
-            algorithm::for_each( message.queues.remove, remove_queue);
-         }
-
-      } // manager
-   } // queue
+   } // queue::manager
 } // casual

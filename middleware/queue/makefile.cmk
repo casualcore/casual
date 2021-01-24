@@ -44,7 +44,7 @@ Environment( 'PATH', '../tools/bin:$(PATH)')
 common = LinkLibrary( 'bin/casual-queue-common',
    [
     Compile( 'source/common/log.cpp'),
-    Compile( 'source/common/transform.cpp'),
+    #Compile( 'source/common/ipc.cpp'),
     Compile( 'source/common/queue.cpp'),
     Compile( 'source/code.cpp'),
    ],
@@ -55,24 +55,25 @@ install_lib.append( common)
 # Group
 
 group_archive = LinkArchive( 'bin/casual-queue-group-archive',
-    [
-        Compile( 'source/group/group.cpp'),
-        Compile( 'source/group/state.cpp'),
-        Compile( 'source/group/database.cpp'),
-        Compile( 'source/group/database/statement.cpp'),
-        Compile( 'source/group/handle.cpp'),
-    ])
+[
+    Compile( 'source/group/state.cpp'),   
+    Compile( 'source/group/queuebase.cpp'),
+    Compile( 'source/group/queuebase/statement.cpp'),
+    Compile( 'source/group/handle.cpp'),
+])
 
 
 queue_group = LinkExecutable( 'bin/casual-queue-group', 
-    [Compile( 'source/group/main.cpp')], 
-    [
-     group_archive,
-     common,
-     'casual-domain-utility',
-     'casual-common',
-     'sqlite3',
-     ])
+[
+    Compile( 'source/group/main.cpp')
+],
+[
+    group_archive,
+    common,
+    'casual-domain-utility',
+    'casual-common',
+    'sqlite3',
+])
      
  
 install_bin.append( queue_group)
@@ -80,12 +81,12 @@ install_bin.append( queue_group)
 # Manager
 
 manager_archive = LinkArchive( 'bin/casual-queue-manager-archive',
-   [
-     Compile( 'source/manager/handle.cpp'),
-     Compile( 'source/manager/manager.cpp'),
-     Compile( 'source/manager/state.cpp'),
-     Compile( 'source/manager/admin/server.cpp'),
-   ])
+[
+    Compile( 'source/manager/transform.cpp'),
+    Compile( 'source/manager/handle.cpp'),
+    Compile( 'source/manager/state.cpp'),
+    Compile( 'source/manager/admin/server.cpp'),
+])
 
 
 queue_manager = LinkExecutable( 'bin/casual-queue-manager', 
@@ -132,7 +133,7 @@ install_lib.append( queue_c_api)
 Install( 'include/casual/queue/c/queue.h', '$(CASUAL_HOME)/include/casual/queue/c/')
 
 # forward
-forward_server = LinkExecutable( 'bin/casual-queue-forward',
+forward_server = LinkExecutable( 'bin/casual-queue-forward-group',
 [
     Compile( 'source/forward/handle.cpp'),
     Compile( 'source/forward/state.cpp'),
@@ -167,8 +168,8 @@ install_bin.append( target)
 
 test_casual_queue = LinkUnittest( 'unittest/bin/test-casual-queue', 
     [
-        Compile( 'unittest/source/test_transform.cpp'),
-        Compile( 'unittest/source/group/test_database.cpp'),
+        Compile( 'unittest/source/manager/test_transform.cpp'),
+        Compile( 'unittest/source/group/test_queuebase.cpp'),
         Compile( 'unittest/source/test_queue.cpp'),
         Compile( 'unittest/source/api/test_c.cpp'),
         Compile( 'unittest/source/test_forward.cpp')

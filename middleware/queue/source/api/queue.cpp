@@ -8,10 +8,11 @@
 #include <utility>
 
 #include "queue/api/queue.h"
+#include "queue/common/ipc/message.h"
 #include "queue/common/log.h"
 #include "queue/common/queue.h"
-#include "queue/common/transform.h"
 #include "queue/manager/admin/services.h"
+#include "queue/manager/admin/model.h"
 #include "queue/code.h"
 
 #include "common/range.h"
@@ -56,7 +57,7 @@ namespace casual
                   }
 
 
-                  common::message::queue::enqueue::Request request;
+                  ipc::message::group::enqueue::Request request;
                   request.trid = transaction.trid;
 
                   request.process = common::process::handle();
@@ -88,7 +89,7 @@ namespace casual
                {
                   auto request = []( auto& lookup, auto& selector, auto& trid, auto block)
                   {
-                     common::message::queue::dequeue::Request request{ common::process::handle()};
+                     ipc::message::group::dequeue::Request request{ common::process::handle()};
                      request.trid = trid;
                      request.queue = lookup.queue;
                      request.block = block;
@@ -100,6 +101,24 @@ namespace casual
 
                      return request;
                   };
+
+                  namespace transform
+                  {
+                     auto message()
+                     {
+                        return []( ipc::message::group::dequeue::Message& value)
+                        {
+                           queue::Message result;
+                           result.id = value.id;
+                           result.attributes.available = value.available;
+                           result.attributes.properties = std::move( value.properties);
+                           result.attributes.reply = std::move( value.reply);
+                           result.payload.type = std::move( value.type);
+                           result.payload.data = std::move( value.payload);
+                           return result;
+                        };
+                     }
+                  } // transform
 
                   namespace non
                   {
@@ -126,7 +145,7 @@ namespace casual
                            transaction.external();
                         }
 
-                        return common::algorithm::transform( reply.message, queue::transform::Message{});
+                        return common::algorithm::transform( reply.message, transform::message());
                      }  
                   } // non
 
@@ -156,7 +175,7 @@ namespace casual
                      } state;
 
                      // handles deque-reply - used for the normal reply, and also when we send dequeue::forget::Request
-                     auto handle_dequeue_reply = [&]( common::message::queue::dequeue::Reply& message)
+                     auto handle_dequeue_reply = [&]( ipc::message::group::dequeue::Reply& message)
                      {
                         Trace trace{ "casual::queue::local::dequeue::blocking handler - dequeue::Reply"};
                         common::log::line( verbose::log, "message: ", message);
@@ -172,19 +191,19 @@ namespace casual
                         if( message.correlation != correlation)
                            queue::error( code::system, "correlation mismatch");
 
-                        common::algorithm::transform( message.message, state.result, queue::transform::Message{});
+                        common::algorithm::transform( message.message, state.result, transform::message());
                      };
 
 
                      auto handler = common::message::dispatch::handler( ipc,
                         // the normal case - when we get a message
-                        [&]( common::message::queue::dequeue::Reply& reply)
+                        [&]( ipc::message::group::dequeue::Reply& reply)
                         {
                            handle_dequeue_reply( reply);
                            state.done = true;
                         },
                         // queue-group want's to end the blockin dequeue for some reason
-                        [&]( common::message::queue::dequeue::forget::Request& message)
+                        [&]( ipc::message::group::dequeue::forget::Request& message)
                         {
                            Trace trace{ "casual::queue::local::dequeue::blocking handler - forget::Request"};
                            common::log::line( verbose::log, "message: ", message);
@@ -204,7 +223,7 @@ namespace casual
 
                            // we need to send forget-dequeue
                            {
-                              common::message::queue::dequeue::forget::Request request{ common::process::handle()};
+                              ipc::message::group::dequeue::forget::Request request{ common::process::handle()};
                               request.correlation = correlation;
                               request.queue = group.queue;
 
@@ -213,7 +232,7 @@ namespace casual
                                  // there could be race-conditions when the queue-group has either sent the
                                  // dequeue-reply already, or instigated a dequeue::forget for some reason.
                                  auto handler = common::message::dispatch::handler( ipc,
-                                    [&state]( common::message::queue::dequeue::forget::Reply& message)
+                                    [&state]( ipc::message::group::dequeue::forget::Reply& message)
                                     {
                                        Trace trace{ "casual::queue::local::dequeue::blocking handler - forget::Request - forget::Reply"};
                                        common::log::line( verbose::log, "message: ", message);
@@ -222,8 +241,8 @@ namespace casual
                                        // 'session', but the two below might have been consumed.
                                        state.done = true;
                                     }, 
-                                    []( common::message::queue::dequeue::forget::Request& request) {}, // no-op
-                                    [&]( common::message::queue::dequeue::Reply& message)
+                                    []( ipc::message::group::dequeue::forget::Request& request) {}, // no-op
+                                    [&]( ipc::message::group::dequeue::Reply& message)
                                     {
                                        Trace trace{ "casual::queue::local::dequeue::blocking handler - forget::Request - dequeue::Reply"};
                                        common::log::line( verbose::log, "message: ", message);
@@ -450,12 +469,10 @@ namespace casual
 
                std::vector< message::Information> result;
 
-               common::message::queue::peek::information::Request request;
+               ipc::message::group::message::meta::peek::Request request;
                request.name = queuename;
                request.process = common::process::handle();
                request.selector.properties = selector.properties;
-
-
 
                auto queue = lookup();
 
@@ -508,7 +525,7 @@ namespace casual
 
                queue::Lookup lookup{ queuename};
 
-               common::message::queue::peek::messages::Request request{ common::process::handle()};
+               ipc::message::group::message::peek::Request request{ common::process::handle()};
                request.ids = ids;
 
                auto queue = lookup();
@@ -550,7 +567,7 @@ namespace casual
 
                   auto reply = call( manager::admin::service::name::restore);
 
-                  std::vector< manager::admin::model::Affected> result;
+                  std::vector< queue::manager::admin::model::Affected> result;
                   reply >> CASUAL_NAMED_VALUE( result);
 
                   common::algorithm::transform( result, affected, []( auto& a)
@@ -609,7 +626,6 @@ namespace casual
             }
             
          } // messages
-      }
-
+      } // v1
    } // queue
 } // casual

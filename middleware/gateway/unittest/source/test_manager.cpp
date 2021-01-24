@@ -10,15 +10,16 @@
 
 #include "gateway/manager/admin/model.h"
 #include "gateway/manager/admin/server.h"
+#include "gateway/message.h"
 
 
 #include "common/environment.h"
 #include "common/service/lookup.h"
 #include "common/communication/instance.h"
 #include "common/event/listen.h"
+#include "common/message/event.h"
 
 #include "common/message/domain.h"
-#include "common/message/queue.h"
 #include "common/algorithm/is.h"
 
 #include "serviceframework/service/protocol/call.h"
@@ -371,7 +372,7 @@ domain:
 
          // enqueue
          {
-            common::message::queue::enqueue::Request request{ process::handle()};
+            casual::queue::ipc::message::group::enqueue::Request request{ process::handle()};
             request.name = "a";
             request.message.type = "json";
             request.message.payload = payload;
@@ -383,7 +384,7 @@ domain:
 
          // dequeue
          {
-            common::message::queue::dequeue::Request request{ process::handle()};
+            casual::queue::ipc::message::group::dequeue::Request request{ process::handle()};
             request.name = "a";
 
             auto reply = communication::ipc::call( outbound.ipc, request);
@@ -822,7 +823,7 @@ domain:
 
             while( metrics.size() < count)
             {
-               message::event::service::Calls event;
+               common::message::event::service::Calls event;
                common::communication::device::blocking::receive( common::communication::ipc::inbound::device(), event);
                //EXPECT_TRUE( false) << CASUAL_NAMED_VALUE( event);
                algorithm::append( event.metrics, metrics);

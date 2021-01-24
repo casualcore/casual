@@ -56,10 +56,10 @@ namespace casual
             std::string m_path;
          };
 
-         void remove( const std::string& path);
+         void remove( std::string_view path);
 
-         //! Moves/renames a file from @p old_path to @p new_path
-         void move( const std::string& old_path, const std::string& new_path);
+         //! Moves/renames a file from @p source to @p target
+         void move( std::string_view source, std::string_view target);
 
          namespace scoped
          {
@@ -80,6 +80,7 @@ namespace casual
 
                const std::string& path() const &; // only on l-values
                operator const std::string&() const &; // only on l-values
+               operator std::string_view() const &; // only on l-values
 
                std::string release();
 
@@ -97,7 +98,7 @@ namespace casual
          //!   * https://man7.org/linux/man-pages/man7/glob.7.html
          //!   * https://en.wikipedia.org/wiki/Glob_(programming)
          //! @{
-         std::vector< std::string> find( const std::string& pattern);
+         std::vector< std::string> find( std::string_view pattern);
          std::vector< std::string> find( const std::vector< std::string>& patterns);
          //! @}
          
@@ -106,49 +107,49 @@ namespace casual
          //!
          //! @param path The path to search
          //! @param search regexp to match file names
-         std::string find( const std::string& path, const std::regex& search);
+         std::string find( std::string_view path, const std::regex& search);
 
          //! Return the absolute path of the provided path
          //!
          //! @param path
          //! @return absolute path
-         std::string absolute( const std::string& path);
+         std::string absolute( std::string_view path);
 
 
          namespace name
          {
             //! @return true if path begins with /, otherwise false
-            bool absolute( const std::string& path);
+            bool absolute( std::string_view path);
 
             //! @return a unique file-name, with post- and pre-fix, if provided
-            std::string unique( const std::string& prefix = "", const std::string& postfix = "");
+            std::string unique( std::string_view prefix = "", std::string_view postfix = "");
 
             //! @return filename without directory portion
-            std::string base( const std::string& path);
+            std::string base( std::string_view path);
 
             //! @return the extension of the file. ex. yaml for file configuration.yaml
-            std::string extension( const std::string& file);
+            std::string extension( std::string_view path);
 
             namespace without
             {
                //! @return path without extension
-               std::string extension( const std::string& path);
+               std::string extension( std::string_view path);
 
             } // without
 
             //! @return the path/name of what the link links to
-            std::string link( const std::string& path);
+            std::string link( std::string_view path);
 
          } // name
 
          //! @return true if the file exists, otherwise false
-         bool exists( const std::string& path);
+         bool exists( std::string_view path);
 
          namespace permission
          {
             //! @return true if calling process has execution permission on @p path
             //! @note returns false if the file does not exists
-            bool execution( const std::string& path);
+            bool execution( std::string_view path);
 
          } // permission
       } // file
@@ -163,7 +164,7 @@ namespace casual
 
          //! change the WD to @p path
          //! @return previous WD
-         std::string change( const std::string& path);
+         std::string change( std::string_view path);
 
          namespace scope
          {
@@ -171,7 +172,7 @@ namespace casual
             //! and change back to previous WD on destruction
             struct Change
             {
-               Change( const std::string& path);
+               Change( std::string_view path);
                ~Change();
 
                Change( const Change&) = delete;
@@ -186,16 +187,15 @@ namespace casual
          namespace name
          {
             //! @return directory without filename
-            std::string base( const std::string& path);
-
+            std::string base( std::string_view path);
          } // name
 
-         bool exists( const std::string& path);
+         bool exists( std::string_view path);
 
          //! creates the directory path recursively
-         bool create( const std::string& path);
+         bool create( std::string_view path);
 
-         bool remove( const std::string& path);
+         bool remove( std::string_view path);
 
       } // directory
 

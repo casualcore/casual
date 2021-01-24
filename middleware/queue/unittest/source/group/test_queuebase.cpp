@@ -6,20 +6,18 @@
 
 #include "common/unittest.h"
 
-#include "queue/group/database.h"
-#include "queue/common/transform.h"
-
+#include "queue/group/queuebase.h"
 
 #include "common/file.h"
 #include "common/environment.h"
 #include "common/chronology.h"
+#include "common/buffer/type.h"
 
 
 namespace casual
 {
-   namespace queue
+   namespace queue::group
    {
-
       namespace local
       {
          namespace
@@ -32,9 +30,9 @@ namespace casual
 
             static const common::transaction::ID nullId{};
 
-            common::message::queue::enqueue::Request message( const group::Queue& queue, const common::transaction::ID& trid = nullId)
+            auto message( const queuebase::Queue& queue, const common::transaction::ID& trid = nullId)
             {
-               common::message::queue::enqueue::Request result;
+               ipc::message::group::enqueue::Request result;
 
                result.queue = queue.id;
                result.trid = trid;
@@ -52,9 +50,10 @@ namespace casual
                return result;
             }
 
-            common::message::queue::dequeue::Request request( const group::Queue& queue, const common::transaction::ID& trid = nullId)
+            template< typename Q>
+            auto request( const Q& queue, const common::transaction::ID& trid = nullId)
             {
-               common::message::queue::dequeue::Request result;
+               ipc::message::group::dequeue::Request result;
 
                result.queue = queue.id;
                result.trid = trid;
@@ -64,18 +63,19 @@ namespace casual
 
             namespace peek
             {
-               common::message::queue::peek::information::Request information( common::strong::queue::id queue)
+               auto information( common::strong::queue::id queue)
                {
-                  common::message::queue::peek::information::Request result;
+                  ipc::message::group::message::meta::peek::Request result;
 
                   result.queue = queue;
+                  
 
                   return result;
                }
 
             } // peek
 
-            std::optional< common::message::queue::information::Queue> get_queue( group::Database& queuebase, common::strong::queue::id id)
+            std::optional< ipc::message::group::state::Queue> get_queue( group::Queuebase& queuebase, common::strong::queue::id id)
             {
                auto result = queuebase.queues();
                auto found = common::algorithm::find( result, id);
@@ -94,7 +94,7 @@ namespace casual
          common::unittest::Trace trace;
 
          auto path = local::file();
-         group::Database database( path, "test_group");
+         group::Queuebase database( path);
       }
 
 
@@ -103,9 +103,9 @@ namespace casual
          common::unittest::Trace trace;
 
          auto path = local::file();
-         group::Database database( path, "test_group");
+         group::Queuebase database( path);
 
-         database.update( { group::Queue{ "unittest_queue"}}, {});
+         database.update( { queuebase::Queue{ "unittest_queue"}}, {});
 
          auto queues = database.queues();
 
@@ -114,9 +114,9 @@ namespace casual
          EXPECT_TRUE( queues.at( 0).name == "unittest_queue.error");
 
          EXPECT_TRUE( queues.at( 1).name == "unittest_queue");
-         EXPECT_TRUE( queues.at( 1).count == 0) << "count: " << queues.at( 2).count;
-         EXPECT_TRUE( queues.at( 1).size == 0);
-         EXPECT_TRUE( queues.at( 1).uncommitted == 0);
+         EXPECT_TRUE( queues.at( 1).metric.count == 0) << "count: " << queues.at( 2).metric.count;
+         EXPECT_TRUE( queues.at( 1).metric.size == 0);
+         EXPECT_TRUE( queues.at( 1).metric.uncommitted == 0);
       }
 
       TEST( casual_queue_group_database, remove_queue)
@@ -124,9 +124,9 @@ namespace casual
          common::unittest::Trace trace;
 
          auto path = local::file();
-         group::Database database( path, "test_group");
+         group::Queuebase database( path);
 
-         auto queue = database.update( {group::Queue{ "unittest_queue"}}, {});
+         auto queue = database.update( {queuebase::Queue{ "unittest_queue"}}, {});
 
          database.update( {}, { queue.at( 0).id});
 
@@ -138,9 +138,9 @@ namespace casual
          common::unittest::Trace trace;
 
          auto path = local::file();
-         group::Database database( path, "test_group");
+         group::Queuebase database( path);
 
-         auto queue = database.update( { group::Queue{ "unittest_queue"}}, {});
+         auto queue = database.update( { queuebase::Queue{ "unittest_queue"}}, {});
 
          queue.at( 0).name = "foo-bar";
 
@@ -165,13 +165,13 @@ namespace casual
             };
 
          {
-            group::Database database( path, "test_group");
-            database.create( group::Queue{ "unittest_queue"});
+            group::Queuebase database( path);
+            database.create( queuebase::Queue{ "unittest_queue"});
          }
 
          {
             // open again
-            group::Database database( path, "test_group");
+            group::Queuebase database( path);
 
             auto queues = database.queues();
 
@@ -195,17 +195,17 @@ namespace casual
             };
 
          {
-            group::Database database( path, "test_group");
+            group::Queuebase database( path);
 
             for( int index = 1; index <= 5; ++index)
             {
-               database.create( group::Queue{ "unittest_queue_" + std::to_string( index)});
+               database.create( queuebase::Queue{ "unittest_queue_" + std::to_string( index)});
             }
          }
 
          {
             // open again
-            group::Database database( path, "test_group");
+            group::Queuebase database( path);
 
             auto queues = database.queues();
 
@@ -224,24 +224,20 @@ namespace casual
          common::unittest::Trace trace;
 
          auto path = local::file();
-         group::Database database( path, "test_group");
+         group::Queuebase queuebase( path);
 
+         common::algorithm::for_n< 100>( [&queuebase]( auto index)
          {
-            auto writer = sql::database::scoped::write( database);
+            queuebase.create( queuebase::Queue{ "unittest_queue" + std::to_string( index)});
+         });
+         queuebase.persist();
 
-            auto count = 0;
 
-            while( count++ < 100)
-            {
-               database.create( group::Queue{ "unittest_queue" + std::to_string( count)});
-            }
-         }
-
-         auto queues = database.queues();
+         auto queues = queuebase.queues();
 
          // there is always an error-queue for each queue
          ASSERT_TRUE( queues.size() == 200) << "size: " << queues.size();
-         EXPECT_TRUE( queues.at( 0).name == "unittest_queue1.error") << queues.at( 0).name;
+         EXPECT_TRUE( queues.at( 0).name == "unittest_queue0.error") << queues.at( 0).name;
       }
 
 
@@ -250,8 +246,8 @@ namespace casual
          common::unittest::Trace trace;
 
          auto path = local::file();
-         group::Database database( path, "test_group");
-         auto queue = database.create( group::Queue{ "unittest_queue"});
+         group::Queuebase database( path);
+         auto queue = database.create( queuebase::Queue{ "unittest_queue"});
 
          auto message = local::message( queue);
 
@@ -267,8 +263,8 @@ namespace casual
          common::unittest::Trace trace;
 
          auto path = local::file();
-         group::Database database( path, "test_group");
-         auto queue = database.create( group::Queue{ "unittest_queue"});
+         group::Queuebase database( path);
+         auto queue = database.create( queuebase::Queue{ "unittest_queue"});
 
          auto message = local::message( queue);
 
@@ -279,8 +275,8 @@ namespace casual
          auto info = local::get_queue( database, queue.id).value();
 
          EXPECT_TRUE( info.name == "unittest_queue");
-         EXPECT_TRUE( info.count == 1) << "info.count: " << info.count;
-         EXPECT_TRUE( info.size == static_cast< platform::size::type>( message.message.payload.size()));
+         EXPECT_TRUE( info.metric.count == 1) << "info.metric.count: " << info.metric.count;
+         EXPECT_TRUE( info.metric.size == static_cast< platform::size::type>( message.message.payload.size()));
       }
 
 
@@ -290,8 +286,8 @@ namespace casual
          common::unittest::Trace trace;
 
          auto path = local::file();
-         group::Database database( path, "test_group");
-         auto queue = database.create( group::Queue{ "unittest_queue"});
+         group::Queuebase database( path);
+         auto queue = database.create( queuebase::Queue{ "unittest_queue"});
 
          auto message = local::message( queue);
 
@@ -299,7 +295,7 @@ namespace casual
             database.enqueue( message);
          });
 
-         auto messages = database.messages( queue.id);
+         auto messages = database.meta( queue.id);
 
          ASSERT_TRUE( messages.size() == 1);
          EXPECT_TRUE( messages.at( 0).id  == message.message.id);
@@ -311,8 +307,8 @@ namespace casual
          common::unittest::Trace trace;
 
          auto path = local::file();
-         group::Database database( path, "test_group");
-         auto queue = database.create( group::Queue{ "unittest_queue"});
+         group::Queuebase database( path);
+         auto queue = database.create( queuebase::Queue{ "unittest_queue"});
 
          auto origin = local::message( queue);
          database.enqueue( origin);
@@ -333,8 +329,8 @@ namespace casual
          common::unittest::Trace trace;
 
          auto path = local::file();
-         group::Database database( path, "test_group");
-         auto queue = database.create( group::Queue{ "enqueue_deque__info__expect__count_0__size_0"});
+         group::Queuebase database( path);
+         auto queue = database.create( queuebase::Queue{ "enqueue_deque__info__expect__count_0__size_0"});
 
          auto origin = local::message( queue);
          database.enqueue( origin);
@@ -344,8 +340,8 @@ namespace casual
 
          auto info = local::get_queue( database, queue.id).value();
 
-         EXPECT_TRUE( info.count == 0) << CASUAL_NAMED_VALUE( info);
-         EXPECT_TRUE( info.size == 0);
+         EXPECT_TRUE( info.metric.count == 0) << CASUAL_NAMED_VALUE( info);
+         EXPECT_TRUE( info.metric.size == 0);
       }
 
       TEST( casual_queue_group_database, enqueue_deque__info__expect_metric_to_reflect)
@@ -353,8 +349,8 @@ namespace casual
          common::unittest::Trace trace;
 
          auto path = local::file();
-         group::Database database( path, "test_group");
-         auto queue = database.create( group::Queue{ "enqueue_deque__info__expect_metric_to_reflect"});
+         group::Queuebase database( path);
+         auto queue = database.create( queuebase::Queue{ "enqueue_deque__info__expect_metric_to_reflect"});
 
          auto origin = local::message( queue);
          database.enqueue( origin);
@@ -373,8 +369,8 @@ namespace casual
          common::unittest::Trace trace;
 
          auto path = local::file();
-         group::Database database( path, "test_group");
-         auto queue = database.create( group::Queue{ "enqueue_deque__info__expect_metric_to_reflect"});
+         group::Queuebase database( path);
+         auto queue = database.create( queuebase::Queue{ "enqueue_deque__info__expect_metric_to_reflect"});
 
          auto origin = local::message( queue);
          database.enqueue( origin);
@@ -396,8 +392,8 @@ namespace casual
          common::unittest::Trace trace;
 
          auto path = local::file();
-         group::Database database( path, "test_group");
-         auto queue = database.create( group::Queue{ "dequeue_message__from_id"});
+         group::Queuebase database( path);
+         auto queue = database.create( queuebase::Queue{ "dequeue_message__from_id"});
 
          auto origin = local::message( queue);
 
@@ -420,8 +416,8 @@ namespace casual
          common::unittest::Trace trace;
 
          auto path = local::file();
-         group::Database database( path, "test_group");
-         auto queue = database.create( group::Queue{ "unittest_queue"});
+         group::Queuebase database( path);
+         auto queue = database.create( queuebase::Queue{ "unittest_queue"});
 
          auto origin = local::message( queue);
          origin.message.properties = "some: properties";
@@ -446,8 +442,8 @@ namespace casual
          common::unittest::Trace trace;
 
          auto path = local::file();
-         group::Database database( path, "test_group");
-         auto queue = database.create( group::Queue{ "unittest_queue"});
+         group::Queuebase database( path);
+         auto queue = database.create( queuebase::Queue{ "unittest_queue"});
 
          auto origin = local::message( queue);
          origin.message.properties = "some: properties";
@@ -467,32 +463,25 @@ namespace casual
          common::unittest::Trace trace;
 
          auto path = local::file();
-         group::Database database( path, "test_group");
-         auto queue = database.create( group::Queue{ "unittest_queue"});
+         group::Queuebase database( path);
+         auto queue = database.create( queuebase::Queue{ "unittest_queue"});
 
-         using message_type = decltype( local::message( queue));
-
-
-         std::vector< message_type > messages;
-
-         auto count = 0;
-         while( count++ < 100)
+         auto messages = common::algorithm::generate_n< 100>( [&]( auto index)
          {
-            auto m = local::message( queue);
-            m.message.type = std::to_string( count);
-            messages.push_back( std::move( m));
-         }
+            auto message = local::message( queue);
+            message.message.type = std::to_string( index);
+            return message;
+         });
 
+         common::algorithm::for_each( messages, [&]( auto& message)
          {
-            auto writer = sql::database::scoped::write( database);
-            common::algorithm::for_each( messages, [&]( const message_type& m){
-               database.enqueue( m);});
-         }
+            database.enqueue( message);
+         });
 
-         auto writer = sql::database::scoped::write( database);
+         database.persist();
 
-         common::algorithm::for_each( messages,[&]( const message_type& origin){
-
+         common::algorithm::for_each( messages,[&]( auto& origin)
+         {
             auto fetched = database.dequeue( local::request( queue), platform::time::clock::type::now());
 
             ASSERT_TRUE( fetched.message.size() == 1);
@@ -517,8 +506,8 @@ namespace casual
          common::unittest::Trace trace;
 
          auto path = local::file();
-         group::Database database( path, "test_group");
-         auto queue = database.create( group::Queue{ "unittest_queue"});
+         group::Queuebase database( path);
+         auto queue = database.create( queuebase::Queue{ "unittest_queue"});
 
          common::transaction::ID xid = common::transaction::id::create();
          auto origin = local::message( queue, xid);
@@ -554,8 +543,8 @@ namespace casual
          common::unittest::Trace trace;
 
          auto path = local::file();
-         group::Database database( path, "test_group");
-         auto queue = database.create( group::Queue{ "unittest_queue"});
+         group::Queuebase database( path);
+         auto queue = database.create( queuebase::Queue{ "unittest_queue"});
 
 
          auto origin = local::message( queue);
@@ -582,8 +571,8 @@ namespace casual
          common::unittest::Trace trace;
 
          auto path = local::file();
-         group::Database database( path, "test_group");
-         auto queue = database.create( group::Queue{ "unittest_queue"});
+         group::Queuebase database( path);
+         auto queue = database.create( queuebase::Queue{ "unittest_queue"});
 
 
          auto origin = local::message( queue);
@@ -602,8 +591,8 @@ namespace casual
 
          auto info = local::get_queue( database, queue.id).value();
 
-         EXPECT_TRUE( info.count == 0) << CASUAL_NAMED_VALUE( info);
-         EXPECT_TRUE( info.size == 0);
+         EXPECT_TRUE( info.metric.count == 0) << CASUAL_NAMED_VALUE( info);
+         EXPECT_TRUE( info.metric.size == 0);
       }
 
       TEST( casual_queue_group_database, enqueue_one_message_in_transaction_rollback)
@@ -611,8 +600,8 @@ namespace casual
          common::unittest::Trace trace;
 
          auto path = local::file();
-         group::Database database( path, "test_group");
-         auto queue = database.create( group::Queue{ "unittest_queue"});
+         group::Queuebase database( path);
+         auto queue = database.create( queuebase::Queue{ "unittest_queue"});
 
 
          common::transaction::ID xid = common::transaction::id::create();
@@ -631,8 +620,8 @@ namespace casual
          common::unittest::Trace trace;
 
          auto path = local::file();
-         group::Database database( path, "test_group");
-         auto queue = database.create( group::Queue{ "unittest_queue"});
+         group::Queuebase database( path);
+         auto queue = database.create( queuebase::Queue{ "unittest_queue"});
 
 
          common::transaction::ID xid = common::transaction::id::create();
@@ -643,8 +632,8 @@ namespace casual
 
          auto info = local::get_queue( database, queue.id).value();
 
-         EXPECT_TRUE( info.count == 0) << CASUAL_NAMED_VALUE( info);
-         EXPECT_TRUE( info.size == 0);
+         EXPECT_TRUE( info.metric.count == 0) << CASUAL_NAMED_VALUE( info);
+         EXPECT_TRUE( info.metric.size == 0);
 
       }
 
@@ -654,8 +643,8 @@ namespace casual
          common::unittest::Trace trace;
 
          auto path = local::file();
-         group::Database database( path, "test_group");
-         auto queue = database.create( group::Queue{ "unittest_queue"});
+         group::Queuebase database( path);
+         auto queue = database.create( queuebase::Queue{ "unittest_queue"});
 
 
          auto origin = local::message( queue);
@@ -668,8 +657,8 @@ namespace casual
 
             auto info = local::get_queue( database, queue.id).value();
 
-            EXPECT_TRUE( info.count == 1) << CASUAL_NAMED_VALUE( info);
-            EXPECT_TRUE( info.size ==  static_cast< platform::size::type>( origin.message.payload.size()));
+            EXPECT_TRUE( info.metric.count == 1) << CASUAL_NAMED_VALUE( info);
+            EXPECT_TRUE( info.metric.size ==  static_cast< platform::size::type>( origin.message.payload.size()));
          }
 
          {
@@ -691,8 +680,8 @@ namespace casual
          {
             auto error = local::get_queue( database, queue.error).value();
          
-            EXPECT_TRUE( error.count == 1) << " queues.at( 1).count: " <<  error.count;
-            EXPECT_TRUE( error.size ==  static_cast< platform::size::type>( origin.message.payload.size()));
+            EXPECT_TRUE( error.metric.count == 1) << " queues.at( 1).count: " <<  error.metric.count;
+            EXPECT_TRUE( error.metric.size ==  static_cast< platform::size::type>( origin.message.payload.size()));
 
             common::transaction::ID xid = common::transaction::id::create();
          
@@ -708,8 +697,8 @@ namespace casual
          {
             auto error = local::get_queue( database, queue.error).value();
          
-            EXPECT_TRUE( error.count == 1) << " queues.at( 1).count: " <<  error.count;
-            EXPECT_TRUE( error.size ==  static_cast< platform::size::type>( origin.message.payload.size()));
+            EXPECT_TRUE( error.metric.count == 1) << " queues.at( 1).count: " <<  error.metric.count;
+            EXPECT_TRUE( error.metric.size ==  static_cast< platform::size::type>( origin.message.payload.size()));
 
             common::transaction::ID xid = common::transaction::id::create();
 
@@ -721,7 +710,7 @@ namespace casual
          }
 
          // All queues should have count = 0 and size = 0
-         auto is_empty = []( auto& queue){ return queue.count == 0 && queue.size == 0;};
+         auto is_empty = []( auto& queue){ return queue.metric.count == 0 && queue.metric.size == 0;};
          EXPECT_TRUE( common::algorithm::all_of( database.queues(), is_empty));
       }
 
@@ -730,8 +719,8 @@ namespace casual
          common::unittest::Trace trace;
 
          auto path = local::file();
-         group::Database database( path, "test_group");
-         auto queue = database.create( group::Queue{ "unittest_queue"});
+         group::Queuebase database( path);
+         auto queue = database.create( queuebase::Queue{ "unittest_queue"});
 
          using message_type = decltype( local::message( queue));
 
@@ -780,8 +769,8 @@ namespace casual
          common::unittest::Trace trace;
 
          auto path = local::file();
-         group::Database database( path, "test_group");
-         auto queue = database.create( group::Queue{ "unittest_queue"});
+         group::Queuebase database( path);
+         auto queue = database.create( queuebase::Queue{ "unittest_queue"});
 
          auto restored = database.restore( queue.id);
          EXPECT_TRUE( restored == 0) << "restored: " << restored;
@@ -792,8 +781,8 @@ namespace casual
          common::unittest::Trace trace;
 
          auto path = local::file();
-         group::Database database( path, "test_group");
-         auto queue = database.create( group::Queue{ "unittest_queue"});
+         group::Queuebase database( path);
+         auto queue = database.create( queuebase::Queue{ "unittest_queue"});
 
          auto message = local::message( queue);
          {
@@ -828,8 +817,8 @@ namespace casual
          auto now = platform::time::clock::type::now();
 
          auto path = local::file();
-         group::Database database( path, "test_group");
-         auto queue = database.create( group::Queue{ "unittest_queue", group::Queue::Retry{ 3, std::chrono::hours{ 1}}});
+         group::Queuebase database( path);
+         auto queue = database.create( queuebase::Queue{ "unittest_queue", queuebase::queue::Retry{ 3, std::chrono::hours{ 1}}});
          
          {
             auto message = local::message( queue);
@@ -861,7 +850,7 @@ namespace casual
          common::unittest::Trace trace;
 
          auto path = local::file();
-         group::Database database( path, "test_version");
+         group::Queuebase database( path);
 
          auto version = database.version();
 
@@ -869,5 +858,5 @@ namespace casual
          EXPECT_TRUE( version.minor == 0);
       }
 
-   } // queue
+   } // queue::group
 } // casual

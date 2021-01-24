@@ -710,14 +710,7 @@ namespace casual
 
             return std::forward< R>( range);
          }
-         
-         //! applies `functor` `N` times
-         template< platform::size::type N, typename F>
-         constexpr void for_n( F functor)
-         {
-            for( platform::size::type count = 0; count < N; ++count)
-               functor();
-         }
+
 
          namespace detail
          {
@@ -738,6 +731,14 @@ namespace casual
             }
          } // detail
 
+         //! applies `functor` `N` times, from template value N.
+         template< platform::size::type N, typename F>
+         constexpr void for_n( F functor)
+         {
+            detail::for_n( N, std::move( functor), common::traits::priority::tag< 1>{});
+         }
+
+         //! applies `functor` `n` times
          template< typename F>
          constexpr auto for_n( platform::size::type n, F functor) 
             -> decltype( detail::for_n( n, std::move( functor), common::traits::priority::tag< 1>{}))
@@ -745,20 +746,32 @@ namespace casual
             detail::for_n( n, std::move( functor), common::traits::priority::tag< 1>{});
          }
 
-         //! associate container specialization
-         template< typename R, typename T,
-            std::enable_if_t< common::traits::is::container::associative::like< std::decay_t< R>>::value, int> = 0>
-         auto find( R&& range, const T& value)
-         {
-            return range::make( range.find( value), std::end( range));
-         }
 
-         //! non associate container specialization
-         template< typename R, typename T,
-            std::enable_if_t< ! common::traits::is::container::associative::like< std::decay_t< R>>::value, int> = 0>
-         auto find( R&& range, const T& value)
+         namespace detail
          {
-            return range::make( std::find( std::begin( range), std::end( range), value), std::end( range));
+            //! associate container specialization
+            template< typename R, typename T>
+            auto find( R&& range, const T& value, traits::priority::tag< 1>) 
+               -> decltype( range::make( range.find( value), std::end( range)))
+            {
+               return range::make( range.find( value), std::end( range));
+            }
+
+            //! non associate container specialization
+            template< typename R, typename T>
+            auto find( R&& range, const T& value, traits::priority::tag< 0>)
+               -> decltype( range::make( std::find( std::begin( range), std::end( range), value), std::end( range)))
+            {
+               return range::make( std::find( std::begin( range), std::end( range), value), std::end( range));
+            }
+         } // detail
+
+         //! @returns a range [found, end( range)) - empty range if not found.
+         template< typename R, typename T>
+         auto find( R&& range, const T& value)
+            -> decltype( detail::find( std::forward< R>( range), value, traits::priority::tag< 1>{}))
+         {
+            return detail::find( std::forward< R>( range), value, traits::priority::tag< 1>{});
          }
 
          template< typename R, typename P>
@@ -778,6 +791,38 @@ namespace casual
          auto adjacent_find( R&& range)
          {
             return range::make( std::adjacent_find( std::begin( range), std::end( range)), std::end( range));
+         }
+
+         namespace detail
+         {
+            template< typename R, typename T>
+            auto contains( R&& range, const T& value, traits::priority::tag< 2>) 
+               -> decltype( range.contains( value))
+            {
+               return range.contains( value);
+            }
+
+            template< typename R, typename T>
+            auto contains( R&& range, const T& value, traits::priority::tag< 1>) 
+               -> decltype( range.find( value) != std::end( range))
+            {
+               return range.find( value) != std::end( range);
+            }
+            
+            template< typename R, typename T>
+            auto contains( R&& range, const T& value, traits::priority::tag< 0>) 
+               -> decltype( ! algorithm::find( range, value).empty())
+            {
+               return ! algorithm::find( range, value).empty();
+            }
+         } // detail
+
+         //! @returns true if `value` is found in `range` - false othervise
+         template< typename R, typename T>
+         auto contains( R&& range, const T& value)
+            -> decltype( detail::contains( std::forward< R>( range), value, traits::priority::tag< 2>{}))
+         {
+            return detail::contains( std::forward< R>( range), value, traits::priority::tag< 2>{});
          }
 
 

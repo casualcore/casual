@@ -9,7 +9,6 @@
 #include "gateway/manager/admin/server.h"
 
 #include "common/argument.h"
-#include "common/message/queue.h"
 #include "common/terminal.h"
 #include "common/chronology.h"
 #include "common/transcode.h"

@@ -465,7 +465,6 @@ namespace casual
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
                      CASUAL_SERIALIZE( retry);
-
                      CASUAL_SERIALIZE( retries);
                   )
                };
@@ -488,62 +487,70 @@ namespace casual
 
             struct Group
             {
-               std::string name;
+               std::optional< std::string> alias;
                std::optional< std::string> queuebase;
                std::optional< std::string> note;
                std::vector< Queue> queues;
 
+               //! @deprecated
+               std::optional< std::string> name;
+
                CASUAL_CONST_CORRECT_SERIALIZE(
-                  CASUAL_SERIALIZE( name);
+                  CASUAL_SERIALIZE( alias);
                   CASUAL_SERIALIZE( queuebase);
                   CASUAL_SERIALIZE( note);
                   CASUAL_SERIALIZE( queues);
+                  CASUAL_SERIALIZE( name);
                )
             };
 
-            struct Forward
+            namespace forward
             {
                struct Default
                {
-                  struct
+                  struct Service
                   {
-                     std::optional< platform::size::type> instances;
-
-                     struct
+                     struct Reply
                      {
-                        std::optional< std::string> delay;
+                        std::string delay;
 
                         CASUAL_CONST_CORRECT_SERIALIZE(
                            CASUAL_SERIALIZE( delay);
                         )
-                     } reply;
+                     };
+
+                     std::optional< platform::size::type> instances;
+                     std::optional< Reply> reply;
 
                      CASUAL_CONST_CORRECT_SERIALIZE(
                         CASUAL_SERIALIZE( instances);
                         CASUAL_SERIALIZE( reply);
                      )
 
-                  } service;
+                  };
 
-                  struct
+                  struct Queue
                   {
-                     std::optional< platform::size::type> instances;
-
-                     struct
+                     struct Target
                      {
-                        std::optional< std::string> delay;
+                        std::string delay;
 
                         CASUAL_CONST_CORRECT_SERIALIZE(
                            CASUAL_SERIALIZE( delay);
                         )
-                     } target;
+                     };
+
+                     std::optional< platform::size::type> instances;
+                     std::optional< Target> target;
 
                      CASUAL_CONST_CORRECT_SERIALIZE(
                         CASUAL_SERIALIZE( instances);
                         CASUAL_SERIALIZE( target);
                      )
-                  } queue;
+                  };
 
+                  std::optional< Service> service;
+                  std::optional< Queue> queue;
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
                      CASUAL_SERIALIZE( service);
@@ -551,16 +558,14 @@ namespace casual
                   )
                };
 
-               using Source = std::string;
-
                struct forward_base
                {
                   std::optional< std::string> alias;
-                  Source source;
+                  std::string source;
                   std::optional< platform::size::type> instances;
                   std::optional< std::string> note;
 
-                  inline friend bool operator == ( const forward_base& lhs, const forward_base& rhs) { return lhs.alias == rhs.alias;}
+                  //inline friend bool operator == ( const forward_base& lhs, const forward_base& rhs) { return lhs.alias == rhs.alias;}
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
                      CASUAL_SERIALIZE( alias);
@@ -614,12 +619,37 @@ namespace casual
                   )
                };
 
-               std::vector< Service> services;
-               std::vector< Queue> queues;
+               struct Group
+               {
+                  std::optional< std::string> alias;
+                  std::optional< std::vector< forward::Service>> services;
+                  std::optional< std::vector< forward::Queue>> queues;
+                  std::optional< std::string> note;
+
+                  Group& operator += ( Group rhs);
+
+                  CASUAL_CONST_CORRECT_SERIALIZE(
+                     CASUAL_SERIALIZE( alias);
+                     CASUAL_SERIALIZE( note);
+                     CASUAL_SERIALIZE( services);
+                     CASUAL_SERIALIZE( queues);
+                  )
+               };
+            } // forward
+
+            struct Forward
+            {
+               std::optional< forward::Default> defaults;
+               std::optional< std::vector< forward::Group>> groups;
+
+               Forward& operator += ( Forward rhs);
+
+               //! normalizes the 'forward', mostly to set default values
+               void normalize();
 
                CASUAL_CONST_CORRECT_SERIALIZE(
-                  CASUAL_SERIALIZE( services);
-                  CASUAL_SERIALIZE( queues);
+                  CASUAL_SERIALIZE_NAME( defaults, "default");
+                  CASUAL_SERIALIZE( groups);
                )
             };
 
@@ -627,20 +657,18 @@ namespace casual
             {
                struct Default
                {
-                  Queue::Default queue;
-                  Forward::Default forward;
-                  std::string directory;
+                  std::optional< Queue::Default> queue;
+                  std::optional< std::string> directory;
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
                      CASUAL_SERIALIZE( queue);
-                     CASUAL_SERIALIZE( forward);
                      CASUAL_SERIALIZE( directory);
                   )
                };
 
                std::optional< Default> defaults;
-               std::vector< Group> groups;
-               Forward forward;
+               std::optional< std::vector< Group>> groups;
+               std::optional< Forward> forward;
 
                std::optional< std::string> note;
 
@@ -650,10 +678,10 @@ namespace casual
                void normalize();
 
                CASUAL_CONST_CORRECT_SERIALIZE(
+                  CASUAL_SERIALIZE( note);
                   CASUAL_SERIALIZE_NAME( defaults, "default");
                   CASUAL_SERIALIZE( groups);
                   CASUAL_SERIALIZE( forward);
-                  CASUAL_SERIALIZE( note);
                )
             };
 
@@ -664,12 +692,14 @@ namespace casual
          {
             struct Default
             {
-               Environment environment;
                std::optional< executable::Default> server;
                std::optional< executable::Default> executable;
                std::optional< service::Default> service;
 
                Default& operator += ( Default rhs);
+
+               //! @deprecated
+               std::optional< Environment> environment;
 
                CASUAL_CONST_CORRECT_SERIALIZE(
                   CASUAL_SERIALIZE( environment);
@@ -686,6 +716,8 @@ namespace casual
             std::string name;
             std::optional< std::string> note;
             std::optional< domain::Default> defaults;
+
+            std::optional< Environment> environment;
 
             std::optional< transaction::Manager> transaction;
 
@@ -707,6 +739,7 @@ namespace casual
                CASUAL_SERIALIZE( name);
                CASUAL_SERIALIZE( note);
                CASUAL_SERIALIZE_NAME( defaults, "default");
+               CASUAL_SERIALIZE( environment);
                CASUAL_SERIALIZE( transaction);
                CASUAL_SERIALIZE( groups);
                CASUAL_SERIALIZE( servers);

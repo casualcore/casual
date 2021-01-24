@@ -146,6 +146,31 @@ namespace casual
          EXPECT_TRUE( sequence == expected);
       }
 
+      TEST_P( archive_maker, consume_archive__validate_unnamed_sequence__expect_no_throw)
+      {
+         common::unittest::Trace trace;
+         
+         const std::vector< int> expected{ 42, 43};
+
+         auto writer = serialize::create::writer::from( this->param());
+         writer << expected;
+
+         auto stream = writer.consume< std::stringstream>();
+
+         auto textual = stream.str();
+         auto reader = serialize::create::reader::consumed::from( this->param(), stream);
+
+         std::vector< int> sequence;
+
+         reader >> sequence;
+
+         EXPECT_NO_THROW({  
+            reader.validate();
+         }) << "textual: " << textual;
+
+         EXPECT_TRUE( sequence == expected);
+      }
+
 
 
       TEST_P( archive_maker, consume_archive__composite_validate__expect_no_throw)

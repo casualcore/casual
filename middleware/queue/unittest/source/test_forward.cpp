@@ -6,9 +6,7 @@
 
 #include "common/unittest.h"
 
-#include "queue/group/group.h"
 #include "queue/common/queue.h"
-#include "queue/common/transform.h"
 #include "queue/api/queue.h"
 #include "queue/manager/admin/model.h"
 #include "queue/manager/admin/services.h"
@@ -36,6 +34,7 @@
 
 namespace casual
 {
+   using namespace common;
    namespace queue
    {
       namespace local
@@ -49,7 +48,7 @@ namespace casual
 
                Domain() : Domain{ Domain::configuration} {}
 
-               domain::manager::unittest::Process domain;
+               casual::domain::manager::unittest::Process domain;
 
                static constexpr auto configuration = R"(
 domain: 
@@ -66,7 +65,6 @@ domain:
       - path: "${CASUAL_HOME}/bin/casual-transaction-manager"
         memberships: [ base]
       - path: "./bin/casual-queue-manager"
-        arguments: [ --executable-path, './bin']
         memberships: [ queue]
 
    queue:
@@ -76,21 +74,21 @@ domain:
                count: 3
 
       groups:
-         - name: a
+         - alias: a
            queuebase: ":memory:"
            queues:
             - name: a1
             - name: a2
             - name: a3
             - name: a4
-         - name: b
+         - alias: b
            queuebase: ":memory:"
            queues:
             - name: b1
             - name: b2
             - name: b3
             - name: b4
-         - name: c
+         - alias: c
            queuebase: ":memory:"
            queues:
             - name: c1
@@ -100,57 +98,59 @@ domain:
 
 
       forward:
-         services:
-            - alias: foo
-              source: a1
-              target: 
-                  service: queue/unittest/service
-              instances: 4
-              reply:
-                  queue: b1
-            - alias: bar
-              source: a2
-              target: 
-                  service: queue/unittest/service
-              instances: 4
-              reply:
-                  queue: b2
-            - source: a3
-              target: 
-                  service: queue/unittest/service
-              instances: 4
-              reply:
-                  queue: b3
+         groups:
+            -  alias: forward-group-1
+               services:
+                  -  alias: foo
+                     source: a1
+                     target: 
+                        service: queue/unittest/service
+                     instances: 4
+                     reply:
+                        queue: b1
+                  -  alias: bar
+                     source: a2
+                     target: 
+                        service: queue/unittest/service
+                     instances: 4
+                     reply:
+                        queue: b2
+                  -  source: a3
+                     target: 
+                        service: queue/unittest/service
+                     instances: 1
+                     reply:
+                        queue: b3
 
-            - source: x1
-              target: 
-                 service: queue/unittest/service
-              instances: 4
-              reply:
-                  queue: b1
+                  -  source: x1
+                     target: 
+                        service: queue/unittest/service
+                     instances: 4
+                     reply:
+                        queue: b1
 
-         queues:
-            - source: a4
-              target:
-                  queue: b4
-                  delay: 10ms
-              instances: 2 
-              
-              # a forward 'chain' from c1 -> c4 
-            - source: c1
-              target:
-                  queue: c2
-              instances: 1
+               queues:
+                  -  source: a4
+                     target:
+                        queue: b4
+                        delay: 10ms
+                     instances: 2 
+                  
+                  # a forward 'chain' from c1 -> c4 
+                  -  source: c1
+                     target:
+                        queue: c2
+                     instances: 1
 
-            - source: c2
-              target:
-                  queue: c3
-              instances: 1
+                  -  source: c2
+                     target:
+                        queue: c3
+                     instances: 1
 
-            - source: c3
-              target:
-                  queue: c4
-              instances: 1
+                  -  source: c3
+                     target:
+                        queue: c4
+                     instances: 1
 )";
             };
 
@@ -254,7 +254,45 @@ domain:
       {
          common::unittest::Trace trace;
 
-         local::Domain domain;
+         constexpr auto configuration = R"(
+domain: 
+   name: service-forward
+
+   groups: 
+      -  name: base
+      -  name: queue
+         dependencies: [ base]
+
+   servers:
+      -  path: "${CASUAL_HOME}/bin/casual-service-manager"
+         memberships: [ base]
+      -  path: "${CASUAL_HOME}/bin/casual-transaction-manager"
+         memberships: [ base]
+      -  path: "bin/casual-queue-manager"
+         memberships: [ queue]
+
+   queue:
+      groups:
+         -  alias: a
+            queuebase: ":memory:"
+            queues:
+               - name: a1
+               - name: a2
+
+      forward:
+         groups:
+            -  alias: forward-group-1
+               services:
+                  -  alias: foo
+                     source: a1
+                     target: 
+                        service: queue/unittest/service
+                     instances: 1
+                     reply:
+                        queue: a2
+)";
+
+         local::Domain domain{ configuration};
 
          casual::service::unittest::advertise( { "queue/unittest/service"});
 
@@ -266,8 +304,10 @@ domain:
             message.payload.type = common::buffer::type::binary();
             message.payload.data = payload;
 
-            queue::enqueue( "a3", message);
+            queue::enqueue( "a1", message);
          }
+
+         signal::timer::Scoped alarm{ std::chrono::seconds{ 5}};
 
          // we expect to get a forward call
          {
@@ -285,9 +325,9 @@ domain:
             common::communication::device::blocking::send( request.process.ipc, reply);
          }
 
-         // we expect the reply to be enqueued to b3
+         // we expect the reply to be enqueued to a2
          {
-            auto message = queue::blocking::dequeue( "b3");
+            auto message = queue::blocking::dequeue( "a2");
             EXPECT_TRUE( message.payload.data == payload);
             EXPECT_TRUE( message.payload.type == common::buffer::type::binary());
          }
@@ -403,27 +443,19 @@ domain:
    name: forward-domain
 
    groups: 
-      - name: base
-      - name: queue
-        dependencies: [ base]
+      -  name: base
+      -  name: queue
+         dependencies: [ base]
 
    servers:
-      - path: "${CASUAL_HOME}/bin/casual-service-manager"
-        memberships: [ base]
-      - path: "${CASUAL_HOME}/bin/casual-transaction-manager"
-        memberships: [ base]
-      - path: "./bin/casual-queue-manager"
-        arguments: [ --executable-path, './bin']
-        memberships: [ queue]
+      -  path: "${CASUAL_HOME}/bin/casual-service-manager"
+         memberships: [ base]
+      -  path: "${CASUAL_HOME}/bin/casual-transaction-manager"
+         memberships: [ base]
+      -  path: "./bin/casual-queue-manager"
+         memberships: [ queue]
 
    queue:
-      default:
-         forward: 
-            service:
-               instances: 0
-            queue:
-               instances: 0
-
       groups:
          - name: a
            queuebase: ":memory:"
@@ -439,23 +471,30 @@ domain:
             - name: b3
 
       forward:
-         services:
-            - source: a1
-              target: 
-                  service: queue/unittest/service
-              reply:
-                  queue: b1
-         queues:
-            # circle...
-            - source: b1
-              target:
-                  queue: b2
-            - source: b2
-              target:
-                  queue: b3
-            - source: b3
-              target:
-                  queue: b1
+         default:
+            service:
+               instances: 0
+            queue:
+               instances: 0
+         groups:
+            -  alias: forward-group-1
+               services:
+                  -  source: a1
+                     target: 
+                        service: queue/unittest/service
+                     reply:
+                        queue: b1
+               queues:
+                  # circle...
+                  -  source: b1
+                     target:
+                        queue: b2
+                  -  source: b2
+                     target:
+                        queue: b3
+                  -  source: b3
+                     target:
+                        queue: b1
 )";
 
          local::Domain domain{ configuration};
