@@ -16,92 +16,89 @@
 
 namespace casual
 {
-   namespace common
+   namespace common::event
    {
-      namespace event
+      namespace detail
       {
-         namespace detail
-         {
-            
-            void send( communication::message::Complete&& message);
+         
+         void send( communication::message::Complete&& message);
 
-            using Severity = message::event::Error::Severity;
-            void send( std::error_code code, Severity severity, std::string message);
-         } // detail
+         using Severity = message::event::Error::Severity;
+         void send( std::error_code code, Severity severity, std::string message);
+      } // detail
 
-         template< typename Event>
-         constexpr void send( Event&& event)
+      template< typename Event>
+      constexpr void send( Event&& event)
+      {
+         static_assert( message::is::event::message< std::decay_t< Event>>(), "only events can be sent");
+         detail::send( serialize::native::complete( std::forward< Event>( event)));
+      }
+
+      namespace error
+      {
+         using Severity = message::event::Error::Severity;
+
+         //! Sends an error event to domain manager, that will forward the event
+         //! to possible listeners
+         template< typename Code, typename... Ts>
+         void send( Code code, Severity severity, Ts&&... ts)
          {
-            static_assert( message::is::event::message< std::decay_t< Event>>(), "only events can be sent");
-            detail::send( serialize::native::complete( std::forward< Event>( event)));
+            detail::send( code, severity, string::compose( std::forward< Ts>( ts)...));
          }
 
-         namespace error
+         //! Sends an error event (with severity error) to domain manager, that will forward the event
+         //! to possible listeners
+         template< typename Code, typename... Ts>
+         auto send( Code code, Ts&&... ts)
          {
-            using Severity = message::event::Error::Severity;
+            detail::send( code, Severity::error, string::compose( std::forward< Ts>( ts)...));
+         }
 
-            //! Sends an error event to domain manager, that will forward the event
-            //! to possible listeners
-            template< typename Code, typename... Ts>
-            void send( Code code, Severity severity, Ts&&... ts)
-            {
-               detail::send( code, severity, string::compose( std::forward< Ts>( ts)...));
-            }
-
-            //! Sends an error event (with severity error) to domain manager, that will forward the event
-            //! to possible listeners
-            template< typename Code, typename... Ts>
-            auto send( Code code, Ts&&... ts)
-            {
-               detail::send( code, Severity::error, string::compose( std::forward< Ts>( ts)...));
-            }
-
-            //! Sends an error event to domain manager, that will forward the event
-            //! to possible listeners
-            //! then: raise the code
-            template< typename Code, typename... Ts>
-            void raise( Code code, Severity severity, Ts&&... ts)
-            {
-               auto message = string::compose( std::forward< Ts>( ts)...);
-               detail::send( code, severity, message);
-               code::raise::error( code, message);
-            }
-
-            //! Sends an error event (with severity error) to domain manager, that will forward the event
-            //! to possible listeners
-            //! then: raise the code
-            template< typename Code, typename... Ts>
-            [[noreturn]] void raise( Code code, Ts&&... ts)
-            {
-               auto message = string::compose( std::forward< Ts>( ts)...);
-               detail::send( code, Severity::error, message);
-               code::raise::error( code, message);
-            }
-
-
-         } // error
-
-         namespace guard
+         //! Sends an error event to domain manager, that will forward the event
+         //! to possible listeners
+         //! then: raise the code
+         template< typename Code, typename... Ts>
+         void raise( Code code, Severity severity, Ts&&... ts)
          {
-            //! sends a fatal error if an exception is thrown
-            template< typename F, typename... Ts>
-            auto fatal( F&& functor, Ts&&... ts)
-            {
-               try
-               {
-                  return functor( std::forward< Ts>( ts)...);
-               }
-               catch( ...)
-               {
-                  auto code = exception::code();
-                  event::error::send( code, event::error::Severity::fatal);
-                  throw code;
-               }
-            }
-         } // guard
+            auto message = string::compose( std::forward< Ts>( ts)...);
+            detail::send( code, severity, message);
+            code::raise::error( code, message);
+         }
 
-      } // event
-   } // common
+         //! Sends an error event (with severity error) to domain manager, that will forward the event
+         //! to possible listeners
+         //! then: raise the code
+         template< typename Code, typename... Ts>
+         [[noreturn]] void raise( Code code, Ts&&... ts)
+         {
+            auto message = string::compose( std::forward< Ts>( ts)...);
+            detail::send( code, Severity::error, message);
+            code::raise::error( code, message);
+         }
+
+
+      } // error
+
+      namespace guard
+      {
+         //! sends a fatal error if an exception is thrown
+         template< typename F, typename... Ts>
+         auto fatal( F&& functor, Ts&&... ts)
+         {
+            try
+            {
+               return functor( std::forward< Ts>( ts)...);
+            }
+            catch( ...)
+            {
+               auto code = exception::code();
+               event::error::send( code, event::error::Severity::fatal);
+               throw code;
+            }
+         }
+      } // guard
+
+   } // common::event
 } // casual
 
 

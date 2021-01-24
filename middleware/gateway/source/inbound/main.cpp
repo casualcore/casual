@@ -113,6 +113,10 @@ namespace casual
                               algorithm::transform( state.listeners, []( auto& listener){ return listener.socket.descriptor();}));
 
                            log::line( verbose::log, "state: ", state);
+
+                           // send reply
+                           communication::device::blocking::optional::send(
+                              message.process.ipc, common::message::reverse::type( message, common::process::handle()));
                         };
                      }
                   } // configuration::update

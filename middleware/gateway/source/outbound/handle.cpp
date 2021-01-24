@@ -12,6 +12,7 @@
 
 #include "common/communication/instance.h"
 #include "common/message/handle.h"
+#include "common/event/send.h"
 
 namespace casual
 {
@@ -19,7 +20,6 @@ namespace casual
 
    namespace gateway::outbound::handle
    {
-
       namespace local
       {
          namespace
@@ -538,7 +538,10 @@ namespace casual
                                  send_request( state, message, information->configuration, destination),
                                  std::move( callback)
                               );
-                           }                              
+                           }
+
+                           // send event to enable others to use us to discover
+                           common::event::send( common::message::event::discoverable::Avaliable{ common::process::handle()});                           
 
                            log::line( verbose::log, "information: ", *information);
                         }

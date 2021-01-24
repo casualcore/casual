@@ -193,6 +193,10 @@ namespace casual
 
                            // we might got some addresses to try...
                            external::connect( state);
+
+                           // send reply
+                           communication::device::blocking::optional::send(
+                              message.process.ipc, common::message::reverse::type( message, common::process::handle()));
                         };
                      }
                   } // configuration::update

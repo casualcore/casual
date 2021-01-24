@@ -608,7 +608,7 @@ namespace casual
                      {
                         return [&state]( common::message::event::Error& message)
                         {
-                           Trace trace{ "domain::manager::handle::event::Error"};
+                           Trace trace{ "domain::manager::handle::event::error"};
 
                            log::line( verbose::log, "message: ", message);
 
@@ -631,7 +631,7 @@ namespace casual
                      {
                         return [&state]( common::message::event::Task& message)
                         {
-                           Trace trace{ "domain::manager::handle::local::event::general::task"};
+                           Trace trace{ "domain::manager::handle::local::event::task"};
                            log::line( verbose::log, "message: ", message);
 
                            manager::task::event::dispatch( state, [&message](){ return message;});
@@ -644,13 +644,27 @@ namespace casual
                         {
                            return [&state]( common::message::event::sub::Task& message)
                            {
-                              Trace trace{ "domain::manager::handle::local::event::general::sub::task"};
+                              Trace trace{ "domain::manager::handle::local::event::sub::task"};
                               log::line( verbose::log, "message: ", message);
 
                               manager::task::event::dispatch( state, [&message](){ return message;});
                            };
                         }
                      } // task
+
+                     namespace discoverable
+                     {
+                        auto available( State& state)
+                        {
+                           return [&state]( common::message::event::discoverable::Avaliable& event)
+                           {
+                              Trace trace{ "domain::manager::handle::local::event::discoverable::available"};
+                              log::line( verbose::log, "event: ", event);
+
+                              manager::task::event::dispatch( state, [&event](){ return event;});
+                           };
+                        }
+                     } // discoverable
                    } // event
 
                   namespace process
@@ -955,6 +969,7 @@ namespace casual
                handle::local::event::error( state),
                handle::local::event::task( state),
                handle::local::event::sub::task( state),
+               handle::local::event::discoverable::available( state),
                handle::local::process::connect( state),
                handle::local::process::lookup( state),
                handle::local::configuration::request( state),

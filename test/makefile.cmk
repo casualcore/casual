@@ -54,6 +54,7 @@ unittest_object = [
    Compile( 'unittest/source/domain/xatmi/test_conversation.cpp'),
    Compile( 'unittest/source/domain/xatmi/test_start.cpp'),
    Compile( 'unittest/source/domain/test_transaction.cpp'),
+   Compile( 'unittest/source/domain/test_gateway.cpp'),
    Compile( 'unittest/source/domain/gateway/test_reverse.cpp'),
 ]
 
@@ -68,6 +69,7 @@ LinkUnittest( 'unittest/bin/test-casual-basic',
       'casual-common', 
       'casual-buffer',
       'casual-xatmi', 
+      'casual-queue-api',
       'casual-unittest',
       'casual-mockup-rm',
       'casual-domain-unittest',

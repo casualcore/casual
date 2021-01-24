@@ -360,7 +360,8 @@ namespace casual
                common::message::event::process::Exit,
                common::message::event::Task,
                common::message::event::sub::Task,
-               common::message::event::Error
+               common::message::event::Error,
+               common::message::event::discoverable::Avaliable
             > event;
 
 

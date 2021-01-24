@@ -86,8 +86,27 @@ namespace casual
 
                      algorithm::trim( state.pending.lookups, algorithm::remove_if( state.pending.lookups, lookup_replied));
                   }
+
+
        
                } // check::pending
+
+               namespace discovery
+               {
+                  auto send( std::vector< std::string> queues, const Uuid& correlation = uuid::make())
+                  {
+                     Trace trace{ "queue::manager::handle::local::discovery::send"};
+
+                     common::message::gateway::domain::discover::Request request{ common::process::handle()};
+                     request.correlation = correlation;
+                     request.domain = common::domain::identity();
+                     request.queues = std::move( queues);
+
+                     log::line( verbose::log, "request: ", request);
+
+                     return communication::device::blocking::optional::send( ipc::manager::optional::gateway(), std::move( request));
+                  }
+               }
             } // <unnamed>
          } // local
 
@@ -110,18 +129,42 @@ namespace casual
          {
             namespace
             {
-               namespace process
+               namespace event
                {
-                  auto exit( State& state)
+                  namespace process
                   {
-                     return [&state]( const common::message::event::process::Exit& message)
+                     auto exit( State& state)
                      {
-                        Trace trace{ "queue::manager::handle::local::process::exit"};
-                        common::log::line( verbose::log, "message: ", message);
-                        state.remove( message.state.pid);
-                     };
-                  }
-               } // process
+                        return [&state]( const common::message::event::process::Exit& event)
+                        {
+                           Trace trace{ "queue::manager::handle::local::event::process::exit"};
+                           common::log::line( verbose::log, "event: ", event);
+                           state.remove( event.state.pid);
+                        };
+                     }
+                  } // process
+
+                  namespace discoverable
+                  {
+                     auto available( State& state)
+                     {
+                        return [&state]( const common::message::event::discoverable::Avaliable& event)
+                        {
+                           Trace trace{ "queue::manager::handle::local::event::discoverable::available"};
+                           common::log::line( verbose::log, "event: ", event);
+
+                           auto queues = algorithm::transform( state.pending.lookups, []( auto& pending){ return pending.name;});
+
+                           algorithm::trim( queues, algorithm::unique( algorithm::sort( queues)));
+
+                           if( ! queues.empty())
+                              local::discovery::send( std::move( queues));
+                        };
+                     }
+                     
+                  } // discoverable
+                  
+               } // event
 
                namespace shutdown
                {
@@ -184,13 +227,7 @@ namespace casual
 
                            common::log::line( log, "queue not found - ", message.name);
 
-                           common::message::gateway::domain::discover::Request request;
-                           request.correlation = message.correlation;
-                           request.domain = common::domain::identity();
-                           request.process = common::process::handle();
-                           request.queues.push_back(  message.name);
-
-                           if( communication::device::blocking::optional::send( ipc::manager::optional::gateway(), std::move( request)) 
+                           if( local::discovery::send( { message.name}, message.correlation)
                               || message.context == decltype( message.context)::wait)
                            {
                               // either we've sent a discovery or the lookup want's to wait (possible for ever).
@@ -413,8 +450,6 @@ namespace casual
       {
          return common::message::dispatch::handler( ipc::device(),
             common::message::handle::defaults( ipc::device()),
-
-            common::event::listener( handle::local::process::exit( state)),
             
             handle::local::group::connect( state),
             handle::local::group::configuration::update::reply( state),
@@ -431,7 +466,10 @@ namespace casual
             handle::local::domain::discover::reply( state),
 
             handle::local::shutdown::request( state),
-            handle::local::process::exit( state),
+            common::event::listener( 
+               handle::local::event::process::exit( state),
+               handle::local::event::discoverable::available( state)
+            ),
 
             common::server::handle::admin::Call{
                manager::admin::services( state)}

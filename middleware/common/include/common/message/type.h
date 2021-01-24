@@ -112,6 +112,9 @@ namespace casual
             event_process_spawn,
             event_process_exit,
 
+            // sent from _processes_ that can be discovered
+            event_discoverable_avaliable,
+
             // internal domain events
             event_domain_information,
 

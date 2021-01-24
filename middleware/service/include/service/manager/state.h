@@ -70,9 +70,9 @@ namespace casual
                   inline friend bool operator < ( const base_instance& lhs, const base_instance& rhs) { return lhs.process.pid < rhs.process.pid;}
                   inline friend bool operator == ( const base_instance& lhs, common::strong::process::id rhs) { return lhs.process.pid == rhs;}
 
-                  CASUAL_LOG_SERIALIZE({
+                  CASUAL_LOG_SERIALIZE(
                      CASUAL_SERIALIZE( process);
-                  })
+                  )
                };
 
 
@@ -117,13 +117,12 @@ namespace casual
                   friend std::ostream& operator << ( std::ostream& out, State value);
 
                   CASUAL_LOG_SERIALIZE(
-                  {
                      base_instance::serialize( archive);   
                      CASUAL_SERIALIZE_NAME( m_service, "service");
                      CASUAL_SERIALIZE_NAME( m_caller, "caller");
                      CASUAL_SERIALIZE_NAME( m_correlation, "correlation");
                      CASUAL_SERIALIZE_NAME( m_services, "services");
-                  })
+                  )
 
                private:
                   state::Service* m_service = nullptr;
@@ -143,10 +142,9 @@ namespace casual
                   friend bool operator < ( const Concurrent& lhs, const Concurrent& rhs);
 
                   CASUAL_LOG_SERIALIZE(
-                  {
                      base_instance::serialize( archive);   
                      CASUAL_SERIALIZE( order);
-                  })
+                  )
                };
 
             } // instance
