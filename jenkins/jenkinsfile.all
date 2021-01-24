@@ -139,7 +139,7 @@ cd $CASUAL_REPO_ROOT && \
       casual-make --no-colors clean && \
       casual-make --no-colors -d -a --use-valgrind compile && \
       casual-make --no-colors -d -a --use-valgrind link && \
-      ISOLATED_UNITTEST_DIRECTIVES="--gtest_color=no --gtest_output='xml:report.xml'" casual-make --no-colors test > /dev/null && \
+      ISOLATED_UNITTEST_DIRECTIVES="--gtest_color=no --gtest_output='xml:report.xml'" casual-make --no-colors test && \
       mkdir -p $CASUAL_REPO_ROOT/coverage && \
       casual-make --no-colors make && \
       casual-make --no-colors clean && \
