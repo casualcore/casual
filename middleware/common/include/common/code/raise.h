@@ -31,14 +31,14 @@ namespace casual
             template< typename Code>
             [[noreturn]] void generic( Code code, std::ostream& category) noexcept( false)
             {
-               common::log::line( category, code);
+               common::stream::write( category, code, '\n');
                raise::condition( code);
             }
 
             template< typename Code, typename... Ts>
             [[noreturn]] void generic( Code code, std::ostream& category, Ts&&... ts) noexcept( false)
             {
-               common::log::line( category, code, ' ', std::forward< Ts>( ts)...);
+               common::stream::write( category, code, ' ', std::forward< Ts>( ts)..., '\n');
                raise::condition( code);
             }
             

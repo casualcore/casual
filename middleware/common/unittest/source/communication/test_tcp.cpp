@@ -29,7 +29,7 @@ namespace casual
                   {
                      tcp::Listener listener{ std::move( address)};
 
-                     std::vector< tcp::Socket> connections;
+                     std::vector< Socket> connections;
 
                      while( true)
                      {
@@ -118,7 +118,7 @@ namespace casual
 
             unittest::Thread server{ &local::simple_server, address};
 
-            std::vector< tcp::Socket> connections;
+            std::vector< Socket> connections;
 
             algorithm::for_n< 10>( [&](){
                connections.push_back( tcp::retry::connect( address, { { std::chrono::milliseconds{ 1}, 0}}));
@@ -134,7 +134,7 @@ namespace casual
             {
                namespace echo
                {
-                  void worker( tcp::Socket&& socket)
+                  void worker( Socket&& socket)
                   {
                      try
                      {
@@ -219,7 +219,7 @@ namespace casual
 
             unittest::Thread server{ &local::echo::server, address};
 
-            std::vector< tcp::Socket> connections( 10);
+            std::vector< Socket> connections( 10);
 
             for( auto& socket : connections)
             {

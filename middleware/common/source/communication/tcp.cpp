@@ -164,11 +164,14 @@ namespace casual
                         for( auto& info : native)
                         {
                            auto socket = Socket{ 
-                              descriptor_type{ ::socket( info.ai_family, info.ai_socktype, info.ai_protocol)}};
+                              strong::socket::id{ ::socket( info.ai_family, info.ai_socktype, info.ai_protocol)}};
 
                            if( socket && binder( socket, info))
                            {
                               socket.set( local::socket::option::no_delay{});
+
+                              // make sure we honour keepalive
+                              socket.set( communication::socket::option::keepalive< true>{});
                               return socket; 
                            }
                         }
@@ -187,8 +190,7 @@ namespace casual
                         {
                            Trace trace( "common::communication::tcp::local::socket::connect lambda");
 
-                           // To avoid possible TIME_WAIT from previous
-                           // possible connections
+                           // To avoid possible TIME_WAIT from previous possible connections
                            socket.set( communication::socket::option::reuse_address< true>{});
                            socket.set( communication::socket::option::linger{ std::chrono::seconds{ 1}});
 
@@ -242,7 +244,7 @@ namespace casual
                         return { string::compose( host, ':', serv)};
                      }
 
-                     Socket accept( const descriptor_type descriptor)
+                     Socket accept( const strong::socket::id descriptor)
                      {
                         auto result = ::accept( descriptor.value(), nullptr, nullptr);
 
@@ -254,8 +256,10 @@ namespace casual
                            code::system::raise( "accept");
                         }
 
-                        Socket socket{ descriptor_type{ result}};
+                        Socket socket{ strong::socket::id{ result}};
                         socket.set( socket::option::no_delay{});
+                        // make sure we honour keepalive.
+                        socket.set( communication::socket::option::keepalive< true>{});
                         return socket;
                      }
                   } // socket
@@ -286,7 +290,7 @@ namespace casual
             {
                namespace address
                {
-                  Address host( const descriptor_type descriptor)
+                  Address host( const strong::socket::id descriptor)
                   {
                      struct sockaddr info{ };
                      socklen_t size = sizeof( info);
@@ -303,7 +307,7 @@ namespace casual
                      return host( socket.descriptor());
                   }
 
-                  Address peer( const descriptor_type descriptor)
+                  Address peer( const strong::socket::id descriptor)
                   {
                      struct sockaddr info{ };
                      socklen_t size = sizeof( info);
@@ -419,14 +423,14 @@ namespace casual
                   namespace
                   {
 
-                     ssize_t send( const descriptor_type descriptor, const void* const data, size_type const size, common::Flags< Flag> flags)
+                     ssize_t send( const strong::socket::id descriptor, const void* const data, platform::size::type const size, common::Flags< Flag> flags)
                      {
                         return posix::result( 
                            ::send( descriptor.value(), data, size, flags.underlaying()));
                      }
 
                      char* receive(
-                           const descriptor_type descriptor,
+                           const strong::socket::id descriptor,
                            char* first,
                            char* const last,
                            common::Flags< Flag> flags)

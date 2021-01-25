@@ -52,9 +52,10 @@ domain:
       - path: "${CASUAL_REPOSITORY_ROOT}/middleware/example/server/bin/casual-example-server"
         memberships: [ user]
    gateway:
-      inbounds:
-         - connections: 
-            - address: 127.0.0.1:6669
+      inbound:
+         groups:
+            -  connections: 
+               -  address: 127.0.0.1:6669
 )";
 
          constexpr auto B = R"(
@@ -96,9 +97,10 @@ domain:
                         queue: a2
    
    gateway:
-      outbounds:
-         - connections:
-            - address: 127.0.0.1:6669
+      outbound:
+         groups:
+            -  connections:
+                  -  address: 127.0.0.1:6669
 )";
 
       

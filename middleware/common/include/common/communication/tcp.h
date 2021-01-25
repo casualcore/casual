@@ -27,13 +27,6 @@ namespace casual
 {
    namespace common::communication::tcp
    {
-    
-      using size_type = platform::size::type;
-      using descriptor_type = communication::socket::descriptor_type;
-
-      using Socket = communication::Socket;
-
-
       struct Address
       {
          Address() = default;
@@ -55,11 +48,11 @@ namespace casual
          namespace address
          {
             //! @return The address to which the socket is bound to on local host
-            Address host( descriptor_type descriptor);
+            Address host( strong::socket::id descriptor);
             Address host( const Socket& socket);
 
             //! @return The address of the peer connected to the socket
-            Address peer( descriptor_type descriptor);
+            Address peer( strong::socket::id descriptor);
             Address peer( const Socket& socket);
 
          } // address
@@ -113,8 +106,8 @@ namespace casual
       {
          struct Policy
          {
-            static constexpr size_type message_size() { return platform::tcp::message::size;}
-            static constexpr size_type header_size( size_type header_size, size_type type_size) { return header_size + type_size;}
+            static constexpr platform::size::type message_size() { return platform::tcp::message::size;}
+            static constexpr platform::size::type header_size( platform::size::type header_size, platform::size::type type_size) { return header_size + type_size;}
          };
 
       } // message

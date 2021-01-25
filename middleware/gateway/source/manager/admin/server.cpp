@@ -32,6 +32,8 @@ namespace casual
                {
                   return [&state]( common::service::invoke::Parameter&& parameter)
                   {
+                     Trace trace{ "gateway::manager::admin::local::service::state"};
+
                      auto get_state = []( auto& state)
                      {
                         auto request_state = []( auto&& range, auto&& message)

@@ -21,8 +21,6 @@ namespace casual
       {
          namespace socket
          {
-            using descriptor_type = strong::socket::id;
-
             namespace option
             {
                template< int option_value>
@@ -38,11 +36,15 @@ namespace casual
                   constexpr static int value() { return on ? 1 : 0;}
                };
 
-               template< bool on> 
+               template< bool on = true> 
                struct reuse_address : on_base< SO_REUSEADDR, on> {}; 
+
+               template< bool on = true> 
+               struct keepalive : on_base< SO_KEEPALIVE, on> {};
 
                struct linger : base< SO_LINGER> 
                {
+                  linger() = default;
                   linger( std::chrono::seconds time) : m_time( time) {}
 
                   auto value()
@@ -50,7 +52,7 @@ namespace casual
                      // using linger defined in sys/socket.h
                      return ::linger{ 1, static_cast< int>( m_time.count())};
                   }
-                  std::chrono::seconds m_time;
+                  std::chrono::seconds m_time{};
                };
 
                enum class File 
@@ -66,11 +68,8 @@ namespace casual
          {
          public:
 
-            using descriptor_type = socket::descriptor_type;
-            using size_type = platform::size::type;
-
             Socket() noexcept = default;
-            explicit Socket( descriptor_type descriptor) noexcept;
+            explicit Socket( strong::socket::id descriptor) noexcept;
             ~Socket() noexcept;
 
             Socket( const Socket&);
@@ -85,9 +84,9 @@ namespace casual
             //! Releases the responsibility of the socket
             //!
             //! @return descriptor
-            descriptor_type release() noexcept;
+            strong::socket::id release() noexcept;
 
-            descriptor_type descriptor() const noexcept;
+            strong::socket::id descriptor() const noexcept;
 
             //! return SO_ERROR from getsockopt
             std::errc error() const;
@@ -96,23 +95,30 @@ namespace casual
             void set( Option&& option)
             {
                auto&& value = option.value();
-               Socket::option( option.level(), option.option(), &value, sizeof( std::decay_t< decltype( value)>));
+               Socket::set_option( option.level(), option.option(), &value, sizeof( std::decay_t< decltype( value)>));
+            }
+
+            template< typename Option>
+            auto get( Option&& option) const
+            {
+               auto result = option.value();
+               Socket::get_option( option.level(), option.option(), &result, sizeof( std::decay_t< decltype( result)>));
+               return result;
             }
 
             void set( socket::option::File option);
             void unset( socket::option::File option);
 
-            CASUAL_LOG_SERIALIZE(
-               CASUAL_SERIALIZE_NAME( m_descriptor, "descriptor");
-            )
+            friend std::ostream& operator << ( std::ostream& out, const Socket& value);
 
             inline auto tie() const { return std::tie( m_descriptor);}
 
          private:
 
-            void option( int level, int optname, const void *optval, size_type optlen);
+            void set_option( int level, int optname, const void *optval, platform::size::type optlen);
+            void get_option( int level, int optname, void* optval, platform::size::type optlen) const;
 
-            descriptor_type m_descriptor;
+            strong::socket::id m_descriptor;
          };
 
          namespace socket
@@ -121,7 +127,7 @@ namespace casual
             //!
             //! @param descriptor to be duplicated
             //! @return socket that owns the descriptor
-            Socket duplicate( descriptor_type descriptor);
+            Socket duplicate( strong::socket::id descriptor);
 
          } // socket
       

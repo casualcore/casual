@@ -108,7 +108,7 @@ namespace casual
          {
             struct Connection
             {
-               inline explicit Connection( common::communication::tcp::Socket&& socket)
+               inline explicit Connection( common::communication::Socket&& socket)
                   : device{ std::move( socket)} {}
 
                common::communication::tcp::Duplex device;
@@ -147,7 +147,7 @@ namespace casual
          {
             inline void add( 
                common::communication::select::Directive& directive,
-               common::communication::tcp::Socket&& socket, 
+               common::communication::Socket&& socket, 
                configuration::model::gateway::inbound::Connection configuration)
             {
                auto descriptor = socket.descriptor();

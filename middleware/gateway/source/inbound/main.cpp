@@ -42,7 +42,7 @@ namespace casual
             {
                struct Listener
                {
-                  communication::tcp::Socket socket;
+                  communication::Socket socket;
                   configuration::model::gateway::inbound::Connection configuration;
 
                   inline friend bool operator == ( const Listener& lhs, common::strong::file::descriptor::id rhs) { return lhs.socket.descriptor() == rhs;}
