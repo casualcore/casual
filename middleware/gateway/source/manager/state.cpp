@@ -34,18 +34,18 @@ namespace casual
          {
             namespace executable
             {
-               std::string path( const Outbound& value)
+               std::string path( const outbound::Group& value)
                {
                   if( value.configuration.connect == decltype( value.configuration.connect)::reversed)
-                     return local::path( "casual-gateway-outbound-reverse");
-                  return local::path( "casual-gateway-outbound");
+                     return local::path( "casual-gateway-outbound-reverse-group");
+                  return local::path( "casual-gateway-outbound-group");
                }
 
-               std::string path( const Inbound& value)
+               std::string path( const inbound::Group& value)
                {
                   if( value.configuration.connect == decltype( value.configuration.connect)::reversed)
-                     return local::path( "casual-gateway-inbound-reverse");
-                  return local::path( "casual-gateway-inbound");
+                     return local::path( "casual-gateway-inbound-reverse-group");
+                  return local::path( "casual-gateway-inbound-group");
                }
             
             } // executable
@@ -70,7 +70,7 @@ namespace casual
             if( runlevel() <= Runlevel::running)
                return false;
 
-            return inbounds.empty() && outbounds.empty();
+            return inbound.groups.empty() && outbound.groups.empty();
          }
 
 

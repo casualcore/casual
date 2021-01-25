@@ -58,21 +58,23 @@ domain:
         dependencies: [ base]
    
    servers:
-      - path: "${CASUAL_HOME}/bin/casual-service-manager"
-        memberships: [ base]
-      - path: "${CASUAL_HOME}/bin/casual-transaction-manager"
-        memberships: [ base]
-      - path: "./bin/casual-gateway-manager"
-        memberships: [ gateway]
+      -  path: "${CASUAL_HOME}/bin/casual-service-manager"
+         memberships: [ base]
+      -  path: "${CASUAL_HOME}/bin/casual-transaction-manager"
+         memberships: [ base]
+      -  path: "./bin/casual-gateway-manager"
+         memberships: [ gateway]
    gateway:
-      inbounds:
-         - alias: inbound-1
-           connections: 
-            - address: 127.0.0.1:6669
-      outbounds: 
-         - alias: outbound-1
-           connections:
-            - address: 127.0.0.1:6669
+      inbound:
+         groups:
+            -  alias: inbound-1
+               connections: 
+                  -  address: 127.0.0.1:6669
+      outbound:
+         groups: 
+            -  alias: outbound-1
+               connections:
+                  -  address: 127.0.0.1:6669
 )";
 
             };
@@ -324,33 +326,35 @@ domain:
    name: gateway-domain
 
    groups: 
-      - name: base
-      - name: gateway
-        dependencies: [ base]
+      -  name: base
+      -  name: gateway
+         dependencies: [ base]
    
    servers:
-      - path: "${CASUAL_HOME}/bin/casual-service-manager"
-        memberships: [ base]
-      - path: "${CASUAL_HOME}/bin/casual-transaction-manager"
-        memberships: [ base]
-      - path: "${CASUAL_HOME}/bin/casual-queue-manager"
-        memberships: [ base]
-      - path: "./bin/casual-gateway-manager"
-        memberships: [ gateway]
+      -  path: "${CASUAL_HOME}/bin/casual-service-manager"
+         memberships: [ base]
+      -  path: "${CASUAL_HOME}/bin/casual-transaction-manager"
+         memberships: [ base]
+      -  path: "${CASUAL_HOME}/bin/casual-queue-manager"
+         memberships: [ base]
+      -  path: "./bin/casual-gateway-manager"
+         memberships: [ gateway]
    gateway:
-      inbounds:
-         - connections:
-            - address: 127.0.0.1:6666
-      outbounds: 
-         - connections:
-            - address: 127.0.0.1:6666
-              queues: [ a]
+      inbound:
+         groups:
+            -  connections:
+                  -  address: 127.0.0.1:6666
+      outbound:
+         groups: 
+            -  connections:
+                  -  address: 127.0.0.1:6666
+                     queues: [ a]
    queue:
       groups:
-         - name: A
-           queuebase: ":memory:"
-           queues:
-            - name: a
+         -  name: A
+            queuebase: ":memory:"
+            queues:
+               - name: a
 )";
 
 
@@ -443,33 +447,35 @@ domain:
    name: gateway-domain
 
    groups: 
-      - name: base
-      - name: gateway
-        dependencies: [ base]
+      -  name: base
+      -  name: gateway
+         dependencies: [ base]
    
    servers:
-      - path: "${CASUAL_HOME}/bin/casual-service-manager"
-        memberships: [ base]
-      - path: "${CASUAL_HOME}/bin/casual-transaction-manager"
-        memberships: [ base]
-      - path: "./bin/casual-gateway-manager"
-        memberships: [ gateway]
+      -  path: "${CASUAL_HOME}/bin/casual-service-manager"
+         memberships: [ base]
+      -  path: "${CASUAL_HOME}/bin/casual-transaction-manager"
+         memberships: [ base]
+      -  path: "./bin/casual-gateway-manager"
+         memberships: [ gateway]
    gateway:
-      inbounds: 
-         - connections: 
-            - address: 127.0.0.1:6666
-      outbounds: 
-         - connections:
-            - address: 127.0.0.1:6666
-            - address: 127.0.0.1:6666
-            - address: 127.0.0.1:6666
-            - address: 127.0.0.1:6666
-            - address: 127.0.0.1:6666
-            - address: 127.0.0.1:6666
-            - address: 127.0.0.1:6666
-            - address: 127.0.0.1:6666
-            - address: 127.0.0.1:6666
-            - address: 127.0.0.1:6666
+      inbound: 
+         groups:
+            -  connections: 
+               -  address: 127.0.0.1:6666
+      outbound:
+         groups: 
+            -  connections:
+               -  address: 127.0.0.1:6666
+               -  address: 127.0.0.1:6666
+               -  address: 127.0.0.1:6666
+               -  address: 127.0.0.1:6666
+               -  address: 127.0.0.1:6666
+               -  address: 127.0.0.1:6666
+               -  address: 127.0.0.1:6666
+               -  address: 127.0.0.1:6666
+               -  address: 127.0.0.1:6666
+               -  address: 127.0.0.1:6666
 )";
 
 
@@ -482,7 +488,7 @@ domain:
          EXPECT_TRUE( state.connections.size() == 2 * 10) << state.connections;
       }
 
-      TEST( gateway_manager_tcp, connect_to_our_self__10_outbounds__one_connection_each)
+      TEST( gateway_manager_tcp, connect_to_our_self__10_outbound_groups__one_connection_each)
       {
          common::unittest::Trace trace;
 
@@ -503,30 +509,32 @@ domain:
       - path: "./bin/casual-gateway-manager"
         memberships: [ gateway]
    gateway:
-      inbounds: 
-         - connections: 
-            - address: 127.0.0.1:6666
-      outbounds: 
-         - connections:
-            - address: 127.0.0.1:6666
-         - connections:
-            - address: 127.0.0.1:6666
-         - connections:
-            - address: 127.0.0.1:6666
-         - connections:
-            - address: 127.0.0.1:6666
-         - connections:
-            - address: 127.0.0.1:6666
-         - connections:
-            - address: 127.0.0.1:6666
-         - connections:
-            - address: 127.0.0.1:6666
-         - connections:
-            - address: 127.0.0.1:6666
-         - connections:
-            - address: 127.0.0.1:6666
-         - connections:
-            - address: 127.0.0.1:6666
+      inbound:
+         groups:
+            -  connections: 
+               -  address: 127.0.0.1:6666
+      outbound:
+         groups: 
+            -  connections:
+               - address: 127.0.0.1:6666
+            -  connections:
+               - address: 127.0.0.1:6666
+            -  connections:
+               - address: 127.0.0.1:6666
+            -  connections:
+               - address: 127.0.0.1:6666
+            -  connections:
+               - address: 127.0.0.1:6666
+            -  connections:
+               - address: 127.0.0.1:6666
+            -  connections:
+               - address: 127.0.0.1:6666
+            -  connections:
+               - address: 127.0.0.1:6666
+            -  connections:
+               - address: 127.0.0.1:6666
+            -  connections:
+               - address: 127.0.0.1:6666
 )";
 
 
@@ -600,9 +608,10 @@ domain:
       - path: "./bin/casual-gateway-manager"
         memberships: [ gateway]
    gateway:
-      outbounds:
-         - connections:
-            - address: 127.0.0.1:6666
+      outbound:
+         groups:
+            -  connections:
+               -  address: 127.0.0.1:6666
 )";
 
 
@@ -690,10 +699,11 @@ domain:
       - path: "./bin/casual-gateway-manager"
         memberships: [ gateway]
    gateway:
-      outbounds: 
-         - connections:
-            - address: 127.0.0.1:6666
-            - address: 127.0.0.1:6667
+      outbound:
+         groups: 
+            -  connections:
+               -  address: 127.0.0.1:6666
+               -  address: 127.0.0.1:6667
 )";
 
 
@@ -725,13 +735,15 @@ domain:
       - path: "./bin/casual-gateway-manager"
         memberships: [ gateway]
    gateway:
-      inbounds:
-         - connections: 
-            - address: 127.0.0.1:6666
-      outbounds:
-         - connections:
-            - address: 127.0.0.1:6666
-            - address: 127.0.0.1:6667
+      inbound:
+         groups:
+            -  connections: 
+               -  address: 127.0.0.1:6666
+      outbound:
+         groups:
+            -  connections:
+               -  address: 127.0.0.1:6666
+               -  address: 127.0.0.1:6667
 )";
 
 

@@ -30,12 +30,12 @@ namespace casual
          namespace state
          {      
             template< typename Configuration>
-            struct basic_bound
+            struct basic_group
             {
                common::process::Handle process;
                Configuration configuration;
 
-               friend inline bool operator == ( const basic_bound& lhs, common::strong::process::id rhs) { return lhs.process == rhs;}
+               friend inline bool operator == ( const basic_group& lhs, common::strong::process::id rhs) { return lhs.process == rhs;}
                inline explicit operator bool () const { return static_cast< bool>( process);}
 
 
@@ -45,13 +45,20 @@ namespace casual
                )
             };
 
-            using Outbound = basic_bound< configuration::model::gateway::Outbound>;
-            using Inbound = basic_bound< configuration::model::gateway::Inbound>;
+            namespace inbound
+            {  
+               using Group = basic_group< configuration::model::gateway::inbound::Group>;
+            } // inbound
+
+            namespace outbound
+            {
+                using Group = basic_group< configuration::model::gateway::outbound::Group>;
+            } // outbound
 
             namespace executable
             {
-               std::string path( const Outbound& value);
-               std::string path( const Inbound& value);
+               std::string path( const inbound::Group& value);
+               std::string path( const outbound::Group& value);
             
             } // executable
 
@@ -70,8 +77,20 @@ namespace casual
             //! @return true if we're done, and ready to exit
             bool done() const;
 
-            std::vector< state::Inbound> inbounds;
-            std::vector< state::Outbound> outbounds;
+            struct
+            {
+               std::vector< state::inbound::Group> groups;
+               
+               CASUAL_LOG_SERIALIZE( CASUAL_SERIALIZE( groups);)
+            } inbound;
+
+            struct
+            {
+               std::vector< state::outbound::Group> groups;
+               
+               CASUAL_LOG_SERIALIZE( CASUAL_SERIALIZE( groups);)
+            } outbound;
+            
 
             common::state::Machine< state::Runlevel, state::Runlevel::startup> runlevel;
 
@@ -87,8 +106,8 @@ namespace casual
             } coordinate;
 
             CASUAL_LOG_SERIALIZE(
-               CASUAL_SERIALIZE( inbounds);
-               CASUAL_SERIALIZE( outbounds);
+               CASUAL_SERIALIZE( inbound);
+               CASUAL_SERIALIZE( outbound);
                CASUAL_SERIALIZE( runlevel);
                CASUAL_SERIALIZE( coordinate);
             )

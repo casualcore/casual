@@ -11,20 +11,20 @@ Each service can have different `transaction` semantics:
 
 type         | description
 -------------|----------------------------------------------------------------------
-automatic    | join transaction if present otherwise start a new transaction (default type)
-join         | join transaction if present otherwise execute outside transaction
+automatic    | join transaction if present else start a new transaction (default type)
+join         | join transaction if present else execute outside transaction
 atomic       | start a new transaction regardless
 none         | execute outside transaction regardless
 
 ### resources
 
-Defines which `xa` resources to link and use at runtime. If a name is provided for a given
-resource, then the startup configuration phase will ask for resource configuration for that 
+Defines which `xa` resources to link and use runtime. If a name is provided for a given
+resource, then startup configuration phase will ask for resource configuration for that 
 given name. This is the preferred way, since it is a lot more explicit.
 
 ## examples 
 
-Below are examples in human readable formats that `casual` can handle
+Below follows examples in human readable formats that `casual` can handle
 
 ### yaml
 ```` yaml
@@ -32,31 +32,21 @@ Below are examples in human readable formats that `casual` can handle
 server:
   default:
     service:
-      transaction: join
-      category: some.category
-
-
+      transaction: "join"
+      category: "some.category"
   resources:
-    - key: rm-mockup
-      name: resource-1
-      note: the runtime configuration for this resource is correlated with the name 'resource-1' - no group is needed for resource configuration
-
-
+    - key: "rm-mockup"
+      name: "resource-1"
+      note: "the runtime configuration for this resource is correlated with the name 'resource-1' - no group is needed for resource configuration"
   services:
-    - name: s1
-
-    - name: s2
-      transaction: auto
-
-    - name: s3
-      function: f3
-
-    - name: s4
-      function: f4
-      category: some.other.category
-
-
-
+    - name: "s1"
+    - name: "s2"
+      transaction: "auto"
+    - name: "s3"
+      function: "f3"
+    - name: "s4"
+      function: "f4"
+      category: "some.other.category"
 ...
 
 ````

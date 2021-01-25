@@ -128,11 +128,6 @@ namespace casual
 
                            void element( const Node& node)
                            {
-                              common::log::line( verbose::log, "node.name(): ", node.name());
-
-                              common::log::line( verbose::log, "node - sequence: ", sequence( node), ":");
-                              node.print( verbose::log);
-
                               if( auto children = filter::children( node))
                               {
                                  auto is_container = sequence( node);

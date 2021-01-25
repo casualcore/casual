@@ -24,37 +24,26 @@ Below follows examples in human readable formats that `casual` can handle
 ```` yaml
 ---
 resources:
-  - key: db2
-    server: rm-proxy-db2-static
-    xa_struct_name: db2xa_switch_static_std
+  - key: "db2"
+    server: "rm-proxy-db2-static"
+    xa_struct_name: "db2xa_switch_static_std"
     libraries:
-      - db2
-
+      - "db2"
     paths:
       include:
         []
-
       library:
-        - ${DB2DIR}/lib64
-
-
-
-  - key: rm-mockup
-    server: rm-proxy-casual-mockup
-    xa_struct_name: casual_mockup_xa_switch_static
+        - "${DB2DIR}/lib64"
+  - key: "rm-mockup"
+    server: "rm-proxy-casual-mockup"
+    xa_struct_name: "casual_mockup_xa_switch_static"
     libraries:
-      - casual-mockup-rm
-
+      - "casual-mockup-rm"
     paths:
       include:
         []
-
       library:
-        - ${CASUAL_HOME}/lib
-
-
-
-
+        - "${CASUAL_HOME}/lib"
 ...
 
 ````

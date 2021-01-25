@@ -89,7 +89,7 @@ namespace casual
                            return "inbound";
                         
                         });
-                        algorithm::for_each( model.gateway.inbounds, normalizer);
+                        algorithm::for_each( model.gateway.inbound.groups, normalizer);
                      }
 
                      {
@@ -100,7 +100,7 @@ namespace casual
                            return "outbound";
                         
                         });
-                        algorithm::for_each( model.gateway.outbounds, normalizer);
+                        algorithm::for_each( model.gateway.outbound.groups, normalizer);
                      }
                   }
                }
@@ -252,9 +252,9 @@ namespace casual
                {
                   log::line( log::category::warning, code::casual::invalid_configuration, " domain.gateway.listeners are deprecated - use domain.gateway.inbounds");
 
-                  gateway::Inbound inbound;
-                  inbound.connect = decltype( inbound.connect)::regular;
-                  inbound.connections = common::algorithm::transform( gateway.listeners, []( const auto& listener)
+                  gateway::inbound::Group group;
+                  group.connect = decltype( group.connect)::regular;
+                  group.connections = common::algorithm::transform( gateway.listeners, []( const auto& listener)
                   {
                      gateway::inbound::Connection result;
                      result.note = listener.note.value_or( "");
@@ -263,7 +263,7 @@ namespace casual
                   });
 
 
-                  inbound.limit = algorithm::accumulate( gateway.listeners, gateway::inbound::Limit{}, [&]( auto current, auto& listener)
+                  group.limit = algorithm::accumulate( gateway.listeners, gateway::inbound::Limit{}, [&]( auto current, auto& listener)
                   {
                      if( ! listener.limit)
                         return current;
@@ -280,16 +280,16 @@ namespace casual
                      return current;
                   });
 
-                  result.inbounds.push_back( std::move( inbound));
+                  result.inbound.groups.push_back( std::move( group));
                }
 
                if( ! gateway.connections.empty())
                {
                   log::line( log::category::warning, code::casual::invalid_configuration, " domain.gateway.connections are deprecated - use domain.gateway.outbounds");
 
-                  gateway::Outbound outbound;
-                  outbound.connect = decltype( outbound.connect)::regular;
-                  outbound.connections = common::algorithm::transform( gateway.connections, []( const auto& value)
+                  gateway::outbound::Group group;
+                  group.connect = decltype( group.connect)::regular;
+                  group.connections = common::algorithm::transform( gateway.connections, []( const auto& value)
                   {
                      gateway::outbound::Connection result;
 
@@ -303,7 +303,7 @@ namespace casual
 
                      return result;
                   });
-                  result.outbounds.push_back( std::move( outbound));
+                  result.outbound.groups.push_back( std::move( group));
                }
 
                auto append_inbounds = []( auto& source, auto& target, auto connect)
@@ -311,9 +311,9 @@ namespace casual
                   if( ! source)
                      return;
 
-                  algorithm::transform( source.value(), std::back_inserter( target), [connect]( auto& source)
+                  algorithm::transform( source.value().groups, std::back_inserter( target), [connect]( auto& source)
                   {
-                     gateway::Inbound result;
+                     gateway::inbound::Group result;
                      result.alias = source.alias.value_or( "");
                      result.note = source.note.value_or( "");
                      result.connect = connect;
@@ -341,9 +341,9 @@ namespace casual
                   if( ! source)
                      return;
 
-                  algorithm::transform( source.value(), std::back_inserter( target), [connect]( auto& source)
+                  algorithm::transform( source.value().groups, std::back_inserter( target), [connect]( auto& source)
                   {
-                     gateway::Outbound result;
+                     gateway::outbound::Group result;
                      result.alias = source.alias.value_or( "");
                      result.note = source.note.value_or( "");
                      result.connect = connect;
@@ -361,17 +361,17 @@ namespace casual
                   });
                };
 
-               append_inbounds( gateway.inbounds, result.inbounds, model::gateway::connect::Semantic::regular);
-               append_outbounds( gateway.outbounds, result.outbounds, model::gateway::connect::Semantic::regular);
+               append_inbounds( gateway.inbound, result.inbound.groups, configuration::model::gateway::connect::Semantic::regular);
+               append_outbounds( gateway.outbound, result.outbound.groups, configuration::model::gateway::connect::Semantic::regular);
 
                if( gateway.reverse)
                {
-                  append_inbounds( gateway.reverse.value().inbounds, result.inbounds, model::gateway::connect::Semantic::reversed);
-                  append_outbounds( gateway.reverse.value().outbounds, result.outbounds, model::gateway::connect::Semantic::reversed);
+                  append_inbounds( gateway.reverse.value().inbound, result.inbound.groups, configuration::model::gateway::connect::Semantic::reversed);
+                  append_outbounds( gateway.reverse.value().outbound, result.outbound.groups, configuration::model::gateway::connect::Semantic::reversed);
                }
 
                // make sure we keep track of the order.
-               algorithm::for_each( result.outbounds, normalize::order());
+               algorithm::for_each( result.outbound.groups, normalize::order());
 
                return result;
             }
@@ -625,7 +625,7 @@ namespace casual
 
                   auto transform_inbound = []( auto& value) 
                   {
-                     configuration::user::gateway::Inbound result;
+                     configuration::user::gateway::inbound::Group result;
                      result.alias = value.alias;
                      result.note = null_if_empty( value.note);
                      
@@ -649,7 +649,7 @@ namespace casual
 
                   auto transform_outbound = []( auto& value) 
                   {
-                     configuration::user::gateway::Outbound result;
+                     configuration::user::gateway::outbound::Group result;
                      result.alias = value.alias;
                      result.note = null_if_empty( value.note);
                      result.connections = algorithm::transform( value.connections, []( auto& value)
@@ -671,29 +671,46 @@ namespace casual
 
                   // inbounds
                   {
-                     auto [ reversed, regular] = algorithm::stable_partition( model.inbounds, is_reversed);
+                     auto [ reversed, regular] = algorithm::stable_partition( model.inbound.groups, is_reversed);
 
                      if( reversed)
-                        reverse.inbounds = algorithm::transform( reversed, transform_inbound);
+                     {
+                        configuration::user::gateway::Inbound inbound;
+                        inbound.groups = algorithm::transform( reversed, transform_inbound);
+                        reverse.inbound = std::move( inbound);
+                     }
 
                      if( regular)
-                        result.inbounds = algorithm::transform( regular, transform_inbound);
+                     {
+                        configuration::user::gateway::Inbound inbound;
+                        inbound.groups = algorithm::transform( regular, transform_inbound);
+                        result.inbound = std::move( inbound);
+                     }
+                        
                   }
 
                   // outbounds
                   {
                      auto less_order = []( auto& lhs, auto& rhs){ return lhs.order < rhs.order;};
 
-                     auto [ reversed, regular] = algorithm::stable_partition( model.outbounds, is_reversed);
+                     auto [ reversed, regular] = algorithm::stable_partition( model.outbound.groups, is_reversed);
 
                      if( reversed)
-                        reverse.outbounds = algorithm::transform( algorithm::sort( reversed, less_order), transform_outbound);
+                     {
+                        configuration::user::gateway::Outbound outbound;
+                        outbound.groups = algorithm::transform( algorithm::sort( reversed, less_order), transform_outbound);
+                        reverse.outbound = std::move( outbound);
+                     }
 
                      if( regular)
-                        result.outbounds = algorithm::transform( algorithm::sort( regular, less_order), transform_outbound);
+                     {
+                        configuration::user::gateway::Outbound outbound;
+                        outbound.groups = algorithm::transform( algorithm::sort( regular, less_order), transform_outbound);
+                        result.outbound = std::move( outbound);
+                     }
                   }
 
-                  if( reverse.inbounds || reverse.outbounds)
+                  if( reverse.inbound || reverse.outbound)
                      result.reverse = std::move( reverse);
                   
                   return result;

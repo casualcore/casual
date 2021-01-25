@@ -41,27 +41,27 @@ namespace casual
             {
                namespace shutdown
                {
-                  auto bound()
+                  auto group()
                   {
-                     return []( auto& bound)
+                     return []( auto& group)
                      {
-                        Trace trace{ "gateway::manager::handle::local::shutdown::bound"};
+                        Trace trace{ "gateway::manager::handle::local::shutdown::group"};
 
                         // We only want to handle terminate during this
                         common::signal::thread::scope::Mask mask{ signal::set::filled( code::signal::terminate)};
 
-                        if( bound.process)
+                        if( group.process)
                         {
-                           log::line( log, "send shutdown to 'bound': ", bound);
+                           log::line( log, "send shutdown to 'group': ", group);
 
                            communication::device::blocking::optional::send( 
-                              bound.process.ipc, 
+                              group.process.ipc, 
                               common::message::shutdown::Request{ common::process::handle()});
                         }
-                        else if( bound.process.pid)
+                        else if( group.process.pid)
                         {
-                           log::line( log, "terminate bound: ", bound);
-                           signal::send( bound.process.pid, code::signal::terminate);
+                           log::line( log, "terminate group: ", group);
+                           signal::send( group.process.pid, code::signal::terminate);
                         }
                      };
                   }
@@ -98,11 +98,11 @@ namespace casual
                      return {};
                   }
    
-                  auto bound()
+                  auto group()
                   {
-                     return []( auto& bound)
+                     return []( auto& group)
                      {
-                        bound.process.pid = spawn::process( bound.configuration.alias, state::executable::path( bound),
+                        group.process.pid = spawn::process( group.configuration.alias, state::executable::path( group),
                            {});
                      };
                   }
@@ -120,28 +120,28 @@ namespace casual
 
             log::line( verbose::log, "state: ", state);
 
-            algorithm::for_each( state.inbounds, local::shutdown::bound());
-            algorithm::for_each( state.outbounds, local::shutdown::bound());
+            algorithm::for_each( state.inbound.groups, local::shutdown::group());
+            algorithm::for_each( state.outbound.groups, local::shutdown::group());
          }
 
          void boot( State& state)
          {
             Trace trace{ "gateway::manager::handle::boot"};
 
-            auto boot = [handler = manager::handler( state)]( auto& bounds) mutable
+            auto boot = [handler = manager::handler( state)]( auto& groups) mutable
             {
-               algorithm::for_each( bounds, local::spawn::bound());
+               algorithm::for_each( groups, local::spawn::group());
 
                common::message::dispatch::relaxed::pump(
                   common::message::dispatch::condition::compose(
-                     common::message::dispatch::condition::done( [&bounds]()
+                     common::message::dispatch::condition::done( [&groups]()
                      {
                         auto connected = []( auto& bound)
                         {
                            return predicate::boolean( bound.process);
                         };
 
-                        return algorithm::all_of( bounds, connected);
+                        return algorithm::all_of( groups, connected);
                      })
                   ),
                   handler,
@@ -149,8 +149,8 @@ namespace casual
             };
 
             // make sure we boot 'in order' and got connected stuff before we continue
-            boot( state.outbounds);
-            boot( state.inbounds);
+            boot( state.outbound.groups);
+            boot( state.inbound.groups);
             
          }
 
@@ -197,7 +197,7 @@ namespace casual
                   pending.emplace_back( correlation, outbound.process.pid);
             };
 
-            algorithm::for_each( state.outbounds, send_request);
+            algorithm::for_each( state.outbound.groups, send_request);
 
             log::line( verbose::log, "pending: ", pending);
 
@@ -232,36 +232,36 @@ namespace casual
 
                         const auto pid = message.state.pid;
 
-                        auto restart = [&state, pid]( auto& bound, auto information)
+                        auto restart = [&state, pid]( auto& group, auto information)
                         {
                            if( state.runlevel == decltype( state.runlevel())::running)
                            {
                               log::line( log::category::error, code::casual::invalid_semantics, ' ', information,  
-                                 " process exit - pid: ", pid, " alias: ", bound.configuration.alias, " - action: restart");
+                                 " process exit - pid: ", pid, " alias: ", group.configuration.alias, " - action: restart");
 
-                              bound.process = {};
-                              local::spawn::bound()( bound);
+                              group.process = {};
+                              local::spawn::group()( group);
                               return true;
                            }
                            return  false;
                         };
 
-                        if( auto found = algorithm::find( state.inbounds, pid))
+                        if( auto found = algorithm::find( state.inbound.groups, pid))
                         {
                            log::line( log::category::information, "inbound terminated - alias: ", found->configuration.alias);
                            log::line( verbose::log, "connection: ", *found);
 
                            if( ! restart( *found, "inbound"))
-                              state.inbounds.erase( std::begin( found));
+                              state.inbound.groups.erase( std::begin( found));
                         }
                         
-                        if( auto found = algorithm::find( state.outbounds, pid))
+                        if( auto found = algorithm::find( state.outbound.groups, pid))
                         {
                            log::line( log::category::information, "outbound terminated - alias: ", found->configuration.alias);
                            log::line( verbose::log, "connection: ", *found);
 
                            if( ! restart( *found, "outbound"))
-                              state.outbounds.erase( std::begin( found));
+                              state.outbound.groups.erase( std::begin( found));
                         }
 
                         // remove (re)discover coordination, if any.
@@ -310,7 +310,7 @@ namespace casual
                                  pending.emplace_back( correlation, outbound.process.pid);
                            };
 
-                           algorithm::for_each( state.outbounds, send_request);
+                           algorithm::for_each( state.outbound.groups, send_request);
 
                            state.coordinate.discovery( std::move( pending), std::move( coordinate_callback));
                         };
@@ -357,7 +357,7 @@ namespace casual
                         Trace trace{ "gateway::manager::handle::local::outbound::connect"};
                         log::line( verbose::log, "message: ", message);
 
-                        if( auto found = algorithm::find( state.outbounds, message.process.pid))
+                        if( auto found = algorithm::find( state.outbound.groups, message.process.pid))
                         {
                            found->process = message.process;
 
@@ -395,7 +395,7 @@ namespace casual
                         Trace trace{ "gateway::manager::handle::local::inbound::connect"};
                         log::line( verbose::log, "message: ", message);
 
-                        if( auto found = algorithm::find( state.inbounds, message.process.pid))
+                        if( auto found = algorithm::find( state.inbound.groups, message.process.pid))
                         {
                            found->process = message.process;
 

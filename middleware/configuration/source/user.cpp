@@ -46,6 +46,11 @@ namespace casual
                   };
                }
 
+               auto address()
+               {
+                  return []( auto& l, auto& r){ return l.address == r.address;};
+               }
+
                auto environment()
                {
                   return []( auto& l, auto& r)
@@ -142,44 +147,104 @@ namespace casual
 
       namespace gateway
       {
+         namespace inbound
+         {
+            Connection& Connection::operator += ( Connection rhs)
+            {
+               note = coalesce( std::move( rhs.note), std::move( note));
+               return *this;
+            }
+
+            Group& Group::operator += ( Group rhs)
+            {
+               local::add_or_replace( std::move( rhs.connections), connections, local::equal::address());
+
+               return *this;
+            }
+            
+         } // inbound
+
+         namespace outbound
+         {
+            Connection& Connection::operator += ( Connection rhs)
+            {
+               auto merge = []( auto&& source, auto& target)
+               {
+                  algorithm::append_unique( source, target);
+               };
+
+               local::optional_add( std::move( rhs.services), services, merge);
+               local::optional_add( std::move( rhs.queues), queues, merge);
+
+               note = coalesce( std::move( rhs.note), std::move( note));
+               return *this;
+            }
+
+            Group& Group::operator += ( Group rhs)
+            {
+               local::add_or_accumulate( std::move( rhs.connections), connections, local::equal::address());
+               note = coalesce( std::move( rhs.note), std::move( note));
+               return *this;
+            }
+         } // outbound
+
+         Inbound& Inbound::operator += ( Inbound rhs)
+         {
+            local::add_or_accumulate( std::move( rhs.groups), groups, local::equal::alias());
+            return *this;
+         }
+
+         void Inbound::normalize()
+         {
+            if( ! defaults || ! defaults.value().limit)
+               return;
+
+            algorithm::for_each( groups, [ limit = defaults.value().limit.value()]( auto& group)
+            {
+               if( ! group.limit)
+                  return;
+
+               group.limit.value().size = coalesce( group.limit.value().size, limit.size);
+               group.limit.value().messages = coalesce( group.limit.value().messages, limit.messages);
+            });
+         }
+
+         Outbound& Outbound::operator += ( Outbound rhs)
+         {
+            local::add_or_accumulate( std::move( rhs.groups), groups, local::equal::alias());
+            return *this;
+         }
+
          Reverse& Reverse::operator += ( Reverse rhs)
          {
-            auto add_or_replace = []( auto&& source, auto& target)
-            {
-               local::add_or_replace( std::move( source), target, local::equal::alias());
-            };
-
-            local::optional_add( std::move( rhs.inbounds), inbounds, add_or_replace);
-            local::optional_add( std::move( rhs.outbounds), outbounds, add_or_replace);
+            local::optional_add( std::move( rhs.inbound), inbound);
+            local::optional_add( std::move( rhs.outbound), outbound);
             
             return *this;
          }
 
          Manager& Manager::operator += ( Manager rhs)
          {
-            auto equal_address = []( auto& l, auto& r){ return l.address == r.address;};
+            local::add_or_replace( std::move( rhs.listeners), listeners, local::equal::address());
+            local::add_or_replace( std::move( rhs.connections), connections, local::equal::address());
 
-            local::add_or_replace( std::move( rhs.listeners), listeners, equal_address);
-            local::add_or_replace( std::move( rhs.connections), connections, equal_address);
-
-            auto append_replace_alias = []( auto&& source, auto& target)
-            {
-               algorithm::append_replace( source, target, local::equal::alias());
-            };
-
-            local::optional_add( std::move( rhs.inbounds), inbounds, append_replace_alias);
-            local::optional_add( std::move( rhs.outbounds), outbounds, append_replace_alias);
-
+            local::optional_add( std::move( rhs.inbound), inbound);
+            local::optional_add( std::move( rhs.outbound), outbound);
 
             local::optional_add( std::move( rhs.reverse), reverse);
-
-
 
             return *this;
          }  
 
          void Manager::normalize()
          {
+            if( inbound)
+               inbound.value().normalize();
+
+            if( reverse && reverse.value().inbound)
+               reverse.value().inbound.value().normalize();
+
+            // the rest is deprecated...
             if( ! defaults)
                return;
 
@@ -196,9 +261,10 @@ namespace casual
                algorithm::for_each( connections, update_connection);
             }
 
+            // TODO deprecated remove on 2.0
             if( defaults.value().listener)
             {
-               log::line( log::category::warning, code::casual::invalid_configuration, " domain.gateway.default.listener is deprecated - use domain.gateway.default.inbound");
+               log::line( log::category::warning, code::casual::invalid_configuration, " domain.gateway.default.listener is deprecated - use domain.gateway.inbound.default");
 
                auto update_listener = [&defaults = defaults.value().listener.value()]( auto& listener)
                {

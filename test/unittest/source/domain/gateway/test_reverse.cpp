@@ -115,9 +115,10 @@ domain:
         memberships: [ user]
    gateway:
       reverse:
-         inbounds:
-            - connections: 
-               - address: 127.0.0.1:6669
+         inbound:
+            groups:
+               -  connections: 
+                  -  address: 127.0.0.1:6669
 )";
 
          constexpr auto B = R"(
@@ -138,9 +139,10 @@ domain:
         memberships: [ gateway]
    gateway:
       reverse:
-         outbounds:
-            - connections:
-               - address: 127.0.0.1:6669
+         outbound:
+            groups:
+               -  connections:
+                  -  address: 127.0.0.1:6669
 )";
 
          domain::Manager a{ A};

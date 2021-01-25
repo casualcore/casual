@@ -157,78 +157,79 @@ domain:
       timeout: 130ms
 
   gateway:
-    default:
-      connection:
-        restart: true
 
-    inbounds: 
-      - alias: unique-inbound-alias
-        limit:
-           size: 2097152
-        note: if threshold of 2MB of total payload 'in flight' is reach inbound will stop consume from socket until we're below
+      inbound:
+         groups: 
+            -  alias: unique-inbound-alias
+               limit:
+                  size: 2097152
+               note: if threshold of 2MB of total payload 'in flight' is reach inbound will stop consume from socket until we're below
 
-        connections: 
-          - address: localhost:7779
-            note: can be several listening host:port per inbound instance
-          - address: some.host.org:7779
+               connections: 
+                  -  address: localhost:7779
+                     note: can be several listening host:port per inbound instance
+                  -  address: some.host.org:7779
 
-      - limit:
-           size: 10485760
-           messages: 10
-        note: (generated alias) listeners - threshold of either 10 messages OR 10MB - the first that is reach, inbound will stop consume
+            -  limit:
+                  size: 10485760
+                  messages: 10
+               note: (generated alias) listeners - threshold of either 10 messages OR 10MB - the first that is reach, inbound will stop consume
+               connections:
+                  -  address: some.host.org:7780
+                  -  address: some.host.org:4242
 
-        connections:
-          - address: some.host.org:7780
-          - address: some.host.org:4242
-
-      - note: (generated alias) listeners - no limits
-        connections:
-           - address: some.host.org:4242
+            -  note: (generated alias) listeners - no limits
+               connections:
+                  -  address: some.host.org:4242
         
 
-    outbounds: 
-      - alias: primary
-        connections:
-         - address: a45.domain.host.org:7779
-           note: connection to domain 'a45' - we expect to find service 's1' and 's2' there.
-           services:
-             - s1
-             - s2
-         - address: a46.domain.host.org:7779
-           note: connection to domain 'a46' - we expect to find queues 'q1' and 'q2' and service 's1' - casual will only route 's1' to a46 if it's not accessible in a45 (or local)
-           services:
-             - s1
-           queues:
-             - q1
-             - q2
+      outbound:
+         groups: 
+            -  alias: primary
+               note: casual will 'round-robin' between connections within a group for the same service/queue
+               connections:
+               -  address: a45.domain.host.org:7779
+                  note: connection to domain 'a45' - we expect to find service 's1' and 's2' there.
+                  services:
+                     -  s1
+                     -  s2
+               -  address: a46.domain.host.org:7779
+                  note: we expect to find queues 'q1' and 'q2' and service 's1'
+                  services:
+                     -  s1
+                  queues:
+                     -  q1
+                     -  q2
 
-      - alias: fallback
-        connections:
-           - address: a99.domain.host.org:7780
-             note: will be chosen if _resources_ are not found at connections in the 'primary' outbound
+            -  alias: fallback
+               connections:
+                  -  address: a99.domain.host.org:7780
+                     note: will be chosen if _resources_ are not found at connections in the 'primary' outbound
 
-    reverse:
-      inbounds:
-         - alias: unique-alias-name
-           note: connect to other reverse outbound that is listening on this port - then treat it as a regular inbound
-           limit:
-              messages: 42
-           connections:
-              - note: one of possible many addresses to connect to
-                address: localhost:7780
+      reverse:
+         inbound:
+            groups:
+               -  alias: unique-alias-name
+                  note: connect to other reverse outbound that is listening on this port - then treat it as a regular inbound
+                  limit:
+                     messages: 42
+                  connections:
+                     -  note: one of possible many addresses to connect to
+                        address: localhost:7780
 
-      outbounds:
-         - alias: primary
-           note: listen for connection from reverse inbound - then treat it as a regular outbound
-           connections:
-            - note: one of possible many listining addresses.
-              address: localhost:7780
+         outbound:
+            groups:
+               -  alias: primary
+                  note: listen for connection from reverse inbound - then treat it as a regular outbound
+                  connections:
+                     -  note: one of possible many listining addresses.
+                        address: localhost:7780
 
-         - alias: secondary
-           note: onther instance (proces) that handles (multiplexed) traffic on it's own
-           connections:
-            - note: one of possible many listining addresses.
-              address: localhost:7781
+               -  alias: secondary
+                  note: onther instance (proces) that handles (multiplexed) traffic on it's own
+                  connections:
+                     -  note: one of possible many listining addresses.
+                        address: localhost:7781
 
 )";
 

@@ -36,16 +36,16 @@ namespace casual
 
             manager::State state;
             
-            state.outbounds = algorithm::transform( configuration.outbounds, []( auto& model)
+            state.outbound.groups = algorithm::transform( configuration.outbound.groups, []( auto& model)
             {
-               manager::state::Outbound result;
+               manager::state::outbound::Group result;
                result.configuration = model;
                return result;
             });
 
-            state.inbounds = algorithm::transform( configuration.inbounds, [](  auto& model)
+            state.inbound.groups = algorithm::transform( configuration.inbound.groups, []( auto& model)
             {
-               manager::state::Inbound result;
+               manager::state::inbound::Group result;
                result.configuration = model;
                return result;
             });

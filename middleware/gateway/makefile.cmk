@@ -81,7 +81,7 @@ outbound_archive = LinkArchive( 'bin/casual-gateway-outbound-archive',
 )
 
 ## regular outbound
-target = LinkExecutable( 'bin/casual-gateway-outbound',
+target = LinkExecutable( 'bin/casual-gateway-outbound-group',
     [
         Compile( 'source/outbound/main.cpp'),
     ],
@@ -94,7 +94,7 @@ target = LinkExecutable( 'bin/casual-gateway-outbound',
 install_bin.append( target)
 
 ## reverse outbound
-target = LinkExecutable( 'bin/casual-gateway-outbound-reverse',
+target = LinkExecutable( 'bin/casual-gateway-outbound-reverse-group',
     [
         Compile( 'source/outbound/reverse/main.cpp'),
     ],
@@ -116,7 +116,7 @@ inbound_archive = LinkArchive( 'bin/casual-gateway-inbound-archive',
 )
 
 ##  regular inbound
-target = LinkExecutable( 'bin/casual-gateway-inbound',
+target = LinkExecutable( 'bin/casual-gateway-inbound-group',
 [
     Compile( 'source/inbound/main.cpp'),
 ],
@@ -129,7 +129,7 @@ target = LinkExecutable( 'bin/casual-gateway-inbound',
 install_bin.append( target)
 
 # reverse inbound
-target = LinkExecutable( 'bin/casual-gateway-inbound-reverse',
+target = LinkExecutable( 'bin/casual-gateway-inbound-reverse-group',
     [
         Compile( 'source/inbound/reverse/main.cpp'),
     ],

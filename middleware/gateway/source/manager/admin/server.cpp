@@ -45,11 +45,11 @@ namespace casual
                         auto is_reverse = []( auto& bound){ return bound.configuration.connect == decltype( bound.configuration.connect)::reversed;};
                         auto is_regular = predicate::negate( is_reverse);
 
-                        auto inbounds = request_state( algorithm::filter( state.inbounds, is_regular), message::inbound::state::Request{ process::handle()});
-                        auto reverse_inbounds = request_state( algorithm::filter( state.inbounds, is_reverse), message::inbound::reverse::state::Request{ process::handle()});
+                        auto inbounds = request_state( algorithm::filter( state.inbound.groups, is_regular), message::inbound::state::Request{ process::handle()});
+                        auto reverse_inbounds = request_state( algorithm::filter( state.inbound.groups, is_reverse), message::inbound::reverse::state::Request{ process::handle()});
 
-                        auto outbounds = request_state( algorithm::filter( state.outbounds, is_regular), message::outbound::state::Request{ process::handle()});
-                        auto reverse_outbounds = request_state( algorithm::filter( state.outbounds, is_reverse), message::outbound::reverse::state::Request{ process::handle()});
+                        auto outbounds = request_state( algorithm::filter( state.outbound.groups, is_regular), message::outbound::state::Request{ process::handle()});
+                        auto reverse_outbounds = request_state( algorithm::filter( state.outbound.groups, is_reverse), message::outbound::reverse::state::Request{ process::handle()});
 
                         auto get_reply = []( auto& future){ return future.get( manager::ipc::inbound());};
 

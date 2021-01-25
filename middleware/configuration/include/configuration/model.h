@@ -245,26 +245,40 @@ namespace casual::configuration
 
                inline auto tie() const { return std::tie( address, note);}
             };
+
+            struct Group : common::Compare< Group>
+            {
+               connect::Semantic connect = connect::Semantic::unknown;
+               std::string alias;
+               inbound::Limit limit;
+               std::vector< inbound::Connection> connections;
+               std::string note;
+
+               inline bool empty() const { return connections.empty();}
+
+               CASUAL_CONST_CORRECT_SERIALIZE(
+                  CASUAL_SERIALIZE( connect);
+                  CASUAL_SERIALIZE( alias);
+                  CASUAL_SERIALIZE( limit);
+                  CASUAL_SERIALIZE( connections);
+                  CASUAL_SERIALIZE( note);
+               )
+
+               inline auto tie() const { return std::tie( connect, alias, limit, connections, note);}
+            };
+
          }
          struct Inbound : common::Compare< Inbound>
          {
-            connect::Semantic connect = connect::Semantic::unknown;
-            std::string alias;
-            inbound::Limit limit;
-            std::vector< inbound::Connection> connections;
-            std::string note;
+            std::vector< inbound::Group> groups;
 
-            inline bool empty() const { return connections.empty();}
+            inline bool empty() const { return groups.empty();}
 
             CASUAL_CONST_CORRECT_SERIALIZE(
-               CASUAL_SERIALIZE( connect);
-               CASUAL_SERIALIZE( alias);
-               CASUAL_SERIALIZE( limit);
-               CASUAL_SERIALIZE( connections);
-               CASUAL_SERIALIZE( note);
+               CASUAL_SERIALIZE( groups);
             )
 
-            inline auto tie() const { return std::tie( connect, alias, limit, connections, note);}
+            inline auto tie() const { return std::tie( groups);}
          };
 
          namespace outbound
@@ -287,40 +301,53 @@ namespace casual::configuration
 
                inline auto tie() const { return std::tie( address, services, queues, note);}
             };
+
+            struct Group : common::Compare< Group>
+            {
+               connect::Semantic connect = connect::Semantic::unknown;
+               platform::size::type order{};
+               std::string alias;
+               std::vector< outbound::Connection> connections;
+               std::string note;
+
+               inline bool empty() const { return connections.empty();}
+
+               CASUAL_CONST_CORRECT_SERIALIZE(
+                  CASUAL_SERIALIZE( connect);
+                  CASUAL_SERIALIZE( order);
+                  CASUAL_SERIALIZE( alias);
+                  CASUAL_SERIALIZE( connections);
+                  CASUAL_SERIALIZE( note);
+               )
+
+               inline auto tie() const { return std::tie( connect, order, alias, connections, note);}
+            };
          }
 
          struct Outbound : common::Compare< Outbound>
          {
-            connect::Semantic connect = connect::Semantic::unknown;
-            platform::size::type order{};
-            std::string alias;
-            std::vector< outbound::Connection> connections;
-            std::string note;
+            std::vector< outbound::Group> groups;
 
-            inline bool empty() const { return connections.empty();}
+            inline bool empty() const { return groups.empty();}
 
             CASUAL_CONST_CORRECT_SERIALIZE(
-               CASUAL_SERIALIZE( connect);
-               CASUAL_SERIALIZE( order);
-               CASUAL_SERIALIZE( alias);
-               CASUAL_SERIALIZE( connections);
-               CASUAL_SERIALIZE( note);
+               CASUAL_SERIALIZE( groups);
             )
 
-            inline auto tie() const { return std::tie( connect, order, alias, connections, note);}
+            inline auto tie() const { return std::tie( groups);}
          };
 
          struct Model : common::Compare< Model>
          {
-            std::vector< Inbound> inbounds;
-            std::vector< Outbound> outbounds;
+            Inbound inbound;
+            Outbound outbound;
 
             CASUAL_CONST_CORRECT_SERIALIZE(
-               CASUAL_SERIALIZE( inbounds);
-               CASUAL_SERIALIZE( outbounds);
+               CASUAL_SERIALIZE( inbound);
+               CASUAL_SERIALIZE( outbound);
             )
 
-            inline auto tie() const { return std::tie( inbounds, outbounds);}
+            inline auto tie() const { return std::tie( inbound, outbound);}
          };
          
       } // gateway

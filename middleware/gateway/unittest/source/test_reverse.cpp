@@ -58,19 +58,21 @@ domain:
         memberships: [ gateway]
    gateway:
       reverse:
-         outbounds:
-            - connections:
-               - address: 127.0.0.1:6669
-                 services:
-                   - a
-                   - b
+         outbound:
+            groups:
+               -  connections:
+                  -  address: 127.0.0.1:6669
+                     services:
+                        - a
+                        - b
 
-         inbounds:
-            - connections: 
-               - address: 127.0.0.1:6669
-               - address: 127.0.0.1:6669
-               - address: 127.0.0.1:6669
-               - address: 127.0.0.1:6669
+         inbound:
+            groups:
+               -  connections: 
+                  - address: 127.0.0.1:6669
+                  - address: 127.0.0.1:6669
+                  - address: 127.0.0.1:6669
+                  - address: 127.0.0.1:6669
 )";
 
             };

@@ -2,9 +2,9 @@
 
 This is the runtime configuration for a casual domain.
 
-Most of the _sections_ have a property `note` for the user to provide descriptions of the documentation. 
-The examples further down uses this to make it easier to understand the examples by themselves. But they can of
-course be used as a means to help document actual production configuration.  
+Most of the _sections_ has a property `note` for the user to provide descriptions of the documentation. 
+The examples further down uses this to make it easier to understand the examples by them self. But can of
+course be used as a mean to help document actual production configuration.  
 
 The following _sections_ can be used:
 
@@ -15,7 +15,7 @@ Defines transaction related configuration.
 ### log
 
 The path of the distributed transactions log file. When a distributed transaction reaches prepare,
-this state is persistently stored, before the actual commit stage.
+this state is persistent stored, before the actual commit stage.
 
 if `:memory:` is used, the log is non-persistent. 
 
@@ -34,7 +34,7 @@ closeinfo      | resources specific _close_ configurations for the particular re
 
 ## groups
 
-Defines the groups in the configuration. Groups are used to associate `resources` to servers/executables
+Defines the groups in the configuration. Groups are used to associate `resources` to serveres/executables
 and to define the dependency order.
 
 property       | description
@@ -76,7 +76,7 @@ memberships    | which groups are the server member of (dictates order)
 
 Defines service related configuration. 
 
-Note that this configuration is tied to the service, regardless of who has advertised the service.
+Note that this configuration is tied to the service, regardless who has advertised the service.
 
 property       | description
 ---------------|----------------------------------------------------
@@ -104,7 +104,7 @@ limit.messages | the maximum allowed number of inflight messages. If reached _in
 
 Defines all _outbound_ connections that this configuration should try to connect to.
 
-The order in which connections are defined matters. Services and queues found in the first connection have higher priority
+The order in which connections are defined matters. services and queues found in the first connection has higher priority
 than the last, hence if several remote domains exposes the the same service, the first connection will be used as long as
 the service is provided. When a connection is lost, the next connection that exposes the service will be used.
 
@@ -116,7 +116,7 @@ restart        | if true, the connection will be restarted if connection is lost
 services       | services we're expecting to find on the other side 
 queues         | queues we're expecting to find on the other side 
 
-`services` and `queues` are used as an _optimization_ to do a _build_ discovery during startup. `casual`
+`services` and `queues` is used as an _optimization_ to do a _build_ discovery during startup. `casual`
 will find these services later lazily otherwise. It can also be used to do some rudimentary load balancing 
 to make sure lower prioritized connections are used for `services` and `queues` that could be discovered in
 higher prioritized connections.
@@ -147,337 +147,317 @@ retry.delay    | if message is rolled backed, how long delay before message is a
 
 ## examples 
 
-Below follows some examples in human readable formats that `casual` can handle.
+Below follows examples in human readable formats that `casual` can handle
 
 ### yaml
-```yaml
+```` yaml
 ---
 domain:
-  name: domain.A42
+  name: "domain.A42"
   default:
     environment:
       files:
-        - /some/path/to/environment/file
-        - /some/other/file
-
+        []
       variables:
-        - key: SOME_VARIABLE
-          value: 42
-
-        - key: SOME_OTHER_VARIABLE
-          value: some value
-
-
-
+        []
     server:
       instances: 1
       restart: true
       memberships:
         []
-
       environment:
         files:
           []
-
         variables:
           []
-
-
-
     executable:
       instances: 1
       restart: false
       memberships:
         []
-
       environment:
         files:
           []
-
         variables:
           []
-
-
-
     service:
-      timeout: 90s
-
-
+      timeout: "90s"
+  environment:
+    files:
+      []
+    variables:
+      - key: "SOME_VARIABLE"
+        value: "42"
+      - key: "SOME_OTHER_VARIABLE"
+        value: "some value"
   transaction:
     default:
       resource:
-        key: db2_rm
+        key: "db2_rm"
         instances: 3
-
-
-    log: /some/fast/disk/domain.A42/transaction.log
+    log: "/some/fast/disk/domain.A42/transaction.log"
     resources:
-      - name: customer-db
+      - name: "customer-db"
+        key: "db2_rm"
         instances: 5
-        note: this resource is named 'customer-db' - using the default rm-key (db_rm) - overrides the default rm-instances to 5
-        openinfo: db=customer,uid=db2,pwd=db2
-
-      - name: sales-db
-        note: this resource is named 'sales-db' - using the default rm-key (db_rm) - using default rm-instances
-        openinfo: db=sales,uid=db2,pwd=db2
-
-      - name: event-queue
-        key: mq_rm
-        note: this resource is named 'event-queue' - overrides rm-key - using default rm-instances
-        openinfo: some-mq-specific-stuff
-        closeinfo: some-mq-specific-stuff
-
-
-
+        note: "this resource is named 'customer-db' - using the default rm-key (db_rm) - overrides the default rm-instances to 5"
+        openinfo: "db=customer,uid=db2,pwd=db2"
+      - name: "sales-db"
+        key: "db2_rm"
+        instances: 3
+        note: "this resource is named 'sales-db' - using the default rm-key (db_rm) - using default rm-instances"
+        openinfo: "db=sales,uid=db2,pwd=db2"
+      - name: "event-queue"
+        key: "mq_rm"
+        instances: 3
+        note: "this resource is named 'event-queue' - overrides rm-key - using default rm-instances"
+        openinfo: "some-mq-specific-stuff"
+        closeinfo: "some-mq-specific-stuff"
   groups:
-    - name: common-group
-      note: group that logically groups 'common' stuff
-
-    - name: customer-group
-      note: group that logically groups 'customer' stuff
+    - name: "common-group"
+      note: "group that logically groups 'common' stuff"
+    - name: "customer-group"
+      note: "group that logically groups 'customer' stuff"
       resources:
-        - customer-db
-
+        - "customer-db"
       dependencies:
-        - common-group
-
-
-    - name: sales-group
-      note: group that logically groups 'customer' stuff
+        - "common-group"
+    - name: "sales-group"
+      note: "group that logically groups 'customer' stuff"
       resources:
-        - sales-db
-        - event-queue
-
+        - "sales-db"
+        - "event-queue"
       dependencies:
-        - customer-group
-
-
-
+        - "customer-group"
   servers:
-    - path: customer-server-1
+    - path: "customer-server-1"
+      instances: 1
       memberships:
-        - customer-group
-
-
-    - path: customer-server-2
-      memberships:
-        - customer-group
-
-
-    - path: sales-server
-      alias: sales-pre
-      note: the only services that will be advertised are 'preSalesSaveService' and 'preSalesGetService'
-      instances: 10
-      memberships:
-        - sales-group
-
-      restrictions:
-        - preSalesSaveService
-        - preSalesGetService
-
-
-    - path: sales-server
-      alias: sales-post
-      note: the only services that will be advertised are 'postSalesSaveService' and 'postSalesGetService'
-      memberships:
-        - sales-group
-
-      restrictions:
-        - postSalesSaveService
-        - postSalesGetService
-
-
-    - path: sales-broker
-      memberships:
-        - sales-group
-
+        - "customer-group"
       environment:
         files:
           []
-
         variables:
-          - key: SALES_BROKER_VARIABLE
-            value: 556
-
-
-
-      resources:
-        - event-queue
-
-
-
-  executables:
-    - path: mq-server
-      arguments:
-        - --configuration
-        - /path/to/configuration
-
+          []
+      restart: true
+    - path: "customer-server-2"
+      instances: 1
       memberships:
-        - common-group
-
-
-
+        - "customer-group"
+      environment:
+        files:
+          []
+        variables:
+          []
+      restart: true
+    - path: "sales-server"
+      alias: "sales-pre"
+      note: "the only services that will be advertised are 'preSalesSaveService' and 'preSalesGetService'"
+      instances: 10
+      memberships:
+        - "sales-group"
+      environment:
+        files:
+          []
+        variables:
+          []
+      restart: true
+      restrictions:
+        - "preSalesSaveService"
+        - "preSalesGetService"
+    - path: "sales-server"
+      alias: "sales-post"
+      note: "the only services that will be advertised are 'postSalesSaveService' and 'postSalesGetService'"
+      instances: 1
+      memberships:
+        - "sales-group"
+      environment:
+        files:
+          []
+        variables:
+          []
+      restart: true
+      restrictions:
+        - "postSalesSaveService"
+        - "postSalesGetService"
+    - path: "sales-broker"
+      instances: 1
+      memberships:
+        - "sales-group"
+      environment:
+        files:
+          []
+        variables:
+          - key: "SALES_BROKER_VARIABLE"
+            value: "556"
+      restart: true
+      resources:
+        - "event-queue"
+  executables:
+    - path: "mq-server"
+      arguments:
+        - "--configuration"
+        - "/path/to/configuration"
+      instances: 1
+      memberships:
+        - "common-group"
+      environment:
+        files:
+          []
+        variables:
+          []
+      restart: false
   services:
-    - name: postSalesSaveService
-      timeout: 2h
+    - name: "postSalesSaveService"
+      timeout: "2h"
       routes:
-        - postSalesSaveService
-        - sales/post/save
-
-
-    - name: postSalesGetService
-      timeout: 130ms
-
-
+        - "postSalesSaveService"
+        - "sales/post/save"
+    - name: "postSalesGetService"
+      timeout: "130ms"
   gateway:
-    default:
-      listener:
-        limit:
-          {}
-
-
-      connection:
-        restart: true
-        address: ""
-
-
+    inbound:
+      groups:
+        - alias: "unique-inbound-alias"
+          note: "if threshold of 2MB of total payload 'in flight' is reach inbound will stop consume from socket until we're below"
+          limit:
+            size: 2097152
+          connections:
+            - address: "localhost:7779"
+              note: "can be several listening host:port per inbound instance"
+            - address: "some.host.org:7779"
+        - note: "(generated alias) listeners - threshold of either 10 messages OR 10MB - the first that is reach, inbound will stop consume"
+          limit:
+            size: 10485760
+            messages: 10
+          connections:
+            - address: "some.host.org:7780"
+            - address: "some.host.org:4242"
+        - note: "(generated alias) listeners - no limits"
+          connections:
+            - address: "some.host.org:4242"
+    outbound:
+      groups:
+        - alias: "primary"
+          note: "casual will 'round-robin' between connections within a group for the same service/queue"
+          connections:
+            - address: "a45.domain.host.org:7779"
+              note: "connection to domain 'a45' - we expect to find service 's1' and 's2' there."
+              services:
+                - "s1"
+                - "s2"
+            - address: "a46.domain.host.org:7779"
+              note: "we expect to find queues 'q1' and 'q2' and service 's1'"
+              services:
+                - "s1"
+              queues:
+                - "q1"
+                - "q2"
+        - alias: "fallback"
+          connections:
+            - address: "a99.domain.host.org:7780"
+              note: "will be chosen if _resources_ are not found at connections in the 'primary' outbound"
+    reverse:
+      inbound:
+        groups:
+          - alias: "unique-alias-name"
+            note: "connect to other reverse outbound that is listening on this port - then treat it as a regular inbound"
+            limit:
+              messages: 42
+            connections:
+              - address: "localhost:7780"
+                note: "one of possible many addresses to connect to"
+      outbound:
+        groups:
+          - alias: "primary"
+            note: "listen for connection from reverse inbound - then treat it as a regular outbound"
+            connections:
+              - address: "localhost:7780"
+                note: "one of possible many listining addresses."
+          - alias: "secondary"
+            note: "onther instance (proces) that handles (multiplexed) traffic on it's own"
+            connections:
+              - address: "localhost:7781"
+                note: "one of possible many listining addresses."
     listeners:
-      - address: localhost:7779
-        limit:
-          size: 2097152
-
-        note: local host - if threshold of 2MB of total payload 'in flight' is reach inbound will stop consume from socket until we're below
-
-      - address: some.host.org:7779
-        limit:
-          messages: 200
-
-        note: listener that is bound to some 'external ip' - limit to max 200 calls 'in flight'
-
-      - address: some.host.org:9999
-        limit:
-          size: 10485760
-          messages: 10
-
-        note: listener - threshold of either 10 messages OR 10MB - the first that is reach, inbound will stop consume
-
-      - address: some.host.org:4242
-        note: listener - no limits
-
-
+      []
     connections:
-      - address: a45.domain.host.org:7779
-        services:
-          - s1
-          - s2
-
-        queues:
-          []
-
-        note: connection to domain 'a45' - we expect to find service 's1' and 's2' there.
-
-      - address: a46.domain.host.org:7779
-        services:
-          - s1
-
-        queues:
-          - q1
-          - q2
-
-        note: connection to domain 'a46' - we expect to find queues 'q1' and 'q2' and service 's1' - casual will only route 's1' to a46 if it's not accessible in a45 (or local)
-
-      - address: a99.domain.host.org:7780
-        services:
-          []
-
-        queues:
-          []
-
-        restart: false
-        note: connection to domain 'a99' - if the connection is closed from a99, casual will not try to reestablish the connection
-
-
-
+      []
   queue:
+    note: "retry.count - if number of rollbacks is greater, message is moved to error-queue  retry.delay - the amount of time before the message is available for consumption, after rollback\n"
     default:
       queue:
         retry:
           count: 3
-          delay: 20s
-
-
-      directory: ${CASUAL_DOMAIN_HOME}/queue/groups
-
+          delay: "20s"
+      directory: "${CASUAL_DOMAIN_HOME}/queue/groups"
     groups:
-      - name: groupA
+      - alias: "A"
         note: "will get default queuebase: ${CASUAL_DOMAIN_HOME}/queue/groupA.gb"
         queues:
-          - name: q_A1
-
-          - name: q_A2
+          - name: "a1"
+          - name: "a2"
             retry:
               count: 10
-              delay: 100ms
-
-            note: after 10 rollbacked dequeues, message is moved to q_A2.error
-
-          - name: q_A3
-
-          - name: q_A4
-
-
-
-      - name: groupB
-        queuebase: /some/fast/disk/queue/groupB.qb
+              delay: "100ms"
+            note: "after 10 rollbacked dequeues, message is moved to a2.error"
+          - name: "a3"
+          - name: "a4"
+      - alias: "B"
+        queuebase: "/some/fast/disk/queue/groupB.qb"
         queues:
-          - name: q_B1
-
-          - name: q_B2
+          - name: "b1"
+          - name: "b2"
             retry:
               count: 20
-
-            note: after 20 rollbacked dequeues, message is moved to q_B2.error. retry.delay is 'inherited' from default, if any
-
-
-
-      - name: groupC
-        queuebase: ":memory:"
-        note: group is an in-memory queue, hence no persistence
+            note: "after 20 rollbacked dequeues, message is moved to b2.error. retry.delay is 'inherited' from default, if any"
+      - queuebase: ":memory:"
+        note: "group is an in-memory queue, hence no persistence"
         queues:
-          - name: q_C1
-
-          - name: q_C2
-
-
-
-
-    note: "retry.count - if number of rollbacks is greater, message is moved to error-queue  retry.delay - the amount of time before the message is available for consumption, after rollback\x0a"
-
-
+          - name: "c1"
+          - name: "c2"
+        name: "C"
+    forward:
+      default:
+        service:
+          instances: 3
+          reply:
+            delay: "2s"
+        queue:
+          instances: 1
+          target:
+            delay: "500ms"
+      groups:
+        - alias: "forward-group-1"
+          services:
+            - source: "b1"
+              instances: 4
+              target:
+                service: "casual/example/echo"
+              reply:
+                queue: "a3"
+                delay: "10ms"
+          queues:
+            - source: "c1"
+              target:
+                queue: "a4"
+        - alias: "forward-group-2"
+          services:
+            - source: "b2"
+              target:
+                service: "casual/example/echo"
 ...
 
 ````
 ### json
-```json
+```` json
 {
     "domain": {
         "name": "domain.A42",
         "default": {
             "environment": {
-                "files": [
-                    "/some/path/to/environment/file",
-                    "/some/other/file"
-                ],
-                "variables": [
-                    {
-                        "key": "SOME_VARIABLE",
-                        "value": "42"
-                    },
-                    {
-                        "key": "SOME_OTHER_VARIABLE",
-                        "value": "some value"
-                    }
-                ]
+                "files": [],
+                "variables": []
             },
             "server": {
                 "instances": 1,
@@ -501,6 +481,19 @@ domain:
                 "timeout": "90s"
             }
         },
+        "environment": {
+            "files": [],
+            "variables": [
+                {
+                    "key": "SOME_VARIABLE",
+                    "value": "42"
+                },
+                {
+                    "key": "SOME_OTHER_VARIABLE",
+                    "value": "some value"
+                }
+            ]
+        },
         "transaction": {
             "default": {
                 "resource": {
@@ -512,18 +505,22 @@ domain:
             "resources": [
                 {
                     "name": "customer-db",
+                    "key": "db2_rm",
                     "instances": 5,
                     "note": "this resource is named 'customer-db' - using the default rm-key (db_rm) - overrides the default rm-instances to 5",
                     "openinfo": "db=customer,uid=db2,pwd=db2"
                 },
                 {
                     "name": "sales-db",
+                    "key": "db2_rm",
+                    "instances": 3,
                     "note": "this resource is named 'sales-db' - using the default rm-key (db_rm) - using default rm-instances",
                     "openinfo": "db=sales,uid=db2,pwd=db2"
                 },
                 {
                     "name": "event-queue",
                     "key": "mq_rm",
+                    "instances": 3,
                     "note": "this resource is named 'event-queue' - overrides rm-key - using default rm-instances",
                     "openinfo": "some-mq-specific-stuff",
                     "closeinfo": "some-mq-specific-stuff"
@@ -560,15 +557,27 @@ domain:
         "servers": [
             {
                 "path": "customer-server-1",
+                "instances": 1,
                 "memberships": [
                     "customer-group"
-                ]
+                ],
+                "environment": {
+                    "files": [],
+                    "variables": []
+                },
+                "restart": true
             },
             {
                 "path": "customer-server-2",
+                "instances": 1,
                 "memberships": [
                     "customer-group"
-                ]
+                ],
+                "environment": {
+                    "files": [],
+                    "variables": []
+                },
+                "restart": true
             },
             {
                 "path": "sales-server",
@@ -578,6 +587,11 @@ domain:
                 "memberships": [
                     "sales-group"
                 ],
+                "environment": {
+                    "files": [],
+                    "variables": []
+                },
+                "restart": true,
                 "restrictions": [
                     "preSalesSaveService",
                     "preSalesGetService"
@@ -587,9 +601,15 @@ domain:
                 "path": "sales-server",
                 "alias": "sales-post",
                 "note": "the only services that will be advertised are 'postSalesSaveService' and 'postSalesGetService'",
+                "instances": 1,
                 "memberships": [
                     "sales-group"
                 ],
+                "environment": {
+                    "files": [],
+                    "variables": []
+                },
+                "restart": true,
                 "restrictions": [
                     "postSalesSaveService",
                     "postSalesGetService"
@@ -597,6 +617,7 @@ domain:
             },
             {
                 "path": "sales-broker",
+                "instances": 1,
                 "memberships": [
                     "sales-group"
                 ],
@@ -609,6 +630,7 @@ domain:
                         }
                     ]
                 },
+                "restart": true,
                 "resources": [
                     "event-queue"
                 ]
@@ -621,9 +643,15 @@ domain:
                     "--configuration",
                     "/path/to/configuration"
                 ],
+                "instances": 1,
                 "memberships": [
                     "common-group"
-                ]
+                ],
+                "environment": {
+                    "files": [],
+                    "variables": []
+                },
+                "restart": false
             }
         ],
         "services": [
@@ -641,74 +669,135 @@ domain:
             }
         ],
         "gateway": {
-            "default": {
-                "listener": {
-                    "limit": {}
+            "inbound": {
+                "groups": [
+                    {
+                        "alias": "unique-inbound-alias",
+                        "note": "if threshold of 2MB of total payload 'in flight' is reach inbound will stop consume from socket until we're below",
+                        "limit": {
+                            "size": 2097152
+                        },
+                        "connections": [
+                            {
+                                "address": "localhost:7779",
+                                "note": "can be several listening host:port per inbound instance"
+                            },
+                            {
+                                "address": "some.host.org:7779"
+                            }
+                        ]
+                    },
+                    {
+                        "note": "(generated alias) listeners - threshold of either 10 messages OR 10MB - the first that is reach, inbound will stop consume",
+                        "limit": {
+                            "size": 10485760,
+                            "messages": 10
+                        },
+                        "connections": [
+                            {
+                                "address": "some.host.org:7780"
+                            },
+                            {
+                                "address": "some.host.org:4242"
+                            }
+                        ]
+                    },
+                    {
+                        "note": "(generated alias) listeners - no limits",
+                        "connections": [
+                            {
+                                "address": "some.host.org:4242"
+                            }
+                        ]
+                    }
+                ]
+            },
+            "outbound": {
+                "groups": [
+                    {
+                        "alias": "primary",
+                        "note": "casual will 'round-robin' between connections within a group for the same service/queue",
+                        "connections": [
+                            {
+                                "address": "a45.domain.host.org:7779",
+                                "note": "connection to domain 'a45' - we expect to find service 's1' and 's2' there.",
+                                "services": [
+                                    "s1",
+                                    "s2"
+                                ]
+                            },
+                            {
+                                "address": "a46.domain.host.org:7779",
+                                "note": "we expect to find queues 'q1' and 'q2' and service 's1'",
+                                "services": [
+                                    "s1"
+                                ],
+                                "queues": [
+                                    "q1",
+                                    "q2"
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "alias": "fallback",
+                        "connections": [
+                            {
+                                "address": "a99.domain.host.org:7780",
+                                "note": "will be chosen if _resources_ are not found at connections in the 'primary' outbound"
+                            }
+                        ]
+                    }
+                ]
+            },
+            "reverse": {
+                "inbound": {
+                    "groups": [
+                        {
+                            "alias": "unique-alias-name",
+                            "note": "connect to other reverse outbound that is listening on this port - then treat it as a regular inbound",
+                            "limit": {
+                                "messages": 42
+                            },
+                            "connections": [
+                                {
+                                    "address": "localhost:7780",
+                                    "note": "one of possible many addresses to connect to"
+                                }
+                            ]
+                        }
+                    ]
                 },
-                "connection": {
-                    "restart": true,
-                    "address": ""
+                "outbound": {
+                    "groups": [
+                        {
+                            "alias": "primary",
+                            "note": "listen for connection from reverse inbound - then treat it as a regular outbound",
+                            "connections": [
+                                {
+                                    "address": "localhost:7780",
+                                    "note": "one of possible many listining addresses."
+                                }
+                            ]
+                        },
+                        {
+                            "alias": "secondary",
+                            "note": "onther instance (proces) that handles (multiplexed) traffic on it's own",
+                            "connections": [
+                                {
+                                    "address": "localhost:7781",
+                                    "note": "one of possible many listining addresses."
+                                }
+                            ]
+                        }
+                    ]
                 }
             },
-            "listeners": [
-                {
-                    "address": "localhost:7779",
-                    "limit": {
-                        "size": 2097152
-                    },
-                    "note": "local host - if threshold of 2MB of total payload 'in flight' is reach inbound will stop consume from socket until we're below"
-                },
-                {
-                    "address": "some.host.org:7779",
-                    "limit": {
-                        "messages": 200
-                    },
-                    "note": "listener that is bound to some 'external ip' - limit to max 200 calls 'in flight'"
-                },
-                {
-                    "address": "some.host.org:9999",
-                    "limit": {
-                        "size": 10485760,
-                        "messages": 10
-                    },
-                    "note": "listener - threshold of either 10 messages OR 10MB - the first that is reach, inbound will stop consume"
-                },
-                {
-                    "address": "some.host.org:4242",
-                    "note": "listener - no limits"
-                }
-            ],
-            "connections": [
-                {
-                    "address": "a45.domain.host.org:7779",
-                    "services": [
-                        "s1",
-                        "s2"
-                    ],
-                    "queues": [],
-                    "note": "connection to domain 'a45' - we expect to find service 's1' and 's2' there."
-                },
-                {
-                    "address": "a46.domain.host.org:7779",
-                    "services": [
-                        "s1"
-                    ],
-                    "queues": [
-                        "q1",
-                        "q2"
-                    ],
-                    "note": "connection to domain 'a46' - we expect to find queues 'q1' and 'q2' and service 's1' - casual will only route 's1' to a46 if it's not accessible in a45 (or local)"
-                },
-                {
-                    "address": "a99.domain.host.org:7780",
-                    "services": [],
-                    "queues": [],
-                    "restart": false,
-                    "note": "connection to domain 'a99' - if the connection is closed from a99, casual will not try to reestablish the connection"
-                }
-            ]
+            "listeners": [],
+            "connections": []
         },
         "queue": {
+            "note": "retry.count - if number of rollbacks is greater, message is moved to error-queue  retry.delay - the amount of time before the message is available for consumption, after rollback\n",
             "default": {
                 "queue": {
                     "retry": {
@@ -720,65 +809,117 @@ domain:
             },
             "groups": [
                 {
-                    "name": "groupA",
+                    "alias": "A",
                     "note": "will get default queuebase: ${CASUAL_DOMAIN_HOME}/queue/groupA.gb",
                     "queues": [
                         {
-                            "name": "q_A1"
+                            "name": "a1"
                         },
                         {
-                            "name": "q_A2",
+                            "name": "a2",
                             "retry": {
                                 "count": 10,
                                 "delay": "100ms"
                             },
-                            "note": "after 10 rollbacked dequeues, message is moved to q_A2.error"
+                            "note": "after 10 rollbacked dequeues, message is moved to a2.error"
                         },
                         {
-                            "name": "q_A3"
+                            "name": "a3"
                         },
                         {
-                            "name": "q_A4"
+                            "name": "a4"
                         }
                     ]
                 },
                 {
-                    "name": "groupB",
+                    "alias": "B",
                     "queuebase": "/some/fast/disk/queue/groupB.qb",
                     "queues": [
                         {
-                            "name": "q_B1"
+                            "name": "b1"
                         },
                         {
-                            "name": "q_B2",
+                            "name": "b2",
                             "retry": {
                                 "count": 20
                             },
-                            "note": "after 20 rollbacked dequeues, message is moved to q_B2.error. retry.delay is 'inherited' from default, if any"
+                            "note": "after 20 rollbacked dequeues, message is moved to b2.error. retry.delay is 'inherited' from default, if any"
                         }
                     ]
                 },
                 {
-                    "name": "groupC",
                     "queuebase": ":memory:",
                     "note": "group is an in-memory queue, hence no persistence",
                     "queues": [
                         {
-                            "name": "q_C1"
+                            "name": "c1"
                         },
                         {
-                            "name": "q_C2"
+                            "name": "c2"
                         }
-                    ]
+                    ],
+                    "name": "C"
                 }
             ],
-            "note": "retry.count - if number of rollbacks is greater, message is moved to error-queue  retry.delay - the amount of time before the message is available for consumption, after rollback\n"
+            "forward": {
+                "default": {
+                    "service": {
+                        "instances": 3,
+                        "reply": {
+                            "delay": "2s"
+                        }
+                    },
+                    "queue": {
+                        "instances": 1,
+                        "target": {
+                            "delay": "500ms"
+                        }
+                    }
+                },
+                "groups": [
+                    {
+                        "alias": "forward-group-1",
+                        "services": [
+                            {
+                                "source": "b1",
+                                "instances": 4,
+                                "target": {
+                                    "service": "casual/example/echo"
+                                },
+                                "reply": {
+                                    "queue": "a3",
+                                    "delay": "10ms"
+                                }
+                            }
+                        ],
+                        "queues": [
+                            {
+                                "source": "c1",
+                                "target": {
+                                    "queue": "a4"
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "alias": "forward-group-2",
+                        "services": [
+                            {
+                                "source": "b2",
+                                "target": {
+                                    "service": "casual/example/echo"
+                                }
+                            }
+                        ]
+                    }
+                ]
+            }
         }
     }
 }
-```
+````
 ### ini
-```ini
+```` ini
 
 [domain]
 name=domain.A42
@@ -786,16 +927,6 @@ name=domain.A42
 [domain.default]
 
 [domain.default.environment]
-files=/some/path/to/environment/file
-files=/some/other/file
-
-[domain.default.environment.variables]
-key=SOME_VARIABLE
-value=42
-
-[domain.default.environment.variables]
-key=SOME_OTHER_VARIABLE
-value=some value
 
 [domain.default.executable]
 instances=1
@@ -812,67 +943,121 @@ restart=true
 [domain.default.service]
 timeout=90s
 
+[domain.environment]
+
+[domain.environment.variables]
+key=SOME_VARIABLE
+value=42
+
+[domain.environment.variables]
+key=SOME_OTHER_VARIABLE
+value=some value
+
 [domain.executables]
 arguments=--configuration
 arguments=/path/to/configuration
+instances=1
 memberships=common-group
 path=mq-server
+restart=false
+
+[domain.executables.environment]
 
 [domain.gateway]
 
-[domain.gateway.connections]
+[domain.gateway.inbound]
+
+[domain.gateway.inbound.groups]
+alias=unique-inbound-alias
+note=if threshold of 2MB of total payload 'in flight' is reach inbound will stop consume from socket until we're below
+
+[domain.gateway.inbound.groups.connections]
+address=localhost:7779
+note=can be several listening host:port per inbound instance
+
+[domain.gateway.inbound.groups.connections]
+address=some.host.org:7779
+
+[domain.gateway.inbound.groups.limit]
+size=2097152
+
+[domain.gateway.inbound.groups]
+note=(generated alias) listeners - threshold of either 10 messages OR 10MB - the first that is reach, inbound will stop consume
+
+[domain.gateway.inbound.groups.connections]
+address=some.host.org:7780
+
+[domain.gateway.inbound.groups.connections]
+address=some.host.org:4242
+
+[domain.gateway.inbound.groups.limit]
+messages=10
+size=10485760
+
+[domain.gateway.inbound.groups]
+note=(generated alias) listeners - no limits
+
+[domain.gateway.inbound.groups.connections]
+address=some.host.org:4242
+
+[domain.gateway.outbound]
+
+[domain.gateway.outbound.groups]
+alias=primary
+note=casual will 'round-robin' between connections within a group for the same service/queue
+
+[domain.gateway.outbound.groups.connections]
 address=a45.domain.host.org:7779
 note=connection to domain 'a45' - we expect to find service 's1' and 's2' there.
 services=s1
 services=s2
 
-[domain.gateway.connections]
+[domain.gateway.outbound.groups.connections]
 address=a46.domain.host.org:7779
-note=connection to domain 'a46' - we expect to find queues 'q1' and 'q2' and service 's1' - casual will only route 's1' to a46 if it's not accessible in a45 (or local)
+note=we expect to find queues 'q1' and 'q2' and service 's1'
 queues=q1
 queues=q2
 services=s1
 
-[domain.gateway.connections]
+[domain.gateway.outbound.groups]
+alias=fallback
+
+[domain.gateway.outbound.groups.connections]
 address=a99.domain.host.org:7780
-note=connection to domain 'a99' - if the connection is closed from a99, casual will not try to reestablish the connection
-restart=false
+note=will be chosen if _resources_ are not found at connections in the 'primary' outbound
 
-[domain.gateway.default]
+[domain.gateway.reverse]
 
-[domain.gateway.default.connection]
-address=
-restart=true
+[domain.gateway.reverse.inbound]
 
-[domain.gateway.default.listener]
+[domain.gateway.reverse.inbound.groups]
+alias=unique-alias-name
+note=connect to other reverse outbound that is listening on this port - then treat it as a regular inbound
 
-[domain.gateway.default.listener.limit]
+[domain.gateway.reverse.inbound.groups.connections]
+address=localhost:7780
+note=one of possible many addresses to connect to
 
-[domain.gateway.listeners]
-address=localhost:7779
-note=local host - if threshold of 2MB of total payload 'in flight' is reach inbound will stop consume from socket until we're below
+[domain.gateway.reverse.inbound.groups.limit]
+messages=42
 
-[domain.gateway.listeners.limit]
-size=2097152
+[domain.gateway.reverse.outbound]
 
-[domain.gateway.listeners]
-address=some.host.org:7779
-note=listener that is bound to some 'external ip' - limit to max 200 calls 'in flight'
+[domain.gateway.reverse.outbound.groups]
+alias=primary
+note=listen for connection from reverse inbound - then treat it as a regular outbound
 
-[domain.gateway.listeners.limit]
-messages=200
+[domain.gateway.reverse.outbound.groups.connections]
+address=localhost:7780
+note=one of possible many listining addresses.
 
-[domain.gateway.listeners]
-address=some.host.org:9999
-note=listener - threshold of either 10 messages OR 10MB - the first that is reach, inbound will stop consume
+[domain.gateway.reverse.outbound.groups]
+alias=secondary
+note=onther instance (proces) that handles (multiplexed) traffic on it's own
 
-[domain.gateway.listeners.limit]
-messages=10
-size=10485760
-
-[domain.gateway.listeners]
-address=some.host.org:4242
-note=listener - no limits
+[domain.gateway.reverse.outbound.groups.connections]
+address=localhost:7781
+note=one of possible many listining addresses.
 
 [domain.groups]
 name=common-group
@@ -903,59 +1088,112 @@ directory=${CASUAL_DOMAIN_HOME}/queue/groups
 count=3
 delay=20s
 
+[domain.queue.forward]
+
+[domain.queue.forward.default]
+
+[domain.queue.forward.default.queue]
+instances=1
+
+[domain.queue.forward.default.queue.target]
+delay=500ms
+
+[domain.queue.forward.default.service]
+instances=3
+
+[domain.queue.forward.default.service.reply]
+delay=2s
+
+[domain.queue.forward.groups]
+alias=forward-group-1
+
+[domain.queue.forward.groups.queues]
+source=c1
+
+[domain.queue.forward.groups.queues.target]
+queue=a4
+
+[domain.queue.forward.groups.services]
+instances=4
+source=b1
+
+[domain.queue.forward.groups.services.reply]
+delay=10ms
+queue=a3
+
+[domain.queue.forward.groups.services.target]
+service=casual/example/echo
+
+[domain.queue.forward.groups]
+alias=forward-group-2
+
+[domain.queue.forward.groups.services]
+source=b2
+
+[domain.queue.forward.groups.services.target]
+service=casual/example/echo
+
 [domain.queue.groups]
-name=groupA
+alias=A
 note=will get default queuebase: ${CASUAL_DOMAIN_HOME}/queue/groupA.gb
 
 [domain.queue.groups.queues]
-name=q_A1
+name=a1
 
 [domain.queue.groups.queues]
-name=q_A2
-note=after 10 rollbacked dequeues, message is moved to q_A2.error
+name=a2
+note=after 10 rollbacked dequeues, message is moved to a2.error
 
 [domain.queue.groups.queues.retry]
 count=10
 delay=100ms
 
 [domain.queue.groups.queues]
-name=q_A3
+name=a3
 
 [domain.queue.groups.queues]
-name=q_A4
+name=a4
 
 [domain.queue.groups]
-name=groupB
+alias=B
 queuebase=/some/fast/disk/queue/groupB.qb
 
 [domain.queue.groups.queues]
-name=q_B1
+name=b1
 
 [domain.queue.groups.queues]
-name=q_B2
-note=after 20 rollbacked dequeues, message is moved to q_B2.error. retry.delay is 'inherited' from default, if any
+name=b2
+note=after 20 rollbacked dequeues, message is moved to b2.error. retry.delay is 'inherited' from default, if any
 
 [domain.queue.groups.queues.retry]
 count=20
 
 [domain.queue.groups]
-name=groupC
+name=C
 note=group is an in-memory queue, hence no persistence
 queuebase=:memory:
 
 [domain.queue.groups.queues]
-name=q_C1
+name=c1
 
 [domain.queue.groups.queues]
-name=q_C2
+name=c2
 
 [domain.servers]
+instances=1
 memberships=customer-group
 path=customer-server-1
+restart=true
+
+[domain.servers.environment]
 
 [domain.servers]
+instances=1
 memberships=customer-group
 path=customer-server-2
+restart=true
+
+[domain.servers.environment]
 
 [domain.servers]
 alias=sales-pre
@@ -963,21 +1201,30 @@ instances=10
 memberships=sales-group
 note=the only services that will be advertised are 'preSalesSaveService' and 'preSalesGetService'
 path=sales-server
+restart=true
 restrictions=preSalesSaveService
 restrictions=preSalesGetService
 
+[domain.servers.environment]
+
 [domain.servers]
 alias=sales-post
+instances=1
 memberships=sales-group
 note=the only services that will be advertised are 'postSalesSaveService' and 'postSalesGetService'
 path=sales-server
+restart=true
 restrictions=postSalesSaveService
 restrictions=postSalesGetService
 
+[domain.servers.environment]
+
 [domain.servers]
+instances=1
 memberships=sales-group
 path=sales-broker
 resources=event-queue
+restart=true
 
 [domain.servers.environment]
 
@@ -1006,44 +1253,36 @@ key=db2_rm
 
 [domain.transaction.resources]
 instances=5
+key=db2_rm
 name=customer-db
 note=this resource is named 'customer-db' - using the default rm-key (db_rm) - overrides the default rm-instances to 5
 openinfo=db=customer,uid=db2,pwd=db2
 
 [domain.transaction.resources]
+instances=3
+key=db2_rm
 name=sales-db
 note=this resource is named 'sales-db' - using the default rm-key (db_rm) - using default rm-instances
 openinfo=db=sales,uid=db2,pwd=db2
 
 [domain.transaction.resources]
 closeinfo=some-mq-specific-stuff
+instances=3
 key=mq_rm
 name=event-queue
 note=this resource is named 'event-queue' - overrides rm-key - using default rm-instances
 openinfo=some-mq-specific-stuff
 
-```
+````
 ### xml
-```xml
+```` xml
 <?xml version="1.0"?>
 <domain>
  <name>domain.A42</name>
  <default>
   <environment>
-   <files>
-    <element>/some/path/to/environment/file</element>
-    <element>/some/other/file</element>
-   </files>
-   <variables>
-    <element>
-     <key>SOME_VARIABLE</key>
-     <value>42</value>
-    </element>
-    <element>
-     <key>SOME_OTHER_VARIABLE</key>
-     <value>some value</value>
-    </element>
-   </variables>
+   <files />
+   <variables />
   </environment>
   <server>
    <instances>1</instances>
@@ -1067,6 +1306,19 @@ openinfo=some-mq-specific-stuff
    <timeout>90s</timeout>
   </service>
  </default>
+ <environment>
+  <files />
+  <variables>
+   <element>
+    <key>SOME_VARIABLE</key>
+    <value>42</value>
+   </element>
+   <element>
+    <key>SOME_OTHER_VARIABLE</key>
+    <value>some value</value>
+   </element>
+  </variables>
+ </environment>
  <transaction>
   <default>
    <resource>
@@ -1078,18 +1330,22 @@ openinfo=some-mq-specific-stuff
   <resources>
    <element>
     <name>customer-db</name>
+    <key>db2_rm</key>
     <instances>5</instances>
     <note>this resource is named 'customer-db' - using the default rm-key (db_rm) - overrides the default rm-instances to 5</note>
     <openinfo>db=customer,uid=db2,pwd=db2</openinfo>
    </element>
    <element>
     <name>sales-db</name>
+    <key>db2_rm</key>
+    <instances>3</instances>
     <note>this resource is named 'sales-db' - using the default rm-key (db_rm) - using default rm-instances</note>
     <openinfo>db=sales,uid=db2,pwd=db2</openinfo>
    </element>
    <element>
     <name>event-queue</name>
     <key>mq_rm</key>
+    <instances>3</instances>
     <note>this resource is named 'event-queue' - overrides rm-key - using default rm-instances</note>
     <openinfo>some-mq-specific-stuff</openinfo>
     <closeinfo>some-mq-specific-stuff</closeinfo>
@@ -1126,15 +1382,27 @@ openinfo=some-mq-specific-stuff
  <servers>
   <element>
    <path>customer-server-1</path>
+   <instances>1</instances>
    <memberships>
     <element>customer-group</element>
    </memberships>
+   <environment>
+    <files />
+    <variables />
+   </environment>
+   <restart>true</restart>
   </element>
   <element>
    <path>customer-server-2</path>
+   <instances>1</instances>
    <memberships>
     <element>customer-group</element>
    </memberships>
+   <environment>
+    <files />
+    <variables />
+   </environment>
+   <restart>true</restart>
   </element>
   <element>
    <path>sales-server</path>
@@ -1144,6 +1412,11 @@ openinfo=some-mq-specific-stuff
    <memberships>
     <element>sales-group</element>
    </memberships>
+   <environment>
+    <files />
+    <variables />
+   </environment>
+   <restart>true</restart>
    <restrictions>
     <element>preSalesSaveService</element>
     <element>preSalesGetService</element>
@@ -1153,9 +1426,15 @@ openinfo=some-mq-specific-stuff
    <path>sales-server</path>
    <alias>sales-post</alias>
    <note>the only services that will be advertised are 'postSalesSaveService' and 'postSalesGetService'</note>
+   <instances>1</instances>
    <memberships>
     <element>sales-group</element>
    </memberships>
+   <environment>
+    <files />
+    <variables />
+   </environment>
+   <restart>true</restart>
    <restrictions>
     <element>postSalesSaveService</element>
     <element>postSalesGetService</element>
@@ -1163,6 +1442,7 @@ openinfo=some-mq-specific-stuff
   </element>
   <element>
    <path>sales-broker</path>
+   <instances>1</instances>
    <memberships>
     <element>sales-group</element>
    </memberships>
@@ -1175,6 +1455,7 @@ openinfo=some-mq-specific-stuff
      </element>
     </variables>
    </environment>
+   <restart>true</restart>
    <resources>
     <element>event-queue</element>
    </resources>
@@ -1187,9 +1468,15 @@ openinfo=some-mq-specific-stuff
     <element>--configuration</element>
     <element>/path/to/configuration</element>
    </arguments>
+   <instances>1</instances>
    <memberships>
     <element>common-group</element>
    </memberships>
+   <environment>
+    <files />
+    <variables />
+   </environment>
+   <restart>false</restart>
   </element>
  </executables>
  <services>
@@ -1207,74 +1494,136 @@ openinfo=some-mq-specific-stuff
   </element>
  </services>
  <gateway>
-  <default>
-   <listener>
-    <limit />
-   </listener>
-   <connection>
-    <restart>true</restart>
-    <address></address>
-   </connection>
-  </default>
-  <listeners>
-   <element>
-    <address>localhost:7779</address>
-    <limit>
-     <size>2097152</size>
-    </limit>
-    <note>local host - if threshold of 2MB of total payload 'in flight' is reach inbound will stop consume from socket until we're below</note>
-   </element>
-   <element>
-    <address>some.host.org:7779</address>
-    <limit>
-     <messages>200</messages>
-    </limit>
-    <note>listener that is bound to some 'external ip' - limit to max 200 calls 'in flight'</note>
-   </element>
-   <element>
-    <address>some.host.org:9999</address>
-    <limit>
-     <size>10485760</size>
-     <messages>10</messages>
-    </limit>
-    <note>listener - threshold of either 10 messages OR 10MB - the first that is reach, inbound will stop consume</note>
-   </element>
-   <element>
-    <address>some.host.org:4242</address>
-    <note>listener - no limits</note>
-   </element>
-  </listeners>
-  <connections>
-   <element>
-    <address>a45.domain.host.org:7779</address>
-    <services>
-     <element>s1</element>
-     <element>s2</element>
-    </services>
-    <queues />
-    <note>connection to domain 'a45' - we expect to find service 's1' and 's2' there.</note>
-   </element>
-   <element>
-    <address>a46.domain.host.org:7779</address>
-    <services>
-     <element>s1</element>
-    </services>
-    <queues>
-     <element>q1</element>
-     <element>q2</element>
-    </queues>
-    <note>connection to domain 'a46' - we expect to find queues 'q1' and 'q2' and service 's1' - casual will only route 's1' to a46 if it's not accessible in a45 (or local)</note>
-   </element>
-   <element>
-    <address>a99.domain.host.org:7780</address>
-    <services />
-    <queues />
-    <restart>false</restart>
-    <note>connection to domain 'a99' - if the connection is closed from a99, casual will not try to reestablish the connection</note>
-   </element>
-  </connections>
+  <inbound>
+   <groups>
+    <element>
+     <alias>unique-inbound-alias</alias>
+     <note>if threshold of 2MB of total payload 'in flight' is reach inbound will stop consume from socket until we're below</note>
+     <limit>
+      <size>2097152</size>
+     </limit>
+     <connections>
+      <element>
+       <address>localhost:7779</address>
+       <note>can be several listening host:port per inbound instance</note>
+      </element>
+      <element>
+       <address>some.host.org:7779</address>
+      </element>
+     </connections>
+    </element>
+    <element>
+     <note>(generated alias) listeners - threshold of either 10 messages OR 10MB - the first that is reach, inbound will stop consume</note>
+     <limit>
+      <size>10485760</size>
+      <messages>10</messages>
+     </limit>
+     <connections>
+      <element>
+       <address>some.host.org:7780</address>
+      </element>
+      <element>
+       <address>some.host.org:4242</address>
+      </element>
+     </connections>
+    </element>
+    <element>
+     <note>(generated alias) listeners - no limits</note>
+     <connections>
+      <element>
+       <address>some.host.org:4242</address>
+      </element>
+     </connections>
+    </element>
+   </groups>
+  </inbound>
+  <outbound>
+   <groups>
+    <element>
+     <alias>primary</alias>
+     <note>casual will 'round-robin' between connections within a group for the same service/queue</note>
+     <connections>
+      <element>
+       <address>a45.domain.host.org:7779</address>
+       <note>connection to domain 'a45' - we expect to find service 's1' and 's2' there.</note>
+       <services>
+        <element>s1</element>
+        <element>s2</element>
+       </services>
+      </element>
+      <element>
+       <address>a46.domain.host.org:7779</address>
+       <note>we expect to find queues 'q1' and 'q2' and service 's1'</note>
+       <services>
+        <element>s1</element>
+       </services>
+       <queues>
+        <element>q1</element>
+        <element>q2</element>
+       </queues>
+      </element>
+     </connections>
+    </element>
+    <element>
+     <alias>fallback</alias>
+     <connections>
+      <element>
+       <address>a99.domain.host.org:7780</address>
+       <note>will be chosen if _resources_ are not found at connections in the 'primary' outbound</note>
+      </element>
+     </connections>
+    </element>
+   </groups>
+  </outbound>
+  <reverse>
+   <inbound>
+    <groups>
+     <element>
+      <alias>unique-alias-name</alias>
+      <note>connect to other reverse outbound that is listening on this port - then treat it as a regular inbound</note>
+      <limit>
+       <messages>42</messages>
+      </limit>
+      <connections>
+       <element>
+        <address>localhost:7780</address>
+        <note>one of possible many addresses to connect to</note>
+       </element>
+      </connections>
+     </element>
+    </groups>
+   </inbound>
+   <outbound>
+    <groups>
+     <element>
+      <alias>primary</alias>
+      <note>listen for connection from reverse inbound - then treat it as a regular outbound</note>
+      <connections>
+       <element>
+        <address>localhost:7780</address>
+        <note>one of possible many listining addresses.</note>
+       </element>
+      </connections>
+     </element>
+     <element>
+      <alias>secondary</alias>
+      <note>onther instance (proces) that handles (multiplexed) traffic on it's own</note>
+      <connections>
+       <element>
+        <address>localhost:7781</address>
+        <note>one of possible many listining addresses.</note>
+       </element>
+      </connections>
+     </element>
+    </groups>
+   </outbound>
+  </reverse>
+  <listeners />
+  <connections />
  </gateway>
  <queue>
+  <note>retry.count - if number of rollbacks is greater, message is moved to error-queue  retry.delay - the amount of time before the message is available for consumption, after rollback
+</note>
   <default>
    <queue>
     <retry>
@@ -1286,60 +1635,112 @@ openinfo=some-mq-specific-stuff
   </default>
   <groups>
    <element>
-    <name>groupA</name>
+    <alias>A</alias>
     <note>will get default queuebase: ${CASUAL_DOMAIN_HOME}/queue/groupA.gb</note>
     <queues>
      <element>
-      <name>q_A1</name>
+      <name>a1</name>
      </element>
      <element>
-      <name>q_A2</name>
+      <name>a2</name>
       <retry>
        <count>10</count>
        <delay>100ms</delay>
       </retry>
-      <note>after 10 rollbacked dequeues, message is moved to q_A2.error</note>
+      <note>after 10 rollbacked dequeues, message is moved to a2.error</note>
      </element>
      <element>
-      <name>q_A3</name>
+      <name>a3</name>
      </element>
      <element>
-      <name>q_A4</name>
+      <name>a4</name>
      </element>
     </queues>
    </element>
    <element>
-    <name>groupB</name>
+    <alias>B</alias>
     <queuebase>/some/fast/disk/queue/groupB.qb</queuebase>
     <queues>
      <element>
-      <name>q_B1</name>
+      <name>b1</name>
      </element>
      <element>
-      <name>q_B2</name>
+      <name>b2</name>
       <retry>
        <count>20</count>
       </retry>
-      <note>after 20 rollbacked dequeues, message is moved to q_B2.error. retry.delay is 'inherited' from default, if any</note>
+      <note>after 20 rollbacked dequeues, message is moved to b2.error. retry.delay is 'inherited' from default, if any</note>
      </element>
     </queues>
    </element>
    <element>
-    <name>groupC</name>
     <queuebase>:memory:</queuebase>
     <note>group is an in-memory queue, hence no persistence</note>
     <queues>
      <element>
-      <name>q_C1</name>
+      <name>c1</name>
      </element>
      <element>
-      <name>q_C2</name>
+      <name>c2</name>
      </element>
     </queues>
+    <name>C</name>
    </element>
   </groups>
-  <note>retry.count - if number of rollbacks is greater, message is moved to error-queue  retry.delay - the amount of time before the message is available for consumption, after rollback
-</note>
+  <forward>
+   <default>
+    <service>
+     <instances>3</instances>
+     <reply>
+      <delay>2s</delay>
+     </reply>
+    </service>
+    <queue>
+     <instances>1</instances>
+     <target>
+      <delay>500ms</delay>
+     </target>
+    </queue>
+   </default>
+   <groups>
+    <element>
+     <alias>forward-group-1</alias>
+     <services>
+      <element>
+       <source>b1</source>
+       <instances>4</instances>
+       <target>
+        <service>casual/example/echo</service>
+       </target>
+       <reply>
+        <queue>a3</queue>
+        <delay>10ms</delay>
+       </reply>
+      </element>
+     </services>
+     <queues>
+      <element>
+       <source>c1</source>
+       <target>
+        <queue>a4</queue>
+       </target>
+      </element>
+     </queues>
+    </element>
+    <element>
+     <alias>forward-group-2</alias>
+     <services>
+      <element>
+       <source>b2</source>
+       <target>
+        <service>casual/example/echo</service>
+       </target>
+      </element>
+     </services>
+    </element>
+   </groups>
+  </forward>
  </queue>
 </domain>
-```
+
+````
