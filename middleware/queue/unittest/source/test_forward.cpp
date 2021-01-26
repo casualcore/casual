@@ -26,7 +26,7 @@
 #include "common/serialize/macro.h"
 
 #include "domain/manager/unittest/process.h"
-#include "service/unittest/advertise.h"
+#include "service/unittest/utility.h"
 
 
 
@@ -339,7 +339,9 @@ domain:
 
          local::Domain domain;
 
-         casual::service::unittest::advertise( { "queue/unittest/service"});
+         constexpr auto service = "queue/unittest/service";
+
+         casual::service::unittest::advertise( { service});
 
          const auto payload = common::unittest::random::binary( 1024);
 
@@ -367,6 +369,10 @@ domain:
             auto reply = common::message::reverse::type( request);
             reply.buffer = std::move( request.buffer);
             common::communication::device::blocking::send( request.process.ipc, reply);
+
+            casual::service::unittest::unadvertise( { service});
+
+            casual::service::unittest::send::ack( request);
          }
 
          // we expect the reply to be enqueued to b3

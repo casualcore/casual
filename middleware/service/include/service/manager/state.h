@@ -378,10 +378,10 @@ namespace casual
             void deactivate( common::strong::process::id pid);
 
             //! adds or "updates" service
-            //! @returns [[nodiscard]] pending request that has got services ready for reply
+            //! @returns pending request that has got services ready for reply
             //! @{ 
-            std::vector< state::service::Pending> update( common::message::service::Advertise& message);
-            std::vector< state::service::Pending> update( common::message::service::concurrent::Advertise& message);
+            [[nodiscard]] std::vector< state::service::Pending> update( common::message::service::Advertise& message);
+            [[nodiscard]] std::vector< state::service::Pending> update( common::message::service::concurrent::Advertise& message);
             //! @}
 
             //! Resets metrics for the provided services, if empty all metrics are reseted.

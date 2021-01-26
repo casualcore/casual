@@ -51,7 +51,7 @@ namespace casual
 
             {
                common::message::service::Advertise message;
-               state.update( message);
+               EXPECT_TRUE( state.update( message).empty());
             }
 
             EXPECT_TRUE( state.instances.sequential.empty()) << CASUAL_NAMED_VALUE( state.instances.sequential);
@@ -66,7 +66,7 @@ namespace casual
 
             {
                common::message::service::concurrent::Advertise message;
-               state.update( message);
+               EXPECT_TRUE( state.update( message).empty());
             }
 
             EXPECT_TRUE( state.instances.sequential.empty());
@@ -83,7 +83,7 @@ namespace casual
                common::message::service::Advertise message;
                message.process = common::process::handle();
                message.services.add.emplace_back( "service1");
-               state.update( message);
+               EXPECT_TRUE( state.update( message).empty());
             }
 
             EXPECT_TRUE( state.instances.sequential.size() == 1);
@@ -112,7 +112,7 @@ namespace casual
                common::message::service::Advertise message;
                message.process = common::process::handle();
                message.services.add.emplace_back( "service1");
-               state.update( message);
+               EXPECT_TRUE( state.update( message).empty());
             }
 
             // unadvertise
@@ -120,7 +120,7 @@ namespace casual
                common::message::service::Advertise message;
                message.process = common::process::handle();
                message.services.remove.emplace_back( "service1");
-               state.update( message);
+               EXPECT_TRUE( state.update( message).empty());
             }
 
             {
@@ -158,7 +158,7 @@ namespace casual
                   std::shuffle( std::begin( message.services.add), std::end( message.services.add), generator);
                }
 
-               state.update( message);
+               EXPECT_TRUE( state.update( message).empty());
             }
 
             {
@@ -190,7 +190,7 @@ namespace casual
                   std::shuffle( std::begin( message.services.add), std::end( message.services.add), generator);
                }
 
-               state.update( message);
+               EXPECT_TRUE( state.update( message).empty());
             }
 
             // unadvertise
@@ -198,7 +198,7 @@ namespace casual
                common::message::service::Advertise message;
                message.process = common::process::handle();
                message.services.remove = { { "s4"}, { "s7"}};
-               state.update( message);
+               EXPECT_TRUE( state.update( message).empty());
             }
             {
                auto service = state.service( "s4");

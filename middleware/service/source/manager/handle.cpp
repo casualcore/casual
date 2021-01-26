@@ -294,7 +294,7 @@ namespace casual
                   {
                      return [&state]( common::message::service::Advertise& message)
                      {
-                        Trace trace{ "service::manager::handle::service::Advertise"};
+                        Trace trace{ "service::manager::handle::service::advertise"};
                         log::line( verbose::log, "message: ", message);
 
                         // some pending might got resolved, from the update
@@ -308,7 +308,7 @@ namespace casual
                      {
                         return [&state]( common::message::service::concurrent::Advertise& message)
                         {
-                           Trace trace{ "service::manager::handle::service::concurrent::Advertise"};
+                           Trace trace{ "service::manager::handle::service::concurrent::advertise"};
                            common::log::line( verbose::log, "message: ", message);
 
                            // some pending might got resolved.
@@ -320,7 +320,7 @@ namespace casual
                      {
                         return [&state]( common::message::event::service::Calls& message)
                         {
-                           Trace trace{ "service::manager::handle::service::concurrent::Metric"};
+                           Trace trace{ "service::manager::handle::service::concurrent::metric"};
                            log::line( verbose::log, "message: ", message);
 
                            auto update_metric = [&]( auto& metric)

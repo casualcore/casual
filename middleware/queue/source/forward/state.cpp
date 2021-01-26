@@ -16,13 +16,13 @@ namespace casual
       namespace state
       {
 
-         std::ostream& operator << ( std::ostream& out, Machine value)
+         std::ostream& operator << ( std::ostream& out, Runlevel value)
          {
             switch( value)
             {
-               case Machine::startup: return out << "startup";
-               case Machine::running: return out << "running";
-               case Machine::shutdown: return out << "shutdown";
+               case Runlevel::startup: return out << "startup";
+               case Runlevel::running: return out << "running";
+               case Runlevel::shutdown: return out << "shutdown";
             }
             return out << "<unknown>";
          }
@@ -31,8 +31,11 @@ namespace casual
 
       bool State::done() const noexcept
       {
-         return machine == state::Machine::shutdown &&
-            algorithm::all_of( forward.services, []( auto& forward){ return forward.instances.absent();});
+         auto absent = []( auto& forward){ return forward.instances.absent();};
+
+         return runlevel == state::Runlevel::shutdown 
+            && algorithm::all_of( forward.services, absent)
+            && algorithm::all_of( forward.queues, absent);
       }
 
       state::forward::Service* State::forward_service( state::forward::id id) noexcept

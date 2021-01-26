@@ -11,7 +11,7 @@
 #include "gateway/manager/admin/server.h"
 
 #include "domain/manager/unittest/process.h"
-#include "service/unittest/advertise.h"
+#include "service/unittest/utility.h"
 
 #include "serviceframework/service/protocol/call.h"
 

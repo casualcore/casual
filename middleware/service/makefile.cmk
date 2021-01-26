@@ -114,7 +114,7 @@ install_headers += [
 
 service_unittest = LinkLibrary( 'bin/casual-service-unittest',
     [ 
-        Compile( 'source/unittest/advertise.cpp'),
+        Compile( 'source/unittest/utility.cpp'),
     ],
     [ 
         'casual-common', 

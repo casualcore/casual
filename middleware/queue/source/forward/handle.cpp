@@ -459,6 +459,12 @@ namespace casual
                            log::line( log::category::error, "empty dequeued message - action: rollback");
                            send::transaction::rollback::request( state, std::move( pending));
                         }
+                        else if( state.runlevel > decltype( state.runlevel())::running)
+                        {
+                           // if we're in _shutdown mode_ we don't want to start any "flows"
+                           log::line( log::category::information, "message dequeued in shutdown mode - the message might end up on error queue - action: rollback");
+                           send::transaction::rollback::request( state, std::move( pending));
+                        }
                         else if( auto forward = state.forward_service( pending.id))
                         {
 
@@ -506,6 +512,27 @@ namespace casual
 
                   namespace forget
                   {
+                     namespace detail::discard::pending
+                     {
+                        auto dequeue = []( State& state, const auto& message)
+                        {
+                           if( auto found = algorithm::find( state.pending.dequeues, message.correlation))
+                           {
+                              auto pending = algorithm::extract( state.pending.dequeues, std::begin( found));
+
+                              state.forward_apply( pending.id, []( auto& forward)
+                              {
+                                 assert( forward.instances.running > 0);
+                                 
+                                 --forward.instances.running;
+                                 common::log::line( verbose::log, "forward: ", forward);
+                              });
+
+                              common::log::line( verbose::log, "pending: ", pending);
+                           }
+                        };
+                        
+                     } // detail::discard::pending 
                      auto request( State& state)
                      {
                         // we get this from queue group if it's 'going down' or some other configuration
@@ -515,18 +542,7 @@ namespace casual
                            Trace trace{ "queue::forward::handle::dequeue::forget::request"};
                            common::log::line( verbose::log, "message: ", message);
 
-                           // TODO we'll always find it!
-                           if( auto found = algorithm::find( state.pending.dequeues, message.correlation))
-                           {
-                              auto pending = algorithm::extract( state.pending.dequeues, std::begin( found));
-
-                              state.forward_apply( pending.id, []( auto& forward)
-                              {
-                                 --forward.instances.running;
-                              });
-
-                              common::log::line( verbose::log, "pending: ", pending);
-                           }
+                           detail::discard::pending::dequeue( state, message);
                         };
                      }
 
@@ -539,16 +555,7 @@ namespace casual
                            common::log::line( verbose::log, "message: ", message);
 
                            if( message.found)
-                           {
-                              auto pending = pending::consume( state.pending.dequeues, message.correlation);
-                              common::log::line( verbose::log, "pending: ", pending);
-
-                              state.forward_apply( pending.id, []( auto& forward)
-                              {
-                                 --forward.instances.running;
-                                 common::log::line( verbose::log, "forward: ", forward);
-                              });  
-                           }
+                              detail::discard::pending::dequeue( state, message);
 
                            // if not found, we've already got a dequeue, and we're mid 'state flow'.
                            // the forward has been configured already, and we do nothing and let the
@@ -810,7 +817,7 @@ namespace casual
                      Trace trace{ "queue::forward::service::local::handle::shutdown"};
                      log::line( verbose::log, "message: ", message);
 
-                     state.machine = decltype( state.machine)::shutdown;
+                     state.runlevel = decltype( state.runlevel())::shutdown;
 
                      // configure zero instances for all forwards
                      auto set_no_instances = []( auto& forward){ forward.instances.configured = 0;};

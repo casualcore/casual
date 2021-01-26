@@ -551,10 +551,14 @@ namespace casual
             return result;
          };
 
-         common::message::service::Advertise message{ process::handle()};
-         message.services.add = algorithm::transform( services, transform_service);
+         auto& instance = local::find_or_add( instances.sequential, process::handle());
 
-         update( message);
+         for( auto service : algorithm::transform( services, transform_service))
+         {
+            local::find_or_add_service( 
+               *this, 
+               local::transform( service, default_timeout), [&instance]( auto& service) { service.add( instance);});
+         }
       }
 
       

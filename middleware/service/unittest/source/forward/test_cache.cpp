@@ -8,7 +8,7 @@
 #include <gtest/gtest.h>
 #include "common/unittest.h"
 
-#include "service/unittest/advertise.h"
+#include "service/unittest/utility.h"
 
 #include "common/communication/instance.h"
 #include "common/message/service.h"

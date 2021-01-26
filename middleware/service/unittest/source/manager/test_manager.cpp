@@ -9,7 +9,7 @@
 
 #include "service/manager/admin/server.h"
 #include "service/manager/admin/model.h"
-#include "service/unittest/advertise.h"
+#include "service/unittest/utility.h"
 
 #include "common/message/domain.h"
 #include "common/message/event.h"

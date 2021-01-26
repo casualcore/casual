@@ -14,6 +14,7 @@
 #include "common/strong/id.h"
 #include "common/process.h"
 #include "common/buffer/type.h"
+#include "common/state/machine.h"
 
 
 #include <vector>
@@ -27,14 +28,14 @@ namespace casual
    {
       namespace state
       {
-         enum class Machine : short
+         enum class Runlevel : short
          {
             startup,
             running,
             shutdown,
          };
 
-         std::ostream& operator << ( std::ostream& out, Machine value);
+         std::ostream& operator << ( std::ostream& out, Runlevel value);
 
          namespace forward
          {
@@ -86,7 +87,7 @@ namespace casual
                   return configured - running;
                }
 
-               //! @returns true if there are no configured and running concurrency
+               //! @returns true if there are no configured and running currently
                inline auto absent() const { return configured == 0 && running == 0;}
 
                CASUAL_LOG_SERIALIZE(
@@ -360,11 +361,11 @@ namespace casual
       } // state
 
       struct State
-      {            
+      {  
+         common::state::Machine< state::Runlevel> runlevel;          
          state::Forward forward;
          state::Pending pending;
-         state::Machine machine = state::Machine::startup;
-
+         
          //! we're done when we're in shutdown mode
          //! and all forwards has no concurrent stuff in flight.
          bool done() const noexcept;
@@ -383,8 +384,8 @@ namespace casual
          }
 
          CASUAL_LOG_SERIALIZE(
+            CASUAL_SERIALIZE( runlevel);
             CASUAL_SERIALIZE( forward);
-            CASUAL_SERIALIZE( machine);
             CASUAL_SERIALIZE( pending);
          )
       };

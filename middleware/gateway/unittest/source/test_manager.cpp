@@ -25,7 +25,7 @@
 #include "serviceframework/service/protocol/call.h"
 
 #include "domain/manager/unittest/process.h"
-#include "service/unittest/advertise.h"
+#include "service/unittest/utility.h"
 
 namespace casual
 {
