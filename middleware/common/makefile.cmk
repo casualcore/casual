@@ -25,6 +25,7 @@ else:
 
 IncludePaths( [ 
     'include',
+    '../cli/include',
     '../xatmi/include',
     '$(CASUAL_THIRDPARTY)/pugixml/src',
     '$(CASUAL_THIRDPARTY)/rapidjson/include',
@@ -35,6 +36,7 @@ IncludePaths( [
 
 LibraryPaths( [
     'bin',
+    '../cli/bin',
     '$(CASUAL_THIRDPARTY)/pugixml/bin',
     '$(CASUAL_THIRDPARTY)/yaml-cpp/bin',
     ]
@@ -157,7 +159,7 @@ casual_common_objectfiles = [
 
 common = LinkLibrary( 'bin/casual-common', 
 	casual_common_objectfiles,
-	platform_specific_libs + [ 'yaml-cpp', 'pugixml'])
+	platform_specific_libs + [ 'yaml-cpp', 'pugixml', 'casual-cli'])
 
 install_libs.append( common)
 
