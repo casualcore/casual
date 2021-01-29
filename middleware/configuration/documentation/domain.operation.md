@@ -89,9 +89,28 @@ routes         | defines what logical names are actually exposed. For _aliases_,
 
 Defines configuration for communication with other `casual` domains.
 
-### listeners
+### inbound
 
-Defines all listeners that this configuration should listen on.
+Defines all inbound related configuration (from remote domains -> local domain)
+
+### default
+#### inbound
+
+property       | description
+---------------|----------------------------------------------------
+limit.size     | default value for limit size 
+limit.messages | default value for maximum number of messages
+
+#### groups
+
+Defines a list of all inbound groups
+
+property       | description
+---------------|----------------------------------------------------
+alias          | an _identity_ for this group instance (if not set, casual generates one)
+connections    | all the connections for this group
+
+##### connection
 
 property       | description
 ---------------|----------------------------------------------------
@@ -99,20 +118,34 @@ address        | the address to listen on, `host:port`
 limit.size     | the maximum allowed size of all inflight messages. If reached _inbound_ stop taking more request until below the limit 
 limit.messages | the maximum allowed number of inflight messages. If reached _inbound_ stop taking more request until below the limit
 
+### outbound
 
-### connections
+Defines all outbound related configuration (from local domain -> remote domains)
 
-Defines all _outbound_ connections that this configuration should try to connect to.
+#### groups
 
-The order in which connections are defined matters. services and queues found in the first connection has higher priority
-than the last, hence if several remote domains exposes the the same service, the first connection will be used as long as
-the service is provided. When a connection is lost, the next connection that exposes the service will be used.
+Defines a list of all outbound groups. 
+
+Each group gets an _order_ in the order they are defined. Groups defined lower down will only be used if the higher
+ups does not provide the wanted _service_ or _queue_. Hence, the lower downs can be used as _fallback_.
+
+property       | description
+---------------|----------------------------------------------------
+alias          | an _identity_ for this group instance (if not set, casual generates one)
+connections    | all the connections for this group
+
+##### connection
+
+Defines all connections that this _outbound group_ should try to connect to.
+
+All connections within a group ar treated equal, and service calls will be load balanced with _round robin_. Allthough,
+`casual` will try to _route_ the same transaction to the previous _associated_ connectino with the specific transaction. 
+This is only done to minimize the amount of _resources_ involved within the prepare and commit/rollback stage.  
 
 
 property       | description
 ---------------|----------------------------------------------------
 address        | the address to connect to, `host:port` 
-restart        | if true, the connection will be restarted if connection is lost.
 services       | services we're expecting to find on the other side 
 queues         | queues we're expecting to find on the other side 
 
@@ -155,36 +188,15 @@ Below follows examples in human readable formats that `casual` can handle
 domain:
   name: "domain.A42"
   default:
-    environment:
-      files:
-        []
-      variables:
-        []
     server:
       instances: 1
       restart: true
-      memberships:
-        []
-      environment:
-        files:
-          []
-        variables:
-          []
     executable:
       instances: 1
       restart: false
-      memberships:
-        []
-      environment:
-        files:
-          []
-        variables:
-          []
     service:
       timeout: "90s"
   environment:
-    files:
-      []
     variables:
       - key: "SOME_VARIABLE"
         value: "42"
@@ -234,21 +246,11 @@ domain:
       instances: 1
       memberships:
         - "customer-group"
-      environment:
-        files:
-          []
-        variables:
-          []
       restart: true
     - path: "customer-server-2"
       instances: 1
       memberships:
         - "customer-group"
-      environment:
-        files:
-          []
-        variables:
-          []
       restart: true
     - path: "sales-server"
       alias: "sales-pre"
@@ -256,11 +258,6 @@ domain:
       instances: 10
       memberships:
         - "sales-group"
-      environment:
-        files:
-          []
-        variables:
-          []
       restart: true
       restrictions:
         - "preSalesSaveService"
@@ -271,11 +268,6 @@ domain:
       instances: 1
       memberships:
         - "sales-group"
-      environment:
-        files:
-          []
-        variables:
-          []
       restart: true
       restrictions:
         - "postSalesSaveService"
@@ -285,8 +277,6 @@ domain:
       memberships:
         - "sales-group"
       environment:
-        files:
-          []
         variables:
           - key: "SALES_BROKER_VARIABLE"
             value: "556"
@@ -301,11 +291,6 @@ domain:
       instances: 1
       memberships:
         - "common-group"
-      environment:
-        files:
-          []
-        variables:
-          []
       restart: false
   services:
     - name: "postSalesSaveService"
@@ -379,10 +364,6 @@ domain:
             connections:
               - address: "localhost:7781"
                 note: "one of possible many listining addresses."
-    listeners:
-      []
-    connections:
-      []
   queue:
     note: "retry.count - if number of rollbacks is greater, message is moved to error-queue  retry.delay - the amount of time before the message is available for consumption, after rollback\n"
     default:
@@ -455,34 +436,19 @@ domain:
     "domain": {
         "name": "domain.A42",
         "default": {
-            "environment": {
-                "files": [],
-                "variables": []
-            },
             "server": {
                 "instances": 1,
-                "restart": true,
-                "memberships": [],
-                "environment": {
-                    "files": [],
-                    "variables": []
-                }
+                "restart": true
             },
             "executable": {
                 "instances": 1,
-                "restart": false,
-                "memberships": [],
-                "environment": {
-                    "files": [],
-                    "variables": []
-                }
+                "restart": false
             },
             "service": {
                 "timeout": "90s"
             }
         },
         "environment": {
-            "files": [],
             "variables": [
                 {
                     "key": "SOME_VARIABLE",
@@ -561,10 +527,6 @@ domain:
                 "memberships": [
                     "customer-group"
                 ],
-                "environment": {
-                    "files": [],
-                    "variables": []
-                },
                 "restart": true
             },
             {
@@ -573,10 +535,6 @@ domain:
                 "memberships": [
                     "customer-group"
                 ],
-                "environment": {
-                    "files": [],
-                    "variables": []
-                },
                 "restart": true
             },
             {
@@ -587,10 +545,6 @@ domain:
                 "memberships": [
                     "sales-group"
                 ],
-                "environment": {
-                    "files": [],
-                    "variables": []
-                },
                 "restart": true,
                 "restrictions": [
                     "preSalesSaveService",
@@ -605,10 +559,6 @@ domain:
                 "memberships": [
                     "sales-group"
                 ],
-                "environment": {
-                    "files": [],
-                    "variables": []
-                },
                 "restart": true,
                 "restrictions": [
                     "postSalesSaveService",
@@ -622,7 +572,6 @@ domain:
                     "sales-group"
                 ],
                 "environment": {
-                    "files": [],
                     "variables": [
                         {
                             "key": "SALES_BROKER_VARIABLE",
@@ -647,10 +596,6 @@ domain:
                 "memberships": [
                     "common-group"
                 ],
-                "environment": {
-                    "files": [],
-                    "variables": []
-                },
                 "restart": false
             }
         ],
@@ -792,9 +737,7 @@ domain:
                         }
                     ]
                 }
-            },
-            "listeners": [],
-            "connections": []
+            }
         },
         "queue": {
             "note": "retry.count - if number of rollbacks is greater, message is moved to error-queue  retry.delay - the amount of time before the message is available for consumption, after rollback\n",
@@ -926,19 +869,13 @@ name=domain.A42
 
 [domain.default]
 
-[domain.default.environment]
-
 [domain.default.executable]
 instances=1
 restart=false
 
-[domain.default.executable.environment]
-
 [domain.default.server]
 instances=1
 restart=true
-
-[domain.default.server.environment]
 
 [domain.default.service]
 timeout=90s
@@ -960,8 +897,6 @@ instances=1
 memberships=common-group
 path=mq-server
 restart=false
-
-[domain.executables.environment]
 
 [domain.gateway]
 
@@ -1185,15 +1120,11 @@ memberships=customer-group
 path=customer-server-1
 restart=true
 
-[domain.servers.environment]
-
 [domain.servers]
 instances=1
 memberships=customer-group
 path=customer-server-2
 restart=true
-
-[domain.servers.environment]
 
 [domain.servers]
 alias=sales-pre
@@ -1205,8 +1136,6 @@ restart=true
 restrictions=preSalesSaveService
 restrictions=preSalesGetService
 
-[domain.servers.environment]
-
 [domain.servers]
 alias=sales-post
 instances=1
@@ -1216,8 +1145,6 @@ path=sales-server
 restart=true
 restrictions=postSalesSaveService
 restrictions=postSalesGetService
-
-[domain.servers.environment]
 
 [domain.servers]
 instances=1
@@ -1280,34 +1207,19 @@ openinfo=some-mq-specific-stuff
 <domain>
  <name>domain.A42</name>
  <default>
-  <environment>
-   <files />
-   <variables />
-  </environment>
   <server>
    <instances>1</instances>
    <restart>true</restart>
-   <memberships />
-   <environment>
-    <files />
-    <variables />
-   </environment>
   </server>
   <executable>
    <instances>1</instances>
    <restart>false</restart>
-   <memberships />
-   <environment>
-    <files />
-    <variables />
-   </environment>
   </executable>
   <service>
    <timeout>90s</timeout>
   </service>
  </default>
  <environment>
-  <files />
   <variables>
    <element>
     <key>SOME_VARIABLE</key>
@@ -1386,10 +1298,6 @@ openinfo=some-mq-specific-stuff
    <memberships>
     <element>customer-group</element>
    </memberships>
-   <environment>
-    <files />
-    <variables />
-   </environment>
    <restart>true</restart>
   </element>
   <element>
@@ -1398,10 +1306,6 @@ openinfo=some-mq-specific-stuff
    <memberships>
     <element>customer-group</element>
    </memberships>
-   <environment>
-    <files />
-    <variables />
-   </environment>
    <restart>true</restart>
   </element>
   <element>
@@ -1412,10 +1316,6 @@ openinfo=some-mq-specific-stuff
    <memberships>
     <element>sales-group</element>
    </memberships>
-   <environment>
-    <files />
-    <variables />
-   </environment>
    <restart>true</restart>
    <restrictions>
     <element>preSalesSaveService</element>
@@ -1430,10 +1330,6 @@ openinfo=some-mq-specific-stuff
    <memberships>
     <element>sales-group</element>
    </memberships>
-   <environment>
-    <files />
-    <variables />
-   </environment>
    <restart>true</restart>
    <restrictions>
     <element>postSalesSaveService</element>
@@ -1447,7 +1343,6 @@ openinfo=some-mq-specific-stuff
     <element>sales-group</element>
    </memberships>
    <environment>
-    <files />
     <variables>
      <element>
       <key>SALES_BROKER_VARIABLE</key>
@@ -1472,10 +1367,6 @@ openinfo=some-mq-specific-stuff
    <memberships>
     <element>common-group</element>
    </memberships>
-   <environment>
-    <files />
-    <variables />
-   </environment>
    <restart>false</restart>
   </element>
  </executables>
@@ -1618,8 +1509,6 @@ openinfo=some-mq-specific-stuff
     </groups>
    </outbound>
   </reverse>
-  <listeners />
-  <connections />
  </gateway>
  <queue>
   <note>retry.count - if number of rollbacks is greater, message is moved to error-queue  retry.delay - the amount of time before the message is available for consumption, after rollback

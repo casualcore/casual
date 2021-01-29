@@ -248,13 +248,13 @@ namespace casual
 
                // first we take care of deprecated stuff
 
-               if( ! gateway.listeners.empty())
+               if( gateway.listeners && ! gateway.listeners.value().empty())
                {
                   log::line( log::category::warning, code::casual::invalid_configuration, " domain.gateway.listeners are deprecated - use domain.gateway.inbounds");
 
                   gateway::inbound::Group group;
                   group.connect = decltype( group.connect)::regular;
-                  group.connections = common::algorithm::transform( gateway.listeners, []( const auto& listener)
+                  group.connections = common::algorithm::transform( gateway.listeners.value(), []( const auto& listener)
                   {
                      gateway::inbound::Connection result;
                      result.note = listener.note.value_or( "");
@@ -263,7 +263,7 @@ namespace casual
                   });
 
 
-                  group.limit = algorithm::accumulate( gateway.listeners, gateway::inbound::Limit{}, [&]( auto current, auto& listener)
+                  group.limit = algorithm::accumulate( gateway.listeners.value(), gateway::inbound::Limit{}, [&]( auto current, auto& listener)
                   {
                      if( ! listener.limit)
                         return current;
@@ -283,13 +283,13 @@ namespace casual
                   result.inbound.groups.push_back( std::move( group));
                }
 
-               if( ! gateway.connections.empty())
+               if( gateway.connections && ! gateway.connections.value().empty())
                {
                   log::line( log::category::warning, code::casual::invalid_configuration, " domain.gateway.connections are deprecated - use domain.gateway.outbounds");
 
                   gateway::outbound::Group group;
                   group.connect = decltype( group.connect)::regular;
-                  group.connections = common::algorithm::transform( gateway.connections, []( const auto& value)
+                  group.connections = common::algorithm::transform( gateway.connections.value(), []( const auto& value)
                   {
                      gateway::outbound::Connection result;
 

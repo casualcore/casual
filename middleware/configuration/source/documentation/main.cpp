@@ -166,9 +166,28 @@ routes         | defines what logical names are actually exposed. For _aliases_,
 
 Defines configuration for communication with other `casual` domains.
 
-### listeners
+### inbound
 
-Defines all listeners that this configuration should listen on.
+Defines all inbound related configuration (from remote domains -> local domain)
+
+### default
+#### inbound
+
+property       | description
+---------------|----------------------------------------------------
+limit.size     | default value for limit size 
+limit.messages | default value for maximum number of messages
+
+#### groups
+
+Defines a list of all inbound groups
+
+property       | description
+---------------|----------------------------------------------------
+alias          | an _identity_ for this group instance (if not set, casual generates one)
+connections    | all the connections for this group
+
+##### connection
 
 property       | description
 ---------------|----------------------------------------------------
@@ -176,20 +195,34 @@ address        | the address to listen on, `host:port`
 limit.size     | the maximum allowed size of all inflight messages. If reached _inbound_ stop taking more request until below the limit 
 limit.messages | the maximum allowed number of inflight messages. If reached _inbound_ stop taking more request until below the limit
 
+### outbound
 
-### connections
+Defines all outbound related configuration (from local domain -> remote domains)
 
-Defines all _outbound_ connections that this configuration should try to connect to.
+#### groups
 
-The order in which connections are defined matters. services and queues found in the first connection has higher priority
-than the last, hence if several remote domains exposes the the same service, the first connection will be used as long as
-the service is provided. When a connection is lost, the next connection that exposes the service will be used.
+Defines a list of all outbound groups. 
+
+Each group gets an _order_ in the order they are defined. Groups defined lower down will only be used if the higher
+ups does not provide the wanted _service_ or _queue_. Hence, the lower downs can be used as _fallback_.
+
+property       | description
+---------------|----------------------------------------------------
+alias          | an _identity_ for this group instance (if not set, casual generates one)
+connections    | all the connections for this group
+
+##### connection
+
+Defines all connections that this _outbound group_ should try to connect to.
+
+All connections within a group ar treated equal, and service calls will be load balanced with _round robin_. Allthough,
+`casual` will try to _route_ the same transaction to the previous _associated_ connectino with the specific transaction. 
+This is only done to minimize the amount of _resources_ involved within the prepare and commit/rollback stage.  
 
 
 property       | description
 ---------------|----------------------------------------------------
 address        | the address to connect to, `host:port` 
-restart        | if true, the connection will be restarted if connection is lost.
 services       | services we're expecting to find on the other side 
 queues         | queues we're expecting to find on the other side 
 
