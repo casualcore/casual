@@ -11,7 +11,6 @@
 #include "common/exception/guard.h"
 #include "common/execute.h"
 
-#include "casual/cli/pipe.h"
 
 #include <iomanip>
 
@@ -41,16 +40,9 @@ namespace casual
                      auto color( std::string value)
                      {
                         if( value == "auto")
-                        {
-                           if( cli::pipe::terminal::out())
-                              return true;
-                           else
-                              return false;
-                        }
-                        else if( value == "false")
-                           return false;
+                           return ::isatty( ::fileno( stdout)) == 1;
                         else
-                           return true;
+                           return string::from< bool>( value);
                      }
                   }
 
