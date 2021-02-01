@@ -15,7 +15,6 @@
 #include "common/memory.h"
 #include "common/execution.h"
 
-#include <vector>
 #include <cassert>
 
 
@@ -105,6 +104,13 @@ namespace casual
                      write_size( value.size());
                      append( value);
                   }
+
+                  void write( const string::immutable::utf8& value, const char*) 
+                  {
+                     write_size(value.get().size());
+                     append(value.get());
+                  }
+
                   void write( const platform::binary::type& value, const char*) 
                   { 
                      write_size( value.size());
@@ -187,6 +193,13 @@ namespace casual
                   {
                      value.resize( read_size());
                      consume( value);
+                     return true;
+                  }
+
+                  bool read( string::utf8& value, const char*)
+                  {
+                     value.get().resize( read_size());
+                     consume( value.get());
                      return true;
                   }
 

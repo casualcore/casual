@@ -97,6 +97,11 @@ namespace casual
                maybe_name( name) << std::quoted( value);
             }
 
+            void Writer::write( const string::immutable::utf8& value, const char* name)
+            {
+               write( transcode::utf8::decode( value.get()), name);               
+            }
+
             void Writer::begin_scope()
             {
                m_stream << std::exchange( m_prefix, detail::first);

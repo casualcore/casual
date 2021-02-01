@@ -98,9 +98,10 @@ value:
 
          local::string_to_strict_value( test::SimpleVO::yaml(), value);
 
-         EXPECT_TRUE( value.m_long == 234) << "value.someLong: " << value.m_long;
-         EXPECT_TRUE( value.m_string == "bla bla bla bla") << "value.someLong: " << value.m_string;
-         EXPECT_TRUE( value.m_longlong == 1234567890123456789) << "value.someLongLong: " << value.m_longlong;
+         EXPECT_TRUE( value.m_long == 234) << value.m_long;
+         EXPECT_TRUE( value.m_string == "bla bla bla bla") << value.m_string;
+         EXPECT_TRUE( value.m_longlong == 1234567890123456789) << value.m_longlong;
+         EXPECT_TRUE( value.m_path == u8"/tmp/file.txt") << value.m_path;
       }
 
       TEST( common_serialize_yaml, strict_read_not_in_document__gives_throws)

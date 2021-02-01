@@ -53,7 +53,8 @@ namespace casual
 
          EXPECT_TRUE( value.m_long == 234) << value.m_long;
          EXPECT_TRUE( value.m_string == "bla bla bla bla") << value.m_long;
-         EXPECT_TRUE( value.m_longlong == 1234567890123456789) <<  value.m_longlong;
+         EXPECT_TRUE( value.m_longlong == 1234567890123456789) << value.m_longlong;
+         EXPECT_TRUE( value.m_path == u8"/tmp/file.txt") << value.m_path;
 
       }
 

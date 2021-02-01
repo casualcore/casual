@@ -32,7 +32,7 @@ namespace casual
             {
                namespace
                {
-                  std::vector< std::string> keys() { return { "xml", common::buffer::type::xml()};};
+                  std::vector< std::string> keys() { return { "xml", buffer::type::xml()};};
 
                   namespace reader
                   {
@@ -96,7 +96,7 @@ namespace casual
                                  return child.type() == pugi::xml_node_type::node_element;
                               };
 
-                              return common::algorithm::filter( node.children(), filter_child);
+                              return algorithm::filter( node.children(), filter_child);
                            }
                         } // filter
 
@@ -303,19 +303,23 @@ namespace casual
                         static void read( const pugi::xml_node& node, char& value)
                         { 
                            // If empty string this should result in '\0'
-                           value = *common::transcode::utf8::decode( node.text().get()).c_str(); 
+                           value = *transcode::utf8::decode( node.text().get()).data(); 
                         }
                         static void read( const pugi::xml_node& node, std::string& value)
                         {
-                           value = common::transcode::utf8::decode( node.text().get());
+                           value = transcode::utf8::decode( node.text().get());
                         }
-                        
+                        static void read( const pugi::xml_node& node, string::utf8& value)
+                        {
+                           value.get() = node.text().get();
+                        }
                         static void read( const pugi::xml_node& node, std::vector<char>& value)
-                        { value = common::transcode::base64::decode( node.text().get()); }
-
+                        { 
+                           value = transcode::base64::decode( node.text().get()); 
+                        }
                         static void read( const pugi::xml_node& node, view::Binary value)
                         { 
-                           auto binary = common::transcode::base64::decode( node.text().get());
+                           auto binary = transcode::base64::decode( node.text().get());
 
                            if( range::size( binary) != range::size( value))
                               code::raise::error( code::casual::invalid_node, "binary size missmatch - wanted: ", range::size( value), " got: ", range::size( binary));
@@ -408,7 +412,7 @@ namespace casual
                         template<typename T>
                         void write( const T& value)
                         {
-                           m_stack.back().text().set( std::to_string( value).c_str());
+                           m_stack.back().text().set( std::to_string( value).data());
                         }
 
                         // A few overloads
@@ -417,7 +421,7 @@ namespace casual
                         {
                            std::ostringstream stream;
                            stream << std::boolalpha << value;
-                           m_stack.back().text().set( stream.str().c_str());
+                           m_stack.back().text().set( stream.str().data());
                         }
 
                         void write( const char& value)
@@ -427,7 +431,12 @@ namespace casual
 
                         void write( const std::string& value)
                         {
-                           m_stack.back().text().set( common::transcode::utf8::encode( value).c_str());
+                           m_stack.back().text().set( transcode::utf8::encode( value).data());
+                        }
+
+                        void write( const string::immutable::utf8& value)
+                        {
+                           m_stack.back().text().set( value.get().data());
                         }
 
                         void write( const platform::binary::type& value)
@@ -437,7 +446,7 @@ namespace casual
 
                         void write( view::immutable::Binary value)
                         {
-                           m_stack.back().text().set( common::transcode::base64::encode( value).c_str());
+                           m_stack.back().text().set( transcode::base64::encode( value).data());
                         }
 
                         pugi::xml_document m_document;

@@ -29,7 +29,7 @@ namespace casual
          {
             namespace
             {
-               std::vector< std::string> keys() { return { "yaml", "yml", common::buffer::type::yaml()};};
+               std::vector< std::string> keys() { return { "yaml", "yml", buffer::type::yaml()};};
 
                namespace reader
                {
@@ -266,12 +266,16 @@ namespace casual
                      {
                         std::string string;
                         consume( node, string);
-                        value = *common::transcode::utf8::decode( string).c_str();
+                        value = *transcode::utf8::decode( string).data();
                      }
                      static void read( const YAML::Node& node, std::string& value)
                      {
                         consume( node, value);
-                        value = common::transcode::utf8::decode( value);
+                        value = transcode::utf8::decode( value);
+                     }
+                     static void read( const YAML::Node& node, string::utf8& value)
+                     {
+                        consume( node, value.get());
                      }
                      static void read( const YAML::Node& node, platform::binary::type& value)
                      {
@@ -366,7 +370,7 @@ namespace casual
 
                         m_output << YAML::BeginDoc;
 
-                        return common::range::make( m_output.c_str() + offset, size - offset);
+                        return range::make( m_output.c_str() + offset, size - offset);
                      }
 
                   private:
@@ -400,12 +404,17 @@ namespace casual
 
                      void write( const char& value)
                      {
-                        m_output << YAML::SingleQuoted << common::transcode::utf8::encode( { value});
+                        m_output << YAML::SingleQuoted << transcode::utf8::encode( { value});
                      }
 
                      void write( const std::string& value)
                      {
-                        m_output << YAML::DoubleQuoted << common::transcode::utf8::encode( value);
+                        m_output << YAML::DoubleQuoted << transcode::utf8::encode( value);
+                     }
+
+                     void write( const string::immutable::utf8& value)
+                     {
+                        m_output << YAML::DoubleQuoted << value.get();
                      }
 
                      void write( const platform::binary::type& value)

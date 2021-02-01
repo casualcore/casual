@@ -42,7 +42,7 @@ namespace casual
             {
                namespace
                {
-                  std::vector< std::string> keys() { return { "json", "jsn", common::buffer::type::json()};};
+                  std::vector< std::string> keys() { return { "json", "jsn", buffer::type::json()};};
 
                   namespace reader
                   {
@@ -52,8 +52,8 @@ namespace casual
                         template<typename C, typename F>
                         auto read( const rapidjson::Value* const value, C&& checker, F&& fetcher)
                         {
-                           if( common::invoke( checker, value))
-                              return common::invoke( fetcher, value);
+                           if( invoke( checker, value))
+                              return invoke( fetcher, value);
 
                            // TODO operations: more information about what type and so on...
                            code::raise::error( code::casual::invalid_node, "unexpected type");
@@ -299,15 +299,17 @@ namespace casual
                         static void read( const rapidjson::Value* node, double& value)
                         { value = check::read( node, &rapidjson::Value::IsNumber, &rapidjson::Value::GetDouble); }
                         static void read( const rapidjson::Value* node, char& value)
-                        { value = *common::transcode::utf8::decode( check::read( node, &rapidjson::Value::IsString, &rapidjson::Value::GetString)).c_str(); }
+                        { value = *transcode::utf8::decode( check::read( node, &rapidjson::Value::IsString, &rapidjson::Value::GetString)).c_str(); }
                         static void read( const rapidjson::Value* node, std::string& value)
-                        { value = common::transcode::utf8::decode( check::read( node, &rapidjson::Value::IsString, &rapidjson::Value::GetString)); }
+                        { value = transcode::utf8::decode( check::read( node, &rapidjson::Value::IsString, &rapidjson::Value::GetString)); }
+                        static void read( const rapidjson::Value* node, string::utf8& value)
+                        { value.get() = check::read( node, &rapidjson::Value::IsString, &rapidjson::Value::GetString); }
                         static void read( const rapidjson::Value* node, platform::binary::type& value)
-                        { value = common::transcode::base64::decode( check::read( node, &rapidjson::Value::IsString, &rapidjson::Value::GetString)); }
+                        { value = transcode::base64::decode( check::read( node, &rapidjson::Value::IsString, &rapidjson::Value::GetString)); }
 
                         static void read( const rapidjson::Value* node, view::Binary value)
                         { 
-                           auto binary = common::transcode::base64::decode( 
+                           auto binary = transcode::base64::decode( 
                               check::read( node, &rapidjson::Value::IsString, &rapidjson::Value::GetString));
                            
                            if( range::size( binary) != range::size( value))
@@ -417,9 +419,10 @@ namespace casual
                         void write( const long long value) { m_stack.back()->SetInt64( value); }
                         void write( const float value) { m_stack.back()->SetDouble( value); }
                         void write( const double value) { m_stack.back()->SetDouble( value); }
-                        void write( const std::string& value) { m_stack.back()->SetString( common::transcode::utf8::encode( value), *m_allocator);}
-                        void write( const platform::binary::type& value) { m_stack.back()->SetString( common::transcode::base64::encode( value), *m_allocator);}
-                        void write( view::immutable::Binary value) { m_stack.back()->SetString( common::transcode::base64::encode( value), *m_allocator);}
+                        void write( const std::string& value) { m_stack.back()->SetString( transcode::utf8::encode( value), *m_allocator);}
+                        void write( const string::immutable::utf8& value) { m_stack.back()->SetString( value.get(), *m_allocator);}
+                        void write( const platform::binary::type& value) { m_stack.back()->SetString( transcode::base64::encode( value), *m_allocator);}
+                        void write( view::immutable::Binary value) { m_stack.back()->SetString( transcode::base64::encode( value), *m_allocator);}
 
                         const rapidjson::Document& document() const { return m_document;}
 

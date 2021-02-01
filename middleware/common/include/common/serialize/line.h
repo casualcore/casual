@@ -78,6 +78,7 @@ namespace casual
                void write( view::immutable::Binary value, const char* name);
                void write( const platform::binary::type& value, const char* name);
                void write( const std::string& value, const char* name);
+               void write( const string::immutable::utf8& value, const char* name);
 
 
                template< typename T>

@@ -13,6 +13,7 @@
 #include "common/serialize/value.h"
 #include "casual/platform.h"
 #include "common/view/binary.h"
+#include "common/string/utf8.h"
 
 #include <utility>
 #include <memory>
@@ -54,6 +55,7 @@ namespace casual
             inline bool read( float& value, const char* name) { return m_protocol->read( value, name);}
             inline bool read( double& value, const char* name) { return m_protocol->read( value, name);}
             inline bool read( std::string& value, const char* name) { return m_protocol->read( value, name);}
+            inline bool read( string::utf8& value, const char* name) { return m_protocol->read( value, name);}
             inline bool read( platform::binary::type& value, const char* name) { return m_protocol->read( value, name);}
 
             //! serialize raw data, no 'size' will be serialized, hence caller has to take care
@@ -100,7 +102,10 @@ namespace casual
                virtual bool read( float& value, const char* name) = 0;
                virtual bool read( double& value, const char* name) = 0;
                virtual bool read( std::string& value, const char* name) = 0;
+               //! @todo: Change to std::u8string with C++20
+               virtual bool read( string::utf8& value, const char* name) = 0;
                virtual bool read( platform::binary::type& value, const char* name) = 0;
+               //! @todo: Change to std::span with C++20
                virtual bool read( view::Binary value, const char* name) = 0;
 
                virtual void validate() = 0;
@@ -128,6 +133,7 @@ namespace casual
                bool read( float& value, const char* name) override { return m_protocol.read( value, name);}
                bool read( double& value, const char* name) override { return m_protocol.read( value, name);}
                bool read( std::string& value, const char* name) override { return m_protocol.read( value, name);}
+               bool read( string::utf8& value, const char* name) override { return m_protocol.read( value, name);}
                bool read( platform::binary::type& value, const char* name) override { return m_protocol.read( value, name);}
                bool read( view::Binary value, const char* name) override { return m_protocol.read( value, name);}
 
@@ -234,10 +240,12 @@ namespace casual
             inline void save( float value, const char* name) { m_protocol->write( value, name);}
             inline void save( double value, const char* name) { m_protocol->write( value, name);}
             inline void save( const std::string& value, const char* name) { m_protocol->write( value, name);}
+            //! @todo: Change to std::u8string with C++20
+            inline void save( const string::immutable::utf8& value, const char* name) { m_protocol->write( value, name);}
             inline void save( const platform::binary::type& value, const char* name) { m_protocol->write( value, name);}
             
-            //! serialize raw data, no 'size' will be serialized, hence caller has to take care
-            //! of this if needed.
+            //! serialize raw data, no 'size' will be serialized, hence caller has to take care of this if needed
+            //! @todo: Change to std::span with C++20
             inline void save( view::immutable::Binary value, const char* name) { m_protocol->write( value, name);}
 
             struct concept
@@ -258,6 +266,7 @@ namespace casual
                virtual void write( float value, const char* name) = 0;
                virtual void write( double value, const char* name) = 0;
                virtual void write( const std::string& value, const char* name) = 0;
+               virtual void write( const string::immutable::utf8& value, const char* name) = 0;
                virtual void write( const platform::binary::type& value, const char* name) = 0;
                virtual void write( view::immutable::Binary value, const char* name) = 0;
 
@@ -286,6 +295,7 @@ namespace casual
                void write( float value, const char* name) override { m_protocol.write( value, name);}
                void write( double value, const char* name) override { m_protocol.write( value, name);}
                void write( const std::string& value, const char* name) override { m_protocol.write( value, name);}
+               void write( const string::immutable::utf8& value, const char* name) override { m_protocol.write( value, name);}
                void write( const platform::binary::type&value, const char* name) override { m_protocol.write( value, name);}
                void write( view::immutable::Binary value, const char* name) override { m_protocol.write( value, name);}
 
@@ -307,7 +317,6 @@ namespace casual
          };
 
          static_assert( traits::archive::type< Writer>::value == archive::Type::dynamic_type, "");
-
 
       } // serialize
    } // common

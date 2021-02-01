@@ -13,6 +13,7 @@
 
 #include "common/traits.h"
 #include "common/view/binary.h"
+#include "common/string/utf8.h"
 #include "casual/platform.h"
 
 #include <string>
@@ -136,7 +137,7 @@ namespace casual
                      using type = traits::bool_constant< 
                         traits::is_any< common::traits::remove_cvref_t< T>, 
                            bool, char, short, int, long, unsigned long, long long, float, double,
-                           view::immutable::Binary, view::Binary>::value
+                           view::immutable::Binary, view::Binary, string::immutable::utf8, string::utf8>::value
                         || common::traits::has::any::base< common::traits::remove_cvref_t< T>, std::string, platform::binary::type>::value
                      >;
                   } // read

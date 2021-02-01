@@ -36,6 +36,7 @@ namespace casual
          short m_short = 256;
          long long m_longlong = std::numeric_limits< long long>::max();
          platform::time::point::type m_time = platform::time::point::type::max();
+         std::filesystem::path m_path{u8"/tmp/file.txt"};
 
          std::optional< long> m_optional = 42;
 
@@ -47,6 +48,7 @@ namespace casual
             CASUAL_SERIALIZE( m_short);
             CASUAL_SERIALIZE( m_longlong);
             CASUAL_SERIALIZE( m_time);
+            CASUAL_SERIALIZE( m_path);
             CASUAL_SERIALIZE( m_optional);
          )
 
@@ -60,6 +62,7 @@ value:
    m_short: 23
    m_longlong: 1234567890123456789
    m_time: 1234567890
+   m_path: /tmp/file.txt
    m_optional: 666
 )";
          }
@@ -74,7 +77,8 @@ value:
       "m_string": "bla bla bla bla",
       "m_short": 23,
       "m_longlong": 1234567890123456789,
-      "m_time": 1234567890
+      "m_time": 1234567890,
+      "m_path": "/tmp/file.txt"
    }
 }
 )";
@@ -90,6 +94,7 @@ value:
    <m_short>23</m_short>
    <m_longlong>1234567890123456789</m_longlong>
    <m_time>1234567890</m_time>
+   <m_path>/tmp/file.txt</m_path>
 </value>
 )";
          }
@@ -149,7 +154,6 @@ value:
             void setString( const std::string& value);
 
 
-
             void serialize( common::serialize::Reader& reader);
             void serialize( common::serialize::Writer& writer) const;
 
@@ -163,7 +167,3 @@ value:
 
    } // test
 } // casual
-
-
-
-

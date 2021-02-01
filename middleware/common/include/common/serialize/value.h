@@ -11,9 +11,11 @@
 #include "common/serialize/traits.h"
 #include "common/view/binary.h"
 #include "common/code/serialize.h"
+#include "common/string/utf8.h"
 
 #include <optional>
 #include <system_error>
+#include <filesystem>
 
 namespace casual
 {
@@ -703,7 +705,32 @@ namespace casual
 
                archive.composite_end( name);
                return true;
-   
+            }
+         };  
+
+         //! Specialization for std::filesystem::path
+         template< typename A>
+         struct Value< std::filesystem::path, A>
+         {
+            //! @todo: Remove usage of string::utf8 when using C++20
+            static auto write( A& archive, const std::filesystem::path& path, const char* name)
+            {
+               const auto data = path.u8string();
+               const string::immutable::utf8 wrapper{ data};
+               value::write( archive, wrapper, name);
+            }
+
+            //! @todo: Remove usage of string::utf8 when using C++20
+            static auto read( A& archive, std::filesystem::path& path, const char* name)
+            {
+               std::string data;
+               string::utf8 wrapper{ data};
+               if( value::read( archive, wrapper, name))
+               {
+                  path = std::filesystem::u8path( std::move( data));
+                  return true;
+               }
+               return false;
             }
          };  
 

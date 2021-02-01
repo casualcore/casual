@@ -32,7 +32,7 @@ namespace casual
             {
                namespace
                {
-                  std::vector< std::string> keys() { return { "ini", common::buffer::type::ini()};};
+                  std::vector< std::string> keys() { return { "ini", buffer::type::ini()};};
 
                   const std::string magic{ '@' };
 
@@ -361,7 +361,7 @@ namespace casual
                         template<typename T>
                         void read( T& value)
                         {
-                           value = common::string::from< T>( *m_data_stack.back());
+                           value = string::from< T>( *m_data_stack.back());
                         }
 
                         void read( bool& value)
@@ -381,9 +381,14 @@ namespace casual
                            value = *m_data_stack.back();
                         }
 
+                        void read( string::utf8& value)
+                        {
+                           value.get() = transcode::utf8::encode(*m_data_stack.back());
+                        }
+
                         void read( view::Binary value)
                         {
-                           auto binary = common::transcode::base64::decode( *m_data_stack.back());
+                           auto binary = transcode::base64::decode( *m_data_stack.back());
                            if( range::size( binary) != range::size( value))
                               code::raise::error( code::casual::invalid_node, "binary size missmatch");
 
@@ -393,7 +398,7 @@ namespace casual
                         void read( platform::binary::type& value)
                         {
                            // Binary data might be double-decoded (in the end)
-                           value = common::transcode::base64::decode( *m_data_stack.back());
+                           value = transcode::base64::decode( *m_data_stack.back());
                         }
 
                         policy::canonical::Representation canonical()
@@ -546,12 +551,17 @@ namespace casual
                         std::string encode( view::immutable::Binary value) const
                         {
                            // Binary data might be double-encoded
-                           return common::transcode::base64::encode( value);
+                           return transcode::base64::encode( value);
                         }
 
                         std::string encode( const platform::binary::type& value) const
                         {
                            return encode( view::binary::make( value));
+                        }
+
+                        std::string encode( const string::immutable::utf8& value) const
+                        {
+                           return transcode::utf8::decode( value.get());
                         }
 
                         using name = const char;

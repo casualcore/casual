@@ -253,6 +253,15 @@ namespace casual
                         canonical.pop();
                      }
 
+                     void write( const common::string::immutable::utf8& value)
+                     {
+                        auto max = absolute_max< decltype( value.get().max_size())>();
+                        write_size( value.get().size());
+                        canonical.push( "data");
+                        dynamic( 0, std::min( max, value.get().max_size()), "dynamic (unicode) string");
+                        canonical.pop();
+                     }
+
                      void write( const platform::binary::type& value)
                      {
                         decltype( value.size()) max = std::numeric_limits< platform::size::type>::max();
