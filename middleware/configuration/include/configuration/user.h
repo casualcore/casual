@@ -39,8 +39,8 @@ namespace casual
 
       struct Environment
       {
-         std::vector< std::string> files;
-         std::vector< environment::Variable> variables;
+         std::optional< std::vector< std::string>> files;
+         std::optional< std::vector< environment::Variable>> variables;
 
          Environment& operator += ( Environment rhs);
 
@@ -75,8 +75,8 @@ namespace casual
             struct Default
             {
                platform::size::type instances = 1;
-               std::vector< std::string> memberships;
-               Environment environment;
+               std::optional< std::vector< std::string>> memberships;
+               std::optional< Environment> environment;
                bool restart = false;
 
                CASUAL_CONST_CORRECT_SERIALIZE(
@@ -450,8 +450,8 @@ namespace casual
 
             //! @deprecated
             //! @{
-            std::vector< gateway::Listener> listeners;
-            std::vector< gateway::Connection> connections;
+            std::optional< std::vector< gateway::Listener>> listeners;
+            std::optional< std::vector< gateway::Connection>> connections;
             //! @}
 
             Manager& operator += ( Manager rhs);

@@ -29,17 +29,6 @@ namespace casual
 domain:
   name: domain.A42
   default:
-    environment:
-#      files:
-#        - /some/path/to/environment/file
-#        - /some/other/file
-
-      variables:
-        - key: SOME_VARIABLE
-          value: 42
-
-        - key: SOME_OTHER_VARIABLE
-          value: some value
 
     server:
       instances: 1
@@ -49,6 +38,13 @@ domain:
       instances: 1
     service:
       timeout: 90s
+
+  environment:
+      variables:
+         -  key: SOME_VARIABLE
+            value: 42
+         -  key: SOME_OTHER_VARIABLE
+            value: some value
 
 
   transaction:

@@ -632,7 +632,7 @@ note: some aliases are unrestartable
                         void call( const std::string& name, const std::string& value, std::vector< std::string> aliases)
                         {
                            admin::model::set::Environment environment;
-                           environment.variables.variables.push_back( casual::configuration::user::environment::Variable{ name, value});
+                           environment.variables.emplace_back( string::compose( name, '=', value));
                            environment.aliases = std::move( aliases);
 
                            call::environment::set( environment);

@@ -42,23 +42,27 @@ namespace casual
                   {
                      std::vector< Variable> result;
 
-                     for( auto& file : environment.files)
+                     if( environment.files)
                      {
-                        auto path = common::environment::string( file);
-
-                        if( ! common::algorithm::find( paths, path))
+                        for( auto& file : environment.files.value())
                         {
-                           auto nested = get( path);
+                           auto path = common::environment::string( file);
 
-                           paths.push_back( std::move( path));
+                           if( ! common::algorithm::find( paths, path))
+                           {
+                              auto nested = get( path);
 
-                           auto variables = fetch( std::move( nested), paths);
+                              paths.push_back( std::move( path));
 
-                           common::algorithm::move( variables, result);
+                              auto variables = fetch( std::move( nested), paths);
+
+                              common::algorithm::move( variables, result);
+                           }
                         }
                      }
 
-                     common::algorithm::move( environment.variables, result);
+                     if( environment.variables)
+                        common::algorithm::move( environment.variables.value(), result);
 
                      return result;
                   }

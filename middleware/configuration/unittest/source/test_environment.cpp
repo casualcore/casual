@@ -113,7 +113,7 @@ namespace casual
          auto env_file = local::serialize( origin, GetParam());
 
          user::Environment refered;
-         refered.files.push_back( env_file);
+         refered.files.emplace().push_back( env_file);
 
          auto result = user::environment::fetch( refered);
 
@@ -134,7 +134,7 @@ namespace casual
 
          user::Environment refered;
          {
-            refered.files.push_back( env_file);
+            refered.files.emplace().push_back( env_file);
             refered.variables = {
                [](){
                   user::environment::Variable v;
@@ -153,7 +153,7 @@ namespace casual
 
          auto result = user::environment::fetch( refered);
 
-         EXPECT_TRUE( result.size() == refered.variables.size() + origin.variables.size());
+         EXPECT_TRUE( result.size() == refered.variables.value().size() + origin.variables.value().size());
          //EXPECT_TRUE( result.back() ==  refered.variables.back());
       }
 
@@ -169,28 +169,28 @@ namespace casual
 
          user::Environment second;
          second.variables = local::variables();
-         second.files.push_back( first_file);
+         second.files.emplace().push_back( first_file);
          auto second_file = local::serialize( second, GetParam());
 
          common::log::line( configuration::log, "second: ", second);
 
          user::Environment third;
          third.variables = local::variables();
-         third.files.push_back( second_file);
+         third.files.emplace().push_back( second_file);
 
          common::log::line( configuration::log, "third: ", third);
 
 
-         auto expected = first.variables;
+         auto expected = first.variables.value();
          {
-            common::algorithm::append( second.variables, expected);
-            common::algorithm::append( third.variables, expected);
+            common::algorithm::append( second.variables.value(), expected);
+            common::algorithm::append( third.variables.value(), expected);
          }
 
 
          auto result = user::environment::fetch( third);
 
-         EXPECT_TRUE( result == expected) << CASUAL_NAMED_VALUE( result);
+         EXPECT_TRUE( result == expected) << "   " << CASUAL_NAMED_VALUE( result) << "\n" << CASUAL_NAMED_VALUE( expected);
       }
 
 

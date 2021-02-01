@@ -204,16 +204,18 @@ domain:
 
             auto& environment = local::instansiate_optional( value.environment);
 
-            ASSERT_TRUE( environment.variables.size() == 2);
-            EXPECT_TRUE( environment.variables[ 0].key == "domain-b");
-            EXPECT_TRUE( environment.variables[ 0].value == "value-b"); 
+            ASSERT_TRUE( environment.variables);
+            ASSERT_TRUE( environment.variables.value().size() == 2);
+            EXPECT_TRUE( environment.variables.value()[ 0].key == "domain-b");
+            EXPECT_TRUE( environment.variables.value()[ 0].value == "value-b"); 
 
-            EXPECT_TRUE( environment.variables[ 1].key == "domain-a");
-            EXPECT_TRUE( environment.variables[ 1].value == "value-a-2"); // overridden
+            EXPECT_TRUE( environment.variables.value()[ 1].key == "domain-a");
+            EXPECT_TRUE( environment.variables.value()[ 1].value == "value-a-2"); // overridden
 
-            ASSERT_TRUE( environment.files.size() == 2);
-            ASSERT_TRUE( environment.files[ 0] == "file-a");
-            ASSERT_TRUE( environment.files[ 1] == "file-b");
+            ASSERT_TRUE( environment.files);
+            ASSERT_TRUE( environment.files.value().size() == 2);
+            EXPECT_TRUE( environment.files.value()[ 0] == "file-a");
+            EXPECT_TRUE( environment.files.value()[ 1] == "file-b");
          }
 
          TEST( configuration_domain_accumulate, group_duplicates__replaced)

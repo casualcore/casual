@@ -115,8 +115,14 @@ namespace casual
 
       Environment& Environment::operator += ( Environment rhs)
       {
-         local::add_or_replace( std::move( rhs.files), files, std::equal_to<>{});
-         local::add_or_replace( std::move( rhs.variables), variables, local::equal::environment());
+         local::optional_add( std::move( rhs.files), files, []( auto source, auto& target)
+         { 
+            local::add_or_replace( std::move( source), target, std::equal_to<>{});
+         });
+         local::optional_add( std::move( rhs.variables), variables, []( auto source, auto& target)
+         { 
+            local::add_or_replace( std::move( source), target, local::equal::environment());
+         });
          return *this;
       }
 
@@ -225,8 +231,14 @@ namespace casual
 
          Manager& Manager::operator += ( Manager rhs)
          {
-            local::add_or_replace( std::move( rhs.listeners), listeners, local::equal::address());
-            local::add_or_replace( std::move( rhs.connections), connections, local::equal::address());
+            local::optional_add( std::move( rhs.listeners), listeners, []( auto source, auto& target)
+            {
+               local::add_or_replace( std::move( source), target, local::equal::address());
+            });
+            local::optional_add( std::move( rhs.connections), connections, []( auto source, auto& target)
+            {
+               local::add_or_replace( std::move( source), target, local::equal::address());
+            });
 
             local::optional_add( std::move( rhs.inbound), inbound);
             local::optional_add( std::move( rhs.outbound), outbound);
@@ -249,7 +261,7 @@ namespace casual
                return;
 
             // TODO deprecated remove on 2.0
-            if( defaults.value().connection)
+            if( defaults.value().connection && connections)
             {
                log::line( log::category::warning, code::casual::invalid_configuration, " domain.gateway.default.connection is deprecated - there is no replacement");
 
@@ -258,11 +270,11 @@ namespace casual
                   connection.address = coalesce( connection.address, defaults.address);
                   connection.restart = connection.restart.value_or( defaults.restart);
                };
-               algorithm::for_each( connections, update_connection);
+               algorithm::for_each( connections.value(), update_connection);
             }
 
             // TODO deprecated remove on 2.0
-            if( defaults.value().listener)
+            if( defaults.value().listener && listeners)
             {
                log::line( log::category::warning, code::casual::invalid_configuration, " domain.gateway.default.listener is deprecated - use domain.gateway.inbound.default");
 
@@ -277,7 +289,7 @@ namespace casual
                   limit.size = coalesce( limit.size, defaults.limit.size);
                   limit.messages = coalesce( limit.messages, defaults.limit.messages);
                };
-               algorithm::for_each( listeners, update_listener);
+               algorithm::for_each( listeners.value(), update_listener);
             }
 
          }
@@ -502,8 +514,8 @@ namespace casual
             auto normalize_entity = [&defaults]( auto& entity)
             {
                entity.instances = entity.instances.value_or( defaults.instances);
-               entity.memberships = entity.memberships.value_or( defaults.memberships);
-               entity.environment = entity.environment.value_or( defaults.environment);
+               entity.memberships = coalesce( entity.memberships, defaults.memberships);
+               entity.environment = coalesce( entity.environment, defaults.environment);
                entity.restart = entity.restart.value_or( defaults.restart);
             };
             algorithm::for_each( entities, normalize_entity);
