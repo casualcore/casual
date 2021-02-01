@@ -365,6 +365,9 @@ namespace casual
             //! holds all the routes, for services that has routes
             std::map< std::string, std::vector< std::string>> routes;
 
+            //! holds all alias restrictions.
+            std::map< std::string, std::vector< std::string>> restrictions;
+
             //! find a service from name
             //!
             //! @param name of the service wanted
@@ -401,6 +404,7 @@ namespace casual
             {
                CASUAL_SERIALIZE( routes);
                CASUAL_SERIALIZE( services);
+               CASUAL_SERIALIZE( restrictions);
             }) 
 
          };

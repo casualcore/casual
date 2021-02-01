@@ -12,6 +12,7 @@
 #include "common/log.h"
 #include "common/communication/ipc.h"
 #include "common/communication/instance.h"
+#include "common/instance.h"
 
 
 namespace casual
@@ -123,6 +124,7 @@ namespace casual
                         };
 
                         message::service::Advertise message{ process::handle()};
+                        message.alias = instance::alias();
                         message.services.add = algorithm::transform( code::mapping, transform_service);
 
                         communication::device::blocking::send( communication::instance::outbound::service::manager::device(), message);

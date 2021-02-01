@@ -16,34 +16,29 @@
 
 namespace casual
 {
-   namespace common
+   namespace common::instance
    {
-      namespace instance
+      struct Information
       {
-         struct Information
-         {
-            std::string alias;
-            platform::size::type index{};
+         std::string alias;
+         platform::size::type index{};
 
-            CASUAL_CONST_CORRECT_SERIALIZE({
-               CASUAL_SERIALIZE( alias);
-               CASUAL_SERIALIZE( index);
-            })
-         };
+         CASUAL_CONST_CORRECT_SERIALIZE({
+            CASUAL_SERIALIZE( alias);
+            CASUAL_SERIALIZE( index);
+         })
+      };
 
-         //! @returns an environament variable that has the supplied information 
-         //! 'serialized' as its value  
-         environment::Variable variable( const Information& value);
+      //! @returns an environament variable that has the supplied information 
+      //! 'serialized' as its value  
+      environment::Variable variable( const Information& value);
 
+      //! @return the instance information. If present this has been set
+      //! by the parent.
+      const std::optional< Information>& information();
 
+      //! @return the alias of the instance, if not present, basename is returned.
+      std::string alias();
 
-         //! @return the instance information. If present this has been set
-         //! by the parent.
-         const std::optional< Information>& information();
-
-         //! @return the alias of the instance, if not present, basename is returned.
-         std::string alias();
-
-      } // instance
-   } // common
+   } // common::instance
 } // casual

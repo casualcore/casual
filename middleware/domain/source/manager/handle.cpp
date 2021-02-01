@@ -752,6 +752,7 @@ namespace casual
                               };
 
                               common::message::service::Advertise message{ common::process::handle()};
+                              message.alias = instance::alias();
                               message.services.add = algorithm::transform( manager::admin::services( state).services, transform_service);
                                  
                               manager::ipc::send( state, process, message);

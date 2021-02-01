@@ -13,6 +13,7 @@
 #include "common/communication/instance.h"
 #include "common/buffer/pool.h"
 #include "common/process.h"
+#include "common/instance.h"
 
 #include "common/code/raise.h"
 #include "common/code/xatmi.h"
@@ -112,7 +113,8 @@ namespace casual
             }
             else
             {
-               message::service::Advertise message;
+               message::service::Advertise message{ process::handle()};
+               message.alias = instance::alias();
                message.process = process::handle();
 
                auto is_prospect = [&prospect]( auto& service) { return service == prospect;};
@@ -140,8 +142,8 @@ namespace casual
             if( m_state.services.erase( service) != 1)
                code::raise::generic( code::xatmi::no_entry, log::debug, "service is not currently advertised - ", service);
 
-            message::service::Advertise message;
-            message.process = process::handle();
+            message::service::Advertise message{ process::handle()};
+            message.alias = instance::alias();
             message.services.remove.emplace_back( service);
 
             communication::device::blocking::send( communication::instance::outbound::service::manager::device(), message);

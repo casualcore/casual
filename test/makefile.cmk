@@ -5,6 +5,7 @@ IncludePaths( ['include',
    '../middleware/serviceframework/include',
    '../middleware/domain/include',
    '../middleware/gateway/include',
+   '../middleware/service/include',
    '../middleware/xatmi/include',
    '../middleware/queue/include',
    '../middleware/buffer/include',
@@ -56,6 +57,7 @@ unittest_object = [
    Compile( 'unittest/source/domain/test_transaction.cpp'),
    Compile( 'unittest/source/domain/test_gateway.cpp'),
    Compile( 'unittest/source/domain/gateway/test_reverse.cpp'),
+   Compile( 'unittest/source/domain/test_service.cpp'),
 ]
 
 # only build http test cases if the enviornment is set up

@@ -7,6 +7,7 @@
 #include "service/unittest/utility.h"
 
 #include "common/communication/instance.h"
+#include "common/instance.h"
 
 namespace casual
 {
@@ -27,6 +28,7 @@ namespace casual
       void advertise( std::vector< std::string> services)
       {
          message::service::Advertise message{ process::handle()};
+         message.alias = instance::alias();
          message.services.add = algorithm::transform( services, []( auto& service)
          {
             return message::service::advertise::Service{ std::move( service)};
@@ -38,6 +40,7 @@ namespace casual
       void unadvertise( std::vector< std::string> services)
       {
          message::service::Advertise message{ process::handle()};
+         message.alias = instance::alias();
          message.services.remove = std::move( services);
          communication::device::blocking::send( local::ipc::manager(), message);
       }

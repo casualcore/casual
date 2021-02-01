@@ -11,287 +11,277 @@
 #include "common/buffer/pool.h"
 #include "common/service/lookup.h"
 #include "common/communication/instance.h"
+#include "common/instance.h"
 
 #include "common/log.h"
 #include "common/execute.h"
 
 namespace casual
 {
-   namespace common
+   namespace common::server::handle::policy
    {
-      namespace server
+      namespace local
       {
-         namespace handle
+         namespace
          {
-            namespace policy
+            void advertise( std::vector< message::service::advertise::Service> services)
             {
-               namespace local
+               Trace trace{ "common::server::local::advertise"};
+
+               if( ! services.empty())
                {
-                  namespace
-                  {
-                     void advertise( std::vector< message::service::advertise::Service> services)
-                     {
-                        Trace trace{ "common::server::local::advertise"};
+                  message::service::Advertise advertise{ process::handle()};
+                  advertise.alias = instance::alias();
+                  advertise.services.add = std::move( services);
 
-                        if( ! services.empty())
-                        {
-                           message::service::Advertise advertise;
-                           advertise.process = process::handle();
-                           advertise.services.add = std::move( services);
+                  log::line( log::debug, "advertise: ", advertise);
 
-                           log::line( log::debug, "advertise: ", advertise);
+                  signal::thread::scope::Mask block{ signal::set::filled( code::signal::terminate, code::signal::interrupt)};
 
-                           signal::thread::scope::Mask block{ signal::set::filled( code::signal::terminate, code::signal::interrupt)};
+                  communication::device::blocking::send( communication::instance::outbound::service::manager::device(), advertise);
+               }
+            }
 
-                           communication::device::blocking::send( communication::instance::outbound::service::manager::device(), advertise);
-                        }
-                     }
-
-                     void advertise( std::vector< server::Service> services)
-                     {
-                        local::advertise( algorithm::transform( services, []( auto& service)
-                        {
-                           message::service::advertise::Service result;
-                           result.name = service.name;
-                           result.category = service.category;
-                           result.transaction = service.transaction;
-
-                           return result;
-                        }));
-
-                     }
-
-                  } // <unnamed>
-               } // local
-
-               namespace call
+            void advertise( std::vector< server::Service> services)
+            {
+               local::advertise( algorithm::transform( services, []( auto& service)
                {
+                  message::service::advertise::Service result;
+                  result.name = service.name;
+                  result.category = service.category;
+                  result.transaction = service.transaction;
 
-                  void Default::configure( server::Arguments&& arguments)
+                  return result;
+               }));
+
+            }
+
+         } // <unnamed>
+      } // local
+
+      namespace call
+      {
+         void Default::configure( server::Arguments&& arguments)
+         {
+            Trace trace{ "server::handle::policy::Default::configure"};
+            log::line( verbose::log, "arguments: ", arguments);
+
+            // Connection to the domain has been done before...
+
+            // configure resources, if any.
+            transaction::Context::instance().configure( arguments.resources);
+
+            // Let the service-manager know about our services...
+            policy::local::advertise( std::move( arguments.services));
+         }
+
+         void Default::reply( strong::ipc::id id, message::service::call::Reply& message)
+         {
+            Trace trace{ "server::handle::policy::Default::reply"};
+            log::line( log::debug, "reply: ", message);
+
+            communication::device::blocking::send( id, message);
+         }
+
+         void Default::reply( strong::ipc::id id, message::conversation::callee::Send& message)
+         {
+            Trace trace{ "server::handle::policy::Default::conversation::reply"};
+
+            log::line( log::debug, "reply: ", message);
+
+            auto node = message.route.next();
+            communication::device::blocking::send( node.address, message);
+         }
+
+         void Default::ack( const message::service::call::ACK& message)
+         {
+            Trace trace{ "server::handle::policy::Default::ack"};
+
+            log::line( verbose::log, "reply: ", message);
+
+            communication::device::blocking::send( communication::instance::outbound::service::manager::device(), message);
+         }
+
+         void Default::statistics( strong::ipc::id id,  message::event::service::Call& event)
+         {
+            Trace trace{ "server::handle::policy::Default::statistics"};
+
+            log::line( log::debug, "event:", event);
+
+            try
+            {
+               communication::device::blocking::send( id, event);
+            }
+            catch( ...)
+            {
+               exception::handle( log::category::error);
+            }
+         }
+
+         void Default::transaction(
+               const common::transaction::ID& trid,
+               const server::Service& service,
+               const platform::time::unit& timeout,
+               const platform::time::point::type& now)
+         {
+            Trace trace{ "server::handle::policy::Default::transaction"};
+
+            log::line( log::debug, "trid: ", trid, " - service: ", service);
+
+            // We keep track of callers transaction (can be null-trid).
+            transaction::context().caller = trid;
+
+            switch( service.transaction)
+            {
+               case service::transaction::Type::automatic:
+               {
+                  if( trid)
+                     transaction::Context::instance().join( trid);
+                  else
+                     transaction::Context::instance().start( now);
+
+                  break;
+               }
+               case service::transaction::Type::branch:
+               {
+                  if( trid)
+                     transaction::Context::instance().branch( trid);
+                  else
+                     transaction::Context::instance().start( now);
+                  break;
+               }
+               case service::transaction::Type::join:
+               {
+                  transaction::Context::instance().join( trid);
+                  break;
+               }
+               case service::transaction::Type::atomic:
+               {
+                  transaction::Context::instance().start( now);
+                  break;
+               }
+               default:
+               {
+                  log::line( log::category::error, "unknown transaction semantics for service: ", service);
+                  // fallthrough
+               }
+               case service::transaction::Type::none:
+               {
+                  // We don't start or join any transactions
+                  // (technically we join a null-trid)
+                  transaction::Context::instance().join( transaction::ID{ process::handle()});
+                  break;
+               }
+            }
+
+            // Set 'global deadline'
+            transaction::Context::instance().current().timeout.set( now, timeout);
+         }
+
+
+         message::service::Transaction Default::transaction( bool commit)
+         {
+            return transaction::context().finalize( commit);
+         }
+
+
+         namespace local
+         {
+            namespace
+            {
+               template< typename M>
+               void forward( M&& message, service::invoke::Forward&& forward)
+               {
+                  Trace trace{ "server::handle::policy::local::forward"};
+
+
+                  if( transaction::context().pending())
+                     code::raise::error( code::xatmi::service_error, "forward with pending transactions - service: ", message.service.name);
+
+                  common::service::Lookup lookup{
+                     forward.parameter.service.name,
+                     common::service::Lookup::Context::forward};
+
+                  auto request = message;
+
+                  auto target = lookup();
+
+                  if( target.busy())
                   {
-                     Trace trace{ "server::handle::policy::Default::configure"};
-                     log::line( verbose::log, "arguments: ", arguments);
-
-                     // Connection to the domain has been done before...
-
-                     // configure resources, if any.
-                     transaction::Context::instance().configure( arguments.resources);
-
-                     // Let the service-manager know about our services...
-                     policy::local::advertise( std::move( arguments.services));
+                     // We wait for service to become idle
+                     target = lookup();
                   }
 
-                  void Default::reply( strong::ipc::id id, message::service::call::Reply& message)
-                  {
-                     Trace trace{ "server::handle::policy::Default::reply"};
-                     log::line( log::debug, "reply: ", message);
+                  request.buffer = std::move( forward.parameter.payload);
+                  request.service = target.service;
 
-                     communication::device::blocking::send( id, message);
-                  }
+                  log::line( log::debug, "policy::Default::forward - request:", request);
 
-                  void Default::reply( strong::ipc::id id, message::conversation::callee::Send& message)
-                  {
-                     Trace trace{ "server::handle::policy::Default::conversation::reply"};
+                  communication::device::blocking::send( target.process.ipc, request);
+               }
 
-                     log::line( log::debug, "reply: ", message);
+            } // <unnamed>
+         } // local
 
-                     auto node = message.route.next();
-                     communication::device::blocking::send( node.address, message);
-                  }
-
-                  void Default::ack( const message::service::call::ACK& message)
-                  {
-                     Trace trace{ "server::handle::policy::Default::ack"};
-
-                     log::line( verbose::log, "reply: ", message);
-
-                     communication::device::blocking::send( communication::instance::outbound::service::manager::device(), message);
-                  }
-
-                  void Default::statistics( strong::ipc::id id,  message::event::service::Call& event)
-                  {
-                     Trace trace{ "server::handle::policy::Default::statistics"};
-
-                     log::line( log::debug, "event:", event);
-
-                     try
-                     {
-                        communication::device::blocking::send( id, event);
-                     }
-                     catch( ...)
-                     {
-                        exception::handle( log::category::error);
-                     }
-                  }
-
-                  void Default::transaction(
-                        const common::transaction::ID& trid,
-                        const server::Service& service,
-                        const platform::time::unit& timeout,
-                        const platform::time::point::type& now)
-                  {
-                     Trace trace{ "server::handle::policy::Default::transaction"};
-
-                     log::line( log::debug, "trid: ", trid, " - service: ", service);
-
-                     // We keep track of callers transaction (can be null-trid).
-                     transaction::context().caller = trid;
-
-                     switch( service.transaction)
-                     {
-                        case service::transaction::Type::automatic:
-                        {
-                           if( trid)
-                              transaction::Context::instance().join( trid);
-                           else
-                              transaction::Context::instance().start( now);
-
-                           break;
-                        }
-                        case service::transaction::Type::branch:
-                        {
-                           if( trid)
-                              transaction::Context::instance().branch( trid);
-                           else
-                              transaction::Context::instance().start( now);
-                           break;
-                        }
-                        case service::transaction::Type::join:
-                        {
-                           transaction::Context::instance().join( trid);
-                           break;
-                        }
-                        case service::transaction::Type::atomic:
-                        {
-                           transaction::Context::instance().start( now);
-                           break;
-                        }
-                        default:
-                        {
-                           log::line( log::category::error, "unknown transaction semantics for service: ", service);
-                           // fallthrough
-                        }
-                        case service::transaction::Type::none:
-                        {
-                           // We don't start or join any transactions
-                           // (technically we join a null-trid)
-                           transaction::Context::instance().join( transaction::ID{ process::handle()});
-                           break;
-                        }
-                     }
-
-                     // Set 'global deadline'
-                     transaction::Context::instance().current().timeout.set( now, timeout);
-                  }
+         void Default::forward( service::invoke::Forward&& forward, const message::service::call::callee::Request& message)
+         {
+            local::forward( message, std::move( forward));
+         }
 
 
-                  message::service::Transaction Default::transaction( bool commit)
-                  {
-                     return transaction::context().finalize( commit);
-                  }
+         void Default::forward( service::invoke::Forward&& forward, const message::conversation::connect::callee::Request& message)
+         {
+            local::forward( message, std::move( forward));
+         }
 
 
-                  namespace local
-                  {
-                     namespace
-                     {
-                        template< typename M>
-                        void forward( M&& message, service::invoke::Forward&& forward)
-                        {
-                           Trace trace{ "server::handle::policy::local::forward"};
+         void Admin::configure( server::Arguments&& arguments)
+         {
+            // Connection to the domain has been done before...
 
+            if( ! arguments.resources.empty())
+               code::raise::error( code::casual::invalid_semantics, "can't build and link an administration server with resources");
 
-                           if( transaction::context().pending())
-                              code::raise::error( code::xatmi::service_error, "forward with pending transactions - service: ", message.service.name);
+            policy::local::advertise( std::move( arguments.services));
 
-                           common::service::Lookup lookup{
-                              forward.parameter.service.name,
-                              common::service::Lookup::Context::forward};
+         }
 
-                           auto request = message;
+         void Admin::reply( strong::ipc::id id, message::service::call::Reply& message)
+         {
+            communication::device::blocking::send( id, message);
+         }
 
-                           auto target = lookup();
+         void Admin::ack( const message::service::call::ACK& message)
+         {
+            communication::device::blocking::send( communication::instance::outbound::service::manager::device(), message);
+         }
 
-                           if( target.busy())
-                           {
-                              // We wait for service to become idle
-                              target = lookup();
-                           }
+         void Admin::statistics( strong::ipc::id id, message::event::service::Call& event)
+         {
+            // no-op
+         }
 
-                           request.buffer = std::move( forward.parameter.payload);
-                           request.service = target.service;
+         void Admin::transaction(
+               const common::transaction::ID& trid,
+               const server::Service& service,
+               const platform::time::unit& timeout,
+               const platform::time::point::type& now)
+         {
+            // no-op
+         }
 
-                           log::line( log::debug, "policy::Default::forward - request:", request);
+         message::service::Transaction Admin::transaction( bool commit)
+         {
+            // no-op
+            return {};
+         }
 
-                           communication::device::blocking::send( target.process.ipc, request);
-                        }
+         void Admin::forward( common::service::invoke::Forward&& forward, const message::service::call::callee::Request& message)
+         {
+            code::raise::error( code::casual::invalid_semantics, "can't forward within an administration server");
+         }
 
-                     } // <unnamed>
-                  } // local
+      } // call
 
-                  void Default::forward( service::invoke::Forward&& forward, const message::service::call::callee::Request& message)
-                  {
-                     local::forward( message, std::move( forward));
-                  }
-
-
-                  void Default::forward( service::invoke::Forward&& forward, const message::conversation::connect::callee::Request& message)
-                  {
-                     local::forward( message, std::move( forward));
-                  }
-
-
-                  void Admin::configure( server::Arguments&& arguments)
-                  {
-                     // Connection to the domain has been done before...
-
-                     if( ! arguments.resources.empty())
-                        code::raise::error( code::casual::invalid_semantics, "can't build and link an administration server with resources");
-
-                     policy::local::advertise( std::move( arguments.services));
-
-                  }
-
-                  void Admin::reply( strong::ipc::id id, message::service::call::Reply& message)
-                  {
-                     communication::device::blocking::send( id, message);
-                  }
-
-                  void Admin::ack( const message::service::call::ACK& message)
-                  {
-                     communication::device::blocking::send( communication::instance::outbound::service::manager::device(), message);
-                  }
-
-                  void Admin::statistics( strong::ipc::id id, message::event::service::Call& event)
-                  {
-                     // no-op
-                  }
-
-                  void Admin::transaction(
-                        const common::transaction::ID& trid,
-                        const server::Service& service,
-                        const platform::time::unit& timeout,
-                        const platform::time::point::type& now)
-                  {
-                     // no-op
-                  }
-
-                  message::service::Transaction Admin::transaction( bool commit)
-                  {
-                     // no-op
-                     return {};
-                  }
-
-                  void Admin::forward( common::service::invoke::Forward&& forward, const message::service::call::callee::Request& message)
-                  {
-                     code::raise::error( code::casual::invalid_semantics, "can't forward within an administration server");
-                  }
-
-               } // call
-
-            } // policy
-
-         } // handle
-      } // server
-   } // common
+   } // common::server::handle::policy
 } // casual

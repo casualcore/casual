@@ -144,6 +144,9 @@ namespace casual
             {
                using base_advertise::base_advertise;
 
+               //! the alias of the server 'instance'
+               std::string alias;
+
                struct
                {
                   std::vector< advertise::Service> add;
@@ -163,6 +166,7 @@ namespace casual
                CASUAL_CONST_CORRECT_SERIALIZE(
                {
                   base_advertise::serialize( archive);
+                  CASUAL_SERIALIZE( alias);
                   CASUAL_SERIALIZE( services);
                })
             };
@@ -234,6 +238,8 @@ namespace casual
                {
                   using basic_advertise::basic_advertise;
 
+                  //! the alias of the server 'instance'
+                  std::string alias;
                   platform::size::type order = 0;
 
                   struct
@@ -254,6 +260,7 @@ namespace casual
                   CASUAL_CONST_CORRECT_SERIALIZE(
                   {
                      basic_advertise::serialize( archive);
+                     CASUAL_SERIALIZE( alias);
                      CASUAL_SERIALIZE( order);
                      CASUAL_SERIALIZE( services);
                      CASUAL_SERIALIZE( reset);

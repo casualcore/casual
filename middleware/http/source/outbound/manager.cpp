@@ -14,6 +14,7 @@
 #include "common/message/service.h"
 #include "common/message/handle.h"
 #include "common/exception/handle.h"
+#include "common/instance.h"
 
 namespace casual
 {
@@ -187,8 +188,8 @@ namespace casual
                   {
                      Trace trace{ "http::outbound::manager::local::advertise"};
 
-                     common::message::service::concurrent::Advertise message;
-                     message.process = process::handle();
+                     common::message::service::concurrent::Advertise message{ process::handle()};
+                     message.alias = instance::alias();
 
                      // highest possible order
                      message.order = std::numeric_limits< std::decay_t< decltype( message.order)>>::max();

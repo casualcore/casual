@@ -231,6 +231,15 @@ namespace casual
          };
 
          algorithm::for_each( configuration.service.services, add_service);
+
+         // accumulate restriction information
+         for( auto& server : configuration.domain.servers)
+         {
+            if( ! server.restrictions.empty())
+               algorithm::append_unique( server.restrictions, restrictions[ server.alias]);
+         }
+
+         log::line( verbose::log, "state: ", *this);
       }
 
       state::Service* State::service( const std::string& name)
@@ -369,6 +378,20 @@ namespace casual
                algorithm::for_each( services, remove);
             }
 
+            template< typename M>
+            void restrict_add_services( const State& state, M& advertise)
+            {
+               if( auto found = algorithm::find( state.restrictions, advertise.alias))
+               {
+                  auto& restricted = found->second;
+
+                  algorithm::trim( advertise.services.add, algorithm::filter( advertise.services.add, [&restricted]( auto& service)
+                  {
+                     return predicate::boolean( algorithm::find( restricted, service.name));
+                  }));
+               }
+            }
+
          } // <unnamed>
       } // local
 
@@ -417,6 +440,9 @@ namespace casual
             remove( message.process.pid);
             return {}; 
          }
+         
+         // honour possible restriction for the alias
+         local::restrict_add_services( *this, message);
 
          auto& instance = local::find_or_add( instances.sequential, message.process);
 
@@ -465,6 +491,9 @@ namespace casual
 
          if( message.reset)
             remove( message.process.pid);
+
+         // honour possible restriction for the alias
+         local::restrict_add_services( *this, message);
 
          auto& instance = local::find_or_add( instances.concurrent, message.process);
          instance.order = message.order;
