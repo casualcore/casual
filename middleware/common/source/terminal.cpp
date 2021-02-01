@@ -35,6 +35,17 @@ namespace casual
                      }, value);
                   }
 
+                  namespace deduce
+                  {
+                     auto color( std::string value)
+                     {
+                        if( value == "auto")
+                           return ::isatty( ::fileno( stdout)) == 1;
+                        else
+                           return string::from< bool>( value);
+                     }
+                  }
+
                   namespace global
                   {
                      Directive& directive = Directive::instance();
@@ -43,6 +54,10 @@ namespace casual
                } // <unnamed>
             } // local
 
+            bool Directive::color() const
+            {
+               return ! m_porcelain && local::deduce::color( m_color);
+            }
 
             Directive::options_type Directive::options() &
             {
@@ -50,12 +65,16 @@ namespace casual
                   return std::vector< std::string>{ "true", "false"};
                };
 
+               auto color_completer = []( auto, bool ){
+                  return std::vector< std::string>{ "true", "false", "auto"};
+               };
+
                auto default_description = []( const char* message, auto value)
                {
                   return string::compose( message, " (default: ", std::boolalpha, value, ')');
                };
 
-               return argument::Option( std::tie( m_color), bool_completer, { "--color"}, default_description( "set/unset color", m_color))
+               return argument::Option( std::tie( m_color), color_completer, { "--color"}, default_description( "set/unset color", m_color))
                   + argument::Option( std::tie( m_header), bool_completer, { "--header"}, default_description( "set/unset header", m_header))
                   + argument::Option( std::tie( m_precision), { "--precision"}, default_description( "set number of decimal points used for output", m_precision))
                   + argument::Option( std::tie( m_block), bool_completer, { "--block"}, default_description( "set/unset blocking - if false return control to user as soon as possible", m_block))
@@ -71,7 +90,7 @@ namespace casual
             }
 
             Directive::Directive()
-               : m_color{ local::get( environment::variable::name::terminal::color, true)},
+               : m_color{ local::get( environment::variable::name::terminal::color, "true")},
                   m_porcelain{ local::get( environment::variable::name::terminal::porcelain, false)},
                   m_header{ local::get( environment::variable::name::terminal::header, true)},
                   m_block{ local::get( environment::variable::name::terminal::precision, true)},

@@ -30,7 +30,7 @@ namespace casual
             {
                static Directive& instance();
 
-               inline auto color() const { return m_color && ! m_porcelain;}
+               bool color() const;
                inline auto porcelain() const { return m_porcelain;}
                inline auto header() const { return m_header;}
                inline auto precision() const { return m_precision;}
@@ -46,7 +46,7 @@ namespace casual
                options_type options() &;
 
             private:
-               bool m_color;
+               std::string m_color;
                bool m_porcelain;
                bool m_header;
                bool m_block;
