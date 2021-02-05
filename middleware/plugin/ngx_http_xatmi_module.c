@@ -385,14 +385,6 @@ static ngx_int_t ngx_xatmi_backend_handler( ngx_http_request_t* r)
    rc = receive( r);
    if ( rc == NGX_AGAIN)
    {
-      if (client_context->number_of_calls > 600)
-      {
-         xatmi_cancel(client_context, r);
-
-         error_handler(r, client_context);
-         goto produce_output;
-      }
-
       restart_cycle( r);
       return NGX_DONE;
    }
