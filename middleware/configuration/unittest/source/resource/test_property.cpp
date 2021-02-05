@@ -17,6 +17,13 @@ namespace casual
    {
       namespace resource
       {
+
+         TEST( configuration_resource_property, no_file)
+         {
+            auto resources = resource::property::get( "");
+            EXPECT_TRUE( resources.empty());
+         }
+
          class configuration_resource_property : public ::testing::TestWithParam< const char*>
          {
          };

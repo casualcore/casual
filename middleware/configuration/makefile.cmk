@@ -24,7 +24,6 @@ lib_configuration = LinkLibrary( 'bin/casual-configuration',
     [
         Compile( 'source/common.cpp'),
         Compile( 'source/user.cpp'),
-        Compile( 'source/user/file.cpp'),
         Compile( 'source/user/load.cpp'),
         Compile( 'source/user/environment.cpp'),
         Compile( 'source/model/transform.cpp'),

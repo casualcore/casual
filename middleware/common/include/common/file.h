@@ -40,6 +40,8 @@ namespace casual
             const std::string& path() const  { return m_path;} 
             std::string extension() const;
 
+            inline friend std::ostream& operator << ( std::ostream& out, const Input& value) { return out << value.m_path;}
+
          private:
             std::string m_path;
          };
@@ -51,6 +53,8 @@ namespace casual
 
             const std::string& path() const  { return m_path;} 
             std::string extension() const;
+
+            inline friend std::ostream& operator << ( std::ostream& out, const Output& value) { return out << value.m_path;}
 
          private:
             std::string m_path;
@@ -101,13 +105,6 @@ namespace casual
          std::vector< std::string> find( std::string_view pattern);
          std::vector< std::string> find( const std::vector< std::string>& patterns);
          //! @}
-         
-
-         //! Find the first file that matches search
-         //!
-         //! @param path The path to search
-         //! @param search regexp to match file names
-         std::string find( std::string_view path, const std::regex& search);
 
          //! Return the absolute path of the provided path
          //!
