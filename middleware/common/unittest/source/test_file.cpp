@@ -116,45 +116,6 @@ namespace casual
          EXPECT_TRUE(verify == "/") << verify;
       }
 
-      TEST( common_file_find_regex, existing_file)
-      {
-         common::unittest::Trace trace;
-
-         auto path = common::directory::name::base( __FILE__);
-         auto file = common::file::name::base( __FILE__);
-
-         std::regex regex = std::regex( file);
-
-         std::string verify = common::file::find( path, regex);
-         EXPECT_TRUE( verify == file) << verify;
-      }
-
-
-      TEST( common_file_find_regex, nonexisting_file)
-      {
-         common::unittest::Trace trace;
-
-         std::string path = common::directory::name::base( __FILE__);
-         std::string file = common::file::name::base( __FILE__) + "testfail";
-
-         std::regex regex = std::regex( file);
-
-         std::string verify = common::file::find( path, regex);
-         EXPECT_TRUE( verify == "") << verify;
-      }
-
-      TEST( common_file_find_regex, empty_arguments)
-      {
-         common::unittest::Trace trace;
-
-         std::string path = common::directory::name::base( "");
-         std::string file = common::file::name::base( "");
-
-         std::regex regex = std::regex( file);
-
-         std::string verify = common::file::find( path, regex);
-         EXPECT_TRUE( verify == "") << verify;
-      }
 
       TEST( common_file_find_pattern, existing_files)
       {

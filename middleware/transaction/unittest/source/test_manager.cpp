@@ -230,45 +230,6 @@ resources:
          });
       }
 
-      TEST( transaction_manager, one_non_existent_RM_key__expect_boot)
-      {
-         common::unittest::Trace trace;
-
-         auto configuration = []()
-         {
-            local::Domain::Configuration result;
-            result.domain = R"(
-domain:
-   name: transaction-domain
-   
-   groups:
-      - name: first
-      - name: second
-        dependencies: [ first]
-   
-   transaction:
-      resources:
-         - key: non-existent
-           name: rm1
-           instances: 2
-
-   servers:
-      - path: "${CASUAL_HOME}/bin/casual-service-manager"
-        memberships: [ first]
-      - path: "./bin/casual-transaction-manager"
-        arguments: [ --transaction-log, ":memory:"]
-        memberships: [ second]
-         
-)";
-            return result;
-         }();
-
-
-         EXPECT_NO_THROW({
-            local::Domain domain( std::move( configuration));
-         });
-      }
-
       TEST( transaction_manager, non_existent_RM_proxy___expect_boot)
       {
          common::unittest::Trace trace;

@@ -19,58 +19,54 @@
 
 namespace casual
 {
-   namespace configuration
-   {
-      namespace resource
+   namespace configuration::resource
+{
+      struct Property
       {
-         struct Property
+         std::string key;
+         std::string server;
+         std::string xa_struct_name;
+
+         std::vector< std::string> libraries;
+
+         struct
          {
-            std::string key;
-            std::string server;
-            std::string xa_struct_name;
-
-            std::vector< std::string> libraries;
-
-            struct
-            {
-               std::vector< std::string> include;
-               std::vector< std::string> library;
-
-               CASUAL_CONST_CORRECT_SERIALIZE
-               (
-                  CASUAL_SERIALIZE( include);
-                  CASUAL_SERIALIZE( library);
-               )
-
-            } paths;
-
-            std::optional< std::string> note;
-
+            std::vector< std::string> include;
+            std::vector< std::string> library;
 
             CASUAL_CONST_CORRECT_SERIALIZE
             (
-               CASUAL_SERIALIZE( key);
-               CASUAL_SERIALIZE( server);
-               CASUAL_SERIALIZE( xa_struct_name);
-               CASUAL_SERIALIZE( libraries);
-               CASUAL_SERIALIZE( paths);
-               CASUAL_SERIALIZE( note);
+               CASUAL_SERIALIZE( include);
+               CASUAL_SERIALIZE( library);
             )
-         };
 
-         namespace property
-         {
-            std::vector< resource::Property> get( const std::string& file);
+         } paths;
 
-            std::vector< resource::Property> get();
-
-         } // property
+         std::optional< std::string> note;
 
 
-         void validate( const std::vector< Property>& properties);
+         CASUAL_CONST_CORRECT_SERIALIZE(
+            CASUAL_SERIALIZE( key);
+            CASUAL_SERIALIZE( server);
+            CASUAL_SERIALIZE( xa_struct_name);
+            CASUAL_SERIALIZE( libraries);
+            CASUAL_SERIALIZE( paths);
+            CASUAL_SERIALIZE( note);
+         )
+      };
 
-      } // resource
-   } // configuration
+      namespace property
+      {
+         std::vector< resource::Property> get( const std::string& glob);
+
+         std::vector< resource::Property> get();
+
+      } // property
+
+
+      void validate( const std::vector< Property>& properties);
+
+   } // configuration::resource
 } // casual
 
 

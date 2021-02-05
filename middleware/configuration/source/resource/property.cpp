@@ -19,76 +19,83 @@
 
 namespace casual
 {
-   namespace configuration
+   using namespace common;
+
+   namespace configuration::resource
    {
-      namespace resource
+      namespace property
       {
-         namespace property
+         namespace local
          {
-            std::vector< Property> get( const std::string& name)
+            namespace
             {
-               common::log::line( verbose::log, "name: ", name);
 
-               std::vector< Property> resources;
-
-               // Create the reader and deserialize configuration
-               common::file::Input file{ name};
-               auto reader = common::serialize::create::reader::consumed::from( file.extension(), file);
-
-               reader >> CASUAL_NAMED_VALUE( resources);
-               reader.validate();
-
-               // Make sure we've got valid configuration
-               validate( resources);
-
-               common::log::line( verbose::log, "resources: ", resources);
-
-               return resources;
-            }
-
-            namespace local
-            {
-               namespace
+               auto get( const std::vector< std::string>& patterns)
                {
-                  std::string file()
+                  return algorithm::accumulate( file::find( patterns), std::vector< Property>{}, []( auto result, auto& file)
                   {
-                     auto file = common::environment::variable::get( common::environment::variable::name::resource::configuration, "");
-
-                     if( file.empty())
+                     auto get_properties = []( common::file::Input file)
                      {
-                        return common::file::find(
-                              common::environment::directory::casual() + "/configuration",
-                              std::regex( "resources.(yaml|xml|json|ini)" ));
-                     }
+                        common::log::line( verbose::log, "file: ", file);
 
-                     return file;
-                  }
-               } // <unnamed>
-            } // local
+                        std::vector< Property> resources;
 
-            std::vector< Property> get()
-            {
-               // Try to find configuration file
-               const auto file = local::file();
+                        // Create the reader and deserialize configuration
+                        auto reader = common::serialize::create::reader::consumed::from( file.extension(), file);
 
-               if( ! file.empty())
-                  return get( file);
-            
-               common::code::raise::error( common::code::casual::invalid_path, "could not find resource configuration file",
-                     " path: ", common::environment::directory::casual(),  "/configuration",
-                     " name: ", "resources.(yaml|json|xml|...");
-            }
+                        reader >> CASUAL_NAMED_VALUE( resources);
+                        reader.validate();
 
+                        // Make sure we've got valid configuration
+                        validate( resources);
 
-         } // property
+                        common::log::line( verbose::log, "resources: ", resources);
 
+                        return resources;
+                     };
+                     algorithm::append( get_properties( file), result);
+                     return result;
+                  });
+               }
 
-         void validate( const std::vector< Property>& properties)
+            } // <unnamed>
+         } // local
+
+         std::vector< Property> get( const std::string& glob)
          {
+            Trace trace{ "config::resource::get"};
 
+            return local::get( { glob});
          }
 
-      } // resource
-   } // config
+         std::vector< Property> get()
+         {
+            // Try to find configuration file
+            auto file = common::environment::variable::get( common::environment::variable::name::resource::configuration, "");
+
+            if( ! file.empty())
+               return get( file);
+
+            auto base = common::environment::directory::casual() + "/configuration/resources";
+
+            return local::get( {
+               base + ".yaml",
+               base + ".json",
+               base + ".xml",
+               base + ".ini",
+            });
+         }
+
+
+      } // property
+
+
+      void validate( const std::vector< Property>& properties)
+      {
+
+      }
+
+
+   } // config::resource
 } // casual
 

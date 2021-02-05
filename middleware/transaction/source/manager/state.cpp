@@ -326,7 +326,7 @@ namespace casual
                      {
                         auto emplaced = result.emplace( property.key, std::move( property));
                         if( ! emplaced.second)
-                           common::code::raise::error( common::code::casual::invalid_configuration, "multiple keys in resource config: ", emplaced.first->first);
+                           event::error::raise( code::casual::invalid_configuration, event::error::Severity::fatal, "multiple keys in resource config: ", emplaced.first->first);
                      }
 
                      return result;
@@ -355,7 +355,7 @@ namespace casual
                         if( common::algorithm::find( properties, r.key))
                            return true;
                         
-                        common::event::error::send( code::casual::invalid_argument, "failed to correlate resource key '", r.key, "' - action: skip resource");
+                        common::event::error::send( code::casual::invalid_argument, event::error::Severity::fatal, "failed to correlate resource key '", r.key);
                         return false;   
                      };
 
@@ -466,15 +466,12 @@ namespace casual
 
          void State::operator () ( const common::process::lifetime::Exit& death)
          {
-
             for( auto& resource : resources)
             {
                if( auto found = common::algorithm::find( resource.instances, death.pid))
                {
                   if( found->state() != state::resource::Proxy::Instance::State::shutdown)
-                  {
                      log::line( log::category::error, "resource proxy instance died - ", *found);
-                  }
 
                   resource.metrics += found->metrics;
                   resource.instances.erase( std::begin( found));

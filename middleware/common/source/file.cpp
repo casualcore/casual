@@ -177,31 +177,6 @@ namespace casual
          }
 
 
-         std::string find( std::string_view path, const std::regex& search)
-         {
-            std::string result;
-
-            auto directory = memory::guard( opendir( path.data()), &closedir);
-
-            if( directory)
-            {
-               while( auto element = readdir( directory.get()))
-               {
-                  if( std::regex_match( element->d_name, search))
-                  {
-                     if( path.back() != '/')
-                     {
-                        result = path;
-                        result.push_back( '/');
-                     }
-
-                     return result + element->d_name;
-                  }
-               }
-            }
-            return result;
-         }
-
          std::string absolute( std::string_view path)
          {
             auto absolute = memory::guard( realpath( path.data(), nullptr), &free);
