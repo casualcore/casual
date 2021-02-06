@@ -338,6 +338,8 @@ namespace casual
 
             Outbound& operator += ( Outbound rhs);
 
+            void normalize();
+
             CASUAL_CONST_CORRECT_SERIALIZE(
                CASUAL_SERIALIZE( groups);
             )
@@ -596,8 +598,6 @@ namespace casual
                std::string source;
                std::optional< platform::size::type> instances;
                std::optional< std::string> note;
-
-               //inline friend bool operator == ( const forward_base& lhs, const forward_base& rhs) { return lhs.alias == rhs.alias;}
 
                CASUAL_CONST_CORRECT_SERIALIZE(
                   CASUAL_SERIALIZE( alias);

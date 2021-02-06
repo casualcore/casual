@@ -60,6 +60,17 @@ namespace casual
                }
             } // equal
 
+            namespace validate
+            {
+               template< typename T>
+               auto not_empty( T&& value, std::string_view role)
+               {
+                  if( value.empty())
+                     code::raise::error( code::casual::invalid_configuration, role, " has to have a value");
+               }
+
+            } // validate   
+
             template< typename S, typename T, typename P>
             auto add_or_replace( S&& source, T& target, P predicate)
             {
@@ -153,6 +164,7 @@ namespace casual
 
       namespace gateway
       {
+
          namespace inbound
          {
             Connection& Connection::operator += ( Connection rhs)
@@ -164,7 +176,6 @@ namespace casual
             Group& Group::operator += ( Group rhs)
             {
                local::add_or_replace( std::move( rhs.connections), connections, local::equal::address());
-
                return *this;
             }
             
@@ -202,23 +213,51 @@ namespace casual
 
          void Inbound::normalize()
          {
+            Trace trace{ "configuration::user::gateway::Inbound::normalize"};
+
+            // validate
+            {
+               for( auto& group : groups)
+               {
+                  algorithm::for_each( group.connections, []( auto& connection)
+                  {
+                     local::validate::not_empty( connection.address, "inbound.groups[].address");
+                  });
+               }
+            }
+
             if( ! defaults || ! defaults.value().limit)
                return;
 
-            algorithm::for_each( groups, [ limit = defaults.value().limit.value()]( auto& group)
-            {
-               if( ! group.limit)
-                  return;
+            auto limit = defaults.value().limit.value();
 
-               group.limit.value().size = coalesce( group.limit.value().size, limit.size);
-               group.limit.value().messages = coalesce( group.limit.value().messages, limit.messages);
-            });
+            for( auto& group : groups)
+            {
+               if( group.limit)
+               {
+                  group.limit.value().size = coalesce( group.limit.value().size, limit.size);
+                  group.limit.value().messages = coalesce( group.limit.value().messages, limit.messages);
+               }
+            }
          }
 
          Outbound& Outbound::operator += ( Outbound rhs)
          {
             local::add_or_accumulate( std::move( rhs.groups), groups, local::equal::alias());
             return *this;
+         }
+
+         void Outbound::normalize()
+         {
+            Trace trace{ "configuration::user::gateway::Outbound::normalize"};
+
+            for( auto& group : groups)
+            {
+               algorithm::for_each( group.connections, []( auto& connection)
+               {
+                  local::validate::not_empty( connection.address, "outbound.groups[].address");
+               });
+            }
          }
 
          Reverse& Reverse::operator += ( Reverse rhs)
@@ -253,8 +292,16 @@ namespace casual
             if( inbound)
                inbound.value().normalize();
 
-            if( reverse && reverse.value().inbound)
-               reverse.value().inbound.value().normalize();
+            if( outbound)
+               outbound.value().normalize();
+
+            if( reverse)
+            {
+               if( reverse.value().inbound)
+                  reverse.value().inbound.value().normalize();
+               if( reverse.value().outbound)
+                  reverse.value().outbound.value().normalize();
+            }
 
             // the rest is deprecated...
             if( ! defaults)
@@ -418,6 +465,8 @@ namespace casual
 
                   algorithm::for_each( group.queues, [&]( auto& queue)
                   {
+                     local::validate::not_empty( queue.name, "domain.queue.groups[].queues[].name");
+                     
                      normalize_queue_retry( queue);
 
                      // should we complement retry with defaults?

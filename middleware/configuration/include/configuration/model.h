@@ -544,13 +544,4 @@ namespace casual::configuration
 
    };
 
-   namespace model
-   {
-   
-      //! finalize and validates the model
-      //! @throws system::invalid::Argument if something is not ok.
-      void finalize( configuration::Model& model);
-
-   } // model
-
 } // casual::configuration
