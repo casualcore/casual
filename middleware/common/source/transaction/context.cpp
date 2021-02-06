@@ -195,7 +195,8 @@ namespace casual
                   {
                      Transaction transaction{ common::transaction::id::create( process::handle())};
                      transaction.state = Transaction::State::active;
-                     transaction.timeout.set( start, std::chrono::seconds{ timeout});
+                     if( timeout > 0)
+                        transaction.deadline = platform::time::clock::type::now() + std::chrono::seconds{ timeout};
 
                      return transaction;
                   }
@@ -238,7 +239,7 @@ namespace casual
             return algorithm::transform( m_resources.all, []( auto& resource){ return resource.id();});
          }
 
-         void Context::join( const transaction::ID& trid)
+         Transaction& Context::join( const transaction::ID& trid)
          {
             Trace trace{ "transaction::Context::join"};
 
@@ -248,9 +249,10 @@ namespace casual
                resources_start( transaction, flag::xa::Flag::no_flags);
 
             m_transactions.push_back( std::move( transaction));
+            return m_transactions.back();
          }
 
-         void Context::start( const platform::time::point::type& start)
+         Transaction& Context::start( const platform::time::point::type& start)
          {
             Trace trace{ "transaction::Context::start"};
 
@@ -259,18 +261,19 @@ namespace casual
             resources_start( transaction, flag::xa::Flag::no_flags);
 
             m_transactions.push_back( std::move( transaction));
+            return m_transactions.back();
          }
 
-         void Context::branch( const transaction::ID& trid)
+         Transaction& Context::branch( const transaction::ID& trid)
          {
             Trace trace{ "transaction::Context::branch"};
 
-            m_transactions.emplace_back( id::branch( trid));
-
-            auto& transaction = m_transactions.back();
+            auto& transaction = m_transactions.emplace_back( id::branch( trid));
 
             if( transaction)
                resources_start( transaction, flag::xa::Flag::no_flags);
+
+            return transaction;
          }
 
 

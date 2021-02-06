@@ -8,6 +8,7 @@
 #include "configuration/model/transform.h"
 #include "configuration/user/environment.h"
 #include "configuration/common.h"
+#include "common/service/type.h"
 
 #include "common/chronology.h"
 
@@ -210,15 +211,51 @@ namespace casual
                return result;
             }
 
+            namespace detail::execution
+            {
+               auto timeout( const std::optional<configuration::user::service::Execution>& execution)
+               {
+                  configuration::model::service::Timeout result;
+                  if( execution && execution.value().timeout)
+                  {
+                     if ( execution.value().timeout.value().duration)
+                     {
+                        result.duration = 
+                           common::chronology::from::string( execution.value().timeout.value().duration.value());
+                     }
+                     if ( execution.value().timeout.value().contract)
+                     {
+                        result.contract = common::service::execution::timeout::contract::transform( execution.value().timeout.value().contract.value());
+                     }
+                  }
+                  return result;
+               }
+               
+            }
 
             auto service( const configuration::user::Domain& domain)
             {
                Trace trace{ "configuration::model::local::service"};
 
+               namespace contract = common::service::execution::timeout::contract;
+
                service::Model result;
 
-               if( domain.defaults && domain.defaults.value().service)
-                  result.timeout = common::chronology::from::string( domain.defaults.value().service.value().timeout);
+               if( domain.defaults && domain.defaults.value().service && domain.defaults.value().service.value().timeout)
+               {
+                  log::line( log::category::warning, code::casual::invalid_configuration, " domain.default.service.timeout are deprecated - use domain.default.service.execution.duration instead");
+                  result.timeout.duration = common::chronology::from::string( domain.defaults.value().service.value().timeout.value());
+               }
+
+               if( domain.service && domain.service.value().execution && domain.service.value().execution.value().timeout)
+               {
+                  const auto& timeout = domain.service.value().execution.value().timeout;
+                  if( timeout.value().duration)
+                     result.timeout.duration = common::chronology::from::string( timeout.value().duration.value());
+
+                  if( timeout.value().contract)
+                     result.timeout.contract = contract::transform( timeout.value().contract.value());
+               }
 
                result.services = common::algorithm::transform( domain.services, []( const auto& service)
                {
@@ -227,7 +264,14 @@ namespace casual
                   result.name = service.name;
                   result.routes = service.routes.value_or( result.routes);
                   if( service.timeout)
-                     result.timeout = common::chronology::from::string( service.timeout.value());
+                  {
+                     log::line( log::category::warning, code::casual::invalid_configuration, " domain.service.timeout are deprecated - use domain.service.execution.duration instead");
+    
+                     result.timeout.duration = common::chronology::from::string( service.timeout.value());
+                  }
+
+                  if( service.execution)
+                     result.timeout = detail::execution::timeout( service.execution);
 
                   return result;
                });
@@ -518,8 +562,8 @@ namespace casual
 
                   result.name = model.domain.name;
 
-                  if( model.service.timeout > platform::time::unit::zero())
-                     result.defaults.emplace().service.emplace().timeout = chronology::to::string( model.service.timeout);
+                  if( model.service.timeout.duration)
+                     result.defaults.emplace().service.emplace().timeout = chronology::to::string( model.service.timeout.duration.value());
 
                   if( ! model.domain.environment.variables.empty())
                      result.environment.emplace().variables = configuration::user::environment::transform( model.domain.environment.variables);
@@ -575,6 +619,25 @@ namespace casual
 
                   return result;
                }
+               
+               namespace detail
+               {
+                  auto execution( const configuration::model::service::Service& service)
+                  {
+                     configuration::user::service::execution::Timeout timeout;                  
+                     if( service.timeout.duration)
+                        timeout.duration = chronology::to::string( service.timeout.duration.value());
+
+                     timeout.contract = common::service::execution::timeout::contract::transform( service.timeout.contract);
+
+                     std::optional<configuration::user::service::Execution> result;
+                     if( timeout.duration || timeout.contract)
+                        result.emplace().timeout = std::move( timeout);
+
+                     return result;                     
+                  }
+
+               }
 
                auto service( const configuration::Model& model)
                {
@@ -582,11 +645,11 @@ namespace casual
 
                   return algorithm::transform( model.service.services, []( auto& service)
                   {
-                     user::Service result;
+                     user::service::Service result;
 
                      result.routes = null_if_empty( service.routes);
                      result.name = service.name;
-                     result.timeout = null_if_empty( chronology::to::string( service.timeout));
+                     result.execution = detail::execution( service);
 
                      return result;
                   });

@@ -448,7 +448,7 @@ template< typename A> struct Value< type, A, std::enable_if_t< common::serialize
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( transaction);
             // TODO 2.0
             // CASUAL_CUSTOMIZATION_POINT_SERIALIZE( type);
-            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( timeout);
+            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( timeout.duration);
             CASUAL_SERIALIZE_NAME( value.property.hops, "hops");
          })
 
@@ -464,7 +464,7 @@ template< typename A> struct Value< type, A, std::enable_if_t< common::serialize
          {
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( execution);
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( service.name);
-            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( service.timeout);
+            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( service.timeout.duration);
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( parent);
             CASUAL_SERIALIZE_NAME( value.trid.xid, "xid");
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( flags);
@@ -485,7 +485,7 @@ template< typename A> struct Value< type, A, std::enable_if_t< common::serialize
          {
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( execution);
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( service.name);
-            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( service.timeout);
+            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( service.timeout.duration);
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( parent);
             CASUAL_SERIALIZE_NAME( value.trid.xid, "xid");
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( flags);

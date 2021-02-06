@@ -14,6 +14,7 @@
 #include "common/server/service.h"
 #include "common/communication/ipc.h"
 #include "common/event/dispatch.h"
+#include "common/state/machine.h"
 
 #include "configuration/model.h"
 
@@ -26,143 +27,147 @@
 
 namespace casual
 {
-   namespace service
+   namespace service::manager
    {
-      namespace manager
+      namespace state
       {
-         using size_type = platform::size::type;
 
-         namespace internal
+         struct Service;
+
+         namespace instance
          {
-            template< typename T>
-            struct Id
+            struct Caller
             {
-               using id_type = size_type;
+               common::process::Handle process;
+               common::Uuid correlation;
 
-               id_type id = nextId();
+               inline explicit operator bool() const noexcept { return common::predicate::boolean( process);}
+               inline friend bool operator == ( const Caller& lhs, const common::Uuid& rhs) { return lhs.correlation == rhs;}
 
-            private:
-               inline static id_type nextId()
-               {
-                  static id_type id = 10;
-                  return id++;
-               }
+               CASUAL_LOG_SERIALIZE(
+                  CASUAL_SERIALIZE( process);
+                  CASUAL_SERIALIZE( correlation);
+               )
             };
 
-         } // internal
+            struct base_instance
+            {
+               base_instance() = default;
+               base_instance( common::process::Handle process) : process( std::move( process)) {}
+
+               common::process::Handle process;
+
+               inline friend bool operator == ( const base_instance& lhs, const base_instance& rhs) { return lhs.process == rhs.process;}
+               inline friend bool operator < ( const base_instance& lhs, const base_instance& rhs) { return lhs.process.pid < rhs.process.pid;}
+               inline friend bool operator == ( const base_instance& lhs, common::strong::process::id rhs) { return lhs.process.pid == rhs;}
+
+               CASUAL_LOG_SERIALIZE(
+                  CASUAL_SERIALIZE( process);
+               )
+            };
 
 
-         namespace state
+            struct Sequential : base_instance
+            {
+               enum class State : short
+               {
+                  idle,
+                  busy,
+               };
+
+               using base_instance::base_instance;
+
+               void reserve( 
+                  state::Service* service,
+                  const common::process::Handle& caller,
+                  const common::Uuid& correlation);
+
+               void unreserve( const common::message::event::service::Metric& metric);
+
+               //! discards the reservation
+               void discard();
+
+               State state() const;
+               inline bool idle() const { return m_service == nullptr;}
+
+               //! Return true if this instance exposes the service
+               bool service( const std::string& name) const;
+
+               //! removes this instance from all services
+               void deactivate();
+
+               void add( state::Service& service);
+               void remove( const std::string& service);
+
+               //! @returns and consumes associated caller to the correlation. 'empty' caller if not found.
+               inline instance::Caller consume( const common::Uuid& correlation)
+               {
+                  if( m_caller == correlation)
+                     return std::exchange( m_caller, {});
+                  return {};
+               }
+
+               //! caller of last reserve
+               inline const auto& caller() const noexcept { return m_caller;}
+
+               friend std::ostream& operator << ( std::ostream& out, State value);
+
+               CASUAL_LOG_SERIALIZE(
+                  base_instance::serialize( archive);   
+                  CASUAL_SERIALIZE_NAME( m_service, "service");
+                  CASUAL_SERIALIZE_NAME( m_caller, "caller");
+                  CASUAL_SERIALIZE_NAME( m_services, "services");
+               )
+
+            private:
+               state::Service* m_service = nullptr;
+               instance::Caller m_caller;
+               // all associated services
+               std::vector< state::Service*> m_services;
+            };
+
+            struct Concurrent : base_instance
+            {
+               using base_instance::base_instance;
+               
+               std::vector< instance::Caller> callers;
+               platform::size::type order;
+
+               inline void reserve( const common::process::Handle& caller, const common::Uuid& correlation)
+               {
+                  callers.push_back( instance::Caller{ caller, correlation});
+               }
+
+               void unreserve( const std::vector< common::Uuid>& correlations);
+
+               //! @returns and consumes associated caller to the correlation. 'empty' caller if not found.
+               instance::Caller consume( const common::Uuid& correlation);
+               
+               friend bool operator < ( const Concurrent& lhs, const Concurrent& rhs);
+
+               CASUAL_LOG_SERIALIZE(
+                  base_instance::serialize( archive);   
+                  CASUAL_SERIALIZE( callers);
+                  CASUAL_SERIALIZE( order);
+               )
+            };
+
+         } // instance
+
+
+         namespace service
          {
-
-            struct Service;
-
-            namespace instance
+            namespace pending
             {
-               struct base_instance
+               struct Lookup
                {
-                  base_instance() = default;
-                  base_instance( common::process::Handle process) : process( std::move( process)) {}
-
-                  common::process::Handle process;
-
-                  inline friend bool operator == ( const base_instance& lhs, const base_instance& rhs) { return lhs.process == rhs.process;}
-                  inline friend bool operator < ( const base_instance& lhs, const base_instance& rhs) { return lhs.process.pid < rhs.process.pid;}
-                  inline friend bool operator == ( const base_instance& lhs, common::strong::process::id rhs) { return lhs.process.pid == rhs;}
-
-                  CASUAL_LOG_SERIALIZE(
-                     CASUAL_SERIALIZE( process);
-                  )
-               };
-
-
-               struct Sequential : base_instance
-               {
-                  enum class State : short
-                  {
-                     idle,
-                     busy,
-                  };
-
-                  using base_instance::base_instance;
-
-                  void reserve( 
-                     state::Service* service,
-                     const common::process::Handle& caller,
-                     const common::Uuid& correlation);
-
-                  void unreserve( const common::message::event::service::Metric& metric);
-
-                  //! discards the reservation
-                  void discard();
-
-                  State state() const;
-                  inline bool idle() const { return m_service == nullptr;}
-
-                  //! Return true if this instance exposes the service
-                  bool service( const std::string& name) const;
-
-                  //! removes this instance from all services
-                  void deactivate();
-
-                  void add( state::Service& service);
-                  void remove( const std::string& service);
-
-                  //! caller and correlation of last reserve
-                  //! @{
-                  inline const common::process::Handle& caller() const { return m_caller;}
-                  inline const common::Uuid& correlation() const { return m_correlation;}
-                  //! @}
-
-                  friend std::ostream& operator << ( std::ostream& out, State value);
-
-                  CASUAL_LOG_SERIALIZE(
-                     base_instance::serialize( archive);   
-                     CASUAL_SERIALIZE_NAME( m_service, "service");
-                     CASUAL_SERIALIZE_NAME( m_caller, "caller");
-                     CASUAL_SERIALIZE_NAME( m_correlation, "correlation");
-                     CASUAL_SERIALIZE_NAME( m_services, "services");
-                  )
-
-               private:
-                  state::Service* m_service = nullptr;
-                  common::process::Handle m_caller;
-                  common::Uuid m_correlation;
-
-                  // all associated services
-                  std::vector< state::Service*> m_services;
-               };
-
-               struct Concurrent : base_instance
-               {
-                  using base_instance::base_instance;
-
-                  size_type order;
-
-                  friend bool operator < ( const Concurrent& lhs, const Concurrent& rhs);
-
-                  CASUAL_LOG_SERIALIZE(
-                     base_instance::serialize( archive);   
-                     CASUAL_SERIALIZE( order);
-                  )
-               };
-
-            } // instance
-
-
-            namespace service
-            {
-               using Metric = common::Metric;
-
-               struct Pending
-               {
-                  Pending( common::message::service::lookup::Request request, platform::time::point::type when)
-                   : request{ std::move( request)}, when{ when} {}
+                  Lookup( common::message::service::lookup::Request request, platform::time::point::type when)
+                  : request{ std::move( request)}, when{ when} {}
 
                   common::message::service::lookup::Request request;
                   platform::time::point::type when;
 
-                  inline friend bool operator == ( const Pending& lhs, const common::Uuid& rhs) { return lhs.request == rhs;}
+                  inline friend bool operator == ( const Lookup& lhs, const common::Uuid& rhs) { return lhs.request == rhs;}
 
                   CASUAL_LOG_SERIALIZE( 
                      CASUAL_SERIALIZE( request);
@@ -170,247 +175,326 @@ namespace casual
                   )
                };
 
-
-               namespace instance
+               namespace deadline
                {
+                  struct Entry
+                  {   
+                     platform::time::point::type when;
+                     common::Uuid correlation;
+                     state::Service* service = nullptr;
 
-                  using local_base = std::reference_wrapper< state::instance::Sequential>;
+                     inline friend bool operator < ( const Entry& lhs, const Entry& rhs) { return lhs.when < rhs.when;}
+                     inline friend bool operator == ( const Entry& lhs, const common::Uuid& rhs) { return lhs.correlation == rhs;}
 
-                  //! Just a helper to simplify usage of the reference
-                  struct Sequential : local_base
+                     CASUAL_LOG_SERIALIZE( 
+                        CASUAL_SERIALIZE( when);
+                        CASUAL_SERIALIZE( correlation);
+                        CASUAL_SERIALIZE( service);
+                     )
+                  };
+                  
+               } // deadline
+
+               struct Deadline
+               {      
+                  std::optional< platform::time::point::type> add( deadline::Entry entry);
+                  std::optional< platform::time::point::type> remove( const common::Uuid& correlation);
+                  std::optional< platform::time::point::type> remove( const std::vector< common::Uuid>& correlations);
+
+                  struct Expired
                   {
-                     using local_base::local_base;
-
-                     inline bool idle() const { return get().idle();}
-
-                     inline void reserve(                      
-                        state::Service* service,
-                        const common::process::Handle& caller,
-                        const common::Uuid& correlation)
-                     {
-                        get().reserve( service, caller, correlation);
-                     }
-
-                     inline const common::process::Handle& process() const { return get().process;}
-                     inline auto state() const { return get().state();}
-
-                     inline friend bool operator == ( const Sequential& lhs, common::strong::process::id rhs) { return lhs.process().pid == rhs;}
+                     std::vector< deadline::Entry> entries;
+                     std::optional< platform::time::point::type> deadline;
 
                      CASUAL_LOG_SERIALIZE(
-                        get().serialize( archive);
+                        CASUAL_SERIALIZE( entries);
+                        CASUAL_SERIALIZE( deadline);
                      )
                   };
 
-                  using remote_base = std::reference_wrapper< state::instance::Concurrent>;
+                  Expired expired( platform::time::point::type now = platform::time::point::type::clock::now());
 
-                  //! Just a helper to simplify usage of the reference
-                  struct Concurrent : remote_base, common::Compare< Concurrent>
-                  {
-                     using Property = common::message::service::concurrent::advertise::service::Property;
-
-                     Concurrent( state::instance::Concurrent& instance, Property property) : remote_base{ instance}, property{ property} {}
-
-                     inline const common::process::Handle& process() const { return get().process;}
-
-                     inline friend bool operator == ( const Concurrent& lhs, common::strong::process::id rhs) { return lhs.process().pid == rhs;}
-                     
-                     //! for common::Compare. The configured services are 'worth more' than not configured. 
-                     inline auto tie() const { return std::tie( property.type, get().order, property.hops);}
-
-                     CASUAL_LOG_SERIALIZE(
-                        get().serialize( archive);
-                        CASUAL_SERIALIZE( property);
-                     )
-
-                     Property property;
-
-                  };
-               } // instance
-
-
-               struct Advertised
-               {
-                  inline Advertised( common::message::service::call::Service information)
-                     : information( std::move( information)) {}
-
-                  struct Instances
-                  {
-                     template< typename T>
-                     using instances_type = std::vector< T>;
-
-                     instances_type< state::service::instance::Sequential> sequential;
-                     instances_type< state::service::instance::Concurrent> concurrent;
-
-                     inline bool empty() const { return sequential.empty() && concurrent.empty();}
-
-                     inline void partition() { common::algorithm::sort( concurrent);}
-
-                     CASUAL_LOG_SERIALIZE(
-                        CASUAL_SERIALIZE( sequential);
-                        CASUAL_SERIALIZE( concurrent);
-                     )
-                  };
-
-                  // state
-                  Instances instances;
-                  common::message::service::call::Service information;
-
-                  void remove( common::strong::process::id instance);
-                  state::instance::Sequential& sequential( common::strong::process::id instance);
-
-                  CASUAL_LOG_SERIALIZE(
-                     CASUAL_SERIALIZE( information);
-                     CASUAL_SERIALIZE( instances);
+                  CASUAL_LOG_SERIALIZE( 
+                     CASUAL_SERIALIZE_NAME( m_entries, "entries");
                   )
+                  
+               private:
+                  std::vector< deadline::Entry> m_entries;
                };
+            } // pending
 
-            } // service
-
-            struct Service : service::Advertised
+            namespace instance
             {
-               using service::Advertised::Advertised;
 
-               struct Metric
+               using local_base = std::reference_wrapper< state::instance::Sequential>;
+
+               //! Just a helper to simplify usage of the reference
+               struct Sequential : local_base
                {
-                  service::Metric invoked;
+                  using local_base::local_base;
 
-                  //! Keeps track of the pending metrics for this service
-                  service::Metric pending;
+                  inline bool idle() const { return get().idle();}
 
-                  platform::time::point::type last = platform::time::point::limit::zero();
+                  inline auto& reserve(                      
+                     state::Service* service,
+                     const common::process::Handle& caller,
+                     const common::Uuid& correlation)
+                  {
+                     get().reserve( service, caller, correlation);
+                     return get().process;
+                  }
 
-                  // remote invocations
-                  size_type remote = 0;
+                  inline const common::process::Handle& process() const { return get().process;}
+                  inline auto state() const { return get().state();}
 
-                  inline void reset() { *this = Metric{};}
-                  void update( const common::message::event::service::Metric& metric);
+                  inline friend bool operator == ( const Sequential& lhs, common::strong::process::id rhs) { return lhs.process().pid == rhs;}
 
                   CASUAL_LOG_SERIALIZE(
-                     CASUAL_SERIALIZE( invoked);
-                     CASUAL_SERIALIZE( pending);
-                     CASUAL_SERIALIZE( last);
-                     CASUAL_SERIALIZE( remote);
+                     get().serialize( archive);
                   )
                };
 
-               void add( state::instance::Sequential& instance);
-               void add( state::instance::Concurrent& instance, state::service::instance::Concurrent::Property property);
+               using remote_base = std::reference_wrapper< state::instance::Concurrent>;
 
-               Metric metric;
+               //! Just a helper to simplify usage of the reference
+               struct Concurrent : remote_base, common::Compare< Concurrent>
+               {
+                  using Property = common::message::service::concurrent::advertise::service::Property;
 
-               //! @return a reserved instance or 'null-handle' if no one is found.
-               common::process::Handle reserve( 
-                  const common::process::Handle& caller, 
-                  const common::Uuid& correlation);
+                  Concurrent( state::instance::Concurrent& instance, Property property) : remote_base{ instance}, property{ property} {}
 
-               CASUAL_LOG_SERIALIZE(
-                  service::Advertised::serialize( archive);
-                  CASUAL_SERIALIZE( metric);
-               )
+                  inline auto& reserve(                      
+                     const common::process::Handle& caller,
+                     const common::Uuid& correlation)
+                  {
+                     get().reserve( caller, correlation);
+                     return get().process;
+                  }
 
-            };
-         } // state
+                  inline const common::process::Handle& process() const { return get().process;}
 
-         struct State
-         {
-            State( configuration::Model model);
+                  inline friend bool operator == ( const Concurrent& lhs, common::strong::process::id rhs) { return lhs.process().pid == rhs;}
+                  
+                  //! for common::Compare. The configured services are 'worth more' than not configured. 
+                  inline auto tie() const { return std::tie( property.type, get().order, property.hops);}
 
-            State( State&&) = default;
-            State& operator = (State&&) = default;
+                  CASUAL_LOG_SERIALIZE(
+                     get().serialize( archive);
+                     CASUAL_SERIALIZE( property);
+                  )
 
-            State( const State&) = delete;
+                  Property property;
 
-            //! holds the total known services, including routes
-            std::unordered_map< std::string, state::Service> services;
+               };
+            } // instance
 
-            struct
+
+            struct Instances
             {
                template< typename T>
-               using instance_mapping_type = std::unordered_map< common::strong::process::id, T>;
+               using instances_type = std::vector< T>;
 
-               instance_mapping_type< state::instance::Sequential> sequential;
-               instance_mapping_type< state::instance::Concurrent> concurrent;
+               instances_type< state::service::instance::Sequential> sequential;
+               instances_type< state::service::instance::Concurrent> concurrent;
 
-            } instances;
+               inline bool empty() const { return sequential.empty() && concurrent.empty();}
 
+               //! @returns and consumes associated caller to the correlation. 'empty' caller if not found.
+               state::instance::Caller consume( const common::Uuid& correlation);
 
-            struct
+               inline void partition() { common::algorithm::sort( concurrent);}
+
+               CASUAL_LOG_SERIALIZE(
+                  CASUAL_SERIALIZE( sequential);
+                  CASUAL_SERIALIZE( concurrent);
+               )
+            };
+
+            struct Metric
             {
-               std::deque< state::service::Pending> requests;
-            } pending;
+               common::Metric invoked;
 
-            common::event::dispatch::Collection< common::message::event::service::Calls> events;
+               //! Keeps track of the pending metrics for this service
+               common::Metric pending;
 
-            struct Metric 
-            {
-               using metric_type = common::message::event::service::Metric;
+               platform::time::point::type last = platform::time::point::limit::zero();
 
-               void add( metric_type metric);
-               void add( std::vector< metric_type> metrics);
+               // remote invocations
+               platform::size::type remote = 0;
 
-               inline auto& message() const noexcept { return m_message;}
-               inline void clear() { m_message.metrics.clear();}
+               inline void reset() { *this = Metric{};}
+               void update( const common::message::event::service::Metric& metric);
 
-               inline auto size() const noexcept { return m_message.metrics.size();}
-               inline explicit operator bool() const noexcept { return ! m_message.metrics.empty();}
+               CASUAL_LOG_SERIALIZE(
+                  CASUAL_SERIALIZE( invoked);
+                  CASUAL_SERIALIZE( pending);
+                  CASUAL_SERIALIZE( last);
+                  CASUAL_SERIALIZE( remote);
+               )
+            };
 
-            private:
-               common::message::event::service::Calls m_message;
-            } metric;        
+         } // service
 
-            common::process::Handle forward;
+         struct Service
+         {
+            // state
+            service::Instances instances;
+            common::message::service::call::Service information;
+            configuration::model::service::Timeout timeout;
+            service::Metric metric;
 
-            platform::time::unit default_timeout = platform::time::unit::zero();
+            void remove( common::strong::process::id instance);
+            state::instance::Sequential& sequential( common::strong::process::id instance);
 
-            //! holds all the routes, for services that has routes
-            std::map< std::string, std::vector< std::string>> routes;
-
-            //! holds all alias restrictions.
-            std::map< std::string, std::vector< std::string>> restrictions;
-
-            //! find a service from name
-            //!
-            //! @param name of the service wanted
-            //! @return pointer to service, nullptr if not found
-            state::Service* service( const std::string& name);
+            void add( state::instance::Sequential& instance);
+            void add( state::instance::Concurrent& instance, state::service::instance::Concurrent::Property property);
             
-            //! removes the instance (deduced from `pid`) and remove the instance from all services 
-            void remove( common::strong::process::id pid);
+            //! @return a reserved instance or 'null-handle' if no one is found.
+            common::process::Handle reserve( 
+               const common::process::Handle& caller, 
+               const common::Uuid& correlation);
 
-            //! removes the instance (deduced from `pid`) from all services, (keeps the instance though)
-            void deactivate( common::strong::process::id pid);
+            //! @returns and consumes associated caller to the correlation. 'empty' caller if not found.
+            inline auto consume( const common::Uuid& correlation) { return instances.consume( correlation);}
 
-            //! adds or "updates" service
-            //! @returns pending request that has got services ready for reply
-            //! @{ 
-            [[nodiscard]] std::vector< state::service::Pending> update( common::message::service::Advertise& message);
-            [[nodiscard]] std::vector< state::service::Pending> update( common::message::service::concurrent::Advertise& message);
-            //! @}
-
-            //! Resets metrics for the provided services, if empty all metrics are reseted.
-            //! @param services
-            //!
-            //! @return the services that was reset.
-            std::vector< std::string> metric_reset( std::vector< std::string> services);
-
-
-            //! @returns a sequential (local) instances that has the `pid`, or nullptr if absent.
-            state::instance::Sequential* sequential( common::strong::process::id pid);
-
-            void connect_manager( std::vector< common::server::Service> services);
-
-            
             CASUAL_LOG_SERIALIZE(
-            {
-               CASUAL_SERIALIZE( routes);
-               CASUAL_SERIALIZE( services);
-               CASUAL_SERIALIZE( restrictions);
-            }) 
-
+               CASUAL_SERIALIZE( information);
+               CASUAL_SERIALIZE( instances);
+               CASUAL_SERIALIZE( timeout);
+               CASUAL_SERIALIZE( metric);
+            )
          };
 
-      } // manager
-   } // service
+         enum struct Runlevel : short
+         {
+            running,
+            shutdown,
+            error,
+         };
+         std::ostream& operator << ( std::ostream& out, Runlevel value);
+
+      } // state
+
+      struct State
+      {
+
+         common::state::Machine< state::Runlevel> runlevel;
+
+         //! holds the total known services, including routes
+         std::unordered_map< std::string, state::Service> services;
+
+         struct
+         {
+            template< typename T>
+            using instance_mapping_type = std::unordered_map< common::strong::process::id, T>;
+
+            instance_mapping_type< state::instance::Sequential> sequential;
+            instance_mapping_type< state::instance::Concurrent> concurrent;
+
+            CASUAL_LOG_SERIALIZE(
+               CASUAL_SERIALIZE( sequential);
+               CASUAL_SERIALIZE( concurrent);
+            )
+
+         } instances;
+
+
+         struct
+         {
+            state::service::pending::Deadline deadline;
+            std::deque< state::service::pending::Lookup> lookups;
+            
+            CASUAL_LOG_SERIALIZE(
+               CASUAL_SERIALIZE( deadline);
+               CASUAL_SERIALIZE( lookups);
+            )
+         } pending;
+
+         common::event::dispatch::Collection< common::message::event::service::Calls> events;  
+
+         struct Metric 
+         {
+            using metric_type = common::message::event::service::Metric;
+
+            void add( metric_type metric);
+            void add( std::vector< metric_type> metrics);
+
+            inline auto& message() const noexcept { return m_message;}
+            inline void clear() { m_message.metrics.clear();}
+
+            inline auto size() const noexcept { return m_message.metrics.size();}
+            inline explicit operator bool() const noexcept { return ! m_message.metrics.empty();}
+
+            CASUAL_LOG_SERIALIZE(
+               CASUAL_SERIALIZE_NAME( m_message, "message");
+            )
+
+         private:
+            common::message::event::service::Calls m_message;
+         } metric; 
+
+         common::Process forward;
+
+         configuration::model::service::Timeout timeout;
+
+         //! holds all the routes, for services that has routes
+         std::map< std::string, std::vector< std::string>> routes;
+
+         //! holds all alias restrictions.
+         std::map< std::string, std::vector< std::string>> restrictions;
+
+         //! @returns true if we're ready to shutdown
+         bool done() const noexcept;
+
+
+         //! find a service from name
+         //!
+         //! @param name of the service wanted
+         //! @return pointer to service, nullptr if not found
+         [[nodiscard]] state::Service* service( const std::string& name);
+         
+         //! removes the instance (deduced from `pid`) and remove the instance from all services 
+         void remove( common::strong::process::id pid);
+
+         //! removes the instance (deduced from `pid`) from all services, (keeps the instance though)
+         void deactivate( common::strong::process::id pid);
+
+         //! adds or "updates" service
+         //! @returns pending request that has got services ready for reply
+         //! @{ 
+         [[nodiscard]] std::vector< state::service::pending::Lookup> update( common::message::service::Advertise& message);
+         [[nodiscard]] std::vector< state::service::pending::Lookup> update( common::message::service::concurrent::Advertise& message);
+         //! @}
+
+         //! Resets metrics for the provided services, if empty all metrics are reset.
+         //! @param services
+         //!
+         //! @return the services that was reset.
+         std::vector< std::string> metric_reset( std::vector< std::string> services);
+
+         //! @returns a sequential (local) instances that has the `pid`, or nullptr if absent.
+         [[nodiscard]] state::instance::Sequential* sequential( common::strong::process::id pid);
+
+         //! @returns a concurrent (remote) instances that has the `pid`, or nullptr if absent.
+         [[nodiscard]] state::instance::Concurrent* concurrent( common::strong::process::id pid);
+
+         void connect_manager( std::vector< common::server::Service> services);
+
+         CASUAL_LOG_SERIALIZE(
+            CASUAL_SERIALIZE( runlevel);
+            CASUAL_SERIALIZE( services);
+            CASUAL_SERIALIZE( pending);
+            CASUAL_SERIALIZE( events);
+            CASUAL_SERIALIZE( metric);
+            CASUAL_SERIALIZE( forward);
+            CASUAL_SERIALIZE( timeout);
+            CASUAL_SERIALIZE( routes);
+            CASUAL_SERIALIZE( restrictions);
+         ) 
+
+      };
+
+   } // service::manager
 } // casual
 
 

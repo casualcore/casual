@@ -27,7 +27,6 @@ install_headers = []
 
 logic_archive = LinkArchive( 'bin/casual-service-logic',
    [
-   Compile( 'source/manager/manager.cpp'),
    Compile( 'source/manager/handle.cpp'),
    Compile( 'source/manager/state.cpp'),
    Compile( 'source/transform.cpp'),

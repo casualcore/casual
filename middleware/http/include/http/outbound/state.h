@@ -42,9 +42,9 @@ namespace casual
                
                CASUAL_LOG_SERIALIZE(
                { 
-                  CASUAL_NAMED_VALUE( url);
-                  CASUAL_NAMED_VALUE( headers);
-                  CASUAL_NAMED_VALUE( discard_transaction);
+                  CASUAL_SERIALIZE( url);
+                  CASUAL_SERIALIZE( headers);
+                  CASUAL_SERIALIZE( discard_transaction);
                })
             };
 

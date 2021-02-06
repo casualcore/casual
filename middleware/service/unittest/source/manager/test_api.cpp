@@ -50,7 +50,6 @@ domain:
 
    servers:
       - path: "./bin/casual-service-manager"
-        arguments: [ "--forward", "./bin/casual-service-forward"]
 )";
 
                casual::domain::manager::unittest::Process manager{ { configuration}};

@@ -224,6 +224,20 @@ namespace casual
             )
          };
 
+         struct Timeout
+         {
+            platform::time::point::type deadline;
+            common::strong::process::id pid;
+            common::Uuid correlation;
+
+            CASUAL_LOG_SERIALIZE( 
+               CASUAL_SERIALIZE( deadline);
+               CASUAL_SERIALIZE( pid);
+               CASUAL_SERIALIZE( correlation);
+            )
+
+         };
+
       } // state
 
       struct State

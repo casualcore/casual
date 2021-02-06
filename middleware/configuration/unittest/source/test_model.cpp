@@ -8,10 +8,15 @@
 #include "common/unittest.h"
 #include "common/unittest/file.h"
 
+#include "common/chronology.h"
+
+#include "common/service/type.h"
+
 #include "configuration/model/transform.h"
 #include "configuration/model/load.h"
 #include "configuration/user.h"
 #include "configuration/example/domain.h"
+
 
 
 
@@ -174,8 +179,158 @@ domain:
             EXPECT_TRUE( server.resources == std::vector< std::string>{ "r1"});
          }
 
+      }
+
+      TEST( configuration_model_transform, service_no_defaults)
+      {
+         common::unittest::Trace trace;
+
+         constexpr auto configuration = R"(
+domain:
+  name: model
+  services:
+    - name: a
+      execution:
+         timeout:
+            duration: 88s
+            contract: terminate
+)";
+         
+         auto model = local::configuration( configuration);
+
+         EXPECT_TRUE( model.domain.name == "model");
+         ASSERT_TRUE( model.service.services.size()  == 1);
+         EXPECT_TRUE( model.service.services.at(0).name == "a");
+
+         EXPECT_TRUE( model.service.services.at(0).timeout.duration == common::chronology::from::string( "88s"));
+         EXPECT_TRUE( model.service.services.at(0).timeout.contract == common::service::execution::timeout::contract::Type::terminate );
 
       }
+
+      TEST( configuration_model_transform, service_no_defaults_with_error)
+      {
+         common::unittest::Trace trace;
+
+         constexpr auto configuration = R"(
+domain:
+  name: model
+  services:
+    - name: a
+      execution:
+         timeout:
+            duration: 88s
+            contract: some_none_existing_contract
+)";
+         
+         EXPECT_THROW( local::configuration( configuration), std::error_code);
+
+      }
+
+      TEST( configuration_model_transform, service_with_defaults)
+      {
+         common::unittest::Trace trace;
+
+         constexpr auto configuration = R"(
+domain:
+  name: model
+
+  default:
+    service:
+      execution:
+        timeout:
+          duration: 77s
+          contract: kill
+
+  services:
+    - name: a
+      routes: [b]
+)";
+         
+         auto model = local::configuration( configuration);
+
+         EXPECT_TRUE( model.domain.name == "model");
+         ASSERT_TRUE( model.service.services.size()  == 1);
+         EXPECT_TRUE( model.service.services.at(0).name == "a");
+
+         EXPECT_TRUE( model.service.services.at(0).timeout.duration == common::chronology::from::string( "77s"));
+         EXPECT_TRUE( model.service.services.at(0).timeout.contract == common::service::execution::timeout::contract::Type::kill );
+      }
+
+      TEST( configuration_model_transform, service_with_default_and_global_service_config)
+      {
+         common::unittest::Trace trace;
+
+         constexpr auto configuration = R"(
+domain:
+  name: model
+
+  service:
+    execution:
+      timeout:
+        duration: 53min
+        contract: terminate
+
+  default:
+    service:
+      execution:
+        timeout:
+          duration: 77s
+          contract: kill
+
+  services:
+    - name: a
+      routes: [b]
+    - name: b
+      execution:
+        timeout:
+          duration: 97ms
+          contract: linger
+)";
+         
+         auto model = local::configuration( configuration);
+
+         EXPECT_TRUE( model.domain.name == "model");
+         ASSERT_TRUE( model.service.services.size()  == 2);
+
+         EXPECT_TRUE( model.service.services.at(0).name == "a");
+         EXPECT_TRUE( model.service.services.at(0).timeout.duration == common::chronology::from::string( "77s"));
+         EXPECT_TRUE( model.service.services.at(0).timeout.contract == common::service::execution::timeout::contract::Type::kill );
+
+         EXPECT_TRUE( model.service.services.at(1).name == "b");
+         EXPECT_TRUE( model.service.services.at(1).timeout.duration == common::chronology::from::string( "97ms"));
+         EXPECT_TRUE( model.service.services.at(1).timeout.contract == common::service::execution::timeout::contract::Type::linger );
+
+         EXPECT_TRUE( model.service.timeout.duration == common::chronology::from::string( "53min"));
+         EXPECT_TRUE( model.service.timeout.contract == common::service::execution::timeout::contract::Type::terminate );
+
+      }
+
+
+
+      TEST( configuration_model_transform, service_with_error_in_defaults)
+      {
+         common::unittest::Trace trace;
+
+         constexpr auto configuration = R"(
+domain:
+  name: model
+
+  default:
+    service:
+      execution:
+        timeout:
+          duration: 77s
+          contract: some_none_existing_contract
+
+  services:
+    - name: a
+      routes: [b]
+)";
+         
+         EXPECT_THROW( local::configuration( configuration), std::error_code);
+
+      }
+
    } // configuration
 
 } // casual

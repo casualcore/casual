@@ -73,17 +73,17 @@ namespace casual
             //! @ingroup service-start
             //!
             //! Join transaction. could be a null xid.
-            void join( const transaction::ID& trid);
+            Transaction& join( const transaction::ID& trid);
 
             //! @ingroup service-start
             //!
             //! Start a new transaction
-            void start( const platform::time::point::type& start);
+            Transaction& start( const platform::time::point::type& start);
 
             //! @ingroup service-start
             //!
             //! branch transaction, if null-xid, we start a new one
-            void branch( const transaction::ID& trid);
+            Transaction& branch( const transaction::ID& trid);
 
             //! trid server is invoked with
             //! @{

@@ -108,7 +108,9 @@ namespace casual
                      manager::admin::model::Service result;
 
                      result.name = name;
-                     result.timeout = value.information.timeout;
+                     if( value.timeout.duration)
+                        result.timeout = value.timeout.duration.value();
+                        
                      result.metric.invoked = transform_metric( value.metric.invoked);
                      result.metric.pending = transform_metric( value.metric.pending);
                      result.metric.remote = value.metric.remote;
@@ -154,7 +156,7 @@ namespace casual
             common::algorithm::transform( state.instances.concurrent, result.instances.concurrent,
                   common::predicate::make_nested( local::Instance{}, common::extract::Second{}));
 
-            common::algorithm::transform( state.pending.requests, result.pending, local::pending());
+            common::algorithm::transform( state.pending.lookups, result.pending, local::pending());
 
             common::algorithm::transform( state.services, result.services, local::service());
 

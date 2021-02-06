@@ -121,37 +121,46 @@ namespace casual
                } // <unnamed>
             } // local
 
-            void connect( const Uuid& identity, const process::Handle& process)
-            {
-               Trace trace{ "communication::instance::connect identity"};
-
-               common::message::domain::process::connect::Request request;
-               request.identification = identity;
-               request.correlation = identity;
-               request.process = process;
-
-               local::connect( request);
-            }
-
-            void connect( const Uuid& identity)
-            {
-               connect( identity, process::handle());
-            }
 
             void connect( const process::Handle& process)
             {
                Trace trace{ "communication::instance::connect process"};
-
-               common::message::domain::process::connect::Request request;
-               request.process = process;
-
-               local::connect( request);
+               local::connect( common::message::domain::process::connect::Request{ process});
             }
 
             void connect()
             {
                connect( process::handle());
             }
+
+            namespace whitelist
+            {
+               void connect()
+               {
+                  common::message::domain::process::connect::Request request{ process::handle()};
+                  request.whitelist = true;
+                  local::connect( request);
+
+               }
+
+               void connect( const Uuid& identity, const process::Handle& process)
+               {
+                  Trace trace{ "communication::instance::whitelist::connect identity"};
+
+                  common::message::domain::process::connect::Request request{ process};
+                  request.identification = identity;
+                  request.correlation = identity;
+                  request.whitelist = true;
+
+                  local::connect( request);
+               }
+
+               void connect( const Uuid& identity)
+               {
+                  connect( identity, process::handle());
+               }
+               
+            } // whitelist
 
 
             process::Handle ping( strong::ipc::id queue)

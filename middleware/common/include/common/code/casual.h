@@ -43,7 +43,8 @@ namespace casual
             domain_unavailable,
             domain_running,
             domain_instance_unavailable,
-
+            domain_instance_assassinate,
+            
             buffer_type_duplicate,
 
             internal_out_of_bounds,

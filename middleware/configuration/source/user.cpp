@@ -126,6 +126,12 @@ namespace casual
          return *this;
       }
 
+      Service& Service::operator += ( Service rhs)
+      {
+         execution = coalesce( std::move( rhs.execution), std::move( execution));
+         return *this;
+      }
+
       namespace transaction
       {
          Manager& Manager::operator += ( Manager rhs)
@@ -464,6 +470,8 @@ namespace casual
          
          local::optional_add( std::move( rhs.environment), environment);
 
+         local::optional_add( std::move( rhs.service), service);
+
          local::add_or_replace( std::move( rhs.groups), groups, local::equal::name());
          local::add_or_replace( std::move( rhs.servers), servers, local::equal::alias());
          local::add_or_replace( std::move( rhs.executables), executables, local::equal::alias());
@@ -499,6 +507,7 @@ namespace casual
 
          // validate? - no, we don't 'validate' user model
 
+
          if( ! defaults)
             return; // nothing to normalize
 
@@ -531,7 +540,30 @@ namespace casual
          {
             auto normalize_service = [&defaults = defaults.value().service.value()]( auto& service)
             {
-               service.timeout = service.timeout.value_or( defaults.timeout);
+               if( defaults.timeout)
+                  service.timeout = service.timeout.value_or( defaults.timeout.value());
+
+               if( defaults.execution)
+               {
+                  if( !service.execution) 
+                     service.execution = service.execution.emplace();
+
+                  if( defaults.execution.value().timeout)
+                  {
+                     if( !service.execution.value().timeout) 
+                        service.execution.value().timeout = service.execution.value().timeout.emplace();
+
+                     if( defaults.execution.value().timeout.value().duration)
+                        service.execution.value().timeout.value().duration =  
+                           service.execution.value().timeout.value().duration.value_or( defaults.execution.value().timeout.value().duration.value());
+
+                     if( defaults.execution.value().timeout.value().contract)
+                        service.execution.value().timeout.value().contract =  
+                           service.execution.value().timeout.value().contract.value_or( defaults.execution.value().timeout.value().contract.value());
+
+                  }
+               }
+               
             };
             algorithm::for_each( services, normalize_service);
          }

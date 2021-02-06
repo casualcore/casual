@@ -142,7 +142,9 @@ namespace casual
                            state.route.service.metric.metrics.push_back( [&]()
                            {
                               common::message::event::service::Metric metric;
+                              
                               metric.process = common::process::handle();
+                              metric.correlation = message.correlation;
                               metric.execution = message.execution;
                               metric.service = std::move( destination.service);
                               metric.parent = std::move( destination.parent);

@@ -74,14 +74,16 @@ memberships    | which groups are the server member of (dictates order)
 
 ## services
 
-Defines service related configuration. 
+Used for configuring specific attribute on named services.
 
 Note that this configuration is tied to the service, regardless who has advertised the service.
 
 property       | description
 ---------------|----------------------------------------------------
 name           | name of the service
-timeout        | timeout of the service, from the _caller_ perspective (example: `30ms`, `1h`, `3min`, `40s`. if no SI unit `s` is used)
+timeout (deprecated)        | timeout of the service, from the _caller_ perspective (example: `30ms`, `1h`, `3min`, `40s`. if no SI unit `s` is used)
+execution.timeout.duration | timeout of the service, from the _caller_ perspective (example: `30ms`, `1h`, `3min`, `40s`. if no SI unit `s` is used)
+execution.timeout.contract       | defines action to take if timeout is passed (linger = just wait, kill = send kill signal, terminate = send terminate signal)
 routes         | defines what logical names are actually exposed. For _aliases_, it's important to include the original name.
 
 
@@ -176,7 +178,13 @@ name           | the (unique) name of the queue.
 retry.count    | number of rollbacks before moving message to `<queue-name>.error`.
 retry.delay    | if message is rolled backed, how long delay before message is avaliable for dequeue. (example: `30ms`, `1h`, `3min`, `40s`. if no SI unit `s` is used)
 
+## service
+Defines _global_ service information that will be used as configuration on services not specifying specific values in the _services_ section.
 
+property                         | description
+---------------------------------|----------------------------------------------------
+execution.timeout.duration       | timeout of service, from the _caller_ perspective (example: `30ms`, `1h`, `3min`, `40s`. if no SI unit `s` is used)
+execution.timeout.contract       | defines action to take if timeout is passed (linger = just wait, kill = send kill signal, terminate = send terminate signal)
 
 ## examples 
 

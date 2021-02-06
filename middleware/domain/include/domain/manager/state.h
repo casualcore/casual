@@ -358,11 +358,14 @@ namespace casual
                task::message::domain::Information,
                common::message::event::process::Spawn,
                common::message::event::process::Exit,
+               common::message::event::process::Assassination,
                common::message::event::Task,
                common::message::event::sub::Task,
                common::message::event::Error,
                common::message::event::discoverable::Avaliable
             > event;
+
+            std::vector< common::strong::process::id> whitelisted;
 
 
             //! this domain's original configuration.
@@ -424,15 +427,16 @@ namespace casual
             std::tuple< std::vector< state::Server::id_type>, std::vector< state::Executable::id_type>> untouchables() const noexcept;
 
 
-            CASUAL_LOG_SERIALIZE
-            (
+            CASUAL_LOG_SERIALIZE(
                CASUAL_SERIALIZE_NAME( runlevel(), "runlevel");
                CASUAL_SERIALIZE( manager_id);
                CASUAL_SERIALIZE( groups);
                CASUAL_SERIALIZE( servers);
                CASUAL_SERIALIZE( executables);
                CASUAL_SERIALIZE( group_id);
+               CASUAL_SERIALIZE( whitelisted);
                CASUAL_SERIALIZE( configuration);
+               CASUAL_SERIALIZE( bare);
             )
 
             bool bare = false;

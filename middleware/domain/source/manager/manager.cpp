@@ -40,7 +40,10 @@ namespace casual
                {
                   manager::handle::event::process::exit( exit);
                });
-            });   
+            });
+
+            // make sure we're whitelisted from assassinations
+            m_state.whitelisted.push_back( process::id());
 
             // Set the process variables so children can communicate with us.
             common::environment::variable::process::set(

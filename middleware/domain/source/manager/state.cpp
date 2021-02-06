@@ -317,6 +317,8 @@ namespace casual
             // We remove from event listeners if one of them has died
             event.remove( pid);
 
+            algorithm::trim( whitelisted, algorithm::remove( whitelisted, pid));
+
             // We remove from pending 
             algorithm::trim( pending.lookup, algorithm::remove_if( pending.lookup, [pid]( auto& m)
             {

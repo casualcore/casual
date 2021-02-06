@@ -144,7 +144,8 @@ namespace casual
                               service.name = "service1";
                               service.category = "example";
                               service.transaction = common::service::transaction::Type::join;
-                              service.timeout = std::chrono::seconds{ 90};
+                              service.timeout.duration = std::chrono::seconds{ 90};
+                              // TODO: 
                               return service;
                            }()
                      };
@@ -163,7 +164,7 @@ namespace casual
                      local::set_general( message);
 
                      message.service.name = "service1";
-                     message.service.timeout = std::chrono::seconds{ 42};
+                     message.service.timeout.duration = std::chrono::seconds{ 42};
 
                      message.parent = "parent-service";
                      message.trid = local::trid();
@@ -191,7 +192,7 @@ namespace casual
                      local::set_general( message);
 
                      message.service.name = "service1";
-                     message.service.timeout = std::chrono::seconds{ 42};
+                     message.service.timeout.duration = std::chrono::seconds{ 42};
 
                      message.parent = "parent-service";
                      message.trid = local::trid();

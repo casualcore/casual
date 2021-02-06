@@ -220,7 +220,7 @@ namespace casual
             manager::local::advertise( m_state);
 
             // connect to domain
-            common::communication::instance::connect();
+            common::communication::instance::whitelist::connect();
          }
 
          Manager::~Manager()

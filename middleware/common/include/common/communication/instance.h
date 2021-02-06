@@ -67,13 +67,27 @@ namespace casual
 
       } // fetch
 
-
-
-
-      void connect( const Uuid& identity, const process::Handle& process);
-      void connect( const Uuid& identity);
+      //! @{ connect regular 'server' to casual local domain
       void connect( const process::Handle& process);
       void connect();
+      //! @}
+
+
+      //! connect with a 'whitelist' context. These processes are 
+      //! 'protected' and special to casual. All managers (and "all" their
+      //! children) connect this way
+      namespace whitelist
+      {
+         //! connect a whitelisted process, that casual will "protect" more than not whitelisted.
+         void connect();
+
+         //! @{ connect 'singelton' 'manager' to casual local domain
+         void connect( const Uuid& identity, const process::Handle& process);
+         void connect( const Uuid& identity);
+         //! @{
+         
+      } // whitelist
+
 
 
       //! ping a server that owns the @p ipc-id

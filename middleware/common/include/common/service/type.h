@@ -27,6 +27,21 @@ namespace casual
             constexpr auto deprecated = ".deprecated";
          } // category
 
+         namespace execution::timeout::contract
+         {
+            enum class Type : short
+            {
+               linger,
+               kill,
+               terminate
+            };
+            
+            std::ostream& operator << ( std::ostream& out, Type value);
+
+            Type transform( const std::string& constract);
+            std::string transform( Type contract);
+         }
+
          namespace transaction
          {
             enum class Type : short

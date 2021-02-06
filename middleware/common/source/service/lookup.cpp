@@ -19,19 +19,22 @@ namespace casual
          {
             Lookup::Lookup() noexcept {};
 
-            Lookup::Lookup( std::string service, Context context) : m_service( std::move( service))
+            Lookup::Lookup( std::string service, Context context, std::optional< platform::time::point::type> deadline)
+               : m_service( std::move( service))
             {
                Trace trace{ "common::service::Lookup"};
 
-               message::service::lookup::Request request;
+               message::service::lookup::Request request{ process::handle()};
                request.requested = m_service;
-               request.process = process::handle();
                request.context = context;
+               request.deadline = std::move( deadline);
 
                m_correlation = communication::device::blocking::send( communication::instance::outbound::service::manager::device(), request);
             }
 
-            Lookup::Lookup( std::string service) : Lookup( std::move( service), Context::regular) {}
+            Lookup::Lookup( std::string service, std::optional< platform::time::point::type> deadline) 
+               : Lookup( std::move( service), Context::regular, std::move( deadline)) 
+            {}
 
             Lookup::~Lookup()
             {
@@ -46,9 +49,8 @@ namespace casual
 
                      const auto request = [&]()
                      {
-                        message::service::lookup::discard::Request result;
+                        message::service::lookup::discard::Request result{ process::handle()};
                         result.requested = m_service;
-                        result.process = process::handle();
                         result.correlation = m_correlation;
                         return result;
                      }();

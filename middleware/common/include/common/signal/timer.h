@@ -49,6 +49,13 @@ namespace casual
          return set( unit::type{ std::chrono::duration_cast< platform::time::unit>( offset)});
       }
 
+      //! sets a timout that will expire ot `deadline`
+      template< typename R, typename P>
+      unit::type set( std::chrono::time_point< R, P> deadline)
+      {
+         return set( deadline - platform::time::point::type::clock::now());
+      }
+
       //! @return current timeout, or 'emtpy' if there isn't one
       unit::type get();
 

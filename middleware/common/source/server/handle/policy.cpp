@@ -61,6 +61,7 @@ namespace casual
 
       namespace call
       {
+
          void Default::configure( server::Arguments&& arguments)
          {
             Trace trace{ "server::handle::policy::Default::configure"};
@@ -131,33 +132,39 @@ namespace casual
             // We keep track of callers transaction (can be null-trid).
             transaction::context().caller = trid;
 
+            auto set_deadline = [&timeout, &now]( auto& transaction)
+            {
+               if( timeout > platform::time::unit::zero())
+                  transaction.deadline = now + timeout;
+            };
+
             switch( service.transaction)
             {
                case service::transaction::Type::automatic:
                {
                   if( trid)
-                     transaction::Context::instance().join( trid);
+                     set_deadline( transaction::Context::instance().join( trid));
                   else
-                     transaction::Context::instance().start( now);
+                     set_deadline( transaction::Context::instance().start( now));
 
                   break;
                }
                case service::transaction::Type::branch:
                {
                   if( trid)
-                     transaction::Context::instance().branch( trid);
+                     set_deadline( transaction::Context::instance().branch( trid));
                   else
-                     transaction::Context::instance().start( now);
+                     set_deadline( transaction::Context::instance().start( now));
                   break;
                }
                case service::transaction::Type::join:
                {
-                  transaction::Context::instance().join( trid);
+                  set_deadline( transaction::Context::instance().join( trid));
                   break;
                }
                case service::transaction::Type::atomic:
                {
-                  transaction::Context::instance().start( now);
+                  set_deadline( transaction::Context::instance().start( now));
                   break;
                }
                default:
@@ -173,9 +180,6 @@ namespace casual
                   break;
                }
             }
-
-            // Set 'global deadline'
-            transaction::Context::instance().current().timeout.set( now, timeout);
          }
 
 

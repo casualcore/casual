@@ -19,8 +19,10 @@
 #include "common/string.h"
 #include "common/environment.h"
 #include "common/service/lookup.h"
+#include "common/service/type.h"
 #include "common/event/listen.h"
 #include "common/execute.h"
+
 
 
 #include <fstream>
@@ -28,6 +30,8 @@
 namespace casual
 {
    using namespace common;
+
+   using Contract = common::service::execution::timeout::contract::Type;
 
    namespace domain
    {
@@ -528,6 +532,129 @@ domain:
          }
 
 
+         TEST( domain_manager, simple_server__assassinate_process_kill)
+         {
+            common::unittest::Trace trace;
+
+            constexpr auto configuration = R"(
+domain:
+  name: simple-server
+  servers:
+    - path: ./bin/test-simple-server
+      instances: 1
+)";
+
+            unittest::Process manager{ { configuration}};
+
+            auto state_before = local::call::state();
+            ASSERT_TRUE( state_before.servers.size() == 2) << CASUAL_NAMED_VALUE( state_before);
+
+            auto& target = state_before.servers.at( 1).instances.at( 0).handle.pid;
+
+            // setup subscription to see when hit is done
+            message::event::process::Exit died;
+            common::event::subscribe( common::process::handle(), { died.type()});
+
+            // order hit
+            message::event::process::Assassination assassination;
+            assassination.target = target;
+            assassination.contract = Contract::kill;
+            communication::device::blocking::send( communication::instance::outbound::domain::manager::device(), assassination);
+
+            // check if/when hit is performed
+            common::communication::device::blocking::receive( common::communication::ipc::inbound::device(), died);
+         
+            auto state_after = local::call::state();
+
+            ASSERT_TRUE( state_after.servers.size() == 2) << CASUAL_NAMED_VALUE( state_after);
+            ASSERT_TRUE( state_after.servers.at( 1).instances.size() == 1) << CASUAL_NAMED_VALUE( state_after);
+            
+            EXPECT_TRUE( state_after.servers.at( 1).instances.at( 0).state == admin::model::instance::State::exit) << CASUAL_NAMED_VALUE( state_after);
+
+            // is correct target killed
+            EXPECT_TRUE( assassination.target == died.state.pid) << CASUAL_NAMED_VALUE( assassination) << '\n' << CASUAL_NAMED_VALUE( died);
+
+         }
+
+         TEST( domain_manager, simple_server__assassinate_process_terminate)
+         {
+            common::unittest::Trace trace;
+
+            constexpr auto configuration = R"(
+domain:
+  name: simple-server
+  servers:
+    - path: ./bin/test-simple-server
+      instances: 1
+)";
+
+            unittest::Process manager{ { configuration}};
+
+            auto state_before = local::call::state();
+            ASSERT_TRUE( state_before.servers.size() == 2) << CASUAL_NAMED_VALUE( state_before);
+
+            auto& target = state_before.servers.at( 1).instances.at( 0).handle.pid;
+
+            // setup subscription to see when hit is done
+            message::event::process::Exit died;
+            common::event::subscribe( common::process::handle(), { died.type()});
+
+            // order hit
+            message::event::process::Assassination assassination;
+            assassination.target = target;
+            assassination.contract = Contract::terminate;
+            communication::device::blocking::send( communication::instance::outbound::domain::manager::device(), assassination);
+
+            // check if/when hit is performed
+            common::communication::device::blocking::receive( common::communication::ipc::inbound::device(), died);
+         
+            auto state_after = local::call::state();
+
+            ASSERT_TRUE( state_after.servers.size() == 2) << CASUAL_NAMED_VALUE( state_after);
+            ASSERT_TRUE( state_after.servers.at( 1).instances.size() == 1) << CASUAL_NAMED_VALUE( state_after);
+            
+            EXPECT_TRUE( state_after.servers.at( 1).instances.at( 0).state == admin::model::instance::State::exit) << CASUAL_NAMED_VALUE( state_after);
+
+            // is correct target killed
+            EXPECT_TRUE( assassination.target == died.state.pid) << CASUAL_NAMED_VALUE( assassination) << '\n' << CASUAL_NAMED_VALUE( died);
+
+         }
+
+         TEST( domain_manager, simple_server__assassinate_process_linger)
+         {
+            common::unittest::Trace trace;
+
+            constexpr auto configuration = R"(
+domain:
+  name: simple-server
+  servers:
+    - path: ./bin/test-simple-server
+      instances: 1
+)";
+
+            unittest::Process manager{ { configuration}};
+
+            auto state_before = local::call::state();
+            ASSERT_TRUE( state_before.servers.size() == 2) << CASUAL_NAMED_VALUE( state_before);
+
+            auto& target = state_before.servers.at( 1).instances.at( 0).handle.pid;
+
+            // order wrongfull hit
+            message::event::process::Assassination assassination;
+            assassination.target = target;
+            assassination.contract = Contract::linger;
+            communication::device::blocking::send( communication::instance::outbound::domain::manager::device(), assassination);
+
+            process::sleep( std::chrono::milliseconds{ 500});
+
+            auto state_after = local::call::state();
+
+            ASSERT_TRUE( state_after.servers.size() == 2) << CASUAL_NAMED_VALUE( state_after);
+            ASSERT_TRUE( state_after.servers.at( 1).instances.size() == 1) << CASUAL_NAMED_VALUE( state_after);
+            
+            EXPECT_TRUE( state_after.servers.at( 1).instances.at( 0).state == admin::model::instance::State::running) << CASUAL_NAMED_VALUE( state_after);
+         }
+
          TEST( domain_manager, scale_in___expect__prepare_shutdown_to_service_manager)
          {
             common::unittest::Trace trace;
@@ -546,7 +673,7 @@ domain:
             // pretend that we're the service-manager
             // ...since we don't have access to service-manager when we build
             // domain-manager
-            communication::instance::connect( communication::instance::identity::service::manager);
+            communication::instance::whitelist::connect( communication::instance::identity::service::manager);
 
             // make sure we 'disconnect' our self as service-manager before shutdown
             // otherwise domain-manager will wait for approval from service-manager before

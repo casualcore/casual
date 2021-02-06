@@ -7,6 +7,7 @@ from casual.middleware.make.dsl import *
 IncludePaths([
    'include',
    '../common/include',
+   '../buffer/include',
    '../configuration/include',
    '../xatmi/include',
    '../serviceframework/include',
@@ -139,6 +140,7 @@ domain_unittest_library = LinkLibrary( 'bin/casual-domain-unittest',
         common_archive,
         'casual-common',
         'casual-unittest',
+        
     ]
 )
 
@@ -164,7 +166,9 @@ target_test_domain = LinkUnittest( 'bin/test-casual-domain',
         domain_unittest_library,
         pending_library,
         domain_api,
+        common_archive,
         'casual-common',
+        'casual-xatmi',
         'casual-configuration',
         'casual-serviceframework',
         'casual-unittest',

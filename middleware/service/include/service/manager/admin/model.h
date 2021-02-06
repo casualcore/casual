@@ -149,7 +149,7 @@ namespace casual
                   };
 
                   std::string name;
-                  std::chrono::nanoseconds timeout;
+                  platform::time::unit timeout{};
                   std::string category;
                   Transaction transaction = Transaction::automatic;
 

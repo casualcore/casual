@@ -50,6 +50,37 @@ namespace casual
          )
       };
 
+      struct Service
+      {
+         struct Execution
+         {
+            struct Timeout
+            {
+               std::optional<std::string> duration;
+               std::optional<std::string> contract;
+
+               CASUAL_CONST_CORRECT_SERIALIZE(
+                  CASUAL_SERIALIZE( duration);
+                  CASUAL_SERIALIZE( contract);
+               )
+            };
+            
+            std::optional<Timeout> timeout;
+
+            CASUAL_CONST_CORRECT_SERIALIZE(
+               CASUAL_SERIALIZE( timeout);
+            )
+         };
+         
+         std::optional<Execution> execution;
+
+         CASUAL_CONST_CORRECT_SERIALIZE(
+            CASUAL_SERIALIZE( execution);
+         )
+
+         Service& operator += ( Service rhs);
+      };
+
       namespace domain
       {
          struct Group
@@ -126,33 +157,80 @@ namespace casual
                CASUAL_SERIALIZE( resources);
             )
          };
-
       } // domain
 
       namespace service
       {
          struct Default
          {
-            std::string timeout;
+            struct Execution
+            {
+               struct Timeout
+               {
+                  std::optional<std::string> duration;
+                  std::optional<std::string> contract;
+
+                  CASUAL_CONST_CORRECT_SERIALIZE(
+                     CASUAL_SERIALIZE( duration);
+                     CASUAL_SERIALIZE( contract);
+                  )
+               };
+               
+               std::optional<Timeout> timeout;
+
+               CASUAL_CONST_CORRECT_SERIALIZE(
+                  CASUAL_SERIALIZE( timeout);
+               )
+
+            };
+            
+            std::optional<Execution> execution;
+            std::optional<std::string> timeout;
+
+            CASUAL_CONST_CORRECT_SERIALIZE(
+               CASUAL_SERIALIZE( execution);
+               CASUAL_SERIALIZE( timeout);
+            )
+         };
+
+         namespace execution
+         {
+            struct Timeout
+            {
+               std::optional< std::string> duration;
+               std::optional< std::string> contract;
+
+               CASUAL_CONST_CORRECT_SERIALIZE(
+                  CASUAL_SERIALIZE( duration);
+                  CASUAL_SERIALIZE( contract);
+               )
+            };
+         } // execution
+
+         struct Execution
+         {
+            std::optional< execution::Timeout> timeout;
 
             CASUAL_CONST_CORRECT_SERIALIZE(
                CASUAL_SERIALIZE( timeout);
             )
          };
 
-      } // service
-      struct Service
-      {
-         std::string name;
-         std::optional< std::string> timeout;
-         std::optional< std::vector< std::string>> routes;
+         struct Service
+         {
+            std::string name;
+            std::optional< std::string> timeout;
+            std::optional< Execution> execution;
+            std::optional< std::vector< std::string>> routes;
 
-         CASUAL_CONST_CORRECT_SERIALIZE(
-            CASUAL_SERIALIZE( name);
-            CASUAL_SERIALIZE( timeout);
-            CASUAL_SERIALIZE( routes);
-         )
-      };
+            CASUAL_CONST_CORRECT_SERIALIZE(
+               CASUAL_SERIALIZE( name);
+               CASUAL_SERIALIZE( timeout);
+               CASUAL_SERIALIZE( execution);
+               CASUAL_SERIALIZE( routes);
+            )
+         };
+      } // service
 
       namespace transaction
       {
@@ -750,13 +828,15 @@ namespace casual
          std::optional< domain::Default> defaults;
 
          std::optional< Environment> environment;
+         std::optional< Service> service;
 
          std::optional< transaction::Manager> transaction;
 
          std::vector< domain::Group> groups;
          std::vector< domain::Server> servers;
          std::vector< domain::Executable> executables;
-         std::vector< Service> services;
+         
+         std::vector< service::Service> services;
 
          std::optional< gateway::Manager> gateway;
          std::optional< queue::Manager> queue;
@@ -772,6 +852,7 @@ namespace casual
             CASUAL_SERIALIZE( note);
             CASUAL_SERIALIZE_NAME( defaults, "default");
             CASUAL_SERIALIZE( environment);
+            CASUAL_SERIALIZE( service);
             CASUAL_SERIALIZE( transaction);
             CASUAL_SERIALIZE( groups);
             CASUAL_SERIALIZE( servers);

@@ -91,11 +91,11 @@ namespace casual
             std::longjmp( m_state.jump.environment, state::Jump::Location::c_forward);
          }
 
-         void Context::advertise( const std::string& service, void (*adress)( TPSVCINFO *))
+         void Context::advertise( const std::string& service, void (*address)( TPSVCINFO *))
          {
             Trace trace{ "server::Context::advertise"};
 
-            auto prospect = xatmi::service( service, adress);
+            auto prospect = xatmi::service( service, address);
 
             // validate
             if( prospect.name.size() >= XATMI_SERVICE_NAME_LENGTH)

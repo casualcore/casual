@@ -9,6 +9,7 @@
 #include "common/environment/variable.h"
 #include "common/compare.h"
 #include "common/serialize/macro.h"
+#include "common/service/type.h"
 
 #include <vector>
 #include <string>
@@ -41,12 +42,11 @@ namespace casual::configuration
             inline friend bool operator == ( const Group& lhs, const std::string& rhs) { return lhs.name == rhs;}
 
             CASUAL_CONST_CORRECT_SERIALIZE(
-            {
                CASUAL_SERIALIZE( name);
                CASUAL_SERIALIZE( note);
                CASUAL_SERIALIZE( resources);
                CASUAL_SERIALIZE( dependencies);
-            })
+            )
 
             inline auto tie() const { return std::tie( name, note, resources, dependencies);}
          };
@@ -56,9 +56,8 @@ namespace casual::configuration
             bool restart = false;
 
             CASUAL_CONST_CORRECT_SERIALIZE(
-            {
                CASUAL_SERIALIZE( restart);
-            })
+            )
 
             inline auto tie() const { return std::tie( restart);}
          };
@@ -131,25 +130,39 @@ namespace casual::configuration
 
       namespace service
       {
+         struct Timeout : common::Compare< Timeout>
+         {
+            using Contract = common::service::execution::timeout::contract::Type;
+            
+            std::optional< platform::time::unit> duration;
+            Contract contract = Contract::linger;
+
+            CASUAL_CONST_CORRECT_SERIALIZE(
+               CASUAL_SERIALIZE( duration);
+               CASUAL_SERIALIZE( contract);
+            )
+
+            inline auto tie() const { return std::tie( duration, contract);}
+         };
+
          struct Service : common::Compare< Service>
          {
             std::string name;
-            platform::time::unit timeout = platform::time::unit::zero();
             std::vector< std::string> routes;
+            service::Timeout timeout;
 
             CASUAL_CONST_CORRECT_SERIALIZE(
                CASUAL_SERIALIZE( name);
-               CASUAL_SERIALIZE( timeout);
                CASUAL_SERIALIZE( routes);
+               CASUAL_SERIALIZE( timeout);
             )
 
-            inline auto tie() const { return std::tie( name, timeout, routes);}
+            inline auto tie() const { return std::tie( name, routes, timeout);}
          };
 
          struct Model : common::Compare< Model>
-         {
-            platform::time::unit timeout = platform::time::unit::zero();
-
+         {  
+            service::Timeout timeout;
             std::vector< service::Service> services;
 
             CASUAL_CONST_CORRECT_SERIALIZE(

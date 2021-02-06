@@ -9,6 +9,7 @@
 
 
 #include "common/message/type.h"
+#include "common/service/type.h"
 
 #include "common/domain.h"
 #include "common/code/xatmi.h"
@@ -153,6 +154,23 @@ namespace casual
                   )
                };
 
+               using base_assassination_contract = basic_event< Type::event_process_assassination_contract>;
+               struct Assassination : base_assassination_contract
+               {
+                  using base_assassination_contract::base_assassination_contract;
+                  using Contract = common::service::execution::timeout::contract::Type;
+
+                  common::strong::process::id target{};
+                  Contract contract = Contract::linger;
+                   
+                  CASUAL_CONST_CORRECT_SERIALIZE(
+                     base_assassination_contract::serialize( archive);
+                     CASUAL_SERIALIZE( target);
+                     CASUAL_SERIALIZE( contract);
+                  )
+               };
+
+
             } // process
 
             namespace discoverable
@@ -176,6 +194,7 @@ namespace casual
                   Type type = Type::sequential;
                   
                   common::process::Handle process;
+                  Uuid correlation;
                   Uuid execution;
                   common::transaction::ID trid;
 
@@ -194,6 +213,7 @@ namespace casual
                      CASUAL_SERIALIZE( parent);
                      CASUAL_SERIALIZE( type);
                      CASUAL_SERIALIZE( process);
+                     CASUAL_SERIALIZE( correlation);
                      CASUAL_SERIALIZE( execution);
                      CASUAL_SERIALIZE( trid);
                      CASUAL_SERIALIZE( start);

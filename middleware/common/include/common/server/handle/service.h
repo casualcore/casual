@@ -73,6 +73,7 @@ namespace casual
                   {
                      message::service::call::ACK ack;
 
+                     ack.correlation = message.correlation;
                      ack.execution = message.execution;
                      ack.metric.execution = message.execution;
                      ack.metric.service = message.service.name;
@@ -131,7 +132,7 @@ namespace casual
                   // - begin transaction if service has "auto-transaction"
                   // - notify TM about potentially resources involved.
                   // - set 'global' deadline/timeout
-                  policy.transaction( message.trid, service, message.service.timeout, start);
+                  policy.transaction( message.trid, service, message.service.timeout.duration, start);
 
 
                   //

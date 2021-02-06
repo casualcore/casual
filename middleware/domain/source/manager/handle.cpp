@@ -22,6 +22,8 @@
 #include "common/cast.h"
 #include "common/environment.h"
 #include "common/algorithm/compare.h"
+#include "common/algorithm.h"
+
 #include "common/instance.h"
 
 #include "common/communication/instance.h" 
@@ -602,6 +604,42 @@ namespace casual
                               }
                            };
                         }
+
+                        auto assassination( State& state)
+                        {
+                           return [&state]( const common::message::event::process::Assassination& message)
+                           {
+                              Trace trace{ "domain::manager::handle::event::process::assassination"};
+                              log::line( verbose::log, "message: ", message);
+
+                              // Are there any subscribers to this event?
+                              manager::task::event::dispatch( state, [&message]() -> decltype( message)
+                              {
+                                 return message;
+                              });
+
+                              if( message.contract == decltype( message.contract)::linger)
+                              {
+                                 log::line( log, code::casual::domain_instance_assassinate, " event not severe enough, pid: ", message.target);
+                                 return;
+                              } 
+
+                              if( ! algorithm::find( state.whitelisted, message.target))
+                              {                             
+                                 // fulfill assassination contract if not untouchable
+                                 auto weapon = common::code::signal::kill;
+                                 if( message.contract == decltype( message.contract)::terminate) 
+                                    weapon = common::code::signal::terminate;
+                                 
+                                 common::signal::send( message.target, weapon);
+                                 log::line( log::category::error, code::casual::domain_instance_assassinate, " pid: ", message.target, ", weapon: ", weapon);
+                              }
+                              else
+                                 log::line( log::category::information, code::casual::domain_instance_assassinate, " whitelisted process pardoned, pid: ", message.target);
+                              
+                           };
+                        }
+
                      } // process
 
                      auto error( State& state)
@@ -805,7 +843,6 @@ namespace casual
                         return [&state]( const common::message::domain::process::connect::Request& message)
                         {
                            Trace trace{ "domain::manager::handle::process::Connect"};
-
                            common::log::line( verbose::log, "message: ", message);
 
                            auto reply = common::message::reverse::type( message);
@@ -877,6 +914,9 @@ namespace casual
                            auto& pending = state.pending.lookup;
 
                            algorithm::trim( pending, algorithm::remove_if( pending, detail::lookup::request( state)));
+
+                           if( message.whitelist)
+                              state.whitelisted.push_back( message.process.pid);
 
                            // tasks might be interested in server-connect
                            state.tasks.event( state, message);
@@ -965,6 +1005,7 @@ namespace casual
                handle::local::scale::prepare::shutdown( state),
                handle::local::event::process::spawn( state),
                handle::local::event::process::exit( state),
+               handle::local::event::process::assassination( state),
                handle::local::event::subscription::begin( state),
                handle::local::event::subscription::end( state),
                handle::local::event::error( state),

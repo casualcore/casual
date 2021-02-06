@@ -75,7 +75,7 @@ namespace casual
                manager::handle::boot( state);
 
                // Connect to domain
-               communication::instance::connect( communication::instance::identity::gateway::manager);
+               communication::instance::whitelist::connect( communication::instance::identity::gateway::manager);
 
                state.runlevel = manager::state::Runlevel::running;
 

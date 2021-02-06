@@ -6,10 +6,10 @@
 
 #pragma once
 
-#include "common/signal/timer.h"
-#include "common/timeout.h"
 #include "casual/platform.h"
 #include "common/uuid.h"
+#include "common/strong/id.h"
+#include "common/service/type.h"
 
 namespace casual
 {
@@ -24,13 +24,16 @@ namespace casual
          {
             struct Descriptor
             {
+               using Contract = common::service::execution::timeout::contract::Type;
+
                Descriptor( descriptor_type descriptor, bool active = true)
                   : descriptor( descriptor), active( active) {}
 
                descriptor_type descriptor;
                bool active;
                Uuid correlation;
-               common::Timeout timeout;
+               common::strong::process::id target{};
+               Contract contract{ Contract::linger};
 
                friend bool operator == ( descriptor_type cd, const Descriptor& d) { return cd == d.descriptor;}
                friend bool operator == ( const Descriptor& d, descriptor_type cd) { return cd == d.descriptor;}
@@ -48,11 +51,10 @@ namespace casual
 
             const Descriptor& get( descriptor_type descriptor) const;
             const Descriptor& get( const Uuid& correlation) const;
+            Descriptor& get( descriptor_type descriptor);
 
             //! Tries to discard descriptor, throws if fail.
             void discard( descriptor_type descriptor);
-
-            signal::timer::Deadline deadline( descriptor_type descriptor, const platform::time::point::type& now) const;
 
             //! @returns true if there are no pending replies or associated transactions.
             //!  Thus, it's ok to do a service-forward

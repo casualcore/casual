@@ -111,6 +111,7 @@ namespace casual
 
             event_process_spawn,
             event_process_exit,
+            event_process_assassination_contract,
 
             // sent from _processes_ that can be discovered
             event_discoverable_avaliable,

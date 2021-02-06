@@ -38,8 +38,7 @@ domain:
    name: service-forward-domain
 
    servers:
-      - path: ./bin/casual-service-manager
-        arguments [ --forward, ./bin/casual-service-forward]         
+      - path: ./bin/casual-service-manager    
 )";
             };
          } // <unnamed>

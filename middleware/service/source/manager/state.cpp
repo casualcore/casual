@@ -14,6 +14,7 @@
 #include "common/algorithm.h"
 #include "common/environment/normalize.h"
 #include "common/process.h"
+#include "common/service/type.h"
 
 #include "common/code/raise.h"
 #include "common/code/casual.h"
@@ -59,8 +60,8 @@ namespace casual
                assert( m_service == nullptr);
 
                m_service = service;
-               m_caller = caller;
-               m_correlation = correlation;
+               m_caller.process = caller;
+               m_caller.correlation = correlation;
             }
 
             void Sequential::unreserve( const common::message::event::service::Metric& metric)
@@ -74,7 +75,6 @@ namespace casual
             void Sequential::discard()
             {
                m_service = nullptr;
-               m_correlation = uuid::empty();
                m_caller = {};
             }
 
@@ -108,11 +108,6 @@ namespace casual
                   m_services.erase( std::begin( found));
             }
 
-            bool operator < ( const Concurrent& lhs, const Concurrent& rhs)
-            {
-               return lhs.order < rhs.order;
-            }
-
             std::ostream& operator << ( std::ostream& out, Sequential::State value)
             {
                switch( value)
@@ -123,42 +118,132 @@ namespace casual
                return out << "<unknown>";
             }
 
+            void Concurrent::unreserve( const std::vector< common::Uuid>& correlations)
+            {
+               algorithm::trim( callers, algorithm::remove_if( callers, [&correlations]( auto& caller)
+               {
+                  return predicate::boolean( algorithm::find( correlations, caller.correlation));
+               }));
+            }
+
+            instance::Caller Concurrent::consume( const common::Uuid& correlation)
+            {
+               if( auto found = algorithm::find( callers, correlation))
+                  return algorithm::extract( callers, std::begin( found));
+               return {};
+            }
+
+            bool operator < ( const Concurrent& lhs, const Concurrent& rhs)
+            {
+               return lhs.order < rhs.order;
+            }
+
          } // instance
 
          namespace service
          {
-
-            void Advertised::remove( common::strong::process::id instance)
+            state::instance::Caller Instances::consume( const common::Uuid& correlation)
             {
-               if( auto found = algorithm::find( instances.sequential, instance))
-               {
-                  found->get().remove( information.name);
-                  instances.sequential.erase( std::begin( found));
-               }
+               for( auto& instance : sequential)
+                  if( auto caller = instance.get().consume( correlation))
+                     return caller;
 
-               if( auto found = algorithm::find( instances.concurrent, instance))
-               {
-                  instances.concurrent.erase( std::begin( found));
-                  instances.partition();
-               }
+               for( auto& instance : concurrent)
+                  if( auto caller = instance.get().consume( correlation))
+                     return caller;
+
+               return {};
             }
 
-            state::instance::Sequential& Advertised::sequential( common::strong::process::id instance)
+            void Metric::update( const common::message::event::service::Metric& metric)
             {
-               if( auto found = algorithm::find( instances.sequential, instance))
-                  return *found;
-
-               code::raise::generic( code::casual::domain_instance_unavailable, verbose::log, "missing id: ", instance);
+               invoked += metric.duration();
+               pending += metric.pending;
+               last = metric.end;
             }
 
+            namespace pending
+            {
+             
+               std::optional< platform::time::point::type> Deadline::add( deadline::Entry entry)
+               {
+                  auto inserted = m_entries.insert(
+                     std::upper_bound( std::begin( m_entries), std::end( m_entries), entry),
+                     std::move( entry));
+
+                  if( inserted != std::begin( m_entries))
+                     return {};
+
+                  return { inserted->when};
+               }
+
+               std::optional< platform::time::point::type> Deadline::remove( const common::Uuid& correlation)
+               {
+                  if( auto found = algorithm::find( m_entries, correlation))
+                  {
+                     if( auto next = m_entries.erase( std::begin( found)); next == std::begin( m_entries))
+                        return { next->when};
+                  }
+                  return {};
+               }
+
+               std::optional< platform::time::point::type> Deadline::remove( const std::vector< common::Uuid>& correlations)
+               {
+
+                  auto [ keep, remove] = algorithm::stable_partition( m_entries, [&correlations]( auto& entry)
+                  {
+                     return ! predicate::boolean( algorithm::find( correlations, entry.correlation));
+                  });
+
+                  // has the next deadline been postponed?
+                  if( remove && keep && range::front( remove) < range::front( keep))
+                  {
+                     algorithm::trim( m_entries, keep);
+                     return { m_entries.front().when};
+                  }
+                  algorithm::trim( m_entries, keep);
+                  return {};
+               }
+
+               Deadline::Expired Deadline::expired( platform::time::point::type now)
+               {
+                  auto pivot = std::find_if( std::begin( m_entries), std::end( m_entries), [now]( auto& entry)
+                  {
+                     return entry.when >= now;
+                  });
+
+                  Deadline::Expired result;
+                  result.entries = algorithm::extract( m_entries, range::make( std::begin( m_entries), pivot));
+
+                  if( ! m_entries.empty())
+                     result.deadline = m_entries.front().when;
+
+                  return result;
+               }
+            } // pending
          } // service
 
-
-         void Service::Metric::update( const common::message::event::service::Metric& metric)
+         void Service::remove( common::strong::process::id instance)
          {
-            invoked += metric.duration();
-            pending += metric.pending;
-            last = metric.end;
+            if( auto found = algorithm::find( instances.sequential, instance))
+            {
+               found->get().remove( information.name);
+               instances.sequential.erase( std::begin( found));
+            }
+
+            if( auto found = algorithm::find( instances.concurrent, instance))
+            {
+               instances.concurrent.erase( std::begin( found));
+               instances.partition();
+            }
+         }
+
+         state::instance::Sequential& Service::sequential( common::strong::process::id instance)
+         {
+            if( auto found = algorithm::find( instances.sequential, instance))
+               return *found;
+
+            code::raise::generic( code::casual::domain_instance_unavailable, verbose::log, "missing id: ", instance);
          }
 
          void Service::add( state::instance::Sequential& instance)
@@ -192,54 +277,33 @@ namespace casual
             const common::Uuid& correlation)
          {
             if( auto found = algorithm::find_if( instances.sequential, []( auto& i){ return i.idle();}))
-            {
-               found->reserve( this, caller, correlation);
-               return found->process();
-            }
+               return found->reserve( this, caller, correlation);
 
             if( instances.sequential.empty() && ! instances.concurrent.empty())
             {
                ++metric.remote;
-               return instances.concurrent.front().process();
+               return instances.concurrent.front().reserve( caller, correlation);
             }
             return {};
          }
-      } // state
 
-      State::State( configuration::Model configuration)
-         : default_timeout{ configuration.service.timeout}
-      {
-         Trace trace{ "service::manager::State::State"};
 
-         common::environment::normalize( configuration);
-
-         auto add_service = [&]( auto& service)
+         std::ostream& operator << ( std::ostream& out, Runlevel value)
          {
-            common::message::service::call::Service message;
-            message.timeout = service.timeout;
-            message.name = service.name;
-
-            if( service.routes.empty())
-               services.emplace( std::move( service.name), std::move( message));
-            else 
+            switch( value)
             {
-               for( auto& route : service.routes)
-                  services.emplace( route, message);
-
-               routes.emplace( message.name, std::move( service.routes));
+               case Runlevel::running: return out << "running";
+               case Runlevel::shutdown: return out << "shutdown";
+               case Runlevel::error: return out << "error";
             }
-         };
-
-         algorithm::for_each( configuration.service.services, add_service);
-
-         // accumulate restriction information
-         for( auto& server : configuration.domain.servers)
-         {
-            if( ! server.restrictions.empty())
-               algorithm::append_unique( server.restrictions, restrictions[ server.alias]);
+            return out << "<unknown>";
          }
 
-         log::line( verbose::log, "state: ", *this);
+      } // state
+
+      bool State::done() const noexcept
+      {
+         return runlevel > decltype( runlevel())::running;
       }
 
       state::Service* State::service( const std::string& name)
@@ -292,7 +356,7 @@ namespace casual
             }
 
             template< typename A>
-            void find_or_add_service( State& state, const common::message::service::call::Service& service, A&& add_instance)
+            void find_or_add_service( State& state, const state::Service& service, A&& add_instance)
             {
                Trace trace{ "service::manager::local::find_or_add service"};
 
@@ -311,8 +375,8 @@ namespace casual
                         if( target != source) target = source;
                      };
 
-                     asssign_if_not_equal( found->second.information.category, service.category);
-                     asssign_if_not_equal( found->second.information.transaction, service.transaction);
+                     asssign_if_not_equal( found->second.information.category, service.information.category);
+                     asssign_if_not_equal( found->second.information.transaction, service.information.transaction);
 
                      add_instance( found->second);
                      log::line( verbose::log, "existing service: ", found->second);
@@ -326,43 +390,29 @@ namespace casual
                   }
                };
 
-               if( auto found = algorithm::find( state.routes, service.name))
+               if( auto found = algorithm::find( state.routes, service.information.name))
                {
                   // service has routes, use them instead
                   algorithm::for_each( found->second, add_service);
                }
                else
-                  add_service( service.name);
+                  add_service( service.information.name);
                   
             }
 
 
             template< typename Service>
-            common::message::service::call::Service transform( const Service& service, platform::time::unit timeout)
+            auto transform( const Service& service, configuration::model::service::Timeout timeout)
             {
-               common::message::service::call::Service result;
+               state::Service result;
 
-               result.name = service.name;
-               result.timeout = timeout;
-               result.transaction = service.transaction;
-               result.category = service.category;
+               result.information.name = service.name;
+               result.information.transaction = service.transaction;
+               result.information.category = service.category;
+               result.timeout = std::move( timeout);
 
                return result;
             }
-
-            template< typename Service>
-            common::message::service::call::Service transform( const Service& service)
-            {
-               common::message::service::call::Service result;
-
-               result.name = service.name;
-               result.timeout = service.timeout;
-               result.transaction = service.transaction;
-               result.category = service.category;
-
-               return result;
-            }
-
 
             template< typename I>
             void remove_services( State& state, I& instance, const std::vector< std::string>& services)
@@ -401,7 +451,7 @@ namespace casual
          log::line( verbose::log, "pid: ", pid);
 
          if( forward.pid == pid)
-            forward = common::process::Handle{};
+            forward.clear();
 
          events.remove( pid);
 
@@ -423,7 +473,7 @@ namespace casual
          }
       }
 
-      std::vector< state::service::Pending> State::update( common::message::service::Advertise& message)
+      std::vector< state::service::pending::Lookup> State::update( common::message::service::Advertise& message)
       {
          Trace trace{ "service::manager::State::update sequential"};
 
@@ -454,7 +504,7 @@ namespace casual
                {
                   service.add( instance);
                };
-               local::find_or_add_service( *this, local::transform( service, default_timeout), add_instance);
+               local::find_or_add_service( *this, local::transform( service, timeout), add_instance);
             };
 
             algorithm::for_each( message.services.add, add_service);
@@ -470,15 +520,15 @@ namespace casual
                return instance.service( pending.request.requested);
             };
 
-            if( auto found = algorithm::find_if( pending.requests, requested_service))
-               return { algorithm::extract( pending.requests, std::begin( found))};
+            if( auto found = algorithm::find_if( pending.lookups, requested_service))
+               return { algorithm::extract( pending.lookups, std::begin( found))};
          }
 
          return {};
       }
 
 
-      std::vector< state::service::Pending> State::update( common::message::service::concurrent::Advertise& message)
+      std::vector< state::service::pending::Lookup> State::update( common::message::service::concurrent::Advertise& message)
       {
          Trace trace{ "service::manager::State::update concurrent"};
 
@@ -506,7 +556,12 @@ namespace casual
                {
                   service.add( instance, property);
                };
-               local::find_or_add_service( *this, local::transform( service), add_instance);
+
+               configuration::model::service::Timeout timeout;
+               if( service.timeout.duration > platform::time::unit::zero())
+                  timeout.duration = service.timeout.duration;
+
+               local::find_or_add_service( *this, local::transform( service, timeout), add_instance);
             };
 
             algorithm::for_each( message.services.add, add_service);
@@ -516,7 +571,7 @@ namespace casual
          local::remove_services( *this, instance, message.services.remove);
 
          // find all potentially pending.
-         auto [ keep, remove] = algorithm::stable_partition( pending.requests, [&]( auto& pending)
+         auto [ keep, remove] = algorithm::stable_partition( pending.lookups, [&]( auto& pending)
          {
             if( auto found = algorithm::find( services, pending.request.requested))
                return found->second.instances.empty(); // false/remove if not empty, hence what we 'want' to return
@@ -525,7 +580,7 @@ namespace casual
          });
 
          auto result = range::to_vector( remove);
-         algorithm::trim( pending.requests, keep);
+         algorithm::trim( pending.lookups, keep);
          return result;
       }
 
@@ -566,6 +621,13 @@ namespace casual
          return nullptr;
       }
 
+      state::instance::Concurrent* State::concurrent( common::strong::process::id pid)
+      {
+         if( auto found = algorithm::find( instances.concurrent, pid))
+            return &found->second;
+         return nullptr;
+      }
+
 
       void State::connect_manager( std::vector< common::server::Service> services)
       {
@@ -586,15 +648,15 @@ namespace casual
          {
             local::find_or_add_service( 
                *this, 
-               local::transform( service, default_timeout), [&instance]( auto& service) { service.add( instance);});
+               local::transform( service, {}), [&instance]( auto& service) { service.add( instance);});
          }
       }
 
-      
       void State::Metric::add( metric_type metric)
       {
          m_message.metrics.push_back( std::move( metric));
       }
+
       void State::Metric::add( std::vector< metric_type> metrics)
       {
          algorithm::move( std::move( metrics), m_message.metrics);

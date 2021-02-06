@@ -31,11 +31,11 @@ namespace casual
                Lookup() noexcept;
                               
                //! Lookup an entry point for the @p service
-               Lookup( std::string service);
+               Lookup( std::string service, std::optional< platform::time::point::type> deadline = {});
 
                //! Lookup an entry point for the @p service
                //! using a specific context
-               Lookup( std::string service, Context context);
+               Lookup( std::string service, Context context, std::optional< platform::time::point::type> deadline = {});
 
                ~Lookup();
 
@@ -47,14 +47,11 @@ namespace casual
 
                // for logging only
                CASUAL_LOG_SERIALIZE(
-               {
                   CASUAL_SERIALIZE_NAME( m_service, "service");
                   CASUAL_SERIALIZE_NAME( m_correlation, "correlation");
                   CASUAL_SERIALIZE_NAME( m_reply, "reply");
-               })
-
+               )
             protected:
-
                bool update( Reply&& reply);
 
                std::string m_service;

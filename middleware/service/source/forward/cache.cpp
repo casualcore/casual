@@ -200,7 +200,7 @@ namespace casual
             Trace trace{ "service::forward::Cache ctor"};
 
             // Connect to domain
-            communication::instance::connect( communication::instance::identity::forward::cache);
+            communication::instance::whitelist::connect( communication::instance::identity::forward::cache);
 
          }
 

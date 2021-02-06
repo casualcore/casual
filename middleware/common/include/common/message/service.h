@@ -38,10 +38,9 @@ namespace casual
                long user = 0;
 
                CASUAL_CONST_CORRECT_SERIALIZE(
-               {
                   CASUAL_SERIALIZE( result);
                   CASUAL_SERIALIZE( user);
-               })
+               )
             };
 
             enum class Type : short
@@ -68,26 +67,35 @@ namespace casual
                service::Type type = service::Type::sequential;
 
                CASUAL_CONST_CORRECT_SERIALIZE(
-               {
                   CASUAL_SERIALIZE( name);
                   CASUAL_SERIALIZE( category);
                   CASUAL_SERIALIZE( transaction);
                   CASUAL_SERIALIZE( type);
-               })
+               )
             };
+
+            struct Timeout
+            {
+               platform::time::unit duration{};
+
+               CASUAL_CONST_CORRECT_SERIALIZE(
+                  CASUAL_SERIALIZE( duration);
+               )
+
+            };
+
          } // service
 
          struct Service : service::Base
          {
             using service::Base::Base;
 
-            platform::time::unit timeout = platform::time::unit::zero();
+            service::Timeout timeout;
 
             CASUAL_CONST_CORRECT_SERIALIZE(
-            {
                service::Base::serialize( archive);
                CASUAL_SERIALIZE( timeout);
-            })
+            )
          };
 
          namespace service
@@ -114,10 +122,9 @@ namespace casual
                State state = State::active;
 
                CASUAL_CONST_CORRECT_SERIALIZE(
-               {
                   CASUAL_SERIALIZE( trid);
                   CASUAL_SERIALIZE( state);
-               })
+               )
 
                inline friend std::ostream& operator << ( std::ostream& out, Transaction::State value)
                {
@@ -153,10 +160,9 @@ namespace casual
                   std::vector< std::string> remove;
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
-                  {
                      CASUAL_SERIALIZE( add);
                      CASUAL_SERIALIZE( remove);
-                  })
+                  )
                } services;
 
 
@@ -164,11 +170,10 @@ namespace casual
                inline bool clear() const { return services.add.empty() && services.remove.empty();}
 
                CASUAL_CONST_CORRECT_SERIALIZE(
-               {
                   base_advertise::serialize( archive);
                   CASUAL_SERIALIZE( alias);
                   CASUAL_SERIALIZE( services);
-               })
+               )
             };
 
             namespace concurrent
@@ -203,10 +208,9 @@ namespace casual
                         inline auto tie() const { return std::tie( type, hops);}
 
                         CASUAL_CONST_CORRECT_SERIALIZE(
-                        {
                            CASUAL_SERIALIZE( hops);
                            CASUAL_SERIALIZE( type);
-                        })
+                        )
                      };
 
 
@@ -225,10 +229,9 @@ namespace casual
                      service::Property property;
 
                      CASUAL_CONST_CORRECT_SERIALIZE(
-                     {
                         message::Service::serialize( archive);
                         CASUAL_SERIALIZE( property);
-                     })
+                     )
                   };
 
                } // advertise
@@ -248,23 +251,21 @@ namespace casual
                      std::vector< std::string> remove;
 
                      CASUAL_CONST_CORRECT_SERIALIZE(
-                     {
                         CASUAL_SERIALIZE( add);
                         CASUAL_SERIALIZE( remove);
-                     })
+                     )
                   } services;
 
                   //! indicate to remove all current advertised services, and replace with content in this message
                   bool reset = false;
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
-                  {
                      basic_advertise::serialize( archive);
                      CASUAL_SERIALIZE( alias);
                      CASUAL_SERIALIZE( order);
                      CASUAL_SERIALIZE( services);
                      CASUAL_SERIALIZE( reset);
-                  })
+                  )
                };
               
             } // concurrent   
@@ -301,13 +302,14 @@ namespace casual
 
                   std::string requested;
                   Context context = Context::regular;
+                  std::optional< platform::time::point::type> deadline{};
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
-                  {
                      base_request::serialize( archive);
                      CASUAL_SERIALIZE( requested);
                      CASUAL_SERIALIZE( context);
-                  })
+                     CASUAL_SERIALIZE( deadline);
+                  )
                };
 
                //! Represent "service-name-lookup" response.
@@ -315,11 +317,6 @@ namespace casual
                struct Reply : base_reply
                {
                   using base_reply::base_reply;
-
-                  call::Service service;
-
-                  //! represent how long this request was pending (busy);
-                  platform::time::unit pending{};
 
                   enum class State : short
                   {
@@ -339,17 +336,19 @@ namespace casual
                      return out << "unknown";
                   }
 
+                  call::Service service;
+                  //! represent how long this request was pending (busy);
+                  platform::time::unit pending{};
                   State state = State::idle;
                  
                   inline bool busy() const { return state == State::busy;}
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
-                  {
                      base_reply::serialize( archive);
                      CASUAL_SERIALIZE( service);
                      CASUAL_SERIALIZE( pending);
                      CASUAL_SERIALIZE( state);
-                  })
+                  )
                };
 
                namespace discard
@@ -364,11 +363,10 @@ namespace casual
                      bool reply = true;
 
                      CASUAL_CONST_CORRECT_SERIALIZE(
-                     {
                         base_request::serialize( archive);
                         CASUAL_SERIALIZE( requested);
                         CASUAL_SERIALIZE( reply);
-                     })
+                     )
                   };
 
                   using base_reply = basic_message< message::Type::service_name_lookup_discard_reply>;
@@ -380,6 +378,7 @@ namespace casual
                         discarded,
                         replied
                      };
+
                      inline friend std::ostream& operator << ( std::ostream& out, State value)
                      {
                         switch( value)
@@ -394,10 +393,9 @@ namespace casual
                      State state = State::absent;
 
                      CASUAL_CONST_CORRECT_SERIALIZE(
-                     {
                         base_reply::serialize( archive);
                         CASUAL_SERIALIZE( state);
-                     })
+                     )
                   };
                } // discard
             } // lookup
@@ -436,7 +434,6 @@ namespace casual
                   platform::time::unit pending{};
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
-                  {
                      base_type::serialize( archive);
                      CASUAL_SERIALIZE( service);
                      CASUAL_SERIALIZE( parent);
@@ -444,7 +441,7 @@ namespace casual
                      CASUAL_SERIALIZE( flags);
                      CASUAL_SERIALIZE( header);
                      CASUAL_SERIALIZE( pending);
-                  })
+                  )
                };
 
                using base_request = common_request< message::Type::service_call>;
@@ -483,12 +480,11 @@ namespace casual
                   common::buffer::Payload buffer;
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
-                  {
                      base_reply::serialize( archive);
                      CASUAL_SERIALIZE( code);
                      CASUAL_SERIALIZE( transaction);
                      CASUAL_SERIALIZE( buffer);
-                  })
+                  )
                };
 
                //! Represent the reply to the service-manager when a server is done handling
@@ -499,10 +495,9 @@ namespace casual
                   event::service::Metric metric;
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
-                  {
                      base_ack::serialize( archive);
                      CASUAL_SERIALIZE( metric);
-                  })
+                  )
                };
                
             } // call

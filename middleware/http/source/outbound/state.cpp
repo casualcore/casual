@@ -107,7 +107,7 @@ namespace casual
             m_message.metrics.push_back( [&]()
             {
                message::event::service::Metric metric;
-
+               metric.correlation = request.state().correlation;
                metric.execution = request.state().execution;
                metric.service = request.state().service;
                metric.parent = request.state().parent;

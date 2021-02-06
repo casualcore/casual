@@ -42,7 +42,6 @@ domain:
 
    servers:
       - path: "./bin/casual-service-manager"
-        arguments: [ "--forward", "./bin/casual-service-forward"]
 )";
 
             struct Domain
@@ -183,8 +182,6 @@ domain:
    name: route-domain
    servers:
       - path: "./bin/casual-service-manager"
-        arguments: [ "--forward", "./bin/casual-service-forward"]
-
    services:
       - name: A
         routes: [ B]
@@ -207,6 +204,50 @@ domain:
          
       }
 
+      TEST( service_manager, service_a_execution_timeout_duration_1ms__advertise_a__lookup_a____expect__TPETIME__and_assassination_event)
+      {
+         common::unittest::Trace trace;
+
+         constexpr auto configuration = R"(
+domain:
+   name: route-domain
+   servers:
+      -  path: "./bin/casual-service-manager"
+   services:
+      -  name: a
+         execution:
+            timeout:
+               duration: 1ms
+
+)";
+
+         local::Domain domain{ configuration};
+
+         // setup subscription to verify event
+         common::event::subscribe( common::process::handle(), { common::message::event::process::Assassination::type()});
+
+         service::unittest::advertise( { "a"});
+
+         auto service = common::service::Lookup{ "a"}();
+         ASSERT_TRUE( ! service.busy());
+
+         common::message::service::call::Reply reply;
+         EXPECT_TRUE( common::communication::device::blocking::receive( 
+            common::communication::ipc::inbound::device(),
+            reply));
+
+         EXPECT_TRUE( reply.code.result == decltype( reply.code.result)::timeout);
+
+         common::message::event::process::Assassination event;
+         EXPECT_TRUE( common::communication::device::blocking::receive( 
+            common::communication::ipc::inbound::device(),
+            event));
+
+         EXPECT_TRUE( event.target == common::process::id());
+         EXPECT_TRUE( event.contract == decltype( event.contract)::linger);
+      }
+
+
       TEST( service_manager, env_variables__advertise_A__route_B_A__expect_lookup_for_B)
       {
          common::unittest::Trace trace;
@@ -223,8 +264,6 @@ domain:
               value: B
    servers:
       - path: "./bin/casual-service-manager"
-        arguments: [ "--forward", "./bin/casual-service-forward"]
-
    services:
       - name: ${SA}
         routes: [ "${SB}"]
@@ -254,8 +293,6 @@ domain:
 
    servers:
       - path: "./bin/casual-service-manager"
-        arguments: [ "--forward", "./bin/casual-service-forward"]
-
    services:
       - name: A
         routes: [ B]

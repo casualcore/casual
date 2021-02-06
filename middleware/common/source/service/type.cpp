@@ -22,6 +22,37 @@ namespace casual
    {
       namespace service
       {
+         namespace execution::timeout::contract
+         {
+            Type transform( const std::string& contract)
+            {
+               if ( contract == "linger") return Type::linger;
+               if ( contract == "kill") return Type::kill;
+               if ( contract == "terminate") return Type::terminate;
+               
+               code::raise::error( code::casual::invalid_configuration, "unexpected value: ", contract);
+            }
+
+            std::string transform( Type contract)
+            {
+               std::ostringstream stream{};
+               stream << contract;
+               return stream.str();
+            }
+
+            std::ostream& operator << ( std::ostream& out, Type value)
+            {
+               switch( value)
+               {
+                  case Type::linger: return out << "linger";
+                  case Type::kill: return out << "kill";
+                  case Type::terminate: return out << "terminate";
+               }
+               return out << "unknown";
+            }
+
+         }
+
          namespace transaction
          {
             std::ostream& operator << ( std::ostream& out, Type value)

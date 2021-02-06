@@ -16,6 +16,7 @@
 #include "common/message/gateway.h"
 #include "common/message/domain.h"
 #include "common/message/service.h"
+#include "common/signal/timer.h"
 
 #include "common/transaction/context.h"
 #include "common/transaction/resource.h"

@@ -116,7 +116,7 @@ namespace casual
                }
 
                // connect to domain
-               common::communication::instance::connect( 0x8130b1cd7e8842a49e3da91f8913aff7_uuid);
+               common::communication::instance::whitelist::connect( 0x8130b1cd7e8842a49e3da91f8913aff7_uuid);
 
                {
                   Handler handler{ database};

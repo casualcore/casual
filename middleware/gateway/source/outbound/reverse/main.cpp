@@ -74,7 +74,7 @@ namespace casual
                communication::device::blocking::send( ipc::gateway(), gateway::message::outbound::Connect{ process::handle()});
 
                // 'connect' to our local domain
-               common::communication::instance::connect();
+               common::communication::instance::whitelist::connect();
 
                return {};
             }

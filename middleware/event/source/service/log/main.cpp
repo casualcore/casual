@@ -42,8 +42,8 @@ namespace casual
                      std::string exclusive;
 
                      CASUAL_LOG_SERIALIZE({
-                        CASUAL_NAMED_VALUE( inclusive);
-                        CASUAL_NAMED_VALUE( exclusive);
+                        CASUAL_SERIALIZE( inclusive);
+                        CASUAL_SERIALIZE( exclusive);
                      })
                   };
                   struct Settings
@@ -53,9 +53,9 @@ namespace casual
                      Filter filter;
 
                      CASUAL_LOG_SERIALIZE({
-                        CASUAL_NAMED_VALUE( file);
-                        CASUAL_NAMED_VALUE( delimiter);
-                        CASUAL_NAMED_VALUE( filter);
+                        CASUAL_SERIALIZE( file);
+                        CASUAL_SERIALIZE( delimiter);
+                        CASUAL_SERIALIZE( filter);
                      })
                   };
 
@@ -245,7 +245,7 @@ namespace casual
                      common::log::line( event::log, "settings: ", settings);
 
                      // connect to domain
-                     common::communication::instance::connect( 0xc9d132c7249241c8b4085cc399b19714_uuid);
+                     common::communication::instance::whitelist::connect( 0xc9d132c7249241c8b4085cc399b19714_uuid);
 
                      pump( std::move( settings));
                   }        

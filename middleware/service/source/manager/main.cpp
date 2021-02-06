@@ -5,13 +5,17 @@
 //!
 
 
+#include "service/manager/state.h"
+#include "service/manager/handle.h"
+#include "service/common.h"
 
-#include "service/manager/manager.h"
-
+#include "domain/configuration/fetch.h"
 
 #include "common/exception/handle.h"
 #include "common/argument.h"
-
+#include "common/environment.h"
+#include "common/communication/instance.h"
+#include "common/message/dispatch.h"
 
 #include <iostream>
 
@@ -19,20 +23,117 @@ namespace casual
 {
    using namespace common;
 
-   namespace service
+   namespace service::manager
    {
-      void main( int argc, char** argv)
+      namespace local
       {
-         manager::Settings settings;
+         namespace
+         {
+            struct Settings
+            {
+               CASUAL_LOG_SERIALIZE()
+            };
 
-         argument::Parse{ "casual-service-manager",
-            argument::Option( std::tie( settings.forward), { "--forward"}, "path to the forward instance - mainly for unittest")
-         }( argc, argv);
 
-         Manager manager( std::move( settings));
-         manager.start();
-      }
-   } // service
+            auto initialize( Settings settings)
+            {
+               Trace trace( "service::manager:local::initialize");
+
+
+               // Set the process variables so children can find us easier.
+               environment::variable::process::set(
+                  environment::variable::name::ipc::service::manager,
+                  process::handle());
+
+               State state;
+
+               // We ask the domain manager for configuration, and 'comply' to it...
+               handle::comply::configuration( state, casual::domain::configuration::fetch());
+
+               return state;
+            }
+
+            void setup( State& state)
+            {
+               Trace trace( "service::manager:local::setup");
+
+               // make sure we handle death of our children
+               signal::callback::registration< code::signal::child>( []()
+               {
+                  algorithm::for_each( process::lifetime::ended(), []( auto& exit)
+                  {
+                     manager::handle::process::exit( exit);
+                  });
+               }); 
+
+               signal::callback::registration< code::signal::alarm>( [&state]()
+               {
+                  handle::timeout( state);
+               });
+
+               // Start forward
+               {
+                  Trace trace{ "service::manager:local::initialize spawn forward"};
+
+                  state.forward = common::Process( process::directory() + "/casual-service-forward");
+                  state.forward.ipc = common::communication::instance::fetch::handle(
+                     common::communication::instance::identity::forward::cache).ipc;
+
+                  log::line( log, "forward: ", state.forward);
+               }
+            }
+
+
+            auto condition( State& state)
+            {
+               return message::dispatch::condition::compose(
+                  message::dispatch::condition::done( [&state]() { return state.done();}),
+                  message::dispatch::condition::idle( [&state]()
+                  {
+                     // the input socket is empty, we can't know if there ever gonna be any more 
+                     // messages to read, we need to send metric, if any...
+                     if( state.metric && state.events.active< common::message::event::service::Calls>())
+                        manager::handle::metric::send( state);
+                  })
+               );
+            }
+
+            void start( State state)
+            {
+               Trace trace( "service::manager:local::start");
+
+               setup( state);
+
+               auto handler = manager::handler( state);
+
+               // Connect to domain
+               communication::instance::whitelist::connect( communication::instance::identity::service::manager);
+
+               log::line( common::log::category::information, "casual-service-manager is on-line");
+               log::line( verbose::log, "state: ", state);
+
+               common::message::dispatch::pump(
+                  local::condition( state),
+                  handler, 
+                  ipc::device());
+            }
+
+            void main( int argc, char** argv)
+            {
+               Trace trace( "service::manager:local::main");
+
+               Settings settings;
+
+               argument::Parse{ "Responsible for service related informaiton, such as service lookups",
+               }( argc, argv);
+
+               start( initialize( std::move( settings)));
+
+            }
+         } // <unnamed>
+      } // local
+
+   } // service::manager
 
 } // casual
 
@@ -41,6 +142,6 @@ int main( int argc, char** argv)
 {
    return casual::common::exception::main::guard( [=]()
    {  
-      casual::service::main( argc, argv);
+      casual::service::manager::local::main( argc, argv);
    });
 }

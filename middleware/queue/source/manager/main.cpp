@@ -74,7 +74,7 @@ namespace casual
                      ipc::device());
 
                   // Connect to domain
-                  common::communication::instance::connect( common::communication::instance::identity::queue::manager);
+                  common::communication::instance::whitelist::connect( common::communication::instance::identity::queue::manager);
                }  
             } // wait
 

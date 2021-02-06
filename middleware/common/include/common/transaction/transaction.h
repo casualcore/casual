@@ -7,9 +7,7 @@
 
 
 #include "common/transaction/id.h"
-#include "common/timeout.h"
 #include "casual/platform.h"
-
 
 #include "tx.h"
 
@@ -41,7 +39,7 @@ namespace casual
             explicit Transaction( ID trid);
 
             ID trid;
-            Timeout timeout;
+            std::optional< platform::time::point::type> deadline;
             State state = State::active;
 
             //! @return true if `trid` is _active_ 
@@ -104,7 +102,7 @@ namespace casual
 
             CASUAL_LOG_SERIALIZE({
                CASUAL_SERIALIZE( trid);
-               CASUAL_SERIALIZE( timeout);
+               CASUAL_SERIALIZE( deadline);
                CASUAL_SERIALIZE( state);
                CASUAL_SERIALIZE_NAME( m_involved, "involved");
                CASUAL_SERIALIZE_NAME( m_pending, "pending");

@@ -134,7 +134,6 @@ casual_common_objectfiles = [
     Compile( 'source/execution.cpp'),
     Compile( 'source/network/byteorder.cpp'),
     Compile( 'source/transcode.cpp'),
-    Compile( 'source/timeout.cpp'),
     Compile( 'source/metric.cpp'),
     
     Compile( 'source/argument.cpp'),

@@ -93,7 +93,7 @@ namespace casual
          auto handler = manager::handle::handlers( m_state);
 
          // Connect to domain
-         communication::instance::connect( communication::instance::identity::transaction::manager);
+         communication::instance::whitelist::connect( communication::instance::identity::transaction::manager);
 
          auto idle_callback = [&]()
          {

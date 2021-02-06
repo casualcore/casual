@@ -34,10 +34,7 @@ namespace casual
                { 6, false },
                { 7, false },
                { 8, false }}
-            {
-
-            }
-
+            {}
 
             State::Pending::Descriptor& State::Pending::reserve( const Uuid& correlation)
             {
@@ -55,7 +52,7 @@ namespace casual
                if( found)
                {
                   found->active = true;
-                  found->timeout = {};
+                  found->target = {};
                   return *found;
                }
                else
@@ -90,6 +87,15 @@ namespace casual
                return *found;
             }
 
+            State::Pending::Descriptor& State::Pending::get( descriptor_type descriptor)
+            {
+               auto found = algorithm::find( m_descriptors, descriptor);
+               if( ! found || ! found->active)
+                  code::raise::generic( code::xatmi::descriptor, log::debug, "invalid call descriptor: ", descriptor);
+
+               return *found;
+            }
+
             const State::Pending::Descriptor& State::Pending::get( const Uuid& correlation) const
             {
                auto found = algorithm::find_if( m_descriptors, [&]( const auto& d){ return d.correlation == correlation;});
@@ -99,21 +105,9 @@ namespace casual
                return *found;
             }
 
-            signal::timer::Deadline State::Pending::deadline( descriptor_type descriptor, const platform::time::point::type& now) const
-            {
-               if( descriptor != 0)
-               {
-                  auto& desc = get( descriptor);
-                  return { desc.timeout.deadline(), now};
-               }
-
-               return { std::nullopt, now};
-            }
-
             void State::Pending::discard( descriptor_type descriptor)
             {
                const auto& holder = get( descriptor);
-
 
                // Can't be associated with a transaction
                if( common::transaction::Context::instance().associated( holder.correlation))
