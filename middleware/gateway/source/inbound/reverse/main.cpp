@@ -184,8 +184,9 @@ namespace casual
                            log::line( verbose::log, "message: ", message);
 
                            // TODO maintainece - make sure we can handle runtime updates...
-
+                           state.alias = message.model.alias;
                            state.pending.requests.limit( message.model.limit);
+                           
                            state.reverse.connections = algorithm::transform( message.model.connections, []( auto& configuration)
                            {
                               return local::State::Connection{ std::move( configuration)};

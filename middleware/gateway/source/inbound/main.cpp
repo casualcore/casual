@@ -44,12 +44,14 @@ namespace casual
                {
                   communication::Socket socket;
                   configuration::model::gateway::inbound::Connection configuration;
+                  platform::time::point::type created = platform::time::clock::type::now();
 
                   inline friend bool operator == ( const Listener& lhs, common::strong::file::descriptor::id rhs) { return lhs.socket.descriptor() == rhs;}
 
                   CASUAL_LOG_SERIALIZE( 
                      CASUAL_SERIALIZE( socket);
                      CASUAL_SERIALIZE( configuration);
+                     CASUAL_SERIALIZE( created);
                   )
                };
 
@@ -97,6 +99,7 @@ namespace casual
                            // TODO maintainece - make sure we can handle runtime updates...
 
                            state.alias = message.model.alias;
+                           state.pending.requests.limit( message.model.limit);
 
                            state.listeners = algorithm::transform( message.model.connections, []( auto& information)
                            {
@@ -138,6 +141,7 @@ namespace casual
                               message::state::Listener result;
                               result.address = listener.configuration.address;
                               result.descriptor = listener.socket.descriptor();
+                              result.created = listener.created;
 
                               return result;
                            });

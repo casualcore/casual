@@ -1,7 +1,7 @@
 # casual describe
 
-```bash
->$ casual --help describe
+```shell
+host# casual --help describe
 
   describe [0..1]  (<service> [json, yaml, xml, ini]) [1..2]
         service describer

@@ -1,7 +1,7 @@
 # casual service
 
-```bash
->$ casual --help service
+```shell
+host# casual --help service
 
   service [0..1]
         service related administration

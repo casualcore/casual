@@ -12,24 +12,19 @@
 
 namespace casual
 {
-   namespace gateway 
+   namespace gateway::manager::admin
    {
-      namespace manager
+      struct cli 
       {
-         namespace admin
-         {
-            struct cli 
-            {
-               cli();
-               ~cli();
+         cli();
+         ~cli();
 
-               common::argument::Group options() &;
+         common::argument::Group options() &;
 
-            private:
-               struct Implementation;
-               common::move::basic_pimpl< Implementation> m_implementation;
-            };
-         } // admin
-      } // manager  
-   } // gateway
+      private:
+         struct Implementation;
+         common::move::basic_pimpl< Implementation> m_implementation;
+      };
+
+   } // gateway::manager::admin
 } // casual

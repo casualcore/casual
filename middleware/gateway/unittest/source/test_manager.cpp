@@ -640,7 +640,7 @@ domain:
                   auto running_outbound = []( auto& connection)
                   {
                      return connection.bound == decltype( connection.bound)::out &&
-                        connection.runlevel == decltype( connection.runlevel)::online;
+                        connection.runlevel() == decltype( connection.runlevel())::online;
                   };
 
                   auto state = call::state();

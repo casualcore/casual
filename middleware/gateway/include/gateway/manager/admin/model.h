@@ -15,196 +15,243 @@
 
 namespace casual
 {
-   namespace gateway
+   namespace gateway::manager::admin::model
    {
-      namespace manager
+      inline namespace v2
       {
-         namespace admin
+         namespace connection
          {
-            namespace model
+            enum struct Phase : short
             {
-               inline namespace v1
-               {
-                  namespace inbound
-                  {
-                     struct Limit : common::Compare< Limit>
-                     {
-                        platform::binary::size::type size = 0;
-                        platform::binary::size::type messages = 0;
-                        
-                        CASUAL_CONST_CORRECT_SERIALIZE(
-                        {
-                           CASUAL_SERIALIZE( size);
-                           CASUAL_SERIALIZE( messages);
-                        })
+               regular,
+               reversed,
+            };
 
-                        inline auto tie() const noexcept { return std::tie( size, messages);}
-                     };
-                     
-                  } // inbound
-                  
-                  struct Inbound
-                  {
-                     std::string alias;
-                     common::process::Handle process;
-                     inbound::Limit limit;
+            std::ostream& operator << ( std::ostream& out, Phase value);
 
-                     CASUAL_CONST_CORRECT_SERIALIZE(
-                     {
-                        CASUAL_SERIALIZE( alias);
-                        CASUAL_SERIALIZE( process);
-                        CASUAL_SERIALIZE( limit);
-                     })
-                  };
+            enum struct Bound : short
+            {
+               unknown,
+               out,
+               in,
+            };
 
-                  struct Outbound
-                  {
-                     std::string alias;
-                     common::process::Handle process;
+            std::ostream& operator << ( std::ostream& out, Bound value);
 
-                     CASUAL_CONST_CORRECT_SERIALIZE(
-                     {
-                        CASUAL_SERIALIZE( alias);
-                        CASUAL_SERIALIZE( process);
-                     })
-                  };
+            enum struct Runlevel : short
+            {
+               connecting = 1,
+               connected = 2,
+               //! @deprecated remove in 2.0
+               online = connected,
+            };
 
+            std::ostream& operator << ( std::ostream& out, Runlevel value);
 
-                  namespace connection
-                  {
-                     enum struct Bound : short
-                     {
-                        out,
-                        in,
-                        unknown,
-                     };
+            struct Address
+            {
+               std::string local;
+               std::string peer;
+               
+               CASUAL_CONST_CORRECT_SERIALIZE(
+                  CASUAL_SERIALIZE( local);
+                  CASUAL_SERIALIZE( peer);
+               )
+            };
+            
+         } // connection
 
-                     inline std::ostream& operator << ( std::ostream& out, Bound value)
-                     {
-                        switch( value)
-                        {
-                           case Bound::out: return out << "out";
-                           case Bound::in: return out << "in";
-                           case Bound::unknown: return out << "unknown";
-                        }
-                        return out << "<unknown>";
-                     }
+         struct Connection : common::Compare< Connection>
+         {
+            std::string group;
+            connection::Phase connect{};
+            connection::Bound bound{};
+            common::domain::Identity remote;
+            connection::Address address;
+            platform::time::point::type created{};
 
-                     enum struct Runlevel : short
-                     {
-                        absent,
-                        connecting,
-                        online,
-                        shutdown,
-                        error
-                     };
+            inline connection::Runlevel runlevel() const noexcept
+            {
+               if( ! address.peer.empty())
+                  return connection::Runlevel::connected;
+               return connection::Runlevel::connecting;
+            }
 
-                     inline std::ostream& operator << ( std::ostream& out, Runlevel value)
-                     {
-                        switch( value)
-                        {
-                           case Runlevel::absent: return out << "absent";
-                           case Runlevel::connecting: return out << "connecting";
-                           case Runlevel::online: return out << "online";
-                           case Runlevel::shutdown: return out << "shutdown";
-                           case Runlevel::error: return out << "error";
-                        }
-                        return out << "<unknown>";
-                     }
+            //! @deprecated remove in 2.0 - group knows the process, not the connection
+            common::process::Handle process;
 
-                     struct Address
-                     {
-                        std::string local;
-                        std::string peer;
-                        
-                        CASUAL_CONST_CORRECT_SERIALIZE(
-                        {
-                           CASUAL_SERIALIZE( local);
-                           CASUAL_SERIALIZE( peer);
-                        })
-                     };
-                     
-                  } // connection
+            CASUAL_CONST_CORRECT_SERIALIZE(
+               CASUAL_SERIALIZE( group);
+               CASUAL_SERIALIZE( connect);
+               CASUAL_SERIALIZE( bound);
+               CASUAL_SERIALIZE( remote);
+               CASUAL_SERIALIZE( address);
+               CASUAL_SERIALIZE( created);
 
-                  struct Connection : common::Compare< Connection>
-                  {
-                     connection::Bound bound = connection::Bound::unknown;
-                     connection::Runlevel runlevel = connection::Runlevel::absent;
-                     
-                     std::string alias;
-                     common::process::Handle process;
-                     
-                     common::domain::Identity remote;
-                     connection::Address address;
+               //! @deprecated remove in 2.0
+               auto runlevel = Connection::runlevel();
+               CASUAL_SERIALIZE( runlevel);
+               CASUAL_SERIALIZE( process);
+            )
 
-                     CASUAL_CONST_CORRECT_SERIALIZE(
-                     {
-                        CASUAL_SERIALIZE( bound);
-                        CASUAL_SERIALIZE( runlevel);
-                        CASUAL_SERIALIZE( alias);
-                        CASUAL_SERIALIZE( process);
-                        CASUAL_SERIALIZE( remote);
-                        CASUAL_SERIALIZE( address);
-                     })
+            inline auto tie() const noexcept { return std::tie( remote, bound, group);}
+         };
 
-                     inline auto tie() const noexcept { return std::tie( remote, bound, process);}
+         namespace group
+         {
+            enum struct Runlevel : short
+            {
+               running,
+               shutdown,
+               error,
+            };
 
-                  };
+            std::ostream& operator << ( std::ostream& out, Runlevel value);
 
-                  namespace listener
-                  {
-                     struct Address : common::Compare< Address>
-                     {
-                        std::string host;
-                        std::string port;
+         } // group
 
-                        CASUAL_CONST_CORRECT_SERIALIZE(
-                           CASUAL_SERIALIZE( host);
-                           CASUAL_SERIALIZE( port);
-                        )
+         namespace inbound
+         {
+            struct Limit
+            {
+               platform::binary::size::type size = 0;
+               platform::binary::size::type messages = 0;
+               
+               CASUAL_CONST_CORRECT_SERIALIZE(
+                  CASUAL_SERIALIZE( size);
+                  CASUAL_SERIALIZE( messages);
+               )
+            };
 
-                        inline auto tie() const noexcept { return std::tie( host, port);}
-                     };
+            struct Group
+            {
+               std::string alias;
+               group::Runlevel runlevel{};
+               connection::Phase connect{};
+               common::process::Handle process;
+               inbound::Limit limit{};
+               std::string note;
 
-                  } // listener
+               CASUAL_CONST_CORRECT_SERIALIZE(
+                  CASUAL_SERIALIZE( alias);
+                  CASUAL_SERIALIZE( runlevel);
+                  CASUAL_SERIALIZE( connect);
+                  CASUAL_SERIALIZE( process);
+                  CASUAL_SERIALIZE( limit);
+                  CASUAL_SERIALIZE( note);
+               )
+            };
+         } // inbound
 
-                  struct Listener : common::Compare< Listener>
-                  {
-                     std::string alias;
-                     inbound::Limit limit;
-                     listener::Address address;
+         namespace outbound
+         {
+            struct Group
+            {
+               std::string alias;
+               group::Runlevel runlevel{};
+               connection::Phase connect{};
+               common::process::Handle process;
+               platform::size::type order{};
+               std::string note;
 
-                     CASUAL_CONST_CORRECT_SERIALIZE(
-                        CASUAL_SERIALIZE( alias);
-                        CASUAL_SERIALIZE( limit);
-                        CASUAL_SERIALIZE( address);
-                     )
+               CASUAL_CONST_CORRECT_SERIALIZE(
+                  CASUAL_SERIALIZE( alias);
+                  CASUAL_SERIALIZE( runlevel);
+                  CASUAL_SERIALIZE( connect);
+                  CASUAL_SERIALIZE( process);
+                  CASUAL_SERIALIZE( order);
+                  CASUAL_SERIALIZE( note);
+               )
+            };
+         } // outbound
 
-                     inline auto tie() const noexcept { return std::tie( alias, address, limit);}
-                  };
+ 
 
+         namespace listener
+         {
+            struct Address : common::Compare< Address>
+            {
+               std::string host;
+               std::string port;
 
-                  struct State
-                  {
-                     std::vector< Inbound> inbounds;
-                     std::vector< Outbound> outbounds;
-                     std::vector< Connection> connections;
-                     std::vector< Listener> listeners;
+               CASUAL_CONST_CORRECT_SERIALIZE(
+                  CASUAL_SERIALIZE( host);
+                  CASUAL_SERIALIZE( port);
+               )
 
-                     CASUAL_CONST_CORRECT_SERIALIZE(
-                     {
-                        CASUAL_SERIALIZE( inbounds);
-                        CASUAL_SERIALIZE( outbounds);
-                        CASUAL_SERIALIZE( connections);
-                        CASUAL_SERIALIZE( listeners);
-                     })
-                  };
+               inline auto tie() const noexcept { return std::tie( host, port);}
+            };
 
-               } // v1
-            } // model
-         } // admin
-      } // manager
-   } // gateway
+         } // listener
+
+         struct Listener : common::Compare< Listener>
+         {
+            std::string group;
+            listener::Address address;
+            connection::Bound bound{};
+            platform::time::point::type created{};
+
+            //@ deprecared
+            struct
+            {
+               std::string note = "NOT USED";
+               platform::binary::size::type size = 0;
+               platform::binary::size::type messages = 0;
+               
+               CASUAL_CONST_CORRECT_SERIALIZE(
+                  CASUAL_SERIALIZE( note);
+                  CASUAL_SERIALIZE( size);
+                  CASUAL_SERIALIZE( messages);
+               )
+             } limit;
+
+            CASUAL_CONST_CORRECT_SERIALIZE(
+               CASUAL_SERIALIZE( group);
+               CASUAL_SERIALIZE( address);
+               CASUAL_SERIALIZE( bound);
+               CASUAL_SERIALIZE( created);
+               CASUAL_SERIALIZE( limit);
+            )
+
+            inline auto tie() const noexcept { return std::tie( group, address);}
+         };
+
+         struct State
+         {
+            struct
+            {
+               std::vector< inbound::Group> groups;
+
+               CASUAL_CONST_CORRECT_SERIALIZE(
+                  CASUAL_SERIALIZE( groups);
+               )
+
+            } inbound;
+
+            struct
+            {
+               std::vector< outbound::Group> groups;
+               
+               CASUAL_CONST_CORRECT_SERIALIZE(
+                  CASUAL_SERIALIZE( groups);
+               )
+
+            } outbound;
+
+            std::vector< Connection> connections;
+            std::vector< Listener> listeners;
+
+            CASUAL_CONST_CORRECT_SERIALIZE(
+               CASUAL_SERIALIZE( inbound);
+               CASUAL_SERIALIZE( outbound);
+               CASUAL_SERIALIZE( connections);
+               CASUAL_SERIALIZE( listeners);
+            )
+         };
+
+      } // v2
+      
+   } // gateway::manager::admin::model
 } // casual
 
 

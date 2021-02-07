@@ -1,7 +1,7 @@
 # casual buffer
 
-```bash
->$ casual --help buffer
+```shell
+host# casual --help buffer
 
   buffer [0..1]
         buffer related 'tools'

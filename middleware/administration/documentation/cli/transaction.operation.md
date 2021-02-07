@@ -1,7 +1,7 @@
 # casual transaction
 
-```bash
->$ casual --help transaction
+```shell
+host# casual --help transaction
 
   transaction [0..1]
         transaction related administration

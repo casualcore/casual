@@ -67,55 +67,105 @@ namespace casual
 
             // connections
             {
-               auto transform_connection = [&result]( auto bound)
+               auto transform = [&result]( auto connect, auto bound)
                {
-                  return [&result, bound]( auto& reply)
+                  return [&result, connect, bound]( auto& reply)
                   {
-                     algorithm::transform( reply.state.connections, result.connections, [&reply, bound]( auto& connection)
+                     algorithm::transform( reply.state.connections, result.connections, [&reply, connect, bound]( auto& connection)
                      {
                         manager::admin::model::Connection result;
-                        result.alias = reply.state.alias;
+                        result.group = reply.state.alias;
+                        result.connect = connect;
                         result.bound = bound;
                         result.address.local = connection.address.local;
                         result.address.peer = connection.address.peer;
                         result.remote = connection.domain;
-                        result.process = reply.process;
+                        result.created = connection.created;
 
-                        {
-                           if( ! result.address.local.empty() && ! result.address.peer.empty())
-                              result.runlevel = decltype( result.runlevel)::online;
-                        };
+                        // deprecated remove in 2.0
+                        result.process = reply.process; 
+
                         return result;
                      });
                   };
                };
 
-               algorithm::for_each( std::get< 0>( inbounds), transform_connection( manager::admin::model::connection::Bound::in));
-               algorithm::for_each( std::get< 1>( inbounds), transform_connection( manager::admin::model::connection::Bound::in));
-               algorithm::for_each( std::get< 0>( outbounds), transform_connection( manager::admin::model::connection::Bound::out));
-               algorithm::for_each( std::get< 1>( outbounds), transform_connection( manager::admin::model::connection::Bound::out));
+               using Bound = manager::admin::model::connection::Bound;
+               using Phase = manager::admin::model::connection::Phase;
+
+               algorithm::for_each( std::get< 0>( inbounds), transform( Phase::regular, Bound::in));
+               algorithm::for_each( std::get< 1>( inbounds), transform( Phase::reversed, Bound::in));
+               algorithm::for_each( std::get< 0>( outbounds), transform( Phase::regular, Bound::out));
+               algorithm::for_each( std::get< 1>( outbounds), transform( Phase::reversed, Bound::out));
 
                algorithm::sort( result.connections);
             }
 
-            // listeners
+            // groups
             {
-               auto transform_listeners = [&result]( auto& reply)
+               using Phase = manager::admin::model::connection::Phase;
+
+               auto set_general = []( auto& reply, auto& result)
                {
-                  algorithm::transform( reply.state.listeners, result.listeners, [&reply]( auto& listener)
-                  {
-                     manager::admin::model::Listener result;
-                     result.alias = reply.state.alias;
-                     result.address.host = listener.address.host();
-                     result.address.port = listener.address.port();
-                     //result.limit.size = reply.state.limit.size;
-                     //result.limit.messages = reply.state.limit.messages;
-                     return result;
-                  });
+                  result.process = reply.process;
+                  result.alias = reply.state.alias;
+                  result.note = reply.state.note;
                };
 
-               algorithm::for_each( std::get< 0>( inbounds), transform_listeners);
-               algorithm::for_each( std::get< 1>( outbounds), transform_listeners);
+               auto transform_inbound = [set_general]( auto connect)
+               {
+                  return [set_general, connect]( auto& reply)
+                  {
+                     manager::admin::model::inbound::Group result;
+                     set_general( reply, result);
+                     result.connect = connect;
+                     result.limit.size = reply.state.limit.size;
+                     result.limit.messages = reply.state.limit.messages;
+                     return result;
+                  };
+               };
+
+               auto transform_outbound = [set_general]( auto connect)
+               {
+                  return [set_general, connect]( auto& reply)
+                  {
+                     manager::admin::model::outbound::Group result;
+                     set_general( reply, result);
+                     result.connect = connect;
+                     result.order = reply.state.order;
+                     return result;
+                  };
+               };
+               
+
+               algorithm::transform( std::get< 0>( inbounds), std::back_inserter( result.inbound.groups), transform_inbound( Phase::regular));
+               algorithm::transform( std::get< 1>( inbounds), std::back_inserter( result.inbound.groups), transform_inbound( Phase::reversed));
+               algorithm::transform( std::get< 0>( outbounds), std::back_inserter( result.outbound.groups), transform_outbound( Phase::regular));
+               algorithm::transform( std::get< 1>( outbounds), std::back_inserter( result.outbound.groups), transform_outbound( Phase::reversed));
+
+            }
+
+            // listeners
+            {
+               auto transform = [&result]( auto bound)
+               {
+                  return [&result, bound]( auto& reply)
+                  {
+                     algorithm::transform( reply.state.listeners, result.listeners, [&reply, bound]( auto& listener)
+                     {
+                        manager::admin::model::Listener result;
+                        result.group = reply.state.alias;
+                        result.address.host = listener.address.host();
+                        result.address.port = listener.address.port();
+                        result.bound = bound;
+                        result.created = listener.created;
+                        return result;
+                     });
+                  };
+               };
+
+               algorithm::for_each( std::get< 0>( inbounds), transform( manager::admin::model::connection::Bound::in));
+               algorithm::for_each( std::get< 1>( outbounds), transform( manager::admin::model::connection::Bound::out));
 
                algorithm::sort( result.listeners);
             }

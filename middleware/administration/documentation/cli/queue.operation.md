@@ -1,7 +1,7 @@
 # casual queue
 
-```bash
->$ casual --help queue
+```shell
+host# casual --help queue
 
   queue [0..1]
         queue related administration

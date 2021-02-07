@@ -39,6 +39,7 @@ common_archive = LinkArchive( 'bin/casual-gateway-common',
         Compile( 'source/transform.cpp'),
         Compile( 'source/common.cpp'),
         Compile( 'source/manager/state.cpp'),
+        Compile( 'source/manager/admin/model.cpp'),
     ])
         
 
@@ -152,7 +153,6 @@ protocol_objects = [
 target_unittest = LinkUnittest( 'bin/test-casual-gateway',
    [
         Compile( 'unittest/source/test_manager.cpp'),
-        #Compile( 'unittest/source/test_state.cpp'),
         Compile( 'unittest/source/test_protocol.cpp'),
         Compile( 'unittest/source/outbound/test_state.cpp'),
         Compile( 'unittest/source/test_reverse.cpp'),

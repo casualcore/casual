@@ -64,6 +64,7 @@ namespace casual
                   common::strong::file::descriptor::id connection;
                   common::domain::Identity domain;
                   configuration::model::gateway::outbound::Connection configuration;
+                  platform::time::point::type created{};
 
                   inline friend bool operator == ( const Information& lhs, common::strong::file::descriptor::id rhs) { return lhs.connection == rhs;} 
 
@@ -71,6 +72,7 @@ namespace casual
                      CASUAL_SERIALIZE( connection);
                      CASUAL_SERIALIZE( domain);
                      CASUAL_SERIALIZE( configuration);
+                     CASUAL_SERIALIZE( created);
                   )
                };
             } // connection
@@ -92,6 +94,7 @@ namespace casual
                   state::external::connection::Information result;
                   result.connection = descriptor;
                   result.configuration = std::move( configuration);
+                  result.created = platform::time::clock::type::now();
                   return result;
                }());
                directive.read.add( descriptor);
@@ -305,6 +308,8 @@ namespace casual
                if( auto found = common::algorithm::find( external.information, descriptor))
                {
                   result.domain = found->domain;
+                  result.configuration = found->configuration;
+                  result.created = found->created;
                }
 
                return result;

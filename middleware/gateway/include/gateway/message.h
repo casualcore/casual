@@ -110,10 +110,12 @@ namespace casual
          {
             common::communication::tcp::Address address;
             common::strong::file::descriptor::id descriptor;
+            platform::time::point::type created{};
 
             CASUAL_CONST_CORRECT_SERIALIZE(
                CASUAL_SERIALIZE( address);
                CASUAL_SERIALIZE( descriptor);
+               CASUAL_SERIALIZE( created);
             )
          };
 
@@ -124,12 +126,14 @@ namespace casual
             common::strong::file::descriptor::id descriptor;
             common::domain::Identity domain;
             Configuration configuration;
+            platform::time::point::type created{};
 
             CASUAL_CONST_CORRECT_SERIALIZE(
                CASUAL_SERIALIZE( address);
                CASUAL_SERIALIZE( descriptor);
                CASUAL_SERIALIZE( domain);
                CASUAL_SERIALIZE( configuration);
+               CASUAL_SERIALIZE( created);
             )
          };
          
