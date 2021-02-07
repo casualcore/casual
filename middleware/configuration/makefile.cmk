@@ -70,7 +70,7 @@ LinkUnittest( 'bin/test-casual-configuration',
         Compile( 'unittest/source/resource/test_property.cpp'),
         Compile( 'unittest/source/build/test_server.cpp'),
         Compile( 'unittest/source/user/test_accumulate.cpp'),
-
+        Compile( 'unittest/source/user/test_validate.cpp'),
    ],
    [ 
        example_archive, 
