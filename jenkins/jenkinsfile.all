@@ -58,10 +58,9 @@ def rpmRelease()
 
 def selectExtendedVersion()
 {
-   if (isDevelop())
-      return "-" + env.CASUAL_RELEASE
    if ( isRelease())
       return ""
+
    return "-" + env.CASUAL_RELEASE
 }
 
@@ -70,25 +69,34 @@ def totalVersion()
     return env.CASUAL_VERSION + selectExtendedVersion()
 }
 
-def setCurrentVersionAndRelease()
+def type_of_build()
+{
+   if (isDevelop())
+      return "beta"
+   if (isFeature())
+      return "alpha"
+   return ""
+}
+
+def setCurrentVersionAndRelease(version)
 {
    if ( isRelease())
    {
       // 1.2.buildnumber
-      env.CASUAL_VERSION = retrieve_major_minor().concat('.').concat(env.BUILD_NUMBER)
+      env.CASUAL_VERSION = version
       env.CASUAL_RELEASE = "1"
    }
    else if (isDevelop())
    {
       // 1.2-beta.buildnumber
       env.CASUAL_VERSION = retrieve_major_minor()
-      env.CASUAL_RELEASE = "beta." + env.BUILD_NUMBER
+      env.CASUAL_RELEASE = version.split("-")[1]
    }
    else if (isFeature())
    {
       // 1.2-alpha.branchname.buildnumber
       env.CASUAL_VERSION = retrieve_major_minor()
-      env.CASUAL_RELEASE = "alpha." + normalizeBranchName(env.BRANCH_NAME) + "." + env.BUILD_NUMBER
+      env.CASUAL_RELEASE = type_of_build() + "." + normalizeBranchName(env.BRANCH_NAME) + "." + env.BUILD_NUMBER
    }
    else
    {
@@ -107,8 +115,29 @@ try
    currentBuild.result = 'SUCCESS'
    slackSend color: "good", message: "Build started: ${env.JOB_NAME} - ${env.BUILD_NUMBER} (<${env.JOB_URL}|Open>)"
 
+
+   node("documentation")
+   {
+       stage("calculate version")
+       {
+           checkout([
+              $class: 'GitSCM',
+              branches: scm.branches,
+              doGenerateSubmoduleConfigurations: scm.doGenerateSubmoduleConfigurations,
+              extensions: [[$class: 'CloneOption', noTags: false, shallow: false, depth: 0, reference: '']],
+              userRemoteConfigs: scm.userRemoteConfigs,
+           ])
+
+           major_minor = retrieve_major_minor()
+           build_type = type_of_build()
+           version = sh(returnStdout: true, script: "jenkins/version.py $major_minor $build_type").trim()
+           println version
+       }
+   }
+
    // need to be called before defines later in script
-   setCurrentVersionAndRelease()
+   setCurrentVersionAndRelease(version)
+
 }
 catch (Exception e)
 {
