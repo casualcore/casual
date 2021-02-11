@@ -197,7 +197,7 @@ namespace casual
 
                   // send event, at least domain-manager want's to know...
                   common::message::event::process::Assassination event{ common::process::handle()};
-                  event.target = caller.process.pid;
+                  event.target = entry.target;
                   event.contract = entry.service->timeout.contract;
                   common::event::send( event);
                }
@@ -491,6 +491,7 @@ namespace casual
                                  auto next = state.pending.deadline.add( {
                                     deadline,
                                     message.correlation,
+                                    handle.pid,
                                     service});
 
                                  if( next)

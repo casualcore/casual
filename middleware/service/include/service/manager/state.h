@@ -181,6 +181,7 @@ namespace casual
                   {   
                      platform::time::point::type when;
                      common::Uuid correlation;
+                     common::strong::process::id target;
                      state::Service* service = nullptr;
 
                      inline friend bool operator < ( const Entry& lhs, const Entry& rhs) { return lhs.when < rhs.when;}
@@ -189,6 +190,7 @@ namespace casual
                      CASUAL_LOG_SERIALIZE( 
                         CASUAL_SERIALIZE( when);
                         CASUAL_SERIALIZE( correlation);
+                        CASUAL_SERIALIZE( target);
                         CASUAL_SERIALIZE( service);
                      )
                   };
