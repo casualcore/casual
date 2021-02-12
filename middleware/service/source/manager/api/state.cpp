@@ -37,7 +37,8 @@ namespace casual
                               model::Service result;
                               result.name = service.name;
                               result.category = service.category;
-                              result.timeout = service.timeout;
+                              if( service.execution.timeout.duration)
+                                 result.timeout = service.execution.timeout.duration.value();
 
                               auto tranform_mode = []( auto mode)
                               {

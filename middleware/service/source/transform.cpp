@@ -108,9 +108,7 @@ namespace casual
                      manager::admin::model::Service result;
 
                      result.name = name;
-                     if( value.timeout.duration)
-                        result.timeout = value.timeout.duration.value();
-                        
+                     result.execution.timeout = value.timeout;                        
                      result.metric.invoked = transform_metric( value.metric.invoked);
                      result.metric.pending = transform_metric( value.metric.pending);
                      result.metric.remote = value.metric.remote;

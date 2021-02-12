@@ -298,14 +298,19 @@ namespace casual
 
                      static auto instances = normalized::instances( state);
 
-                     struct format_timeout
+                     auto format_timeout_duration = []( const auto& value)
                      {
-                        double operator () ( const admin::model::Service& value) const
-                        {
-                           using second_t = std::chrono::duration< double>;
-                           return std::chrono::duration_cast< second_t>( value.timeout).count();
-                        }
+                        if( ! value.execution.timeout.duration)
+                           return 0.0;
+                        using second_t = std::chrono::duration< double>;
+                        return std::chrono::duration_cast< second_t>( value.execution.timeout.duration.value()).count();
                      };
+
+                     auto format_timeout_contract = []( const auto& value)
+                     {
+                        return value.execution.timeout.contract;
+                     };
+
 
                      auto format_mode = []( auto& service)
                      {
@@ -375,22 +380,46 @@ namespace casual
 
                      auto remote_invocations = []( auto& value){ return value.metric.remote;};
 
-                     return terminal::format::formatter< admin::model::Service>::construct( 
-                        terminal::format::column( "name", std::mem_fn( &admin::model::Service::name), terminal::color::yellow, terminal::format::Align::left),
-                        terminal::format::column( "category", format_category, terminal::color::no_color, terminal::format::Align::left),
-                        terminal::format::column( "mode", format_mode, terminal::color::no_color, terminal::format::Align::right),
-                        terminal::format::column( "timeout", format_timeout{}, terminal::color::blue, terminal::format::Align::right),
-                        terminal::format::column( "I", format::instance::local::total{}, terminal::color::white, terminal::format::Align::right),
-                        terminal::format::column( "C", format_invoked, terminal::color::white, terminal::format::Align::right),
-                        terminal::format::column( "AT", format_avg_time, terminal::color::white, terminal::format::Align::right),
-                        terminal::format::column( "min", format_min_time, terminal::color::white, terminal::format::Align::right),
-                        terminal::format::column( "max", format_max_time, terminal::color::white, terminal::format::Align::right),
-                        terminal::format::column( "P", format_pending_count, terminal::color::magenta, terminal::format::Align::right),
-                        terminal::format::column( "PAT", format_avg_pending_time, terminal::color::magenta, terminal::format::Align::right),
-                        terminal::format::column( "RI", format::instance::remote::total{}, terminal::color::cyan, terminal::format::Align::right),
-                        terminal::format::column( "RC", remote_invocations, terminal::color::cyan, terminal::format::Align::right),
-                        terminal::format::column( "last", format_last, terminal::color::blue, terminal::format::Align::left)
-                     );
+                     if( ! terminal::output::directive().porcelain())
+                     {
+                        return terminal::format::formatter< admin::model::Service>::construct( 
+                           terminal::format::column( "name", std::mem_fn( &admin::model::Service::name), terminal::color::yellow, terminal::format::Align::left),
+                           terminal::format::column( "category", format_category, terminal::color::no_color, terminal::format::Align::left),
+                           terminal::format::column( "mode", format_mode, terminal::color::no_color, terminal::format::Align::right),
+                           terminal::format::column( "timeout", format_timeout_duration, terminal::color::blue, terminal::format::Align::right),
+                           terminal::format::column( "contract", format_timeout_contract, terminal::color::blue, terminal::format::Align::right),
+                           terminal::format::column( "I", format::instance::local::total{}, terminal::color::white, terminal::format::Align::right),
+                           terminal::format::column( "C", format_invoked, terminal::color::white, terminal::format::Align::right),
+                           terminal::format::column( "AT", format_avg_time, terminal::color::white, terminal::format::Align::right),
+                           terminal::format::column( "min", format_min_time, terminal::color::white, terminal::format::Align::right),
+                           terminal::format::column( "max", format_max_time, terminal::color::white, terminal::format::Align::right),
+                           terminal::format::column( "P", format_pending_count, terminal::color::magenta, terminal::format::Align::right),
+                           terminal::format::column( "PAT", format_avg_pending_time, terminal::color::magenta, terminal::format::Align::right),
+                           terminal::format::column( "RI", format::instance::remote::total{}, terminal::color::cyan, terminal::format::Align::right),
+                           terminal::format::column( "RC", remote_invocations, terminal::color::cyan, terminal::format::Align::right),
+                           terminal::format::column( "last", format_last, terminal::color::blue, terminal::format::Align::left)
+                        );
+                     }
+                     else
+                     {
+                        return terminal::format::formatter< admin::model::Service>::construct( 
+                           terminal::format::column( "name", std::mem_fn( &admin::model::Service::name)),
+                           terminal::format::column( "category", format_category),
+                           terminal::format::column( "mode", format_mode),
+                           terminal::format::column( "timeout", format_timeout_duration),
+                           terminal::format::column( "I", format::instance::local::total{}),
+                           terminal::format::column( "C", format_invoked),
+                           terminal::format::column( "AT", format_avg_time),
+                           terminal::format::column( "min", format_min_time),
+                           terminal::format::column( "max", format_max_time),
+                           terminal::format::column( "P", format_pending_count),
+                           terminal::format::column( "PAT", format_avg_pending_time),
+                           terminal::format::column( "RI", format::instance::remote::total{}),
+                           terminal::format::column( "RC", remote_invocations),
+                           terminal::format::column( "last", format_last),
+                           terminal::format::column( "contract", format_timeout_contract)
+                        );
+                     }
                   }
 
                   auto routes( const admin::model::State& state)
@@ -558,6 +587,8 @@ namespace casual
       transaction mode - can be one of the following (auto, join, none, atomic)
    timeout:
       the timeout for the service (in seconds)
+   contract:
+      what happens if a timeout occur. 
    LI:
       Local-Instances number of local instances
    C:

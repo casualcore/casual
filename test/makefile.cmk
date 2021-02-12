@@ -3,6 +3,7 @@ from casual.middleware.make.dsl import *
 IncludePaths( ['include',
    '../middleware/common/include',
    '../middleware/serviceframework/include',
+   '../middleware/configuration/include',
    '../middleware/domain/include',
    '../middleware/gateway/include',
    '../middleware/service/include',

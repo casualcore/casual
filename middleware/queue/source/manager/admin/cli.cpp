@@ -232,7 +232,7 @@ namespace casual
 
                   auto column_commit = []()
                   {
-                     return terminal::format::column( "commit", []( auto& forward)
+                     return terminal::format::column( "commits", []( auto& forward)
                      { 
                         return forward.metric.commit.count;
                      }, terminal::color::cyan, terminal::format::Align::right);
@@ -240,7 +240,7 @@ namespace casual
 
                   auto column_rollback = []()
                   {
-                     return terminal::format::column( "rollback", []( auto& forward)
+                     return terminal::format::column( "rollbacks", []( auto& forward)
                      { 
                         return forward.metric.rollback.count;
                      }, terminal::color::cyan, terminal::format::Align::right);
@@ -371,7 +371,7 @@ namespace casual
 
                      auto column_commit = [=]()
                      {
-                        return terminal::format::column( "commit", [=]( auto& group)
+                        return terminal::format::column( "commits", [=]( auto& group)
                         { 
                            return aggregate( group.process.pid, []( auto& forward)
                            { 
@@ -382,7 +382,7 @@ namespace casual
 
                      auto column_rollback = [=]()
                      {
-                        return terminal::format::column( "rollback", [=]( auto& group)
+                        return terminal::format::column( "rollbacks", [=]( auto& group)
                         { 
                            return aggregate( group.process.pid, []( auto& forward)
                            { 
@@ -505,6 +505,75 @@ namespace casual
       when the message was enqueued
       
 )";
+                  namespace forward
+                  {
+
+                     constexpr auto groups = R"(legend: list-forward-groups
+   alias:
+      alias of the group
+   pid:
+      the pid of the process that is running the group
+   services:
+      number of forward-services running within the group
+   queues:
+      number of forward-queues running within the group
+   commits:
+      accumulated number of commits for all forwards within the group
+   rollbacks:
+      accumulated number of rollbacks for all forwards within the group
+   last:
+      when the last time one of the forward did something
+)";
+
+                     constexpr auto services = R"(legend: list-forward-services
+   alias:
+      alias of the forward
+   group:
+      which group the forward is hosted on
+   source:
+      the queue to dequeue from
+   target:
+      the service to call
+   reply:
+      the queue to put the reply to, if any
+   delay:
+      delay of the reply message, duration until the message will be available for others to consume
+   CI:
+      configured 'instances'
+   I:
+      running 'instances'
+   commits:
+      number of commits the forward has performed
+   rollbacks:
+      number of rollbacks the forward has performed
+   last:
+      when the last time the forward did something
+)";
+
+                     constexpr auto queues = R"(legend: list-forward-queues
+   alias:
+      alias of the forward
+   group:
+      which group the forward is hosted on
+   source:
+      the queue to dequeue from
+   target:
+      the queue to enqueue to
+   delay:
+      delay of the enqueued message, duration until the message will be available for others to consume
+   CI:
+      configured 'instances'
+   I:
+      running 'instances'
+   commits:
+      number of commits the forward has performed
+   rollbacks:
+      number of rollbacks the forward has performed
+   last:
+      when the last time the forward did something
+)";
+
+                  } // forward
                } // list 
 
                auto option()
@@ -515,11 +584,17 @@ namespace casual
                         std::cout << legend::list::queues;
                      else if( option == "list-messages")
                         std::cout << legend::list::messages;
+                     else if( option == "list-forward-groups")
+                        std::cout << legend::list::forward::groups;
+                     else if( option == "list-forward-services")
+                        std::cout << legend::list::forward::services;
+                     else if( option == "list-forward-queues")
+                        std::cout << legend::list::forward::queues;
                   };
 
                   auto complete = []( auto& values, bool help) -> std::vector< std::string>
                   {     
-                     return { "list-queues", "list-messages"};
+                     return { "list-queues", "list-messages", "list-forward-groups", "list-forward-services", "list-forward-queues"};
                   };
 
                   return argument::Option{
@@ -528,7 +603,7 @@ namespace casual
                      { "--legend"},
                      R"(provide legend for the output for some of the options
 
-to view legend for --list-queues use casual queue --legend list-queues.
+to view legend for --list-queues use casual queue --legend list-queues, and so on.
 
 use auto-complete to help which options has legends)"
                   };
