@@ -199,6 +199,8 @@ namespace casual
             Metric metric;
             std::string note;
 
+            inline friend bool operator == ( const Queue& lhs, common::strong::process::id rhs) { return lhs.group == rhs;}
+
             CASUAL_CONST_CORRECT_SERIALIZE(
                CASUAL_SERIALIZE( group);
                CASUAL_SERIALIZE( alias);
@@ -233,6 +235,8 @@ namespace casual
             Metric metric;
             std::string note;
 
+            inline friend bool operator == ( const Service& lhs, common::strong::process::id rhs) { return lhs.group == rhs;}
+
             CASUAL_CONST_CORRECT_SERIALIZE(
                CASUAL_SERIALIZE( group);
                CASUAL_SERIALIZE( alias);
@@ -247,12 +251,14 @@ namespace casual
 
          struct Group
          {
-            std::string name;
+            std::string alias;
             common::process::Handle process;
             std::string note;
 
+            inline friend bool operator == ( const Group& lhs, common::strong::process::id rhs) { return lhs.process.pid == rhs;}
+
             CASUAL_CONST_CORRECT_SERIALIZE(
-               CASUAL_SERIALIZE( name);
+               CASUAL_SERIALIZE( alias);
                CASUAL_SERIALIZE( process);
                CASUAL_SERIALIZE( note);
             )

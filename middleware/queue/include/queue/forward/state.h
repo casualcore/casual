@@ -365,6 +365,8 @@ namespace casual
          common::state::Machine< state::Runlevel> runlevel;          
          state::Forward forward;
          state::Pending pending;
+
+         std::string alias;
          
          //! we're done when we're in shutdown mode
          //! and all forwards has no concurrent stuff in flight.
@@ -385,6 +387,7 @@ namespace casual
 
          CASUAL_LOG_SERIALIZE(
             CASUAL_SERIALIZE( runlevel);
+            CASUAL_SERIALIZE( alias);
             CASUAL_SERIALIZE( forward);
             CASUAL_SERIALIZE( pending);
          )

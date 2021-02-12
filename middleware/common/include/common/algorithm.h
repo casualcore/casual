@@ -1210,6 +1210,12 @@ namespace casual
                  && includes( std::forward< R2>( range2), std::forward< R1>( range1), predicate::inverse( comp));
          }
 
+         template< typename Range, typename T>
+         auto count( Range&& range, T&& value)
+         {
+            return std::count( std::begin( range), std::end( range), std::forward< T>( value));
+         }
+
          template< typename Range, typename Predicate>
          auto count_if( Range&& range, Predicate predicate)
          {

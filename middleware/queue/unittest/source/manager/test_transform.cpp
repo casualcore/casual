@@ -156,7 +156,7 @@ queues:
       created: 6000000000
 forward:
    groups:
-      -  name: F1
+      -  alias: F1
          process:
             pid: 43
          note: note-F1

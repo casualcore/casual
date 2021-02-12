@@ -468,6 +468,7 @@ namespace casual
                   result.forward.groups = algorithm::transform( source.forward.value().groups.value(), []( auto& group)
                   {
                      queue::forward::Group result;
+                     result.alias = group.alias.value_or( "");
 
                      auto set_base_forward = []( auto& source, auto& target)
                      {

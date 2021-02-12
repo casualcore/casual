@@ -365,6 +365,8 @@ namespace casual
                         Trace trace{ "queue::forward::service::local::handle::configuration::update::request"};
                         log::line( verbose::log, "message: ", message);
 
+                        state.alias = message.model.alias;
+
                         // TOOD maintenance we only update instances
                         auto add_or_update = []( auto& source, auto& target, auto transform)
                         {
@@ -797,11 +799,13 @@ namespace casual
                            basic_assign( queue, result);
 
                            result.target.delay = queue.target.delay;
+                           result.target.queue = queue.target.queue;
 
                            return result;
                         };
 
                         auto reply = common::message::reverse::type( message, process::handle());
+                        reply.alias = state.alias;
                         reply.services = algorithm::transform( state.forward.services, transform_service);
                         reply.queues = algorithm::transform( state.forward.queues, transform_queue);
 

@@ -206,9 +206,14 @@ namespace casual
                      return terminal::format::column( "alias", []( auto& forward){ return forward.alias;}, terminal::color::yellow);
                   };
 
-                  auto column_group = []()
+                  auto column_group = []( auto& groups)
                   {
-                     return terminal::format::column( "group", []( auto& forward){ return forward.group;}, terminal::color::cyan);
+                     return terminal::format::column( "group", [&groups]( auto& forward)
+                     { 
+                        if( auto found = algorithm::find( groups, forward.group))
+                           return found->alias;
+                        return std::to_string( forward.group.value());
+                     }, terminal::color::white);
                   };
                   
                   auto column_configure_instances = []()
@@ -251,7 +256,7 @@ namespace casual
 
                   using time_type = std::chrono::duration< double>;
 
-                  auto services()
+                  auto services( const manager::admin::model::State& state)
                   {
                      auto column_target = []()
                      {
@@ -282,7 +287,7 @@ namespace casual
 
                      return terminal::format::formatter< manager::admin::model::forward::Service>::construct(
                         column_alias(),
-                        column_group(),
+                        column_group( state.forward.groups),
                         column_source(),
                         column_target(),
                         column_reply_name(),
@@ -295,7 +300,7 @@ namespace casual
                      );
                   }
    
-                  auto queues()
+                  auto queues( const manager::admin::model::State& state)
                   {
                      auto column_target = []()
                      {
@@ -312,12 +317,107 @@ namespace casual
 
                      return terminal::format::formatter< manager::admin::model::forward::Queue>::construct(
                         column_alias(),
-                        column_group(),
+                        column_group( state.forward.groups),
                         column_source(),
                         column_target(),
                         column_target_delay(),
                         column_configure_instances(),
                         column_running_instances(),
+                        column_commit(),
+                        column_rollback(),
+                        column_last()
+                     );
+                  }
+
+                  auto groups( const manager::admin::model::State& state)
+                  {
+                     auto column_pid = []()
+                     {
+                        return terminal::format::column( "pid", []( auto& group){ return group.process.pid;}, terminal::color::white);
+                     };
+
+                     auto column_services = [&state]()
+                     {
+                        return terminal::format::column( "services", [&state]( auto& group)
+                        { 
+                           return algorithm::count( state.forward.services, group.process.pid);
+
+                        }, terminal::color::blue, terminal::format::Align::right);
+                     };
+
+                     auto column_queues = [&state]()
+                     {
+                        return terminal::format::column( "queues", [&state]( auto& group)
+                        { 
+                           return algorithm::count( state.forward.queues, group.process.pid);
+
+                        }, terminal::color::blue, terminal::format::Align::right);
+                     };
+                     
+                     auto aggregate = [&state]( auto pid, auto extractor)
+                     {
+                        auto accumulate = [extractor, pid]( auto& forwards)
+                        {
+                           return algorithm::accumulate( forwards, decltype( extractor( range::front( forwards))){}, [pid, extractor]( auto result, auto& forward)
+                           {
+                              if( forward == pid)
+                                 return result + extractor( forward);
+                              return result;
+                           });
+                        };
+
+                        return accumulate( state.forward.queues) + accumulate( state.forward.services);
+                     };
+
+                     auto column_commit = [=]()
+                     {
+                        return terminal::format::column( "commit", [=]( auto& group)
+                        { 
+                           return aggregate( group.process.pid, []( auto& forward)
+                           { 
+                              return forward.metric.commit.count;
+                           });
+                        }, terminal::color::cyan, terminal::format::Align::right);
+                     };
+
+                     auto column_rollback = [=]()
+                     {
+                        return terminal::format::column( "rollback", [=]( auto& group)
+                        { 
+                           return aggregate( group.process.pid, []( auto& forward)
+                           { 
+                              return forward.metric.rollback.count;
+                           });
+                        }, terminal::color::cyan, terminal::format::Align::right);
+                     };
+
+
+                     auto column_last = [&state]()
+                     {
+                        return terminal::format::column( "last", [&state]( auto& group)
+                        { 
+                           platform::time::point::type result{};
+                           auto last = [&result, pid = group.process.pid]( auto& forward)
+                           {
+                              auto max = std::max( forward.metric.commit.last, forward.metric.rollback.last);
+
+                              if( forward == pid && result < max)
+                                 result = max;
+                           };
+
+                           algorithm::for_each( state.forward.queues, last);
+                           algorithm::for_each( state.forward.services, last);
+
+                           return local::normalize::timestamp( result);
+                           
+                        }, terminal::color::blue);
+                     };
+
+                     return terminal::format::formatter< manager::admin::model::forward::Group>::construct(
+                        column_alias(),
+                        column_pid(),
+                        column_services(),
+                        column_queues(),
                         column_commit(),
                         column_rollback(),
                         column_last()
@@ -530,7 +630,7 @@ use auto-complete to help which options has legends)"
                         auto invoke = []()
                         {
                            auto state = call::state();
-                           format::forward::services().print( std::cout, state.forward.services);
+                           format::forward::services( state).print( std::cout, state.forward.services);
                         };
                         
                         return argument::Option{
@@ -548,7 +648,7 @@ use auto-complete to help which options has legends)"
                         auto invoke = []()
                         {
                            auto state = call::state();
-                           format::forward::queues().print( std::cout, state.forward.queues);
+                           format::forward::queues( state).print( std::cout, state.forward.queues);
                         };
                         
                         return argument::Option{
@@ -557,9 +657,27 @@ use auto-complete to help which options has legends)"
                            "list information of all queue forwards"
                         };
                      }
-                  } // services
+                  } // queues
 
-               } // groups
+                  namespace groups
+                  {
+                     auto option()
+                     {
+                        auto invoke = []()
+                        {
+                           auto state = call::state();
+                           format::forward::groups( state).print( std::cout, state.forward.groups);
+                        };
+                        
+                        return argument::Option{
+                           std::move( invoke),
+                           {  "--list-forward-groups"},
+                           "list (aggregated) information of forward groups"
+                        };
+                     }
+                  } // queues
+
+               } // forward
             } // list
 
             namespace enqueue
@@ -1163,6 +1281,7 @@ casual queue --metric-reset a b)"
                      local::list::messages::option(),
                      local::list::forward::services::option(),
                      local::list::forward::queues::option(),
+                     local::list::forward::groups::option(),
                      local::restore::option(),
                      local::enqueue::option(),
                      local::dequeue::option(),
