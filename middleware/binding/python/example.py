@@ -3,9 +3,9 @@ import casual.server.exception as exception
 import casual.server.buffer as buffer
 
 try:
-    buf = buffer.JsonBuffer("{}")
+    buf = buffer.JsonBuffer()
     #buf = buffer.XmlBuffer("<root></root>")
-    reply = casual.call( ".casual.broker.state", buf)
+    reply = casual.call( ".casual/domain/state", buf)
 except exception.BufferError as bufferError:
     """
     Just to visualize exception type
@@ -17,23 +17,22 @@ except exception.CallError as callError:
     """
     raise callError
 
-print reply
-
+print( reply.decode())
 #
 # Another call
 #
-print casual.call( "casual_test1", "echo echo echo")
+print( casual.call( "casual/example/echo", b"echo echo echo").decode())
 
 #
 # Async call
 #
-id = casual.send( "casual_test1", "async echo async echo async echo")
-print casual.receive( id)
+id = casual.send( "casual/example/echo", b"async echo async echo async echo")
+print( casual.receive( id).decode())
 
 #
 # Cancel async call
 #
-id = casual.send( "casual_test1", "async echo async echo async echo")
+id = casual.send( "casual/example/echo", b"async echo async echo async echo")
 casual.cancel( id)
 
 #

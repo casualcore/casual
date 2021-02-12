@@ -1,9 +1,9 @@
 import ctypes
 import os
 
-X_OCTET =  "X_OCTET"
-X_C_TYPE = "X_C_TYPE"
-X_COMMON = "X_COMMON"
+X_OCTET =  b"X_OCTET"
+X_C_TYPE = b"X_C_TYPE"
+X_COMMON = b"X_COMMON"
 
 TPFAIL = 1
 TPSUCCESS = 2
@@ -32,16 +32,21 @@ TPEV_SVCFAIL    = 0x0004
 TPEV_SVCSUCC    = 0x0008
 TPEV_SENDONLY   = 0x0020
 
-CASUAL_BUFFER_BINARY_TYPE = ".binary"
+CASUAL_BUFFER_BINARY_TYPE = b".binary"
 CASUAL_BUFFER_BINARY_SUBTYPE = None
-CASUAL_BUFFER_INI_TYPE = ".ini"
+CASUAL_BUFFER_INI_TYPE = b".ini"
 CASUAL_BUFFER_INI_SUBTYPE = None
-CASUAL_BUFFER_JSON_TYPE = ".json"
+CASUAL_BUFFER_JSON_TYPE = b".json"
 CASUAL_BUFFER_JSON_SUBTYPE = None
-CASUAL_BUFFER_XML_TYPE = ".xml"
+CASUAL_BUFFER_XML_TYPE = b".xml"
 CASUAL_BUFFER_XML_SUBTYPE = None
-CASUAL_BUFFER_YAML_TYPE = ".yaml"
+CASUAL_BUFFER_YAML_TYPE = b".yaml"
 CASUAL_BUFFER_YAML_SUBTYPE = None
+
+CASUAL_HOME = os.getenv("CASUAL_HOME")
+
+if not CASUAL_HOME:
+   raise SystemError( "CASUAL_HOME not set")
 
 #
 # ctypes definitions
@@ -133,4 +138,3 @@ class casual_server_argument( ctypes.Structure):
 casual_start_server = _mod.casual_start_server
 casual_start_server.argtypes = [ ctypes.POINTER(casual_server_argument),]
 casual_start_server.restype = ctypes.c_int
-

@@ -1,7 +1,7 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 import sys
 
-from casual.server.api import (FAIL, SUCCESS, Service, casual_return,start_server)
+from casual.server.api import FAIL, SUCCESS, Service, casual_return,start_server
 from casual.server.buffer import JsonBuffer
 from casual.server.log import userlog
 
