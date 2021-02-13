@@ -27,10 +27,19 @@ def yaml():
 def xml():
     return BufferTypeMap['xml']
 
+def _convert( data):
+    try:
+        data = data.encode()
+        is_bytes = False
+    except (UnicodeDecodeError, AttributeError):
+        is_bytes = True
+    return is_bytes, data
+
 class Buffer(object):
 
     def __init__(self, buffertype, subtype, data=None):
         if data:
+            self.is_bytes, data = _convert( data)
             self.size = ctypes.c_long(len(data))
             self.holder = tpalloc(buffertype, subtype, self.size)
             if self.holder:

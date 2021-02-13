@@ -9,6 +9,8 @@ from casual.server.buffer import JsonBuffer, Buffer, create_buffer
 import ctypes
 import os
 
+# global descriptor buffertype list
+descriptor_buffer_store = {} 
 
 #
 # Public
@@ -17,6 +19,12 @@ import os
 FAIL = TPFAIL
 SUCCESS = TPSUCCESS
 
+def _convert( data):
+    try:
+        data = data.encode()
+    except (UnicodeDecodeError, AttributeError):
+        pass
+    return data
 
 def call(service, input, flags=0):
     """
@@ -26,24 +34,24 @@ def call(service, input, flags=0):
     if not service:
         raise CallError("No service supplied")
 
-    if not isinstance(input, bytes) and not isinstance(input, Buffer):
-        raise SystemError("Input to call function need to be bytes or supported buffer type")
+    # some convertions
+    service = _convert(service)
 
-    if isinstance(input, bytes):
+    if isinstance(input, bytes) or isinstance(input, str):
         inputbuffer = JsonBuffer(input)
         outputbuffer = JsonBuffer()
     else:
         inputbuffer = input
         outputbuffer = create_buffer(input)
 
-    result = tpcall(service.encode(), inputbuffer.raw(), inputbuffer.size, ctypes.byref(
+    result = tpcall(service, inputbuffer.raw(), inputbuffer.size, ctypes.byref(
         outputbuffer.holder), ctypes.byref(outputbuffer.size), flags)
 
     if result == -1:
-        raise CallError(tperrnostring(tperrno()).decode())
+        raise CallError(tperrnostring(tperrno()))
 
-    return outputbuffer.data() 
-
+    return outputbuffer.data() if inputbuffer.is_bytes else outputbuffer.data().decode()
+        
 
 def send(service, input, flags=0):
     """
@@ -53,14 +61,16 @@ def send(service, input, flags=0):
     if not service:
         raise CallError("No service supplied")
 
-    if not isinstance(input, bytes):
-        raise SystemError("Input to call function need to be bytes")
+    # some convertions
+    service = _convert(service)
 
     inputbuffer = JsonBuffer(input)
 
-    id = tpacall(service.encode(), inputbuffer.raw(), inputbuffer.size, flags)
+    id = tpacall(service, inputbuffer.raw(), inputbuffer.size, flags)
     if id == -1:
-        raise CallError(xatmi.tperrnostring(xatmi.tperrno))
+        raise CallError(tperrnostring(tperrno))
+
+    descriptor_buffer_store[id] = inputbuffer.is_bytes
 
     return id
 
@@ -70,6 +80,8 @@ def receive(id, flags=0):
     Use function to get reply from service
     """
 
+    input_was_bytes = descriptor_buffer_store[id]
+
     id = ctypes.c_int(id)
 
     outputbuffer = JsonBuffer()
@@ -77,9 +89,9 @@ def receive(id, flags=0):
     result = tpgetrply(ctypes.byref(id), ctypes.byref(
         outputbuffer.holder), ctypes.byref(outputbuffer.size), flags)
     if result == -1:
-        raise CallError(xatmi.tperrnostring(xatmi.tperrno))
+        raise CallError(tperrnostring(tperrno))
 
-    return outputbuffer.data()
+    return outputbuffer.data() if input_was_bytes else outputbuffer.data().decode()
 
 
 def cancel(id, flags=0):
