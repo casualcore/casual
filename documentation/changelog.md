@@ -1,7 +1,13 @@
 # Changelog
-This is the changelog for casual and all changes are listed in this document.
+This is the changelog for `casual` and all changes are listed in this document.
 
 ## [Unreleased]
+
+## [1.4.2] - 2021-02-13
+### Fixed
+- service - added timeout contract to cli output
+- queue - improved cli
+- service - assassination target caller instead of callee
 
 ## [1.4.1] - 2021-02-07
 ### Added
