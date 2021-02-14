@@ -93,3 +93,5 @@ def create_buffer(buffer):
         return XmlBuffer()
     elif theType is JsonBuffer:
         return JsonBuffer()
+    else:
+       raise BufferError("Unknown buffer type")
