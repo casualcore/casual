@@ -34,7 +34,7 @@ namespace casual
             auto create( S&& source) { return Reader::emplace< policy::Consumed< I>>( std::forward< S>( source));}
 
             serialize::Reader from( std::string_view key, std::istream& stream);
-            serialize::Reader from( std::string_view key, platform::binary::type& data);
+            serialize::Reader from( std::string_view key, const platform::binary::type& data);
          }
 
          namespace strict 
@@ -48,7 +48,7 @@ namespace casual
             auto create( S&& source) { return Reader::emplace< policy::Strict< I>>( std::forward< S>( source));}
 
             serialize::Reader from( std::string_view key, std::istream& stream);
-            serialize::Reader from( std::string_view key, platform::binary::type& data);
+            serialize::Reader from( std::string_view key, const platform::binary::type& data);
          }
 
          namespace relaxed 
@@ -62,7 +62,7 @@ namespace casual
             auto create( S&& source) { return Reader::emplace< policy::Relaxed< I>>( std::forward< S>( source));}
 
             serialize::Reader from( std::string_view key, std::istream& stream);
-            serialize::Reader from( std::string_view key, platform::binary::type& data);
+            serialize::Reader from( std::string_view key, const platform::binary::type& data);
 
             template< typename F>
             inline auto from( F&& file) -> decltype( from( file.extension(), file))
