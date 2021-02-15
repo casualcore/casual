@@ -3,6 +3,13 @@ This is the changelog for `casual` and all changes are listed in this document.
 
 ## [Unreleased]
 
+## [1.4.3] - 2021-02-13
+### Changed
+- cli - updated documentation for --color with option auto
+
+### Fixed
+- cli - fixed so colors is false for Directive::plain()
+
 ## [1.4.2] - 2021-02-13
 ### Fixed
 - service - added timeout contract to cli output

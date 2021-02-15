@@ -74,7 +74,7 @@ namespace casual
                   return string::compose( message, " (default: ", std::boolalpha, value, ')');
                };
 
-               return argument::Option( std::tie( m_color), color_completer, { "--color"}, default_description( "set/unset color", m_color))
+               return argument::Option( std::tie( m_color), color_completer, { "--color"}, default_description( "set/unset color - if auto, colors are used if tty is bound to stdout", m_color))
                   + argument::Option( std::tie( m_header), bool_completer, { "--header"}, default_description( "set/unset header", m_header))
                   + argument::Option( std::tie( m_precision), { "--precision"}, default_description( "set number of decimal points used for output", m_precision))
                   + argument::Option( std::tie( m_block), bool_completer, { "--block"}, default_description( "set/unset blocking - if false return control to user as soon as possible", m_block))
@@ -102,7 +102,7 @@ namespace casual
 
             void Directive::plain()
             {
-               m_color = false;
+               m_color = "false";
                m_header = true;
                m_precision = 3;
             }
