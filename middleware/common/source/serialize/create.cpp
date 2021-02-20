@@ -93,7 +93,7 @@ namespace casual
                      }
                   } // detail
                   serialize::Reader from( std::string_view key, std::istream& stream) { return Dispatch::from( key, stream);}
-                  serialize::Reader from( std::string_view key, platform::binary::type& data) { return Dispatch::from( key, data);}
+                  serialize::Reader from( std::string_view key, const platform::binary::type& data) { return Dispatch::from( key, data);}
                }
 
                namespace strict 
@@ -107,7 +107,7 @@ namespace casual
                      }
                   } // detail
                   serialize::Reader from( std::string_view key, std::istream& stream) { return Dispatch::from( key, stream);}
-                  serialize::Reader from( std::string_view key, platform::binary::type& data) { return Dispatch::from( key, data);}
+                  serialize::Reader from( std::string_view key, const platform::binary::type& data) { return Dispatch::from( key, data);}
                }
 
                namespace relaxed 
@@ -121,7 +121,7 @@ namespace casual
                      }
                   } // detail
                   serialize::Reader from( std::string_view key, std::istream& stream) { return Dispatch::from( key, stream);}
-                  serialize::Reader from( std::string_view key, platform::binary::type& data) { return Dispatch::from( key, data);}
+                  serialize::Reader from( std::string_view key, const platform::binary::type& data) { return Dispatch::from( key, data);}
                }
 
                std::vector< std::string> keys()

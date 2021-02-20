@@ -40,7 +40,7 @@ namespace casual
                         communication::message::Complete message{ header};
 
                         if( ! in.read( message.payload.data(), message.payload.size()))
-                           code::raise::log( code::casual::communication_unavailable, "stream is unavailable - pauload");
+                           code::raise::log( code::casual::communication_unavailable, "stream is unavailable - payload");
 
                         log::line( verbose::log, "stream <-- ", message);
 

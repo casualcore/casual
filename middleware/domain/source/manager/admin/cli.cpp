@@ -713,7 +713,7 @@ for all servers and executables
                         };
                      }
 
-                     constexpr auto descripton = R"(boot domain
+                     constexpr auto description = R"(boot domain
 )";
                      
                   } // boot
@@ -747,7 +747,7 @@ for all servers and executables
                            local::event::handler( tasks));
                      }
 
-                     constexpr auto descripton = R"(shutdown domain
+                     constexpr auto description = R"(shutdown domain
 )";
 
                   } // shutdown
@@ -1022,8 +1022,8 @@ note: not all options has legend, use 'auto complete' to find out which legends 
                         { "-rg", "--restart-groups"}, local::action::restart::groups::description),
                      argument::Option( &local::action::list::instances::server::invoke, { "-lis", "--list-instances-server"}, local::action::list::instances::server::description),
                      argument::Option( &local::action::list::instances::executable::invoke, { "-lie", "--list-instances-executable"}, local::action::list::instances::executable::description),
-                     argument::Option( &local::action::shutdown::invoke, { "-s", "--shutdown"}, local::action::shutdown::descripton),
-                     argument::Option( &local::action::boot::invoke, local::action::boot::complete(), { "-b", "--boot"}, local::action::boot::descripton),
+                     argument::Option( &local::action::shutdown::invoke, { "-s", "--shutdown"}, local::action::shutdown::description),
+                     argument::Option( &local::action::boot::invoke, local::action::boot::complete(), { "-b", "--boot"}, local::action::boot::description),
                      argument::Option( &local::action::environment::set::call, local::action::environment::set::complete, { "--set-environment"}, local::action::environment::set::description)( argument::cardinality::any{}),
                      argument::Option( &local::action::configuration::get, configuration_format, { "--configuration-get"}, "get configuration (as provided format)"),
                      argument::Option( &local::action::configuration::put::invoke, configuration_format, { "--configuration-put"}, local::action::configuration::put::description),
