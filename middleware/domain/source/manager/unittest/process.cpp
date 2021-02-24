@@ -67,6 +67,21 @@ namespace casual
                         return environment::variable::get( "CASUAL_REPOSITORY_ROOT");
                      }
                   } // repository
+                  
+                  namespace instance::devices
+                  {
+                     void reset()
+                     {
+                        // reset domain instance, if any.
+                        exception::guard( [](){ communication::instance::outbound::domain::manager::device().connector().clear();});
+                        exception::guard( [](){ communication::instance::outbound::domain::manager::optional::device().connector().clear();});
+
+                        // reset service instance, if any.
+                        exception::guard( [](){ communication::instance::outbound::service::manager::device().connector().clear();});
+                     }
+
+                  } // instance::devices
+
                } // <unnamed>
             } // local
 
@@ -80,9 +95,7 @@ namespace casual
 
                   common::domain::identity( {});
 
-                  // reset domain instance, if any.
-                  exception::guard( [](){ communication::instance::outbound::domain::manager::device().connector().clear();});
-                  exception::guard( [](){ communication::instance::outbound::domain::manager::optional::device().connector().clear();});
+                  local::instance::devices::reset();
 
                   auto tasks = std::vector< common::Uuid>{ uuid::make()};
 
@@ -106,7 +119,8 @@ namespace casual
                      [&]( const manager::task::message::domain::Information& event)
                      {
                         log::line( log::debug, "event: ", event);
-                        common::domain::identity( event.domain);
+                        domain = event.domain;
+                        common::domain::identity( domain);
                         process.handle( event.process);
                      },
                      [&tasks]( const message::event::Task& event)
@@ -140,6 +154,17 @@ domain:
    name: default-domain
                )"})
                {}
+
+               void activate()
+               {
+                  log::Trace trace{ "domain::manager::unittest::Process::Implementation::activate", verbose::log};
+
+                  common::domain::identity( domain);
+
+                  environment.activate();
+
+                  local::instance::devices::reset();
+               }
                
                struct Environment
                {
@@ -172,14 +197,16 @@ domain:
 
                } environment;
 
+
                std::vector< common::file::scoped::Path> files;
                common::Process process;
+               common::domain::Identity domain;
 
                CASUAL_LOG_SERIALIZE(
-               {
                   CASUAL_SERIALIZE( files);
                   CASUAL_SERIALIZE( process);
-               })
+                  CASUAL_SERIALIZE( domain);
+               )
 
             };
 
@@ -191,10 +218,14 @@ domain:
 
             Process::Process() {}
 
-            Process::~Process() = default;
+            Process::~Process()
+            {
+               log::Trace trace{ "domain::manager::unittest::Process::~Process", verbose::log};
+               log::line( verbose::log, "this: ", *this);
+            }
 
-            Process::Process( Process&&) = default;
-            Process& Process::operator = ( Process&&) = default;
+            Process::Process( Process&&) noexcept = default;
+            Process& Process::operator = ( Process&&) noexcept = default;
 
             const common::process::Handle& Process::handle() const noexcept
             {
@@ -203,12 +234,14 @@ domain:
 
             void Process::activate()
             {
-               m_implementation->environment.activate();
+               m_implementation->activate();
             }
 
             std::ostream& operator << ( std::ostream& out, const Process& value)
             {
-               return common::stream::write( out, *value.m_implementation);
+               if( value.m_implementation)
+                  return common::stream::write( out, *value.m_implementation);
+               return out << "nil";
             }
 
          } // unittest

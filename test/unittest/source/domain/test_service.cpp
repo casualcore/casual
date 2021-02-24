@@ -6,7 +6,7 @@
 
 #include "common/unittest.h"
 
-#include "casual/test/domain.h"
+#include "domain/manager/unittest/process.h"
 
 #include "service/manager/admin/server.h"
 #include "service/manager/admin/model.h"
@@ -23,6 +23,8 @@ namespace casual
       {
          namespace
          {
+            using Manager = casual::domain::manager::unittest::Process;
+            
             namespace call::state
             {
                auto service()
@@ -75,7 +77,7 @@ domain:
 )";
 
 
-         domain::Manager domain{ configuration};
+         local::Manager domain{ { configuration}};
 
          auto state = local::call::state::service();
 

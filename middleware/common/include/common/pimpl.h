@@ -33,7 +33,7 @@ namespace casual
             implementation_type* operator -> () const { return m_holder.get();}
             implementation_type& operator * () const { return *m_holder.get();}
 
-            explicit operator bool () { return m_holder.get();}
+            explicit operator bool () const noexcept { return static_cast< bool>( m_holder);}
 
          protected:
             basic_pimpl( holder_type&& holder) : m_holder{ std::move( holder)} {} 

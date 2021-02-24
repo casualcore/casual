@@ -7,7 +7,7 @@
 
 #include "common/unittest.h"
 
-#include "casual/test/domain.h"
+#include "domain/manager/unittest/process.h"
 
 #include "common/communication/instance.h"
 
@@ -29,7 +29,7 @@ domain:
   name: empty_configuration
 )";
 
-            domain::Manager manager{ configuration};
+            casual::domain::manager::unittest::Process manager{ { configuration}};
 
             EXPECT_TRUE( communication::instance::ping( manager.handle().ipc) == manager.handle());
          }
@@ -49,8 +49,8 @@ domain:
   name: B
 )";
 
-            domain::Manager a{ A};
-            domain::Manager b{ B};
+            casual::domain::manager::unittest::Process a{ { A}};
+            casual::domain::manager::unittest::Process b{ { B}};
 
             EXPECT_TRUE( communication::instance::ping( a.handle().ipc) == a.handle());
             EXPECT_TRUE( communication::instance::ping( b.handle().ipc) == b.handle());

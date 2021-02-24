@@ -31,8 +31,8 @@ namespace casual
                Process( std::vector< std::string_view> configuration, std::function< void( const std::string&)> callback);
                ~Process();
 
-               Process( Process&&);
-               Process& operator = ( Process&&);
+               Process( Process&&) noexcept;
+               Process& operator = ( Process&&) noexcept;
 
                const common::process::Handle& handle() const noexcept;
                
@@ -46,7 +46,6 @@ namespace casual
                struct Implementation;
                common::move::basic_pimpl< Implementation> m_implementation;
             };
-
 
          } // unittest
       } // manager

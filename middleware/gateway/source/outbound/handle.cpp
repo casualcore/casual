@@ -789,7 +789,7 @@ namespace casual
       {
          std::optional< configuration::model::gateway::outbound::Connection> lost( State& state, strong::file::descriptor::id descriptor)
          {
-            Trace trace{ "gateway::outbound::error::reply::connection::lost"};
+            Trace trace{ "gateway::outbound::handle::connection::lost"};
             log::line( verbose::log, "descriptor: ", descriptor);
 
             // unadvertise all 'orphanage' services and queues, if any.
@@ -813,7 +813,7 @@ namespace casual
 
          void disconnect( State& state, common::strong::file::descriptor::id descriptor)
          {
-            Trace trace{ "gateway::outbound::error::reply::connection::disconnect"};
+            Trace trace{ "gateway::outbound::handle::connection::disconnect"};
             log::line( verbose::log, "descriptor: ", descriptor);
 
             // unadvertise all 'orphanage' services and queues, if any.

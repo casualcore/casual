@@ -8,7 +8,7 @@
 
 #include "common/unittest.h"
 
-#include "casual/test/domain.h"
+#include "domain/manager/unittest/process.h"
 
 #include "common/communication/instance.h"
 #include "serviceframework/service/protocol/call.h"
@@ -30,6 +30,7 @@ namespace casual
       {
          namespace
          {
+            using Manager = casual::domain::manager::unittest::Process;
 
             namespace call
             {
@@ -180,10 +181,10 @@ domain:
             });
          };
 
-         domain::Manager c{ { local::configuration::base, C}};
-         domain::Manager b{ { local::configuration::base, B}};
+         local::Manager c{ { local::configuration::base, C}};
+         local::Manager b{ { local::configuration::base, B}};
          connected_to( "C");
-         domain::Manager a{ { local::configuration::base, A}};
+         local::Manager a{ { local::configuration::base, A}};
          connected_to( "B");
 
          {
@@ -254,10 +255,10 @@ domain:
             });
          };
 
-         domain::Manager c{ { local::configuration::base, C}};
-         domain::Manager b{ { local::configuration::base, B}};
+         local::Manager c{ { local::configuration::base, C}};
+         local::Manager b{ { local::configuration::base, B}};
          connected_to( "C");
-         domain::Manager a{ { local::configuration::base, A}};
+         local::Manager a{ { local::configuration::base, A}};
          connected_to( "B");
 
          {

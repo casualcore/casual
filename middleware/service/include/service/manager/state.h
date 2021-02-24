@@ -449,10 +449,14 @@ namespace casual
 
 
          //! find a service from name
-         //!
          //! @param name of the service wanted
          //! @return pointer to service, nullptr if not found
          [[nodiscard]] state::Service* service( const std::string& name);
+
+         //! find a `origin` service from name
+         //! @param name of the service wanted
+         //! @return pointer to service, nullptr if not found
+         [[nodiscard]] state::Service* origin_service( const std::string& name);
          
          //! removes the instance (deduced from `pid`) and remove the instance from all services 
          void remove( common::strong::process::id pid);
