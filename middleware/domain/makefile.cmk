@@ -142,6 +142,7 @@ domain_discovery_library = LinkLibrary( 'bin/casual-domain-discovery',
     ]
 )
 
+install_libs.append( domain_discovery_library)
 
 target = LinkLibrary( 'bin/casual-domain-discovery-admin-cli',
     [
