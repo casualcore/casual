@@ -176,6 +176,7 @@ namespace casual
             Connection& Connection::operator += ( Connection rhs)
             {
                note = coalesce( std::move( rhs.note), std::move( note));
+               discovery = coalesce( std::move( rhs.discovery ), std::move( discovery));
                return *this;
             }
 
@@ -221,28 +222,32 @@ namespace casual
          {
             Trace trace{ "configuration::user::gateway::Inbound::normalize"};
 
-            // validate
+            auto local_default = defaults.value_or( inbound::Default{});
+
+            // connections
             {
+               auto default_connection = local_default.connection.value_or( inbound::Default::Connection{});
                for( auto& group : groups)
                {
-                  algorithm::for_each( group.connections, []( auto& connection)
+                  algorithm::for_each( group.connections, [&default_connection]( auto& connection)
                   {
+                     connection.discovery = coalesce( connection.discovery, default_connection.discovery);
                      local::validate::not_empty( connection.address, "inbound.groups[].address");
                   });
                }
             }
 
-            if( ! defaults || ! defaults.value().limit)
-               return;
-
-            auto limit = defaults.value().limit.value();
-
-            for( auto& group : groups)
+            if( local_default.limit)
             {
-               if( group.limit)
+               auto limit = local_default.limit.value();
+
+               for( auto& group : groups)
                {
-                  group.limit.value().size = coalesce( group.limit.value().size, limit.size);
-                  group.limit.value().messages = coalesce( group.limit.value().messages, limit.messages);
+                  if( group.limit)
+                  {
+                     group.limit.value().size = coalesce( group.limit.value().size, limit.size);
+                     group.limit.value().messages = coalesce( group.limit.value().messages, limit.messages);
+                  }
                }
             }
          }

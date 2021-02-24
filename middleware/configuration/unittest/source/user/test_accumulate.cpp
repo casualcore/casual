@@ -420,6 +420,51 @@ domain:
                auto value = user::load( { file_a.path()});
             }, common::code::casual::invalid_configuration );
          }
+
+         TEST( configuration_domain_accumulate, gateway_inbound_default_discovery)
+         {
+            common::unittest::Trace trace;
+
+            auto file = common::unittest::file::temporary::content( ".yaml", R"(
+domain:
+   name: foo
+   gateway:
+      inbound:
+         default:
+            connection:
+               discovery:
+                  forward: true
+
+         groups:
+            -  connections:
+               -  address: localhost:666
+               -  address: localhost:667
+                  discovery:
+                     forward: false
+            -  connections:
+               -  address: localhost:777
+               -  address: localhost:778
+                  discovery:
+                     forward: false
+
+
+)");
+
+            
+            auto value = user::load( { file.path()});
+
+            {
+               auto& connections = value.gateway.value().inbound.value().groups.at( 0).connections;
+               EXPECT_TRUE( connections.at( 0).discovery.value().forward == true);
+               EXPECT_TRUE( connections.at( 1).discovery.value().forward == false);
+            }
+            {
+               auto& connections = value.gateway.value().inbound.value().groups.at( 1).connections;
+               EXPECT_TRUE( connections.at( 0).discovery.value().forward == true);
+               EXPECT_TRUE( connections.at( 1).discovery.value().forward == false);
+            }
+            
+         }
       } // user
    } // configuration   
 } // casual

@@ -67,16 +67,6 @@ namespace casual
                   };
                }
 
-               auto rediscover( manager::State& state)
-               {
-                  return [&state]( common::service::invoke::Parameter&& parameter)
-                  {
-                     return serviceframework::service::user( 
-                        std::move( parameter),
-                        [&state](){ return gateway::manager::handle::rediscover( state);});
-
-                  };
-               }
             }
 
 
@@ -88,11 +78,6 @@ namespace casual
          return { {
                { service::name::state,
                   local::service::state( state),
-                  common::service::transaction::Type::none,
-                  common::service::category::admin
-               },
-               { service::name::rediscover,
-                  local::service::rediscover( state),
                   common::service::transaction::Type::none,
                   common::service::category::admin
                }

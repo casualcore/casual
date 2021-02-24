@@ -41,6 +41,7 @@ target = LinkExecutable( 'bin/casual-service-manager',
      logic_archive,
      'casual-common',
      'casual-domain-utility',
+     'casual-domain-discovery',
      'casual-serviceframework',
      'casual-configuration']
    )
@@ -48,19 +49,17 @@ target = LinkExecutable( 'bin/casual-service-manager',
 install_bins.append( target)
 
 
-forward_objs = [
-        Compile( 'source/forward/cache.cpp'),   
-    ]
 
 target = LinkExecutable( 'bin/casual-service-forward',
     [
-        Compile( 'source/forward/main.cpp')
-     ] + forward_objs,
+        Compile( 'source/forward/main.cpp'),
+        Compile( 'source/forward/handle.cpp')
+    ],
     [
-      logic_archive,
-      'casual-domain-utility',
-      'casual-common'
-     ])
+        logic_archive,
+        'casual-domain-utility',
+        'casual-common'
+    ])
 
 install_bins.append( target)
 	
@@ -126,12 +125,13 @@ LinkUnittest( 'unittest/bin/test-casual-service',
       Compile( 'unittest/source/manager/test_manager.cpp'),
       Compile( 'unittest/source/manager/test_state.cpp'),
       Compile( 'unittest/source/manager/test_api.cpp'),
-    ] + forward_objs,
+    ],
     [
      logic_archive,
      api_lib,
      service_unittest,
      'casual-domain-utility',
+     'casual-domain-discovery',
      'casual-common', 
      'casual-serviceframework',
      'casual-configuration', 

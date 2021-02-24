@@ -5,27 +5,65 @@
 //!
 
 
-#include "service/forward/cache.h"
+#include "service/forward/instance.h"
+#include "service/forward/handle.h"
+#include "service/forward/state.h"
+
+#include "service/common.h"
 
 #include "common/exception/guard.h"
 #include "common/argument.h"
 
 namespace casual
 {
+   using namespace common;
 
-   namespace service
+   namespace service::forward
    {
-      namespace forward
+      namespace local
       {
-         void main( int argc, char **argv)
+         namespace
          {
-            casual::common::argument::Parse{ "service forward"}( argc, argv);
-      
-            Cache cache;
-            cache.start();
-         }
-      } // forward
-   } // service
+            auto initialize()
+            {
+               Trace trace{ "service::forward::initialize"};
+               State result;
+
+               communication::instance::whitelist::connect( instance::identity);
+
+               return result;
+            }
+
+            auto condition( State& state)
+            {
+               return message::dispatch::condition::compose(
+                  message::dispatch::condition::done( [&state]() { return state.done();})
+               );
+            }
+
+            void start( State state)
+            {
+               Trace trace{ "service::forward::start"};
+               log::line( verbose::log, "state: ", state);
+
+               auto handler = handle::create( state);
+
+               message::dispatch::pump( 
+                  local::condition( state),
+                  handler, 
+                  communication::ipc::inbound::device());
+            }
+
+            void main( int argc, char **argv)
+            {
+               argument::Parse{ "service forward"}( argc, argv);
+         
+               start( initialize());
+            }
+         } // <unnamed>
+      } // local
+ 
+   } // service::forward
 } // casual
 
 
@@ -34,6 +72,6 @@ int main( int argc, char **argv)
 {
    return casual::common::exception::main::guard( [=]()
    {
-      casual::service::forward::main( argc, argv);
+      casual::service::forward::local::main( argc, argv);
    });
 }

@@ -18,451 +18,423 @@
 
 namespace casual
 {
-   namespace common
+   namespace common::communication::instance
    {
-      namespace communication
+      std::ostream& operator << ( std::ostream& out, const Identity& value)
       {
-
-         namespace instance
+         stream::write( out, "{ id: ", value.id, ", environment: ", value.environment, "}");
+         return out;
+      }
+   
+      namespace fetch
+      {
+         namespace local
          {
-         
-            namespace fetch
+            namespace
             {
-               namespace local
+               auto call( common::message::domain::process::lookup::Request& request)
                {
-                  namespace
-                  {
-                     auto call( common::message::domain::process::lookup::Request& request)
-                     {
-                        // We create a temporary inbound, so we don't rely on the 'global' inbound
-                        communication::ipc::inbound::Device inbound;
+                  // We create a temporary inbound, so we don't rely on the 'global' inbound
+                  communication::ipc::inbound::Device inbound;
 
-                        request.process.pid = common::process::id();
-                        request.process.ipc = inbound.connector().handle().ipc();
+                  request.process.pid = common::process::id();
+                  request.process.ipc = inbound.connector().handle().ipc();
 
-                        return communication::ipc::call(
-                              outbound::domain::manager::device(),
-                              request,
-                              inbound).process;
-                     }
-                  } // <unnamed>
-               } // local
-
-               std::ostream& operator << ( std::ostream& out, Directive directive)
-               {
-                  switch( directive)
-                  {
-                     case Directive::wait: return out << "wait";
-                     case Directive::direct: return out << "direct";
-                  }
-                  return out << "unknown";
+                  return communication::ipc::call(
+                        outbound::domain::manager::device(),
+                        request,
+                        inbound).process;
                }
+            } // <unnamed>
+         } // local
 
-               process::Handle handle( const Uuid& identity, Directive directive)
-               {
-                  Trace trace{ "common::communication::instance::fetch::handle"};
+         std::ostream& operator << ( std::ostream& out, Directive directive)
+         {
+            switch( directive)
+            {
+               case Directive::wait: return out << "wait";
+               case Directive::direct: return out << "direct";
+            }
+            return out << "unknown";
+         }
 
-                  common::log::line( log, "identity: ", identity, ", directive: ", directive);
+         process::Handle handle( const Uuid& identity, Directive directive)
+         {
+            Trace trace{ "common::communication::instance::fetch::handle"};
 
-                  common::message::domain::process::lookup::Request request;
-                  request.directive = static_cast< common::message::domain::process::lookup::Request::Directive>( directive);
-                  request.identification = identity;
+            common::log::line( log, "identity: ", identity, ", directive: ", directive);
 
-                  return local::call( request);
-               }
+            common::message::domain::process::lookup::Request request;
+            request.directive = directive == Directive::wait ? decltype( request.directive)::wait : decltype( request.directive)::direct;
+            request.identification = identity;
 
-               process::Handle handle( strong::process::id pid , Directive directive)
-               {
-                  Trace trace{ "common::communication::instance::fetch::handle (pid)"};
+            return local::call( request);
+         }
 
-                  log::line( log::debug, "pid: ", pid, ", directive: ", directive);
+         process::Handle handle( strong::process::id pid , Directive directive)
+         {
+            Trace trace{ "common::communication::instance::fetch::handle (pid)"};
 
-                  common::message::domain::process::lookup::Request request;
-                  request.directive = static_cast< common::message::domain::process::lookup::Request::Directive>( directive);
-                  request.pid = pid;
+            log::line( log::debug, "pid: ", pid, ", directive: ", directive);
 
-                  return local::call( request);
-               }
+            common::message::domain::process::lookup::Request request;
+            request.directive = directive == Directive::wait ? decltype( request.directive)::wait : decltype( request.directive)::direct;
+            request.pid = pid;
 
-            } // fetch
+            return local::call( request);
+         }
 
+      } // fetch
+
+      namespace local
+      {
+         namespace
+         {
+
+            template< typename M>
+            void connect( M&& message)
+            {
+               signal::thread::scope::Mask block{ signal::set::filled( code::signal::terminate, code::signal::interrupt)};
+
+               auto directive = communication::ipc::call( outbound::domain::manager::device(), message).directive;
+
+               if( directive != decltype( directive)::start)
+                  code::raise::error( code::casual::shutdown, "domain-manager denied startup - directive: ", directive, " - action: terminate");
+            }
+
+         } // <unnamed>
+      } // local
+
+
+      void connect( const process::Handle& process)
+      {
+         Trace trace{ "communication::instance::connect process"};
+         local::connect( common::message::domain::process::connect::Request{ process});
+      }
+
+      void connect()
+      {
+         connect( process::handle());
+      }
+
+      namespace whitelist
+      {
+         void connect()
+         {
+            common::message::domain::process::connect::Request request{ process::handle()};
+            request.whitelist = true;
+            local::connect( request);
+
+         }
+
+         void connect( const instance::Identity& identity, const process::Handle& process)
+         {
+            Trace trace{ "communication::instance::whitelist::connect identity"};
+
+            common::message::domain::process::singleton::connect::Request request{ process};
+            request.identification = identity.id;
+            request.correlation = identity.id;
+            request.environment = identity.environment;
+
+            local::connect( request);
+         }
+
+         void connect( const instance::Identity& identity)
+         {
+            connect( identity, process::handle());
+         }
+
+         void connect( const Uuid& id)
+         {
+            connect( instance::Identity{ id, {}});
+         }
+         
+      } // whitelist
+
+
+      process::Handle ping( strong::ipc::id queue)
+      {
+         Trace trace{ "communication::instance::ping"};
+
+         common::message::server::ping::Request request;
+         request.process = process::handle();
+
+         return communication::ipc::call( queue, request).process;
+      }
+
+      namespace outbound
+      {
+         namespace detail
+         {
             namespace local
             {
                namespace
                {
-                  template< typename M>
-                  void connect_reply( M&& message)
+
+                  process::Handle fetch(
+                        const instance::Identity& identity,
+                        fetch::Directive directive)
                   {
-                     switch( message.directive)
+                     Trace trace{ "communication::instance::outbound::instance::local::fetch"};
+
+                     log::line( verbose::log, "identity: ", identity, ", directive: ", directive);
+
+                     if( common::environment::variable::exists( identity.environment))
                      {
-                        case M::Directive::singleton:
-                        {
-                           code::raise::error( code::casual::shutdown, "domain-manager denied startup - reason: executable is a singleton - action: terminate");
-                        }
-                        case M::Directive::shutdown:
-                        {
-                           code::raise::error( code::casual::shutdown, "domain-manager denied startup - reason: domain-manager is in shutdown mode - action: terminate");
-                        }
-                        default:
-                        {
-                           break;
-                        }
+                        auto process = environment::variable::process::get( identity.environment);
+
+                        log::line( verbose::log, "process: ", process);
+
+                        if( ipc::exists( process.ipc))
+                           return process;
                      }
-                  }
 
-                  template< typename M>
-                  void connect( M&& message)
-                  {
-                     signal::thread::scope::Mask block{ signal::set::filled( code::signal::terminate, code::signal::interrupt)};
+                     try
+                     {
+                        auto process = instance::fetch::handle( identity.id, directive);
 
-                     connect_reply( communication::ipc::call( outbound::domain::manager::device(), message));
+                        if( process && ! identity.environment.empty())
+                           environment::variable::process::set( identity.environment, process);
+
+                        return process;
+                     }
+                     catch( ...)
+                     {
+                        if( exception::code() == code::casual::communication_unavailable)
+                        {
+                           common::log::line( log, "failed to fetch instance with identity: ", identity);
+                           return {};
+                        }
+                        throw;
+                     }
                   }
 
                } // <unnamed>
             } // local
 
-
-            void connect( const process::Handle& process)
+            template< fetch::Directive directive>
+            basic_connector< directive>::basic_connector( instance::Identity identity)
+               : base_connector( local::fetch( identity, directive)),
+                  m_identity{ identity}
             {
-               Trace trace{ "communication::instance::connect process"};
-               local::connect( common::message::domain::process::connect::Request{ process});
+               log::line( log, "instance created - ", m_identity, " ipc: ", m_process.ipc);
+               log::line( verbose::log, "connector: ", *this);
             }
 
-            void connect()
+
+            template< fetch::Directive directive>
+            void basic_connector< directive>::reconnect()
             {
-               connect( process::handle());
+               Trace trace{ "communication::instance::outbound::Connector::reconnect"};
+
+               reset( local::fetch( m_identity, directive));
+
+               if( ! m_process)
+                  code::raise::generic( code::casual::communication_unavailable, verbose::log, "process absent: ", m_process);
+
+               log::line( verbose::log, "connector: ", *this);
             }
 
-            namespace whitelist
+            template< fetch::Directive directive>
+            void basic_connector< directive>::clear()
             {
-               void connect()
-               {
-                  common::message::domain::process::connect::Request request{ process::handle()};
-                  request.whitelist = true;
-                  local::connect( request);
+               Trace trace{ "communication::instance::outbound::Connector::clear"};
 
-               }
-
-               void connect( const Uuid& identity, const process::Handle& process)
-               {
-                  Trace trace{ "communication::instance::whitelist::connect identity"};
-
-                  common::message::domain::process::connect::Request request{ process};
-                  request.identification = identity;
-                  request.correlation = identity;
-                  request.whitelist = true;
-
-                  local::connect( request);
-               }
-
-               void connect( const Uuid& identity)
-               {
-                  connect( identity, process::handle());
-               }
-               
-            } // whitelist
-
-
-            process::Handle ping( strong::ipc::id queue)
-            {
-               Trace trace{ "communication::instance::ping"};
-
-               common::message::server::ping::Request request;
-               request.process = process::handle();
-
-               return communication::ipc::call( queue, request).process;
+               environment::variable::unset( m_identity.environment);
+               m_connector.clear();
             }
 
-            namespace outbound
+            template struct basic_connector< fetch::Directive::direct>;
+            template struct basic_connector< fetch::Directive::wait>;
+         } // detail
+
+         namespace service
+         {
+            namespace manager
             {
-               namespace detail
+               detail::Device& device()
                {
-                  namespace local
+                  static detail::Device singelton{ identity::service::manager};
+                  return singelton;
+               }
+
+            } // manager
+         } // service
+
+
+         namespace transaction
+         {
+            namespace manager
+            {
+               detail::Device& device()
+               {
+                  static detail::Device singelton{ identity::transaction::manager};
+                  return singelton;
+               }
+
+            } // manager
+         } // transaction
+
+         namespace gateway
+         {
+            namespace manager
+            {
+               detail::Device& device()
+               {
+                  static detail::Device singelton{ identity::gateway::manager};
+                  return singelton;
+               }
+
+               namespace optional
+               {
+                  detail::optional::Device& device()
                   {
-                     namespace
+                     static detail::optional::Device singelton{ identity::gateway::manager};
+                     return singelton;
+                  }
+               } // optional
+
+            } // manager
+         } // gateway
+
+         namespace queue
+         {
+            namespace manager
+            {
+               detail::Device& device()
+               {
+                  static detail::Device singelton{ identity::queue::manager};
+                  return singelton;
+               }
+
+               namespace optional
+               {
+                  detail::optional::Device& device()
+                  {
+                     static detail::optional::Device singelton{ identity::queue::manager};
+                     return singelton;
+                  }
+               } // optional
+            } // manager
+         } // queue
+
+
+         namespace domain
+         {
+            namespace manager    
+            {                     
+               namespace local
+               {
+                  namespace
+                  {
+
+                     template< typename R>
+                     process::Handle reconnect( R&& singleton_policy)
                      {
+                        Trace trace{ "communication::instance::outbound::domain::manager::local::reconnect"};
 
-                        process::Handle fetch(
-                              const Uuid& identity,
-                              const std::string& environment,
-                              fetch::Directive directive)
+                        auto from_environment = []()
                         {
-                           Trace trace{ "communication::instance::outbound::instance::local::fetch"};
+                           if( environment::variable::exists( environment::variable::name::ipc::domain::manager))
+                              return environment::variable::process::get( environment::variable::name::ipc::domain::manager);
 
-                           log::line( verbose::log, "identity: ", identity, ", environment: ", environment, ", directive: ", directive);
+                           return process::Handle{};
+                        };
 
-                           if( common::environment::variable::exists( environment))
-                           {
-                              auto process = environment::variable::process::get( environment);
+                        auto process = from_environment();
 
-                              log::line( verbose::log, "process: ", process);
+                        common::log::line( verbose::log, "process: ", process);
 
-                              if( ipc::exists( process.ipc))
-                                 return process;
-                           }
 
-                           try
-                           {
-                              auto process = instance::fetch::handle( identity, directive);
-
-                              if( process && ! environment.empty())
-                                 environment::variable::process::set( environment, process);
-
-                              return process;
-                           }
-                           catch( ...)
-                           {
-                              if( exception::code() == code::casual::communication_unavailable)
-                              {
-                                 common::log::line( log, "failed to fetch instance with identity: ", identity);
-                                 return {};
-                              }
-                              throw;
-                           }
+                        if( ipc::exists( process.ipc))
+                        {
+                           return process;
                         }
 
-                     } // <unnamed>
-                  } // local
+                        common::log::line( log, "failed to locate domain manager via ", environment::variable::name::ipc::domain::manager, " - trying 'singleton file'");
 
-                  template< fetch::Directive directive>
-                  basic_connector< directive>::basic_connector( const Uuid& identity, std::string environment)
-                     : base_connector( local::fetch( identity, environment, directive)),
-                       m_identity{ identity}, m_environment{ std::move( environment)}
+                        process = singleton_policy();
+
+                        if( ! ipc::exists( process.ipc))
+                           code::raise::log( code::casual::domain_unavailable, "failed to locate domain manager");
+
+                        return process;
+                     }
+
+                  } // <unnamed>
+               } // local
+
+               Connector::Connector() 
+                  : detail::base_connector{ local::reconnect( [](){ return common::domain::singleton::read().process;})}
+               {
+                  log::line( verbose::log, "connector: ", *this);
+               }
+
+               void Connector::reconnect()
+               {
+                  Trace trace{ "communication::instance::outbound::domain::manager::Connector::reconnect"};
+
+                  reset( local::reconnect( [](){ return common::domain::singleton::read().process;}));
+
+                  log::line( verbose::log, "connector: ", *this);
+               }
+
+               void Connector::clear()
+               {
+                  Trace trace{ "communication::instance::outbound::domain::manager::Connector::clear"};
+                  environment::variable::unset( environment::variable::name::ipc::domain::manager);
+                  m_connector.clear();
+                  m_process = {};
+               }
+
+
+               Device& device()
+               {
+                  static Device singelton;
+                  return singelton;
+               }
+
+               namespace optional
+               {
+                  Connector::Connector()
+                  : detail::base_connector{ local::reconnect( [](){
+                     return common::domain::singleton::read().process;
+                  })}
                   {
-                     log::line( log, "instance created - ", m_environment, " ipc: ", m_process.ipc);
                      log::line( verbose::log, "connector: ", *this);
                   }
 
-
-                  template< fetch::Directive directive>
-                  void basic_connector< directive>::reconnect()
+                  void Connector::reconnect()
                   {
-                     Trace trace{ "communication::instance::outbound::Connector::reconnect"};
+                     Trace trace{ "communication::instance::outbound::domain::manager::optional::Connector::reconnect"};
 
-                     reset( local::fetch( m_identity, m_environment, directive));
-
-                     if( ! m_process)
-                        code::raise::generic( code::casual::communication_unavailable, verbose::log, "process absent: ", m_process);
+                     reset( local::reconnect( [](){
+                        return common::domain::singleton::read().process;
+                     }));
 
                      log::line( verbose::log, "connector: ", *this);
                   }
 
-                  template< fetch::Directive directive>
-                  void basic_connector< directive>::clear()
+                  void Connector::clear()
                   {
-                     Trace trace{ "communication::instance::outbound::Connector::clear"};
-
-                     environment::variable::unset( m_environment);
+                     Trace trace{ "communication::instance::outbound::domain::manager::optional::Connector::clear"};
+                     environment::variable::unset( environment::variable::name::ipc::domain::manager);
                      m_connector.clear();
+                     m_process = {};
                   }
 
-                  template struct basic_connector< fetch::Directive::direct>;
-                  template struct basic_connector< fetch::Directive::wait>;
-               } // detail
-
-               namespace service
-               {
-                  namespace manager
+                  Device& device()
                   {
-                     detail::Device& device()
-                     {
-                        static detail::Device singelton{
-                           identity::service::manager,
-                           common::environment::variable::name::ipc::service::manager};
+                     static Device singelton;
+                     return singelton;
+                  }
+               } // optional
 
-                        return singelton;
-                     }
+            } // manager 
 
-                  } // manager
-               } // service
+         } // domain
+      } // outbound
 
-
-               namespace transaction
-               {
-                  namespace manager
-                  {
-                     detail::Device& device()
-                     {
-                        static detail::Device singelton{
-                           identity::transaction::manager,
-                           common::environment::variable::name::ipc::transaction::manager};
-                        return singelton;
-                     }
-
-                  } // manager
-               } // transaction
-
-               namespace gateway
-               {
-                  namespace manager
-                  {
-                     detail::Device& device()
-                     {
-                        static detail::Device singelton{
-                           identity::gateway::manager,
-                           environment::variable::name::ipc::gateway::manager};
-
-                        return singelton;
-                     }
-
-                     namespace optional
-                     {
-                        detail::optional::Device& device()
-                        {
-                           static detail::optional::Device singelton{
-                              identity::gateway::manager,
-                              environment::variable::name::ipc::gateway::manager};
-
-                           return singelton;
-                        }
-                     } // optional
-
-                  } // manager
-               } // gateway
-
-               namespace queue
-               {
-                  namespace manager
-                  {
-                     detail::Device& device()
-                     {
-                        static detail::Device singelton{
-                           identity::queue::manager,
-                           environment::variable::name::ipc::queue::manager};
-
-                        return singelton;
-                     }
-
-                     namespace optional
-                     {
-                        detail::optional::Device& device()
-                        {
-                           static detail::optional::Device singelton{
-                              identity::queue::manager,
-                              environment::variable::name::ipc::queue::manager};
-
-                           return singelton;
-                        }
-                     } // optional
-                  } // manager
-               } // queue
-
-
-               namespace domain
-               {
-                  namespace manager    
-                  {                     
-                     namespace local
-                     {
-                        namespace
-                        {
-
-                           template< typename R>
-                           process::Handle reconnect( R&& singleton_policy)
-                           {
-                              Trace trace{ "communication::instance::outbound::domain::manager::local::reconnect"};
-
-                              auto from_environment = []()
-                              {
-                                 if( environment::variable::exists( environment::variable::name::ipc::domain::manager))
-                                    return environment::variable::process::get( environment::variable::name::ipc::domain::manager);
-
-                                 return process::Handle{};
-                              };
-
-                              auto process = from_environment();
-
-                              common::log::line( verbose::log, "process: ", process);
-
-
-                              if( ipc::exists( process.ipc))
-                              {
-                                 return process;
-                              }
-
-                              common::log::line( log, "failed to locate domain manager via ", environment::variable::name::ipc::domain::manager, " - trying 'singleton file'");
-
-                              process = singleton_policy();
-
-                              if( ! ipc::exists( process.ipc))
-                                 code::raise::log( code::casual::domain_unavailable, "failed to locate domain manager");
-
-                              return process;
-                           }
-
-                        } // <unnamed>
-                     } // local
-
-                     Connector::Connector() 
-                        : detail::base_connector{ local::reconnect( [](){ return common::domain::singleton::read().process;})}
-                     {
-                        log::line( verbose::log, "connector: ", *this);
-                     }
-
-                     void Connector::reconnect()
-                     {
-                        Trace trace{ "communication::instance::outbound::domain::manager::Connector::reconnect"};
-
-                        reset( local::reconnect( [](){ return common::domain::singleton::read().process;}));
-
-                        log::line( verbose::log, "connector: ", *this);
-                     }
-
-                     void Connector::clear()
-                     {
-                        Trace trace{ "communication::instance::outbound::domain::manager::Connector::clear"};
-                        environment::variable::unset( environment::variable::name::ipc::domain::manager);
-                        m_connector.clear();
-                     }
-
-
-                     Device& device()
-                     {
-                        static Device singelton;
-                        return singelton;
-                     }
-
-                     namespace optional
-                     {
-                        Connector::Connector()
-                        : detail::base_connector{ local::reconnect( [](){
-                           return common::domain::singleton::read().process;
-                        })}
-                        {
-                           log::line( verbose::log, "connector: ", *this);
-                        }
-
-                        void Connector::reconnect()
-                        {
-                           Trace trace{ "communication::instance::outbound::domain::manager::optional::Connector::reconnect"};
-
-                           reset( local::reconnect( [](){
-                              return common::domain::singleton::read().process;
-                           }));
-
-                           log::line( verbose::log, "connector: ", *this);
-                        }
-
-                        void Connector::clear()
-                        {
-                           Trace trace{ "communication::instance::outbound::domain::manager::optional::Connector::clear"};
-                           environment::variable::unset( environment::variable::name::ipc::domain::manager);
-                           m_connector.clear();
-                        }
-
-                        Device& device()
-                        {
-                           static Device singelton;
-                           return singelton;
-                        }
-                     } // optional
-
-                  } // manager 
-
-               } // domain
-            } // outbound
-         } // instance
-      } // communication
-   } // common
+   } // common::communication::instance
    
 } // casual

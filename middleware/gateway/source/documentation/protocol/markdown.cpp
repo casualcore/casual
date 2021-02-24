@@ -817,7 +817,7 @@ Connection reply
 )";
 
                   {
-                     using message_type = common::message::gateway::domain::discover::Request;
+                     using message_type = gateway::message::domain::discovery::Request;
 
                      out << R"(
 #### message::gateway::domain::discover::Request
@@ -831,8 +831,8 @@ Sent to and received from other domains when one domain wants discover informati
                      message_type message;
                      message.domain.name = "domain-A";
 
-                     message.services.push_back( local::string::value( 128));
-                     message.queues.push_back( local::string::value( 128));
+                     message.content.services.push_back( local::string::value( 128));
+                     message.content.queues.push_back( local::string::value( 128));
 
                      local::format::type( out, message, {
                               { "execution", "uuid of the current execution context (breadcrumb)"},
@@ -852,7 +852,7 @@ Sent to and received from other domains when one domain wants discover informati
 
 
                   {
-                     using message_type = common::message::gateway::domain::discover::Reply;
+                     using message_type = gateway::message::domain::discovery::Reply;
 
                      out << R"(
 #### message::gateway::domain::discover::Reply

@@ -21,9 +21,9 @@ namespace casual
          {
             namespace temporary
             {
-               common::file::scoped::Path content( const std::string& extension, const std::string& content);
+               common::file::scoped::Path content( std::string_view extension, std::string_view content);
 
-               common::file::scoped::Path name( const std::string& extension);
+               common::file::scoped::Path name( std::string_view extension);
             } // temporary
          } // file
 

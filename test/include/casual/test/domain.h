@@ -19,10 +19,9 @@ namespace casual
       {
          struct Manager : casual::domain::manager::unittest::Process
          {
-            Manager( const std::vector< std::string>& configuration);
+            Manager( std::vector< std::string_view> configuration);
 
-            inline Manager( const std::string& configuration) : Manager{ std::vector< std::string>{ configuration}} {}
-            inline Manager( const char* configuration) : Manager{ std::string{ configuration}} {}
+            inline Manager( std::string_view configuration) : Manager{ std::vector< std::string_view>{ configuration}} {}
 
             inline Manager() : Manager{ configuration} {}
 

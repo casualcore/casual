@@ -12,26 +12,21 @@
 
 namespace casual
 {
-   namespace domain
+   namespace domain::manager::admin
    {
-      namespace manager
+      struct cli 
       {
-         namespace admin
-         {
-            struct cli 
-            {
-               cli();
-               ~cli();
+         cli();
+         ~cli();
 
-               common::argument::Group options() &;
+         common::argument::Group options() &;
 
-               std::vector< std::tuple< std::string, std::string>> information() &;
+         std::vector< std::tuple< std::string, std::string>> information() &;
 
-            private:
-               struct Implementation;
-               common::move::basic_pimpl< Implementation> m_implementation;
-            };
-         } // admin
-      } // manager  
-   } // domain
+      private:
+         struct Implementation;
+         common::move::basic_pimpl< Implementation> m_implementation;
+      };
+
+   } // domain::manager::admin
 } // casual

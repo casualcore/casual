@@ -172,51 +172,7 @@ namespace casual
 
          } // process
 
-         common::Uuid rediscover( State& state)
-         {
-            Trace trace{ "gateway::manager::handle::rediscover"};
-
-            auto correlation = uuid::make();
-            constexpr auto description = "rediscover outbound connections";
-
-            // main task
-            {
-               common::message::event::Task event{ common::process::handle()};
-               event.correlation = correlation;
-               event.description = description;
-               event.state = decltype( event.state)::started;
-               common::event::send( std::move( event));
-            }
-
-            auto pending = state.coordinate.rediscovery.empty_pendings();
-
-            auto send_request = [&]( auto& outbound)
-            {
-               message::outbound::rediscover::Request message{ common::process::handle()};
-               if( auto correlation = communication::device::blocking::optional::send( outbound.process.ipc, message))
-                  pending.emplace_back( correlation, outbound.process.pid);
-            };
-
-            algorithm::for_each( state.outbound.groups, send_request);
-
-            log::line( verbose::log, "pending: ", pending);
-
-            auto coordinate_callback = [correlation]( auto&& received, auto failed)
-            {
-               // we're done, and can send end event (if caller is listening)
-               common::message::event::Task event{ common::process::handle()};
-               event.correlation = correlation;
-               event.description = description;
-               event.state = decltype( event.state)::done;
-               common::event::send( std::move( event));
-            };
-
-            // add the fan-out coordination.
-            state.coordinate.rediscovery( std::move( pending), std::move( coordinate_callback));
-
-            return correlation;
-         }
-
+      
 
          namespace local
          {
@@ -263,91 +219,11 @@ namespace casual
                            if( ! restart( *found, "outbound"))
                               state.outbound.groups.erase( std::begin( found));
                         }
-
-                        // remove (re)discover coordination, if any.
-                        state.coordinate.discovery.failed( pid);
-                        state.coordinate.rediscovery.failed( pid);
                      };
                   }
 
                } // process
 
-               namespace domain
-               {
-                  namespace discover
-                  {
-                     auto request( State& state)
-                     {
-                        return [&state]( common::message::gateway::domain::discover::Request& message)
-                        {
-                           Trace trace{ "gateway::manager::handle::local::domain::discover::request"};
-                           log::line( verbose::log, "message: ", message);
-
-                           auto coordinate_callback = [
-                              ipc = message.process.ipc, 
-                              execution = message.execution, 
-                              correlation = std::exchange( message.correlation, {})
-                           ]( auto&& received, auto outcome)
-                           {
-                              common::message::gateway::domain::discover::accumulated::Reply reply;
-                              reply.execution = execution;
-                              reply.correlation = correlation;
-                              
-                              for( auto& message : received)
-                                 algorithm::move( message.replies, std::back_inserter( reply.replies));
-
-                              communication::device::blocking::optional::send( ipc, reply);
-                           };
-
-                           // Make sure we get the response
-                           message.process = common::process::handle();
-
-                           auto pending = state.coordinate.discovery.empty_pendings();
-
-                           auto send_request = [&]( auto& outbound)
-                           {
-                              if( auto correlation = communication::device::blocking::optional::send( outbound.process.ipc, message))
-                                 pending.emplace_back( correlation, outbound.process.pid);
-                           };
-
-                           algorithm::for_each( state.outbound.groups, send_request);
-
-                           state.coordinate.discovery( std::move( pending), std::move( coordinate_callback));
-                        };
-                     }
-
-                     auto reply( State& state)
-                     {
-                        return [&state]( common::message::gateway::domain::discover::accumulated::Reply&& message)
-                        {
-                           Trace trace{ "gateway::manager::handle::local::domain::discover::reply"};
-                           log::line( verbose::log, "message: ", message);
-
-                           // Accumulate the reply, might trigger a accumulated reply to the requester
-                           state.coordinate.discovery( std::move( message));
-                        };
-                     }
-                  } // discovery
-
-                  namespace rediscover
-                  {
-                     auto reply( State& state)
-                     {
-                        return [&state]( message::outbound::rediscover::Reply&& message)
-                        {
-                           Trace trace{ "gateway::manager::handle::local::domain::rediscover::reply"};
-                           log::line( verbose::log, "message: ", message);
-
-                           // Accumulate the reply, might trigger a accumulated reply to the requester
-                           state.coordinate.rediscovery( std::move( message));
-                        };
-                     }
-
-                  } // rediscover
-               } // domain
-
-
-      
                namespace outbound
                {
                   auto connect( State& state)
@@ -452,9 +328,6 @@ namespace casual
          return common::message::dispatch::handler( ipc::inbound(),
             common::message::handle::defaults( ipc::inbound()),
             handle::local::process::exit( state),
-            handle::local::domain::discover::request( state),
-            handle::local::domain::discover::reply( state),
-            handle::local::domain::rediscover::reply( state),
 
             handle::local::outbound::connect( state),
             handle::local::outbound::configuration::update::reply( state),

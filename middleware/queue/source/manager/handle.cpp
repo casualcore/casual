@@ -9,6 +9,8 @@
 #include "queue/common/log.h"
 #include "queue/common/ipc/message.h"
 
+#include "domain/discovery/api.h"
+
 #include "common/process.h"
 #include "common/server/lifetime.h"
 #include "common/server/handle/call.h"
@@ -16,7 +18,6 @@
 #include "common/event/send.h"
 #include "common/algorithm/compare.h"
 #include "common/message/handle.h"
-#include "common/message/gateway.h"
 
 
 #include "common/code/raise.h"
@@ -39,10 +40,6 @@ namespace casual
          {
             namespace
             {
-               namespace ipc::manager::optional
-               {
-                  auto& gateway() { return communication::instance::outbound::gateway::manager::optional::device();}
-               } // ipc::manager::optional
 
                template< typename G, typename M>
                void send( State& state, G&& groups, M&& message)
@@ -60,13 +57,12 @@ namespace casual
                   });
                }
 
-               namespace check::pending
+               namespace pending::lookups
                {
-       
                   //! check if there are pending lookups that can be replied 
-                  void lookups( State& state)
+                  void check( State& state)
                   {
-                     Trace trace{ "queue::manager::handle::local::check::pending::lookups"};
+                     Trace trace{ "queue::manager::handle::local::pending::lookups::check"};
                      log::line( verbose::log, "pending: ", state.pending.lookups);
 
                      auto lookup_replied = [&state]( auto& lookup)
@@ -87,9 +83,26 @@ namespace casual
                      algorithm::trim( state.pending.lookups, algorithm::remove_if( state.pending.lookups, lookup_replied));
                   }
 
+                  void discard( State& state)
+                  {
+                     Trace trace{ "queue::manager::handle::local::pending::lookups::discard"};
 
-       
-               } // check::pending
+                     auto pending = std::exchange( state.pending.lookups, {});
+                     log::line( verbose::log, "pending: ", pending);
+
+                     auto discard_lookup = []( auto& lookup)
+                     {
+                        auto reply = common::message::reverse::type( lookup);
+                        reply.name = lookup.name;
+                        communication::device::blocking::optional::send( lookup.process.ipc, reply);
+                     };
+
+                     algorithm::for_each( pending, discard_lookup);
+                  }
+
+
+               } // pending::lookups
+
 
                namespace discovery
                {
@@ -97,14 +110,13 @@ namespace casual
                   {
                      Trace trace{ "queue::manager::handle::local::discovery::send"};
 
-                     common::message::gateway::domain::discover::Request request{ common::process::handle()};
+                     casual::domain::message::discovery::outbound::Request request{ common::process::handle()};
                      request.correlation = correlation;
-                     request.domain = common::domain::identity();
-                     request.queues = std::move( queues);
+                     request.content.queues = std::move( queues);
 
                      log::line( verbose::log, "request: ", request);
 
-                     return communication::device::blocking::optional::send( ipc::manager::optional::gateway(), std::move( request));
+                     return casual::domain::discovery::outbound::request( request);
                   }
                }
             } // <unnamed>
@@ -176,6 +188,8 @@ namespace casual
                         common::log::line( verbose::log, "message: ", message);
 
                         state.runlevel = decltype( state.runlevel())::shutdown;
+
+                        local::pending::lookups::discard( state);
 
                         auto shutdown = [&]( auto& entity)
                         {
@@ -303,7 +317,7 @@ namespace casual
 
                            state.update( std::move( message));
 
-                           check::pending::lookups( state);
+                           pending::lookups::check( state);
                         };
                      }
                   } // configuration::update
@@ -364,7 +378,7 @@ namespace casual
 
                      state.update( message);
 
-                     check::pending::lookups( state);
+                     pending::lookups::check( state);
                   }; 
                }
 
@@ -374,7 +388,7 @@ namespace casual
                   {
                      auto request( State& state)
                      {
-                        return [&state]( common::message::gateway::domain::discover::Request& message)
+                        return [&state]( casual::domain::message::discovery::Request& message)
                         {
                            Trace trace{ "handle::domain::discover::Request"};
                            common::log::line( verbose::log, "message: ", message);
@@ -384,10 +398,10 @@ namespace casual
                            reply.process = common::process::handle();
                            reply.domain = common::domain::identity();
 
-                           for( auto& queue : message.queues)
+                           for( auto& queue : message.content.queues)
                            {
                               if( common::algorithm::find( state.queues, queue))
-                                 reply.queues.emplace_back( queue);
+                                 reply.content.queues.emplace_back( queue);
                            }
 
                            common::log::line( verbose::log, "reply: ", reply);
@@ -398,21 +412,22 @@ namespace casual
 
                      auto reply( State& state)
                      {
-                        return [&state]( common::message::gateway::domain::discover::accumulated::Reply& message)
+                        return [&state]( casual::domain::message::discovery::outbound::Reply& message)
                         {
                            Trace trace{ "handle::domain::discover::Reply"};
                            common::log::line( verbose::log, "message: ", message);
 
-                           check::pending::lookups( state);
+                           pending::lookups::check( state);
 
-                           // we need to remove the possible pending, that instigated the request, 
-                           // if it's correlated and in _direct-context_
-
-                           algorithm::trim( state.pending.lookups, algorithm::remove_if( state.pending.lookups, [&message]( auto& pending)
+                           // we need to reply to the caller that instigated the discovery, if the 
+                           // context is direct  (and the lookup did not find what the caller wants, via check::pending::lookups)
+                           if( auto found = algorithm::find( state.pending.lookups, message.correlation); found && found->context == decltype( found->context)::direct)
                            {
-                              return pending.correlation == message.correlation
-                                 && pending.context == decltype( pending.context)::direct;
-                           }));
+                              auto pending = algorithm::extract( state.pending.lookups, std::begin( found));
+                              auto reply = common::message::reverse::type( pending);
+                              communication::device::blocking::optional::send( pending.process.ipc, reply);
+                           }
+                           
                         };
                      }
                   } // discover
@@ -443,6 +458,25 @@ namespace casual
                
             }
          } // comply
+
+         void abort( State& state)
+         {
+            Trace trace{ "queue::manager::handle::abort"};
+            log::line( verbose::log, "state: ", state);
+
+            state.runlevel = decltype( state.runlevel())::error;
+
+            local::pending::lookups::discard( state);
+
+            auto terminate = [&]( auto& entity)
+            {
+               signal::send( entity.process.pid, code::signal::terminate);
+            };
+
+            algorithm::for_each( state.forward.groups, terminate);
+            algorithm::for_each( state.groups, terminate);
+
+         }
       } // handle
 
 

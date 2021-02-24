@@ -19,11 +19,8 @@ namespace casual
    {
       namespace manager
       {
-         struct Settings;
          namespace configuration
          {
-
-            State state( const Settings& settings);
 
             //! extract and transforms the current state to a 'the configuration model'
             casual::configuration::Model get( const State& state);

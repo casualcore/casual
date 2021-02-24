@@ -14,7 +14,6 @@
 #include "queue/code.h"
 
 #include "common/process.h"
-#include "common/message/gateway.h"
 #include "common/message/domain.h"
 
 #include "common/transaction/context.h"

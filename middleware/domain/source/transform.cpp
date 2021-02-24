@@ -9,7 +9,6 @@
 #include "domain/manager/task.h"
 
 #include "common/domain.h"
-#include "common/message/gateway.h"
 
 #include "common/code/raise.h"
 #include "common/code/casual.h"
@@ -345,8 +344,11 @@ namespace casual
             auto& domain = result.configuration.domain;
 
             // Handle groups
-            {               
-               manager::state::Group master{ ".casual.master", {}, "the master and (implicit) parent of all groups"};
+            {
+               manager::state::Group core{ ".casual.core", {}, "domain-manager internal group"};
+               result.group_id.core = core.id;
+
+               manager::state::Group master{ ".casual.master", { result.group_id.core}, "the master and (implicit) parent of all groups"};
                result.group_id.master = master.id;
                
                manager::state::Group transaction{ ".casual.transaction", { result.group_id.master}};
@@ -358,6 +360,7 @@ namespace casual
                manager::state::Group global{ ".global", { queue.id, transaction.id}, "user global group"};
                result.group_id.global = global.id;
 
+               result.groups.push_back( std::move( core));
                result.groups.push_back( std::move( master));
                result.groups.push_back( std::move( transaction));
                result.groups.push_back( std::move( queue));

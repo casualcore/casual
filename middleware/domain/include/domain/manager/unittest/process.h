@@ -24,11 +24,11 @@ namespace casual
             struct Process 
             {
                Process();
-               Process( const std::vector< std::string>& configuration);
+               Process( std::vector< std::string_view> configuration);
 
                //! callback to be able to enable other _environment_ stuff before boot
                //! @attention `callback` has to be idempotent (if activate is used)
-               Process( const std::vector< std::string>& configuration, std::function< void( const std::string&)> callback);
+               Process( std::vector< std::string_view> configuration, std::function< void( const std::string&)> callback);
                ~Process();
 
                Process( Process&&);

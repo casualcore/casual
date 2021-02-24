@@ -9,9 +9,9 @@
 
 #include "domain/manager/state.h"
 #include "domain/manager/configuration.h"
-#include "domain/manager/manager.h"
 #include "domain/transform.h"
 
+#include "configuration/model/load.h"
 #include "configuration/example/domain.h"
 
 #include "common/unittest/file.h"
@@ -33,10 +33,7 @@ namespace casual
                {
                   auto file = common::unittest::file::temporary::content( ".yaml", configuration);
 
-                  Settings settings;
-                  settings.configuration.push_back( file);
-
-                  return configuration::state( settings);
+                  return casual::domain::transform::model( casual::configuration::model::load( { file}));
                }
 
 

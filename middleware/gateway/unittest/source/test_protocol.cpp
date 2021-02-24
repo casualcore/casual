@@ -85,13 +85,13 @@ namespace casual
       TEST( gateway_protocol_v1, discover_request)
       {
          constexpr auto expected = R"(cHPL9BRESkGHswCG8UP8YDFdrMYYLkwSv5h376kky4YAAAAAAAAACGRvbWFpbiBBAAAAAAAAAAMAAAAAAAAACHNlcnZpY2UxAAAAAAAAAAhzZXJ2aWNlMgAAAAAAAAAIc2VydmljZTMAAAAAAAAAAwAAAAAAAAAGcXVldWUxAAAAAAAAAAZxdWV1ZTIAAAAAAAAABnF1ZXVlMw==)";
-         local::compare( local::fill< common::message::gateway::domain::discover::Request>(), expected);
+         local::compare( local::fill< gateway::message::domain::discovery::Request>(), expected);
       }
 
       TEST( gateway_protocol_v1, discover_reply)
       {
          constexpr auto expected = R"(cHPL9BRESkGHswCG8UP8YOL2t8N/c0oJgqCrFYGyH6UAAAAAAAAACGRvbWFpbiBCAAAAAAAAAAEAAAAAAAAACHNlcnZpY2UxAAAAAAAAAAdleGFtcGxlAAEAAAAU9GsEAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAABnF1ZXVlMQAAAAAAAAAK)";
-         local::compare( local::fill< common::message::gateway::domain::discover::Reply>(), expected);
+         local::compare( local::fill< gateway::message::domain::discovery::Reply>(), expected);
       }
 
       TEST( gateway_protocol_v1, call_request)

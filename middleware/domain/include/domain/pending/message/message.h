@@ -11,70 +11,41 @@
 
 namespace casual
 {
-   namespace domain
+   namespace domain::pending::message
    {
-      namespace pending
+      using base_request = common::message::basic_message< common::message::Type::domain_pending_message_send_request>;
+      struct Request : base_request
       {
-         namespace message
+         Request( common::message::pending::Message&& message)
+            : message{ std::move( message)} {}
+         
+         Request() = default;
+
+         common::message::pending::Message message;
+
+         CASUAL_CONST_CORRECT_SERIALIZE(
          {
-            namespace connect
-            {
-               using Request = common::message::domain::process::connect::basic_request< common::message::Type::domain_pending_message_connect_request>;
-               using Reply = common::message::domain::process::connect::basic_reply< common::message::Type::domain_pending_message_connect_reply>;
+            base_request::serialize( archive);
+            CASUAL_SERIALIZE( message);
+         })
+      };
 
-            } // connect
-
-
-            using base_request = common::message::basic_message< common::message::Type::domain_pending_message_send_request>;
-            struct Request : base_request
-            {
-               Request( common::message::pending::Message&& message)
-                  : message{ std::move( message)} {}
-               
-               Request() = default;
-
-               common::message::pending::Message message;
-
-               CASUAL_CONST_CORRECT_SERIALIZE(
-               {
-                  base_request::serialize( archive);
-                  CASUAL_SERIALIZE( message);
-               })
-            };
-
-            namespace caller
-            {
-               //! wraps the pending message by reference
-               struct Request : base_request
-               {
-                  Request( const common::message::pending::Message& message)
-                     : message( message) {}
-                  
-                  const common::message::pending::Message& message;
-
-                  CASUAL_LOG_SERIALIZE(
-                  {
-                     base_request::serialize( archive);
-                     CASUAL_SERIALIZE( message);
-                  })
-               };
-            } // caller
-
-         } // message
-      } // pending
-   } // domain
-
-   namespace common
-   {
-      namespace message
+      namespace caller
       {
-         namespace reverse
+         //! wraps the pending message by reference
+         struct Request : base_request
          {
-            template<>
-            struct type_traits< casual::domain::pending::message::connect::Request> : detail::type< casual::domain::pending::message::connect::Reply> {};
+            Request( const common::message::pending::Message& message)
+               : message( message) {}
+            
+            const common::message::pending::Message& message;
 
-         } // reverse
+            CASUAL_LOG_SERIALIZE(
+               base_request::serialize( archive);
+               CASUAL_SERIALIZE( message);
+            )
+         };
+      } // caller
 
-      } // message
-   } // common
+   } // domain::pending::message
 } // casual

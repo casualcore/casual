@@ -26,6 +26,7 @@
 #include "configuration/message.h"
 
 #include "domain/pending/message/send.h"
+#include "domain/discovery/api.h"
 
 // std
 #include <vector>
@@ -122,16 +123,13 @@ namespace casual
                   {
                      Trace trace{ "service::manager::handle::local::discovery::send"};
 
-                     common::message::gateway::domain::discover::Request request{ common::process::handle()};
+                     casual::domain::message::discovery::outbound::Request request{ common::process::handle()};
                      request.correlation = correlation;
-                     request.domain = common::domain::identity();
-                     request.services = std::move( services);
+                     request.content.services = std::move( services);
 
                      log::line( verbose::log, "request: ", request);
 
-                     auto& gateway = communication::instance::outbound::gateway::manager::optional::device();
-
-                     return communication::device::blocking::optional::send( gateway, std::move( request));
+                     return casual::domain::discovery::outbound::request( std::move( request));
                   }
                }
 
@@ -667,7 +665,7 @@ namespace casual
                   {
                      auto request( State& state)
                      {
-                        return [&state]( common::message::gateway::domain::discover::Request& message)
+                        return [&state]( casual::domain::message::discovery::Request& message)
                         {
                            Trace trace{ "service::manager::handle::domain::discover::Request"};
                            common::log::line( verbose::log, "message: ", message);
@@ -687,14 +685,14 @@ namespace casual
                               {
                                  if( ! service->instances.sequential.empty())
                                  {
-                                    reply.services.emplace_back(
+                                    reply.content.services.emplace_back(
                                           name,
                                           service->information.category,
                                           service->information.transaction);
                                  }
                                  else if( ! service->instances.concurrent.empty())
                                  {
-                                    reply.services.emplace_back(
+                                    reply.content.services.emplace_back(
                                           name,
                                           service->information.category,
                                           service->information.transaction,
@@ -703,7 +701,7 @@ namespace casual
                               }
                            };
 
-                           algorithm::for_each( message.services, known_services);
+                           algorithm::for_each( message.content.services, known_services);
 
                            communication::device::blocking::send( message.process.ipc, reply);
                         };
@@ -711,7 +709,8 @@ namespace casual
 
                      auto reply( State& state)
                      {
-                        return [&state]( common::message::gateway::domain::discover::accumulated::Reply& message)
+
+                        return [&state]( casual::domain::message::discovery::outbound::Reply& message)
                         {
                            Trace trace{ "service::manager::handle::gateway::discover::Reply"};
                            common::log::line( verbose::log, "message: ", message);

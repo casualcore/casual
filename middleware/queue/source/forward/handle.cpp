@@ -298,7 +298,9 @@ namespace casual
 
                            // there might be queue-groups that has died (extremely unlikely)
                            // if so, just forget this pending dequeue
+                           assert( forward.instances.running > 0);
                            --forward.instances.running;
+
                            return false;
                         });
                      };
@@ -525,8 +527,8 @@ namespace casual
                               state.forward_apply( pending.id, []( auto& forward)
                               {
                                  assert( forward.instances.running > 0);
-                                 
                                  --forward.instances.running;
+                                 
                                  common::log::line( verbose::log, "forward: ", forward);
                               });
 
@@ -645,11 +647,12 @@ namespace casual
                            }
 
                            // we know that this is a service forward
-                           auto& forward = *state.forward_service( call.id);
+                           auto forward = state.forward_service( call.id);
+                           assert( forward);
 
-                           if( forward.reply)
+                           if( forward->reply)
                            {
-                              auto& reply = forward.reply.value();
+                              auto& reply = forward->reply.value();
                               ipc::message::group::enqueue::Request request{ process::handle()};
                               request.correlation = call.correlation;
                               request.trid = call.trid;
@@ -711,6 +714,7 @@ namespace casual
 
                            state.forward_apply( pending.id, [&state]( auto& forward)
                            {
+                              assert( forward.instances.running > 0);
                               --forward.instances.running;
                               ++forward.metric.rollback.count;
                               forward.metric.rollback.last = platform::time::clock::type::now();
@@ -742,6 +746,7 @@ namespace casual
 
                            state.forward_apply( pending.id, [&state]( auto& forward)
                            {
+                              assert( forward.instances.running > 0);
                               --forward.instances.running;
                               ++forward.metric.commit.count;
                               forward.metric.commit.last = platform::time::clock::type::now();

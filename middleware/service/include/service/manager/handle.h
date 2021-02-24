@@ -12,7 +12,6 @@
 #include "service/manager/state.h"
 
 #include "common/message/dispatch.h"
-#include "common/message/gateway.h"
 #include "common/message/transaction.h"
 #include "common/message/event.h"
 

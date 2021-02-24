@@ -7,9 +7,11 @@
 
 #include "service/manager/state.h"
 #include "service/manager/handle.h"
+#include "service/forward/instance.h"
 #include "service/common.h"
 
 #include "domain/configuration/fetch.h"
+#include "domain/discovery/api.h"
 
 #include "common/exception/handle.h"
 #include "common/argument.h"
@@ -76,8 +78,7 @@ namespace casual
                   Trace trace{ "service::manager:local::initialize spawn forward"};
 
                   state.forward = common::Process( process::directory() + "/casual-service-forward");
-                  state.forward.ipc = common::communication::instance::fetch::handle(
-                     common::communication::instance::identity::forward::cache).ipc;
+                  state.forward.ipc = common::communication::instance::fetch::handle( forward::instance::identity.id).ipc;
 
                   log::line( log, "forward: ", state.forward);
                }
@@ -108,6 +109,9 @@ namespace casual
 
                // Connect to domain
                communication::instance::whitelist::connect( communication::instance::identity::service::manager);
+
+               // register that we can answer discovery questions.
+               casual::domain::discovery::inbound::registration();
 
                log::line( common::log::category::information, "casual-service-manager is on-line");
                log::line( verbose::log, "state: ", state);

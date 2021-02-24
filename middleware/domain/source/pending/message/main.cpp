@@ -5,7 +5,7 @@
 //!
 
 #include "domain/common.h"
-#include "domain/pending/message/environment.h"
+#include "domain/pending/message/instance.h"
 #include "domain/pending/message/message.h"
 
 #include "common/communication/ipc.h"
@@ -138,23 +138,9 @@ namespace casual
                      // register the alarm callback.
                      signal::callback::registration< code::signal::alarm>( callback::timeout( state));
 
-                     auto& ipc = communication::ipc::inbound::device();
-
-                     // connect process
-                     {
-                        pending::message::connect::Request request{ common::process::handle()};
-                        request.identification = message::environment::identification;
-                        
-                        auto reply = communication::ipc::call( communication::instance::outbound::domain::manager::device(), request);
-
-                        if( reply.directive != decltype( reply.directive)::start)
-                        {
-                           log::line( log::category::error, "domain manager said no to start: ", reply.directive);
-                           return;
-                        }
-
-                     }
+                     communication::instance::whitelist::connect( message::instance::identity);
                      
+                     auto& ipc = communication::ipc::inbound::device();
 
                      auto handler = common::message::dispatch::handler( ipc,
                         common::message::handle::defaults( ipc),

@@ -27,7 +27,16 @@ namespace casual
                reversed,
             };
 
-            std::ostream& operator << ( std::ostream& out, Phase value);
+            inline std::ostream& operator << ( std::ostream& out, Phase value)
+            {
+               switch( value)
+               {
+                  case Phase::regular: return out << "regular";
+                  case Phase::reversed: return out << "reversed";
+               }
+               return out << "<unknown>";
+            }
+
 
             enum struct Bound : short
             {
@@ -36,7 +45,16 @@ namespace casual
                in,
             };
 
-            std::ostream& operator << ( std::ostream& out, Bound value);
+            inline std::ostream& operator << ( std::ostream& out, Bound value)
+            {
+               switch( value)
+               {
+                  case Bound::out: return out << "out";
+                  case Bound::in: return out << "in";
+                  case Bound::unknown: return out << "unknown";
+               }
+               return out << "<unknown>";
+            }
 
             enum struct Runlevel : short
             {
@@ -46,7 +64,7 @@ namespace casual
                online = connected,
             };
 
-            std::ostream& operator << ( std::ostream& out, Runlevel value);
+            inline std::ostream& operator << ( std::ostream& out, Runlevel value) { return out << "<not used>";}
 
             struct Address
             {
@@ -106,7 +124,16 @@ namespace casual
                error,
             };
 
-            std::ostream& operator << ( std::ostream& out, Runlevel value);
+            inline std::ostream& operator << ( std::ostream& out, Runlevel value)
+            {
+               switch( value)
+               {
+                  case Runlevel::running: return out << "running";
+                  case Runlevel::shutdown: return out << "shutdown";
+                  case Runlevel::error: return out << "error";
+               }
+               return out << "<unknown>";
+            }
 
          } // group
 

@@ -25,6 +25,8 @@
 #include "serviceframework/service/protocol/call.h"
 
 #include "domain/manager/unittest/process.h"
+#include "domain/discovery/api.h"
+
 #include "service/unittest/utility.h"
 
 namespace casual
@@ -110,16 +112,6 @@ domain:
                   return state;
                }
 
-               auto rediscover()
-               {
-                  serviceframework::service::protocol::binary::Call call;
-                  auto reply = call( manager::admin::service::name::rediscover);
-
-                  Uuid result;
-                  reply >> CASUAL_NAMED_VALUE( result);
-
-                  return result;
-               }
 
                namespace wait
                {
@@ -164,7 +156,7 @@ domain:
 
          local::Domain domain;
 
-         EXPECT_TRUE( common::communication::instance::fetch::handle( common::communication::instance::identity::gateway::manager));
+         EXPECT_TRUE( common::communication::instance::fetch::handle( common::communication::instance::identity::gateway::manager.id));
 
          auto state = local::call::wait::ready::state();
 
@@ -226,8 +218,7 @@ domain:
          algorithm::sort( state.connections);
 
          // discover to make sure outbound(s) knows about wanted services
-         auto discovered = unittest::discover( { "a"}, {});
-         ASSERT_TRUE( discovered.replies.size() == 1);
+         unittest::discover( { "a"}, {});
 
          auto data = common::unittest::random::binary( 128);
 
@@ -267,8 +258,7 @@ domain:
          auto state = local::call::wait::ready::state();
 
          // discover to make sure outbound(s) knows about wanted services
-         auto discovered = unittest::discover( { "a"}, {});
-         ASSERT_TRUE( discovered.replies.size() == 1);
+         unittest::discover( { "a"}, {});
 
          ASSERT_TRUE( state.connections.size() == 2);
 
@@ -360,15 +350,14 @@ domain:
 
          local::Domain domain{ configuration};
 
-         EXPECT_TRUE( common::communication::instance::fetch::handle( common::communication::instance::identity::gateway::manager));
+         EXPECT_TRUE( common::communication::instance::fetch::handle( common::communication::instance::identity::gateway::manager.id));
 
          auto state = local::call::wait::ready::state();
          ASSERT_TRUE( state.connections.size() == 2);
          algorithm::sort( state.connections);
 
          // discover to make sure outbound(s) knows about wanted queues
-         auto discovered = unittest::discover( { }, { "a"});
-         ASSERT_TRUE( discovered.replies.size() == 1);
+         unittest::discover( { }, { "a"});
 
          // Gateway is connected to it self. Hence we can send a request to the outbound, and it
          // will send it to the corresponding inbound, and back in the current (mockup) domain
@@ -408,7 +397,7 @@ domain:
 
          local::Domain domain;
 
-         EXPECT_TRUE( common::communication::instance::fetch::handle( common::communication::instance::identity::gateway::manager));
+         EXPECT_TRUE( common::communication::instance::fetch::handle( common::communication::instance::identity::gateway::manager.id));
 
          auto state = local::call::wait::ready::state();
 
@@ -485,7 +474,7 @@ domain:
 
          local::Domain domain{ configuration};
 
-         EXPECT_TRUE( common::communication::instance::fetch::handle( common::communication::instance::identity::gateway::manager));
+         EXPECT_TRUE( common::communication::instance::fetch::handle( common::communication::instance::identity::gateway::manager.id));
 
          auto state = local::call::wait::ready::state();
 
@@ -544,7 +533,7 @@ domain:
 
          local::Domain domain{ configuration};
 
-         EXPECT_TRUE( common::communication::instance::fetch::handle( common::communication::instance::identity::gateway::manager));
+         EXPECT_TRUE( common::communication::instance::fetch::handle( common::communication::instance::identity::gateway::manager.id));
 
          auto state = local::call::wait::ready::state();
 
@@ -557,7 +546,7 @@ domain:
 
          local::Domain domain;
 
-         EXPECT_TRUE( common::communication::instance::fetch::handle( common::communication::instance::identity::gateway::manager)); 
+         EXPECT_TRUE( common::communication::instance::fetch::handle( common::communication::instance::identity::gateway::manager.id)); 
 
          auto state = local::call::wait::ready::state();
 
@@ -652,32 +641,6 @@ domain:
                   process::sleep( std::chrono::milliseconds{ 2});
             }
 
-
-            namespace rediscover
-            {
-               auto listen()
-               {
-                  Uuid correlation;
-
-                  auto condition = event::condition::compose( 
-                     event::condition::prelude( [&correlation]() { correlation = call::rediscover();}),
-                     event::condition::done( [&correlation](){ return correlation.empty();}));
-                  
-                  event::listen( condition, 
-                     [&correlation]( const common::message::event::Task& task)
-                     {
-                        if( task.correlation != correlation)
-                           return;
-
-                        common::message::event::terminal::print( std::cout, task);
-
-                        if( task.done())
-                           correlation = {};
-                     }
-                  );
-               }
-               
-            } // rediscover
          } // <unnamed>
       } // local
 
@@ -714,7 +677,7 @@ domain:
          local::Domain domain{ configuration};
 
          EXPECT_NO_THROW(
-            local::rediscover::listen();
+            casual::domain::discovery::rediscovery::blocking::request();
          );
       }
 
@@ -756,7 +719,7 @@ domain:
          local::wait_for_outbounds( 1);
 
          EXPECT_NO_THROW(
-            local::rediscover::listen();
+            casual::domain::discovery::rediscovery::blocking::request();
          );
       }
 
@@ -768,7 +731,7 @@ domain:
          
          local::Domain domain;
 
-         EXPECT_TRUE( common::communication::instance::fetch::handle( common::communication::instance::identity::gateway::manager)); 
+         EXPECT_TRUE( common::communication::instance::fetch::handle( common::communication::instance::identity::gateway::manager.id)); 
 
          local::wait_for_outbounds( 1);
 
@@ -776,8 +739,7 @@ domain:
          casual::service::unittest::advertise( { "a"});
 
          // discover to make sure outbound(s) knows about wanted services
-         auto discovered = unittest::discover( { "a"}, {});
-         ASSERT_TRUE( discovered.replies.size() == 1);
+         unittest::discover( { "a"}, {});
 
          auto outbound = []() -> process::Handle
          {

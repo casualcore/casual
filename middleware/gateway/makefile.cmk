@@ -39,7 +39,6 @@ common_archive = LinkArchive( 'bin/casual-gateway-common',
         Compile( 'source/transform.cpp'),
         Compile( 'source/common.cpp'),
         Compile( 'source/manager/state.cpp'),
-        Compile( 'source/manager/admin/model.cpp'),
     ])
         
 
@@ -88,7 +87,8 @@ target = LinkExecutable( 'bin/casual-gateway-outbound-group',
     ],
     [
         outbound_archive,
-        common_archive, 
+        common_archive,
+        'casual-domain-discovery',
         'casual-common',  
     ])
      
@@ -101,7 +101,8 @@ target = LinkExecutable( 'bin/casual-gateway-outbound-reverse-group',
     ],
     [
         outbound_archive,
-        common_archive, 
+        common_archive,
+        'casual-domain-discovery',
         'casual-common',  
     ])
      
@@ -124,6 +125,7 @@ target = LinkExecutable( 'bin/casual-gateway-inbound-group',
 [
     inbound_archive,
     common_archive, 
+    'casual-domain-discovery',
     'casual-common', 
 ])
 
@@ -137,6 +139,7 @@ target = LinkExecutable( 'bin/casual-gateway-inbound-reverse-group',
     [
         inbound_archive,
         common_archive, 
+        'casual-domain-discovery',
         'casual-common',  
     ])
      
@@ -152,6 +155,7 @@ protocol_objects = [
 
 target_unittest = LinkUnittest( 'bin/test-casual-gateway',
    [
+        Compile( 'unittest/source/utility.cpp'),
         Compile( 'unittest/source/test_manager.cpp'),
         Compile( 'unittest/source/test_protocol.cpp'),
         Compile( 'unittest/source/outbound/test_state.cpp'),
@@ -162,6 +166,7 @@ target_unittest = LinkUnittest( 'bin/test-casual-gateway',
        common_archive, 
        'casual-serviceframework',
        'casual-common',
+       'casual-domain-discovery',
        'casual-configuration',
        'casual-unittest',
        'casual-domain-unittest',

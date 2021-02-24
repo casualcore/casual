@@ -501,7 +501,7 @@ namespace casual
                      // make sure we sett runlevel when we're done.
                      auto done_callback = []( State& state)
                      {
-                        state.runlevel( decltype( state.runlevel())::running);
+                        state.runlevel = decltype( state.runlevel())::running;
                      };
 
                      auto description = string::compose( "boot domain ", common::domain::identity().name);

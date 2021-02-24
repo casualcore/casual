@@ -14,7 +14,6 @@
 #include "common/communication/tcp.h"
 #include "common/domain.h"
 #include "common/message/coordinate.h"
-#include "common/message/gateway.h"
 #include "common/state/machine.h"
 
 #include "configuration/model.h"
@@ -277,7 +276,7 @@ namespace casual
          
          struct
          {
-            common::message::coordinate::fan::Out< common::message::gateway::domain::discover::Reply, common::strong::file::descriptor::id> discovery;
+            common::message::coordinate::fan::Out< gateway::message::domain::discovery::Reply, common::strong::file::descriptor::id> discovery;
 
             CASUAL_LOG_SERIALIZE( 
                CASUAL_SERIALIZE( discovery);

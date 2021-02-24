@@ -155,6 +155,12 @@ domain:
   gateway:
 
       inbound:
+         default:
+            note: discovery forward is disabled default.
+            connection:
+               discovery:
+                  forward: false
+
          groups: 
             -  alias: unique-inbound-alias
                limit:
@@ -162,9 +168,12 @@ domain:
                note: if threshold of 2MB of total payload 'in flight' is reach inbound will stop consume from socket until we're below
 
                connections: 
-                  -  address: localhost:7779
+                  -  address: localhost:7778
                      note: can be several listening host:port per inbound instance
                   -  address: some.host.org:7779
+                     discovery:
+                        forward: true
+                     note: discovery will be forward to 'all' outbounds
 
             -  limit:
                   size: 10485760

@@ -6,7 +6,6 @@
 
 #pragma once
 
-#include "common/message/gateway.h"
 #include "common/message/service.h"
 #include "common/message/pending.h"
 

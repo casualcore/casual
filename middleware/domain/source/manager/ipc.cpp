@@ -9,42 +9,35 @@
 #include "domain/manager/state.h"
 #include "domain/manager/handle.h"
 #include "domain/pending/message/message.h"
+#include "domain/pending/message/instance.h"
 
 namespace casual
 {
    using namespace common;
 
-   namespace domain
+   namespace domain::manager::ipc
    {
-      namespace manager
+      communication::ipc::inbound::Device& device()
       {
-         struct State;
+         return communication::ipc::inbound::device(); 
+      }
 
-         namespace ipc
+      namespace pending
+      {
+         void send( const State& state, common::message::pending::Message&& pending)
          {
-            communication::ipc::inbound::Device& device()
-            {
-               return communication::ipc::inbound::device(); 
-            }
+            communication::device::blocking::send(
+               state.singleton( casual::domain::pending::message::instance::identity.id).ipc,
+               casual::domain::pending::message::Request{ std::move( pending)});
+         }
 
-            namespace pending
-            {
-               void send( const State& state, common::message::pending::Message&& pending)
-               {
-                  communication::device::blocking::send( 
-                     state.process.pending.handle().ipc,
-                     casual::domain::pending::message::Request{ std::move( pending)});
-               }
+      } // pending
 
-            } // pending
+      void send( const State& state, common::message::pending::Message&& pending)
+      {
+         if( ! message::pending::non::blocking::send( pending))
+            ipc::pending::send( state, std::move( pending));
+      }
 
-            void send( const State& state, common::message::pending::Message&& pending)
-            {
-                if( ! message::pending::non::blocking::send( pending))
-                     ipc::pending::send( state, std::move( pending));
-            }
-
-         } // ipc
-      } // manager
-   } // domain
+   } // domain::manager::ipc
 } // casual

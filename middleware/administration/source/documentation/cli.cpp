@@ -77,6 +77,7 @@ namespace casual
                   generate_option( "transaction");
                   generate_option( "queue");
                   generate_option( "gateway");
+                  generate_option( "discovery");
                   generate_option( "buffer");
                   generate_option( "describe");
                   generate_option( "call");

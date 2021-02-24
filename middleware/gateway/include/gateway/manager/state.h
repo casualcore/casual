@@ -15,7 +15,6 @@
 
 #include "common/communication/tcp.h"
 #include "common/communication/select.h"
-#include "common/message/coordinate.h"
 #include "common/state/machine.h"
 
 #include "configuration/model.h"
@@ -94,22 +93,11 @@ namespace casual
 
             common::state::Machine< state::Runlevel, state::Runlevel::startup> runlevel;
 
-            struct
-            {
-               common::message::coordinate::fan::Out< common::message::gateway::domain::discover::accumulated::Reply, common::strong::process::id> discovery;
-               common::message::coordinate::fan::Out< message::outbound::rediscover::Reply, common::strong::process::id> rediscovery;
-
-               CASUAL_LOG_SERIALIZE(
-                  CASUAL_SERIALIZE( discovery);
-                  CASUAL_SERIALIZE( rediscovery);
-               )
-            } coordinate;
 
             CASUAL_LOG_SERIALIZE(
                CASUAL_SERIALIZE( inbound);
                CASUAL_SERIALIZE( outbound);
                CASUAL_SERIALIZE( runlevel);
-               CASUAL_SERIALIZE( coordinate);
             )
 
          };

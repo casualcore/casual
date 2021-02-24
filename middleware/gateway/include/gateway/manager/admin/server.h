@@ -26,7 +26,6 @@ namespace casual
                namespace name
                {
                   constexpr auto state = ".casual/gateway/state";
-                  constexpr auto rediscover = ".casual/gateway/rediscover";
                } // name
             } // service
 

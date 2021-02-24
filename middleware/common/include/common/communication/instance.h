@@ -11,35 +11,46 @@
 #include "common/uuid.h"
 #include "common/process.h"
 
+#include <iosfwd>
+
 namespace casual
 {
    namespace common::communication::instance
    {
+      //! holds an instance id and corresponding environment variables
+      struct Identity
+      {
+         Uuid id;
+         std::string_view environment;
+      };
+
+      std::ostream& operator << ( std::ostream& out, const Identity& value);
+
       namespace identity
       {
          namespace service
          {
-            const Uuid manager{ "f58e0b181b1b48eb8bba01b3136ed82a"};
+            inline const Identity manager{ 0xf58e0b181b1b48eb8bba01b3136ed82a_uuid, "CASUAL_SERVICE_MANAGER_PROCESS"};
          } // service
 
          namespace forward
          {
-            const Uuid cache{ "f17d010925644f728d432fa4a6cf5257"};
+            //inline const Uuid cache{ "f17d010925644f728d432fa4a6cf5257"};
          } // forward
 
          namespace gateway
          {
-            const Uuid manager{ "b9624e2f85404480913b06e8d503fce5"};
+             inline const Identity manager{ 0xb9624e2f85404480913b06e8d503fce5_uuid, "CASUAL_GATEWAY_MANAGER_PROCESS"};
          } // domain
 
          namespace queue
          {
-            const Uuid manager{ "c0c5a19dfc27465299494ad7a5c229cd"};
+            inline const Identity manager{ 0xc0c5a19dfc27465299494ad7a5c229cd_uuid, "CASUAL_QUEUE_MANAGER_PROCESS"};
          } // queue
 
          namespace transaction
          {
-            const Uuid manager{ "5ec18cd92b2e4c60a927e9b1b68537e7"};
+            inline const Identity manager{ 0x5ec18cd92b2e4c60a927e9b1b68537e7_uuid, "CASUAL_TRANSACTION_MANAGER_PROCESS"};
          } // transaction
 
       } // identity
@@ -47,7 +58,7 @@ namespace casual
 
       namespace fetch
       {
-         enum class Directive : char
+         enum class Directive : short
          {
             wait,
             direct
@@ -82,9 +93,12 @@ namespace casual
          void connect();
 
          //! @{ connect 'singelton' 'manager' to casual local domain
-         void connect( const Uuid& identity, const process::Handle& process);
-         void connect( const Uuid& identity);
+         void connect( const instance::Identity& identity, const process::Handle& process);
+         void connect( const instance::Identity& identity);
          //! @{
+         
+         //! connect without _environemnt state_, usefull for 'singletons' that is not known to others. 
+         void connect( const Uuid& id);
          
       } // whitelist
 
@@ -136,7 +150,7 @@ namespace casual
             template< fetch::Directive directive>
             struct basic_connector : base_connector
             {
-               basic_connector( const Uuid& identity, std::string environment);
+               basic_connector( instance::Identity identity);
                
                void reconnect();
 
@@ -146,12 +160,10 @@ namespace casual
                CASUAL_LOG_SERIALIZE(
                   base_connector::serialize( archive);
                   CASUAL_SERIALIZE_NAME( m_identity, "identity");
-                  CASUAL_SERIALIZE_NAME( m_environment, "environment");
                )
                
             private:
-               Uuid m_identity;
-               std::string m_environment;
+               instance::Identity m_identity;
             };
 
             //! Will wait until the instance is online, could block for ever.
@@ -164,61 +176,59 @@ namespace casual
             } // optional
          } // detail
 
-         namespace service
+         namespace service::manager
          {
-            namespace manager
+            outbound::detail::Device& device();
+         } // service::manager
+
+
+         namespace transaction::manager
+         {
+            outbound::detail::Device& device();
+         } // transaction::manager
+
+         namespace gateway::manager
+         {
+            outbound::detail::Device& device();
+
+            namespace optional
             {
-               outbound::detail::Device& device();
-            } // manager
-         } // service
+               //! Can be missing. That is, this will not block
+               //! until the device is found (the gateway is online)
+               //!
+               //! @return device to gateway-manager
+               outbound::detail::optional::Device& device();
+            } // optional
 
+         } // gateway::manager
 
-         namespace transaction
+         namespace queue::manager
          {
-            namespace manager
+            outbound::detail::Device& device();
+
+            namespace optional
             {
-               outbound::detail::Device& device();
-            } // manager
-         } // transaction
+               //! Can be missing. That is, this will not block
+               //! until the device is found (the queue is online)
+               //!
+               //! @return device to queue-manager
+               outbound::detail::optional::Device& device();
+            } // optional
 
-         namespace gateway
+         } // queue::manager
+
+         namespace domain::manager
          {
-            namespace manager
+            struct Connector : detail::base_connector
             {
-               outbound::detail::Device& device();
+               Connector();
+               void reconnect();
+               void clear();
+            };
+            using Device = communication::device::Outbound< Connector>;
+            Device& device();
 
-               namespace optional
-               {
-                  //! Can be missing. That is, this will not block
-                  //! until the device is found (the gateway is online)
-                  //!
-                  //! @return device to gateway-manager
-                  outbound::detail::optional::Device& device();
-               } // optional
-            } // manager
-         } // gateway
-
-         namespace queue
-         {
-            namespace manager
-            {
-               outbound::detail::Device& device();
-
-               namespace optional
-               {
-                  //! Can be missing. That is, this will not block
-                  //! until the device is found (the queue is online)
-                  //!
-                  //! @return device to queue-manager
-                  outbound::detail::optional::Device& device();
-               } // optional
-
-            } // manager
-         } // queue
-
-         namespace domain
-         {
-            namespace manager
+            namespace optional
             {
                struct Connector : detail::base_connector
                {
@@ -226,29 +236,18 @@ namespace casual
                   void reconnect();
                   void clear();
                };
+
                using Device = communication::device::Outbound< Connector>;
                Device& device();
+            } // optional
 
-               namespace optional
-               {
-                  struct Connector : detail::base_connector
-                  {
-                     Connector();
-                     void reconnect();
-                     void clear();
-                  };
+         } // domain::manager
 
-                  using Device = communication::device::Outbound< Connector>;
-                  Device& device();
-               } // optional
-            } // manager
+         //! resets all outbound instances, hence they will start
+         //! configure them self from the environment
+         //! @attention only for unittests
+         //void reset();
 
-            //! resets all outbound instances, hence they will start
-            //! configure them self from the environment
-            //! @attention only for unittests
-            //void reset();
-
-         } // domain
       } // outbound
 
    } // common::communication::instance

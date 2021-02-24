@@ -20,68 +20,67 @@
 
 namespace casual
 {
-   namespace domain
+   namespace domain::manager::handle
    {
-      namespace manager
+      using dispatch_type = decltype( common::message::dispatch::handler( ipc::device()));   
+
+      namespace mandatory
       {
-         namespace handle
+         namespace boot
          {
-            using dispatch_type = decltype( common::message::dispatch::handler( ipc::device()));   
-
-            namespace mandatory
+            namespace core
             {
-               namespace boot
-               {
-                  void prepare( State& state);
-               } // boot
+               void prepare( State& state);
+            } // core
 
-            } // mandatory
+            void prepare( State& state);
+         } // boot
 
-            void boot( State& state, common::Uuid correlation);
+      } // mandatory
 
-            std::vector< common::Uuid> shutdown( State& state);
+      void boot( State& state, common::Uuid correlation);
 
-            namespace start
-            {
-               namespace pending
-               {
-                  void message( State& state);
-               } // pending
-            } // start
+      std::vector< common::Uuid> shutdown( State& state);
 
-            namespace scale
-            {
-               void shutdown( State& state, std::vector< common::process::Handle> processes);
+      namespace start
+      {
+         namespace pending
+         {
+            //void message( State& state);
+         } // pending
+      } // start
 
-               void instances( State& state, state::Server& server);
-               void instances( State& state, state::Executable& executable);
+      namespace scale
+      {
+         void shutdown( State& state, std::vector< common::process::Handle> processes);
 
-               std::vector< common::Uuid> aliases( State& state, std::vector< admin::model::scale::Alias> aliases);
+         void instances( State& state, state::Server& server);
+         void instances( State& state, state::Executable& executable);
 
-            } // scale
+         std::vector< common::Uuid> aliases( State& state, std::vector< admin::model::scale::Alias> aliases);
 
-         
-            namespace restart
-            {
-               std::vector< common::Uuid> aliases( State& state, std::vector< std::string> aliases);
-               std::vector< common::Uuid> groups( State& state, std::vector< std::string> groups);
-            } // restart
+      } // scale
 
-            namespace event
-            {
-               namespace process
-               {
-                  void exit( const common::process::lifetime::Exit& exit);
-               } // process
+   
+      namespace restart
+      {
+         std::vector< common::Uuid> aliases( State& state, std::vector< std::string> aliases);
+         std::vector< common::Uuid> groups( State& state, std::vector< std::string> groups);
+      } // restart
 
-            } // event
+      namespace event
+      {
+         namespace process
+         {
+            void exit( const common::process::lifetime::Exit& exit);
+         } // process
 
-         } // handle
+      } // event
 
-         handle::dispatch_type handler( State& state);
 
-      } // manager
-   } // domain
+      handle::dispatch_type create( State& state);
+
+   } // domain::manager::handle
 } // casual
 
 

@@ -73,8 +73,8 @@ namespace casual
                   {
                      generator( example::message< gateway::message::domain::connect::Request>(), basename + "message.gateway.domain.connect.Request");
                      generator( example::message< gateway::message::domain::connect::Reply>(), basename + "message.gateway.domain.connect.Reply");
-                     generator( example::message< common::message::gateway::domain::discover::Request>(), basename + "message.gateway.domain.discovery.Request");
-                     generator( example::message< common::message::gateway::domain::discover::Reply>(), basename + "message.gateway.domain.discovery.Reply");
+                     generator( example::message< gateway::message::domain::discovery::Request>(), basename + "message.gateway.domain.discovery.Request");
+                     generator( example::message< gateway::message::domain::discovery::Reply>(), basename + "message.gateway.domain.discovery.Reply");
                      generator( example::message< common::message::service::call::callee::Request>(), basename + "message.service.call.Request");
                      generator( example::message< common::message::service::call::Reply>(), basename + "message.service.call.Reply");
                      generator( example::message< common::message::conversation::connect::callee::Request>(), basename + "message.conversation.connect.Request");

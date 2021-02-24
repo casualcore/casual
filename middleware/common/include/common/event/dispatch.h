@@ -77,9 +77,7 @@ namespace casual
             void subscription( strong::ipc::id ipc)
             {
                if( ! exists( ipc))
-               {
                   m_subscribers.emplace_back( 0, ipc);
-               }
             }
 
             explicit operator bool () const { return ! m_subscribers.empty();}

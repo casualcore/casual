@@ -9,33 +9,29 @@
 
 namespace casual
 {
-   namespace test
+   namespace test::domain
    {
-      namespace domain
+      namespace local
       {
-         namespace local
+         namespace
          {
-            namespace
+            auto environment()
             {
-               auto environment()
+               return []( const std::string& home)
                {
-                  return []( const std::string& home)
-                  {
-                     // create directores for nginx...
-                     common::directory::create( home + "/logs");
-                  };
-               }
-               
-            } // <unnamed>
-         } // local
+                  // create directores for nginx...
+                  common::directory::create( home + "/logs");
+               };
+            }
+            
+         } // <unnamed>
+      } // local
 
-         Manager::Manager( const std::vector< std::string>& configuration)
-            : casual::domain::manager::unittest::Process{ configuration, local::environment()}
-         {
+      Manager::Manager( std::vector< std::string_view> configuration)
+         : casual::domain::manager::unittest::Process{ configuration, local::environment()}
+      {
 
-         }
+      }
          
-
-      } // domain
-   } // test
+   } // test::domain
 } // casual

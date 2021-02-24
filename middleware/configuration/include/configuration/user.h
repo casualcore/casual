@@ -319,25 +319,49 @@ namespace casual
                )
             };
 
+            struct Discovery
+            {
+               bool forward = false;
+
+               CASUAL_CONST_CORRECT_SERIALIZE(
+                  CASUAL_SERIALIZE( forward);
+               )
+            };
+
             struct Connection
             {
                std::string address;
+               std::optional< Discovery> discovery;
                std::optional< std::string> note;
 
                Connection& operator += ( Connection rhs);
 
                CASUAL_CONST_CORRECT_SERIALIZE(
                   CASUAL_SERIALIZE( address);
+                  CASUAL_SERIALIZE( discovery);
                   CASUAL_SERIALIZE( note);
                )
             };
 
             struct Default
             {
-               std::optional< inbound::Limit> limit; 
+               struct Connection
+               {
+                  std::optional< Discovery> discovery;
+                  
+                  CASUAL_CONST_CORRECT_SERIALIZE(
+                     CASUAL_SERIALIZE( discovery);
+                  )
+               };
+
+               std::optional< inbound::Limit> limit;
+               std::optional< Connection> connection;
+               std::optional< std::string> note;
 
                CASUAL_CONST_CORRECT_SERIALIZE(
+                  CASUAL_SERIALIZE( note);
                   CASUAL_SERIALIZE( limit);
+                  CASUAL_SERIALIZE( connection);
                )
             };
 
@@ -860,14 +884,7 @@ namespace casual
             CASUAL_SERIALIZE( services);
             CASUAL_SERIALIZE( gateway);
             CASUAL_SERIALIZE( queue);
-            
-            // if we've been deserialized, we normalize
-            if( common::serialize::traits::is::archive::input( archive))
-               normalize();
          )
-      private:
-         // dummy
-         inline void normalize() const {}
       };
 
    } // configuration::user

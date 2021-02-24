@@ -373,6 +373,10 @@ namespace casual
                         gateway::inbound::Connection result;
                         result.note = connection.note.value_or( "");
                         result.address = connection.address;
+                        
+                        if( connection.discovery && connection.discovery.value().forward)
+                           result.discovery = decltype( result.discovery)::forward;
+
                         return result;
                      });
 
@@ -706,6 +710,11 @@ namespace casual
                         configuration::user::gateway::inbound::Connection result;
                         result.address = value.address;
                         result.note = null_if_empty( value.note);
+
+                        if( value.discovery == decltype( value.discovery)::forward)
+                           result.discovery = configuration::user::gateway::inbound::Discovery{ true};
+
+
                         return result;
                      });
                      return result;

@@ -45,7 +45,6 @@ manager_archive = LinkArchive( 'bin/casual-domain-manager',
     Compile( 'source/manager/handle.cpp'),
     Compile( 'source/manager/admin/server.cpp'),
     Compile( 'source/manager/configuration.cpp'),
-    Compile( 'source/manager/manager.cpp'),
 ])
 
 # utility for other 'managers'
@@ -113,6 +112,49 @@ install_headers += [
    ( 'include/casual/domain/manager/api/state.h', 'casual/domain/manager/api'),
 ]
 
+# discovery
+discovery_archive = LinkArchive( 'bin/casual-domain-discovery-archive',
+    [
+        Compile( 'source/discovery/common.cpp'),
+    ]
+)
+
+
+discovery_executable = LinkExecutable( 'bin/casual-domain-discovery',
+    [
+        Compile( 'source/discovery/main.cpp'),
+        Compile( 'source/discovery/handle.cpp'),
+        Compile( 'source/discovery/state.cpp'),
+    ],
+    [
+        discovery_archive,
+        'casual-common',
+    ]
+)
+
+domain_discovery_library = LinkLibrary( 'bin/casual-domain-discovery',
+    [
+        Compile( 'source/discovery/api.cpp'),
+    ],
+    [
+        discovery_archive,
+        'casual-common',
+    ]
+)
+
+
+target = LinkLibrary( 'bin/casual-domain-discovery-admin-cli',
+    [
+        Compile( 'source/discovery/admin/cli.cpp'),
+    ],
+    [
+        domain_discovery_library,
+        'casual-common',
+    ]
+)
+
+install_libs.append( target)
+
 # pending send
 pending_executable = LinkExecutable( 'bin/casual-domain-pending-message',
     [
@@ -160,9 +202,11 @@ target_test_domain = LinkUnittest( 'bin/test-casual-domain',
         Compile( 'unittest/source/manager/test_manager.cpp'),
         Compile( 'unittest/source/manager/test_api.cpp'),
         Compile( 'unittest/source/pending/test_message.cpp'),
+        Compile( 'unittest/source/test_discovery.cpp'),
     ],
     [
         manager_archive,
+        domain_discovery_library,
         domain_unittest_library,
         pending_library,
         domain_api,
@@ -176,53 +220,7 @@ target_test_domain = LinkUnittest( 'bin/test-casual-domain',
     ]) 
 
 # We use domain-manager and simple-server from the unittests
-Dependencies( target_test_domain, [ target_domain_manager, target_simple_server, pending_executable])
-
-
-#message_lib = LinkLibrary( 'bin/casual-delay-message', 
-#    [
-#      Compile( 'source/delay/message.cpp'),
-#    ],
-#    [ 
-#        common_archive,
-#        'casual-common'
-#    ]
-#    )
-#
-#delay_objects = [
-#     Compile( 'source/delay/delay.cpp')
-#    ]
-#
-#
-#target_delay_message = LinkExecutable( 'bin/casual-delay-message',
-#    [
-#        Compile( 'source/delay/main.cpp'),
-#    ] + delay_objects,
-#    [
-#      message_lib,
-#      manager_archive,
-#      common_archive,
-#     'casual-common'
-#    ])
-#
-#
-#target_test_delay = LinkUnittest( 'bin/test-casual-domain-delay', 
-#    [ 
-#        Compile( 'unittest/source/test_delay.cpp'),
-#    ],
-#    [
-#     message_lib,
-#     common_archive,
-#     domain_unittest_library,
-#     'casual-common',
-#     'casual-unittest',
-#    ])        
-
-#
-# We execute 'target_domain_delay' from test-casual-domain-delay, so
-# we need to make sure target_domain_delay is built before
-#
-#Dependencies( target_test_delay, [ target_delay_message ])
+Dependencies( target_test_domain, [ target_domain_manager, target_simple_server, pending_executable, discovery_executable])
 
 
 

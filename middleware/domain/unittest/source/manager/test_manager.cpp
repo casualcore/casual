@@ -9,7 +9,6 @@
 
 #include "domain/manager/state.h"
 #include "domain/manager/configuration.h"
-#include "domain/manager/manager.h"
 #include "domain/manager/admin/model.h"
 #include "domain/manager/admin/server.h"
 #include "domain/manager/unittest/process.h"
@@ -41,6 +40,13 @@ namespace casual
          {
             namespace
             {
+
+               namespace expected::size
+               {
+                  constexpr auto service = 3;
+               } // expected::size
+
+
                namespace configuration
                {
 
@@ -97,6 +103,17 @@ domain:
 
 
                } // configuration
+
+               namespace find
+               {
+                  auto alias = []( auto& entities, auto&& alias)
+                  {
+                     return algorithm::find_if( entities, [alias]( auto& entity)
+                     {
+                        return entity.alias == alias;
+                     });
+                  };
+               } // find
 
             } // <unnamed>
          } // local
@@ -302,10 +319,10 @@ domain:
 
             auto state = local::call::state();
 
-            ASSERT_TRUE( state.servers.size() == 1) << CASUAL_NAMED_VALUE( state);
+            ASSERT_TRUE( state.servers.size() == local::expected::size::service) << CASUAL_NAMED_VALUE( state);
             EXPECT_TRUE( state.servers.at( 0).instances.size() == 1) << CASUAL_NAMED_VALUE( state);
-            ASSERT_TRUE( state.executables.size() == 1) << CASUAL_NAMED_VALUE( state);
-            EXPECT_TRUE( state.executables.at( 0).instances.size() == 5) << CASUAL_NAMED_VALUE( state);
+            ASSERT_TRUE( local::find::alias( state.executables, "sleep")) << CASUAL_NAMED_VALUE( state);
+            EXPECT_TRUE( local::find::alias( state.executables, "sleep")->instances.size() == 5) << CASUAL_NAMED_VALUE( state);
          }
 
 
@@ -322,8 +339,8 @@ domain:
 
             auto state = local::call::state();
 
-            ASSERT_TRUE( state.executables.size() == 1);
-            EXPECT_TRUE( state.executables.at( 0).instances.size() == 10) << CASUAL_NAMED_VALUE( state);
+            ASSERT_TRUE( local::find::alias( state.executables, "sleep"));
+            EXPECT_TRUE( local::find::alias( state.executables, "sleep")->instances.size() == 10) << CASUAL_NAMED_VALUE( state);
          }
 
          TEST( domain_manager, long_running_processes_5__scale_in_to_0___expect_0)
@@ -338,7 +355,7 @@ domain:
 
             auto state = local::call::state();
 
-            ASSERT_TRUE( state.executables.size() == 1);
+            ASSERT_TRUE( local::find::alias( state.executables, "sleep"));
 
             // not deterministic how long it takes for the processes to terminate.
             // EXPECT_TRUE( state.executables.at( 0).instances.size() == 0) << CASUAL_NAMED_VALUE( state);
@@ -362,10 +379,8 @@ domain:
 
             auto state = local::call::state();
 
-            ASSERT_TRUE( state.servers.size() == 2) << CASUAL_NAMED_VALUE( state);
-            EXPECT_TRUE( state.servers.at( 0).instances.size() == 1) << CASUAL_NAMED_VALUE( state);
-            EXPECT_TRUE( state.servers.at( 1).instances.size() == 1) << CASUAL_NAMED_VALUE( state);
-            EXPECT_TRUE( state.servers.at( 1).alias == "test-simple-server");
+            ASSERT_TRUE( local::find::alias( state.servers, "test-simple-server")) << CASUAL_NAMED_VALUE( state);
+            EXPECT_TRUE( local::find::alias( state.servers, "test-simple-server")->alias == "test-simple-server");
 
          }
 
@@ -412,7 +427,9 @@ domain:
 
             auto state = local::call::state();
 
-            auto server = local::get_global_state( state.servers.at( 1).instances.at( 0).handle);
+            ASSERT_TRUE( local::find::alias( state.servers, "foo"));
+
+            auto server = local::get_global_state( local::find::alias( state.servers, "foo")->instances.at( 0).handle);
             EXPECT_TRUE( server.instance.alias == "foo") << "server.instance.alias: " << server.instance.alias;
             EXPECT_TRUE( server.instance.index == 0) << "server.instance.index: " << server.instance.index;
 
@@ -435,13 +452,14 @@ domain:
 
             auto state = local::call::state();
 
-            EXPECT_TRUE( state.servers.at( 1).instances.size() == 10);
+            ASSERT_TRUE( local::find::alias( state.servers, "foo"));
+            ASSERT_TRUE( local::find::alias( state.servers, "foo")->instances.size() == 10);
 
             auto index = 0;
 
             auto order_spawnpoint = []( auto& l, auto& r){ return l.spawnpoint < r.spawnpoint;};
 
-            for( auto& instance : algorithm::sort( state.servers.at( 1).instances, order_spawnpoint))
+            for( auto& instance : algorithm::sort( local::find::alias( state.servers, "foo")->instances, order_spawnpoint))
             {
                auto instance_state = local::get_global_state( instance.handle);
                EXPECT_TRUE( instance_state.instance.alias == "foo");
@@ -473,17 +491,13 @@ domain:
 
             auto state = local::call::state();
 
-            ASSERT_TRUE( state.servers.size() == 2) << CASUAL_NAMED_VALUE( state);
-            EXPECT_TRUE( state.servers.at( 0).instances.size() == 1) << CASUAL_NAMED_VALUE( state);
-            EXPECT_TRUE( state.servers.at( 1).instances.size() == 1) << CASUAL_NAMED_VALUE( state);
-            EXPECT_TRUE( state.servers.at( 1).alias == "test-simple-server");
+            ASSERT_TRUE( local::find::alias( state.servers, "test-simple-server")) << CASUAL_NAMED_VALUE( state);
+            EXPECT_TRUE( local::find::alias( state.servers, "test-simple-server")->instances.size() == 1) << CASUAL_NAMED_VALUE( state);
 
-            auto& simple = state.servers.at( 1);
-            ASSERT_TRUE( simple.alias == "test-simple-server");
-            EXPECT_TRUE( simple.instances.size() == 1) << CASUAL_NAMED_VALUE( simple);
+            auto simple = local::find::alias( state.servers, "test-simple-server");
 
             // get environment variables
-            auto checker = local::get_variable_checker( simple.instances.at( 0).handle);
+            auto checker = local::get_variable_checker( simple->instances.at( 0).handle);
             EXPECT_TRUE( checker( "PARENT", "foo"));
             EXPECT_TRUE( checker( "CHILD", "foo/bar"));
 
@@ -504,9 +518,9 @@ domain:
             unittest::Process manager{ { configuration}};
 
             auto state = local::call::state();
-            ASSERT_TRUE( state.servers.size() == 2) << CASUAL_NAMED_VALUE( state);
+            ASSERT_TRUE( local::find::alias( state.servers, "test-simple-server")) << CASUAL_NAMED_VALUE( state);
 
-            auto& instance = state.servers.at( 1).instances.at( 0);
+            auto& instance = local::find::alias( state.servers, "test-simple-server")->instances.at( 0);
 
             common::signal::send( instance.handle.pid, common::code::signal::hangup);
 
@@ -547,9 +561,9 @@ domain:
             unittest::Process manager{ { configuration}};
 
             auto state_before = local::call::state();
-            ASSERT_TRUE( state_before.servers.size() == 2) << CASUAL_NAMED_VALUE( state_before);
+            ASSERT_TRUE( local::find::alias( state_before.servers, "test-simple-server")) << CASUAL_NAMED_VALUE( state_before);
 
-            auto& target = state_before.servers.at( 1).instances.at( 0).handle.pid;
+            auto& target = local::find::alias( state_before.servers, "test-simple-server")->instances.at( 0).handle.pid;
 
             // setup subscription to see when hit is done
             message::event::process::Exit died;
@@ -566,10 +580,10 @@ domain:
          
             auto state_after = local::call::state();
 
-            ASSERT_TRUE( state_after.servers.size() == 2) << CASUAL_NAMED_VALUE( state_after);
-            ASSERT_TRUE( state_after.servers.at( 1).instances.size() == 1) << CASUAL_NAMED_VALUE( state_after);
+            ASSERT_TRUE( local::find::alias( state_after.servers, "test-simple-server")) << CASUAL_NAMED_VALUE( state_after);
+            ASSERT_TRUE( local::find::alias( state_after.servers, "test-simple-server")->instances.size() == 1) << CASUAL_NAMED_VALUE( state_after);
             
-            EXPECT_TRUE( state_after.servers.at( 1).instances.at( 0).state == admin::model::instance::State::exit) << CASUAL_NAMED_VALUE( state_after);
+            EXPECT_TRUE( local::find::alias( state_after.servers, "test-simple-server")->instances.at( 0).state == admin::model::instance::State::exit) << CASUAL_NAMED_VALUE( state_after);
 
             // is correct target killed
             EXPECT_TRUE( assassination.target == died.state.pid) << CASUAL_NAMED_VALUE( assassination) << '\n' << CASUAL_NAMED_VALUE( died);
@@ -585,15 +599,16 @@ domain:
   name: simple-server
   servers:
     - path: ./bin/test-simple-server
+      alias: foo
       instances: 1
 )";
 
             unittest::Process manager{ { configuration}};
 
             auto state_before = local::call::state();
-            ASSERT_TRUE( state_before.servers.size() == 2) << CASUAL_NAMED_VALUE( state_before);
+            ASSERT_TRUE( local::find::alias( state_before.servers, "foo"))  << CASUAL_NAMED_VALUE( state_before);
 
-            auto& target = state_before.servers.at( 1).instances.at( 0).handle.pid;
+            auto target = local::find::alias( state_before.servers, "foo")->instances.at( 0).handle.pid;
 
             // setup subscription to see when hit is done
             message::event::process::Exit died;
@@ -607,16 +622,18 @@ domain:
 
             // check if/when hit is performed
             common::communication::device::blocking::receive( common::communication::ipc::inbound::device(), died);
-         
-            auto state_after = local::call::state();
 
-            ASSERT_TRUE( state_after.servers.size() == 2) << CASUAL_NAMED_VALUE( state_after);
-            ASSERT_TRUE( state_after.servers.at( 1).instances.size() == 1) << CASUAL_NAMED_VALUE( state_after);
-            
-            EXPECT_TRUE( state_after.servers.at( 1).instances.at( 0).state == admin::model::instance::State::exit) << CASUAL_NAMED_VALUE( state_after);
+            {
+               auto state = local::call::state();
 
-            // is correct target killed
-            EXPECT_TRUE( assassination.target == died.state.pid) << CASUAL_NAMED_VALUE( assassination) << '\n' << CASUAL_NAMED_VALUE( died);
+               ASSERT_TRUE( local::find::alias( state.servers, "foo")) << CASUAL_NAMED_VALUE( state);
+               ASSERT_TRUE( local::find::alias( state.servers, "foo")->instances.size() == 1) << CASUAL_NAMED_VALUE( state);
+               
+               EXPECT_TRUE( local::find::alias( state.servers, "foo")->instances.at( 0).state == admin::model::instance::State::exit) << CASUAL_NAMED_VALUE( state);
+
+               // is correct target killed
+               EXPECT_TRUE( assassination.target == died.state.pid) << CASUAL_NAMED_VALUE( assassination) << '\n' << CASUAL_NAMED_VALUE( died);
+            }
 
          }
 
@@ -629,15 +646,16 @@ domain:
   name: simple-server
   servers:
     - path: ./bin/test-simple-server
+      alias: foo
       instances: 1
 )";
 
             unittest::Process manager{ { configuration}};
 
             auto state_before = local::call::state();
-            ASSERT_TRUE( state_before.servers.size() == 2) << CASUAL_NAMED_VALUE( state_before);
+            ASSERT_TRUE( local::find::alias( state_before.servers, "foo")) << CASUAL_NAMED_VALUE( state_before);
 
-            auto& target = state_before.servers.at( 1).instances.at( 0).handle.pid;
+            auto& target = local::find::alias( state_before.servers, "foo")->instances.at( 0).handle.pid;
 
             // order wrongfull hit
             message::event::process::Assassination assassination;
@@ -647,12 +665,14 @@ domain:
 
             process::sleep( std::chrono::milliseconds{ 500});
 
-            auto state_after = local::call::state();
+            {
+               auto state = local::call::state();
 
-            ASSERT_TRUE( state_after.servers.size() == 2) << CASUAL_NAMED_VALUE( state_after);
-            ASSERT_TRUE( state_after.servers.at( 1).instances.size() == 1) << CASUAL_NAMED_VALUE( state_after);
-            
-            EXPECT_TRUE( state_after.servers.at( 1).instances.at( 0).state == admin::model::instance::State::running) << CASUAL_NAMED_VALUE( state_after);
+               ASSERT_TRUE( local::find::alias( state.servers, "foo")) << CASUAL_NAMED_VALUE( state);
+               ASSERT_TRUE( local::find::alias( state.servers, "foo")->instances.size() == 1) << CASUAL_NAMED_VALUE( state);
+               
+               EXPECT_TRUE( local::find::alias( state.servers, "foo")->instances.at( 0).state == admin::model::instance::State::running) << CASUAL_NAMED_VALUE( state);
+            }
          }
 
          TEST( domain_manager, scale_in___expect__prepare_shutdown_to_service_manager)
@@ -845,17 +865,6 @@ domain:
          {
             namespace
             {
-               namespace find
-               {
-                  auto alias = []( auto& entities, auto& alias)
-                  {
-                     return algorithm::find_if( entities, [&alias]( auto& e)
-                     {
-                        return e.alias == alias;
-                     });
-                  };
-               } // find
-
                namespace predicate
                {
                   auto spawnpont = []( auto& timepoint)
@@ -869,6 +878,43 @@ domain:
                } // predicate
             } // <unnamed>
          } // local
+
+         TEST( domain_manager, kill_internal_pending__expect_restart)
+         {
+            common::unittest::Trace trace;
+            unittest::Process manager;
+
+            // setup subscription to see when stuff is done
+            common::event::subscribe( common::process::handle(), 
+            { message::event::process::Exit::type(), message::event::process::Spawn::type()});
+
+            strong::process::id target;
+
+            {
+               auto state = local::call::state();
+               auto pending = local::find::alias( state.servers, "casual-domain-pending-message");
+               ASSERT_TRUE( pending);
+               ASSERT_TRUE( pending->instances.size() == 1);
+
+               target = pending->instances.at( 0).handle.pid;
+               signal::send( target, code::signal::kill);
+            }
+
+            // wait for the exit-event
+            {
+               message::event::process::Exit event;
+               common::communication::device::blocking::receive( common::communication::ipc::inbound::device(), event);
+               EXPECT_TRUE( event.state.pid == target) << CASUAL_NAMED_VALUE( event);
+            }
+
+            // wait for the spawn-event
+            {
+               message::event::process::Spawn event;
+               common::communication::device::blocking::receive( common::communication::ipc::inbound::device(), event);
+               EXPECT_TRUE( event.alias == "casual-domain-pending-message") << CASUAL_NAMED_VALUE( event);
+            }
+         }
+
          TEST( domain_manager, restart_executable)
          {
             common::unittest::Trace trace;
@@ -923,7 +969,7 @@ domain:
   name: simple-server
   servers:
     - path: ./bin/test-simple-server
-      alias: simple-server
+      alias: foo
       instances: 2
 
 )";
@@ -935,7 +981,7 @@ domain:
             decltype( local::call::restart::aliases( { ""})) result;
 
             auto condition = event::condition::compose( 
-               event::condition::prelude( [&result](){ result = local::call::restart::aliases( { "simple-server"});}), 
+               event::condition::prelude( [&result](){ result = local::call::restart::aliases( { "foo"});}), 
                event::condition::done( [&result](){ return result.empty();})
             );
 
@@ -951,9 +997,9 @@ domain:
 
             auto state = local::call::state();
 
-            auto found = local::find::alias( state.servers, "simple-server");
+            auto found = local::find::alias( state.servers, "foo");
 
-            ASSERT_TRUE( found.size() == 1) << CASUAL_NAMED_VALUE( found);
+            ASSERT_TRUE( found);
             // all instances should have a spawnpoint later than before the restart
             EXPECT_TRUE( algorithm::all_of( found->instances, local::predicate::spawnpont( now))) << CASUAL_NAMED_VALUE( found) << "\n" << CASUAL_NAMED_VALUE( now);
          }
@@ -976,7 +1022,7 @@ domain:
 
   servers:
     - path: ./bin/test-simple-server
-      alias: simple-server
+      alias: foo
       instances: 2
       memberships: [ A]
 
@@ -1012,9 +1058,9 @@ domain:
 
             auto state = local::call::state();
 
-            auto found = local::find::alias( state.servers, "simple-server");
+            auto found = local::find::alias( state.servers, "foo");
 
-            ASSERT_TRUE( found.size() == 1) << CASUAL_NAMED_VALUE( found);
+            ASSERT_TRUE( found) << CASUAL_NAMED_VALUE( state);
             // all instances should have a spawnpoint later than before the restart
             EXPECT_TRUE( algorithm::all_of( found->instances, local::predicate::spawnpont( now))) << CASUAL_NAMED_VALUE( found) << "\n" << CASUAL_NAMED_VALUE( now);
 

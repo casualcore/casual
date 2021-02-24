@@ -86,11 +86,6 @@ namespace casual
                local::send::queue< casual::queue::ipc::message::group::dequeue::Reply>( point);
                break;
             }
-            case common::message::gateway::domain::discover::Request::type():
-            {
-               local::send::empty< common::message::gateway::domain::discover::Reply>( point);
-               break;
-            }
             case message::domain::connect::Request::type():
             {
                break; // no op.

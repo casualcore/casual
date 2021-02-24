@@ -14,7 +14,6 @@
 
 #include "common/message/dispatch.h"
 #include "common/message/domain.h"
-#include "common/message/gateway.h"
 #include "common/message/coordinate.h"
 
 #include "common/message/event.h"

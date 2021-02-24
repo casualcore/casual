@@ -45,6 +45,7 @@ cli_library = LinkLibrary( 'bin/causal-administration-cli',
    [
       'casual-common',
       'casual-domain-admin-cli',
+      'casual-domain-discovery-admin-cli',
       'casual-service-admin-cli',
       'casual-queue-admin-cli',
       'casual-transaction-admin-cli',

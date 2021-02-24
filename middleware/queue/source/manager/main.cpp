@@ -16,6 +16,7 @@
 #include "common/environment/normalize.h"
 
 #include "domain/configuration/fetch.h"
+#include "domain/discovery/api.h"
 
 namespace casual
 {
@@ -75,6 +76,9 @@ namespace casual
 
                   // Connect to domain
                   common::communication::instance::whitelist::connect( common::communication::instance::identity::queue::manager);
+
+                  // register that we can answer discovery questions.
+                  casual::domain::discovery::inbound::registration();
                }  
             } // wait
 
@@ -90,6 +94,8 @@ namespace casual
                Trace trace( "queue::manager::local::start");
                common::log::line( log, "queue manager start");
 
+               auto abort = execute::scope( [&state](){ manager::handle::abort( state);});
+
                auto handler = manager::handlers( state);
 
                wait::running( state, handler);
@@ -102,6 +108,8 @@ namespace casual
                   handler, 
                   ipc::device());
 
+               // cancel the abort
+               abort.release();
             }
 
             void main( int argc, char **argv)

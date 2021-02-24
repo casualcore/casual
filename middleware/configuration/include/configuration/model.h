@@ -231,10 +231,29 @@ namespace casual::configuration
 
          namespace inbound
          {
+            namespace discovery
+            {
+               enum struct Directive
+               {
+                  localized,
+                  forward,
+               };
+
+               inline std::ostream& operator << ( std::ostream& out, Directive value)
+               {
+                  switch( value)
+                  {
+                     case Directive::forward: return out << "forward";
+                     case Directive::localized: return out << "localized";
+                  }
+                  return out << "<unknown>";
+               }
+            } // discovery
+
             struct Limit : common::Compare< Limit>
             {
-               platform::size::type size = 0;
-               platform::size::type messages = 0;
+               platform::size::type size{};
+               platform::size::type messages{};
 
                constexpr operator bool() const noexcept { return size > 0 || messages > 0;}
 
@@ -249,14 +268,16 @@ namespace casual::configuration
             struct Connection : common::Compare< Connection>
             {
                std::string address;
+               discovery::Directive discovery{};
                std::string note;
 
                CASUAL_CONST_CORRECT_SERIALIZE(
                   CASUAL_SERIALIZE( address);
+                  CASUAL_SERIALIZE( discovery);
                   CASUAL_SERIALIZE( note);
                )
 
-               inline auto tie() const { return std::tie( address, note);}
+               inline auto tie() const { return std::tie( address, discovery, note);}
             };
 
             struct Group : common::Compare< Group>
@@ -372,7 +393,7 @@ namespace casual::configuration
          {
             struct Retry : common::Compare< Retry>
             {
-               platform::size::type count = 0;
+               platform::size::type count{};
                platform::time::unit delay = platform::time::unit::zero();
 
                inline auto empty() const { return count == 0 && delay == platform::time::unit::zero();}

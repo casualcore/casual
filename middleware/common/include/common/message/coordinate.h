@@ -9,6 +9,7 @@
 #include "common/functional.h"
 
 #include "common/uuid.h"
+#include "common/log.h"
 #include "common/algorithm.h"
 #include "common/serialize/macro.h"
 
@@ -105,7 +106,7 @@ namespace casual
 
             //! @returns an empty 'pending_type' vector
             //! convince function to get 'the right type' 
-            inline auto empty_pendings() { return std::vector< Pending>{};}
+            inline auto empty_pendings() const noexcept { return std::vector< Pending>{};}
 
             CASUAL_LOG_SERIALIZE(
                CASUAL_SERIALIZE_NAME( m_entries, "entries");

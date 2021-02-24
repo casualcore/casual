@@ -47,17 +47,6 @@ namespace casual
                   return result;
                }
 
-               auto rediscover()
-               {
-                  serviceframework::service::protocol::binary::Call call;
-                  auto reply = call( manager::admin::service::name::rediscover);
-
-                  Uuid result;
-                  reply >> CASUAL_NAMED_VALUE( result);
-
-                  return result;
-               }
-
             } // call
 
             namespace format
@@ -340,45 +329,6 @@ namespace casual
                      }
                   } // groups
                } // list
- 
-               auto rediscover()
-               {
-                  auto invoke = []()
-                  {
-                     if( ! terminal::output::directive().block())
-                     {
-                        call::rediscover();
-                        return;
-                     }
-                     
-                     Uuid correlation;
-
-                     auto condition = event::condition::compose( 
-                        event::condition::prelude( [&correlation]() { correlation = call::rediscover();}),
-                        event::condition::done( [&correlation](){ return correlation.empty();}));
-                     
-                     event::listen( condition, 
-                        [&correlation]( const common::message::event::Task& task)
-                        {
-                           common::message::event::terminal::print( std::cout, task);
-
-                           if( task.done())
-                              correlation = {};
-                        },
-                        []( const common::message::event::sub::Task& task)
-                        {
-                           common::message::event::terminal::print( std::cout, task);
-                        }
-                     );
-                  };
-
-                  return argument::Option{ 
-                     std::move( invoke), 
-                     { "--rediscover"}, 
-                     R"(rediscover all outbound connections)"
-                  };
-
-               }
                
                auto state()
                {
@@ -403,6 +353,19 @@ namespace casual
                      "gateway state"};
                }
 
+               auto rediscover()
+               {
+                  auto invoke = []()
+                  {
+                     std::cerr << "use casual discover --rediscover instead\n";
+                  };
+
+                  return argument::Option{ 
+                     std::move( invoke),
+                     argument::option::keys( {}, { "--rediscover"}), 
+                     "moved to casual discover --rediscover"};
+               }
+
             } // option
          } // <unnamed>
       } // local
@@ -418,8 +381,9 @@ namespace casual
                local::option::list::listeners(),
                local::option::list::groups::inbound(),
                local::option::list::groups::outbound(),
-               local::option::rediscover(),
-               local::option::state()
+               local::option::state(),
+
+               local::option::rediscover() // removed... TODO: remove in 2.0
             };
          }
       };

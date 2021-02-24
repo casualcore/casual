@@ -9,6 +9,8 @@
 #include "gateway/message.h"
 #include "gateway/common.h"
 
+#include "domain/discovery/api.h"
+
 #include "common/communication/device.h"
 #include "common/communication/instance.h"
 #include "common/message/handle.h"
@@ -99,7 +101,7 @@ namespace casual
                         if( auto connection = state.external.connection( tcp::send( state, reply)))
                         {
                            connection->protocol = reply.version;
-                           if( auto found = algorithm::find( state.external.information, connection->descriptor()))
+                           if( auto found = state.external.information( connection->descriptor()))
                               found->domain = message.domain;
 
                            common::log::line( verbose::log, "connection: ", *connection);
@@ -108,22 +110,6 @@ namespace casual
                   }
                } // connect
 
-               namespace event
-               {
-                  namespace process
-                  {
-                     auto exit( State& state)
-                     {
-                        return [&state]( common::message::event::process::Exit& message)
-                        {
-                           Trace trace{ "gateway::inbound::handle::local::internal::event::process::exit"};
-                           common::log::line( verbose::log, "message: ", message);
-
-                           state.coordinate.discovery.failed( message.state.pid);
-                        };
-                     }
-                  } // process
-               } // event
 
                namespace service
                {
@@ -243,21 +229,36 @@ namespace casual
 
                namespace domain
                {
-                  namespace discover
+                  namespace discovery
                   {
-                     auto reply( State& state)
+                     auto request( State& state)
                      {
-                        return [&state]( common::message::gateway::domain::discover::Reply& message)
+                        return [&state]( gateway::message::domain::discovery::Request& message)
                         {
-                           Trace trace{ "gateway::inbound::handle::internal::domain::discover::Reply"};
+                           Trace trace{ "gateway::inbound::handle::local::internal::domain::discovery::request"};
                            common::log::line( verbose::log, "message: ", message);
 
-                           // Might send the accumulated message if all requested has replied.
-                           state.coordinate.discovery( std::move( message));
+                           if( auto found = algorithm::find( state.correlations, message.correlation))
+                           {
+                              common::log::line( verbose::log, "correlation: ", *found);
+
+                              // Set 'sender' so we get the reply
+                              message.process = common::process::handle();
+
+                              auto information = state.external.information( found->descriptor);
+                              assert( information);
+
+                              if( information->configuration.discovery == decltype( information->configuration.discovery)::forward)
+                                  message.directive = decltype( message.directive)::forward;
+
+                              casual::domain::discovery::request( message);
+                           }
                         };
                      }
 
-                  } // discover
+                     auto reply = basic_forward< gateway::message::domain::discovery::Reply>;
+
+                  } // discovery
                } // domain
 
 
@@ -430,7 +431,7 @@ namespace casual
                   {
                      auto request( State& state)
                      {
-                        return [&]( casual::queue::ipc::message::group::dequeue::Request& message)
+                        return [&state]( casual::queue::ipc::message::group::dequeue::Request& message)
                         {
                            Trace trace{ "gateway::inbound::handle::queue::dequeue::Request::operator()"};
 
@@ -457,75 +458,25 @@ namespace casual
 
                namespace domain
                {
-                  namespace discover
+                  namespace discovery
                   {
                      auto request( State& state)
                      {
-                        return [&state]( common::message::gateway::domain::discover::Request& message)
+                        return []( gateway::message::domain::discovery::Request& message)
                         {
-                           Trace trace{ "gateway::inbound::handle::local::external::connection::discover::request"};
+                           Trace trace{ "gateway::inbound::handle::local::external::domain::discovery::request"};
                            common::log::line( verbose::log, "message: ", message);
 
-                           if( state.runlevel > decltype( state.runlevel())::running)
-                           {
-                              common::log::line( verbose::log, "inbound in ", state.runlevel, " mode - action: empty reply");
-
-                              auto reply = common::message::reverse::type( message);
-                              reply.domain = common::domain::identity();
-                              tcp::send( state, reply);
-                              return;
-                           }
-                           
-                           // Make sure we get the reply
-                           message.process = common::process::handle();
-
-                           // make sure we get unique correlations for the coordination
-                           auto correlation = std::exchange( message.correlation, {});
-
-                           // Forward to service-manager and possible queue-manager
-                           auto pending = state.coordinate.discovery.empty_pendings();
-
-                           if( ! message.services.empty())
-                           {
-                              pending.emplace_back(  
-                                 communication::device::blocking::send( ipc::manager::service(), message),
-                                 ipc::manager::service().connector().process().pid);
-                           }
-
-                           if( ! message.queues.empty())
-                           {
-                              if( auto correlation = communication::device::blocking::optional::send( ipc::manager::queue(), message))
-                              {
-                                 pending.emplace_back(  
-                                    correlation,
-                                    ipc::manager::service().connector().process().pid);
-                              }
-                           }
-
-                           state.coordinate.discovery( std::move( pending), [&state, correlation]( auto received, auto failed)
-                           {
-                              Trace trace{ "gateway::inbound::handle::local::external::connection::discover::request coordinate"};
-
-                              common::message::gateway::domain::discover::Reply message;
-                              message.correlation = correlation;
-                              message.domain = common::domain::identity();
-
-                              algorithm::for_each( received, [&message]( auto& reply)
-                              {
-                                 algorithm::append( reply.services, message.services);
-                                 algorithm::append( reply.queues, message.queues);
-
-                              });
-
-                              tcp::send( state, message);
-                           });
-                           
+                           // we push it to the internal side, so it's possible to correlate the message.
+                           // We don't know which external socket has sent this message at this moment.
+                           // when we're done here, the 'external-dispatch' will correlate the socket descriptor
+                           // and the correlation id of the message, so we can access it from the internal part.
+                           ipc::inbound().push( std::move( message));                         
                         };
                      }
-                  } // discover
+                  } // discovery
                } // domain
-
-
+         
                namespace transaction
                {
                   namespace resource
@@ -575,17 +526,14 @@ namespace casual
             local::internal::queue::dequeue::reply( state),
             local::internal::queue::enqueue::reply( state),
 
+            // domain discovery
+            local::internal::domain::discovery::request( state),
+            local::internal::domain::discovery::reply( state),
+
             // transaction
             local::internal::transaction::resource::prepare::reply( state),
             local::internal::transaction::resource::commit::reply( state),
             local::internal::transaction::resource::rollback::reply( state),
-
-            // domain discovery
-            local::internal::domain::discover::reply( state),
-
-            // events
-            common::event::listener( local::internal::event::process::exit( state)),
-
          };
       }
 
@@ -605,7 +553,7 @@ namespace casual
             local::external::queue::dequeue::request( state),
 
             // domain discover
-            local::external::domain::discover::request( state),
+            local::external::domain::discovery::request( state),
 
             // transaction
             local::external::transaction::resource::prepare::request(),

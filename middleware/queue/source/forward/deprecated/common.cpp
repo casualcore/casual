@@ -82,7 +82,7 @@ namespace casual
             // wait for queue-manager to be up and running
             {
                auto manager = common::communication::instance::fetch::handle( 
-                  common::communication::instance::identity::queue::manager,
+                  common::communication::instance::identity::queue::manager.id,
                   common::communication::instance::fetch::Directive::wait);
 
                common::log::line( verbose::log, "queue-manager is running: ", manager);

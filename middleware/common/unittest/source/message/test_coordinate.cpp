@@ -11,7 +11,6 @@
 #include "common/log/stream.h"
 
 #include "common/message/coordinate.h"
-#include "common/message/gateway.h"
 #include "common/communication/ipc.h"
 
 
@@ -23,7 +22,10 @@ namespace casual
       {
          namespace
          {
-            using Coordinate = message::coordinate::fan::Out< message::gateway::domain::discover::Reply, strong::process::id>;
+            using Request = message::basic_request< message::Type::domain_discovery_request>;
+            using Reply = message::basic_request< message::Type::domain_discovery_reply>;
+
+            using Coordinate = message::coordinate::fan::Out< Reply, strong::process::id>;
          } // <unnamed>
       } // local
 
@@ -86,7 +88,7 @@ namespace casual
          });
 
          {
-            message::gateway::domain::discover::Reply message{ process::handle()};
+            local::Reply message{ process::handle()};
             message.correlation = correlation;
             coordinate( message);
          }
@@ -104,7 +106,7 @@ namespace casual
          // fill the messages
          const auto origin = algorithm::generate_n< 10>( []( auto index)
          {
-            message::gateway::domain::discover::Reply message{ process::Handle{ strong::process::id( process::id().value() + index), communication::ipc::inbound::ipc()}};
+            local::Reply message{ process::Handle{ strong::process::id( process::id().value() + index), communication::ipc::inbound::ipc()}};
             message.correlation = uuid::make();
             return message;
          });
@@ -143,7 +145,7 @@ namespace casual
          // fill the messages
          const auto origin = algorithm::generate_n< 10>( []()
          {
-            message::gateway::domain::discover::Reply message{ process::handle()};
+            local::Reply message{ process::handle()};
             message.correlation = uuid::make();
             return message;
          });
@@ -183,7 +185,7 @@ namespace casual
          // fill the messages
          const auto origin = algorithm::generate_n< 10>( []()
          {
-            message::gateway::domain::discover::Reply message{ process::handle()};
+            local::Reply message{ process::handle()};
             message.correlation = uuid::make();
             return message;
          });

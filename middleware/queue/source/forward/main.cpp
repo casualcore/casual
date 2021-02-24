@@ -37,10 +37,7 @@ namespace casual
             auto condition( State& state)
             {
                return message::dispatch::condition::compose(
-                  message::dispatch::condition::done( [&state]()
-                  {
-                     return state.done();
-                  })
+                  message::dispatch::condition::done( [&state](){ return state.done();})
                );
             }
 

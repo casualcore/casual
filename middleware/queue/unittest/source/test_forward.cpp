@@ -13,7 +13,6 @@
 #include "queue/code.h"
 
 #include "common/process.h"
-#include "common/message/gateway.h"
 #include "common/message/domain.h"
 #include "common/message/service.h"
 #include "common/signal/timer.h"

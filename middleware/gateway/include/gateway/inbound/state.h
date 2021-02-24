@@ -13,7 +13,6 @@
 #include "common/communication/tcp.h"
 #include "common/domain.h"
 #include "common/message/service.h"
-#include "common/message/coordinate.h"
 #include "common/state/machine.h"
 
 #include "configuration/model.h"
@@ -156,7 +155,7 @@ namespace casual
 
                connections.emplace_back( std::move( socket));
                descriptors.push_back( descriptor);
-               information.push_back( [&](){
+               informations.push_back( [&](){
                   state::external::connection::Information result;
                   result.descriptor = descriptor;
                   result.configuration = std::move( configuration);
@@ -176,8 +175,8 @@ namespace casual
                directive.read.remove( descriptor);
                common::algorithm::trim( connections, common::algorithm::remove( connections, descriptor));
                common::algorithm::trim( descriptors, common::algorithm::remove( descriptors, descriptor));
-               if( auto found = common::algorithm::find( information, descriptor))
-                  return common::algorithm::extract( information, std::begin( found)).configuration;
+               if( auto found = common::algorithm::find( informations, descriptor))
+                  return common::algorithm::extract( informations, std::begin( found)).configuration;
                
                return {};
             }
@@ -187,24 +186,31 @@ namespace casual
                directive.read.remove( descriptors);
                connections.clear();
                descriptors.clear();
-               information.clear();
+               informations.clear();
             }
 
-            state::external::Connection* connection( common::strong::file::descriptor::id descriptor)
+            inline state::external::Connection* connection( common::strong::file::descriptor::id descriptor)
             {
                if( auto found = common::algorithm::find( connections, descriptor))
                   return found.data();
                return nullptr;
             }
 
+            inline state::external::connection::Information* information( common::strong::file::descriptor::id descriptor)
+            {
+               if( auto found = common::algorithm::find( informations, descriptor))
+                  return found.data();
+               return nullptr;
+            }
+
             std::vector< state::external::Connection> connections;
             std::vector< common::strong::file::descriptor::id> descriptors;
-            std::vector< state::external::connection::Information> information;
+            std::vector< state::external::connection::Information> informations;
 
             CASUAL_LOG_SERIALIZE( 
                CASUAL_SERIALIZE( connections);
                CASUAL_SERIALIZE( descriptors);
-               CASUAL_SERIALIZE( information);
+               CASUAL_SERIALIZE( informations);
             )
          };
          
@@ -264,12 +270,6 @@ namespace casual
 
          std::vector< state::Correlation> correlations;
 
-         struct
-         {
-            common::message::coordinate::fan::Out< common::message::gateway::domain::discover::Reply, common::strong::process::id> discovery;
-
-            CASUAL_LOG_SERIALIZE(  CASUAL_SERIALIZE( discovery);)
-         } coordinate;
 
          std::string alias;
          std::string note;
@@ -299,7 +299,7 @@ namespace casual
                result.address.local = common::communication::tcp::socket::address::host( descriptor);
                result.address.peer = common::communication::tcp::socket::address::peer( descriptor);
 
-               if( auto found = common::algorithm::find( external.information, descriptor))
+               if( auto found = external.information( descriptor))
                {
                   result.domain = found->domain;
                   result.configuration = found->configuration;
@@ -318,7 +318,6 @@ namespace casual
             CASUAL_SERIALIZE( external);
             CASUAL_SERIALIZE( pending);
             CASUAL_SERIALIZE( correlations);
-            CASUAL_SERIALIZE( coordinate);
             CASUAL_SERIALIZE( alias);
             CASUAL_SERIALIZE( note);
          )

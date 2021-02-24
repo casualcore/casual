@@ -72,19 +72,27 @@ instances      | number of instances to start of the server.
 memberships    | which groups are the server member of (dictates order)
 
 
+## service
+
+Defines _global_ service information that will be used as configuration on services not specifying specific values in the _services_ section.
+
+property                   | description
+---------------------------|----------------------------------------------------
+execution.timeout.duration | timeout of service, from the _caller_ perspective (example: `30ms`, `1h`, `3min`, `40s`. if no SI unit `s` is used)
+execution.timeout.contract | defines action to take if timeout is passed (linger = just wait, kill = send kill signal, terminate = send terminate signal)
+
 ## services
 
-Used for configuring specific attribute on named services.
+Defines service related configuration. 
 
 Note that this configuration is tied to the service, regardless who has advertised the service.
 
-property       | description
----------------|----------------------------------------------------
-name           | name of the service
-timeout (deprecated)        | timeout of the service, from the _caller_ perspective (example: `30ms`, `1h`, `3min`, `40s`. if no SI unit `s` is used)
-execution.timeout.duration | timeout of the service, from the _caller_ perspective (example: `30ms`, `1h`, `3min`, `40s`. if no SI unit `s` is used)
-execution.timeout.contract       | defines action to take if timeout is passed (linger = just wait, kill = send kill signal, terminate = send terminate signal)
-routes         | defines what logical names are actually exposed. For _aliases_, it's important to include the original name.
+property                   | description
+---------------------------|----------------------------------------------------
+name                       | name of the service
+routes                     | defines what logical names are actually exposed. For _aliases_, it's important to include the original name.
+execution.timeout.duration | timeout of service, from the _caller_ perspective (example: `30ms`, `1h`, `3min`, `40s`. if no SI unit `s` is used)
+execution.timeout.contract | defines action to take if timeout is passed (linger = just wait, kill = send kill signal, terminate = send terminate signal)
 
 
 ## gateway
@@ -98,10 +106,11 @@ Defines all inbound related configuration (from remote domains -> local domain)
 ### default
 #### inbound
 
-property       | description
----------------|----------------------------------------------------
-limit.size     | default value for limit size 
-limit.messages | default value for maximum number of messages
+property                     | description
+-----------------------------|----------------------------------------------------
+limit.size                   | default value for limit size 
+limit.messages               | default value for maximum number of messages
+connection.discovery.forward | default value if connections should forward discovery or not
 
 #### groups
 
@@ -110,15 +119,17 @@ Defines a list of all inbound groups
 property       | description
 ---------------|----------------------------------------------------
 alias          | an _identity_ for this group instance (if not set, casual generates one)
+limit.size     | the maximum allowed size of all inflight messages. If reached, _inbound-group_ will stop taking more request until below the limit 
+limit.messages | the maximum allowed number of inflight messages. If reached, _inbound-group_ will stop taking more request until below the limit
 connections    | all the connections for this group
 
 ##### connection
 
-property       | description
----------------|----------------------------------------------------
-address        | the address to listen on, `host:port` 
-limit.size     | the maximum allowed size of all inflight messages. If reached _inbound_ stop taking more request until below the limit 
-limit.messages | the maximum allowed number of inflight messages. If reached _inbound_ stop taking more request until below the limit
+property          | description
+------------------|----------------------------------------------------
+address           | the address to listen on, `host:port`
+discovery.forward | boolean if the connetion should forward discovery request to 'discoverables'
+
 
 ### outbound
 
@@ -178,13 +189,7 @@ name           | the (unique) name of the queue.
 retry.count    | number of rollbacks before moving message to `<queue-name>.error`.
 retry.delay    | if message is rolled backed, how long delay before message is avaliable for dequeue. (example: `30ms`, `1h`, `3min`, `40s`. if no SI unit `s` is used)
 
-## service
-Defines _global_ service information that will be used as configuration on services not specifying specific values in the _services_ section.
 
-property                         | description
----------------------------------|----------------------------------------------------
-execution.timeout.duration       | timeout of service, from the _caller_ perspective (example: `30ms`, `1h`, `3min`, `40s`. if no SI unit `s` is used)
-execution.timeout.contract       | defines action to take if timeout is passed (linger = just wait, kill = send kill signal, terminate = send terminate signal)
 
 ## examples 
 
@@ -218,18 +223,14 @@ domain:
     log: "/some/fast/disk/domain.A42/transaction.log"
     resources:
       - name: "customer-db"
-        key: "db2_rm"
         instances: 5
         note: "this resource is named 'customer-db' - using the default rm-key (db_rm) - overrides the default rm-instances to 5"
         openinfo: "db=customer,uid=db2,pwd=db2"
       - name: "sales-db"
-        key: "db2_rm"
-        instances: 3
         note: "this resource is named 'sales-db' - using the default rm-key (db_rm) - using default rm-instances"
         openinfo: "db=sales,uid=db2,pwd=db2"
       - name: "event-queue"
         key: "mq_rm"
-        instances: 3
         note: "this resource is named 'event-queue' - overrides rm-key - using default rm-instances"
         openinfo: "some-mq-specific-stuff"
         closeinfo: "some-mq-specific-stuff"
@@ -251,44 +252,35 @@ domain:
         - "customer-group"
   servers:
     - path: "customer-server-1"
-      instances: 1
       memberships:
         - "customer-group"
-      restart: true
     - path: "customer-server-2"
-      instances: 1
       memberships:
         - "customer-group"
-      restart: true
     - path: "sales-server"
       alias: "sales-pre"
       note: "the only services that will be advertised are 'preSalesSaveService' and 'preSalesGetService'"
       instances: 10
       memberships:
         - "sales-group"
-      restart: true
       restrictions:
         - "preSalesSaveService"
         - "preSalesGetService"
     - path: "sales-server"
       alias: "sales-post"
       note: "the only services that will be advertised are 'postSalesSaveService' and 'postSalesGetService'"
-      instances: 1
       memberships:
         - "sales-group"
-      restart: true
       restrictions:
         - "postSalesSaveService"
         - "postSalesGetService"
     - path: "sales-broker"
-      instances: 1
       memberships:
         - "sales-group"
       environment:
         variables:
           - key: "SALES_BROKER_VARIABLE"
             value: "556"
-      restart: true
       resources:
         - "event-queue"
   executables:
@@ -296,10 +288,8 @@ domain:
       arguments:
         - "--configuration"
         - "/path/to/configuration"
-      instances: 1
       memberships:
         - "common-group"
-      restart: false
   services:
     - name: "postSalesSaveService"
       timeout: "2h"
@@ -310,15 +300,23 @@ domain:
       timeout: "130ms"
   gateway:
     inbound:
+      default:
+        note: "discovery forward is disabled default."
+        connection:
+          discovery:
+            forward: false
       groups:
         - alias: "unique-inbound-alias"
           note: "if threshold of 2MB of total payload 'in flight' is reach inbound will stop consume from socket until we're below"
           limit:
             size: 2097152
           connections:
-            - address: "localhost:7779"
+            - address: "localhost:7778"
               note: "can be several listening host:port per inbound instance"
             - address: "some.host.org:7779"
+              discovery:
+                forward: true
+              note: "discovery will be forward to 'all' outbounds"
         - note: "(generated alias) listeners - threshold of either 10 messages OR 10MB - the first that is reach, inbound will stop consume"
           limit:
             size: 10485760
@@ -479,22 +477,18 @@ domain:
             "resources": [
                 {
                     "name": "customer-db",
-                    "key": "db2_rm",
                     "instances": 5,
                     "note": "this resource is named 'customer-db' - using the default rm-key (db_rm) - overrides the default rm-instances to 5",
                     "openinfo": "db=customer,uid=db2,pwd=db2"
                 },
                 {
                     "name": "sales-db",
-                    "key": "db2_rm",
-                    "instances": 3,
                     "note": "this resource is named 'sales-db' - using the default rm-key (db_rm) - using default rm-instances",
                     "openinfo": "db=sales,uid=db2,pwd=db2"
                 },
                 {
                     "name": "event-queue",
                     "key": "mq_rm",
-                    "instances": 3,
                     "note": "this resource is named 'event-queue' - overrides rm-key - using default rm-instances",
                     "openinfo": "some-mq-specific-stuff",
                     "closeinfo": "some-mq-specific-stuff"
@@ -531,19 +525,15 @@ domain:
         "servers": [
             {
                 "path": "customer-server-1",
-                "instances": 1,
                 "memberships": [
                     "customer-group"
-                ],
-                "restart": true
+                ]
             },
             {
                 "path": "customer-server-2",
-                "instances": 1,
                 "memberships": [
                     "customer-group"
-                ],
-                "restart": true
+                ]
             },
             {
                 "path": "sales-server",
@@ -553,7 +543,6 @@ domain:
                 "memberships": [
                     "sales-group"
                 ],
-                "restart": true,
                 "restrictions": [
                     "preSalesSaveService",
                     "preSalesGetService"
@@ -563,11 +552,9 @@ domain:
                 "path": "sales-server",
                 "alias": "sales-post",
                 "note": "the only services that will be advertised are 'postSalesSaveService' and 'postSalesGetService'",
-                "instances": 1,
                 "memberships": [
                     "sales-group"
                 ],
-                "restart": true,
                 "restrictions": [
                     "postSalesSaveService",
                     "postSalesGetService"
@@ -575,7 +562,6 @@ domain:
             },
             {
                 "path": "sales-broker",
-                "instances": 1,
                 "memberships": [
                     "sales-group"
                 ],
@@ -587,7 +573,6 @@ domain:
                         }
                     ]
                 },
-                "restart": true,
                 "resources": [
                     "event-queue"
                 ]
@@ -600,11 +585,9 @@ domain:
                     "--configuration",
                     "/path/to/configuration"
                 ],
-                "instances": 1,
                 "memberships": [
                     "common-group"
-                ],
-                "restart": false
+                ]
             }
         ],
         "services": [
@@ -623,6 +606,14 @@ domain:
         ],
         "gateway": {
             "inbound": {
+                "default": {
+                    "note": "discovery forward is disabled default.",
+                    "connection": {
+                        "discovery": {
+                            "forward": false
+                        }
+                    }
+                },
                 "groups": [
                     {
                         "alias": "unique-inbound-alias",
@@ -632,11 +623,15 @@ domain:
                         },
                         "connections": [
                             {
-                                "address": "localhost:7779",
+                                "address": "localhost:7778",
                                 "note": "can be several listening host:port per inbound instance"
                             },
                             {
-                                "address": "some.host.org:7779"
+                                "address": "some.host.org:7779",
+                                "discovery": {
+                                    "forward": true
+                                },
+                                "note": "discovery will be forward to 'all' outbounds"
                             }
                         ]
                     },
@@ -901,25 +896,35 @@ value=some value
 [domain.executables]
 arguments=--configuration
 arguments=/path/to/configuration
-instances=1
 memberships=common-group
 path=mq-server
-restart=false
 
 [domain.gateway]
 
 [domain.gateway.inbound]
+
+[domain.gateway.inbound.default]
+note=discovery forward is disabled default.
+
+[domain.gateway.inbound.default.connection]
+
+[domain.gateway.inbound.default.connection.discovery]
+forward=false
 
 [domain.gateway.inbound.groups]
 alias=unique-inbound-alias
 note=if threshold of 2MB of total payload 'in flight' is reach inbound will stop consume from socket until we're below
 
 [domain.gateway.inbound.groups.connections]
-address=localhost:7779
+address=localhost:7778
 note=can be several listening host:port per inbound instance
 
 [domain.gateway.inbound.groups.connections]
 address=some.host.org:7779
+note=discovery will be forward to 'all' outbounds
+
+[domain.gateway.inbound.groups.connections.discovery]
+forward=true
 
 [domain.gateway.inbound.groups.limit]
 size=2097152
@@ -1123,16 +1128,12 @@ name=c1
 name=c2
 
 [domain.servers]
-instances=1
 memberships=customer-group
 path=customer-server-1
-restart=true
 
 [domain.servers]
-instances=1
 memberships=customer-group
 path=customer-server-2
-restart=true
 
 [domain.servers]
 alias=sales-pre
@@ -1140,26 +1141,21 @@ instances=10
 memberships=sales-group
 note=the only services that will be advertised are 'preSalesSaveService' and 'preSalesGetService'
 path=sales-server
-restart=true
 restrictions=preSalesSaveService
 restrictions=preSalesGetService
 
 [domain.servers]
 alias=sales-post
-instances=1
 memberships=sales-group
 note=the only services that will be advertised are 'postSalesSaveService' and 'postSalesGetService'
 path=sales-server
-restart=true
 restrictions=postSalesSaveService
 restrictions=postSalesGetService
 
 [domain.servers]
-instances=1
 memberships=sales-group
 path=sales-broker
 resources=event-queue
-restart=true
 
 [domain.servers.environment]
 
@@ -1188,21 +1184,17 @@ key=db2_rm
 
 [domain.transaction.resources]
 instances=5
-key=db2_rm
 name=customer-db
 note=this resource is named 'customer-db' - using the default rm-key (db_rm) - overrides the default rm-instances to 5
 openinfo=db=customer,uid=db2,pwd=db2
 
 [domain.transaction.resources]
-instances=3
-key=db2_rm
 name=sales-db
 note=this resource is named 'sales-db' - using the default rm-key (db_rm) - using default rm-instances
 openinfo=db=sales,uid=db2,pwd=db2
 
 [domain.transaction.resources]
 closeinfo=some-mq-specific-stuff
-instances=3
 key=mq_rm
 name=event-queue
 note=this resource is named 'event-queue' - overrides rm-key - using default rm-instances
@@ -1250,22 +1242,18 @@ openinfo=some-mq-specific-stuff
   <resources>
    <element>
     <name>customer-db</name>
-    <key>db2_rm</key>
     <instances>5</instances>
     <note>this resource is named 'customer-db' - using the default rm-key (db_rm) - overrides the default rm-instances to 5</note>
     <openinfo>db=customer,uid=db2,pwd=db2</openinfo>
    </element>
    <element>
     <name>sales-db</name>
-    <key>db2_rm</key>
-    <instances>3</instances>
     <note>this resource is named 'sales-db' - using the default rm-key (db_rm) - using default rm-instances</note>
     <openinfo>db=sales,uid=db2,pwd=db2</openinfo>
    </element>
    <element>
     <name>event-queue</name>
     <key>mq_rm</key>
-    <instances>3</instances>
     <note>this resource is named 'event-queue' - overrides rm-key - using default rm-instances</note>
     <openinfo>some-mq-specific-stuff</openinfo>
     <closeinfo>some-mq-specific-stuff</closeinfo>
@@ -1302,19 +1290,15 @@ openinfo=some-mq-specific-stuff
  <servers>
   <element>
    <path>customer-server-1</path>
-   <instances>1</instances>
    <memberships>
     <element>customer-group</element>
    </memberships>
-   <restart>true</restart>
   </element>
   <element>
    <path>customer-server-2</path>
-   <instances>1</instances>
    <memberships>
     <element>customer-group</element>
    </memberships>
-   <restart>true</restart>
   </element>
   <element>
    <path>sales-server</path>
@@ -1324,7 +1308,6 @@ openinfo=some-mq-specific-stuff
    <memberships>
     <element>sales-group</element>
    </memberships>
-   <restart>true</restart>
    <restrictions>
     <element>preSalesSaveService</element>
     <element>preSalesGetService</element>
@@ -1334,11 +1317,9 @@ openinfo=some-mq-specific-stuff
    <path>sales-server</path>
    <alias>sales-post</alias>
    <note>the only services that will be advertised are 'postSalesSaveService' and 'postSalesGetService'</note>
-   <instances>1</instances>
    <memberships>
     <element>sales-group</element>
    </memberships>
-   <restart>true</restart>
    <restrictions>
     <element>postSalesSaveService</element>
     <element>postSalesGetService</element>
@@ -1346,7 +1327,6 @@ openinfo=some-mq-specific-stuff
   </element>
   <element>
    <path>sales-broker</path>
-   <instances>1</instances>
    <memberships>
     <element>sales-group</element>
    </memberships>
@@ -1358,7 +1338,6 @@ openinfo=some-mq-specific-stuff
      </element>
     </variables>
    </environment>
-   <restart>true</restart>
    <resources>
     <element>event-queue</element>
    </resources>
@@ -1371,11 +1350,9 @@ openinfo=some-mq-specific-stuff
     <element>--configuration</element>
     <element>/path/to/configuration</element>
    </arguments>
-   <instances>1</instances>
    <memberships>
     <element>common-group</element>
    </memberships>
-   <restart>false</restart>
   </element>
  </executables>
  <services>
@@ -1394,6 +1371,14 @@ openinfo=some-mq-specific-stuff
  </services>
  <gateway>
   <inbound>
+   <default>
+    <note>discovery forward is disabled default.</note>
+    <connection>
+     <discovery>
+      <forward>false</forward>
+     </discovery>
+    </connection>
+   </default>
    <groups>
     <element>
      <alias>unique-inbound-alias</alias>
@@ -1403,11 +1388,15 @@ openinfo=some-mq-specific-stuff
      </limit>
      <connections>
       <element>
-       <address>localhost:7779</address>
+       <address>localhost:7778</address>
        <note>can be several listening host:port per inbound instance</note>
       </element>
       <element>
        <address>some.host.org:7779</address>
+       <discovery>
+        <forward>true</forward>
+       </discovery>
+       <note>discovery will be forward to 'all' outbounds</note>
       </element>
      </connections>
     </element>

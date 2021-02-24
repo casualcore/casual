@@ -9,12 +9,11 @@
 
 #include "gateway/manager/admin/model.h"
 
+#include "domain/message/discovery.h"
 #include "queue/common/ipc/message.h"
 
 #include "common/message/type.h"
 #include "common/message/transaction.h"
-#include "common/message/service.h"
-#include "common/message/gateway.h"
 #include "common/message/conversation.h"
 #include "common/domain.h"
 #include "common/serialize/native/binary.h"
@@ -89,6 +88,17 @@ namespace casual
             using Reply = common::message::basic_message< common::message::Type::gateway_domain_disconnect_reply>;
          } // disconnect
 
+         namespace discovery
+         {
+            namespace reply
+            {
+               using Service = casual::domain::message::discovery::reply::Service;
+               using Queue = casual::domain::message::discovery::reply::Queue;               
+            } // reply
+
+            using Request = casual::domain::message::discovery::Request;
+            using Reply = casual::domain::message::discovery::Reply;
+         } // discovery
       } // domain
 
       namespace state
@@ -318,8 +328,8 @@ namespace casual
 
          namespace rediscover
          {
-            using Request = common::message::basic_request< common::message::Type::gateway_outbound_rediscover_request>;
-            using Reply = common::message::basic_reply< common::message::Type::gateway_outbound_rediscover_reply>;
+            //using Request = common::message::basic_request< common::message::Type::gateway_outbound_rediscover_request>;
+            //using Reply = common::message::basic_reply< common::message::Type::gateway_outbound_rediscover_reply>;
          } // rediscover
 
 
@@ -374,9 +384,6 @@ namespace casual
 
          template<>
          struct type_traits< casual::gateway::message::domain::disconnect::Request> : detail::type<  casual::gateway::message::domain::disconnect::Reply> {};
-
-         template<>
-         struct type_traits< casual::gateway::message::outbound::rediscover::Request> : detail::type< casual::gateway::message::outbound::rediscover::Reply> {};
 
          template<>
          struct type_traits< casual::gateway::message::inbound::configuration::update::Request> : detail::type< casual::gateway::message::inbound::configuration::update::Reply> {};
@@ -437,15 +444,15 @@ template< typename A> struct Value< type, A, std::enable_if_t< common::serialize
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( execution);
          })
 
-         CASUAL_CUSTOMIZATION_POINT_NETWORK( common::message::gateway::domain::discover::Request,
+         CASUAL_CUSTOMIZATION_POINT_NETWORK( casual::gateway::message::domain::discovery::Request,
          {
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( execution);
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( domain);
-            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( services);
-            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( queues);
+            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( content.services);
+            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( content.queues);
          })
          
-         CASUAL_CUSTOMIZATION_POINT_NETWORK( common::message::gateway::domain::discover::Reply::Service,
+         CASUAL_CUSTOMIZATION_POINT_NETWORK( casual::gateway::message::domain::discovery::reply::Service,
          {
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( name);
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( category);
@@ -456,12 +463,12 @@ template< typename A> struct Value< type, A, std::enable_if_t< common::serialize
             CASUAL_SERIALIZE_NAME( value.property.hops, "hops");
          })
 
-         CASUAL_CUSTOMIZATION_POINT_NETWORK( common::message::gateway::domain::discover::Reply,
+         CASUAL_CUSTOMIZATION_POINT_NETWORK( casual::gateway::message::domain::discovery::Reply,
          {
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( execution);
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( domain);
-            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( services);
-            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( queues);
+            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( content.services);
+            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( content.queues);
          })
 
          CASUAL_CUSTOMIZATION_POINT_NETWORK( common::message::service::call::callee::Request,

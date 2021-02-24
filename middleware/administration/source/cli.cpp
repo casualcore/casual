@@ -11,6 +11,7 @@
 #include "common/terminal.h"
 
 #include "domain/manager/admin/cli.h"
+#include "domain/discovery/admin/cli.h"
 #include "service/manager/admin/cli.h"
 #include "queue/manager/admin/cli.h"
 #include "transaction/manager/admin/cli.h"
@@ -127,6 +128,7 @@ valid directives:
             queue::manager::admin::cli queue;
             transaction::manager::admin::CLI transaction;
             gateway::manager::admin::cli gateway;
+            domain::discovery::admin::cli discovery;
             tools::service::call::cli service_call;
             tools::service::describe::cli describe;
             casual::buffer::admin::CLI buffer;
@@ -151,6 +153,7 @@ Where <option> is one of the listed below
                cli.queue.options(),
                cli.transaction.options(),
                cli.gateway.options(),
+               cli.discovery.options(),
                cli.service_call.options(),
                cli.describe.options(),
                cli.buffer.options(),

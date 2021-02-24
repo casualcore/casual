@@ -8,8 +8,7 @@
 
 #include "common/unittest.h"
 
-#include "common/message/gateway.h"
-#include "common/communication/instance.h"
+#include "service/manager/admin/model.h"
 
 #include <vector>
 #include <string>
@@ -20,17 +19,12 @@ namespace casual
    {
       using namespace common::unittest;
 
-      inline auto discover( std::vector< std::string> services, std::vector< std::string> queues)
+      void discover( std::vector< std::string> services, std::vector< std::string> queues);
+
+      namespace service
       {
-         common::message::gateway::domain::discover::Request request{ common::process::handle()};
-         request.domain =  common::domain::identity();
-         request.services = std::move( services);
-         request.queues = std::move( queues);
-         auto correlation = common::communication::device::blocking::send( common::communication::instance::outbound::gateway::manager::device(), request);
-         common::message::gateway::domain::discover::accumulated::Reply reply;
-         common::communication::device::blocking::receive( common::communication::ipc::inbound::device(), reply, correlation);
-         return reply;
-      }
+         casual::service::manager::admin::model::State state();
+      } // service
       
    } // gateway::unittest
 } // casual

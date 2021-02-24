@@ -98,6 +98,7 @@ queue_manager = LinkExecutable( 'bin/casual-queue-manager',
      common,
      'casual-common', 
      'casual-domain-utility',
+     'casual-domain-discovery',
      'casual-serviceframework', 
      ])
 

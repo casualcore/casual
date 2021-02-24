@@ -31,9 +31,9 @@ namespace casual
                CASUAL_SERIALIZE( process);
             )
 
-            friend bool operator < ( const Base& lhs, const Base& rhs) { return lhs.process.pid < rhs.process.pid;}
-            friend bool operator == ( const Base& lhs, const Base& rhs) { return lhs.process.pid == rhs.process.pid;}
-            friend bool operator == ( const Base& lhs, common::strong::process::id rhs) { return lhs.process.pid == rhs;}
+            inline friend bool operator < ( const Base& lhs, const Base& rhs) { return lhs.process.pid < rhs.process.pid;}
+            inline friend bool operator == ( const Base& lhs, const Base& rhs) { return lhs.process.pid == rhs.process.pid;}
+            inline friend bool operator == ( const Base& lhs, common::strong::process::id rhs) { return lhs.process.pid == rhs;}
 
          };
 
@@ -165,6 +165,8 @@ namespace casual
                CASUAL_SERIALIZE( concurrent);
             )
          } instances;
+
+         inline friend bool operator == ( const Service& lhs, std::string_view rhs) { return lhs.name == rhs;}
 
          CASUAL_CONST_CORRECT_SERIALIZE(
             CASUAL_SERIALIZE( name);

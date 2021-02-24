@@ -9,6 +9,7 @@
 
 #include "common/environment.h"
 #include "common/communication/ipc.h"
+#include "common/communication/instance.h"
 #include "common/event/listen.h"
 #include "common/execute.h"
 #include "common/message/event.h"
@@ -37,9 +38,9 @@ namespace casual
                   namespace configuration
                   {
 
-                     std::vector< file::scoped::Path> files( const std::vector< std::string>& configuration)
+                     std::vector< file::scoped::Path> files( std::vector< std::string_view> configuration)
                      {
-                        return algorithm::transform( configuration, []( const std::string& c){
+                        return algorithm::transform( configuration, []( auto& c){
                            return file::scoped::Path{ common::unittest::file::temporary::content( ".yaml", c)};
                         });
                      }
@@ -71,11 +72,17 @@ namespace casual
 
             struct Process::Implementation
             {
-               Implementation( const std::vector< std::string>& configuration, std::function< void( const std::string&)> callback = nullptr)
+               Implementation( std::vector< std::string_view> configuration, std::function< void( const std::string&)> callback = nullptr)
                   : environment( std::move( callback)),
                   files( local::configuration::files( configuration))
                {
                   log::Trace trace{ "domain::manager::unittest::Process::Implementation", verbose::log};
+
+                  common::domain::identity( {});
+
+                  // reset domain instance, if any.
+                  exception::guard( [](){ communication::instance::outbound::domain::manager::device().connector().clear();});
+                  exception::guard( [](){ communication::instance::outbound::domain::manager::optional::device().connector().clear();});
 
                   auto tasks = std::vector< common::Uuid>{ uuid::make()};
 
@@ -84,7 +91,7 @@ namespace casual
                      {
                         // spawn the domain-manager
                         process = common::Process{ 
-                           common::environment::directory::casual() + "/bin/casual-domain-manager", 
+                           local::repository::root() + "/middleware/domain/bin/casual-domain-manager", 
                            local::configuration::arguments( files, tasks.front())};
                      }),
                      event::condition::done( [&tasks]()
@@ -176,10 +183,10 @@ domain:
 
             };
 
-            Process::Process( const std::vector< std::string>& configuration)
+            Process::Process( std::vector< std::string_view> configuration)
                : m_implementation( configuration) {}
 
-            Process::Process( const std::vector< std::string>& configuration, std::function< void( const std::string&)> callback)
+            Process::Process( std::vector< std::string_view> configuration, std::function< void( const std::string&)> callback)
                : m_implementation( configuration, std::move( callback)) {}
 
             Process::Process() {}

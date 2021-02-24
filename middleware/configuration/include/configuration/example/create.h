@@ -22,13 +22,13 @@ namespace casual
             {
 
                template< typename M>
-               common::file::scoped::Path temporary( M&& model, const std::string& root, const std::string& extension)
+               common::file::scoped::Path temporary( M&& model, std::string_view root, std::string_view extension)
                {
                   common::file::scoped::Path path{ common::file::name::unique( common::directory::temporary() + "/configuration_", extension)};
 
                   common::file::Output file{ path};
                   auto archive = common::serialize::create::writer::from( file.extension());
-                  archive << CASUAL_NAMED_VALUE_NAME( model, root.c_str());;
+                  archive << CASUAL_NAMED_VALUE_NAME( model, root.data());;
                   archive.consume( file);
 
                   return path;
@@ -37,11 +37,11 @@ namespace casual
 
             //! creates a given model from yaml
             template< typename M, typename Yaml>
-            auto model( Yaml&& yaml, const std::string& root)
+            auto model( Yaml&& yaml, std::string_view root)
             {
                M model;
                auto archive = common::serialize::yaml::consumed::reader( std::forward< Yaml>( yaml));
-               archive >> CASUAL_NAMED_VALUE_NAME( model, root.c_str());
+               archive >> CASUAL_NAMED_VALUE_NAME( model, root.data());
                archive.validate();
                return model;
             };

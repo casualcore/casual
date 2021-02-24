@@ -15,7 +15,6 @@
 
 #include "serviceframework/service/protocol/call.h"
 
-#include "common/message/gateway.h"
 #include "common/communication/instance.h"
 
 
@@ -143,10 +142,16 @@ domain:
             return ! state.connections.empty() && ! state.connections[ 0].remote.name.empty();
          });
 
-         // should be found
-         auto discovered = unittest::discover( { "a"}, {});
-            
-         EXPECT_TRUE( ! discovered.replies.empty());
+         unittest::discover( { "a"}, {});
+
+         // check that service has concurrent instances
+         {
+            auto service = unittest::service::state();
+            auto found = algorithm::find( service.services, "a");
+            ASSERT_TRUE( found);
+            EXPECT_TRUE( ! found->instances.concurrent.empty()) << CASUAL_NAMED_VALUE( *found);
+         }
+
       }
 
       namespace local
@@ -196,20 +201,36 @@ domain:
             return ! state.connections.empty() && ! state.connections[ 0].remote.name.empty();
          });
 
-         auto discovered = unittest::discover( { "a"}, {});
+         unittest::discover( { "a"}, {});
 
-         auto equal_name = []( auto& lhs, auto& rhs){ return lhs.name == rhs;};
 
-         ASSERT_TRUE( discovered.replies.size() == 4) << CASUAL_NAMED_VALUE( discovered);
-         EXPECT_TRUE( algorithm::equal( discovered.replies[ 0].services, unittest::to::vector( { "a"}), equal_name)) << CASUAL_NAMED_VALUE( discovered.replies[ 0].services);
-            
-         auto& process = discovered.replies.at( 0).process;
-         ASSERT_TRUE( process) << CASUAL_NAMED_VALUE( process);
+         auto outbound_processes = []() -> std::vector< process::Handle>
+         {
+            auto state = unittest::service::state();
+            if( auto found = algorithm::find( state.services, "a"))
+            {
+               return algorithm::accumulate( found->instances.concurrent, std::vector< process::Handle>{}, [&state]( auto result, auto& instance)
+               {
+                  if( auto found = algorithm::find( state.instances.concurrent, instance.pid))
+                     result.push_back( found->process);
+                  return result;
+               });
+            }
+
+            return {};
+         };
+
+         
+         auto outbounds = outbound_processes();
+         ASSERT_TRUE( ! outbounds.empty()) << CASUAL_NAMED_VALUE( outbounds);
 
          const auto data = common::unittest::random::binary( 128);
 
          algorithm::for_n< 10>( [&]()
          {
+            algorithm::rotate( outbounds, std::begin( outbounds) + 1);
+            auto& process = range::front( outbounds);
+
             common::message::service::call::callee::Request request{ common::process::handle()};
             request.service.name = "a";
             request.buffer.memory = data;

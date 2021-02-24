@@ -6,9 +6,9 @@
 
 
 #include "domain/manager/configuration.h"
+#include "domain/manager/state.h"
 #include "domain/manager/state/create.h"
 #include "domain/transform.h"
-#include "domain/manager/manager.h"
 #include "domain/manager/task/create.h"
 
 #include "configuration/model.h"
@@ -25,32 +25,6 @@ namespace casual
          namespace configuration
          {
    
-            State state( const Settings& settings)
-            {
-               const auto files = common::file::find( settings.configuration);
-
-               auto state = casual::domain::transform::model( casual::configuration::model::load( files));
-
-               state.bare = settings.bare;
-
-               // log the source of the configuration
-               if( settings.configuration == files)
-                  log::line( log::category::information, "used configuration: ", files);
-               else
-                  log::line( log::category::information, "used configuration: ", files, " - from patterns: ", settings.configuration);
-               
-
-               if( settings.event.ipc)
-               {
-                  common::message::event::subscription::Begin request;
-                  request.process.ipc = settings.event.ipc;
-                  state.event.subscription( request);
-               }
-
-               return state;
-            }
-
-
             namespace local
             {
                namespace

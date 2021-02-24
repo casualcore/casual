@@ -9,12 +9,12 @@
 
 #include "service/manager/admin/server.h"
 #include "service/manager/admin/model.h"
+#include "service/forward/instance.h"
 #include "service/unittest/utility.h"
 
 #include "common/message/domain.h"
 #include "common/message/event.h"
 #include "common/message/service.h"
-#include "common/message/gateway.h"
 
 #include "common/service/lookup.h"
 #include "common/communication/instance.h"
@@ -25,6 +25,7 @@
 #include "serviceframework/service/protocol/call.h"
 #include "serviceframework/log.h"
 
+#include "domain/discovery/api.h"
 #include "domain/manager/unittest/process.h"
 
 namespace casual
@@ -54,7 +55,7 @@ domain:
 
                auto forward() const
                {
-                  return common::communication::instance::fetch::handle( common::communication::instance::identity::forward::cache);
+                  return common::communication::instance::fetch::handle( forward::instance::identity.id);
                }
             };
 
@@ -303,14 +304,15 @@ domain:
          service::unittest::advertise( { "A"});
 
          // discover
-         {
-            common::message::gateway::domain::discover::Request request{ common::process::handle()};
-            request.services = { "B"};
-            auto reply = common::communication::ipc::call( common::communication::instance::outbound::service::manager::device(), request);
+         {            
+            domain::message::discovery::Request request{ common::process::handle()};
+            request.content.services = { "B"};
+            domain::discovery::request( request);
+            auto reply = common::message::reverse::type( request);
+            common::communication::device::blocking::receive( common::communication::ipc::inbound::device(), reply);
 
-            ASSERT_TRUE( reply.services.size() == 1) << "reply: " << reply;
-            EXPECT_TRUE( reply.services.at( 0).name == "B") << "reply: " << reply;
-
+            ASSERT_TRUE( reply.content.services.size() == 1) << "reply: " << reply;
+            EXPECT_TRUE( reply.content.services.at( 0).name == "B") << "reply: " << reply;
          }
       }
 

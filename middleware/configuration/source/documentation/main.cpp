@@ -66,9 +66,7 @@ Below follows examples in human readable formats that `casual` can handle
 
 )";
                for( auto format : { "yaml", "json", "ini", "xml"})
-               {
                   write::example( out, format, configuration);
-               }
             }
 
             void domain( const std::string& root)
@@ -149,17 +147,27 @@ instances      | number of instances to start of the server.
 memberships    | which groups are the server member of (dictates order)
 
 
+## service
+
+Defines _global_ service information that will be used as configuration on services not specifying specific values in the _services_ section.
+
+property                   | description
+---------------------------|----------------------------------------------------
+execution.timeout.duration | timeout of service, from the _caller_ perspective (example: `30ms`, `1h`, `3min`, `40s`. if no SI unit `s` is used)
+execution.timeout.contract | defines action to take if timeout is passed (linger = just wait, kill = send kill signal, terminate = send terminate signal)
+
 ## services
 
 Defines service related configuration. 
 
 Note that this configuration is tied to the service, regardless who has advertised the service.
 
-property       | description
----------------|----------------------------------------------------
-name           | name of the service
-timeout        | timeout of the service, from the _caller_ perspective (example: `30ms`, `1h`, `3min`, `40s`. if no SI unit `s` is used)
-routes         | defines what logical names are actually exposed. For _aliases_, it's important to include the original name.
+property                   | description
+---------------------------|----------------------------------------------------
+name                       | name of the service
+routes                     | defines what logical names are actually exposed. For _aliases_, it's important to include the original name.
+execution.timeout.duration | timeout of service, from the _caller_ perspective (example: `30ms`, `1h`, `3min`, `40s`. if no SI unit `s` is used)
+execution.timeout.contract | defines action to take if timeout is passed (linger = just wait, kill = send kill signal, terminate = send terminate signal)
 
 
 ## gateway
@@ -173,10 +181,11 @@ Defines all inbound related configuration (from remote domains -> local domain)
 ### default
 #### inbound
 
-property       | description
----------------|----------------------------------------------------
-limit.size     | default value for limit size 
-limit.messages | default value for maximum number of messages
+property                     | description
+-----------------------------|----------------------------------------------------
+limit.size                   | default value for limit size 
+limit.messages               | default value for maximum number of messages
+connection.discovery.forward | default value if connections should forward discovery or not
 
 #### groups
 
@@ -185,15 +194,17 @@ Defines a list of all inbound groups
 property       | description
 ---------------|----------------------------------------------------
 alias          | an _identity_ for this group instance (if not set, casual generates one)
+limit.size     | the maximum allowed size of all inflight messages. If reached, _inbound-group_ will stop taking more request until below the limit 
+limit.messages | the maximum allowed number of inflight messages. If reached, _inbound-group_ will stop taking more request until below the limit
 connections    | all the connections for this group
 
 ##### connection
 
-property       | description
----------------|----------------------------------------------------
-address        | the address to listen on, `host:port` 
-limit.size     | the maximum allowed size of all inflight messages. If reached _inbound_ stop taking more request until below the limit 
-limit.messages | the maximum allowed number of inflight messages. If reached _inbound_ stop taking more request until below the limit
+property          | description
+------------------|----------------------------------------------------
+address           | the address to listen on, `host:port`
+discovery.forward | boolean if the connetion should forward discovery request to 'discoverables'
+
 
 ### outbound
 

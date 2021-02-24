@@ -120,27 +120,27 @@ namespace casual
                      local::set_general( message);
                   }
 
-                  void fill( common::message::gateway::domain::discover::Request& message)
+                  void fill( gateway::message::domain::discovery::Request& message)
                   {
                      local::set_general( message);
 
                      message.domain.id = 0x315dacc6182e4c12bf9877efa924cb86_uuid;
                      message.domain.name = "domain A";
 
-                     message.services = { "service1", "service2", "service3"};
-                     message.queues = { "queue1", "queue2", "queue3"};
+                     message.content.services = { "service1", "service2", "service3"};
+                     message.content.queues = { "queue1", "queue2", "queue3"};
                   }
 
-                  void fill( common::message::gateway::domain::discover::Reply& message)
+                  void fill( gateway::message::domain::discovery::Reply& message)
                   {
                      local::set_general( message);
 
                      message.domain.id = common::Uuid{ "e2f6b7c37f734a0982a0ab1581b21fa5"};
                      message.domain.name = "domain B";
 
-                     message.services = {
+                     message.content.services = {
                            [](){
-                              common::message::service::concurrent::advertise::Service service;
+                              gateway::message::domain::discovery::reply::Service service;
                               service.name = "service1";
                               service.category = "example";
                               service.transaction = common::service::transaction::Type::join;
@@ -149,9 +149,9 @@ namespace casual
                               return service;
                            }()
                      };
-                     message.queues = {
+                     message.content.queues = {
                            [](){
-                              common::message::gateway::domain::discover::Queue queue;
+                              gateway::message::domain::discovery::reply::Queue queue;
                               queue.name = "queue1";
                               queue.retries = 10;
                               return queue;

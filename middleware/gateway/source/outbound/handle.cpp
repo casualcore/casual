@@ -10,6 +10,8 @@
 #include "gateway/message.h"
 #include "gateway/common.h"
 
+#include "domain/discovery/api.h"
+
 #include "common/communication/instance.h"
 #include "common/message/handle.h"
 #include "common/event/send.h"
@@ -255,7 +257,7 @@ namespace casual
 
                namespace domain
                {
-                  namespace discover
+                  namespace discovery
                   {
                      namespace detail
                      {
@@ -272,8 +274,8 @@ namespace casual
 
                                  auto advertise = state.lookup.add( 
                                     connection, 
-                                    algorithm::transform( reply.services, get_name), 
-                                    algorithm::transform( reply.queues, get_name));
+                                    algorithm::transform( reply.content.services, get_name), 
+                                    algorithm::transform( reply.content.queues, get_name));
 
 
                                  auto equal_name = []( auto& lhs, auto& rhs){ return lhs.name == rhs;};
@@ -281,7 +283,7 @@ namespace casual
                                  // we need to intersect whit the actual 'resource' information with what the state says we should advertise.
                                  // (we do not know the _information_, and don't really care)
 
-                                 if( auto services = std::get< 0>( algorithm::intersection( reply.services, advertise.services, equal_name)))
+                                 if( auto services = std::get< 0>( algorithm::intersection( reply.content.services, advertise.services, equal_name)))
                                  {
                                     common::message::service::concurrent::Advertise request{ common::process::handle()};
                                     request.alias = instance::alias();
@@ -291,7 +293,7 @@ namespace casual
                                     communication::device::blocking::send( ipc::manager::service(), request);
                                  }
 
-                                 if( auto queues = std::get< 0>( algorithm::intersection( reply.queues, advertise.queues, equal_name)))
+                                 if( auto queues = std::get< 0>( algorithm::intersection( reply.content.queues, advertise.queues, equal_name)))
                                  {
                                     casual::queue::ipc::message::Advertise request{ common::process::handle()};
                                     request.order = state.order;
@@ -315,7 +317,7 @@ namespace casual
 
                      auto request( State& state)
                      {
-                        return [&state]( common::message::gateway::domain::discover::Request& message)
+                        return [&state]( gateway::message::domain::discovery::Request& message)
                         {
                            Trace trace{ "gateway::outbound::handle::local::internal::domain::discover::request"};
                            log::line( verbose::log, "message: ", message);
@@ -344,6 +346,11 @@ namespace casual
                                  if( algorithm::find( state.disconnecting, descriptor))
                                     return;
 
+                                 // check if the connection is the same domain that instigated the discovery
+                                 if( auto found = algorithm::find( state.external.information, descriptor))
+                                    if( found->domain.id == message.domain.id)
+                                       return;
+
                                  if( auto correlation = communication::device::blocking::optional::send( connection.device, message))
                                     result.emplace_back( correlation, descriptor);
                               });
@@ -359,11 +366,13 @@ namespace casual
 
                               detail::advertise::replies( state, replies, outcome);
 
-                              common::message::gateway::domain::discover::accumulated::Reply message;
+                              gateway::message::domain::discovery::Reply message{ process::handle()};
                               message.correlation = correlation;
-                              message.replies = std::move( replies);
-                              // make sure we're the replier...
-                              algorithm::for_each( message.replies, []( auto& reply){ reply.process = process::handle();});
+                              
+                              message.content = algorithm::accumulate( replies, decltype( message.content){}, []( auto result, auto& reply)
+                              {
+                                 return result + reply.content;
+                              });
 
                               communication::device::blocking::optional::send( destination, message);
                            };
@@ -375,13 +384,13 @@ namespace casual
 
                         };
                      }
-                  } // discover
+                  } // discovery
 
                   namespace rediscover
                   {
                      auto request( State& state)
                      {
-                        return [&state]( message::outbound::rediscover::Request& message)
+                        return [&state]( casual::domain::message::discovery::rediscovery::Request& message)
                         {
                            Trace trace{ "gateway::outbound::handle::local::internal::domain::rediscover::request"};
                            log::line( verbose::log, "message: ", message);
@@ -394,31 +403,24 @@ namespace casual
                               return;
                            }
 
-                           auto pending = [&state]()
+                           auto pending = algorithm::accumulate( state.external.information, state.coordinate.discovery.empty_pendings(), [&state]( auto result, auto& information)
                            {
-                              auto result = state.coordinate.discovery.empty_pendings();
+                              if( ( information.configuration.services.empty() 
+                                 && information.configuration.queues.empty())
+                                 || algorithm::find( state.disconnecting, information.connection))
+                                 return result;
 
-                              auto call = [&]( auto& information)
-                              {
-                                 if( ( information.configuration.services.empty() 
-                                    && information.configuration.queues.empty())
-                                    || algorithm::find( state.disconnecting, information.connection))
-                                    return;
+                              gateway::message::domain::discovery::Request request;
+                              request.domain = common::domain::identity();
+                              request.content.services = information.configuration.services;
+                              request.content.queues = information.configuration.queues;
 
-                                 common::message::gateway::domain::discover::Request request;
-                                 request.domain = common::domain::identity();
-                                 request.services =  information.configuration.services;
-                                 request.queues = information.configuration.queues;
-
-                                 result.emplace_back( local::tcp::send( state, information.connection, request), information.connection);
-                              };
-
-                              algorithm::for_each( state.external.information, call);
-
+                              result.emplace_back( local::tcp::send( state, information.connection, request), information.connection);
                               return result;
-                           };
+                           });
 
-                           auto callback = [&state, message]( auto&& replies, auto&& outcome)
+
+                           state.coordinate.discovery( std::move( pending), [&state, correlation = message.correlation, ipc = message.process.ipc]( auto&& replies, auto&& outcome)
                            { 
                               Trace trace{ "gateway::outbound::handle::local::internal::domain::rediscover::request callback"};
 
@@ -426,17 +428,17 @@ namespace casual
                               handle::unadvertise( state.lookup.clear());
 
                               // advertise the newly found, if any.
-                              discover::detail::advertise::replies( state, replies, outcome);
+                              discovery::detail::advertise::replies( state, replies, outcome);
 
-                              auto reply = common::message::reverse::type( message, process::handle());
-                              communication::device::blocking::optional::send( message.process.ipc, reply);
-                           } ;
-
-                           state.coordinate.discovery( pending(), std::move( callback));
+                              casual::domain::message::discovery::rediscovery::Reply message;
+                              message.correlation = correlation;
+                              communication::device::blocking::optional::send( ipc, message);
+                           });
 
                         };
                      }
                   } // rediscover
+
                } // domain
 
                namespace queue
@@ -520,11 +522,11 @@ namespace casual
                               {
                                  auto result = state.coordinate.discovery.empty_pendings();
 
-                                 common::message::gateway::domain::discover::Request request{ common::process::handle()};
+                                 gateway::message::domain::discovery::Request request{ common::process::handle()};
                                  request.correlation = message.correlation;
                                  request.domain = common::domain::identity();
-                                 request.services = configuration.services;
-                                 request.queues = configuration.queues;
+                                 request.content.services = configuration.services;
+                                 request.content.queues = configuration.queues;
                                  result.emplace_back( tcp::send( state, destination.connection, request), destination.connection);
 
                                  return result;
@@ -535,7 +537,7 @@ namespace casual
                                  Trace trace{ "gateway::outbound::handle::local::external::connect::reply callback"};
 
                                  // since we've instigated the request, we just advertise and we're done.
-                                 internal::domain::discover::detail::advertise::replies( state, replies, outcome);
+                                 internal::domain::discovery::detail::advertise::replies( state, replies, outcome);
                               };
                               
                               state.coordinate.discovery( 
@@ -544,8 +546,8 @@ namespace casual
                               );
                            }
 
-                           // send event to enable others to use us to discover
-                           common::event::send( common::message::event::discoverable::Avaliable{ common::process::handle()});                           
+                           // register to domain discovery
+                           casual::domain::discovery::outbound::registration( common::process::handle());
 
                            log::line( verbose::log, "information: ", *information);
                         }
@@ -693,11 +695,11 @@ namespace casual
 
                namespace domain
                {
-                  namespace discover
+                  namespace discovery
                   {
                      auto reply( State& state)
                      {
-                        return [&state]( common::message::gateway::domain::discover::Reply& message)
+                        return [&state]( gateway::message::domain::discovery::Reply& message)
                         {
                            Trace trace{ "gateway::outbound::handle::local::external::domain::discover::reply"};
                            log::line( verbose::log, "message: ", message);
@@ -734,7 +736,7 @@ namespace casual
             local::internal::transaction::resource::rollback::request( state),
 
             // discover
-            local::internal::domain::discover::request( state),
+            local::internal::domain::discovery::request( state),
             local::internal::domain::rediscover::request( state),
          };
       }
@@ -758,7 +760,7 @@ namespace casual
             local::external::transaction::resource::rollback::reply( state),
 
             // discover
-            local::external::domain::discover::reply( state)
+            local::external::domain::discovery::reply( state)
          };
       }
 
@@ -830,7 +832,7 @@ namespace casual
          Trace trace{ "gateway::outbound::handle::connect"};
 
          gateway::message::domain::connect::Request request;
-         request.domain = domain::identity();
+         request.domain = common::domain::identity();
          request.correlation = uuid::make();
          request.versions = range::to_vector( gateway::message::domain::protocol::versions);
          

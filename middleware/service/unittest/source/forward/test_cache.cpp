@@ -4,10 +4,9 @@
 //! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-
-#include <gtest/gtest.h>
 #include "common/unittest.h"
 
+#include "service/forward/instance.h"
 #include "service/unittest/utility.h"
 
 #include "common/communication/instance.h"
@@ -30,7 +29,7 @@ namespace casual
 
                auto forward() const
                {
-                  return communication::instance::fetch::handle( communication::instance::identity::forward::cache);
+                  return communication::instance::fetch::handle( forward::instance::identity.id);
                }
 
                static constexpr auto configuration = R"(
@@ -117,7 +116,7 @@ domain:
 
             EXPECT_TRUE( reply.correlation == correlation);
             EXPECT_TRUE( reply.transaction.trid == request.trid);
-            EXPECT_TRUE( reply.code.result == common::code::xatmi::service_error);
+            EXPECT_TRUE( reply.code.result == common::code::xatmi::no_entry) << CASUAL_NAMED_VALUE( reply.code.result);
          }
       }
    } // service
