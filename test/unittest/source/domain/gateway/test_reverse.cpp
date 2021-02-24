@@ -7,7 +7,7 @@
 
 #include "common/unittest.h"
 
-#include "casual/test/domain.h"
+#include "domain/manager/unittest/process.h"
 
 #include "common/communication/instance.h"
 #include "serviceframework/service/protocol/call.h"
@@ -28,20 +28,7 @@ namespace casual
       {
          namespace
          {
-
-            namespace call
-            {
-               auto state()
-               {
-                  serviceframework::service::protocol::binary::Call call;
-                  auto reply = call( gateway::manager::admin::service::name::state);
-
-                  gateway::manager::admin::model::State result;
-                  reply >> CASUAL_NAMED_VALUE( result);
-
-                  return result;
-               }
-            }
+            using Manager = casual::domain::manager::unittest::Process;
 
             namespace state
             {
@@ -68,7 +55,7 @@ namespace casual
                      while( ! predicate( state) && count-- > 0)
                      {
                         process::sleep( std::chrono::milliseconds{ 2});
-                        state = call::state();
+                        state = state::gateway::call();
                      }
 
                      return state;
@@ -76,7 +63,6 @@ namespace casual
 
                } // gateway
 
-               
             } // state
 
             auto allocate( platform::size::type size = 128)
@@ -145,8 +131,8 @@ domain:
                   -  address: 127.0.0.1:6669
 )";
 
-         domain::Manager a{ A};
-         domain::Manager b{ B}; // will be the 'active' domain
+         local::Manager a{ { A}};
+         local::Manager b{ { B}}; // will be the 'active' domain
 
          EXPECT_TRUE( communication::instance::ping( a.handle().ipc) == a.handle());
          EXPECT_TRUE( communication::instance::ping( b.handle().ipc) == b.handle());

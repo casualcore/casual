@@ -9,6 +9,7 @@
 
 #include "common/environment.h"
 #include "common/communication/ipc.h"
+#include "common/communication/instance.h"
 #include "common/event/listen.h"
 #include "common/execute.h"
 #include "common/message/event.h"
@@ -37,9 +38,9 @@ namespace casual
                   namespace configuration
                   {
 
-                     std::vector< file::scoped::Path> files( const std::vector< std::string>& configuration)
+                     std::vector< file::scoped::Path> files( std::vector< std::string_view> configuration)
                      {
-                        return algorithm::transform( configuration, []( const std::string& c){
+                        return algorithm::transform( configuration, []( auto& c){
                            return file::scoped::Path{ common::unittest::file::temporary::content( ".yaml", c)};
                         });
                      }
@@ -66,16 +67,35 @@ namespace casual
                         return environment::variable::get( "CASUAL_REPOSITORY_ROOT");
                      }
                   } // repository
+                  
+                  namespace instance::devices
+                  {
+                     void reset()
+                     {
+                        // reset domain instance, if any.
+                        exception::guard( [](){ communication::instance::outbound::domain::manager::device().connector().clear();});
+                        exception::guard( [](){ communication::instance::outbound::domain::manager::optional::device().connector().clear();});
+
+                        // reset service instance, if any.
+                        exception::guard( [](){ communication::instance::outbound::service::manager::device().connector().clear();});
+                     }
+
+                  } // instance::devices
+
                } // <unnamed>
             } // local
 
             struct Process::Implementation
             {
-               Implementation( const std::vector< std::string>& configuration, std::function< void( const std::string&)> callback = nullptr)
+               Implementation( std::vector< std::string_view> configuration, std::function< void( const std::string&)> callback = nullptr)
                   : environment( std::move( callback)),
                   files( local::configuration::files( configuration))
                {
                   log::Trace trace{ "domain::manager::unittest::Process::Implementation", verbose::log};
+
+                  common::domain::identity( {});
+
+                  local::instance::devices::reset();
 
                   auto tasks = std::vector< common::Uuid>{ uuid::make()};
 
@@ -84,7 +104,7 @@ namespace casual
                      {
                         // spawn the domain-manager
                         process = common::Process{ 
-                           common::environment::directory::casual() + "/bin/casual-domain-manager", 
+                           local::repository::root() + "/middleware/domain/bin/casual-domain-manager", 
                            local::configuration::arguments( files, tasks.front())};
                      }),
                      event::condition::done( [&tasks]()
@@ -99,7 +119,8 @@ namespace casual
                      [&]( const manager::task::message::domain::Information& event)
                      {
                         log::line( log::debug, "event: ", event);
-                        common::domain::identity( event.domain);
+                        domain = event.domain;
+                        common::domain::identity( domain);
                         process.handle( event.process);
                      },
                      [&tasks]( const message::event::Task& event)
@@ -133,6 +154,17 @@ domain:
    name: default-domain
                )"})
                {}
+
+               void activate()
+               {
+                  log::Trace trace{ "domain::manager::unittest::Process::Implementation::activate", verbose::log};
+
+                  common::domain::identity( domain);
+
+                  environment.activate();
+
+                  local::instance::devices::reset();
+               }
                
                struct Environment
                {
@@ -165,29 +197,35 @@ domain:
 
                } environment;
 
+
                std::vector< common::file::scoped::Path> files;
                common::Process process;
+               common::domain::Identity domain;
 
                CASUAL_LOG_SERIALIZE(
-               {
                   CASUAL_SERIALIZE( files);
                   CASUAL_SERIALIZE( process);
-               })
+                  CASUAL_SERIALIZE( domain);
+               )
 
             };
 
-            Process::Process( const std::vector< std::string>& configuration)
+            Process::Process( std::vector< std::string_view> configuration)
                : m_implementation( configuration) {}
 
-            Process::Process( const std::vector< std::string>& configuration, std::function< void( const std::string&)> callback)
+            Process::Process( std::vector< std::string_view> configuration, std::function< void( const std::string&)> callback)
                : m_implementation( configuration, std::move( callback)) {}
 
             Process::Process() {}
 
-            Process::~Process() = default;
+            Process::~Process()
+            {
+               log::Trace trace{ "domain::manager::unittest::Process::~Process", verbose::log};
+               log::line( verbose::log, "this: ", *this);
+            }
 
-            Process::Process( Process&&) = default;
-            Process& Process::operator = ( Process&&) = default;
+            Process::Process( Process&&) noexcept = default;
+            Process& Process::operator = ( Process&&) noexcept = default;
 
             const common::process::Handle& Process::handle() const noexcept
             {
@@ -196,12 +234,14 @@ domain:
 
             void Process::activate()
             {
-               m_implementation->environment.activate();
+               m_implementation->activate();
             }
 
             std::ostream& operator << ( std::ostream& out, const Process& value)
             {
-               return common::stream::write( out, *value.m_implementation);
+               if( value.m_implementation)
+                  return common::stream::write( out, *value.m_implementation);
+               return out << "nil";
             }
 
          } // unittest

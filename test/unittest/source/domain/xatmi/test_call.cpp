@@ -11,7 +11,7 @@
 
 #include "common/unittest.h"
 
-#include "casual/test/domain.h"
+#include "domain/manager/unittest/process.h"
 
 #include "common/flag.h"
 
@@ -36,13 +36,36 @@ namespace casual
       {
          namespace
          {
-
-            // Represent a domain
-            struct Domain : test::domain::Manager
+            auto domain()
             {
-               // using test::domain::Manager default configuration
+               return casual::domain::manager::unittest::Process{{
+R"(
+domain:
+   name: test-default-domain
 
-            };
+   groups: 
+      - name: base
+      - name: transaction
+        dependencies: [ base]
+      - name: queue
+        dependencies: [ transaction]
+      - name: example
+        dependencies: [ queue]
+
+   servers:
+      - path: ${CASUAL_HOME}/bin/casual-service-manager
+        memberships: [ base]
+      - path: ${CASUAL_HOME}/bin/casual-transaction-manager
+        memberships: [ transaction]
+      - path: ${CASUAL_HOME}/bin/casual-queue-manager
+        memberships: [ queue]
+      - path: ${CASUAL_HOME}/bin/casual-example-error-server
+        memberships: [ example]
+      - path: ${CASUAL_HOME}/bin/casual-example-server
+        memberships: [ example]
+)"
+               }};
+            }
 
          } // <unnamed>
       } // local
@@ -63,7 +86,7 @@ namespace casual
       {
          common::unittest::Trace trace;
 
-         local::Domain domain;
+         auto domain = local::domain();
 
          char buffer[ 100];
          EXPECT_TRUE( tpacall( nullptr, buffer, 0, 0) == -1);
@@ -74,7 +97,7 @@ namespace casual
       {
          common::unittest::Trace trace;
 
-         local::Domain domain;
+         auto domain = local::domain();
 
          tx_begin();
 
@@ -91,7 +114,7 @@ namespace casual
       {
          common::unittest::Trace trace;
 
-         local::Domain domain;
+         auto domain = local::domain();
 
          EXPECT_TRUE( tpcancel( 42) == -1);
          EXPECT_TRUE( tperrno == TPEBADDESC) << "tperrno: " << tperrno;
@@ -102,7 +125,7 @@ namespace casual
       {
          common::unittest::Trace trace;
 
-         local::Domain domain;
+         auto domain = local::domain();
 
          EXPECT_TRUE( tx_rollback() == TX_PROTOCOL_ERROR);
       }
@@ -112,7 +135,7 @@ namespace casual
       {
          common::unittest::Trace trace;
 
-         local::Domain domain;
+         auto domain = local::domain();
 
          int descriptor = 42;
          auto buffer = tpalloc( X_OCTET, nullptr, 128);
@@ -128,7 +151,7 @@ namespace casual
       {
          common::unittest::Trace trace;
 
-         local::Domain domain;
+         auto domain = local::domain();
 
          auto buffer = tpalloc( X_OCTET, nullptr, 128);
 
@@ -169,7 +192,7 @@ namespace casual
       {
          common::unittest::Trace trace;
 
-         local::Domain domain;
+         auto domain = local::domain();
 
          auto descriptor = tpacall( "casual/example/echo", nullptr, 0, 0);
          EXPECT_TRUE( descriptor != -1) << "tperrno: " << tperrno;
@@ -181,7 +204,7 @@ namespace casual
       {
          common::unittest::Trace trace;
 
-         local::Domain domain;
+         auto domain = local::domain();
 
          auto buffer = local::allocate( 128);
 
@@ -194,7 +217,7 @@ namespace casual
       {
          common::unittest::Trace trace;
 
-         local::Domain domain;
+         auto domain = local::domain();
 
          auto buffer = tpalloc( X_OCTET, nullptr, 128);
 
@@ -207,7 +230,7 @@ namespace casual
       {
          common::unittest::Trace trace;
 
-         local::Domain domain;
+         auto domain = local::domain();
 
          EXPECT_TRUE( tx_begin() == TX_OK);
 
@@ -226,7 +249,7 @@ namespace casual
       {
          common::unittest::Trace trace;
 
-         local::Domain domain;
+         auto domain = local::domain();
 
          auto buffer = local::allocate( 128);
          auto len = tptypes( buffer, nullptr, nullptr);
@@ -240,7 +263,7 @@ namespace casual
       {
          common::unittest::Trace trace;
 
-         local::Domain domain;
+         auto domain = local::domain();
 
          auto buffer = local::allocate( 128);
          auto len = tptypes( buffer, nullptr, nullptr);
@@ -255,7 +278,7 @@ namespace casual
       {
          common::unittest::Trace trace;
 
-         local::Domain domain;
+         auto domain = local::domain();
 
          EXPECT_TRUE( tx_begin() == TX_OK);
 
@@ -273,7 +296,7 @@ namespace casual
       {
          common::unittest::Trace trace;
 
-         local::Domain domain;
+         auto domain = local::domain();
 
          constexpr auto size = 1024 * 1024;
 
@@ -295,7 +318,7 @@ namespace casual
       {
          common::unittest::Trace trace;
 
-         local::Domain domain;
+         auto domain = local::domain();
 
          auto buffer = tpalloc( X_OCTET, nullptr, 128);
 
@@ -311,7 +334,7 @@ namespace casual
       {
          common::unittest::Trace trace;
 
-         local::Domain domain;
+         auto domain = local::domain();
 
          auto buffer = tpalloc( X_OCTET, nullptr, 128);
 
@@ -339,7 +362,7 @@ namespace casual
       {
          common::unittest::Trace trace;
 
-         local::Domain domain;
+         auto domain = local::domain();
 
 
          auto buffer = tpalloc( X_OCTET, nullptr, 128);
@@ -373,7 +396,7 @@ namespace casual
       {
          common::unittest::Trace trace;
 
-         local::Domain domain;
+         auto domain = local::domain();
 
          EXPECT_TRUE( tx_begin() == TX_OK);
 
@@ -407,7 +430,7 @@ namespace casual
       {
          common::unittest::Trace trace;
 
-         local::Domain domain;
+         auto domain = local::domain();
 
 
          EXPECT_TRUE( tx_begin() == TX_OK);
@@ -426,7 +449,7 @@ namespace casual
       {
          common::unittest::Trace trace;
 
-         local::Domain domain;
+         auto domain = local::domain();
 
 
          EXPECT_TRUE( tx_begin() == TX_OK);
@@ -448,7 +471,7 @@ namespace casual
       {
          common::unittest::Trace trace;
 
-         local::Domain domain;
+         auto domain = local::domain();
 
          EXPECT_TRUE( local::call( "casual/example/error/urcode")) << "tperrno: " << tperrnostring( tperrno);
          EXPECT_TRUE( tpurcode == 42) << "urcode: " << tpurcode;
@@ -460,7 +483,7 @@ namespace casual
       {
          common::unittest::Trace trace;
 
-         local::Domain domain;
+         auto domain = local::domain();
 
          EXPECT_FALSE( local::call( "casual/example/error/TPEOS"));
          EXPECT_TRUE( tperrno == TPEOS) << "tperrno: " << tperrno;
@@ -470,7 +493,7 @@ namespace casual
       {
          common::unittest::Trace trace;
 
-         local::Domain domain;
+         auto domain = local::domain();
 
          EXPECT_FALSE( local::call( "casual/example/error/TPEPROTO"));
          EXPECT_TRUE( tperrno == TPEPROTO) << "tperrno: " << tperrno;
@@ -480,7 +503,7 @@ namespace casual
       {
          common::unittest::Trace trace;
 
-         local::Domain domain;
+         auto domain = local::domain();
 
          EXPECT_FALSE( local::call( "casual/example/error/TPESVCERR"));
          EXPECT_TRUE( tperrno == TPESVCERR) << "tperrno: " << tperrno;
@@ -490,7 +513,7 @@ namespace casual
       {
          common::unittest::Trace trace;
 
-         local::Domain domain;
+         auto domain = local::domain();
 
          EXPECT_FALSE( local::call( "casual/example/error/TPESYSTEM"));
          EXPECT_TRUE( tperrno == TPESYSTEM) << "tperrno: " << tperrno;
@@ -500,7 +523,7 @@ namespace casual
       {
          common::unittest::Trace trace;
 
-         local::Domain domain;
+         auto domain = local::domain();
 
          EXPECT_FALSE( local::call( "casual/example/error/TPESVCFAIL"));
          EXPECT_TRUE( tperrno == TPESVCFAIL) << "tperrno: " << tperrno;

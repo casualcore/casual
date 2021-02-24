@@ -15,7 +15,7 @@
 
 #include "common/unittest.h"
 
-#include "casual/test/domain.h"
+#include "domain/manager/unittest/process.h"
 
 #include "xatmi.h"
 
@@ -31,11 +31,36 @@ namespace casual
          namespace
          {
 
-            // Represent a domain
-            struct Domain : test::domain::Manager
+            auto domain()
             {
-               // using test::domain::Manager default configuration
-            };
+               return casual::domain::manager::unittest::Process{{
+R"(
+domain:
+   name: test-default-domain
+
+   groups: 
+      - name: base
+      - name: transaction
+        dependencies: [ base]
+      - name: queue
+        dependencies: [ transaction]
+      - name: example
+        dependencies: [ queue]
+
+   servers:
+      - path: ${CASUAL_HOME}/bin/casual-service-manager
+        memberships: [ base]
+      - path: ${CASUAL_HOME}/bin/casual-transaction-manager
+        memberships: [ transaction]
+      - path: ${CASUAL_HOME}/bin/casual-queue-manager
+        memberships: [ queue]
+      - path: ${CASUAL_HOME}/bin/casual-example-error-server
+        memberships: [ example]
+      - path: ${CASUAL_HOME}/bin/casual-example-server
+        memberships: [ example]
+)"
+               }};
+            }
 
          } // <unnamed>
       } // local
@@ -79,7 +104,7 @@ namespace casual
       {
          unittest::Trace trace;
 
-         local::Domain domain;
+         auto domain = local::domain();
 
          EXPECT_TRUE( tpconnect( "casual/example/conversation", nullptr, 0, 0) == -1);
          EXPECT_TRUE( tperrno == TPEINVAL);
@@ -89,7 +114,7 @@ namespace casual
       {
          unittest::Trace trace;
 
-         local::Domain domain;
+         auto domain = local::domain();
 
          EXPECT_TRUE( tpconnect( "casual/example/conversation", nullptr, 0, TPSENDONLY | TPRECVONLY) == -1);
          EXPECT_TRUE( tperrno == TPEINVAL);
@@ -99,7 +124,7 @@ namespace casual
       {
          unittest::Trace trace;
 
-         local::Domain domain;
+         auto domain = local::domain();
 
          EXPECT_TRUE( tpconnect( "absent", nullptr, 0, TPSENDONLY) == -1);
          EXPECT_TRUE( tperrno == TPENOENT);
@@ -109,7 +134,7 @@ namespace casual
       {
          unittest::Trace trace;
 
-         local::Domain domain;
+         auto domain = local::domain();
 
          auto descriptor = tpconnect( "casual/example/conversation", nullptr, 0, TPSENDONLY);
          EXPECT_TRUE( descriptor != -1);
@@ -123,7 +148,7 @@ namespace casual
       {
          unittest::Trace trace;
 
-         local::Domain domain;
+         auto domain = local::domain();
 
          auto descriptor = tpconnect( "casual/example/rollback", nullptr, 0, TPSENDONLY);
          EXPECT_TRUE( descriptor != -1);
@@ -145,7 +170,7 @@ namespace casual
       {
          unittest::Trace trace;
 
-         local::Domain domain;
+         auto domain = local::domain();
 
          auto descriptor = tpconnect( "casual/example/error/system", nullptr, 0, TPSENDONLY);
          EXPECT_TRUE( descriptor != -1);
@@ -167,7 +192,7 @@ namespace casual
       {
          unittest::Trace trace;
 
-         local::Domain domain;
+         auto domain = local::domain();
 
          auto descriptor = tpconnect( "casual/example/echo", nullptr, 0, TPSENDONLY);
          EXPECT_TRUE( descriptor != -1);
@@ -190,7 +215,7 @@ namespace casual
       {
          unittest::Trace trace;
 
-         local::Domain domain;
+         auto domain = local::domain();
 
          auto buffer = tpalloc( X_OCTET, nullptr, 128);
          auto len = tptypes( buffer, nullptr, nullptr);

@@ -8,7 +8,7 @@
 
 #define CASUAL_NO_XATMI_UNDEFINE
 
-#include "casual/test/domain.h"
+#include "domain/manager/unittest/process.h"
 
 #include "common/communication/instance.h"
 #include "common/transaction/context.h"
@@ -28,11 +28,36 @@ namespace casual
          {
             namespace
             {
-               Manager domain( std::string configuration)
+               auto domain( std::string_view configuration)
                {
-                  return { { Manager::configuration, std::move( configuration)}};
-               };
+                  return casual::domain::manager::unittest::Process{{
+R"(
+domain:
+   name: test-default-domain
 
+   groups: 
+      - name: base
+      - name: transaction
+        dependencies: [ base]
+      - name: queue
+        dependencies: [ transaction]
+      - name: example
+        dependencies: [ queue]
+
+   servers:
+      - path: ${CASUAL_HOME}/bin/casual-service-manager
+        memberships: [ base]
+      - path: ${CASUAL_HOME}/bin/casual-transaction-manager
+        memberships: [ transaction]
+      - path: ${CASUAL_HOME}/bin/casual-queue-manager
+        memberships: [ queue]
+      - path: ${CASUAL_HOME}/bin/casual-example-error-server
+        memberships: [ example]
+      - path: ${CASUAL_HOME}/bin/casual-example-server
+        memberships: [ example]
+)", configuration}};
+            
+               }
 
 
                struct Clear 

@@ -8,7 +8,7 @@
 #include "common/unittest.h"
 #include "common/unittest/eventually/send.h"
 
-#include "casual/test/domain.h"
+#include "domain/manager/unittest/process.h"
 
 #include "casual/xatmi/server.h"
 
@@ -24,9 +24,6 @@ namespace casual
       {
          namespace
          {
-            // Represent a domain
-            using Domain = test::domain::Manager;
-
             namespace global
             {
                bool init = false;
@@ -44,6 +41,37 @@ namespace casual
                global::done = true;
             }
 
+            auto domain()
+            {
+               return casual::domain::manager::unittest::Process{{
+R"(
+domain:
+   name: test-default-domain
+
+   groups: 
+      - name: base
+      - name: transaction
+        dependencies: [ base]
+      - name: queue
+        dependencies: [ transaction]
+      - name: example
+        dependencies: [ queue]
+
+   servers:
+      - path: ${CASUAL_HOME}/bin/casual-service-manager
+        memberships: [ base]
+      - path: ${CASUAL_HOME}/bin/casual-transaction-manager
+        memberships: [ transaction]
+      - path: ${CASUAL_HOME}/bin/casual-queue-manager
+        memberships: [ queue]
+      - path: ${CASUAL_HOME}/bin/casual-example-error-server
+        memberships: [ example]
+      - path: ${CASUAL_HOME}/bin/casual-example-server
+        memberships: [ example]
+)"
+               }};
+            }
+
          } // <unnamed>
       } // local
 
@@ -51,7 +79,7 @@ namespace casual
       {
          common::unittest::Trace trace;
          
-         local::Domain domain;
+         auto domain = local::domain();
 
          local::global::init = false;
          local::global::done = false;

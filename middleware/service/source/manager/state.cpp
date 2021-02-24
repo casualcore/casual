@@ -308,13 +308,26 @@ namespace casual
 
       state::Service* State::service( const std::string& name)
       {
-         auto found = algorithm::find( services, name);
-
-         if( found)
+         if( auto found = algorithm::find( services, name))
             return &found->second;
 
          return nullptr;
       }
+
+      state::Service* State::origin_service( const std::string& name)
+      {
+         auto is_origin = [&name]( auto& pair)
+         {
+            return pair.second.information.name == name;
+         };
+
+         if( auto found = algorithm::find_if( services, is_origin))
+            return &found->second;
+
+         return nullptr;
+      }
+
+      
 
       namespace local
       {
@@ -421,7 +434,8 @@ namespace casual
 
                auto remove = [&]( auto& name)
                {
-                  if( auto service = state.service( name))
+                  // unadvertise only comes with origin service names.
+                  if( auto service = state.origin_service( name))
                      service->remove( instance.process.pid);
                };
 
