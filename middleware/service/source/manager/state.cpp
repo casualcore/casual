@@ -314,21 +314,17 @@ namespace casual
          return nullptr;
       }
 
-      state::Service* State::origin_service( const std::string& name)
+      std::vector< state::Service*> State::origin_services( const std::string& origin)
       {
-         auto is_origin = [&name]( auto& pair)
+         return algorithm::accumulate( services, std::vector< state::Service*>{}, [&origin]( auto result, auto& pair)
          {
-            return pair.second.information.name == name;
-         };
-
-         if( auto found = algorithm::find_if( services, is_origin))
-            return &found->second;
-
-         return nullptr;
+            if( pair.second.information.name == origin)
+               result.push_back( &pair.second);
+            return result;
+         });
       }
 
       
-
       namespace local
       {
          namespace
@@ -435,7 +431,7 @@ namespace casual
                auto remove = [&]( auto& name)
                {
                   // unadvertise only comes with origin service names.
-                  if( auto service = state.origin_service( name))
+                  for( auto& service : state.origin_services( name))
                      service->remove( instance.process.pid);
                };
 

@@ -3,6 +3,18 @@ This is the changelog for `casual` and all changes are listed in this document.
 
 ## [Unreleased]
 
+## [1.4.6] - 2021-02-25
+### Fixes
+- discovery - did not work correctly on service with multiple routes
+
+## [1.4.5] - 2021-02-24
+### Changed
+- updated this changelog - missed it in 1.4.4
+
+## [1.4.4] - 2021-02-24
+### Fixes
+- discovery - did not work correctly on service routes
+
 ## [1.4.3] - 2021-02-13
 ### Changed
 - cli - updated documentation for --color with option auto
