@@ -368,6 +368,82 @@ domain:
          
          // expect to discover echo...
          local::call( "foo", 0);
+      }
+
+
+      TEST( test_domain_gateway, domains_A_B__B_has_echo__A_has_route_foo_and_bar_to_echo__call_route_foo_from_A__expect_discovery__shutdown_B__expect_no_ent__boot_B__expect_discovery)
+      {
+         common::unittest::Trace trace;
+
+         constexpr auto A = R"(
+domain: 
+   name: A
+
+   services:
+      -  name: casual/example/echo
+         routes: [ foo, bar]
+
+   gateway:
+      outbound:
+         groups:
+            -  connections:
+                  -  address: 127.0.0.1:7770
+
+)";
+
+         constexpr auto B = R"(
+domain: 
+   name: B
+
+   servers:
+      -  path: "${CASUAL_REPOSITORY_ROOT}/middleware/example/server/bin/casual-example-server"
+         memberships: [ user]
+
+   gateway:
+      inbound:
+         groups:
+            -  connections: 
+               -  address: 127.0.0.1:7770
+
+)";
+
+         // sink child signals 
+         signal::callback::registration< code::signal::child>( [](){});
+
+         auto create_domain = []( auto&& config)
+         {
+            return local::Manager{ { local::configuration::base, config}};
+         };
+
+         auto b = create_domain( B);
+         auto a = create_domain( A);
+
+         local::state::gateway::until( local::state::gateway::predicate::outbound::connected());
+
+         local::call( "foo", 0);
+
+         log::line( verbose::log, "before shutdown of B");
+
+         // "shutdown" B
+         local::sink( std::move( b));
+         local::state::gateway::until( local::state::gateway::predicate::outbound::disconnected());
+
+         log::line( verbose::log, "after shutdown of B");
+
+         local::call( "foo", TPENOENT);
+
+         log::line( verbose::log, "before boot of B");
+
+         // boot B again
+         b = create_domain( B);
+         a.activate();
+
+         local::state::gateway::until( local::state::gateway::predicate::outbound::connected());
+
+         log::line( verbose::log, "after boot of B");
+         
+         // expect to discover echo...
+         local::call( "foo", 0);
 
       }
 
