@@ -1,21 +1,21 @@
-from casual.middleware.make.dsl import *
+from casual.make.api import *
 
 IncludePaths( [
    'include',
    '../common/include',
    '../cli/include',
-   '../xatmi/include',
-   '$(CASUAL_OPTIONAL_INCLUDE_PATHS)',
-   ])
+   '../xatmi/include'] + 
+   casual_make_optional_include_paths().split()
+   )
 
 
 LibraryPaths([
     'bin',
     '../common/bin',
     '../cli/bin',
-    '../xatmi/bin',
-    '$(CASUAL_OPTIONAL_LIBRARY_PATHS)',
-    ])
+    '../xatmi/bin'] + 
+    casual_make_optional_library_paths().split()
+   )
 
 
 install_lib = []
@@ -182,11 +182,12 @@ binary = LinkExecutable( 'bin/casual-buffer-field-serialize',
     
 install_bin.append( binary)
 
+casual_home = os.getenv('CASUAL_HOME')
 
 # Install
-Install( install_lib, '$(CASUAL_HOME)/lib')
-Install( install_bin, '$(CASUAL_HOME)/bin')
-Install( install_headers, '$(CASUAL_HOME)/include')
+Install( install_lib,  casual_home + '/lib')
+Install( install_bin,  casual_home + '/bin')
+Install( install_headers,  casual_home + '/include')
 
 
 

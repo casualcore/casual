@@ -1,7 +1,6 @@
 import os
-from casual.make.porcelain import *
+from casual.make.api import *
 
-Parallel( False)
 
 Build( os.environ[ 'CASUAL_THIRDPARTY'] + '/makefile.cmk')
 

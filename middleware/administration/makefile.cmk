@@ -1,4 +1,4 @@
-from casual.middleware.make.dsl import *
+from casual.make.api import *
 
 
 IncludePaths( [
@@ -13,9 +13,9 @@ IncludePaths( [
     '../transaction/include',
     '../gateway/include',
     '../tools/include',
-    '../buffer/include',
-    '$(CASUAL_OPTIONAL_INCLUDE_PATHS)',
-])
+    '../buffer/include'] + 
+    casual_make_optional_include_paths().split()
+)
 
 LibraryPaths( [
     'bin',
@@ -31,9 +31,9 @@ LibraryPaths( [
     '../buffer/bin',
     '../serviceframework/bin',
     '../xatmi/bin',
-    '../cli/bin',
-    '$(CASUAL_OPTIONAL_LIBRARY_PATHS)',
-])
+    '../cli/bin'] + 
+    casual_make_optional_library_paths().split()
+)
 
 install_libs = []
 install_exe = []
@@ -79,12 +79,13 @@ LinkExecutable( 'bin/casual-administration-cli-documentation',
       'casual-common',
    ])
 
+casual_home = os.getenv('CASUAL_HOME')
 
-Install( install_exe, '$(CASUAL_HOME)/bin')
-Install( install_libs, '$(CASUAL_HOME)/lib')
+Install( install_exe,  casual_home + '/bin')
+Install( install_libs,  casual_home + '/lib')
 
-Install( 'etc/bash_completion.d/casual', '$(CASUAL_HOME)/etc/bash_completion.d')
-Install( 'etc/bash_completion.d/casual-log', '$(CASUAL_HOME)/etc/bash_completion.d')
+Install( 'etc/bash_completion.d/casual',  casual_home + '/etc/bash_completion.d')
+Install( 'etc/bash_completion.d/casual-log',  casual_home + '/etc/bash_completion.d')
 
 
 

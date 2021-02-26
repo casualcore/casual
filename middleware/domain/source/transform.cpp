@@ -279,8 +279,8 @@ namespace casual
                      manager::admin::model::Version result;
 
                      // casual version
-#ifdef CASUAL_BUILD_VERSION
-                     result.casual = CASUAL_BUILD_VERSION;
+#ifdef CASUAL_MAKE_BUILD_VERSION
+                     result.casual = CASUAL_MAKE_BUILD_VERSION;
 #endif 
                      // compiler version
 #ifdef __clang_version__

@@ -1,0 +1,66 @@
+{
+"Darwin" : { 
+   "g++" : {  
+      "normal" : {
+         "link_directives_exe": 
+            ["-fPIC", "-Wall", "-Wextra", "-Werror", "-Wsign-compare", "-Wuninitialized", "-Winit-self", "-Wno-unused-parameter", "-Wno-missing-declarations", "-Wno-noexcept-type", "-Wno-implicit-fallthrough", "-std=c++17", "-O3"], 
+         "link_directives_lib": 
+            ["-fPIC", "-Wall", "-Wextra", "-Werror", "-Wsign-compare", "-Wuninitialized", "-Winit-self", "-Wno-unused-parameter", "-Wno-missing-declarations", "-Wno-noexcept-type", "-Wno-implicit-fallthrough", "-std=c++17", "-dynamiclib", "-O3"], 
+         "executable_linker": 
+            ["g++"], 
+         "library_linker": 
+            ["g++"], 
+         "header_dependency_command": 
+            ["g++", "-E", "-MMD", "-std=c++17"],
+         "compiler": 
+            ["g++"], 
+         "archive_linker": 
+            ["ar", "rcs"], 
+         "compile_directives": 
+            ["-Wall", "-Wextra", "-Werror", "-Wsign-compare", "-Wuninitialized", "-Winit-self", "-Wno-unused-parameter", "-Wno-missing-declarations", "-Wno-noexcept-type", "-Wno-implicit-fallthrough", "-std=c++17", "-fdiagnostics-color=always", "-c", "-O3", "-fPIC", "-pthread"], 
+         "link_directives_archive": 
+            ["-O3", "-pthread"]
+      },
+      "debug" : {
+         "link_directives_exe": 
+            ["-fPIC", "-Wall", "-Wextra", "-Werror", "-Wsign-compare", "-Wuninitialized", "-Winit-self", "-Wno-unused-parameter", "-Wno-missing-declarations", "-Wno-noexcept-type", "-Wno-implicit-fallthrough", "-std=c++17", "-O3"], 
+         "link_directives_lib": 
+            ["-fPIC", "-Wall", "-Wextra", "-Werror", "-Wsign-compare", "-Wuninitialized", "-Winit-self", "-Wno-unused-parameter", "-Wno-missing-declarations", "-Wno-noexcept-type", "-Wno-implicit-fallthrough", "-std=c++17", "-dynamiclib", "-O3"], 
+         "executable_linker": 
+            ["g++"], 
+         "library_linker": 
+            ["g++"], 
+         "header_dependency_command": 
+            ["g++", "-E", "-MMD", "-std=c++17"],
+         "compiler": 
+            ["g++"], 
+         "archive_linker": 
+            ["ar", "rcs"], 
+         "compile_directives": 
+            ["-Wall", "-Wextra", "-Werror", "-Wsign-compare", "-Wuninitialized", "-Winit-self", "-Wno-unused-parameter", "-Wno-missing-declarations", "-Wno-noexcept-type", "-Wno-implicit-fallthrough", "-std=c++17", "-fdiagnostics-color=always", "-c", "-O3", "-fPIC", "-pthread"], 
+         "link_directives_archive": 
+            ["-O3", "-pthread"]
+      },
+      "analyze" : {
+         "link_directives_exe": 
+            ["-fPIC", "-Wall", "-Wextra", "-Werror", "-Wsign-compare", "-Wuninitialized", "-Winit-self", "-Wno-unused-parameter", "-Wno-missing-declarations", "-Wno-noexcept-type", "-Wno-implicit-fallthrough", "-std=c++17", "-O3"], 
+         "link_directives_lib": 
+            ["-fPIC", "-Wall", "-Wextra", "-Werror", "-Wsign-compare", "-Wuninitialized", "-Winit-self", "-Wno-unused-parameter", "-Wno-missing-declarations", "-Wno-noexcept-type", "-Wno-implicit-fallthrough", "-std=c++17", "-dynamiclib", "-O3"], 
+         "executable_linker": 
+            ["g++"], 
+         "library_linker": 
+            ["g++"], 
+         "header_dependency_command": 
+            ["g++", "-E", "-MMD", "-std=c++17"],
+         "compiler": 
+            ["g++"], 
+         "archive_linker": 
+            ["ar", "rcs"], 
+         "compile_directives": 
+            ["-Wall", "-Wextra", "-Werror", "-Wsign-compare", "-Wuninitialized", "-Winit-self", "-Wno-unused-parameter", "-Wno-missing-declarations", "-Wno-noexcept-type", "-Wno-implicit-fallthrough", "-std=c++17", "-fdiagnostics-color=always", "-c", "-O3", "-fPIC", "-pthread"], 
+         "link_directives_archive": 
+            ["-O3", "-pthread"]
+      }
+   }
+}
+}

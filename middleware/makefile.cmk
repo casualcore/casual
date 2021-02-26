@@ -1,6 +1,4 @@
-from casual.middleware.make.dsl import *
-
-Parallel( False)
+from casual.make.api import *
 
 Build( 'common/makefile.cmk')
 Build( 'cli/makefile.cmk')
@@ -13,19 +11,13 @@ Build( 'domain/makefile.cmk')
 Build( 'service/makefile.cmk')
 Build( 'transaction/makefile.cmk')
 
-with Scope():
-    Parallel( True)
-      
-    Build( 'event/makefile.cmk')
-    
-    Build( 'queue/makefile.cmk')  
-
-    Build( 'binding/makefile.cmk')  
-    Build( 'http/makefile.cmk')    
+Build( 'event/makefile.cmk')
+Build( 'queue/makefile.cmk')
+Build( 'binding/makefile.cmk')
+Build( 'http/makefile.cmk')
 
 # depends on domain, queue, service
 Build( 'gateway/makefile.cmk')
-
 
 # examples 
 Build( 'example/makefile.cmk')
@@ -33,6 +25,9 @@ Build( 'example/makefile.cmk')
 # admin cli
 Build( 'tools/makefile.cli.cmk')
 Build( 'administration/makefile.cmk')
+
+Build( 'plugin/makefile.cmk')
+
 
 
 

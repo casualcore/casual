@@ -1,4 +1,4 @@
-from casual.middleware.make.dsl import *
+from casual.make.api import *
 
 Build( 'cobol/makefile.cmk')
 Build( 'python/makefile.cmk')

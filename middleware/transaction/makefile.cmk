@@ -1,4 +1,4 @@
-from casual.middleware.make.dsl import *
+from casual.make.api import *
     
 IncludePaths( ['include',
     '../common/include',
@@ -7,9 +7,9 @@ IncludePaths( ['include',
     '../domain/include',
     '../cli/include',
     '../serviceframework/include',
-    '../../thirdparty/database/include',
-    '$(CASUAL_OPTIONAL_INCLUDE_PATHS)',
-    ])
+    '../../thirdparty/database/include'] + 
+    casual_make_optional_include_paths().split()
+    )
 
 LibraryPaths( ['bin',
     '../common/bin',
@@ -18,9 +18,9 @@ LibraryPaths( ['bin',
     '../domain/bin',
     '../cli/bin',
     '../serviceframework/bin',
-    '../xatmi/bin',
-    '$(CASUAL_OPTIONAL_LIBRARY_PATHS)',
-     ])
+    '../xatmi/bin'] + 
+    casual_make_optional_library_paths().split()
+   )
 
 
 install_lib = []
@@ -124,10 +124,11 @@ test_transaction = LinkUnittest( 'bin/test-casual-transaction',
 # make sure we link manager before we run tests 
 Dependencies( test_transaction, [ manager])
 
+casual_home = os.getenv('CASUAL_HOME')
 
-Install( install_bin,'$(CASUAL_HOME)/bin')
-Install( install_lib,'$(CASUAL_HOME)/lib')
-Install( install_headers,'$(CASUAL_HOME)/include')
+Install( install_bin, casual_home + '/bin')
+Install( install_lib, casual_home + '/lib')
+Install( install_headers, casual_home + '/include')
 
 
 

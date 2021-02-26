@@ -1,17 +1,17 @@
-from casual.middleware.make.dsl import *
+from casual.make.api import *
 import sys
 
 IncludePaths([
 	'include', 
-	'../common/include', 
-	'$(CASUAL_OPTIONAL_INCLUDE_PATHS)',
-	])
+	'../common/include'] + 
+   casual_make_optional_include_paths().split()
+   )
 
 LibraryPaths([
 	'bin',
-    '../common/bin',
-    '$(CASUAL_OPTIONAL_LIBRARY_PATHS)',
-    ])
+    '../common/bin'] + 
+    casual_make_optional_library_paths().split()
+   )
 
 
 install_lib = []
@@ -74,9 +74,11 @@ LinkUnittest( 'bin/test-casual-xatmi',
     ],
     [ lib_xatmi, 'casual-common', 'casual-unittest'] + platform_specific_libs )
 
+casual_home = os.getenv('CASUAL_HOME')
+
 # Install
-Install( install_lib, '$(CASUAL_HOME)/lib')
-Install( install_include, '$(CASUAL_HOME)/include')
+Install( install_lib,  casual_home + '/lib')
+Install( install_include,  casual_home + '/include')
 
 
 

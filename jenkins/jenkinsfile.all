@@ -148,44 +148,43 @@ catch (Exception e)
 
 def common_backend_builder = '''
 umask 000
-export CASUAL_REPO_ROOT=/git/casual/casual
-export CASUAL_TOOLS_HOME=$CASUAL_REPO_ROOT
-export PYTHONPATH=$CASUAL_REPO_ROOT/..
+export CASUAL_REPOSITORY_ROOT=/git/casual/casual
+export CASUAL_TOOLS_HOME=$CASUAL_REPOSITORY_ROOT
+export CASUAL_MAKE_HOME=$CASUAL_REPOSITORY_ROOT/../casual-make/source
+export PYTHONPATH=$CASUAL_MAKE_HOME:$CASUAL_REPOSITORY_ROOT/make
 export CASUAL_THIRDPARTY=/git/casual/casual-thirdparty
-export CASUAL_BUILD_HOME=$CASUAL_REPO_ROOT
-export CASUAL_OPTIONAL_INCLUDE_PATHS="${CASUAL_THIRDPARTY}/googletest/include"
-export CASUAL_OPTIONAL_LIBRARY_PATHS="${CASUAL_THIRDPARTY}/googletest/bin"
+export CASUAL_BUILD_HOME=$CASUAL_REPOSITORY_ROOT
+export CASUAL_MAKE_OPTIONAL_INCLUDE_PATHS="${CASUAL_THIRDPARTY}/googletest/include"
+export CASUAL_MAKE_OPTIONAL_LIBRARY_PATHS="${CASUAL_THIRDPARTY}/googletest/bin"
 export CASUAL_HOME=/opt/casual
-export PATH=$CASUAL_BUILD_HOME/tools/bin:$CASUAL_TOOLS_HOME/bin:$CASUAL_HOME/bin:$PATH
-export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CASUAL_HOME/lib:$CASUAL_BUILD_HOME/configuration/bin:$CASUAL_BUILD_HOME/common/bin:$CASUAL_BUILD_HOME/serviceframework/bin:$CASUAL_BUILD_HOME/xatmi/bin:/usr/local/lib
+export PATH=$CASUAL_MAKE_HOME:$CASUAL_BUILD_HOME/middleware/tools/bin:$CASUAL_TOOLS_HOME/bin:$CASUAL_HOME/bin:$PATH
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CASUAL_HOME/lib:$CASUAL_BUILD_HOME/middleware/buffer/bin:$CASUAL_BUILD_HOME/middleware/configuration/bin:$CASUAL_BUILD_HOME/middleware/domain/bin:$CASUAL_BUILD_HOME/middleware/event/bin:$CASUAL_BUILD_HOME/middleware/service/bin:$CASUAL_BUILD_HOME/middleware/common/bin:$CASUAL_BUILD_HOME/middleware/serviceframework/bin:$CASUAL_BUILD_HOME/middleware/xatmi/bin:$CASUAL_BUILD_HOME/middleware/queue/bin:$CASUAL_BUILD_HOME/middleware/transaction/bin:/usr/local/lib
 
-find $CASUAL_REPO_ROOT -name "*.gc*" -print | xargs rm > /dev/null
-find $CASUAL_REPO_ROOT -name "report.xml" -print | xargs rm > /dev/null
-rm -rf $CASUAL_REPO_ROOT/middleware/.casual/unittest/.singleton/.domain-singleton > /dev/null
+find $CASUAL_REPOSITORY_ROOT -name "*.gc*" -print | xargs rm > /dev/null
+find $CASUAL_REPOSITORY_ROOT -name "report.xml" -print | xargs rm > /dev/null
+rm -rf $CASUAL_REPOSITORY_ROOT/middleware/.casual/unittest/.singleton/.domain-singleton > /dev/null
 
-cd $CASUAL_REPO_ROOT && \
-      casual-make --no-colors -d -a --use-valgrind make && \
+cd $CASUAL_REPOSITORY_ROOT && \
+      casual-make --stat --no-colors clean && \
+      casual-make --stat --quiet --no-colors -d -a --use-valgrind compile && \
+      casual-make --stat --no-colors -d -a --use-valgrind link && \
+      casual-make --no-colors test --gtest_color=no --gtest_output='xml:report.xml' && \
+      mkdir -p $CASUAL_REPOSITORY_ROOT/coverage && \
       casual-make --no-colors clean && \
-      casual-make --no-colors -d -a --use-valgrind compile && \
-      casual-make --no-colors -d -a --use-valgrind link && \
-      ISOLATED_UNITTEST_DIRECTIVES="--gtest_color=no --gtest_output='xml:report.xml'" casual-make --no-colors test  && \
-      mkdir -p $CASUAL_REPO_ROOT/coverage && \
-      casual-make --no-colors make && \
-      casual-make --no-colors clean && \
-      casual-make --no-colors compile && \
+      casual-make --no-colors --quiet compile && \
       casual-make --no-colors link && \
       casual-make --no-colors install && \
-      cd $CASUAL_REPO_ROOT && python thirdparty/setup/install_nginx.py && \
-      cp $CASUAL_REPO_ROOT/package/casual-middleware.spec /root/rpmbuild/SPECS/. && \
+      casual-make nginx && \
+      cp $CASUAL_REPOSITORY_ROOT/package/casual-middleware.spec /root/rpmbuild/SPECS/. && \
       rpmbuild -bb --noclean --define "casual_version $CASUAL_VERSION" --define "casual_release $CASUAL_RELEASE" --define "distribution $DISTRIBUTION" /root/rpmbuild/SPECS/casual-middleware.spec  && \
-      cp /root/rpmbuild/RPMS/x86_64/casual-middleware*.rpm $CASUAL_REPO_ROOT/. && \
+      cp /root/rpmbuild/RPMS/x86_64/casual-middleware*.rpm $CASUAL_REPOSITORY_ROOT/. && \
       performCoverageMeasuring && \
-      cd $CASUAL_REPO_ROOT && \
+      cd $CASUAL_REPOSITORY_ROOT && \
       casual-make --no-colors clean
 returncode=$?
 
 cd /git/casual/
-find $CASUAL_REPO_ROOT/.. -user root | xargs chmod 777
+find $CASUAL_REPOSITORY_ROOT/.. -user root | xargs chmod 777
  
 exit $returncode
 '''
@@ -196,7 +195,7 @@ CASUAL_VERSION=''' + env.CASUAL_VERSION + '''
 CASUAL_RELEASE=''' + rpmRelease() + '''
 DISTRIBUTION="centos"
 BRANCH=''' + env.BRANCH_NAME + '''
-export CASUAL_BUILD_VERSION=''' + totalVersion() + '''
+export CASUAL_MAKE_BUILD_VERSION=''' + totalVersion() + '''
 
 performCoverageMeasuring()
 {
@@ -216,7 +215,7 @@ CASUAL_VERSION=''' + env.CASUAL_VERSION + '''
 CASUAL_RELEASE=''' + rpmRelease() + '''
 DISTRIBUTION="suse"
 BRANCH=''' + env.BRANCH_NAME + '''
-export CASUAL_BUILD_VERSION=''' + totalVersion() + '''
+export CASUAL_MAKE_BUILD_VERSION=''' + totalVersion() + '''
 
 performCoverageMeasuring()
 {
@@ -377,7 +376,13 @@ try
                   dir("casual-thirdparty")
                   {
                      // casual-thirdparty
-                     git branch: 'master', url: 'https://bitbucket.org/casualcore/casual-thirdparty.git'
+                     git branch: 'feature/new-casual-make', url: 'https://bitbucket.org/casualcore/casual-thirdparty.git'
+                  }
+
+                  dir("casual-make")
+                  {
+                     // casual-make
+                     git branch: 'feature/0.1/dev', url: 'https://bitbucket.org/casualcore/casual-make.git'
                   }
 
                   dir("casual")
@@ -477,7 +482,13 @@ try
                   dir("casual-thirdparty")
                   {
                      // casual-thirdparty
-                     git branch: 'master', url: 'https://bitbucket.org/casualcore/casual-thirdparty.git'
+                     git branch: 'feature/new-casual-make', url: 'https://bitbucket.org/casualcore/casual-thirdparty.git'
+                  }
+
+                  dir("casual-make")
+                  {
+                     // casual-make
+                     git branch: 'feature/0.1/dev', url: 'https://bitbucket.org/casualcore/casual-make.git'
                   }
 
                   dir("casual")

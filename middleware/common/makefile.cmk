@@ -1,6 +1,6 @@
 import sys
 import os
-from casual.middleware.make.dsl import *
+from casual.make.api import *
 
 
 platform_specific_lib_paths = []
@@ -10,36 +10,33 @@ if sys.platform.startswith('darwin'):
     
     #(sysname, nodename, release, version, machine) = os.uname()
     
-    release = os.uname()[ 2]
-    print( '# release: ' + str( release))
-    
+    release = os.uname()[ 2]    
     platform_specific_libs = [ 'c', 'iconv', 'resolv']
     
     if release < '16.3.0':
         platform_specific_lib_paths = [ '/opt/local/lib' ]
         platform_specific_include_paths = [ '/opt/local/include' ]
-        
+
+elif sys.platform.startswith('win') or sys.platform.startswith('cygwin'):
+    platform_specific_libs = ['uuid', 'resolv', 'iconv']
 else:
     platform_specific_libs = ['uuid', 'resolv']
 
-
 IncludePaths( [ 
-    'include',
-    '../xatmi/include',
-    '$(CASUAL_THIRDPARTY)/pugixml/src',
-    '$(CASUAL_THIRDPARTY)/rapidjson/include',
-    '$(CASUAL_THIRDPARTY)/yaml-cpp/include',
-    '$(CASUAL_OPTIONAL_INCLUDE_PATHS)',
-    ]
-    + platform_specific_include_paths)
+   'include',
+   '../xatmi/include',
+   os.getenv('CASUAL_THIRDPARTY') + '/rapidjson/include',
+   os.getenv('CASUAL_THIRDPARTY') + '/yaml-cpp/include',
+   os.getenv('CASUAL_THIRDPARTY') + '/pugixml/src'
+   ]
+   + casual_make_optional_include_paths().split()
+   + platform_specific_include_paths)
 
-LibraryPaths( [
-    'bin',
-    '$(CASUAL_THIRDPARTY)/pugixml/bin',
-    '$(CASUAL_THIRDPARTY)/yaml-cpp/bin',
-    ]
-     + platform_specific_lib_paths + [ '$(CASUAL_OPTIONAL_LIBRARY_PATHS)'])
-
+LibraryPaths( [ 
+   'bin',
+   os.getenv('CASUAL_THIRDPARTY') + '/yaml-cpp/bin',
+   os.getenv('CASUAL_THIRDPARTY') + '/pugixml/bin'
+    ] + platform_specific_lib_paths + casual_make_optional_library_paths().split())
 
 install_libs = []
 install_headers = []
@@ -295,9 +292,11 @@ target_test_common = LinkUnittest( 'bin/test-casual-common-isolated',
 # we need to make sure simple_process is built before
 Dependencies( target_test_common, [ target_simple_process ])
 
+casual_home = os.getenv('CASUAL_HOME')
+
 # Install 
-Install( install_libs, '$(CASUAL_HOME)/lib')
-Install( install_headers, '$(CASUAL_HOME)/include')
+Install( install_libs,  casual_home + '/lib')
+Install( install_headers,  casual_home + '/include')
 
 
 

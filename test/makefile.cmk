@@ -1,4 +1,4 @@
-from casual.middleware.make.dsl import *
+from casual.make.api import *
 
 IncludePaths( ['include',
    '../middleware/common/include',
@@ -9,9 +9,9 @@ IncludePaths( ['include',
    '../middleware/service/include',
    '../middleware/xatmi/include',
    '../middleware/queue/include',
-   '../middleware/buffer/include',
-   '$(CASUAL_OPTIONAL_INCLUDE_PATHS)',
-])
+   '../middleware/buffer/include'] + 
+   casual_make_optional_include_paths().split()
+   )
 
 LibraryPaths( [ 'bin',
    '../middleware/xatmi/bin',
@@ -22,9 +22,9 @@ LibraryPaths( [ 'bin',
    '../middleware/transaction/bin',
    '../middleware/serviceframework/bin',
    '../middleware/configuration/bin',
-   '../middleware/http/bin',
-   '$(CASUAL_OPTIONAL_LIBRARY_PATHS)',
-])
+   '../middleware/http/bin'] + 
+    casual_make_optional_library_paths().split()
+   )
 
 
 
@@ -39,7 +39,9 @@ target = LinkExecutable( 'bin/casual-test-mockup-string-server',
    ['casual-common', 'casual-xatmi', 'casual-serviceframework'],
 )
 
-Install( [ target],'$(CASUAL_HOME)/test/bin')
+casual_home = os.getenv('CASUAL_HOME')
+
+Install( [ target], casual_home + '/test/bin')
 
 
 #test_archive = LinkArchive( 'bin/test-archive', 
@@ -83,6 +85,6 @@ LinkUnittest( 'unittest/bin/test-casual-basic',
 	
 
 # Install
-Install( install_bin,'$(CASUAL_HOME)/bin')
+Install( install_bin, casual_home + '/bin')
 
 

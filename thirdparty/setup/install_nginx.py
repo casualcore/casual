@@ -15,7 +15,7 @@ FILENAME="nginx-1.18.0.tar.gz"
 TMP="/tmp/"
 
 if not os.getenv("CASUAL_BUILD_HOME") or not os.getenv("CASUAL_HOME"):
-	raise SystemError, "CASUAL-environment need to be set"
+	raise SystemError("CASUAL-environment need to be set")
 
 BASENAME=os.path.splitext(os.path.splitext(FILENAME)[0])[0]
 

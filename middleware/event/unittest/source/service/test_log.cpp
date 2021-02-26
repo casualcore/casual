@@ -40,7 +40,7 @@ domain:
         memberships: [ first]
 
    executables:
-      - path: "${PWD}/bin/casual-event-service-log"
+      - path: "bin/casual-event-service-log"
         arguments: [ --file, "${SERVICE_LOG_FILE}"]
         memberships: [ second]
         
@@ -152,7 +152,7 @@ domain:
         memberships: [ first]
 
    executables:
-      - path: "${PWD}/bin/casual-event-service-log"
+      - path: "bin/casual-event-service-log"
         arguments: [ --file, "${SERVICE_LOG_FILE}", --filter-exclusive, '^[.].*$']
         memberships: [ second]
         
@@ -194,7 +194,7 @@ domain:
         memberships: [ first]
 
    executables:
-      - path: "${PWD}/bin/casual-event-service-log"
+      - path: "bin/casual-event-service-log"
         arguments: [ --file, "${SERVICE_LOG_FILE}", --filter-inclusive, '^[.].*$']
         memberships: [ second]
         

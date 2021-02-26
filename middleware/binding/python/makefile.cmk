@@ -1,4 +1,4 @@
-from casual.middleware.make.dsl import *
+from casual.make.api import *
 
 install_python_server = ['casual/server/__init__.py', 
    'casual/server/api.py',
@@ -9,9 +9,11 @@ install_python_server = ['casual/server/__init__.py',
 install_python_xatmi = ['casual/xatmi/__init__.py',
    'casual/xatmi/xatmi.py']
 
-Install( 'python-example-server.py', '$(CASUAL_HOME)/example/bin')
-Install( 'slack-server.py', '$(CASUAL_HOME)/example/bin')
-Install( 'casual/__init__.py', '$(CASUAL_HOME)/python/casual')
-Install( install_python_server, '$(CASUAL_HOME)/python/casual/server')
-Install( install_python_xatmi, '$(CASUAL_HOME)/python/casual/xatmi')
+casual_home = os.getenv('CASUAL_HOME')
+
+Install( 'python-example-server.py',  casual_home + '/example/bin')
+Install( 'slack-server.py',  casual_home + '/example/bin')
+Install( 'casual/__init__.py',  casual_home + '/python/casual')
+Install( install_python_server,  casual_home + '/python/casual/server')
+Install( install_python_xatmi,  casual_home + '/python/casual/xatmi')
 

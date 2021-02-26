@@ -1,27 +1,30 @@
-from casual.middleware.make.dsl import *
+from casual.make.api import *
+from casual.middleware.make.api import *
 
 IncludePaths( ['server/include',
     '../xatmi/include',
     '../common/include',
-    '../serviceframework/include',
-    '$(CASUAL_OPTIONAL_INCLUDE_PATHS)',
-    ])
+    '../serviceframework/include'] + 
+    casual_make_optional_include_paths().split()
+    )
 LibraryPaths( [ 'server/bin',
     '../common/bin',
     '../queue/bin',
     '../buffer/bin',
     '../configuration/bin',
     '../serviceframework/bin',
-    '../xatmi/bin',
-    '$(CASUAL_OPTIONAL_LIBRARY_PATHS)',
-    ])
+    '../xatmi/bin'] + 
+    casual_make_optional_library_paths().split()
+   )
 
 
 install_bin = []
 
+casual_repository_root = casual_make_source_root()
+casual_home = os.getenv('CASUAL_HOME')
 
 # make sure we use the tools we've built
-Environment( 'PATH', '$(CASUAL_REPOSITORY_ROOT)/bin:$(PATH)')
+Environment( 'PATH', casual_repository_root + '/bin' + os.pathsep + os.getenv('PATH'))
 
 target = LinkServer( 'server/bin/casual-example-server',
     [ 
@@ -37,7 +40,7 @@ target = LinkServer( 'server/bin/casual-example-server',
 install_bin.append( target)
 
 # make sure we got a resource property file available when we build with a resource 
-Environment( 'CASUAL_RESOURCE_CONFIGURATION_FILE', '$(CASUAL_REPOSITORY_ROOT)/middleware/example/resources/resources.yaml')
+Environment( 'CASUAL_RESOURCE_CONFIGURATION_FILE', casual_repository_root + '/middleware/example/resources/resources.yaml')
 
 target = LinkServer( 'server/bin/casual-example-resource-server',
     [ 
@@ -68,34 +71,34 @@ LinkArchive( 'executable/bin/dummy',
 )
 
 # Install
-Install( install_bin,'$(CASUAL_HOME)/example/bin')
+Install( install_bin, casual_home + '/example/bin')
 
 # domain examples
-Install( [ 'domain/readme.md'],'$(CASUAL_HOME)/example/domain')
+Install( [ 'domain/readme.md'], casual_home + '/example/domain')
 
 # single domain minimal example
-Install( [ 'domain/single/minimal/readme.md', 'domain/single/minimal/domain.env'],'$(CASUAL_HOME)/example/domain/single/minimal')
-Install( [ 'domain/single/minimal/configuration/domain.yaml'],'$(CASUAL_HOME)/example/domain/single/minimal/configuration')
+Install( [ 'domain/single/minimal/readme.md', 'domain/single/minimal/domain.env'], casual_home + '/example/domain/single/minimal')
+Install( [ 'domain/single/minimal/configuration/domain.yaml'], casual_home + '/example/domain/single/minimal/configuration')
 
 # multi domian minimal example
-Install( [ 'domain/multiple/minimal/readme.md'],'$(CASUAL_HOME)/example/domain/multiple/minimal')
+Install( [ 'domain/multiple/minimal/readme.md'], casual_home + '/example/domain/multiple/minimal')
 
-Install( [ 'domain/multiple/minimal/domain1/domain.env'],'$(CASUAL_HOME)/example/domain/multiple/minimal/domain1')
-Install( [ 'domain/multiple/minimal/domain1/configuration/domain.yaml'],'$(CASUAL_HOME)/example/domain/multiple/minimal/domain1/configuration')
+Install( [ 'domain/multiple/minimal/domain1/domain.env'], casual_home + '/example/domain/multiple/minimal/domain1')
+Install( [ 'domain/multiple/minimal/domain1/configuration/domain.yaml'], casual_home + '/example/domain/multiple/minimal/domain1/configuration')
 
-Install( [ 'domain/multiple/minimal/domain2/domain.env'],'$(CASUAL_HOME)/example/domain/multiple/minimal/domain2')
-Install( [ 'domain/multiple/minimal/domain2/configuration/domain.yaml'],'$(CASUAL_HOME)/example/domain/multiple/minimal/domain2/configuration')
+Install( [ 'domain/multiple/minimal/domain2/domain.env'], casual_home + '/example/domain/multiple/minimal/domain2')
+Install( [ 'domain/multiple/minimal/domain2/configuration/domain.yaml'], casual_home + '/example/domain/multiple/minimal/domain2/configuration')
 
 
 # multi domian medium example
-Install( [ 'domain/multiple/medium/readme.md'],'$(CASUAL_HOME)/example/domain/multiple/medium')
-Install( [ 'domain/multiple/medium/diagram/scenario.svg', 'domain/multiple/medium/diagram/scenario.uml'],'$(CASUAL_HOME)/example/domain/multiple/medium/diagram')
+Install( [ 'domain/multiple/medium/readme.md'], casual_home + '/example/domain/multiple/medium')
+Install( [ 'domain/multiple/medium/diagram/scenario.svg', 'domain/multiple/medium/diagram/scenario.uml'], casual_home + '/example/domain/multiple/medium/diagram')
 
-Install( [ 'domain/multiple/medium/domainA/domain.env'],'$(CASUAL_HOME)/example/domain/multiple/medium/domainA')
-Install( [ 'domain/multiple/medium/domainA/configuration/domain.yaml'],'$(CASUAL_HOME)/example/domain/multiple/medium/domainA/configuration')
+Install( [ 'domain/multiple/medium/domainA/domain.env'], casual_home + '/example/domain/multiple/medium/domainA')
+Install( [ 'domain/multiple/medium/domainA/configuration/domain.yaml'], casual_home + '/example/domain/multiple/medium/domainA/configuration')
 
-Install( [ 'domain/multiple/medium/domainB/domain.env'],'$(CASUAL_HOME)/example/domain/multiple/medium/domainB')
-Install( [ 'domain/multiple/medium/domainB/configuration/domain.yaml'],'$(CASUAL_HOME)/example/domain/multiple/medium/domainB/configuration')
+Install( [ 'domain/multiple/medium/domainB/domain.env'], casual_home + '/example/domain/multiple/medium/domainB')
+Install( [ 'domain/multiple/medium/domainB/configuration/domain.yaml'], casual_home + '/example/domain/multiple/medium/domainB/configuration')
 
 
 

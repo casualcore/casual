@@ -1,16 +1,16 @@
-from casual.middleware.make.dsl import *
+from casual.make.api import *
 
 IncludePaths([
     'include', 
-    '../../xatmi/include', 
-    '$(CASUAL_OPTIONAL_INCLUDE_PATHS)',
-    ])
+    '../../xatmi/include'] + 
+    casual_make_optional_include_paths().split()
+    )
 
 LibraryPaths([
     'bin',
-    '../../xatmi/bin',
-    '$(CASUAL_OPTIONAL_LIBRARY_PATHS)',
-    ])
+    '../../xatmi/bin'] + 
+    casual_make_optional_library_paths().split()
+   )
 
 
 install_lib = []
@@ -44,5 +44,7 @@ install_copy = [
    'copy/TXSTATUS.cpy'
 ]
 
-Install( install_copy, '$(CASUAL_HOME)/binding/cobol/copy')
-Install( install_lib, '$(CASUAL_HOME)/lib')
+casual_home = os.getenv('CASUAL_HOME')
+
+Install( install_copy,  casual_home + '/binding/cobol/copy')
+Install( install_lib,  casual_home + '/lib')

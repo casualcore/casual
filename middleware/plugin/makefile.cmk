@@ -1,0 +1,20 @@
+from casual.make.entity.target import Recipe
+import casual.make.entity.model as model
+
+import subprocess
+import os
+
+def perform_build(dummy):
+   print( "building and installing nginx")
+   filename = os.path.join( os.getenv("CASUAL_BUILD_HOME"), 'thirdparty/setup/install_nginx.py')
+   try:
+      out = subprocess.check_output(["python2", filename])
+   except subprocess.CalledProcessError as e:
+      print(e)
+      raise
+
+   print(out.decode())
+
+# main - register function
+model.register( 'nginx').execute(True).serial(True).add_recipe( Recipe( perform_build, None))
+

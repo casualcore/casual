@@ -1,6 +1,6 @@
 
 
-from casual.middleware.make.dsl import *
+from casual.make.api import *
 
 
 
@@ -10,9 +10,9 @@ IncludePaths([
    '../buffer/include',
    '../configuration/include',
    '../xatmi/include',
-   '../serviceframework/include',
-   '$(CASUAL_OPTIONAL_INCLUDE_PATHS)',
-   ])
+   '../serviceframework/include'] + 
+   casual_make_optional_include_paths().split()
+   )
 
 
 LibraryPaths([
@@ -20,9 +20,9 @@ LibraryPaths([
     '../common/bin',
     '../configuration/bin',
     '../serviceframework/bin',
-    '../xatmi/bin',
-    '$(CASUAL_OPTIONAL_LIBRARY_PATHS)',
-    ])
+    '../xatmi/bin'] + 
+    casual_make_optional_library_paths().split()
+   )
 
 
 install_bins = []
@@ -207,6 +207,7 @@ target_test_domain = LinkUnittest( 'bin/test-casual-domain',
         Compile( 'unittest/source/test_discovery.cpp'),
     ],
     [
+        common_archive,
         manager_archive,
         domain_discovery_library,
         domain_unittest_library,
@@ -225,10 +226,11 @@ target_test_domain = LinkUnittest( 'bin/test-casual-domain',
 Dependencies( target_test_domain, [ target_domain_manager, target_simple_server, pending_executable, discovery_executable])
 
 
+casual_home = os.getenv('CASUAL_HOME')
 
-Install( install_bins,'$(CASUAL_HOME)/bin')
-Install( install_libs,'$(CASUAL_HOME)/lib')
-Install( install_headers,'$(CASUAL_HOME)/include')
+Install( install_bins, casual_home + '/bin')
+Install( install_libs, casual_home + '/lib')
+Install( install_headers, casual_home + '/include')
 
 
 

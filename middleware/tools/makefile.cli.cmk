@@ -1,4 +1,4 @@
-from casual.middleware.make.dsl import *
+from casual.make.api import *
 
 
 IncludePaths( ['include',
@@ -8,9 +8,9 @@ IncludePaths( ['include',
     '../serviceframework/include',
     '../domain/include',
     '../service/include',
-    '../cli/include',
-    '$(CASUAL_OPTIONAL_INCLUDE_PATHS)',
-    ])
+    '../cli/include'] + 
+    casual_make_optional_include_paths().split()
+   )
 
 LibraryPaths( ['bin',
     '../buffer/bin',
@@ -20,9 +20,9 @@ LibraryPaths( ['bin',
     '../serviceframework/bin',
     '../domain/bin',
     '../service/bin',
-    '../cli/bin',
-    '$(CASUAL_OPTIONAL_LIBRARY_PATHS)',
-    ])
+    '../cli/bin'] + 
+    casual_make_optional_library_paths().split()
+   )
 
 
 install_bin = []
@@ -46,9 +46,10 @@ service_cli = LinkLibrary( 'bin/casual-tools-service-cli',
 
 install_lib.append( service_cli)
 
+casual_home = os.getenv('CASUAL_HOME')
 
-Install( install_bin, '$(CASUAL_HOME)/bin')
-Install( install_lib, '$(CASUAL_HOME)/lib')
+Install( install_bin,  casual_home + '/bin')
+Install( install_lib,  casual_home + '/lib')
 
 
 

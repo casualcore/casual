@@ -5,13 +5,13 @@
 COBCPY=.
 export COBCPY
 
-BUILDSRV=$(CASUAL_HOME)/bin/casual-build-server
+BUILDSRV=${CASUAL_HOME}/bin/casual-build-server
 
 CC=gcc
 CPP=g++
-CFLAGS=-I$(CASUAL_HOME)/include
-CPPFLAGS=-Wall -Wextra -I$(CASUAL_HOME)/include
-LDFLAGS=-L$(CASUAL_HOME)/lib -lcasual-cobol-binding
+CFLAGS=-I${CASUAL_HOME}/include
+CPPFLAGS=-Wall -Wextra -I${CASUAL_HOME}/include
+LDFLAGS=-L${CASUAL_HOME}/lib -lcasual-cobol-binding
 
 COB=cob
 COBFLAGS=-xg -std=cobol85

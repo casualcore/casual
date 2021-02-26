@@ -1,4 +1,4 @@
-from casual.middleware.make.dsl import *
+from casual.make.api import *
 
 
 IncludePaths( [ 
@@ -11,9 +11,9 @@ IncludePaths( [
     '../transaction/include',
     '../domain/include',
     '../service/include',
-    '../../thirdparty/database/include',
-    '$(CASUAL_OPTIONAL_INCLUDE_PATHS)',
-])
+    '../../thirdparty/database/include'] + 
+    casual_make_optional_include_paths().split()
+   )
 
 
 LibraryPaths( [ 
@@ -26,9 +26,9 @@ LibraryPaths( [
     '../buffer/bin',
     '../domain/bin',
     '../service/bin',
-    '../xatmi/bin',
-    '$(CASUAL_OPTIONAL_LIBRARY_PATHS)',
-])
+    '../xatmi/bin'] + 
+    casual_make_optional_library_paths().split()
+   )
     
 
 
@@ -37,7 +37,7 @@ install_lib = []
 install_bin = []
 
 # So we get the local build-rm
-Environment( 'PATH', '../tools/bin:$(PATH)')
+Environment( 'PATH', '../tools/bin' + os.pathsep + os.getenv('PATH'))
 
 # Common stuff
 
@@ -131,7 +131,10 @@ queue_c_api = LinkLibrary( 'bin/casual-queue-c-api',
     ])
 
 install_lib.append( queue_c_api)
-Install( 'include/casual/queue/c/queue.h', '$(CASUAL_HOME)/include/casual/queue/c/')
+
+casual_home = os.getenv('CASUAL_HOME')
+
+Install( 'include/casual/queue/c/queue.h',  casual_home + '/include/casual/queue/c/')
 
 # forward
 forward_server = LinkExecutable( 'bin/casual-queue-forward-group',
@@ -219,8 +222,8 @@ install_bin.append( forward_queue)
 
 
 
-Install( install_lib, '$(CASUAL_HOME)/lib')
-Install( install_bin, '$(CASUAL_HOME)/bin')
+Install( install_lib,  casual_home + '/lib')
+Install( install_bin,  casual_home + '/bin')
 
 
 

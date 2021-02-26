@@ -1,4 +1,4 @@
-from casual.middleware.make.dsl import *
+from casual.make.api import *
 
 IncludePaths( [
     'include',
@@ -7,8 +7,9 @@ IncludePaths( [
     '../configuration/include',
     '../domain/include',
 	'../xatmi/include',
-	'../serviceframework/include',
-	'$(CASUAL_OPTIONAL_INCLUDE_PATHS)'])
+	'../serviceframework/include'] + 
+   casual_make_optional_include_paths().split()
+   )
 
 LibraryPaths( [
     'bin',
@@ -17,8 +18,9 @@ LibraryPaths( [
     '../domain/bin',
 	'../buffer/bin',
 	'../configuration/bin',
-   '../xatmi/bin',
-	'$(CASUAL_OPTIONAL_LIBRARY_PATHS)'])
+   '../xatmi/bin'] + 
+    casual_make_optional_library_paths().split()
+   )
 
 
 install_bins = []
@@ -139,8 +141,10 @@ LinkUnittest( 'unittest/bin/test-casual-service',
      'casual-domain-unittest',
      ])
 
+casual_home = os.getenv('CASUAL_HOME')
+
 # Install
-Install( install_bins,'$(CASUAL_HOME)/bin')
-Install( install_libs,'$(CASUAL_HOME)/lib')
-Install( install_headers,'$(CASUAL_HOME)/include')
+Install( install_bins, casual_home + '/bin')
+Install( install_libs, casual_home + '/lib')
+Install( install_headers, casual_home + '/include')
 
