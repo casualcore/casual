@@ -131,6 +131,7 @@ discovery_executable = LinkExecutable( 'bin/casual-domain-discovery',
         'casual-common',
     ]
 )
+install_bins.append( discovery_executable)
 
 domain_discovery_library = LinkLibrary( 'bin/casual-domain-discovery',
     [
