@@ -1,7 +1,8 @@
-from casual.make.api import *
+import casual.make.api as make
+import casual.middleware.make.api as dsl
 
 
-IncludePaths( [
+make.IncludePaths( [
     'include',
     '../configuration/include',
     '../xatmi/include',
@@ -13,11 +14,12 @@ IncludePaths( [
     '../transaction/include',
     '../gateway/include',
     '../tools/include',
-    '../buffer/include'] + 
-    casual_make_optional_include_paths().split()
+    '../buffer/include']
+    + make.optional_include_paths()
+    + dsl.paths().include.gtest
 )
 
-LibraryPaths( [
+make.LibraryPaths( [
     'bin',
     '../common/bin',
     '../configuration/bin',
@@ -31,16 +33,17 @@ LibraryPaths( [
     '../buffer/bin',
     '../serviceframework/bin',
     '../xatmi/bin',
-    '../cli/bin'] + 
-    casual_make_optional_library_paths().split()
+    '../cli/bin']
+    + make.optional_library_paths()
+    + dsl.paths().library.gtest
 )
 
 install_libs = []
 install_exe = []
 
-cli_library = LinkLibrary( 'bin/causal-administration-cli',
+cli_library = make.LinkLibrary( 'bin/causal-administration-cli',
    [
-      Compile( 'source/cli.cpp')
+      make.Compile( 'source/cli.cpp')
    ],
    [
       'casual-common',
@@ -58,9 +61,9 @@ cli_library = LinkLibrary( 'bin/causal-administration-cli',
 
 install_libs.append( cli_library)
 
-target = LinkExecutable( 'bin/casual', 
+target = make.LinkExecutable( 'bin/casual', 
     [ 
-        Compile( 'source/main.cpp'),
+        make.Compile( 'source/main.cpp'),
     ], 
     [ 
       cli_library,
@@ -70,22 +73,22 @@ target = LinkExecutable( 'bin/casual',
 install_exe.append( target)
 
 
-LinkExecutable( 'bin/casual-administration-cli-documentation', 
+make.LinkExecutable( 'bin/casual-administration-cli-documentation', 
    [ 
-      Compile( 'source/documentation/cli.cpp')
+      make.Compile( 'source/documentation/cli.cpp')
    ],
    [
       cli_library,
       'casual-common',
    ])
 
-casual_home = os.getenv('CASUAL_HOME')
 
-Install( install_exe,  casual_home + '/bin')
-Install( install_libs,  casual_home + '/lib')
 
-Install( 'etc/bash_completion.d/casual',  casual_home + '/etc/bash_completion.d')
-Install( 'etc/bash_completion.d/casual-log',  casual_home + '/etc/bash_completion.d')
+make.Install( install_exe,  dsl.paths().install + '/bin')
+make.Install( install_libs,  dsl.paths().install + '/lib')
+
+make.Install( 'etc/bash_completion.d/casual',  dsl.paths().install + '/etc/bash_completion.d')
+make.Install( 'etc/bash_completion.d/casual-log',  dsl.paths().install + '/etc/bash_completion.d')
 
 
 

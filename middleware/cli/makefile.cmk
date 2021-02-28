@@ -1,17 +1,18 @@
-from casual.make.api import *
+import casual.make.api as make
+import casual.middleware.make.api as dsl
 
-IncludePaths([
+make.IncludePaths([
    'include',
    '../common/include',
    '../xatmi/include'] + 
-   casual_make_optional_include_paths().split()
+   make.optional_include_paths()
    )
 
 
-LibraryPaths([
+make.LibraryPaths([
     'bin',
     '../common/bin'] + 
-    casual_make_optional_library_paths().split()
+    make.optional_library_paths()
    )
 
 intall_lib = []
@@ -19,11 +20,11 @@ intall_bin = []
 
 
 
-lib_cli = LinkLibrary( 'bin/casual-cli',
+lib_cli = make.LinkLibrary( 'bin/casual-cli',
     [
-        Compile( 'source/pipe.cpp'),
-        Compile( 'source/common.cpp'),
-        Compile( 'source/message.cpp'),
+        make.Compile( 'source/pipe.cpp'),
+        make.Compile( 'source/common.cpp'),
+        make.Compile( 'source/message.cpp'),
     ],
     ['casual-common',
     ])
@@ -32,20 +33,9 @@ lib_cli = LinkLibrary( 'bin/casual-cli',
 intall_lib.append( lib_cli)
 
 
-# Unittest
-#LinkUnittest( 'bin/test-casual-cli',
-#   [
-#   ],
-#   [ 
-#       lib_cli, 
-#       'casual-common', 
-#       'casual-unittest',
-#   ])  
-
-casual_home = os.getenv('CASUAL_HOME')
 
 # Install
-Install( intall_lib,  casual_home + '/lib')
-Install( intall_bin,  casual_home + '/bin')
+make.Install( intall_lib, dsl.paths().install + '/lib')
+make.Install( intall_bin, dsl.paths().install + '/bin')
 
 

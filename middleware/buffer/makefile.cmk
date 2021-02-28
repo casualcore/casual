@@ -1,20 +1,23 @@
-from casual.make.api import *
+import casual.make.api as make
+import casual.middleware.make.api as dsl
 
-IncludePaths( [
+make.IncludePaths( [
    'include',
    '../common/include',
    '../cli/include',
-   '../xatmi/include'] + 
-   casual_make_optional_include_paths().split()
+   '../xatmi/include']
+    + make.optional_include_paths()
+    + dsl.paths().include.gtest
    )
 
 
-LibraryPaths([
+make.LibraryPaths([
     'bin',
     '../common/bin',
     '../cli/bin',
-    '../xatmi/bin'] + 
-    casual_make_optional_library_paths().split()
+    '../xatmi/bin']
+    + make.optional_library_paths()
+    + dsl.paths().library.gtest
    )
 
 
@@ -22,15 +25,15 @@ install_lib = []
 install_bin = []
 install_headers = []
 
-lib_buffer = LinkLibrary( 'bin/casual-buffer',
+lib_buffer = make.LinkLibrary( 'bin/casual-buffer',
     [
-     Compile( 'source/field.cpp'),
-     Compile( 'source/octet.cpp'),
-     Compile( 'source/order.cpp'),
-     Compile( 'source/string.cpp'),
+     make.Compile( 'source/field.cpp'),
+     make.Compile( 'source/octet.cpp'),
+     make.Compile( 'source/order.cpp'),
+     make.Compile( 'source/string.cpp'),
      
-     Compile( 'source/common.cpp'),
-     Compile( 'source/internal/field/string.cpp'),
+     make.Compile( 'source/common.cpp'),
+     make.Compile( 'source/internal/field/string.cpp'),
     ],
     [
      'casual-common'
@@ -46,9 +49,9 @@ install_headers += [
    ( 'include/casual/buffer/internal/field/string.h', 'casual/buffer/internal/field'),
 ]
 
-casual_field_make_header = LinkExecutable( 'bin/casual-buffer-field-make-header', 
+casual_field_make_header = make.LinkExecutable( 'bin/casual-buffer-field-make-header', 
     [
-     Compile( 'tools/source/field.cpp'),
+     make.Compile( 'tools/source/field.cpp'),
     ], 
     [ 
      'casual-common',  
@@ -61,9 +64,9 @@ install_bin.append( casual_field_make_header)
 
 # cli
 
-lib_cli = LinkLibrary( 'bin/casual-buffer-cli',
+lib_cli = make.LinkLibrary( 'bin/casual-buffer-cli',
     [ 
-        Compile( 'source/admin/cli.cpp')
+        make.Compile( 'source/admin/cli.cpp')
     ],
     [
         lib_buffer,
@@ -75,24 +78,24 @@ install_lib.append( lib_cli)
 
 
 # Unittest
-LinkUnittest( 'bin/test-buffer',
+make.LinkUnittest( 'bin/test-buffer',
    [
-    Compile( 'unittest/source/test_field_buffer.cpp'),
-    Compile( 'unittest/source/test_octet_buffer.cpp'),
-    Compile( 'unittest/source/test_order_buffer.cpp'),
-    Compile( 'unittest/source/test_string_buffer.cpp'),
-    Compile( 'unittest/source/test_field_stream.cpp'),
-    Compile( 'unittest/source/internal/field/test_string.cpp'),
-    Compile( 'unittest/source/internal/field/test_table.cpp'),
+    make.Compile( 'unittest/source/test_field_buffer.cpp'),
+    make.Compile( 'unittest/source/test_octet_buffer.cpp'),
+    make.Compile( 'unittest/source/test_order_buffer.cpp'),
+    make.Compile( 'unittest/source/test_string_buffer.cpp'),
+    make.Compile( 'unittest/source/test_field_stream.cpp'),
+    make.Compile( 'unittest/source/internal/field/test_string.cpp'),
+    make.Compile( 'unittest/source/internal/field/test_table.cpp'),
    ],
    [ 
     lib_buffer, 'casual-common', 'casual-xatmi', 'casual-unittest'
    ])  
    
 # Sample
-exe_field_sample = LinkExecutable( 'bin/casual-buffer-protocol-sample',
+exe_field_sample = make.LinkExecutable( 'bin/casual-buffer-protocol-sample',
     [
-     Compile( 'sample/protocol/source/field.cpp'),
+     make.Compile( 'sample/protocol/source/field.cpp'),
     ],
     [
      lib_buffer, 'casual-xatmi', 'casual-common'
@@ -100,21 +103,21 @@ exe_field_sample = LinkExecutable( 'bin/casual-buffer-protocol-sample',
     
     
 
-lib_casual_buffer_sample = LinkLibrary( 'bin/casual-buffer-sample',
+lib_casual_buffer_sample = make.LinkLibrary( 'bin/casual-buffer-sample',
     [
-     Compile( 'sample/client/source/field.cpp'),
-     Compile( 'sample/client/source/octet.cpp'),
-     Compile( 'sample/client/source/order.cpp'),
-     Compile( 'sample/client/source/string.cpp'),
+     make.Compile( 'sample/client/source/field.cpp'),
+     make.Compile( 'sample/client/source/octet.cpp'),
+     make.Compile( 'sample/client/source/order.cpp'),
+     make.Compile( 'sample/client/source/string.cpp'),
     ],
     [
      lib_buffer, 'casual-xatmi'
     ])
 
 
-binary = LinkExecutable( 'bin/casual-buffer-field-from-human', 
+binary = make.LinkExecutable( 'bin/casual-buffer-field-from-human', 
     [
-        Compile( 'tools/source/field/from_human.cpp'),
+        make.Compile( 'tools/source/field/from_human.cpp'),
     ], 
     [ 
         lib_cli,
@@ -125,9 +128,9 @@ binary = LinkExecutable( 'bin/casual-buffer-field-from-human',
 install_bin.append( binary)
 
 
-binary = LinkExecutable( 'bin/casual-buffer-field-to-human', 
+binary = make.LinkExecutable( 'bin/casual-buffer-field-to-human', 
     [
-        Compile( 'tools/source/field/to_human.cpp'),
+        make.Compile( 'tools/source/field/to_human.cpp'),
     ], 
     [
         lib_cli,
@@ -137,9 +140,9 @@ binary = LinkExecutable( 'bin/casual-buffer-field-to-human',
     
 install_bin.append( binary)
 
-binary = LinkExecutable( 'bin/casual-buffer-duplicate', 
+binary = make.LinkExecutable( 'bin/casual-buffer-duplicate', 
     [
-        Compile( 'tools/source/duplicate.cpp'),
+        make.Compile( 'tools/source/duplicate.cpp'),
     ], 
     [
         lib_cli, 
@@ -149,9 +152,9 @@ binary = LinkExecutable( 'bin/casual-buffer-duplicate',
 install_bin.append( binary)
 
 
-binary = LinkExecutable( 'bin/casual-buffer-generic-compose', 
+binary = make.LinkExecutable( 'bin/casual-buffer-generic-compose', 
     [
-        Compile( 'tools/source/generic/compose.cpp'),
+        make.Compile( 'tools/source/generic/compose.cpp'),
     ], 
     [
         lib_cli,
@@ -160,9 +163,9 @@ binary = LinkExecutable( 'bin/casual-buffer-generic-compose',
     
 install_bin.append( binary)
 
-binary = LinkExecutable( 'bin/casual-buffer-generic-extract', 
+binary = make.LinkExecutable( 'bin/casual-buffer-generic-extract', 
     [
-        Compile( 'tools/source/generic/extract.cpp'),
+        make.Compile( 'tools/source/generic/extract.cpp'),
     ], 
     [
         lib_cli, 
@@ -171,9 +174,9 @@ binary = LinkExecutable( 'bin/casual-buffer-generic-extract',
     
 install_bin.append( binary)
 
-binary = LinkExecutable( 'bin/casual-buffer-field-serialize', 
+binary = make.LinkExecutable( 'bin/casual-buffer-field-serialize', 
     [
-     Compile( 'tools/source/field/serialize.cpp'),
+     make.Compile( 'tools/source/field/serialize.cpp'),
     ], 
     [ 
      'casual-common',
@@ -182,12 +185,12 @@ binary = LinkExecutable( 'bin/casual-buffer-field-serialize',
     
 install_bin.append( binary)
 
-casual_home = os.getenv('CASUAL_HOME')
+
 
 # Install
-Install( install_lib,  casual_home + '/lib')
-Install( install_bin,  casual_home + '/bin')
-Install( install_headers,  casual_home + '/include')
+make.Install( install_lib,  dsl.paths().install + '/lib')
+make.Install( install_bin,  dsl.paths().install + '/bin')
+make.Install( install_headers,  dsl.paths().install + '/include')
 
 
 

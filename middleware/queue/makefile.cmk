@@ -1,7 +1,9 @@
-from casual.make.api import *
+import casual.make.api as make
+import casual.middleware.make.api as dsl
 
+import os
 
-IncludePaths( [ 
+make.IncludePaths( [ 
     'include',
     '../common/include',
     '../cli/include',
@@ -11,12 +13,13 @@ IncludePaths( [
     '../transaction/include',
     '../domain/include',
     '../service/include',
-    '../../thirdparty/database/include'] + 
-    casual_make_optional_include_paths().split()
+    '../../thirdparty/database/include']
+    + make.optional_include_paths()
+    + dsl.paths().include.gtest
    )
 
 
-LibraryPaths( [ 
+make.LibraryPaths( [ 
     'bin',
     '../transaction/bin',
     '../configuration/bin',
@@ -26,8 +29,9 @@ LibraryPaths( [
     '../buffer/bin',
     '../domain/bin',
     '../service/bin',
-    '../xatmi/bin'] + 
-    casual_make_optional_library_paths().split()
+    '../xatmi/bin']
+    + make.optional_library_paths()
+    + dsl.paths().library.gtest
    )
     
 
@@ -37,16 +41,16 @@ install_lib = []
 install_bin = []
 
 # So we get the local build-rm
-Environment( 'PATH', '../tools/bin' + os.pathsep + os.getenv('PATH'))
+make.Environment( 'PATH', '../tools/bin' + os.pathsep + os.getenv('PATH'))
 
 # Common stuff
 
-common = LinkLibrary( 'bin/casual-queue-common',
+common = make.LinkLibrary( 'bin/casual-queue-common',
    [
-    Compile( 'source/common/log.cpp'),
-    #Compile( 'source/common/ipc.cpp'),
-    Compile( 'source/common/queue.cpp'),
-    Compile( 'source/code.cpp'),
+    make.Compile( 'source/common/log.cpp'),
+    #make.Compile( 'source/common/ipc.cpp'),
+    make.Compile( 'source/common/queue.cpp'),
+    make.Compile( 'source/code.cpp'),
    ],
    [ 'casual-common', ])
  
@@ -54,18 +58,18 @@ install_lib.append( common)
 
 # Group
 
-group_archive = LinkArchive( 'bin/casual-queue-group-archive',
+group_archive = make.LinkArchive( 'bin/casual-queue-group-archive',
 [
-    Compile( 'source/group/state.cpp'),   
-    Compile( 'source/group/queuebase.cpp'),
-    Compile( 'source/group/queuebase/statement.cpp'),
-    Compile( 'source/group/handle.cpp'),
+    make.Compile( 'source/group/state.cpp'),   
+    make.Compile( 'source/group/queuebase.cpp'),
+    make.Compile( 'source/group/queuebase/statement.cpp'),
+    make.Compile( 'source/group/handle.cpp'),
 ])
 
 
-queue_group = LinkExecutable( 'bin/casual-queue-group', 
+queue_group = make.LinkExecutable( 'bin/casual-queue-group', 
 [
-    Compile( 'source/group/main.cpp')
+    make.Compile( 'source/group/main.cpp')
 ],
 [
     group_archive,
@@ -80,18 +84,18 @@ install_bin.append( queue_group)
  
 # Manager
 
-manager_archive = LinkArchive( 'bin/casual-queue-manager-archive',
+manager_archive = make.LinkArchive( 'bin/casual-queue-manager-archive',
 [
-    Compile( 'source/manager/transform.cpp'),
-    Compile( 'source/manager/handle.cpp'),
-    Compile( 'source/manager/state.cpp'),
-    Compile( 'source/manager/admin/server.cpp'),
+    make.Compile( 'source/manager/transform.cpp'),
+    make.Compile( 'source/manager/handle.cpp'),
+    make.Compile( 'source/manager/state.cpp'),
+    make.Compile( 'source/manager/admin/server.cpp'),
 ])
 
 
-queue_manager = LinkExecutable( 'bin/casual-queue-manager', 
+queue_manager = make.LinkExecutable( 'bin/casual-queue-manager', 
     [
-      Compile( 'source/manager/main.cpp'),
+      make.Compile( 'source/manager/main.cpp'),
     ], 
     [ 
      manager_archive,
@@ -107,9 +111,9 @@ install_bin.append( queue_manager)
 
 
 
-queue_api = LinkLibrary( 'bin/casual-queue-api', 
+queue_api = make.LinkLibrary( 'bin/casual-queue-api', 
    [
-       Compile( 'source/api/queue.cpp'),
+       make.Compile( 'source/api/queue.cpp'),
    ],
    [
     common, 
@@ -120,9 +124,9 @@ queue_api = LinkLibrary( 'bin/casual-queue-api',
 install_lib.append( queue_api)
 
 # c-api
-queue_c_api = LinkLibrary( 'bin/casual-queue-c-api', 
+queue_c_api = make.LinkLibrary( 'bin/casual-queue-c-api', 
    [
-       Compile( 'source/c/queue.cpp'),
+       make.Compile( 'source/c/queue.cpp'),
    ],
    [
     common,
@@ -132,16 +136,16 @@ queue_c_api = LinkLibrary( 'bin/casual-queue-c-api',
 
 install_lib.append( queue_c_api)
 
-casual_home = os.getenv('CASUAL_HOME')
 
-Install( 'include/casual/queue/c/queue.h',  casual_home + '/include/casual/queue/c/')
+
+make.Install( 'include/casual/queue/c/queue.h',  dsl.paths().install + '/include/casual/queue/c/')
 
 # forward
-forward_server = LinkExecutable( 'bin/casual-queue-forward-group',
+forward_server = make.LinkExecutable( 'bin/casual-queue-forward-group',
 [
-    Compile( 'source/forward/handle.cpp'),
-    Compile( 'source/forward/state.cpp'),
-    Compile( 'source/forward/main.cpp'),
+    make.Compile( 'source/forward/handle.cpp'),
+    make.Compile( 'source/forward/state.cpp'),
+    make.Compile( 'source/forward/main.cpp'),
 ],
 [ common, 'casual-common', 'casual-buffer'])
 
@@ -149,9 +153,9 @@ install_bin.append( forward_server)
 
 
 # Client
-target = LinkLibrary( 'bin/casual-queue-admin-cli', 
+target = make.LinkLibrary( 'bin/casual-queue-admin-cli', 
     [
-        Compile( 'source/manager/admin/cli.cpp'),
+        make.Compile( 'source/manager/admin/cli.cpp'),
      ], 
    [common, queue_api, 'casual-cli', 'casual-common', 'casual-serviceframework'])
  
@@ -160,9 +164,9 @@ install_lib.append( target)
 
 # tools
 
-target = LinkExecutable( 'bin/casual-queue-upgrade',
+target = make.LinkExecutable( 'bin/casual-queue-upgrade',
    [
-      Compile( 'tools/source/upgrade.cpp')
+      make.Compile( 'tools/source/upgrade.cpp')
    ],
    [ common, 'casual-common', 'sqlite3'])
 
@@ -170,13 +174,13 @@ install_bin.append( target)
 
 # Unittest
 
-test_casual_queue = LinkUnittest( 'unittest/bin/test-casual-queue', 
+test_casual_queue = make.LinkUnittest( 'unittest/bin/test-casual-queue', 
     [
-        Compile( 'unittest/source/manager/test_transform.cpp'),
-        Compile( 'unittest/source/group/test_queuebase.cpp'),
-        Compile( 'unittest/source/test_queue.cpp'),
-        Compile( 'unittest/source/api/test_c.cpp'),
-        Compile( 'unittest/source/test_forward.cpp')
+        make.Compile( 'unittest/source/manager/test_transform.cpp'),
+        make.Compile( 'unittest/source/group/test_queuebase.cpp'),
+        make.Compile( 'unittest/source/test_queue.cpp'),
+        make.Compile( 'unittest/source/api/test_c.cpp'),
+        make.Compile( 'unittest/source/test_forward.cpp')
     ],
     [
      group_archive,
@@ -196,24 +200,24 @@ test_casual_queue = LinkUnittest( 'unittest/bin/test-casual-queue',
 )
 
 # Make sure the executables is linked before unittest
-Dependencies( test_casual_queue, [ queue_manager, queue_group, forward_server])
+make.Dependencies( test_casual_queue, [ queue_manager, queue_group, forward_server])
 
 # Deprecated Forwards ! 
 
-forward_common = LinkArchive( 'bin/casual-queue-forward-common',
+forward_common = make.LinkArchive( 'bin/casual-queue-forward-common',
     [
-       Compile( 'source/forward/deprecated/common.cpp'),
+       make.Compile( 'source/forward/deprecated/common.cpp'),
     ])
 
-forward_service = LinkExecutable( 'bin/casual-queue-forward-service',
+forward_service = make.LinkExecutable( 'bin/casual-queue-forward-service',
     [
-        Compile( 'source/forward/deprecated/service.cpp'),
+        make.Compile( 'source/forward/deprecated/service.cpp'),
     ],
     [ forward_common, common, queue_api, 'casual-common', 'casual-buffer', 'casual-serviceframework'])
 
-forward_queue = LinkExecutable( 'bin/casual-queue-forward-queue',
+forward_queue = make.LinkExecutable( 'bin/casual-queue-forward-queue',
     [
-        Compile( 'source/forward/deprecated/queue.cpp'),
+        make.Compile( 'source/forward/deprecated/queue.cpp'),
     ],
     [ forward_common, common, queue_api, 'casual-common', 'casual-buffer'])
 
@@ -222,8 +226,8 @@ install_bin.append( forward_queue)
 
 
 
-Install( install_lib,  casual_home + '/lib')
-Install( install_bin,  casual_home + '/bin')
+make.Install( install_lib,  dsl.paths().install + '/lib')
+make.Install( install_bin,  dsl.paths().install + '/bin')
 
 
 

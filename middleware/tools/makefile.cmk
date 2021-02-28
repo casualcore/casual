@@ -1,63 +1,66 @@
-from casual.make.api import *
+import casual.make.api as make
+import casual.middleware.make.api as dsl
 
 
-IncludePaths( ['include',
+make.IncludePaths( ['include',
     '../common/include',
     '../xatmi/include',
     '../configuration/include',
-    '../serviceframework/include'] + 
-    casual_make_optional_include_paths().split()
+    '../serviceframework/include']
+    + make.optional_include_paths()
+    + dsl.paths().include.gtest
     )
 
-LibraryPaths( ['bin',
+make.LibraryPaths( ['bin',
     '../buffer/bin',
     '../common/bin',
     '../xatmi/bin',
     '../configuration/bin',
-    '../serviceframework/bin'] + 
-    casual_make_optional_library_paths().split()
+    '../serviceframework/bin']
+    + make.optional_library_paths()
+    + dsl.paths().library.gtest
    )
 
 
 install_bin = []
 install_lib = []
 
-common_a = LinkArchive( 'bin/casual-tools-common',
+common_a = make.LinkArchive( 'bin/casual-tools-common',
   [
-    Compile( 'source/common.cpp'),
-    Compile( 'source/service/describe/invoke.cpp'),
+    make.Compile( 'source/common.cpp'),
+    make.Compile( 'source/service/describe/invoke.cpp'),
    ])
 
-build_task_a = LinkArchive( 'bin/casual-tools-build-task',
+build_task_a = make.LinkArchive( 'bin/casual-tools-build-task',
   [
-    Compile( 'source/build/task.cpp'),
-    Compile( 'source/build/generate.cpp'),
-    Compile( 'source/build/transform.cpp'),
+    make.Compile( 'source/build/task.cpp'),
+    make.Compile( 'source/build/generate.cpp'),
+    make.Compile( 'source/build/transform.cpp'),
    ])
 
-target = LinkExecutable( 'bin/casual-build-server',
-   [ Compile( 'source/build/server/main.cpp')],
+target = make.LinkExecutable( 'bin/casual-build-server',
+   [ make.Compile( 'source/build/server/main.cpp')],
    [ common_a, build_task_a, 'casual-common', 'casual-configuration'])
 
 # setup dependency to simpler name 'casual-build-server'
-Dependencies( model.register('casual-build-server'), [target])
+make.Dependencies( make.model.register('casual-build-server'), [target])
 
 install_bin.append( target)
 
-target = LinkExecutable( 'bin/casual-build-server-generate',
-   [ Compile( 'source/build/server/generate/main.cpp')],
+target = make.LinkExecutable( 'bin/casual-build-server-generate',
+   [ make.Compile( 'source/build/server/generate/main.cpp')],
    [ common_a, build_task_a, 'casual-common', 'casual-configuration'])
 
 install_bin.append( target)
 
-target = LinkExecutable( 'bin/casual-build-executable',
-   [ Compile( 'source/build/executable/main.cpp')],
+target = make.LinkExecutable( 'bin/casual-build-executable',
+   [ make.Compile( 'source/build/executable/main.cpp')],
    [ common_a, build_task_a, 'casual-common', 'casual-configuration'])
 
 install_bin.append( target)
 
-target = LinkExecutable( 'bin/casual-build-resource-proxy',
-   [ Compile( 'source/build/resource/proxy/main.cpp')],
+target = make.LinkExecutable( 'bin/casual-build-resource-proxy',
+   [ make.Compile( 'source/build/resource/proxy/main.cpp')],
    [ 
     common_a,
     'casual-common', 
@@ -69,8 +72,8 @@ install_bin.append( target)
 
 
 
-target = LinkExecutable( 'file/header/bin/casual-source-code-header',
-   [ Compile( 'file/header/source/main.cpp')],
+target = make.LinkExecutable( 'file/header/bin/casual-source-code-header',
+   [ make.Compile( 'file/header/source/main.cpp')],
    [ 
     'casual-common', 
     ])
@@ -83,24 +86,24 @@ install_bin.append( 'log/casual-log')
 install_bin.append( 'log/casual-log-format')
 install_bin.append( 'log/color.py')
 
-#target = LinkExecutable( 'bin/casual-log-format',
-#   [ Compile( 'log/source/format.cpp')],
+#target = make.LinkExecutable( 'bin/casual-log-format',
+#   [ make.Compile( 'log/source/format.cpp')],
 #   [ 'casual-common'])
 #
 # install_bin.append( target)
 
 
-LinkUnittest( 'bin/test-casual-tools',
+make.LinkUnittest( 'bin/test-casual-tools',
 	[   
-        Compile( 'unittest/source/build/test_server.cpp'),
+        make.Compile( 'unittest/source/build/test_server.cpp'),
     ],
 	[  common_a, 'casual-common', 'casual-unittest'])
 
 
-casual_home = os.getenv('CASUAL_HOME')
 
-Install( install_bin,  casual_home + '/bin')
-Install( install_lib,  casual_home + '/lib')
+
+make.Install( install_bin,  dsl.paths().install + '/bin')
+make.Install( install_lib,  dsl.paths().install + '/lib')
 
 
 

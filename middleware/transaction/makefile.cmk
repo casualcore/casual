@@ -1,25 +1,28 @@
-from casual.make.api import *
+import casual.make.api as make
+import casual.middleware.make.api as dsl
     
-IncludePaths( ['include',
+make.IncludePaths( ['include',
     '../common/include',
     '../xatmi/include',
     '../configuration/include',
     '../domain/include',
     '../cli/include',
     '../serviceframework/include',
-    '../../thirdparty/database/include'] + 
-    casual_make_optional_include_paths().split()
+    '../../thirdparty/database/include']
+    + make.optional_include_paths()
+    + dsl.paths().include.gtest
     )
 
-LibraryPaths( ['bin',
+make.LibraryPaths( ['bin',
     '../common/bin',
     '../buffer/bin',
     '../configuration/bin',
     '../domain/bin',
     '../cli/bin',
     '../serviceframework/bin',
-    '../xatmi/bin'] + 
-    casual_make_optional_library_paths().split()
+    '../xatmi/bin']
+    + make.optional_library_paths()
+    + dsl.paths().library.gtest
    )
 
 
@@ -27,24 +30,24 @@ install_lib = []
 install_bin = []
 install_headers = []
 
-# Compile and link the transaction manager
-manager_archive = LinkArchive( 'bin/manager-archive',
+# make.Compile and link the transaction manager
+manager_archive = make.LinkArchive( 'bin/manager-archive',
     [
-        Compile( 'source/common.cpp'),
-        Compile( 'source/global.cpp'),
-        Compile( 'source/manager/manager.cpp'),
-        Compile( 'source/manager/state.cpp'),
-        Compile( 'source/manager/action.cpp'),
-        Compile( 'source/manager/log.cpp'),
-        Compile( 'source/manager/handle.cpp'),
-        Compile( 'source/manager/admin/server.cpp'),
-        Compile( 'source/manager/admin/transform.cpp'),
+        make.Compile( 'source/common.cpp'),
+        make.Compile( 'source/global.cpp'),
+        make.Compile( 'source/manager/manager.cpp'),
+        make.Compile( 'source/manager/state.cpp'),
+        make.Compile( 'source/manager/action.cpp'),
+        make.Compile( 'source/manager/log.cpp'),
+        make.Compile( 'source/manager/handle.cpp'),
+        make.Compile( 'source/manager/admin/server.cpp'),
+        make.Compile( 'source/manager/admin/transform.cpp'),
     ])
 
 
-manager = LinkExecutable( 'bin/casual-transaction-manager',
+manager = make.LinkExecutable( 'bin/casual-transaction-manager',
     [
-        Compile( 'source/manager/main.cpp')
+        make.Compile( 'source/manager/main.cpp')
     ],
     [ 
         manager_archive, 
@@ -58,9 +61,9 @@ manager = LinkExecutable( 'bin/casual-transaction-manager',
 install_bin.append( manager)
 
 
-target = LinkLibrary( 'bin/casual-transaction-admin-cli',
+target = make.LinkLibrary( 'bin/casual-transaction-admin-cli',
     [
-        Compile( 'source/manager/admin/cli.cpp')
+        make.Compile( 'source/manager/admin/cli.cpp')
     ],
     [ 
         manager_archive,
@@ -74,11 +77,11 @@ target = LinkLibrary( 'bin/casual-transaction-admin-cli',
 install_lib.append( target)
 
 
-# Compile and link resource-proxy-server lib
-target = LinkLibrary( 'bin/casual-resource-proxy-server',
+# make.Compile and link resource-proxy-server lib
+target = make.LinkLibrary( 'bin/casual-resource-proxy-server',
    [
-        Compile( 'source/resource/proxy/server.cpp'),
-        Compile( 'source/resource/proxy.cpp'),
+        make.Compile( 'source/resource/proxy/server.cpp'),
+        make.Compile( 'source/resource/proxy.cpp'),
    ],
    [ manager_archive, 'casual-common', 'casual-serviceframework'])
 
@@ -88,8 +91,8 @@ install_headers.append( ( 'include/casual/transaction/resource/proxy/server.h', 
 
 
 # Mockup resource proxy
-target = LinkExecutable( 'bin/rm-proxy-casual-mockup',
-    [ Compile( 'source/resource/template_build_resource_proxy.cpp')],
+target = make.LinkExecutable( 'bin/rm-proxy-casual-mockup',
+    [ make.Compile( 'source/resource/template_build_resource_proxy.cpp')],
     [ 
         'casual-mockup-rm', 
         'casual-resource-proxy-server'
@@ -99,13 +102,13 @@ target = LinkExecutable( 'bin/rm-proxy-casual-mockup',
 install_bin.append( target)
 
 # unittest
-test_transaction = LinkUnittest( 'bin/test-casual-transaction',
+test_transaction = make.LinkUnittest( 'bin/test-casual-transaction',
     [
-        Compile( 'unittest/source/manager/test_state.cpp'),
-        Compile( 'unittest/source/manager/test_log.cpp'),
-        Compile( 'unittest/source/test_admin.cpp'),
-        Compile( 'unittest/source/test_configuration.cpp'),
-        Compile( 'unittest/source/test_manager.cpp'),
+        make.Compile( 'unittest/source/manager/test_state.cpp'),
+        make.Compile( 'unittest/source/manager/test_log.cpp'),
+        make.Compile( 'unittest/source/test_admin.cpp'),
+        make.Compile( 'unittest/source/test_configuration.cpp'),
+        make.Compile( 'unittest/source/test_manager.cpp'),
         
     ],
     [ 
@@ -122,13 +125,13 @@ test_transaction = LinkUnittest( 'bin/test-casual-transaction',
     ])
 
 # make sure we link manager before we run tests 
-Dependencies( test_transaction, [ manager])
+make.Dependencies( test_transaction, [ manager])
 
-casual_home = os.getenv('CASUAL_HOME')
 
-Install( install_bin, casual_home + '/bin')
-Install( install_lib, casual_home + '/lib')
-Install( install_headers, casual_home + '/include')
+
+make.Install( install_bin, dsl.paths().install + '/bin')
+make.Install( install_lib, dsl.paths().install + '/lib')
+make.Install( install_headers, dsl.paths().install + '/include')
 
 
 

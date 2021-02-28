@@ -1,29 +1,30 @@
-from casual.make.api import *
+import casual.make.api as make
+import casual.middleware.make.api as dsl
 
-IncludePaths([
+make.IncludePaths([
     'include', 
     '../../xatmi/include'] + 
-    casual_make_optional_include_paths().split()
+    make.optional_include_paths()
     )
 
-LibraryPaths([
+make.LibraryPaths([
     'bin',
     '../../xatmi/bin'] + 
-    casual_make_optional_library_paths().split()
+    make.optional_library_paths()
    )
 
 
 install_lib = []
 
 objectfiles = [
-    Compile( 'source/tx.cpp'),
-    Compile( 'source/xatmi.cpp'),
+    make.Compile( 'source/tx.cpp'),
+    make.Compile( 'source/xatmi.cpp'),
     
 ]
 
 binary_name = 'bin/casual-cobol-xatmi'
 
-lib_xatmi_so = LinkLibrary( binary_name,
+lib_xatmi_so = make.LinkLibrary( binary_name,
      objectfiles,
      [
          'casual-xatmi'
@@ -31,7 +32,7 @@ lib_xatmi_so = LinkLibrary( binary_name,
 
 install_lib.append( lib_xatmi_so)
 
-lib_xatmi_a = LinkArchive( binary_name, objectfiles)
+lib_xatmi_a = make.LinkArchive( binary_name, objectfiles)
 install_lib.append( lib_xatmi_a)
 
 # install the copy files
@@ -44,7 +45,7 @@ install_copy = [
    'copy/TXSTATUS.cpy'
 ]
 
-casual_home = os.getenv('CASUAL_HOME')
 
-Install( install_copy,  casual_home + '/binding/cobol/copy')
-Install( install_lib,  casual_home + '/lib')
+
+make.Install( install_copy,  dsl.paths().install + '/binding/cobol/copy')
+make.Install( install_lib,  dsl.paths().install + '/lib')

@@ -1,27 +1,30 @@
 
 
-from casual.make.api import *
+import casual.make.api as make
+import casual.middleware.make.api as dsl
 
 
 
-IncludePaths([
+make.IncludePaths([
    'include',
    '../common/include',
    '../buffer/include',
    '../configuration/include',
    '../xatmi/include',
-   '../serviceframework/include'] + 
-   casual_make_optional_include_paths().split()
+   '../serviceframework/include']
+   + make.optional_include_paths()
+   + dsl.paths().include.gtest
    )
 
 
-LibraryPaths([
+make.LibraryPaths([
     'bin',
     '../common/bin',
     '../configuration/bin',
     '../serviceframework/bin',
-    '../xatmi/bin'] + 
-    casual_make_optional_library_paths().split()
+    '../xatmi/bin']
+    + make.optional_library_paths()
+    + dsl.paths().library.gtest
    )
 
 
@@ -29,29 +32,29 @@ install_bins = []
 install_libs = []
 install_headers = []
 
-common_archive = LinkArchive( 'bin/casual-domain-common', 
+common_archive = make.LinkArchive( 'bin/casual-domain-common', 
  [
-    Compile( 'source/common.cpp'),
+    make.Compile( 'source/common.cpp'),
 ])
 
-manager_archive = LinkArchive( 'bin/casual-domain-manager', 
+manager_archive = make.LinkArchive( 'bin/casual-domain-manager', 
  [
-    Compile( 'source/transform.cpp'),
-    Compile( 'source/manager/ipc.cpp'),
-    Compile( 'source/manager/task.cpp'),
-    Compile( 'source/manager/task/create.cpp'),
-    Compile( 'source/manager/state.cpp'),
-    Compile( 'source/manager/state/create.cpp'),
-    Compile( 'source/manager/handle.cpp'),
-    Compile( 'source/manager/admin/server.cpp'),
-    Compile( 'source/manager/configuration.cpp'),
+    make.Compile( 'source/transform.cpp'),
+    make.Compile( 'source/manager/ipc.cpp'),
+    make.Compile( 'source/manager/task.cpp'),
+    make.Compile( 'source/manager/task/create.cpp'),
+    make.Compile( 'source/manager/state.cpp'),
+    make.Compile( 'source/manager/state/create.cpp'),
+    make.Compile( 'source/manager/handle.cpp'),
+    make.Compile( 'source/manager/admin/server.cpp'),
+    make.Compile( 'source/manager/configuration.cpp'),
 ])
 
 # utility for other 'managers'
-pending_library = LinkLibrary( 'bin/casual-domain-utility',
+pending_library = make.LinkLibrary( 'bin/casual-domain-utility',
     [
-        Compile( 'source/pending/message/send.cpp'),
-        Compile( 'source/configuration/fetch.cpp'),
+        make.Compile( 'source/pending/message/send.cpp'),
+        make.Compile( 'source/configuration/fetch.cpp'),
     ],
     [
         common_archive,
@@ -62,9 +65,9 @@ pending_library = LinkLibrary( 'bin/casual-domain-utility',
 install_libs.append( pending_library)
 
 
-target_domain_manager = LinkExecutable( 'bin/casual-domain-manager',
+target_domain_manager = make.LinkExecutable( 'bin/casual-domain-manager',
     [
-      Compile( 'source/manager/main.cpp'),
+      make.Compile( 'source/manager/main.cpp'),
     ],
     [
      manager_archive,
@@ -79,9 +82,9 @@ target_domain_manager = LinkExecutable( 'bin/casual-domain-manager',
 install_bins.append( target_domain_manager)
 
 
-target = LinkLibrary( 'bin/casual-domain-admin-cli',
+target = make.LinkLibrary( 'bin/casual-domain-admin-cli',
    [
-      Compile( 'source/manager/admin/cli.cpp'),
+      make.Compile( 'source/manager/admin/cli.cpp'),
    ],
    [
       manager_archive,
@@ -94,10 +97,10 @@ target = LinkLibrary( 'bin/casual-domain-admin-cli',
 install_libs.append( target)
 
 # public api
-domain_api = LinkLibrary( 'bin/casual-domain-api',
+domain_api = make.LinkLibrary( 'bin/casual-domain-api',
    [
-      Compile( 'source/manager/api/state.cpp'),
-      Compile( 'source/manager/api/internal/transform.cpp'),
+      make.Compile( 'source/manager/api/state.cpp'),
+      make.Compile( 'source/manager/api/internal/transform.cpp'),
    ],
    [
       common_archive,
@@ -113,18 +116,18 @@ install_headers += [
 ]
 
 # discovery
-discovery_archive = LinkArchive( 'bin/casual-domain-discovery-archive',
+discovery_archive = make.LinkArchive( 'bin/casual-domain-discovery-archive',
     [
-        Compile( 'source/discovery/common.cpp'),
+        make.Compile( 'source/discovery/common.cpp'),
     ]
 )
 
 
-discovery_executable = LinkExecutable( 'bin/casual-domain-discovery',
+discovery_executable = make.LinkExecutable( 'bin/casual-domain-discovery',
     [
-        Compile( 'source/discovery/main.cpp'),
-        Compile( 'source/discovery/handle.cpp'),
-        Compile( 'source/discovery/state.cpp'),
+        make.Compile( 'source/discovery/main.cpp'),
+        make.Compile( 'source/discovery/handle.cpp'),
+        make.Compile( 'source/discovery/state.cpp'),
     ],
     [
         discovery_archive,
@@ -133,9 +136,9 @@ discovery_executable = LinkExecutable( 'bin/casual-domain-discovery',
 )
 install_bins.append( discovery_executable)
 
-domain_discovery_library = LinkLibrary( 'bin/casual-domain-discovery',
+domain_discovery_library = make.LinkLibrary( 'bin/casual-domain-discovery',
     [
-        Compile( 'source/discovery/api.cpp'),
+        make.Compile( 'source/discovery/api.cpp'),
     ],
     [
         discovery_archive,
@@ -145,9 +148,9 @@ domain_discovery_library = LinkLibrary( 'bin/casual-domain-discovery',
 
 install_libs.append( domain_discovery_library)
 
-target = LinkLibrary( 'bin/casual-domain-discovery-admin-cli',
+target = make.LinkLibrary( 'bin/casual-domain-discovery-admin-cli',
     [
-        Compile( 'source/discovery/admin/cli.cpp'),
+        make.Compile( 'source/discovery/admin/cli.cpp'),
     ],
     [
         domain_discovery_library,
@@ -158,9 +161,9 @@ target = LinkLibrary( 'bin/casual-domain-discovery-admin-cli',
 install_libs.append( target)
 
 # pending send
-pending_executable = LinkExecutable( 'bin/casual-domain-pending-message',
+pending_executable = make.LinkExecutable( 'bin/casual-domain-pending-message',
     [
-      Compile( 'source/pending/message/main.cpp'),
+      make.Compile( 'source/pending/message/main.cpp'),
     ],
     [
      pending_library,
@@ -176,9 +179,9 @@ install_bins.append( pending_executable)
 
 
 #unittest lib for other modules to use (in unittest)
-domain_unittest_library = LinkLibrary( 'bin/casual-domain-unittest',
+domain_unittest_library = make.LinkLibrary( 'bin/casual-domain-unittest',
     [
-        Compile( 'source/manager/unittest/process.cpp'),
+        make.Compile( 'source/manager/unittest/process.cpp'),
     ],
     [
         common_archive,
@@ -189,22 +192,22 @@ domain_unittest_library = LinkLibrary( 'bin/casual-domain-unittest',
 )
 
 
-target_simple_server = LinkExecutable( 'bin/test-simple-server',
+target_simple_server = make.LinkExecutable( 'bin/test-simple-server',
     [
-        Compile( 'unittest/source/simple_server.cpp'),
+        make.Compile( 'unittest/source/simple_server.cpp'),
     ],
     [
      'casual-common'
     ])
 
 
-target_test_domain = LinkUnittest( 'bin/test-casual-domain', 
+target_test_domain = make.LinkUnittest( 'bin/test-casual-domain', 
     [ 
-        Compile( 'unittest/source/manager/test_state.cpp'),
-        Compile( 'unittest/source/manager/test_manager.cpp'),
-        Compile( 'unittest/source/manager/test_api.cpp'),
-        Compile( 'unittest/source/pending/test_message.cpp'),
-        Compile( 'unittest/source/test_discovery.cpp'),
+        make.Compile( 'unittest/source/manager/test_state.cpp'),
+        make.Compile( 'unittest/source/manager/test_manager.cpp'),
+        make.Compile( 'unittest/source/manager/test_api.cpp'),
+        make.Compile( 'unittest/source/pending/test_message.cpp'),
+        make.Compile( 'unittest/source/test_discovery.cpp'),
     ],
     [
         common_archive,
@@ -223,14 +226,14 @@ target_test_domain = LinkUnittest( 'bin/test-casual-domain',
     ]) 
 
 # We use domain-manager and simple-server from the unittests
-Dependencies( target_test_domain, [ target_domain_manager, target_simple_server, pending_executable, discovery_executable])
+make.Dependencies( target_test_domain, [ target_domain_manager, target_simple_server, pending_executable, discovery_executable])
 
 
-casual_home = os.getenv('CASUAL_HOME')
 
-Install( install_bins, casual_home + '/bin')
-Install( install_libs, casual_home + '/lib')
-Install( install_headers, casual_home + '/include')
+
+make.Install( install_bins, dsl.paths().install + '/bin')
+make.Install( install_libs, dsl.paths().install + '/lib')
+make.Install( install_headers, dsl.paths().install + '/include')
 
 
 

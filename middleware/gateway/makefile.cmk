@@ -1,31 +1,34 @@
-from casual.make.api import *
+import casual.make.api as make
+import casual.middleware.make.api as dsl
 
 
 
-IncludePaths([
-   'include',
-   'unittest/include',
-   '../common/include',
-   '../configuration/include',
-   '../domain/include',
-   '../service/include',
-   '../queue/include',
-   '../xatmi/include',
-   '../serviceframework/include'] + 
-   casual_make_optional_include_paths().split()
+make.IncludePaths([
+    'include',
+    'unittest/include',
+    '../common/include',
+    '../configuration/include',
+    '../domain/include',
+    '../service/include',
+    '../queue/include',
+    '../xatmi/include',
+    '../serviceframework/include']    
+    + make.optional_include_paths()
+    + dsl.paths().include.gtest
    )
 
 
-LibraryPaths([
-   'bin',
-   '../common/bin',
-   '../configuration/bin',
-   '../domain/bin',
-   '../service/bin',
-   '../serviceframework/bin',
-   '../xatmi/bin',
-   '../queue/bin'] + 
-    casual_make_optional_library_paths().split()
+make.LibraryPaths([
+    'bin',
+    '../common/bin',
+    '../configuration/bin',
+    '../domain/bin',
+    '../service/bin',
+    '../serviceframework/bin',
+    '../xatmi/bin',
+    '../queue/bin']
+    + make.optional_library_paths()
+    + dsl.paths().library.gtest
    )
 
 
@@ -33,21 +36,21 @@ install_lib = []
 install_bin = []
 install_example_bin = []
 
-common_archive = LinkArchive( 'bin/casual-gateway-common',
+common_archive = make.LinkArchive( 'bin/casual-gateway-common',
     [
-        Compile( 'source/environment.cpp'),
-        Compile( 'source/transform.cpp'),
-        Compile( 'source/common.cpp'),
-        Compile( 'source/manager/state.cpp'),
+        make.Compile( 'source/environment.cpp'),
+        make.Compile( 'source/transform.cpp'),
+        make.Compile( 'source/common.cpp'),
+        make.Compile( 'source/manager/state.cpp'),
     ])
         
 
 # The gateway-manager
-target = LinkExecutable( 'bin/casual-gateway-manager',
+target = make.LinkExecutable( 'bin/casual-gateway-manager',
     [
-        Compile( 'source/manager/main.cpp'),
-        Compile( 'source/manager/handle.cpp'),
-        Compile( 'source/manager/admin/server.cpp'),
+        make.Compile( 'source/manager/main.cpp'),
+        make.Compile( 'source/manager/handle.cpp'),
+        make.Compile( 'source/manager/admin/server.cpp'),
     ],
     [ 
         common_archive,
@@ -58,9 +61,9 @@ target = LinkExecutable( 'bin/casual-gateway-manager',
 
 install_bin.append( target)
 
-target = LinkLibrary( 'bin/casual-gateway-admin-cli',
+target = make.LinkLibrary( 'bin/casual-gateway-admin-cli',
     [
-        Compile( 'source/manager/admin/cli.cpp'),
+        make.Compile( 'source/manager/admin/cli.cpp'),
     ],
     [
         common_archive,
@@ -72,18 +75,18 @@ install_lib.append( target)
 
 # Outbound
 
-outbound_archive = LinkArchive( 'bin/casual-gateway-outbound-archive',
+outbound_archive = make.LinkArchive( 'bin/casual-gateway-outbound-archive',
     [
-        Compile( 'source/outbound/state.cpp'),
-        Compile( 'source/outbound/handle.cpp'),
-        Compile( 'source/outbound/error/reply.cpp'),
+        make.Compile( 'source/outbound/state.cpp'),
+        make.Compile( 'source/outbound/handle.cpp'),
+        make.Compile( 'source/outbound/error/reply.cpp'),
     ]
 )
 
 ## regular outbound
-target = LinkExecutable( 'bin/casual-gateway-outbound-group',
+target = make.LinkExecutable( 'bin/casual-gateway-outbound-group',
     [
-        Compile( 'source/outbound/main.cpp'),
+        make.Compile( 'source/outbound/main.cpp'),
     ],
     [
         outbound_archive,
@@ -95,9 +98,9 @@ target = LinkExecutable( 'bin/casual-gateway-outbound-group',
 install_bin.append( target)
 
 ## reverse outbound
-target = LinkExecutable( 'bin/casual-gateway-outbound-reverse-group',
+target = make.LinkExecutable( 'bin/casual-gateway-outbound-reverse-group',
     [
-        Compile( 'source/outbound/reverse/main.cpp'),
+        make.Compile( 'source/outbound/reverse/main.cpp'),
     ],
     [
         outbound_archive,
@@ -110,17 +113,17 @@ install_bin.append( target)
 
 # Inbound
 
-inbound_archive = LinkArchive( 'bin/casual-gateway-inbound-archive',
+inbound_archive = make.LinkArchive( 'bin/casual-gateway-inbound-archive',
     [
-        Compile( 'source/inbound/handle.cpp'),
-        Compile( 'source/inbound/state.cpp'),
+        make.Compile( 'source/inbound/handle.cpp'),
+        make.Compile( 'source/inbound/state.cpp'),
     ]
 )
 
 ##  regular inbound
-target = LinkExecutable( 'bin/casual-gateway-inbound-group',
+target = make.LinkExecutable( 'bin/casual-gateway-inbound-group',
 [
-    Compile( 'source/inbound/main.cpp'),
+    make.Compile( 'source/inbound/main.cpp'),
 ],
 [
     inbound_archive,
@@ -132,9 +135,9 @@ target = LinkExecutable( 'bin/casual-gateway-inbound-group',
 install_bin.append( target)
 
 # reverse inbound
-target = LinkExecutable( 'bin/casual-gateway-inbound-reverse-group',
+target = make.LinkExecutable( 'bin/casual-gateway-inbound-reverse-group',
     [
-        Compile( 'source/inbound/reverse/main.cpp'),
+        make.Compile( 'source/inbound/reverse/main.cpp'),
     ],
     [
         inbound_archive,
@@ -147,19 +150,19 @@ install_bin.append( target)
 
 # protocol example
 protocol_objects = [
-    Compile( 'source/documentation/protocol/example.cpp')
+    make.Compile( 'source/documentation/protocol/example.cpp')
 ]
 
 
 # Unittest
 
-target_unittest = LinkUnittest( 'bin/test-casual-gateway',
+target_unittest = make.LinkUnittest( 'bin/test-casual-gateway',
    [
-        Compile( 'unittest/source/utility.cpp'),
-        Compile( 'unittest/source/test_manager.cpp'),
-        Compile( 'unittest/source/test_protocol.cpp'),
-        Compile( 'unittest/source/outbound/test_state.cpp'),
-        Compile( 'unittest/source/test_reverse.cpp'),
+        make.Compile( 'unittest/source/utility.cpp'),
+        make.Compile( 'unittest/source/test_manager.cpp'),
+        make.Compile( 'unittest/source/test_protocol.cpp'),
+        make.Compile( 'unittest/source/outbound/test_state.cpp'),
+        make.Compile( 'unittest/source/test_reverse.cpp'),
    ] + protocol_objects, 
    [ 
        outbound_archive,
@@ -174,15 +177,15 @@ target_unittest = LinkUnittest( 'bin/test-casual-gateway',
     ]) 
 
 # Make sure we link the executables before we run the unittest
-Dependencies( target_unittest, install_bin)
+make.Dependencies( target_unittest, install_bin)
 
 
 
 
 
-target = LinkExecutable( "bin/casual-gateway-markdown-protocol",
+target = make.LinkExecutable( "bin/casual-gateway-markdown-protocol",
     [
-        Compile( 'source/documentation/protocol/markdown.cpp')
+        make.Compile( 'source/documentation/protocol/markdown.cpp')
     ] + protocol_objects,
     [
         'casual-common'
@@ -190,9 +193,9 @@ target = LinkExecutable( "bin/casual-gateway-markdown-protocol",
 
 install_example_bin.append( target)
 
-target = LinkExecutable( "bin/casual-gateway-binary-protocol",
+target = make.LinkExecutable( "bin/casual-gateway-binary-protocol",
     [
-        Compile( 'source/documentation/protocol/binary.cpp')
+        make.Compile( 'source/documentation/protocol/binary.cpp')
     ] + protocol_objects,
     [
         'casual-common'
@@ -200,10 +203,10 @@ target = LinkExecutable( "bin/casual-gateway-binary-protocol",
 
 install_example_bin.append( target)
 
-casual_home = os.getenv('CASUAL_HOME')
 
-Install( install_example_bin, casual_home + '/example/bin')
-Install( install_bin, casual_home + '/bin')
-Install( install_lib, casual_home + '/lib')
+
+make.Install( install_example_bin, dsl.paths().install + '/example/bin')
+make.Install( install_bin, dsl.paths().install + '/bin')
+make.Install( install_lib, dsl.paths().install + '/lib')
 
 

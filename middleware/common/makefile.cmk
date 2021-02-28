@@ -1,6 +1,7 @@
 import sys
 import os
-from casual.make.api import *
+import casual.make.api as make
+import casual.middleware.make.api as dsl
 
 
 platform_specific_lib_paths = []
@@ -22,21 +23,24 @@ elif sys.platform.startswith('win') or sys.platform.startswith('cygwin'):
 else:
     platform_specific_libs = ['uuid', 'resolv']
 
-IncludePaths( [ 
-   'include',
-   '../xatmi/include',
-   os.getenv('CASUAL_THIRDPARTY') + '/rapidjson/include',
-   os.getenv('CASUAL_THIRDPARTY') + '/yaml-cpp/include',
-   os.getenv('CASUAL_THIRDPARTY') + '/pugixml/src'
+make.IncludePaths( [ 
+        'include',
+        '../xatmi/include',
    ]
-   + casual_make_optional_include_paths().split()
-   + platform_specific_include_paths)
+   + platform_specific_include_paths
+   + make.optional_include_paths()
+   + dsl.paths().include.serialization
+   + dsl.paths().include.gtest
+)
 
-LibraryPaths( [ 
-   'bin',
-   os.getenv('CASUAL_THIRDPARTY') + '/yaml-cpp/bin',
-   os.getenv('CASUAL_THIRDPARTY') + '/pugixml/bin'
-    ] + platform_specific_lib_paths + casual_make_optional_library_paths().split())
+make.LibraryPaths( [ 
+        'bin',
+    ]
+    + platform_specific_lib_paths
+    + make.optional_library_paths()
+    + dsl.paths().library.serialization
+    + dsl.paths().library.gtest
+)
 
 install_libs = []
 install_headers = []
@@ -44,114 +48,114 @@ install_headers = []
 
 casual_common_objectfiles = [
 
-    Compile( 'source/strong/id.cpp'),
+    make.Compile( 'source/strong/id.cpp'),
 
-    Compile( 'source/server/context.cpp'),
-    Compile( 'source/server/lifetime.cpp'),
-    Compile( 'source/server/service.cpp'),
-    Compile( 'source/server/argument.cpp'),
-    Compile( 'source/server/start.cpp'),
-    Compile( 'source/server/handle/service.cpp'),
-    Compile( 'source/server/handle/conversation.cpp'),
-    Compile( 'source/server/handle/policy.cpp'),
+    make.Compile( 'source/server/context.cpp'),
+    make.Compile( 'source/server/lifetime.cpp'),
+    make.Compile( 'source/server/service.cpp'),
+    make.Compile( 'source/server/argument.cpp'),
+    make.Compile( 'source/server/start.cpp'),
+    make.Compile( 'source/server/handle/service.cpp'),
+    make.Compile( 'source/server/handle/conversation.cpp'),
+    make.Compile( 'source/server/handle/policy.cpp'),
     
-    Compile( 'source/executable/start.cpp'),
+    make.Compile( 'source/executable/start.cpp'),
 
-    Compile( 'source/service/call/context.cpp'),
-    Compile( 'source/service/call/state.cpp'),
-    Compile( 'source/service/conversation/context.cpp'),
+    make.Compile( 'source/service/call/context.cpp'),
+    make.Compile( 'source/service/call/state.cpp'),
+    make.Compile( 'source/service/conversation/context.cpp'),
     
-    Compile( 'source/service/lookup.cpp'),
-    Compile( 'source/service/header.cpp'),
-    Compile( 'source/service/type.cpp'),
-    Compile( 'source/service/invoke.cpp'),
+    make.Compile( 'source/service/lookup.cpp'),
+    make.Compile( 'source/service/header.cpp'),
+    make.Compile( 'source/service/type.cpp'),
+    make.Compile( 'source/service/invoke.cpp'),
     
-    Compile( 'source/buffer/x_octet.cpp'),
-    Compile( 'source/buffer/pool.cpp'),
-    Compile( 'source/buffer/transport.cpp'),
-    Compile( 'source/buffer/type.cpp'),
+    make.Compile( 'source/buffer/x_octet.cpp'),
+    make.Compile( 'source/buffer/pool.cpp'),
+    make.Compile( 'source/buffer/transport.cpp'),
+    make.Compile( 'source/buffer/type.cpp'),
     
-    Compile( 'source/transaction/context.cpp'),
-    Compile( 'source/transaction/id.cpp'),
-    Compile( 'source/transaction/resource.cpp'),
-    Compile( 'source/transaction/transaction.cpp'),
+    make.Compile( 'source/transaction/context.cpp'),
+    make.Compile( 'source/transaction/id.cpp'),
+    make.Compile( 'source/transaction/resource.cpp'),
+    make.Compile( 'source/transaction/transaction.cpp'),
     
-    Compile( 'source/communication/ipc.cpp'),
-    Compile( 'source/communication/socket.cpp'),
-    Compile( 'source/communication/tcp.cpp'),
-    Compile( 'source/communication/instance.cpp'),
-    Compile( 'source/communication/select.cpp'),
-    Compile( 'source/communication/device.cpp'),
-    Compile( 'source/communication/stream.cpp'),
+    make.Compile( 'source/communication/ipc.cpp'),
+    make.Compile( 'source/communication/socket.cpp'),
+    make.Compile( 'source/communication/tcp.cpp'),
+    make.Compile( 'source/communication/instance.cpp'),
+    make.Compile( 'source/communication/select.cpp'),
+    make.Compile( 'source/communication/device.cpp'),
+    make.Compile( 'source/communication/stream.cpp'),
     
-    Compile( 'source/communication/message.cpp'),
-    Compile( 'source/communication/log.cpp'),
+    make.Compile( 'source/communication/message.cpp'),
+    make.Compile( 'source/communication/log.cpp'),
         
-    Compile( 'source/message/handle.cpp'),
-    Compile( 'source/message/pending.cpp'),
-    Compile( 'source/message/event.cpp'),
+    make.Compile( 'source/message/handle.cpp'),
+    make.Compile( 'source/message/pending.cpp'),
+    make.Compile( 'source/message/event.cpp'),
 
-    Compile( 'source/event/listen.cpp'),
-    Compile( 'source/event/dispatch.cpp'),
-    Compile( 'source/event/send.cpp'),
+    make.Compile( 'source/event/listen.cpp'),
+    make.Compile( 'source/event/dispatch.cpp'),
+    make.Compile( 'source/event/send.cpp'),
     
-    Compile( 'source/log/stream.cpp'),
-    Compile( 'source/log/trace.cpp'),
-    Compile( 'source/log/category.cpp'),
-    Compile( 'source/log.cpp'),
+    make.Compile( 'source/log/stream.cpp'),
+    make.Compile( 'source/log/trace.cpp'),
+    make.Compile( 'source/log/category.cpp'),
+    make.Compile( 'source/log.cpp'),
 
-    Compile( 'source/code/log.cpp'),
-    Compile( 'source/code/xatmi.cpp'),
-    Compile( 'source/code/tx.cpp'),
-    Compile( 'source/code/xa.cpp'),
-    Compile( 'source/code/system.cpp'),
-    Compile( 'source/code/casual.cpp'),
-    Compile( 'source/code/signal.cpp'),
-    Compile( 'source/code/convert.cpp'),
-    Compile( 'source/code/serialize.cpp'),
+    make.Compile( 'source/code/log.cpp'),
+    make.Compile( 'source/code/xatmi.cpp'),
+    make.Compile( 'source/code/tx.cpp'),
+    make.Compile( 'source/code/xa.cpp'),
+    make.Compile( 'source/code/system.cpp'),
+    make.Compile( 'source/code/casual.cpp'),
+    make.Compile( 'source/code/signal.cpp'),
+    make.Compile( 'source/code/convert.cpp'),
+    make.Compile( 'source/code/serialize.cpp'),
 
     
-    Compile( 'source/exception/handle.cpp'),
+    make.Compile( 'source/exception/handle.cpp'),
 
-    Compile( 'source/environment.cpp'),
-    Compile( 'source/environment/string.cpp'),
+    make.Compile( 'source/environment.cpp'),
+    make.Compile( 'source/environment/string.cpp'),
 
-    Compile( 'source/uuid.cpp'),
-    Compile( 'source/file.cpp'),
-    Compile( 'source/string.cpp'),
+    make.Compile( 'source/uuid.cpp'),
+    make.Compile( 'source/file.cpp'),
+    make.Compile( 'source/string.cpp'),
 
-    Compile( 'source/signal.cpp'),
-    Compile( 'source/signal/timer.cpp'),
+    make.Compile( 'source/signal.cpp'),
+    make.Compile( 'source/signal/timer.cpp'),
     
-    Compile( 'source/chronology.cpp'),
-    Compile( 'source/process.cpp'),
-    Compile( 'source/instance.cpp'),
-    Compile( 'source/thread.cpp'),
-    Compile( 'source/domain.cpp'),
-    Compile( 'source/execution.cpp'),
-    Compile( 'source/network/byteorder.cpp'),
-    Compile( 'source/transcode.cpp'),
-    Compile( 'source/metric.cpp'),
+    make.Compile( 'source/chronology.cpp'),
+    make.Compile( 'source/process.cpp'),
+    make.Compile( 'source/instance.cpp'),
+    make.Compile( 'source/thread.cpp'),
+    make.Compile( 'source/domain.cpp'),
+    make.Compile( 'source/execution.cpp'),
+    make.Compile( 'source/network/byteorder.cpp'),
+    make.Compile( 'source/transcode.cpp'),
+    make.Compile( 'source/metric.cpp'),
     
-    Compile( 'source/argument.cpp'),
-    Compile( 'source/argument/cardinality.cpp'),
+    make.Compile( 'source/argument.cpp'),
+    make.Compile( 'source/argument/cardinality.cpp'),
     
-    Compile( 'source/terminal.cpp'),
+    make.Compile( 'source/terminal.cpp'),
 
-    Compile( 'source/serialize/archive.cpp'),
-    Compile( 'source/serialize/line.cpp'),
-    Compile( 'source/serialize/log.cpp'),
-    Compile( 'source/serialize/ini.cpp'),
-    Compile( 'source/serialize/json.cpp'),
-    Compile( 'source/serialize/xml.cpp'),
-    Compile( 'source/serialize/yaml.cpp'),
-    Compile( 'source/serialize/binary.cpp'),
-    Compile( 'source/serialize/create.cpp'),
-    Compile( 'source/serialize/archive/type.cpp'),
+    make.Compile( 'source/serialize/archive.cpp'),
+    make.Compile( 'source/serialize/line.cpp'),
+    make.Compile( 'source/serialize/log.cpp'),
+    make.Compile( 'source/serialize/ini.cpp'),
+    make.Compile( 'source/serialize/json.cpp'),
+    make.Compile( 'source/serialize/xml.cpp'),
+    make.Compile( 'source/serialize/yaml.cpp'),
+    make.Compile( 'source/serialize/binary.cpp'),
+    make.Compile( 'source/serialize/create.cpp'),
+    make.Compile( 'source/serialize/archive/type.cpp'),
 ]
 
 
-common = LinkLibrary( 'bin/casual-common', 
+common = make.LinkLibrary( 'bin/casual-common', 
 	casual_common_objectfiles,
 	platform_specific_libs + [ 'yaml-cpp', 'pugixml'])
 
@@ -164,20 +168,20 @@ install_headers += [
 
 
 # Some help for unittest tracing
-target_unittest = LinkLibrary( 'bin/casual-unittest', 
+target_unittest = make.LinkLibrary( 'bin/casual-unittest', 
      [
-       Compile( 'source/unittest.cpp'),
-       Compile( 'source/unittest/file.cpp'),
-       Compile( 'source/unittest/log.cpp'),
-       Compile( 'source/unittest/thread.cpp'),
-       Compile( 'source/unittest/eventually/send.cpp'),
+       make.Compile( 'source/unittest.cpp'),
+       make.Compile( 'source/unittest/file.cpp'),
+       make.Compile( 'source/unittest/log.cpp'),
+       make.Compile( 'source/unittest/thread.cpp'),
+       make.Compile( 'source/unittest/eventually/send.cpp'),
      ],
      [ common, "gtest"])
 
 # The mockup-rm, only for testing.
-lib_mockup_rm = LinkLibrary( 'bin/casual-mockup-rm', 
+lib_mockup_rm = make.LinkLibrary( 'bin/casual-mockup-rm', 
      [
-       Compile( 'source/unittest/rm.cpp')
+       make.Compile( 'source/unittest/rm.cpp')
      ],
      [ common, target_unittest])
 
@@ -186,9 +190,9 @@ install_libs.append( lib_mockup_rm)
 install_libs.append( target_unittest)
 
 
-target_simple_process = LinkExecutable( 'bin/simple_process',
+target_simple_process = make.LinkExecutable( 'bin/simple_process',
     [
-     Compile( 'unittest/source/simple_process.cpp')
+     make.Compile( 'unittest/source/simple_process.cpp')
     ], 
     [ common]
     )	
@@ -196,91 +200,91 @@ target_simple_process = LinkExecutable( 'bin/simple_process',
    
 # unittest
 unittest_objectfiles = [
-    Compile( 'unittest/source/test_conformance.cpp'),
+    make.Compile( 'unittest/source/test_conformance.cpp'),
     
-    Compile( 'unittest/source/test_algorithm.cpp'),
-    Compile( 'unittest/source/test_range.cpp'),
-    Compile( 'unittest/source/test_execute.cpp'),
-    Compile( 'unittest/source/test_execution.cpp'),
+    make.Compile( 'unittest/source/test_algorithm.cpp'),
+    make.Compile( 'unittest/source/test_range.cpp'),
+    make.Compile( 'unittest/source/test_execute.cpp'),
+    make.Compile( 'unittest/source/test_execution.cpp'),
 
 
-    Compile( 'unittest/source/test_memory.cpp'),
-    Compile( 'unittest/source/test_pimpl.cpp'),
+    make.Compile( 'unittest/source/test_memory.cpp'),
+    make.Compile( 'unittest/source/test_pimpl.cpp'),
     
-    Compile( 'unittest/source/test_flag.cpp'),  
+    make.Compile( 'unittest/source/test_flag.cpp'),  
             
-    Compile( 'unittest/source/test_signal.cpp'),
+    make.Compile( 'unittest/source/test_signal.cpp'),
                          
-    Compile( 'unittest/source/test_buffer.cpp'),
+    make.Compile( 'unittest/source/test_buffer.cpp'),
  
-    Compile( 'unittest/source/test_uuid.cpp'),
-    Compile( 'unittest/source/test_file.cpp'),
-    Compile( 'unittest/source/test_process.cpp'),
-    Compile( 'unittest/source/test_instance.cpp'),
-    Compile( 'unittest/source/test_string.cpp'),
-    Compile( 'unittest/source/test_exception.cpp'),
+    make.Compile( 'unittest/source/test_uuid.cpp'),
+    make.Compile( 'unittest/source/test_file.cpp'),
+    make.Compile( 'unittest/source/test_process.cpp'),
+    make.Compile( 'unittest/source/test_instance.cpp'),
+    make.Compile( 'unittest/source/test_string.cpp'),
+    make.Compile( 'unittest/source/test_exception.cpp'),
 
-    Compile( 'unittest/source/test_environment.cpp'),
-    Compile( 'unittest/source/environment/test_variable.cpp'),
-    Compile( 'unittest/source/environment/test_string.cpp'),
+    make.Compile( 'unittest/source/test_environment.cpp'),
+    make.Compile( 'unittest/source/environment/test_variable.cpp'),
+    make.Compile( 'unittest/source/environment/test_string.cpp'),
     
-    Compile( 'unittest/source/network/test_byteorder.cpp'),
+    make.Compile( 'unittest/source/network/test_byteorder.cpp'),
     
-    Compile( 'unittest/source/test_traits.cpp'),
-    Compile( 'unittest/source/test_chronology.cpp'),
-    Compile( 'unittest/source/test_transcode.cpp'),
+    make.Compile( 'unittest/source/test_traits.cpp'),
+    make.Compile( 'unittest/source/test_chronology.cpp'),
+    make.Compile( 'unittest/source/test_transcode.cpp'),
     
-    Compile( 'unittest/source/communication/test_tcp.cpp'),
-    Compile( 'unittest/source/communication/test_ipc.cpp'),
-    Compile( 'unittest/source/communication/test_stream.cpp'),
+    make.Compile( 'unittest/source/communication/test_tcp.cpp'),
+    make.Compile( 'unittest/source/communication/test_ipc.cpp'),
+    make.Compile( 'unittest/source/communication/test_stream.cpp'),
 
-    Compile( 'unittest/source/message/test_dispatch.cpp'),
-    Compile( 'unittest/source/message/test_coordinate.cpp'),
-    Compile( 'unittest/source/message/test_pending.cpp'),
+    make.Compile( 'unittest/source/message/test_dispatch.cpp'),
+    make.Compile( 'unittest/source/message/test_coordinate.cpp'),
+    make.Compile( 'unittest/source/message/test_pending.cpp'),
     
-    Compile( 'unittest/source/server/test_service.cpp'),
-    Compile( 'unittest/source/server/test_arguments.cpp'),
+    make.Compile( 'unittest/source/server/test_service.cpp'),
+    make.Compile( 'unittest/source/server/test_arguments.cpp'),
     
-    Compile( 'unittest/source/service/test_header.cpp'),
+    make.Compile( 'unittest/source/service/test_header.cpp'),
     
-    Compile( 'unittest/source/transaction/test_id.cpp'),
-    Compile( 'unittest/source/transaction/test_context.cpp'),
+    make.Compile( 'unittest/source/transaction/test_id.cpp'),
+    make.Compile( 'unittest/source/transaction/test_context.cpp'),
    
-    Compile( 'unittest/source/event/test_dispatch.cpp'),
-    Compile( 'unittest/source/event/test_listen.cpp'),
+    make.Compile( 'unittest/source/event/test_dispatch.cpp'),
+    make.Compile( 'unittest/source/event/test_listen.cpp'),
     
-    Compile( 'unittest/source/test_domain.cpp'),
+    make.Compile( 'unittest/source/test_domain.cpp'),
 
-    Compile( 'unittest/source/value/test_optional.cpp'),
-    Compile( 'unittest/source/value/test_id.cpp'),
+    make.Compile( 'unittest/source/value/test_optional.cpp'),
+    make.Compile( 'unittest/source/value/test_id.cpp'),
 
-    Compile( 'unittest/source/test_predicate.cpp'),
-    Compile( 'unittest/source/test_functional.cpp'),
+    make.Compile( 'unittest/source/test_predicate.cpp'),
+    make.Compile( 'unittest/source/test_functional.cpp'),
 
-    Compile( 'unittest/source/test_argument.cpp'),
-    Compile( 'unittest/source/test_metric.cpp'),
+    make.Compile( 'unittest/source/test_argument.cpp'),
+    make.Compile( 'unittest/source/test_metric.cpp'),
 
-    Compile( 'unittest/source/serialize/test_traits.cpp'),
-    Compile( 'unittest/source/serialize/test_macro.cpp'),
-    Compile( 'unittest/source/serialize/test_line.cpp'),
-    Compile( 'unittest/source/serialize/test_archive.cpp'),
-    Compile( 'unittest/source/serialize/test_consumed.cpp'),
-    Compile( 'unittest/source/serialize/test_create.cpp'),
-    Compile( 'unittest/source/serialize/test_ini.cpp'),
-    Compile( 'unittest/source/serialize/test_json.cpp'),
-    Compile( 'unittest/source/serialize/test_log.cpp'),
-    Compile( 'unittest/source/serialize/test_xml.cpp'),
-    Compile( 'unittest/source/serialize/test_yaml.cpp'),
-    Compile( 'unittest/source/serialize/test_relaxed_write_read.cpp'),
-    Compile( 'unittest/source/serialize/test_write_read.cpp'),
-    Compile( 'unittest/source/serialize/native/test_binary.cpp'),
-    Compile( 'unittest/source/serialize/named/test_value.cpp'),
+    make.Compile( 'unittest/source/serialize/test_traits.cpp'),
+    make.Compile( 'unittest/source/serialize/test_macro.cpp'),
+    make.Compile( 'unittest/source/serialize/test_line.cpp'),
+    make.Compile( 'unittest/source/serialize/test_archive.cpp'),
+    make.Compile( 'unittest/source/serialize/test_consumed.cpp'),
+    make.Compile( 'unittest/source/serialize/test_create.cpp'),
+    make.Compile( 'unittest/source/serialize/test_ini.cpp'),
+    make.Compile( 'unittest/source/serialize/test_json.cpp'),
+    make.Compile( 'unittest/source/serialize/test_log.cpp'),
+    make.Compile( 'unittest/source/serialize/test_xml.cpp'),
+    make.Compile( 'unittest/source/serialize/test_yaml.cpp'),
+    make.Compile( 'unittest/source/serialize/test_relaxed_write_read.cpp'),
+    make.Compile( 'unittest/source/serialize/test_write_read.cpp'),
+    make.Compile( 'unittest/source/serialize/native/test_binary.cpp'),
+    make.Compile( 'unittest/source/serialize/named/test_value.cpp'),
     
     
 ]
 
 
-target_test_common = LinkUnittest( 'bin/test-casual-common-isolated', 
+target_test_common = make.LinkUnittest( 'bin/test-casual-common-isolated', 
 	unittest_objectfiles,
 	[
       common,
@@ -290,13 +294,11 @@ target_test_common = LinkUnittest( 'bin/test-casual-common-isolated',
 
 # We execute 'simple_process' from test-casual-common-isolated, so
 # we need to make sure simple_process is built before
-Dependencies( target_test_common, [ target_simple_process ])
-
-casual_home = os.getenv('CASUAL_HOME')
+make.Dependencies( target_test_common, [ target_simple_process ])
 
 # Install 
-Install( install_libs,  casual_home + '/lib')
-Install( install_headers,  casual_home + '/include')
+make.Install( install_libs,  dsl.paths().install + '/lib')
+make.Install( install_headers,  dsl.paths().install + '/include')
 
 
 

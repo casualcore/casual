@@ -1,29 +1,34 @@
-from casual.make.api import *
+import casual.make.api as make
+import casual.middleware.make.api as dsl
 
-IncludePaths( ['include',
-   '../middleware/common/include',
-   '../middleware/serviceframework/include',
-   '../middleware/configuration/include',
-   '../middleware/domain/include',
-   '../middleware/gateway/include',
-   '../middleware/service/include',
-   '../middleware/xatmi/include',
-   '../middleware/queue/include',
-   '../middleware/buffer/include'] + 
-   casual_make_optional_include_paths().split()
+import os
+
+make.IncludePaths( ['include',
+    '../middleware/common/include',
+    '../middleware/serviceframework/include',
+    '../middleware/configuration/include',
+    '../middleware/domain/include',
+    '../middleware/gateway/include',
+    '../middleware/service/include',
+    '../middleware/xatmi/include',
+    '../middleware/queue/include',
+    '../middleware/buffer/include']
+    + make.optional_include_paths()
+    + dsl.paths().include.gtest
    )
 
-LibraryPaths( [ 'bin',
-   '../middleware/xatmi/bin',
-   '../middleware/common/bin',
-   '../middleware/domain/bin',
-   '../middleware/queue/bin',
-   '../middleware/buffer/bin',
-   '../middleware/transaction/bin',
-   '../middleware/serviceframework/bin',
-   '../middleware/configuration/bin',
-   '../middleware/http/bin'] + 
-    casual_make_optional_library_paths().split()
+make.LibraryPaths( [ 'bin',
+    '../middleware/xatmi/bin',
+    '../middleware/common/bin',
+    '../middleware/domain/bin',
+    '../middleware/queue/bin',
+    '../middleware/buffer/bin',
+    '../middleware/transaction/bin',
+    '../middleware/serviceframework/bin',
+    '../middleware/configuration/bin',
+    '../middleware/http/bin']
+    + make.optional_library_paths()
+    + dsl.paths().library.gtest
    )
 
 
@@ -32,44 +37,44 @@ install_bin = []
 
 
 # mockup string server
-target = LinkExecutable( 'bin/casual-test-mockup-string-server',
+target = make.LinkExecutable( 'bin/casual-test-mockup-string-server',
    [
-      Compile( 'source/mockup/string/server.cpp')
+      make.Compile( 'source/mockup/string/server.cpp')
    ],
    ['casual-common', 'casual-xatmi', 'casual-serviceframework'],
 )
 
-casual_home = os.getenv('CASUAL_HOME')
-
-Install( [ target], casual_home + '/test/bin')
 
 
-#test_archive = LinkArchive( 'bin/test-archive', 
+make.Install( [ target], dsl.paths().install + '/test/bin')
+
+
+#test_archive = make.LinkArchive( 'bin/test-archive', 
 #   [
-#      Compile( 'source/domain.cpp'),
+#      make.Compile( 'source/domain.cpp'),
 #   ]
 #)
 
 # unittest
 
 unittest_object = [
-   Compile( 'unittest/source/domain/test_basic.cpp'),
-   Compile( 'unittest/source/domain/xatmi/test_call.cpp'),
-   Compile( 'unittest/source/domain/xatmi/test_conversation.cpp'),
-   Compile( 'unittest/source/domain/xatmi/test_start.cpp'),
-   Compile( 'unittest/source/domain/test_transaction.cpp'),
-   Compile( 'unittest/source/domain/test_gateway.cpp'),
-   Compile( 'unittest/source/domain/gateway/test_reverse.cpp'),
-   Compile( 'unittest/source/domain/gateway/test_discovery.cpp'),
-   Compile( 'unittest/source/domain/test_service.cpp'),
-   Compile( 'unittest/source/domain/test_assassinate.cpp'),
+   make.Compile( 'unittest/source/domain/test_basic.cpp'),
+   make.Compile( 'unittest/source/domain/xatmi/test_call.cpp'),
+   make.Compile( 'unittest/source/domain/xatmi/test_conversation.cpp'),
+   make.Compile( 'unittest/source/domain/xatmi/test_start.cpp'),
+   make.Compile( 'unittest/source/domain/test_transaction.cpp'),
+   make.Compile( 'unittest/source/domain/test_gateway.cpp'),
+   make.Compile( 'unittest/source/domain/gateway/test_reverse.cpp'),
+   make.Compile( 'unittest/source/domain/gateway/test_discovery.cpp'),
+   make.Compile( 'unittest/source/domain/test_service.cpp'),
+   make.Compile( 'unittest/source/domain/test_assassinate.cpp'),
 ]
 
 # only build http test cases if the enviornment is set up
 if "CASUAL_UNITTEST_HTTP_INBOUND_CONFIG" in os.environ and "CASUAL_UNITTEST_HTTP_INBOUND_PATH" in os.environ:
-   unittest_object.append( Compile( 'unittest/source/domain/test_http.cpp'))
+   unittest_object.append( make.Compile( 'unittest/source/domain/test_http.cpp'))
 
-LinkUnittest( 'unittest/bin/test-casual-basic',
+make.LinkUnittest( 'unittest/bin/test-casual-basic',
    unittest_object,
    [ 
       #test_archive,
@@ -85,6 +90,6 @@ LinkUnittest( 'unittest/bin/test-casual-basic',
 	
 
 # Install
-Install( install_bin, casual_home + '/bin')
+make.Install( install_bin, dsl.paths().install + '/bin')
 
 

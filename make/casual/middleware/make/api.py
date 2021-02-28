@@ -5,13 +5,14 @@ import pprint
 from casual.make.entity.target import Target, Recipe
 import casual.make.entity.recipe as recipe
 import casual.make.entity.model as model
+import casual.make.entity.state as state
 
 import casual.make.api as api
 import casual.make.tools.executor as executor
 import casual.make.platform.common as common
 
 import importlib
-compiler_handler = os.getenv("CASUAL_MAKE_COMPILER_HANDLER")
+compiler_handler = state.settings.compiler_handler
 selector = importlib.import_module( compiler_handler)
 
 def BUILD_SERVER():
@@ -27,9 +28,39 @@ def caller():
    path = os.path.abspath( name)
    return model.register(name=path, filename=path, makefile = path)
 
-#
+
+def paths():
+   class Paths:
+      thirdparty = os.getenv('CASUAL_THIRDPARTY') if os.getenv('CASUAL_THIRDPARTY') else api.source_root() + "/../casual-thirdparty"
+
+      install = os.getenv('CASUAL_HOME') if os.getenv('CASUAL_HOME') else '/opt/casual'
+      
+      class Include:
+         def __init__( self, thirdparty):
+            self.serialization = [ 
+               thirdparty + '/rapidjson/include',
+               thirdparty + '/yaml-cpp/include',
+               thirdparty + '/pugixml/src'
+            ]
+            self.gtest = [ thirdparty + '/googletest/include']
+
+      include = Include( thirdparty)
+
+      class Library:
+         def __init__( self, thirdparty):
+            self.serialization = [ 
+               thirdparty + '/yaml-cpp/bin',
+               thirdparty + '/pugixml/bin'
+            ]
+            self.gtest = [ thirdparty + '/googletest/bin']
+
+      library = Library( thirdparty)
+
+   paths.state = Paths()
+   return paths.state
+
 # New functions adding functionality
-#
+
 def LinkServer( name, objects, libraries, serverdefinition, resources=None, configuration=None):
    """
    Links an XATMI-server

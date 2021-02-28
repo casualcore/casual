@@ -1,4 +1,4 @@
-from casual.make.api import *
+import casual.make.api as make
 
-Build( 'cobol/makefile.cmk')
-Build( 'python/makefile.cmk')
+make.Build( 'cobol/makefile.cmk')
+make.Build( 'python/makefile.cmk')

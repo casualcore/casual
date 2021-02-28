@@ -1,24 +1,27 @@
-from casual.make.api import *
+import casual.make.api as make
+import casual.middleware.make.api as dsl
 
-IncludePaths([
+make.IncludePaths([
 	'include',
 	'../common/include',
 	'../serviceframework/include',
 	'../xatmi/include',
    '../domain/include',
-	'../../thirdparty/database/include'] + 
-   casual_make_optional_include_paths().split()
+	'../../thirdparty/database/include']
+    + make.optional_include_paths()
+    + dsl.paths().include.gtest
    )
 
 
-LibraryPaths([
+make.LibraryPaths([
 	'bin',
     '../common/bin',
     '../xatmi/bin',
     '../domain/bin',
     '../serviceframework/bin',
-    '../configuration/bin'] + 
-    casual_make_optional_library_paths().split()
+    '../configuration/bin']
+    + make.optional_library_paths()
+    + dsl.paths().library.gtest
    )
 
 
@@ -26,14 +29,14 @@ install_lib = []
 install_bin = []
 install_header = []
 
-common_archive = LinkArchive( 'bin/casual-event-common',
+common_archive = make.LinkArchive( 'bin/casual-event-common',
     [
-        Compile( 'source/common.cpp')
+        make.Compile( 'source/common.cpp')
     ])
 
-lib_api = LinkLibrary( 'bin/casual-event-api',
+lib_api = make.LinkLibrary( 'bin/casual-event-api',
     [
-        Compile( 'source/dispatch.cpp')
+        make.Compile( 'source/dispatch.cpp')
     ],
     [
         common_archive,
@@ -48,9 +51,9 @@ install_header += [
 
 
     
-target = LinkExecutable( 'bin/casual-event-service-monitor',
+target = make.LinkExecutable( 'bin/casual-event-service-monitor',
 	[
-        Compile( 'source/service/monitor/database.cpp')
+        make.Compile( 'source/service/monitor/database.cpp')
 	],
 	[
         common_archive,
@@ -60,9 +63,9 @@ target = LinkExecutable( 'bin/casual-event-service-monitor',
 
 install_bin.append( target)
 
-target = LinkExecutable( 'bin/casual-event-service-log',
+target = make.LinkExecutable( 'bin/casual-event-service-log',
 	[
-	    Compile( 'source/service/log/main.cpp')
+	    make.Compile( 'source/service/log/main.cpp')
 	],
 	[
         common_archive,
@@ -71,9 +74,9 @@ target = LinkExecutable( 'bin/casual-event-service-log',
 
 install_bin.append( target)
 
-target = LinkExecutable( 'bin/casual-event-service-monitor-server',
+target = make.LinkExecutable( 'bin/casual-event-service-monitor-server',
 	[
-	    Compile( 'source/service/monitor/server.cpp')
+	    make.Compile( 'source/service/monitor/server.cpp')
 	],
 	[
         common_archive,
@@ -85,10 +88,10 @@ target = LinkExecutable( 'bin/casual-event-service-monitor-server',
 install_bin.append( target)
 	
 
-LinkUnittest( 'bin/test-casual-event',
+make.LinkUnittest( 'bin/test-casual-event',
 	[ 
-        Compile( 'unittest/source/test_dispatch.cpp'),
-        Compile( 'unittest/source/service/test_log.cpp'),
+        make.Compile( 'unittest/source/test_dispatch.cpp'),
+        make.Compile( 'unittest/source/service/test_log.cpp'),
     ],
 	[
         lib_api,
@@ -99,11 +102,11 @@ LinkUnittest( 'bin/test-casual-event',
         'casual-domain-unittest',
    ])	
 
-casual_home = os.getenv('CASUAL_HOME')
 
-Install( install_lib, casual_home + '/lib')
-Install( install_bin, casual_home + '/bin')
-Install( install_header, casual_home + '/include')
+
+make.Install( install_lib, dsl.paths().install + '/lib')
+make.Install( install_bin, dsl.paths().install + '/bin')
+make.Install( install_header, dsl.paths().install + '/include')
 
 
 

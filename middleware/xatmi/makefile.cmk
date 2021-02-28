@@ -1,42 +1,45 @@
-from casual.make.api import *
+import casual.make.api as make
+import casual.middleware.make.api as dsl
 import sys
 
-IncludePaths([
+make.IncludePaths([
 	'include', 
-	'../common/include'] + 
-   casual_make_optional_include_paths().split()
+	'../common/include']
+    + make.optional_include_paths()
+    + dsl.paths().include.gtest
    )
 
-LibraryPaths([
+make.LibraryPaths([
 	'bin',
-    '../common/bin'] + 
-    casual_make_optional_library_paths().split()
+    '../common/bin']
+    + make.optional_library_paths()
+    + dsl.paths().library.gtest
    )
 
 
 install_lib = []
 install_include = []
  
-lib_xatmi_explicit = LinkLibrary( 'bin/casual-xatmi-explicit',
+lib_xatmi_explicit = make.LinkLibrary( 'bin/casual-xatmi-explicit',
 	[
-      Compile( 'source/xatmi/explicit/buffer.cpp'),
-      Compile( 'source/xatmi/explicit/service.cpp'),
-      Compile( 'source/xatmi/internal/code.cpp'),
-      Compile( 'source/xatmi/internal/log.cpp'),
+      make.Compile( 'source/xatmi/explicit/buffer.cpp'),
+      make.Compile( 'source/xatmi/explicit/service.cpp'),
+      make.Compile( 'source/xatmi/internal/code.cpp'),
+      make.Compile( 'source/xatmi/internal/log.cpp'),
 	],
 	['casual-common'])
 
 install_lib.append( lib_xatmi_explicit)
 
-lib_xatmi = LinkLibrary( 'bin/casual-xatmi',
+lib_xatmi = make.LinkLibrary( 'bin/casual-xatmi',
 	[
-      Compile( 'source/xatmi.cpp'),
-      Compile( 'source/xatmi/extended.cpp'),
-      Compile( 'source/xatmi/server.cpp'),
-      Compile( 'source/xatmi/executable.cpp'),
-      Compile( 'source/xatmi/conversation.cpp'),
-      Compile( 'source/xa.cpp'),
-      Compile( 'source/tx.cpp'),
+      make.Compile( 'source/xatmi.cpp'),
+      make.Compile( 'source/xatmi/extended.cpp'),
+      make.Compile( 'source/xatmi/server.cpp'),
+      make.Compile( 'source/xatmi/executable.cpp'),
+      make.Compile( 'source/xatmi/conversation.cpp'),
+      make.Compile( 'source/xa.cpp'),
+      make.Compile( 'source/tx.cpp'),
 	],
 	[ lib_xatmi_explicit, 'casual-common'])
 
@@ -66,19 +69,19 @@ platform_specific_libs = []
 if not sys.platform.startswith('darwin'):
    platform_specific_libs = ['uuid']
 
-LinkUnittest( 'bin/test-casual-xatmi',
+make.LinkUnittest( 'bin/test-casual-xatmi',
     [
-       Compile( 'unittest/source/test_buffer.cpp'),
-       Compile( 'unittest/source/test_tx.cpp'),
-       Compile( 'unittest/source/test_xatmi.cpp')
+       make.Compile( 'unittest/source/test_buffer.cpp'),
+       make.Compile( 'unittest/source/test_tx.cpp'),
+       make.Compile( 'unittest/source/test_xatmi.cpp')
     ],
     [ lib_xatmi, 'casual-common', 'casual-unittest'] + platform_specific_libs )
 
-casual_home = os.getenv('CASUAL_HOME')
+
 
 # Install
-Install( install_lib,  casual_home + '/lib')
-Install( install_include,  casual_home + '/include')
+make.Install( install_lib,  dsl.paths().install + '/lib')
+make.Install( install_include,  dsl.paths().install + '/include')
 
 
 

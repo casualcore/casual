@@ -1,26 +1,28 @@
-from casual.make.api import *
+import casual.make.api as make
+import casual.middleware.make.api as dsl
 
 
-
-IncludePaths([
-   'include',
-   '../common/include',
-   '../xatmi/include',
-   '../buffer/include',
-   '../domain/include'] + 
-   casual_make_optional_include_paths().split()
+make.IncludePaths([
+    'include',
+    '../common/include',
+    '../xatmi/include',
+    '../buffer/include',
+    '../domain/include']
+    + make.optional_include_paths()
+    + dsl.paths().include.gtest
    )
 
 
-LibraryPaths([
+make.LibraryPaths([
     'bin',
     '../common/bin',
     '../buffer/bin',
     '../xatmi/bin',
     '../domain/bin',
     '../configuration/bin',
-    '../serviceframework/bin'] + 
-    casual_make_optional_library_paths().split()
+    '../serviceframework/bin']
+    + make.optional_library_paths()
+    + dsl.paths().library.gtest
    )
 
 
@@ -28,23 +30,23 @@ install_lib = []
 install_bin = []
 install_headers = []
 
-common_archive = LinkArchive( 'bin/casual-http-common',
+common_archive = make.LinkArchive( 'bin/casual-http-common',
     [
-       Compile( 'source/common.cpp'),
+       make.Compile( 'source/common.cpp'),
      ])
 
-common_outbound_archive = LinkArchive( 'bin/casual-http-outbound-common',
+common_outbound_archive = make.LinkArchive( 'bin/casual-http-outbound-common',
     [
-       Compile( 'source/outbound/configuration.cpp'),
-       Compile( 'source/outbound/curl.cpp'),
-       Compile( 'source/outbound/transform.cpp'),
-       Compile( 'source/outbound/state.cpp'),
-       Compile( 'source/outbound/request.cpp'),
+       make.Compile( 'source/outbound/configuration.cpp'),
+       make.Compile( 'source/outbound/curl.cpp'),
+       make.Compile( 'source/outbound/transform.cpp'),
+       make.Compile( 'source/outbound/state.cpp'),
+       make.Compile( 'source/outbound/request.cpp'),
      ])
 
-common_inbound_library = LinkLibrary( 'bin/casual-http-inbound-common',
+common_inbound_library = make.LinkLibrary( 'bin/casual-http-inbound-common',
    [
-       Compile( 'source/inbound/caller.cpp')
+       make.Compile( 'source/inbound/caller.cpp')
    ],
    [
        'casual-buffer', 
@@ -55,10 +57,10 @@ common_inbound_library = LinkLibrary( 'bin/casual-http-inbound-common',
 
 install_lib.append( common_inbound_library)
 
-target = LinkExecutable( 'bin/casual-http-outbound',
+target = make.LinkExecutable( 'bin/casual-http-outbound',
    [
-      Compile( 'source/outbound/main.cpp'),
-      Compile( 'source/outbound/manager.cpp'),
+      make.Compile( 'source/outbound/main.cpp'),
+      make.Compile( 'source/outbound/manager.cpp'),
    ],
    [ 
       common_outbound_archive,
@@ -70,12 +72,12 @@ target = LinkExecutable( 'bin/casual-http-outbound',
 install_bin.append( target)
 
 # Unittest
-LinkUnittest( 'unittest/bin/test-http',
+make.LinkUnittest( 'unittest/bin/test-http',
    [
-    Compile( 'unittest/source/outbound/test_model.cpp'),
-    Compile( 'unittest/source/outbound/test_transcode.cpp'),
-    Compile( 'unittest/source/outbound/test_state.cpp'),
-    Compile( 'unittest/source/test_outbound.cpp'),
+    make.Compile( 'unittest/source/outbound/test_model.cpp'),
+    make.Compile( 'unittest/source/outbound/test_transcode.cpp'),
+    make.Compile( 'unittest/source/outbound/test_state.cpp'),
+    make.Compile( 'unittest/source/test_outbound.cpp'),
    ],
    [ 
       common_outbound_archive, 
@@ -87,11 +89,11 @@ LinkUnittest( 'unittest/bin/test-http',
       'curl'
    ])  
    
-casual_home = os.getenv('CASUAL_HOME')
 
-Install( install_bin, casual_home + '/bin')
-Install( install_lib, casual_home + '/lib')
-Install( install_headers, casual_home + '/include')
+
+make.Install( install_bin, dsl.paths().install + '/bin')
+make.Install( install_lib, dsl.paths().install + '/lib')
+make.Install( install_headers, dsl.paths().install + '/include')
 
 
 

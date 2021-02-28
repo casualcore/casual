@@ -1,25 +1,28 @@
-from casual.make.api import *
+import casual.make.api as make
+import casual.middleware.make.api as dsl
 
-IncludePaths( [
+make.IncludePaths( [
     'include',
     'admin/include',
 	'../common/include',
     '../configuration/include',
     '../domain/include',
 	'../xatmi/include',
-	'../serviceframework/include'] + 
-   casual_make_optional_include_paths().split()
+	'../serviceframework/include']
+    + make.optional_include_paths()
+    + dsl.paths().include.gtest
    )
 
-LibraryPaths( [
+make.LibraryPaths( [
     'bin',
     '../common/bin',
     '../serviceframework/bin',
     '../domain/bin',
 	'../buffer/bin',
 	'../configuration/bin',
-   '../xatmi/bin'] + 
-    casual_make_optional_library_paths().split()
+   '../xatmi/bin']
+    + make.optional_library_paths()
+    + dsl.paths().library.gtest
    )
 
 
@@ -27,18 +30,18 @@ install_bins = []
 install_libs = []
 install_headers = []
 
-logic_archive = LinkArchive( 'bin/casual-service-logic',
+logic_archive = make.LinkArchive( 'bin/casual-service-logic',
    [
-   Compile( 'source/manager/handle.cpp'),
-   Compile( 'source/manager/state.cpp'),
-   Compile( 'source/transform.cpp'),
-   Compile( 'source/common.cpp'),
-   Compile( 'source/manager/admin/server.cpp'),
+   make.Compile( 'source/manager/handle.cpp'),
+   make.Compile( 'source/manager/state.cpp'),
+   make.Compile( 'source/transform.cpp'),
+   make.Compile( 'source/common.cpp'),
+   make.Compile( 'source/manager/admin/server.cpp'),
    ])
 
 
-target = LinkExecutable( 'bin/casual-service-manager',
-	[ Compile( 'source/manager/main.cpp')],
+target = make.LinkExecutable( 'bin/casual-service-manager',
+	[ make.Compile( 'source/manager/main.cpp')],
 	[
      logic_archive,
      'casual-common',
@@ -52,10 +55,10 @@ install_bins.append( target)
 
 
 
-target = LinkExecutable( 'bin/casual-service-forward',
+target = make.LinkExecutable( 'bin/casual-service-forward',
     [
-        Compile( 'source/forward/main.cpp'),
-        Compile( 'source/forward/handle.cpp')
+        make.Compile( 'source/forward/main.cpp'),
+        make.Compile( 'source/forward/handle.cpp')
     ],
     [
         logic_archive,
@@ -68,9 +71,9 @@ install_bins.append( target)
 	
 # admin-terminal
 
-admin_api_lib = LinkLibrary( 'bin/casual-service-admin-api',
+admin_api_lib = make.LinkLibrary( 'bin/casual-service-admin-api',
    [ 
-      Compile( 'source/manager/admin/api.cpp')
+      make.Compile( 'source/manager/admin/api.cpp')
    ],
    [
        logic_archive,
@@ -79,8 +82,8 @@ admin_api_lib = LinkLibrary( 'bin/casual-service-admin-api',
    ])
 install_libs.append( admin_api_lib)
 
-target = LinkLibrary( 'bin/casual-service-admin-cli',
-    [ Compile( 'source/manager/admin/cli.cpp')],
+target = make.LinkLibrary( 'bin/casual-service-admin-cli',
+    [ make.Compile( 'source/manager/admin/cli.cpp')],
     [ 
         admin_api_lib,
         logic_archive, 
@@ -91,10 +94,10 @@ target = LinkLibrary( 'bin/casual-service-admin-cli',
 install_libs.append( target)
 
 # public api
-api_lib = LinkLibrary( 'bin/casual-service-api',
+api_lib = make.LinkLibrary( 'bin/casual-service-api',
    [ 
-      Compile( 'source/manager/api/state.cpp'),
-      Compile( 'source/manager/api/model.cpp')
+      make.Compile( 'source/manager/api/state.cpp'),
+      make.Compile( 'source/manager/api/model.cpp')
    ],
    [ 
       admin_api_lib,
@@ -112,21 +115,21 @@ install_headers += [
 
 
 
-service_unittest = LinkLibrary( 'bin/casual-service-unittest',
+service_unittest = make.LinkLibrary( 'bin/casual-service-unittest',
     [ 
-        Compile( 'source/unittest/utility.cpp'),
+        make.Compile( 'source/unittest/utility.cpp'),
     ],
     [ 
         'casual-common', 
     ])
 
  
-LinkUnittest( 'unittest/bin/test-casual-service',
+make.LinkUnittest( 'unittest/bin/test-casual-service',
     [
-      Compile( 'unittest/source/forward/test_cache.cpp'),
-      Compile( 'unittest/source/manager/test_manager.cpp'),
-      Compile( 'unittest/source/manager/test_state.cpp'),
-      Compile( 'unittest/source/manager/test_api.cpp'),
+      make.Compile( 'unittest/source/forward/test_cache.cpp'),
+      make.Compile( 'unittest/source/manager/test_manager.cpp'),
+      make.Compile( 'unittest/source/manager/test_state.cpp'),
+      make.Compile( 'unittest/source/manager/test_api.cpp'),
     ],
     [
      logic_archive,
@@ -141,10 +144,10 @@ LinkUnittest( 'unittest/bin/test-casual-service',
      'casual-domain-unittest',
      ])
 
-casual_home = os.getenv('CASUAL_HOME')
+
 
 # Install
-Install( install_bins, casual_home + '/bin')
-Install( install_libs, casual_home + '/lib')
-Install( install_headers, casual_home + '/include')
+make.Install( install_bins, dsl.paths().install + '/bin')
+make.Install( install_libs, dsl.paths().install + '/lib')
+make.Install( install_headers, dsl.paths().install + '/include')
 

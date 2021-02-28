@@ -1,8 +1,9 @@
 import os
-from casual.make.api import *
+import casual.make.api as make
+import casual.middleware.make.api
 
 
-Build( os.environ[ 'CASUAL_THIRDPARTY'] + '/makefile.cmk')
+make.Build( casual.middleware.make.api.paths().thirdparty + '/makefile.cmk')
 
-Build('middleware/makefile.cmk')
-Build('test/makefile.cmk')
+make.Build('middleware/makefile.cmk')
+make.Build('test/makefile.cmk')

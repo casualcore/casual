@@ -1,35 +1,36 @@
-from casual.make.api import *
-from casual.middleware.make.api import *
+import casual.make.api as make
+import casual.middleware.make.api as dsl
+import os
 
-IncludePaths( ['server/include',
+make.IncludePaths( ['server/include',
     '../xatmi/include',
     '../common/include',
     '../serviceframework/include'] + 
-    casual_make_optional_include_paths().split()
+    make.optional_include_paths()
     )
-LibraryPaths( [ 'server/bin',
+make.LibraryPaths( [ 'server/bin',
     '../common/bin',
     '../queue/bin',
     '../buffer/bin',
     '../configuration/bin',
     '../serviceframework/bin',
     '../xatmi/bin'] + 
-    casual_make_optional_library_paths().split()
+    make.optional_library_paths()
    )
 
 
 install_bin = []
 
-casual_repository_root = casual_make_source_root()
-casual_home = os.getenv('CASUAL_HOME')
+casual_repository_root = make.source_root()
+
 
 # make sure we use the tools we've built
-Environment( 'PATH', casual_repository_root + '/bin' + os.pathsep + os.getenv('PATH'))
+make.Environment( 'PATH', casual_repository_root + '/bin' + os.pathsep + os.getenv('PATH'))
 
-target = LinkServer( 'server/bin/casual-example-server',
+target = dsl.LinkServer( 'server/bin/casual-example-server',
     [ 
-       Compile( 'server/source/example.cpp'),
-       Compile( 'server/source/example/work.cpp')
+       make.Compile( 'server/source/example.cpp'),
+       make.Compile( 'server/source/example/work.cpp')
     ],
     [ 
         'casual-common',
@@ -40,11 +41,11 @@ target = LinkServer( 'server/bin/casual-example-server',
 install_bin.append( target)
 
 # make sure we got a resource property file available when we build with a resource 
-Environment( 'CASUAL_RESOURCE_CONFIGURATION_FILE', casual_repository_root + '/middleware/example/resources/resources.yaml')
+make.Environment( 'CASUAL_RESOURCE_CONFIGURATION_FILE', casual_repository_root + '/middleware/example/resources/resources.yaml')
 
-target = LinkServer( 'server/bin/casual-example-resource-server',
+target = dsl.LinkServer( 'server/bin/casual-example-resource-server',
     [ 
-       Compile( 'server/source/example/resource.cpp')
+       make.Compile( 'server/source/example/resource.cpp')
     ],
     [ 
         'casual-common',
@@ -55,9 +56,9 @@ target = LinkServer( 'server/bin/casual-example-resource-server',
 install_bin.append( target)
 
 
-target = LinkExecutable( 'server/bin/casual-example-error-server',
+target = make.LinkExecutable( 'server/bin/casual-example-error-server',
     [ 
-       Compile( 'server/source/example/error.cpp')
+       make.Compile( 'server/source/example/error.cpp')
     ],
     [ 
         'casual-common',
@@ -66,39 +67,39 @@ target = LinkExecutable( 'server/bin/casual-example-error-server',
 
 install_bin.append( target)
 
-LinkArchive( 'executable/bin/dummy', 
- [ Compile( 'executable/source/example.cpp') ]
+make.LinkArchive( 'executable/bin/dummy', 
+ [ make.Compile( 'executable/source/example.cpp') ]
 )
 
 # Install
-Install( install_bin, casual_home + '/example/bin')
+make.Install( install_bin, dsl.paths().install + '/example/bin')
 
 # domain examples
-Install( [ 'domain/readme.md'], casual_home + '/example/domain')
+make.Install( [ 'domain/readme.md'], dsl.paths().install + '/example/domain')
 
 # single domain minimal example
-Install( [ 'domain/single/minimal/readme.md', 'domain/single/minimal/domain.env'], casual_home + '/example/domain/single/minimal')
-Install( [ 'domain/single/minimal/configuration/domain.yaml'], casual_home + '/example/domain/single/minimal/configuration')
+make.Install( [ 'domain/single/minimal/readme.md', 'domain/single/minimal/domain.env'], dsl.paths().install + '/example/domain/single/minimal')
+make.Install( [ 'domain/single/minimal/configuration/domain.yaml'], dsl.paths().install + '/example/domain/single/minimal/configuration')
 
 # multi domian minimal example
-Install( [ 'domain/multiple/minimal/readme.md'], casual_home + '/example/domain/multiple/minimal')
+make.Install( [ 'domain/multiple/minimal/readme.md'], dsl.paths().install + '/example/domain/multiple/minimal')
 
-Install( [ 'domain/multiple/minimal/domain1/domain.env'], casual_home + '/example/domain/multiple/minimal/domain1')
-Install( [ 'domain/multiple/minimal/domain1/configuration/domain.yaml'], casual_home + '/example/domain/multiple/minimal/domain1/configuration')
+make.Install( [ 'domain/multiple/minimal/domain1/domain.env'], dsl.paths().install + '/example/domain/multiple/minimal/domain1')
+make.Install( [ 'domain/multiple/minimal/domain1/configuration/domain.yaml'], dsl.paths().install + '/example/domain/multiple/minimal/domain1/configuration')
 
-Install( [ 'domain/multiple/minimal/domain2/domain.env'], casual_home + '/example/domain/multiple/minimal/domain2')
-Install( [ 'domain/multiple/minimal/domain2/configuration/domain.yaml'], casual_home + '/example/domain/multiple/minimal/domain2/configuration')
+make.Install( [ 'domain/multiple/minimal/domain2/domain.env'], dsl.paths().install + '/example/domain/multiple/minimal/domain2')
+make.Install( [ 'domain/multiple/minimal/domain2/configuration/domain.yaml'], dsl.paths().install + '/example/domain/multiple/minimal/domain2/configuration')
 
 
 # multi domian medium example
-Install( [ 'domain/multiple/medium/readme.md'], casual_home + '/example/domain/multiple/medium')
-Install( [ 'domain/multiple/medium/diagram/scenario.svg', 'domain/multiple/medium/diagram/scenario.uml'], casual_home + '/example/domain/multiple/medium/diagram')
+make.Install( [ 'domain/multiple/medium/readme.md'], dsl.paths().install + '/example/domain/multiple/medium')
+make.Install( [ 'domain/multiple/medium/diagram/scenario.svg', 'domain/multiple/medium/diagram/scenario.uml'], dsl.paths().install + '/example/domain/multiple/medium/diagram')
 
-Install( [ 'domain/multiple/medium/domainA/domain.env'], casual_home + '/example/domain/multiple/medium/domainA')
-Install( [ 'domain/multiple/medium/domainA/configuration/domain.yaml'], casual_home + '/example/domain/multiple/medium/domainA/configuration')
+make.Install( [ 'domain/multiple/medium/domainA/domain.env'], dsl.paths().install + '/example/domain/multiple/medium/domainA')
+make.Install( [ 'domain/multiple/medium/domainA/configuration/domain.yaml'], dsl.paths().install + '/example/domain/multiple/medium/domainA/configuration')
 
-Install( [ 'domain/multiple/medium/domainB/domain.env'], casual_home + '/example/domain/multiple/medium/domainB')
-Install( [ 'domain/multiple/medium/domainB/configuration/domain.yaml'], casual_home + '/example/domain/multiple/medium/domainB/configuration')
+make.Install( [ 'domain/multiple/medium/domainB/domain.env'], dsl.paths().install + '/example/domain/multiple/medium/domainB')
+make.Install( [ 'domain/multiple/medium/domainB/configuration/domain.yaml'], dsl.paths().install + '/example/domain/multiple/medium/domainB/configuration')
 
 
 

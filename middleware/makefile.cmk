@@ -1,32 +1,32 @@
-from casual.make.api import *
+import casual.make.api as make
 
-Build( 'common/makefile.cmk')
-Build( 'cli/makefile.cmk')
-Build( 'xatmi/makefile.cmk')
-Build( 'serviceframework/makefile.cmk')
-Build( 'buffer/makefile.cmk')
-Build( 'configuration/makefile.cmk')
-Build( 'tools/makefile.cmk')
-Build( 'domain/makefile.cmk') 
-Build( 'service/makefile.cmk')
-Build( 'transaction/makefile.cmk')
+make.Build( 'common/makefile.cmk')
+make.Build( 'cli/makefile.cmk')
+make.Build( 'xatmi/makefile.cmk')
+make.Build( 'serviceframework/makefile.cmk')
+make.Build( 'buffer/makefile.cmk')
+make.Build( 'configuration/makefile.cmk')
+make.Build( 'tools/makefile.cmk')
+make.Build( 'domain/makefile.cmk') 
+make.Build( 'service/makefile.cmk')
+make.Build( 'transaction/makefile.cmk')
 
-Build( 'event/makefile.cmk')
-Build( 'queue/makefile.cmk')
-Build( 'binding/makefile.cmk')
-Build( 'http/makefile.cmk')
+make.Build( 'event/makefile.cmk')
+make.Build( 'queue/makefile.cmk')
+make.Build( 'binding/makefile.cmk')
+make.Build( 'http/makefile.cmk')
 
 # depends on domain, queue, service
-Build( 'gateway/makefile.cmk')
+make.Build( 'gateway/makefile.cmk')
 
 # examples 
-Build( 'example/makefile.cmk')
+make.Build( 'example/makefile.cmk')
 
 # admin cli
-Build( 'tools/makefile.cli.cmk')
-Build( 'administration/makefile.cmk')
+make.Build( 'tools/makefile.cli.cmk')
+make.Build( 'administration/makefile.cmk')
 
-Build( 'plugin/makefile.cmk')
+make.Build( 'plugin/makefile.cmk')
 
 
 

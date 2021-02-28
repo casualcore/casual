@@ -1,7 +1,8 @@
-from casual.make.api import *
+import casual.make.api as make
+import casual.middleware.make.api as dsl
 
 
-IncludePaths( ['include',
+make.IncludePaths( ['include',
     '../common/include',
     '../xatmi/include',
     '../configuration/include',
@@ -9,10 +10,10 @@ IncludePaths( ['include',
     '../domain/include',
     '../service/include',
     '../cli/include'] + 
-    casual_make_optional_include_paths().split()
+    make.optional_include_paths()
    )
 
-LibraryPaths( ['bin',
+make.LibraryPaths( ['bin',
     '../buffer/bin',
     '../common/bin',
     '../xatmi/bin',
@@ -21,7 +22,7 @@ LibraryPaths( ['bin',
     '../domain/bin',
     '../service/bin',
     '../cli/bin'] + 
-    casual_make_optional_library_paths().split()
+    make.optional_library_paths()
    )
 
 
@@ -30,10 +31,10 @@ install_lib = []
 
 
 
-service_cli = LinkLibrary( 'bin/casual-tools-service-cli',
+service_cli = make.LinkLibrary( 'bin/casual-tools-service-cli',
    [ 
-        Compile( 'source/service/describe/cli.cpp'),
-        Compile( 'source/service/call/cli.cpp')],
+        make.Compile( 'source/service/describe/cli.cpp'),
+        make.Compile( 'source/service/call/cli.cpp')],
    [
         'casual-cli',
         'casual-tools-common',
@@ -46,10 +47,10 @@ service_cli = LinkLibrary( 'bin/casual-tools-service-cli',
 
 install_lib.append( service_cli)
 
-casual_home = os.getenv('CASUAL_HOME')
 
-Install( install_bin,  casual_home + '/bin')
-Install( install_lib,  casual_home + '/lib')
+
+make.Install( install_bin,  dsl.paths().install + '/bin')
+make.Install( install_lib,  dsl.paths().install + '/lib')
 
 
 
