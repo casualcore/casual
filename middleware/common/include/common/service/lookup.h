@@ -45,7 +45,8 @@ namespace casual
 
                friend void swap( Lookup& lhs, Lookup& rhs);
 
-               // for logging only
+               inline auto& correlation() const noexcept { return m_correlation;}
+
                CASUAL_LOG_SERIALIZE(
                   CASUAL_SERIALIZE_NAME( m_service, "service");
                   CASUAL_SERIALIZE_NAME( m_correlation, "correlation");

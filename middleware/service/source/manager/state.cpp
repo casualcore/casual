@@ -88,13 +88,16 @@ namespace casual
                return ! algorithm::find_if( m_services, local::equal::service( name)).empty();
             }
 
-            void Sequential::deactivate()
+            std::vector< std::string> Sequential::detach()
             {
-               algorithm::for_each( m_services, [&]( auto service)
+               return algorithm::accumulate( std::exchange( m_services, {}), std::vector< std::string>{}, [&]( auto result, auto service)
                {
                   service->remove( process.pid);
-               });
-               m_services.clear();
+                  if( service->instances.empty())
+                     result.push_back( service->information.name);
+
+                  return result;
+               });                  
             }
 
             void Sequential::add( state::Service& service)
@@ -339,9 +342,7 @@ namespace casual
                if( auto found = common::algorithm::find( instances, pid))
                {
                   for( auto& s : services)
-                  {
                      s.second.remove( pid);
-                  }
 
                   instances.erase( std::begin( found));
                }
@@ -468,19 +469,28 @@ namespace casual
          local::remove_process( instances.sequential, services, pid);
          local::remove_process( instances.concurrent, services, pid);
       }
-
-      void State::deactivate( common::strong::process::id pid)
+      
+      State::prepare_shutdown_result State::prepare_shutdown( std::vector< common::process::Handle> processes)
       {
-         Trace trace{ "service::manager::State::deactivate"};
-         log::line( verbose::log, "pid: ", pid);
+         prepare_shutdown_result result;
 
-         if( auto found = common::algorithm::find( instances.sequential, pid))
-            found->second.deactivate();
-         else
+         algorithm::trim( processes, algorithm::remove_if( processes, [&]( auto& process)
          {
-            // Assume that it's a remote instances
-            local::remove_process( instances.concurrent, services, pid);
-         }
+            if( auto found = common::algorithm::find( instances.sequential, process.pid))
+            {
+               algorithm::append_unique( found->second.detach(), std::get< 0>( result));
+               std::get< 1>( result).push_back( algorithm::extract( instances.sequential, std::begin( found)).second);
+               return true;
+            }
+            else if( common::algorithm::find( instances.concurrent, process.pid))
+               local::remove_process( instances.concurrent, services, process.pid);
+
+            return false;
+         }));
+
+         std::get< 2>( result) = std::move( processes);
+
+         return result;
       }
 
       std::vector< state::service::pending::Lookup> State::update( common::message::service::Advertise& message)

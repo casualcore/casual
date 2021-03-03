@@ -3,6 +3,10 @@ This is the changelog for `casual` and all changes are listed in this document.
 
 ## [Unreleased]
 
+## [1.4.7] - 2021-03-03
+### Fixes
+- domain - shutdown/restart makes 'noise' when provided services are under load
+
 ## [1.4.6] - 2021-02-25
 ### Fixes
 - discovery - did not work correctly on service with multiple routes

@@ -327,6 +327,9 @@ namespace casual
             using resize = decltype( std::declval< T&>().resize( size< T>()));
 
             template< typename T>
+            using reserve = decltype( std::declval< T&>().reserve( size< T>()));
+
+            template< typename T>
             using empty = decltype( std::declval< T&>().empty());
 
             template< typename T>
@@ -363,6 +366,12 @@ namespace casual
 
          template< typename T>
          using resize = detect::is_detected< detail::resize, T>;
+
+         template< typename T>
+         using reserve = detect::is_detected< detail::reserve, T>;
+
+         template< typename T>
+         inline constexpr bool reserve_v = reserve< T>::value;
 
          template< typename T>
          using empty = detect::is_detected< detail::empty, T>;

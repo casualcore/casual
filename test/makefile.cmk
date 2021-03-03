@@ -41,25 +41,20 @@ target = LinkExecutable( 'bin/casual-test-mockup-string-server',
 
 Install( [ target],'$(CASUAL_HOME)/test/bin')
 
-
-#test_archive = LinkArchive( 'bin/test-archive', 
-#   [
-#      Compile( 'source/domain.cpp'),
-#   ]
-#)
-
 # unittest
 
 unittest_object = [
-   Compile( 'unittest/source/domain/test_basic.cpp'),
-   Compile( 'unittest/source/domain/xatmi/test_call.cpp'),
-   Compile( 'unittest/source/domain/xatmi/test_conversation.cpp'),
-   Compile( 'unittest/source/domain/xatmi/test_start.cpp'),
-   Compile( 'unittest/source/domain/test_transaction.cpp'),
-   Compile( 'unittest/source/domain/test_gateway.cpp'),
-   Compile( 'unittest/source/domain/gateway/test_reverse.cpp'),
-   Compile( 'unittest/source/domain/test_service.cpp'),
-   Compile( 'unittest/source/domain/test_assassinate.cpp'),
+    Compile( 'unittest/source/domain/test_basic.cpp'),
+    Compile( 'unittest/source/domain/xatmi/test_call.cpp'),
+    Compile( 'unittest/source/domain/xatmi/test_start.cpp'),
+    Compile( 'unittest/source/domain/test_transaction.cpp'),
+    Compile( 'unittest/source/domain/test_gateway.cpp'),
+    Compile( 'unittest/source/domain/gateway/test_reverse.cpp'),
+    Compile( 'unittest/source/domain/test_service.cpp'),
+    Compile( 'unittest/source/domain/test_assassinate.cpp'),
+    
+    # disabled... Need a total rework of conversation (and service call/callee also)
+    # Compile( 'unittest/source/domain/xatmi/test_conversation.cpp'),
 ]
 
 # only build http test cases if the enviornment is set up
@@ -69,7 +64,6 @@ if "CASUAL_UNITTEST_HTTP_INBOUND_CONFIG" in os.environ and "CASUAL_UNITTEST_HTTP
 LinkUnittest( 'unittest/bin/test-casual-basic',
    unittest_object,
    [ 
-      #test_archive,
       'casual-common', 
       'casual-buffer',
       'casual-xatmi', 

@@ -663,7 +663,8 @@ domain:
 domain:
   name: simple-server
   servers:
-    - path: ./bin/test-simple-server
+    - alias: foo
+      path: ./bin/test-simple-server
       instances: 2
 
 )";
@@ -675,29 +676,73 @@ domain:
             // domain-manager
             communication::instance::whitelist::connect( communication::instance::identity::service::manager);
 
+            // domain-manager will advertise it's services
+            {
+               common::message::service::Advertise message;
+               communication::device::blocking::receive( communication::ipc::inbound::device(), message);
+               EXPECT_TRUE( manager.handle() == message.process);
+            }
+
             // make sure we 'disconnect' our self as service-manager before shutdown
             // otherwise domain-manager will wait for approval from service-manager before
             // each shutdown.
             auto disconnect = execute::scope( []()
             {
                message::event::process::Exit event;
-               event.state.pid = common::process::id();
+               event.state.pid = common::process::id(); 
                event.state.reason = common::process::lifetime::Exit::Reason::exited;
                communication::device::blocking::send( communication::instance::outbound::domain::manager::device(), event);
             });
 
-            auto tasks = local::call::scale( "test-simple-server", 1);
+            auto tasks = local::call::scale( "foo", 1);
             ASSERT_TRUE( tasks.size() == 1) << "tasks: " << CASUAL_NAMED_VALUE( tasks);
 
-            // Consume the request and send reply.
-            {
+            // setup subscription to see when hit is done
+            common::event::subscribe( common::process::handle(), { message::event::process::Exit::type()});
+
+            // Consume the prepare::shutdown::Request
+            auto send_reply = [](){
                message::domain::process::prepare::shutdown::Request request;
                EXPECT_TRUE( communication::device::blocking::receive( communication::ipc::inbound::device(), request));
                EXPECT_TRUE( request.processes.size() == 1) << CASUAL_NAMED_VALUE( request);
 
                auto reply = message::reverse::type( request);
                reply.processes = std::move( request.processes);
-               communication::device::blocking::send( request.process.ipc, reply);
+               return [ipc = request.process.ipc, reply = std::move( reply)]()
+               {
+                  communication::device::blocking::send( ipc, reply);
+               };
+            }();
+
+
+            // check that no instances has been shut downed.
+            {
+               // give some time for a possible bug to occur.
+               process::sleep( std::chrono::milliseconds{ 10});
+
+               auto state = local::call::state();
+               auto found = algorithm::find( state.servers, "foo");
+               ASSERT_TRUE( found);
+               EXPECT_TRUE( found->instances.size() == 2);
+
+               // we expect no exit event
+               message::event::process::Exit event;
+               EXPECT_TRUE( ! communication::device::non::blocking::receive( communication::ipc::inbound::device(), event));
+            }
+
+            send_reply();
+
+
+            // check that one instances has been shut downed.
+            {
+               // we expect exit event
+               message::event::process::Exit event;
+               EXPECT_TRUE( communication::device::blocking::receive( communication::ipc::inbound::device(), event));
+
+               auto state = local::call::state();
+               auto found = algorithm::find( state.servers, "foo");
+               ASSERT_TRUE( found);
+               EXPECT_TRUE( found->instances.size() == 1);
             }
          }
 

@@ -50,6 +50,7 @@ namespace casual
          void ack( const message::service::call::callee::Request& request)
          {
             message::service::call::ACK message;
+            message.correlation = request.correlation;
             message.metric.pending = request.pending;
             message.metric.service = request.service.name;
             message.metric.type = ( request.service.type == decltype( request.service.type)::concurrent) ?
@@ -58,6 +59,21 @@ namespace casual
             message.metric.process = process::handle();
             
             communication::device::blocking::send( local::ipc::manager(), message);
+         }
+
+         void ack( const message::service::lookup::Reply& lookup)
+         {
+            message::service::call::ACK message;
+            message.correlation = lookup.correlation;
+            message.metric.pending = lookup.pending;
+            message.metric.service = lookup.service.name;
+            message.metric.type = ( lookup.service.type == decltype( lookup.service.type)::concurrent) ?
+               decltype( message.metric.type)::concurrent : decltype( message.metric.type)::sequential;
+
+            message.metric.process = process::handle();
+            
+            communication::device::blocking::send( local::ipc::manager(), message);
+
          }
       } // send
 

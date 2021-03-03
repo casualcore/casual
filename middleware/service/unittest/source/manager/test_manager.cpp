@@ -35,6 +35,10 @@ namespace casual
       {
          namespace
          {
+            namespace ipc
+            {
+               auto& inbound() { return common::communication::ipc::inbound::device();}
+            } // ipc
 
             constexpr auto configuration = R"(
 domain:
@@ -538,7 +542,6 @@ domain:
             EXPECT_TRUE( service.service.name == "service1");
             EXPECT_TRUE( service.process == common::process::handle());
             EXPECT_TRUE( service.state == decltype( service)::State::idle);
-            EXPECT_TRUE( service.state == decltype( service)::State::idle);
             
             return service.correlation;
          }();
@@ -566,6 +569,139 @@ domain:
          }
       }
 
+      TEST( service_manager, advertise_a____prepare_shutdown___expect_reply_with_our_self)
+      {
+         common::unittest::Trace trace;
+
+         local::Domain domain;
+
+         service::unittest::advertise( { "a"});
+
+         // send prepare shutdown
+         {
+            common::message::domain::process::prepare::shutdown::Request request{ common::process::handle()};
+            request.processes.push_back( common::process::handle());
+            common::communication::device::blocking::send(
+               common::communication::instance::outbound::service::manager::device(),
+               request);
+         }
+
+         {
+            // we expect to get a prepare shutdown reply, with our self
+            common::message::domain::process::prepare::shutdown::Reply reply;
+            common::communication::device::blocking::receive( local::ipc::inbound(), reply);
+            ASSERT_TRUE( reply.processes.size() == 1) << CASUAL_NAMED_VALUE( reply);
+            EXPECT_TRUE( reply.processes.at( 0) == common::process::handle());
+         }
+
+         {
+            // we expect service 'a' to be absent.
+            auto lookup = common::service::Lookup{ "a"};
+            EXPECT_CODE( lookup(), common::code::xatmi::no_entry);
+         }
+      }
+
+      TEST( service_manager, advertise_a__lookup_a___prepare_shutdown___send_ack___expect_reply_with_our_self)
+      {
+         common::unittest::Trace trace;
+
+         local::Domain domain;
+
+         service::unittest::advertise( { "a"});
+
+         // we reserve (lock) our instance to the 'call'
+         auto lookup = common::service::Lookup{ "a"};
+
+         // 'emulate' that a call is in progress (more like consuming the lookup reply...)
+         EXPECT_TRUE( lookup().state == decltype( lookup().state)::idle);
+
+         // send prepare shutdown
+         {
+            common::message::domain::process::prepare::shutdown::Request request{ common::process::handle()};
+            request.processes.push_back( common::process::handle());
+            common::communication::device::blocking::send(
+               common::communication::instance::outbound::service::manager::device(),
+               request);
+         }
+
+         // pretend a service call has been done
+         service::unittest::send::ack( lookup());
+
+         {
+            // we expect to get a prepare shutdown reply, with our self
+            common::message::domain::process::prepare::shutdown::Reply reply;
+            common::communication::device::blocking::receive( local::ipc::inbound(), reply);
+            ASSERT_TRUE( reply.processes.size() == 1) << CASUAL_NAMED_VALUE( reply);
+            EXPECT_TRUE( reply.processes.at( 0) == common::process::handle());
+         }
+
+         {
+            // we expect service 'a' to be absent.
+            auto absent = common::service::Lookup{ "a"};
+            EXPECT_CODE( absent(), common::code::xatmi::no_entry);
+         }
+      }
+
+      TEST( service_manager, advertise_a_b_c_d___service_lookup_a_b_c_d___prepare_shutdown__expect_lookup_reply_1_idle__3_absent)
+      {
+         common::unittest::Trace trace;
+
+         local::Domain domain;
+
+         service::unittest::advertise( { "a", "b", "c", "d"});
+
+         auto idle = common::service::Lookup{ "a"};
+
+         auto lookups = common::algorithm::container::emplace::initialize< std::vector< common::service::Lookup>>(  "b", "c", "d");
+
+         EXPECT_TRUE( idle().state == decltype( idle().state)::idle);
+
+         // the pending lookups should be busy (in the first round)
+         for( auto& lookup : lookups)
+            EXPECT_TRUE( lookup().state == decltype( lookup().state)::busy);
+
+         // send prepare shutdown
+         {
+            common::message::domain::process::prepare::shutdown::Request request{ common::process::handle()};
+            request.processes.push_back( common::process::handle());
+            common::communication::device::blocking::send(
+               common::communication::instance::outbound::service::manager::device(),
+               request);
+         }
+
+
+         // We should get lookup reply with 'absent', hence, the pending lookups should throw 'no_entry'
+         for( auto& lookup : lookups)
+            EXPECT_CODE( lookup(), common::code::xatmi::no_entry);
+         
+         // we make service-manager think we've died
+         {
+            common::message::event::process::Exit message;
+            message.state.pid = common::process::id();
+            message.state.reason = common::process::lifetime::Exit::Reason::core;
+
+            common::communication::device::blocking::send( 
+               common::communication::instance::outbound::service::manager::device(),
+               message);
+         }
+
+         {
+            // we expect to get a service-call-error-reply
+            common::message::service::call::Reply message;
+            
+            common::communication::device::blocking::receive( local::ipc::inbound(), message);
+            
+            EXPECT_TRUE( message.code.result == decltype( message.code.result)::service_error);
+            EXPECT_TRUE( message.correlation == idle().correlation) << CASUAL_NAMED_VALUE( message) << "\n" << CASUAL_NAMED_VALUE( idle);
+         }
+
+         {
+            // we expect to get a prepare shutdown reply, with no processes since we "died" mid call.
+            common::message::domain::process::prepare::shutdown::Reply reply;
+            common::communication::device::non::blocking::receive( local::ipc::inbound(), reply);
+            EXPECT_TRUE( reply.processes.empty());
+         }
+      }
 
       TEST( service_manager, service_lookup__send_ack__expect_metric)
       {
