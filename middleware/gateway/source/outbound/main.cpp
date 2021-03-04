@@ -340,9 +340,9 @@ namespace casual
                // start the message dispatch
                communication::select::dispatch::pump( 
                   local::condition( state),
-                  state.directive, 
-                  internal::dispatch::create( state),
-                  external::dispatch::create( state)
+                  state.directive,
+                  external::dispatch::create( state),
+                  internal::dispatch::create( state)
                );
 
                abort_guard.release();

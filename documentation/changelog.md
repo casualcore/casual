@@ -3,6 +3,11 @@ This is the changelog for `casual` and all changes are listed in this document.
 
 ## [Unreleased]
 
+## [1.4.9] - 2021-03-04
+### Fixes
+- gateway - outbound should prioritize replies from other domains
+- cli - call not use pending message and use the 'flush send' idiom.
+
 ## [1.4.8] - 2021-03-03
 ### Fixes
 - gateway - outbound/reverse-inbound might try to receive on wrong socket and get 'stuck'
