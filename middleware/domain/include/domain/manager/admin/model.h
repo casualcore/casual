@@ -101,6 +101,7 @@ namespace casual
             )
 
             inline friend bool operator < ( const Process& lhs, const Process& rhs) { return lhs.id < rhs.id;}
+            inline friend bool operator == ( const Process& lhs, std::string_view alias) { return lhs.alias == alias;}
 
          };
 

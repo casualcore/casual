@@ -253,7 +253,7 @@ namespace casual
 
                            // we need to check if the dead process has anyone wating for a reply
                            if( auto found = common::algorithm::find( state.instances.sequential, event.state.pid))
-                              if( found->second.state() == state::instance::Sequential::State::busy)
+                              if( found->second.state() == decltype( found->second.state())::busy)
                               {
                                  auto& instance = found->second;
                                  log::line( common::log::category::error, code::casual::invalid_semantics, 
@@ -265,6 +265,7 @@ namespace casual
                                  local::error::reply( instance.caller(), common::code::xatmi::service_error);
                               }
 
+                           state.pending.shutdown.failed( event.state.pid);
                            state.remove( event.state.pid);
                         };
                      }
@@ -316,39 +317,6 @@ namespace casual
                   } // discoverable
 
                } // event
-
-               namespace process
-               {
-                  namespace prepare
-                  {
-                     auto shutdown( State& state)
-                     {
-                        return [&state]( common::message::domain::process::prepare::shutdown::Request& message)
-                        {
-                           Trace trace{ "service::manager::handle::process::prepare::Shutdown"};
-                           log::line( verbose::log, "message: ", message);
-
-                           auto reply = common::message::reverse::type( message, common::process::handle());
-                           reply.processes = std::move( message.processes);
-
-                           auto deactivate_process = [&]( auto& process)
-                           {
-                              state.deactivate( process.pid);
-                           };
-
-                           // all we need to do is to deactivate all servers (remove all 
-                           // associated services). domain-manager will then send shutdown to
-                           // the servers, and we'll receive a process::Exit when the server 
-                           // has exit, and we'll clean up the rest.
-                           algorithm::for_each( reply.processes, deactivate_process);
-
-                           handle::local::eventually::send( message.process, reply);
-                        };
-                     }
-
-                  } // prepare
-               } // process
-
 
                namespace service
                {
@@ -659,6 +627,134 @@ namespace casual
                   } // detail
                } // service
 
+
+               namespace process
+               {
+                  namespace prepare
+                  {
+                     namespace detail::pending
+                     {
+                        void lookup( State& state, std::vector< std::string> origin_services)
+                        {
+                           Trace trace{ "service::manager::handle::local::process::prepare::detail::pending::lookup"};
+
+                           // normalize origin-services, to take routes in to account...
+                           auto services = algorithm::accumulate( std::move( origin_services), std::vector< std::string>{}, [&state]( auto result, auto& name)
+                           {
+                              if( auto found = algorithm::find( state.routes, name))
+                                 algorithm::append( found->second, result);
+                              else
+                                 result.push_back( std::move( name));
+
+                              return result;
+                           });
+
+                           algorithm::trim( services, algorithm::unique( algorithm::sort( services)));
+
+                           // extract the corresponding pending lookups and 'emulate' new lookups, if any.
+                           {
+                              auto lookups = algorithm::extract( 
+                                 state.pending.lookups, 
+                                 std::get< 0>( algorithm::intersection( state.pending.lookups, services)));
+
+                              const auto now = platform::time::clock::type::now();
+
+                              for( auto& lookup : lookups)
+                                 service::detail::lookup( state, lookup.request, now - lookup.when);
+                           }
+                        }
+                        
+                     } // detail::pending
+
+                     auto shutdown( State& state)
+                     {
+                        return [&state]( common::message::domain::process::prepare::shutdown::Request& message)
+                        {
+                           Trace trace{ "service::manager::handle::local::process::prepare::shutdown"};
+                           log::line( verbose::log, "message: ", message);
+
+                           // all requested processess need to be replied some way or another. We can split them
+                           // to several replies if we need to, which we do. All processses that we don't know and the ones 
+                           // with no current 'reservation' we can reply directly. 
+                           // 'reserved' need to be done/unreserved before we can reply them.
+
+                           auto [ services, instances, unknown] = state.prepare_shutdown( message.processes);
+                           
+                           log::line( verbose::log, "services: ", services);
+
+                           // we might need to handle pending lookups for services with no instances (any more)...
+                           if( ! services.empty())
+                              detail::pending::lookup( state, services);
+
+                           auto [ busy, idle] = algorithm::partition( instances, []( auto& instance){ return ! instance.idle();});
+                           
+                           log::line( verbose::log, "busy: ", busy);
+                           log::line( verbose::log, "idle: ", idle);
+                           log::line( verbose::log, "unknown: ", unknown);
+                           
+                           if( idle || ! unknown.empty())
+                           {
+                              // we can send a reply for these directly
+                              auto reply = common::message::reverse::type( message, common::process::handle());
+                              reply.processes = std::move( unknown);
+
+                              algorithm::transform( idle, std::back_inserter( reply.processes), []( auto& instance)
+                              {
+                                 return instance.process;
+                              });
+                              handle::local::eventually::send( message.process, reply);
+                           }
+
+                           if( busy)
+                           {
+                              // we need to wait for 'acks' before we send a reply.
+
+                              auto pending = algorithm::accumulate( busy, state.pending.shutdown.empty_pendings(), []( auto result, auto& instance)
+                              {
+                                 auto& caller = instance.caller();
+                                 result.emplace_back( caller.correlation, caller.process.pid);
+                                 return result;
+                              });
+
+                              auto callback = [ 
+                                 message = common::message::reverse::type( message, common::process::handle()), 
+                                 instances = range::to_vector( busy),
+                                 destination = message.process]
+                                 ( auto&& replies, auto&& failed) mutable
+                              {
+                                 Trace trace{ "service::manager::handle::local::process::prepare::shutdown callback"};
+                                 log::line( verbose::log, "replies: ", replies, ", failed: ", failed);
+                                 
+                                 // take care of failed, if any
+                                 algorithm::for_each( failed, [&]( auto& failed)
+                                 {
+                                    if( auto found = algorithm::find( instances, failed.id))
+                                       local::error::reply( found->caller(), code::xatmi::service_error);
+                                 });
+
+                                 // take care of replies
+                                 algorithm::for_each( replies, [&]( auto& reply)
+                                 {
+                                    if( auto found = algorithm::find( instances, reply.metric.process.pid))
+                                    {
+                                       found->unreserve( reply.metric);
+                                       message.processes.push_back( reply.metric.process);
+                                       log::line( verbose::log, "found: ", *found);
+                                    }
+                                 }); 
+                                 
+                                 handle::local::eventually::send( destination, message);
+
+                              };
+
+                              state.pending.shutdown( std::move( pending), std::move( callback));
+                           }               
+                        };
+                     }
+
+                  } // prepare
+               } // process
+
                namespace domain
                {
                   namespace discover
@@ -763,47 +859,43 @@ namespace casual
                      if( auto deadline = state.pending.deadline.remove( message.correlation))
                         signal::timer::set( deadline.value());
 
+                     // add metric event regardless
+                     if( state.events.active< common::message::event::service::Calls>())
+                     {
+                        state.metric.add( message.metric);
+                        handle::metric::batch::send( state);
+                     }
+
                      // This message can only come from a local instance
                      if( auto instance = state.sequential( message.metric.process.pid))
                      {
                         instance->unreserve( message.metric);
 
-                        // add event-metric
-                        if( state.events.active< common::message::event::service::Calls>())
-                        {
-                           state.metric.add( std::move( message.metric));
-                           handle::metric::batch::send( state);
-                        }
-
                         // Check if there are pending request for services that this
                         // instance has.
 
+                        auto has_pending = [instance]( const auto& pending)
                         {
-                           auto has_pending = [instance]( const auto& pending)
-                           {
-                              return instance->service( pending.request.requested);
-                           };
+                           return instance->service( pending.request.requested);
+                        };
 
-                           if( auto found = common::algorithm::find_if( state.pending.lookups, has_pending))
-                           {
-                              log::line( verbose::log, "found pendig: ", *found);
+                        if( auto found = common::algorithm::find_if( state.pending.lookups, has_pending))
+                        {
+                           log::line( verbose::log, "found pendig: ", *found);
 
-                              auto pending = algorithm::extract( state.pending.lookups, std::begin( found));
+                           auto pending = algorithm::extract( state.pending.lookups, std::begin( found));
 
-                              // We now know that there are one idle server that has advertised the
-                              // requested service (we've just marked it as idle...).
-                              // We can use the normal request to get the response
-                              service::detail::lookup( state, pending.request, platform::time::clock::type::now() - pending.when);
-                           }
+                           // We now know that there are one idle server that has advertised the
+                           // requested service (we've just marked it as idle...).
+                           // We can use the normal request to get the response
+                           service::detail::lookup( state, pending.request, platform::time::clock::type::now() - pending.when);
                         }
                      }
                      else
                      {
-                        log::line( log::category::error, 
-                           code::casual::internal_correlation, 
-                           " failed to find instance on ACK - indicate inconsistency - action: ignore");
+                        // assume pending shutdown
+                        state.pending.shutdown( message);
                      }
-
 
                   };
                }

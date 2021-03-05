@@ -11,6 +11,7 @@
 #include "common/exception/guard.h"
 #include "common/signal/timer.h"
 #include "common/signal.h"
+#include "common/message/signal.h"
 
 #include "common/communication/instance.h"
 
@@ -115,7 +116,7 @@ namespace casual
 
                   if( auto min = algorithm::min( pending, min_attempts))
                   {
-                     if( min->metric.attempts < 200)
+                     if( min->metric.attempts < 100)
                         common::signal::timer::set( std::chrono::milliseconds{ 10});
                      else
                         common::signal::timer::set( std::chrono::seconds{ 3});
@@ -243,6 +244,16 @@ namespace casual
                      }
                   } // shutdown
 
+                  auto timeout( State& state)
+                  {
+                     return [&state]( const common::message::signal::Timeout& message)
+                     {
+                        Trace trace{ "gateway::inbound::reverse::local::internal::handle::timeout"};
+
+                        external::connect( state);
+                     };
+                  }
+
                } // handle
 
                auto handler( State& state)
@@ -251,7 +262,8 @@ namespace casual
                   return inbound::handle::internal( state) + common::message::dispatch::handler( ipc::inbound(),
                      handle::configuration::update::request( state),
                      handle::state::request( state),
-                     handle::shutdown::request( state)
+                     handle::shutdown::request( state),
+                     handle::timeout( state)
                   );
                }
 
@@ -272,13 +284,15 @@ namespace casual
 
             namespace signal::callback
             {
-               auto timeout( State& state)
+               auto timeout()
                {
-                  return [&state]()
+                  return []()
                   {
                      Trace trace{ "casual::gateway::inbound::reverse::local::signal::callback::timeout"};
 
-                     external::connect( state);                     
+                     // we push it to our own inbound ipc 'queue', and handle the timeout
+                     // in our regular message pump.
+                     ipc::inbound().push( common::message::signal::Timeout{});    
                   };
                }
             } // signal::callback
@@ -302,7 +316,7 @@ namespace casual
                });
 
                // register the alarm callback.
-               common::signal::callback::registration< code::signal::alarm>( signal::callback::timeout( state));
+               common::signal::callback::registration< code::signal::alarm>( signal::callback::timeout());
 
                // start the message dispatch
                communication::select::dispatch::pump( 

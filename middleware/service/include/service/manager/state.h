@@ -14,6 +14,7 @@
 #include "common/communication/ipc.h"
 #include "common/event/dispatch.h"
 #include "common/state/machine.h"
+#include "common/message/coordinate.h"
 
 #include "configuration/model.h"
 
@@ -93,7 +94,8 @@ namespace casual
                bool service( const std::string& name) const;
 
                //! removes this instance from all services
-               void deactivate();
+               //! @returns all associated service names that after the detach has no innstances (this instance was the last/only)
+               std::vector< std::string> detach();
 
                void add( state::Service& service);
                void remove( const std::string& service);
@@ -167,6 +169,7 @@ namespace casual
                   platform::time::point::type when;
 
                   inline friend bool operator == ( const Lookup& lhs, const common::Uuid& rhs) { return lhs.request == rhs;}
+                  inline friend bool operator == ( const Lookup& lhs, const std::string& service) { return lhs.request.requested == service;}
 
                   CASUAL_LOG_SERIALIZE( 
                      CASUAL_SERIALIZE( request);
@@ -404,10 +407,12 @@ namespace casual
          {
             state::service::pending::Deadline deadline;
             std::deque< state::service::pending::Lookup> lookups;
+            common::message::coordinate::fan::Out< common::message::service::call::ACK, common::strong::process::id> shutdown;
             
             CASUAL_LOG_SERIALIZE(
                CASUAL_SERIALIZE( deadline);
                CASUAL_SERIALIZE( lookups);
+               CASUAL_SERIALIZE( shutdown);
             )
          } pending;
 
@@ -461,8 +466,11 @@ namespace casual
          //! removes the instance (deduced from `pid`) and remove the instance from all services 
          void remove( common::strong::process::id pid);
 
-         //! removes the instance (deduced from `pid`) from all services, (keeps the instance though)
-         void deactivate( common::strong::process::id pid);
+
+         using prepare_shutdown_result = std::tuple< std::vector< std::string>, std::vector< state::instance::Sequential>, std::vector< common::process::Handle>>;
+         //! removes and extract all instancees (deduced from `pid`) from all services
+         //! @returns a tuple of (origin) services with no instances - extracted sequential instancess - unknown processes
+         [[nodiscard]] prepare_shutdown_result prepare_shutdown( std::vector< common::process::Handle> processes);
 
          //! adds or "updates" service
          //! @returns pending request that has got services ready for reply

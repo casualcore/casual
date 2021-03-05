@@ -527,8 +527,11 @@ namespace casual
                -> decltype( void( container.erase( std::begin( range), std::end( range))), C{})
             {
                C result;
-               result.resize( range.size());
-               std::move( std::begin( range), std::end( range), std::begin( result));
+
+               if constexpr( traits::has::reserve_v< decltype( result)>)
+                  result.reserve( range.size());
+               
+               std::move( std::begin( range), std::end( range), std::back_inserter( result));
                container.erase( std::begin( range), std::end( range));
                return result;
             }

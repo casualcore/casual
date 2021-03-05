@@ -45,29 +45,20 @@ target = make.LinkExecutable( 'bin/casual-test-mockup-string-server',
 )
 
 
-
 make.Install( [ target], dsl.paths().install + '/test/bin')
 
-
-#test_archive = make.LinkArchive( 'bin/test-archive', 
-#   [
-#      make.Compile( 'source/domain.cpp'),
-#   ]
-#)
-
-# unittest
-
 unittest_object = [
-   make.Compile( 'unittest/source/domain/test_basic.cpp'),
-   make.Compile( 'unittest/source/domain/xatmi/test_call.cpp'),
-   make.Compile( 'unittest/source/domain/xatmi/test_conversation.cpp'),
-   make.Compile( 'unittest/source/domain/xatmi/test_start.cpp'),
-   make.Compile( 'unittest/source/domain/test_transaction.cpp'),
-   make.Compile( 'unittest/source/domain/test_gateway.cpp'),
-   make.Compile( 'unittest/source/domain/gateway/test_reverse.cpp'),
-   make.Compile( 'unittest/source/domain/gateway/test_discovery.cpp'),
-   make.Compile( 'unittest/source/domain/test_service.cpp'),
-   make.Compile( 'unittest/source/domain/test_assassinate.cpp'),
+    make.Compile( 'unittest/source/domain/test_basic.cpp'),
+    make.Compile( 'unittest/source/domain/xatmi/test_call.cpp'),
+    make.Compile( 'unittest/source/domain/xatmi/test_start.cpp'),
+    make.Compile( 'unittest/source/domain/test_transaction.cpp'),
+    make.Compile( 'unittest/source/domain/test_gateway.cpp'),
+    make.Compile( 'unittest/source/domain/gateway/test_reverse.cpp'),
+    make.Compile( 'unittest/source/domain/test_service.cpp'),
+    make.Compile( 'unittest/source/domain/test_assassinate.cpp'),
+    
+    # disabled... Need a total rework of conversation (and service call/callee also)
+    # Compile( 'unittest/source/domain/xatmi/test_conversation.cpp'),
 ]
 
 # only build http test cases if the enviornment is set up
@@ -77,7 +68,6 @@ if "CASUAL_UNITTEST_HTTP_INBOUND_CONFIG" in os.environ and "CASUAL_UNITTEST_HTTP
 make.LinkUnittest( 'unittest/bin/test-casual-basic',
    unittest_object,
    [ 
-      #test_archive,
       'casual-common', 
       'casual-buffer',
       'casual-xatmi', 

@@ -24,7 +24,10 @@ namespace casual
       namespace send
       {
          //! sends ack to service-manager
+         //! @{ 
          void ack( const common::message::service::call::callee::Request& request);
+         void ack( const common::message::service::lookup::Reply& lookup);
+         //! @}
       } // send
 
    
