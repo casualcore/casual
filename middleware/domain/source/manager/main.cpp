@@ -122,22 +122,22 @@ namespace casual
                   {
                      return [&state]()
                      {
-                        auto condition = exception::code();
+                        auto error = exception::error();
 
-                        if( condition == code::casual::shutdown)
+                        if( error.code() == code::casual::shutdown)
                         {
                            state.runlevel = state::Runlevel::shutdown;
                            handle::shutdown( state);
                         }
                         else if( state.runlevel == state::Runlevel::error)
                         {
-                           log::line( log::category::error, condition, " already in error state - fatal abort");
+                           log::line( log::category::error, error, " already in error state - fatal abort");
                            log::line( log::category::verbose::error, "state: ", state);
                            throw;
                         }
                         else 
                         {
-                           log::line( log::category::error, condition, " enter error state");
+                           log::line( log::category::error, error, " enter error state");
                            state.runlevel = state::Runlevel::error;
                            handle::shutdown( state);
                            log::line( log::category::verbose::error, "state: ", state);
@@ -201,19 +201,19 @@ namespace casual
                }
                catch( ...)
                {
-                  auto code = common::exception::code();
+                  auto error = common::exception::error();
 
                   if( ipc)
                   {
                      common::message::event::Error event;
                      event.message = common::string::compose( "fatal abort");
                      event.severity = common::message::event::Error::Severity::fatal;
-                     event.code = code;
+                     event.code = error.code();
 
                      common::communication::device::non::blocking::optional::send( ipc, event);
                   }
                
-                  return code.value();
+                  return error.code().value();
                }
 
             }

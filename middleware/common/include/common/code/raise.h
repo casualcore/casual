@@ -25,7 +25,7 @@ namespace casual
             template< typename Code>
             [[noreturn]] void condition( Code code) noexcept( false)
             {
-               throw std::error_code{ code};
+               throw std::system_error{ std::error_code{ code}};
             }
 
             template< typename Code>

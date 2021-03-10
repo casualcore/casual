@@ -30,7 +30,7 @@ namespace casual
 
             common::code::xatmi code() noexcept
             {
-               return exception::code( common::exception::code());
+               return exception::code( common::exception::error().code());
             }
          } // exception
 

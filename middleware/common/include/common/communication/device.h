@@ -460,13 +460,13 @@ namespace casual
                }
                catch( ...)
                {
-                  auto code = exception::code();
-                  if( code == code::casual::communication_unavailable)
+                  auto error = exception::error();
+                  if( error.code() == code::casual::communication_unavailable)
                   {
                      // Let connector take a crack at resolving this problem, if implemented...
                      reconnect( Base::connector(), traits::priority::tag< 1>{});
                   }
-                  else if( code == code::casual::interupted)
+                  else if( error.code() == code::casual::interupted)
                      signal::dispatch();
                   else
                      throw;
@@ -568,7 +568,7 @@ namespace casual
                }
                catch( ...)
                {
-                  if( exception::code() == code::casual::communication_unavailable)
+                  if( exception::error().code() == code::casual::communication_unavailable)
                   {
                      log::line( communication::log, code::casual::communication_unavailable, " failed to send message - action: ignore");
                      return {};
@@ -617,7 +617,7 @@ namespace casual
                }
                catch( ...)
                {
-                  if( exception::code() == code::casual::communication_unavailable)
+                  if( exception::error().code() == code::casual::communication_unavailable)
                   {
                      log::line( communication::log, code::casual::communication_unavailable, " failed to send message - action: ignore");
                      return {};

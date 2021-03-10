@@ -18,10 +18,10 @@ namespace local
    {
       int handle()
       {
-         auto condition = casual::common::exception::code();
+         auto error = casual::common::exception::error();
 
-         if( casual::common::code::is::category< casual::common::code::ax>( condition))
-               return condition.value();
+         if( casual::common::code::is::category< casual::common::code::ax>( error.code()))
+               return error.code().value();
 
          return casual::common::cast::underlying( casual::common::code::ax::error);
       }

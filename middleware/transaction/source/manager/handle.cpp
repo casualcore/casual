@@ -55,11 +55,11 @@ namespace casual
                      }
                      catch( ...)
                      {
-                        auto code = common::exception::code();
-                        if( code != common::code::casual::communication_unavailable)
+                        auto error = common::exception::error();
+                        if( error.code() != common::code::casual::communication_unavailable)
                            throw;
 
-                        common::log::line( log, code, " failed to send message to target: ", target);
+                        common::log::line( log, error, " failed to send message to target: ", target);
                      }
 
                   }
@@ -1024,21 +1024,21 @@ namespace casual
                }
                catch( ...)
                {
-                  auto condition = common::exception::code();
+                  auto error = common::exception::error();
 
                   auto reply = local::transform::reply( message);
                   reply.stage = decltype( reply.stage)::error;
 
-                  if( condition == common::code::casual::shutdown)
+                  if( error.code() == common::code::casual::shutdown)
                      throw;
 
-                  if( common::code::is::category< common::code::tx>( condition))
-                     reply.state = static_cast< common::code::tx>( condition.value());
-                  else if( common::code::is::category< common::code::xa>( condition))
-                     reply.state = common::code::convert::to::tx( static_cast< common::code::xa>( condition.value()));
+                  if( common::code::is::category< common::code::tx>( error.code()))
+                     reply.state = static_cast< common::code::tx>( error.code().value());
+                  else if( common::code::is::category< common::code::xa>( error.code()))
+                     reply.state = common::code::convert::to::tx( static_cast< common::code::xa>( error.code().value()));
                   else 
                   {
-                     common::log::line( common::log::category::error, condition, " unexpected error - action: send reply with tx::fail");
+                     common::log::line( common::log::category::error, error, " unexpected error - action: send reply with tx::fail");
                      reply.state = common::code::tx::fail;
                   }
 

@@ -195,7 +195,7 @@ namespace casual
                }
                catch( ...)
                {
-                  if( exception::code() == code::casual::failed_transcoding)
+                  if( exception::error().code() == code::casual::failed_transcoding)
                      return false;
 
                   throw;

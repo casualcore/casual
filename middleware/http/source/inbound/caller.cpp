@@ -246,17 +246,17 @@ namespace casual
                      }
                      catch( ...)
                      {
-                        auto condition = common::exception::code();
+                        auto error = common::exception::error();
 
-                        if( condition == code::xatmi::no_message)
+                        if( error.code() == code::xatmi::no_message)
                            return AGAIN; // No reply yet, try again later
 
-                        if( code::is::category< code::xatmi>( condition))
-                           transport->code = condition.value();
+                        if( code::is::category< code::xatmi>( error.code()))
+                           transport->code = error.code().value();
                         else 
                            transport->code = cast::underlying( code::xatmi::os);
 
-                        transport->payload = buffer::copy( string::compose( condition));
+                        transport->payload = buffer::copy( string::compose( error));
                      }
 
                      // Handle reply headers

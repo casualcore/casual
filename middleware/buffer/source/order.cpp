@@ -200,9 +200,7 @@ namespace casual
                   }
                   catch( ...)
                   {
-                     auto condition = common::exception::code();
-
-                     if( condition == common::code::xatmi::argument)
+                     if( common::exception::error().code() == common::code::xatmi::argument)
                         return CASUAL_ORDER_INVALID_HANDLE;
 
                      return CASUAL_ORDER_INTERNAL_FAILURE;

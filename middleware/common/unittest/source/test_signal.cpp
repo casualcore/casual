@@ -29,8 +29,8 @@ namespace casual
                }
                catch( ...)
                {
-                  auto code = exception::code();
-                  EXPECT_TRUE( code == signal)  << "expected: " << signal << " - got: " << code;
+                  auto error = exception::error();
+                  EXPECT_TRUE( error.code() == signal)  << "expected: " << signal << " - got: " << error.code();
                   return;
                }
                EXPECT_TRUE( false) << "signal " << signal << " was not raised...";
@@ -44,8 +44,8 @@ namespace casual
                }
                catch( ...)
                {
-                  auto code = exception::code();
-                  EXPECT_TRUE( code == signal)  << "expected: " << signal << " - got: " << code;
+                  auto error = exception::error();
+                  EXPECT_TRUE( error.code() == signal)  << "expected: " << signal << " - got: " << error.code();
                   return;
                }
                EXPECT_TRUE( false) << "signal " << signal << " was not raised...";
@@ -201,7 +201,7 @@ namespace casual
          EXPECT_THROW(
          {
             signal::dispatch();
-         }, std::error_code);
+         }, std::system_error);
 
          EXPECT_TRUE( signal::current::pending() == 0);
 

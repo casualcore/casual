@@ -80,7 +80,7 @@ namespace casual
                   }
                   catch( ...)
                   {
-                     common::event::error::send( common::exception::code(), "failed to spawn resource-proxy-instance: " + info.server);
+                     common::event::error::send( common::exception::error().code(), "failed to spawn resource-proxy-instance: " + info.server);
                   }
                }
             }

@@ -129,7 +129,7 @@ namespace casual
                            }
                            catch( ...)
                            {
-                              if( exception::code() != code::casual::communication_unavailable)
+                              if( exception::error().code() != code::casual::communication_unavailable)
                                  throw;
                               
                               // Do we try to reconnect?

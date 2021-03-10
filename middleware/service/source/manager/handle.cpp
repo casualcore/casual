@@ -79,11 +79,11 @@ namespace casual
                      }
                      catch( ...)
                      {
-                        auto code = exception::code();
-                        if( code != code::casual::communication_unavailable)
+                        auto error = exception::error();
+                        if( error.code() != code::casual::communication_unavailable)
                            throw;
                            
-                        log::line( log, code, " destination unavailable - ", destination);
+                        log::line( log, error, " destination unavailable - ", destination);
                         return false;
                      }
 

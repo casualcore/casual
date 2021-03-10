@@ -168,13 +168,13 @@ int casual_service_asynchronous_receive( int *const descriptor, char** odata, lo
    }
    catch( ...)
    {
-      auto code = casual::common::exception::code();
+      auto error = casual::common::exception::error();
       
       // we "need" to treat no_entry as service_error to conform to xatmi-spec.
-      if( code == casual::common::code::xatmi::no_entry)
+      if( error.code() == casual::common::code::xatmi::no_entry)
          casual::xatmi::internal::error::set( casual::common::code::xatmi::service_error);
       else 
-         casual::xatmi::internal::error::set( casual::xatmi::internal::exception::code( code));
+         casual::xatmi::internal::error::set( casual::xatmi::internal::exception::code( error.code()));
    }
    return -1;
 }

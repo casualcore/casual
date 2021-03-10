@@ -93,9 +93,9 @@ namespace casual
             }
             catch( ...)
             {
-               auto code = exception::code();
-               event::error::send( code, event::error::Severity::fatal);
-               throw code;
+               auto error = exception::error();
+               event::error::send( error.code(), event::error::Severity::fatal);
+               throw error;
             }
          }
       } // guard

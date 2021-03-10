@@ -222,7 +222,7 @@ domain:
             contract: some_none_existing_contract
 )";
          
-         EXPECT_THROW( local::configuration( configuration), std::error_code);
+         EXPECT_THROW( local::configuration( configuration), std::system_error);
 
       }
 
@@ -327,7 +327,7 @@ domain:
       routes: [b]
 )";
          
-         EXPECT_THROW( local::configuration( configuration), std::error_code);
+         EXPECT_THROW( local::configuration( configuration), std::system_error);
 
       }
 

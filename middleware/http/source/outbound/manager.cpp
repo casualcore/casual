@@ -41,11 +41,11 @@ namespace casual
                         }
                         catch( ...)
                         {
-                           auto condition = exception::code();
-                           if( condition != code::casual::communication_unavailable)
-                              throw condition;
+                           auto error = exception::error();
+                           if( error.code() != code::casual::communication_unavailable)
+                              throw error;
 
-                           log::line( log, condition, " failed to send message - type: ", common::message::type( message), " to: ", process, " - action: ignore");
+                           log::line( log, error, " failed to send message - type: ", common::message::type( message), " to: ", process, " - action: ignore");
                         }
                         return true;
                      }
@@ -153,8 +153,8 @@ namespace casual
                               }
                               catch( ...)
                               {
-                                 auto condition = exception::code();
-                                 log::line( log::category::verbose::error, common::code::xatmi::protocol, " failed to transcode payload - reason: ", condition);
+                                 auto error = exception::error();
+                                 log::line( log::category::verbose::error, common::code::xatmi::protocol, " failed to transcode payload - reason: ", error);
                                  message.code.result = common::code::xatmi::protocol; 
                               }
                            }

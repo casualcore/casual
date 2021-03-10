@@ -21,32 +21,32 @@ namespace casual
 
 
 
-         //! catches all possible exceptions and convert them to error_code
-         std::error_code code() noexcept;
+         //! catches all possible exceptions and convert them to system_error
+         std::system_error error() noexcept;
 
 
          //! tries to catch all possible exceptions, including error_code/conditions 
-         //! logs with appropriate stream, and returns the corresponding error_code
-         //std::error_code handle();
+         //! logs with appropriate stream, and returns the corresponding system_error
+         //std::system_error handle();
 
          namespace detail
          {
             template< typename... Ts>
-            std::error_code handle( std::ostream& out, Ts&&... ts)
+            std::system_error handle( std::ostream& out, Ts&&... ts)
             {
-               auto code = exception::code();
-               log::line( out, code, std::forward< Ts>( ts)...);
-               return code;
+               auto error = exception::error();
+               log::line( out, error, std::forward< Ts>( ts)...);
+               return error;
             }
          } // detail
          
-         inline std::error_code handle( std::ostream& out)
+         inline std::system_error handle( std::ostream& out)
          {
             return detail::handle( out);
          }
 
          template< typename... Ts>
-         std::error_code handle( std::ostream& out, Ts&&... ts)
+         std::system_error handle( std::ostream& out, Ts&&... ts)
          {
             return detail::handle( out, ' ', std::forward< Ts>( ts)...);
          }

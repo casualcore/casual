@@ -362,7 +362,7 @@ namespace casual
             catch( ...)
             {
                // if refused we return 'nil' socket
-               if( exception::code() != code::casual::communication_refused)
+               if( exception::error().code() != code::casual::communication_refused)
                   throw;
             }
             return {};
@@ -385,7 +385,7 @@ namespace casual
                catch( ...)
                {
                   // if refused : no-op - we go to sleep
-                  if( exception::code() != code::casual::communication_refused)
+                  if( exception::error().code() != code::casual::communication_refused)
                      throw;
                }
             }
@@ -484,7 +484,7 @@ namespace casual
                   }
                   catch( ...)
                   {
-                     if( exception::code() == code::casual::communication_refused)
+                     if( exception::error().code() == code::casual::communication_refused)
                         return false;
 
                      throw;
@@ -542,7 +542,7 @@ namespace casual
                   }
                   catch( ...)
                   {
-                     if( exception::code() != code::casual::communication_retry)
+                     if( exception::error().code() != code::casual::communication_retry)
                         throw;
                   }
 

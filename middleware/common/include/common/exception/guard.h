@@ -32,10 +32,10 @@ namespace casual
                }
                catch( ...)
                {
-                  auto code = exception::code();
-                  if( code == code::casual::shutdown)
+                  auto error = exception::error();
+                  if( error.code() == code::casual::shutdown)
                      return 0;
-                  return code.value();
+                  return error.code().value();
                }
             }
 
@@ -49,10 +49,10 @@ namespace casual
                }
                catch( ...)
                {
-                  auto code = exception::handle( out);
-                  if( code == code::casual::shutdown)
+                  auto error = exception::handle( out);
+                  if( error.code() == code::casual::shutdown)
                      return 0;
-                  return code.value();
+                  return error.code().value();
                }
             } 
          } // main

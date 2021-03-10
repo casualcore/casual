@@ -243,11 +243,11 @@ namespace casual
                   }
                   catch( ...)
                   {
-                     auto condition = common::exception::code();
+                     auto error = common::exception::error();
 
-                     std::cerr << "condition: " << condition << '\n';
+                     std::cerr << "error: " << error << '\n';
                      
-                     if( condition == code::xatmi::argument)
+                     if( error.code() == code::xatmi::argument)
                         return CASUAL_FIELD_INVALID_HANDLE;
 
                      return CASUAL_FIELD_INTERNAL_FAILURE;

@@ -627,7 +627,7 @@ namespace casual
                }
                catch( ...)
                {
-                  if( exception::code() != code::signal::alarm)
+                  if( exception::error().code() != code::signal::alarm)
                      throw;
                }
                return result;

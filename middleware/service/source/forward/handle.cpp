@@ -48,12 +48,12 @@ namespace casual
                   }
                   catch( ...)
                   {
-                     auto code = exception::code();
-                     if( code != code::casual::communication_unavailable)
+                     auto error = exception::error();
+                     if( error.code() != code::casual::communication_unavailable)
                         throw;
 
                      // No-op, we just drop the message
-                     log::line( log, code, " failed to sendmessage ", message.type(), " to process: ", process, " - action: discard");
+                     log::line( log, error, " failed to sendmessage ", message.type(), " to process: ", process, " - action: discard");
                      return true;
                   }
                }

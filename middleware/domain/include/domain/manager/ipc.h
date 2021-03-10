@@ -44,7 +44,7 @@ namespace casual
                }
                catch( ...)
                {
-                  if( common::exception::code() != common::code::casual::communication_unavailable)
+                  if( common::exception::error().code() != common::code::casual::communication_unavailable)
                      throw;
 
                   common::log::line( domain::log, common::code::casual::communication_unavailable, " failed to send message - type: ", common::message::type( message), " to: ", process, " - action: ignore");

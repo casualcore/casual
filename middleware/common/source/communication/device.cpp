@@ -28,7 +28,7 @@ namespace casual
                   }
                   catch( ...)
                   {
-                     if( exception::code() != code::casual::interupted)
+                     if( exception::error().code() != code::casual::interupted)
                         throw;
 
                      log::line( verbose::log, "device interupted");

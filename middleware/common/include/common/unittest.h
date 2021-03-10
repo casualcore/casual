@@ -142,12 +142,12 @@ namespace casual
             }
             catch( ...)
             {
-               auto condition = exception::code();
+               auto error = exception::error();
 
-               if( condition == code)
+               if( error.code() == code)
                   return ::testing::AssertionSuccess();
 
-               return ::testing::AssertionFailure() << "expected: " << code << " - got: " << condition << '\n';
+               return ::testing::AssertionFailure() << "expected: " << code << " - got: " << error.code() << '\n';
             }
          }
          
@@ -168,8 +168,8 @@ try                                                                             
 }                                                                                         \
 catch( ...)                                                                               \
 {                                                                                         \
-   auto condition = ::casual::common::exception::code();                                  \
-   ASSERT_TRUE( condition == code_value) << "expected: " << code_value << " - got: " << condition;    \
+   auto error = ::casual::common::exception::error();                                  \
+   ASSERT_TRUE( error.code() == code_value) << "expected: " << code_value << " - got: " << error.code();    \
 }
 
 

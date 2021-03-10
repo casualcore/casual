@@ -64,12 +64,12 @@ namespace casual
                            }
                            catch( ...)
                            {
-                              auto code = exception::code();
+                              auto error = exception::error();
                               
-                              if( code != code::casual::communication_unavailable)
+                              if( error.code() != code::casual::communication_unavailable)
                                  throw;
 
-                              log::line( log, code, " destination not available: ", destination, " - action: ignore");
+                              log::line( log, error, " destination not available: ", destination, " - action: ignore");
                               log::line( verbose::log, "dropped message: ", message);
                            }                         
                         }
@@ -450,7 +450,7 @@ namespace casual
                            }
                            catch( ...)
                            {
-                              common::log::line( common::log::category::error, common::code::xa::resource_fail, " transaction rollback request - ", common::exception::code());
+                              common::log::line( common::log::category::error, common::code::xa::resource_fail, " transaction rollback request - ", common::exception::error());
                               reply.state = common::code::xa::resource_fail;
                            }
                            

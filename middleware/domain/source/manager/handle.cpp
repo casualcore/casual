@@ -81,13 +81,13 @@ namespace casual
                      }
                      catch( ...)
                      {
-                        auto code = exception::code();
-                        log::line( log::category::error, code, " failed to spawn: ", entity.path);
+                        auto error = exception::error();
+                        log::line( log::category::error, error, " failed to spawn: ", entity.path);
 
                         manager::task::event::dispatch( state, [&]()
                         {
                            common::message::event::Error event{ common::process::handle()};
-                           event.code = code;
+                           event.code = error.code();
                            event.severity = decltype( event.severity)::error;
                            event.message = string::compose( "failed to spawn: ", entity.path);
                            return event;
@@ -312,8 +312,8 @@ namespace casual
             }
             catch( ...)
             {
-               auto code = exception::code();
-               log::line( log, code, " failed to reach service-manager - action: emulate reply");
+               auto error = exception::error();
+               log::line( log, error, " failed to reach service-manager - action: emulate reply");
 
                // service-manager is not online, we emulate the reply from service-manager
                // and send it to our self to ensure that possible tasks are initalized and
@@ -976,7 +976,7 @@ namespace casual
                      }
                      catch( ...)
                      {
-                        common::log::line( log, exception::code(), " failed to reach service-manager - action: discard sending ACK");
+                        common::log::line( log, exception::error(), " failed to reach service-manager - action: discard sending ACK");
                      }
                   }
 

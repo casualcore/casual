@@ -173,7 +173,7 @@ namespace casual
                         catch( ...)
                         {
                            log::line( log::category::error, code::casual::invalid_semantics, 
-                              " exception thrown from service: ", argument.service.name, " - ", exception::code());
+                              " exception thrown from service: ", argument.service.name, " - ", exception::error());
                         }
                      }
 

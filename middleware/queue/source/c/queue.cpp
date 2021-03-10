@@ -42,13 +42,13 @@ namespace casual
                }
                catch( ...)
                {
-                  auto code = common::exception::code();
+                  auto error = common::exception::error();
 
-                  if( common::code::is::category< queue::code>( code))
-                     global::code = static_cast< queue::code>( code.value());
+                  if( common::code::is::category< queue::code>( error.code()))
+                     global::code = static_cast< queue::code>( error.code().value());
                   else
                   {
-                     common::log::line( common::log::category::error, common::code::casual::internal_unexpected_value, " unexpected error: ", code);
+                     common::log::line( common::log::category::error, common::code::casual::internal_unexpected_value, " unexpected error: ", error);
                      global::code = queue::code::system;
                   }
                }

@@ -354,11 +354,11 @@ namespace casual
                      }
                      catch( ...)
                      {
-                        auto code = common::exception::code();
-                        if( code != queue::code::no_queue)
+                        auto error = common::exception::error();
+                        if( error.code() != queue::code::no_queue)
                            throw;
 
-                        common::log::line( verbose::log, code, " queue not available yet - ", queue); 
+                        common::log::line( verbose::log, error, " queue not available yet - ", queue); 
                      }
                      sleep();
                   }

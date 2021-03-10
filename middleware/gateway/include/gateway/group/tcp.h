@@ -139,8 +139,8 @@ namespace casual
             }
             catch( ...)
             {
-               auto code = common::exception::code();
-               common::log::line( common::log::category::error, code, " connect severely failed for address: '", connection.configuration.address, "' - action: discard connection");
+               auto error = common::exception::error();
+               common::log::line( common::log::category::error, error, " connect severely failed for address: '", connection.configuration.address, "' - action: discard connection");
                return true;
             }
          };
@@ -179,7 +179,7 @@ namespace casual
          }
          catch( ...)
          {
-            if( common::exception::code() != common::code::casual::communication_unavailable)
+            if( common::exception::error().code() != common::code::casual::communication_unavailable)
                throw;
             
             lost( state, descriptor);

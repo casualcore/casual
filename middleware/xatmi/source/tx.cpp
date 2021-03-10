@@ -25,10 +25,10 @@ namespace local
 
       auto code()
       {
-         auto code = casual::common::exception::code();
+         auto error = casual::common::exception::error();
 
-         if( casual::common::code::is::category< casual::common::code::tx>( code))
-            return static_cast< casual::common::code::tx>( code.value());
+         if( casual::common::code::is::category< casual::common::code::tx>( error.code()))
+            return static_cast< casual::common::code::tx>( error.code().value());
 
          return casual::common::code::tx::error;
       }
