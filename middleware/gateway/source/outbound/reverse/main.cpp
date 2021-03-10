@@ -98,7 +98,7 @@ namespace casual
                            // TODO maintainece - make sure we can handle runtime updates...
 
                            state.alias = message.model.alias;
-                           state.order = message.order;
+                           state.order = message.model.order;
 
                            state.listeners = algorithm::transform( message.model.connections, []( auto& information)
                            {

@@ -267,9 +267,12 @@ domain:
          
       }
 
-      TEST( test_domain_gateway, domain_A_to__B_C_D__outbound_separated_groups___expect_prio_A)
+      TEST( test_domain_gateway, domain_A_to__B_C_D__outbound_separated_groups___expect_prio_B)
       {
          common::unittest::Trace trace;
+
+         // sink child signals 
+         signal::callback::registration< code::signal::child>( [](){});
 
          auto b = local::example::domain( "B", "7001");
          auto c = local::example::domain( "C", "7002");
@@ -309,10 +312,13 @@ domain:
          });
       }
 
-      TEST( BACKWARD_test_domain_gateway, domain_A_to__B_C_D__outbound_separated_groups___expect_prio_A)
+      TEST( BACKWARD_test_domain_gateway, domain_A_to__B_C_D__outbound_separated_groups___expect_prio_B)
       {
          // same test as above but with the deprecated configuration
-         
+
+         // sink child signals 
+         signal::callback::registration< code::signal::child>( [](){});
+
          common::unittest::Trace trace;
 
          auto b = local::example::domain( "B", "7001");
@@ -351,9 +357,147 @@ domain:
          });
       }
 
+      TEST( test_domain_gateway, domain_A_to__B_C_D__outbound_separated_groups___expect_prio_B__shutdown_B__expect_C__shutdown__C__expect_D)
+      {
+         common::unittest::Trace trace;
+
+         // sink child signals 
+         signal::callback::registration< code::signal::child>( [](){});
+
+         auto b = local::example::domain( "B", "7001");
+         auto c = local::example::domain( "C", "7002");
+         auto d = local::example::domain( "D", "7003");
+
+         constexpr auto A = R"(
+domain: 
+   name: A
+  
+   gateway:
+      outbound:
+         groups:
+            -  connections:
+                  -  address: 127.0.0.1:7001
+                     services:
+                        -  casual/example/domain/name
+            -  connections:
+                  -  address: 127.0.0.1:7002
+                     services:
+                        -  casual/example/domain/name
+            -  connections:
+                  -  address: 127.0.0.1:7003
+                     services:
+                        -  casual/example/domain/name
+)";
+
+
+         local::Manager a{ { local::configuration::base, A}};
+
+         local::state::gateway::until( local::state::gateway::predicate::outbound::connected());
+
+         // we expect to always get to B
+         algorithm::for_n< 10>( []()
+         {
+            auto buffer = local::call( "casual/example/domain/name");
+            EXPECT_TRUE( buffer.get() == std::string_view{ "B"});
+         });
+
+         // shutdown B
+         local::sink( std::move( b));
+
+         // we expect to always get to C
+         algorithm::for_n< 10>( []()
+         {
+            auto buffer = local::call( "casual/example/domain/name");
+            EXPECT_TRUE( buffer.get() == std::string_view{ "C"});
+         });
+
+         // shutdown C
+         local::sink( std::move( c));
+
+         // we expect to always get to D ( the only on left...)
+         algorithm::for_n< 10>( []()
+         {
+            auto buffer = local::call( "casual/example/domain/name");
+            EXPECT_TRUE( buffer.get() == std::string_view{ "D"});
+         });
+      }
+
+      TEST( test_domain_gateway, domain_A_to__B_C__outbound_separated_groups___expect_prio_B__shutdown_B__expect_C__boot_B__expect_B)
+      {
+         common::unittest::Trace trace;
+
+         // sink child signals 
+         signal::callback::registration< code::signal::child>( [](){});
+
+         auto b = local::example::domain( "B", "7001");
+         auto c = local::example::domain( "C", "7002");
+
+         constexpr auto A = R"(
+domain: 
+   name: A
+  
+   gateway:
+      outbound:
+         groups:
+            -  connections:
+                  -  address: 127.0.0.1:7001
+                     services:
+                        -  casual/example/domain/name
+            -  connections:
+                  -  address: 127.0.0.1:7002
+                     services:
+                        -  casual/example/domain/name
+            -  connections:
+                  -  address: 127.0.0.1:7003
+                     services:
+                        -  casual/example/domain/name
+)";
+
+
+         local::Manager a{ { local::configuration::base, A}};
+
+         local::state::gateway::until( local::state::gateway::predicate::outbound::connected());
+
+         // we expect to always get to B
+         algorithm::for_n< 10>( []()
+         {
+            auto buffer = local::call( "casual/example/domain/name");
+            EXPECT_TRUE( buffer.get() == std::string_view{ "B"});
+         });
+
+         // shutdown B
+         local::sink( std::move( b));
+
+         // we expect to always get to C
+         algorithm::for_n< 10>( []()
+         {
+            auto buffer = local::call( "casual/example/domain/name");
+            EXPECT_TRUE( buffer.get() == std::string_view{ "C"});
+         });
+
+         // boot B
+         b = local::example::domain( "B", "7001");
+
+         // we need to activate a, otherwise b has 'the control'
+         a.activate();
+
+         // we need to wait for all to be connected...
+         local::state::gateway::until( local::state::gateway::predicate::outbound::connected());
+
+         // we expect to always get to B, again
+         algorithm::for_n< 10>( []()
+         {
+            auto buffer = local::call( "casual/example/domain/name");
+            EXPECT_TRUE( buffer.get() == std::string_view{ "B"});
+         });
+      }
+
       TEST( test_domain_gateway, domain_A_to__B_C_D__outbound_same_group___expect_round_robin_between_A_B_C)
       {
          common::unittest::Trace trace;
+
+         // sink child signals 
+         signal::callback::registration< code::signal::child>( [](){});
 
          auto b = local::example::domain( "B", "7001");
          auto c = local::example::domain( "C", "7002");
@@ -378,7 +522,7 @@ domain:
                         -  casual/example/domain/name
 )";
 
-
+         
          local::Manager a{ { local::configuration::base, A}};
 
          local::state::gateway::until( local::state::gateway::predicate::outbound::connected());

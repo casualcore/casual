@@ -121,7 +121,11 @@ namespace casual
                      if( min->metric.attempts < 100)
                         common::signal::timer::set( std::chrono::milliseconds{ 10});
                      else
+                     {
+                        // is this a good idea, to shorten unittests that connects and so on... Seems hackish, leave it for diskussions...
+                        // static const auto timer = common::chronology::from::string( environment::variable::get( "CASUAL_UNITTEST_OUTBOUND_CONNECT_TIMER", "3s"));
                         common::signal::timer::set( std::chrono::seconds{ 3});
+                     }
                   }
 
                   log::line( verbose::log, "state: ", state);
@@ -193,7 +197,7 @@ namespace casual
                            // TODO maintainece - make sure we can handle runtime updates...
 
                            state.alias = message.model.alias;
-                           state.order = message.order;
+                           state.order = message.model.order;
 
                            state.pending.connections = algorithm::transform( message.model.connections, []( auto& configuration)
                            {
