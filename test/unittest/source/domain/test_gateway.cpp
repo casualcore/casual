@@ -22,6 +22,9 @@
 
 #include "casual/xatmi.h"
 
+
+#include <regex>
+
 namespace casual
 {
    using namespace common;
@@ -90,24 +93,26 @@ domain:
 
                namespace predicate::outbound
                {
+                  // returns a predicate that checks if all out-connections has a 'remote id'
                   auto connected()
                   {
                      return []( auto& state)
                      {
-                        return algorithm::find_if( state.connections, []( auto& connection)
+                        return algorithm::all_of( state.connections, []( auto& connection)
                         {
-                           return connection.bound == decltype( connection.bound)::out && connection.remote.id;
+                           return connection.bound != decltype( connection.bound)::out || connection.remote.id;
                         }); 
                      };
                   };
 
+                  // returns a predicate that checks if all out-connections has NOT a 'remote id'
                   auto disconnected()
                   {
                      return []( auto& state)
                      {
-                        return algorithm::find_if( state.connections, []( auto& connection)
+                        return algorithm::all_of( state.connections, []( auto& connection)
                         {
-                           return connection.bound == decltype( connection.bound)::out && ! connection.remote.id;
+                           return connection.bound != decltype( connection.bound)::out || ! connection.remote.id;
                         }); 
                      };
                   };
@@ -122,7 +127,7 @@ domain:
                return buffer;
             }
 
-            auto call = []( std::string_view service, auto code)
+            auto call( std::string_view service, int code)
             {
                auto buffer = local::allocate( 128);
                auto len = tptypes( buffer, nullptr, nullptr);
@@ -131,7 +136,17 @@ domain:
                EXPECT_TRUE( tperrno == code) << "tperrno: " << tperrnostring( tperrno) << " code: " << tperrnostring( code);
 
                tpfree( buffer);
+            };
 
+            auto call( std::string_view service)
+            {
+               auto buffer = local::allocate( 128);
+               auto len = tptypes( buffer, nullptr, nullptr);
+
+               tpcall( service.data(), buffer, 128, &buffer, &len, 0);
+               EXPECT_TRUE( tperrno == 0) << "tperrno: " << tperrnostring( tperrno);
+
+               return memory::guard( buffer, &tpfree);
             };
 
             template< typename T>
@@ -139,8 +154,38 @@ domain:
             {
                auto sinked = std::move( value);
             }
+
+            namespace example
+            {
+               auto domain( std::string name, std::string port)
+               {
+                  constexpr auto template_config = R"(
+domain: 
+   name: NAME
+
+   servers:
+      - path: "${CASUAL_REPOSITORY_ROOT}/middleware/example/server/bin/casual-example-server"
+        memberships: [ user]
+   gateway:
+      inbound:
+         groups:
+            -  connections: 
+               -  address: 127.0.0.1:PORT
+)";               
+                  auto replace = []( auto text, auto pattern, auto value)
+                  {
+                     return std::regex_replace( text, std::regex{ pattern}, value); 
+                  };
+
+                  return local::Manager{ { local::configuration::base, replace( replace( template_config, "NAME", name), "PORT", port)}};
+
+               };
+            } // example
+
          } // <unnamed>
       } // local
+
+
 
       
       TEST( test_domain_gateway, queue_service_forward___from_A_to_B__expect_discovery)
@@ -220,6 +265,136 @@ domain:
             EXPECT_TRUE( message.payload.data == payload);
          }
          
+      }
+
+      TEST( test_domain_gateway, domain_A_to__B_C_D__outbound_separated_groups___expect_prio_A)
+      {
+         common::unittest::Trace trace;
+
+         auto b = local::example::domain( "B", "7001");
+         auto c = local::example::domain( "C", "7002");
+         auto d = local::example::domain( "D", "7003");
+
+         constexpr auto A = R"(
+domain: 
+   name: A
+  
+   gateway:
+      outbound:
+         groups:
+            -  connections:
+                  -  address: 127.0.0.1:7001
+                     services:
+                        -  casual/example/domain/name
+            -  connections:
+                  -  address: 127.0.0.1:7002
+                     services:
+                        -  casual/example/domain/name
+            -  connections:
+                  -  address: 127.0.0.1:7003
+                     services:
+                        -  casual/example/domain/name
+)";
+
+
+         local::Manager a{ { local::configuration::base, A}};
+
+         local::state::gateway::until( local::state::gateway::predicate::outbound::connected());
+
+         // we expect to always get to B
+         algorithm::for_n< 10>( []()
+         {
+            auto buffer = local::call( "casual/example/domain/name");
+            EXPECT_TRUE( buffer.get() == std::string_view{ "B"});
+         });
+      }
+
+      TEST( BACKWARD_test_domain_gateway, domain_A_to__B_C_D__outbound_separated_groups___expect_prio_A)
+      {
+         // same test as above but with the deprecated configuration
+         
+         common::unittest::Trace trace;
+
+         auto b = local::example::domain( "B", "7001");
+         auto c = local::example::domain( "C", "7002");
+         auto d = local::example::domain( "D", "7003");
+
+         constexpr auto A = R"(
+domain: 
+   name: A
+  
+   gateway:
+      connections:
+         -  address: 127.0.0.1:7001
+            services:
+               -  casual/example/domain/name
+
+         -  address: 127.0.0.1:7002
+            services:
+               -  casual/example/domain/name
+               
+         -  address: 127.0.0.1:7003
+            services:
+               -  casual/example/domain/name
+)";
+
+
+         local::Manager a{ { local::configuration::base, A}};
+
+         local::state::gateway::until( local::state::gateway::predicate::outbound::connected());
+
+         // we expect to always get to B
+         algorithm::for_n< 10>( []()
+         {
+            auto buffer = local::call( "casual/example/domain/name");
+            EXPECT_TRUE( buffer.get() == std::string_view{ "B"});
+         });
+      }
+
+      TEST( test_domain_gateway, domain_A_to__B_C_D__outbound_same_group___expect_round_robin_between_A_B_C)
+      {
+         common::unittest::Trace trace;
+
+         auto b = local::example::domain( "B", "7001");
+         auto c = local::example::domain( "C", "7002");
+         auto d = local::example::domain( "D", "7003");
+
+         constexpr auto A = R"(
+domain: 
+   name: A
+  
+   gateway:
+      outbound:
+         groups:
+            -  connections:
+                  -  address: 127.0.0.1:7001
+                     services:
+                        -  casual/example/domain/name
+                  -  address: 127.0.0.1:7002
+                     services:
+                        -  casual/example/domain/name
+                  -  address: 127.0.0.1:7003
+                     services:
+                        -  casual/example/domain/name
+)";
+
+
+         local::Manager a{ { local::configuration::base, A}};
+
+         local::state::gateway::until( local::state::gateway::predicate::outbound::connected());
+
+         std::map< std::string, int> domains;
+
+         algorithm::for_n< 9>( [&domains]() mutable
+         {
+            auto buffer = local::call( "casual/example/domain/name");
+            domains[ buffer.get()]++;
+         });
+
+         // expect even distribution
+         EXPECT_TRUE( domains[ "B"] == 3);
+         EXPECT_TRUE( domains[ "C"] == 3);
+         EXPECT_TRUE( domains[ "D"] == 3);
       }
 
       TEST( test_domain_gateway, domains_A_B__B_has_echo__call_echo_from_A__expect_discovery__shutdown_B__expect_no_ent__boot_B__expect_discovery)

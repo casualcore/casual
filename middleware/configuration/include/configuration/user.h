@@ -860,10 +860,6 @@ namespace casual
             CASUAL_SERIALIZE( services);
             CASUAL_SERIALIZE( gateway);
             CASUAL_SERIALIZE( queue);
-            
-            // if we've been deserialized, we normalize
-            if( common::serialize::traits::is::archive::input( archive))
-               normalize();
          )
       private:
          // dummy

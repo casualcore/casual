@@ -8,6 +8,7 @@
 #include "xatmi.h"
 
 #include "common/algorithm.h"
+#include "common/domain.h"
 
 #include <locale>
 
@@ -25,6 +26,16 @@ namespace casual
             void casual_example_echo( TPSVCINFO* info)
             {
                tpreturn( TPSUCCESS, 0, info->data, info->len, 0);
+            }
+
+            void casual_example_domain_name( TPSVCINFO* info)
+            {
+               auto buffer = ::tpalloc( X_OCTET, nullptr, common::domain::identity().name.size() + 1);
+
+               common::algorithm::copy( common::domain::identity().name, buffer);
+               buffer[ common::domain::identity().name.size()] = '\0';
+
+               tpreturn( TPSUCCESS, 0, buffer, common::domain::identity().name.size() + 1, 0);
             }
 
             void casual_example_forward_echo( TPSVCINFO* info)
