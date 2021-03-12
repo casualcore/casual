@@ -75,16 +75,16 @@ install_lib.append( target)
 
 outbound_archive = LinkArchive( 'bin/casual-gateway-outbound-archive',
     [
-        Compile( 'source/outbound/state.cpp'),
-        Compile( 'source/outbound/handle.cpp'),
-        Compile( 'source/outbound/error/reply.cpp'),
+        Compile( 'source/group/outbound/state.cpp'),
+        Compile( 'source/group/outbound/handle.cpp'),
+        Compile( 'source/group/outbound/error/reply.cpp'),
     ]
 )
 
 ## regular outbound
 target = LinkExecutable( 'bin/casual-gateway-outbound-group',
     [
-        Compile( 'source/outbound/main.cpp'),
+        Compile( 'source/group/outbound/main.cpp'),
     ],
     [
         outbound_archive,
@@ -97,7 +97,7 @@ install_bin.append( target)
 ## reverse outbound
 target = LinkExecutable( 'bin/casual-gateway-outbound-reverse-group',
     [
-        Compile( 'source/outbound/reverse/main.cpp'),
+        Compile( 'source/group/outbound/reverse/main.cpp'),
     ],
     [
         outbound_archive,
@@ -111,15 +111,15 @@ install_bin.append( target)
 
 inbound_archive = LinkArchive( 'bin/casual-gateway-inbound-archive',
     [
-        Compile( 'source/inbound/handle.cpp'),
-        Compile( 'source/inbound/state.cpp'),
+        Compile( 'source/group/inbound/handle.cpp'),
+        Compile( 'source/group/inbound/state.cpp'),
     ]
 )
 
 ##  regular inbound
 target = LinkExecutable( 'bin/casual-gateway-inbound-group',
 [
-    Compile( 'source/inbound/main.cpp'),
+    Compile( 'source/group/inbound/main.cpp'),
 ],
 [
     inbound_archive,
@@ -132,7 +132,7 @@ install_bin.append( target)
 # reverse inbound
 target = LinkExecutable( 'bin/casual-gateway-inbound-reverse-group',
     [
-        Compile( 'source/inbound/reverse/main.cpp'),
+        Compile( 'source/group/inbound/reverse/main.cpp'),
     ],
     [
         inbound_archive,
@@ -154,7 +154,7 @@ target_unittest = LinkUnittest( 'bin/test-casual-gateway',
    [
         Compile( 'unittest/source/test_manager.cpp'),
         Compile( 'unittest/source/test_protocol.cpp'),
-        Compile( 'unittest/source/outbound/test_state.cpp'),
+        Compile( 'unittest/source/group/outbound/test_state.cpp'),
         Compile( 'unittest/source/test_reverse.cpp'),
    ] + protocol_objects, 
    [ 

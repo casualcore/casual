@@ -4,8 +4,8 @@
 //! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-#include "gateway/outbound/handle.h"
-#include "gateway/outbound/error/reply.h"
+#include "gateway/group/outbound/handle.h"
+#include "gateway/group/outbound/error/reply.h"
 
 #include "gateway/message.h"
 #include "gateway/common.h"
@@ -19,7 +19,7 @@ namespace casual
 {
    using namespace common;
 
-   namespace gateway::outbound::handle
+   namespace gateway::group::outbound::handle
    {
       namespace local
       {
@@ -83,7 +83,7 @@ namespace casual
                   {
                      if( message.trid)
                      {
-                        Trace trace{ "gateway::outbound::handle::local::internal::transaction::involved"};
+                        Trace trace{ "gateway::group::outbound::handle::local::internal::transaction::involved"};
                         log::line( verbose::log, "message: ", message);
 
                         communication::device::blocking::send( 
@@ -101,7 +101,7 @@ namespace casual
                         {
                            return [&state]( Message& message)
                            {
-                              Trace trace{ "gateway::outbound::handle::local::internal::transaction::resource::basic::request"};
+                              Trace trace{ "gateway::group::outbound::handle::local::internal::transaction::resource::basic::request"};
                               log::line( verbose::log, "message: ", message);
 
                               auto descriptor = state.lookup.connection( message.trid);
@@ -137,7 +137,7 @@ namespace casual
                      {
                         auto send( State& state, state::route::service::Point destination, const common::message::service::call::Reply& message)
                         {
-                           Trace trace{ "gateway::outbound::handle::local::internal::service::call::reply::send"};
+                           Trace trace{ "gateway::group::outbound::handle::local::internal::service::call::reply::send"};
 
                            state.route.service.metric.metrics.push_back( [&]()
                            {
@@ -175,7 +175,7 @@ namespace casual
                      {
                         return [&state]( common::message::service::call::callee::Request& message)
                         {
-                           Trace trace{ "gateway::outbound::handle::local::internal::service::call::request"};
+                           Trace trace{ "gateway::group::outbound::handle::local::internal::service::call::request"};
                            log::line( verbose::log, "message: ", message);
 
                            auto now = platform::time::clock::type::now();
@@ -232,7 +232,7 @@ namespace casual
                         {
                            return [&state]( common::message::conversation::connect::callee::Request& message)
                            {
-                              Trace trace{ "gateway::outbound::handle::local::internal::service::conversation::connect::request"};
+                              Trace trace{ "gateway::group::outbound::handle::local::internal::service::conversation::connect::request"};
                               log::line( verbose::log, "message: ", message);
 
                               auto [ lookup, involved] = state.lookup.service( message.service.name, message.trid);
@@ -264,7 +264,7 @@ namespace casual
                            template< typename R, typename O>
                            auto replies( State& state, R& replies, const O& outcome)
                            {
-                              Trace trace{ "gateway::outbound::handle::local::internal::domain::discover::detail::advertise::replies"};
+                              Trace trace{ "gateway::group::outbound::handle::local::internal::domain::discover::detail::advertise::replies"};
 
                               auto advertise_connection = [&state]( auto& reply, auto connection)
                               {
@@ -317,7 +317,7 @@ namespace casual
                      {
                         return [&state]( common::message::gateway::domain::discover::Request& message)
                         {
-                           Trace trace{ "gateway::outbound::handle::local::internal::domain::discover::request"};
+                           Trace trace{ "gateway::group::outbound::handle::local::internal::domain::discover::request"};
                            log::line( verbose::log, "message: ", message);
 
                            if( state.runlevel > decltype( state.runlevel())::running)
@@ -355,7 +355,7 @@ namespace casual
 
                            auto callback = [&state, destination = message.process.ipc, correlation]( auto replies, auto outcome)
                            {
-                              Trace trace{ "gateway::outbound::handle::local::internal::domain::discover::request callback"};
+                              Trace trace{ "gateway::group::outbound::handle::local::internal::domain::discover::request callback"};
 
                               detail::advertise::replies( state, replies, outcome);
 
@@ -383,7 +383,7 @@ namespace casual
                      {
                         return [&state]( message::outbound::rediscover::Request& message)
                         {
-                           Trace trace{ "gateway::outbound::handle::local::internal::domain::rediscover::request"};
+                           Trace trace{ "gateway::group::outbound::handle::local::internal::domain::rediscover::request"};
                            log::line( verbose::log, "message: ", message);
 
                            if( state.runlevel > decltype( state.runlevel())::running)
@@ -420,7 +420,7 @@ namespace casual
 
                            auto callback = [&state, message]( auto&& replies, auto&& outcome)
                            { 
-                              Trace trace{ "gateway::outbound::handle::local::internal::domain::rediscover::request callback"};
+                              Trace trace{ "gateway::group::outbound::handle::local::internal::domain::rediscover::request callback"};
 
                               // clears and unadvertise all 'resources', if any.
                               handle::unadvertise( state.lookup.clear());
@@ -495,7 +495,7 @@ namespace casual
                   {
                      return [&state]( const gateway::message::domain::connect::Reply& message)
                      {
-                        Trace trace{ "gateway::outbound::handle::local::external::connect::reply"};
+                        Trace trace{ "gateway::group::outbound::handle::local::external::connect::reply"};
                         log::line( verbose::log, "message: ", message);
 
                         auto destination = state.route.message.consume( message.correlation);
@@ -532,7 +532,7 @@ namespace casual
 
                               auto callback = [&state]( auto&& replies, auto&& outcome)
                               {
-                                 Trace trace{ "gateway::outbound::handle::local::external::connect::reply callback"};
+                                 Trace trace{ "gateway::group::outbound::handle::local::external::connect::reply callback"};
 
                                  // since we've instigated the request, we just advertise and we're done.
                                  internal::domain::discover::detail::advertise::replies( state, replies, outcome);
@@ -559,7 +559,7 @@ namespace casual
                   {
                      return [&state]( const gateway::message::domain::disconnect::Request& message)
                      {
-                        Trace trace{ "gateway::outbound::handle::local::external::disconnect::request"};
+                        Trace trace{ "gateway::group::outbound::handle::local::external::disconnect::request"};
                         log::line( verbose::log, "message: ", message);
 
                         auto descriptor = state.external.last;
@@ -580,7 +580,7 @@ namespace casual
                      {
                         return [&state]( common::message::service::call::Reply& message)
                         {
-                           Trace trace{ "gateway::outbound::handle::local::external::service::call::reply"};
+                           Trace trace{ "gateway::group::outbound::handle::local::external::service::call::reply"};
                            log::line( verbose::log, "message: ", message);
 
                            if( auto destination = state.route.service.message.consume( message.correlation))
@@ -626,7 +626,7 @@ namespace casual
                      {
                         return [&state]( Message& message)
                         {
-                           Trace trace{ "gateway::outbound::handle::local::external::queue::basic::reply"};
+                           Trace trace{ "gateway::group::outbound::handle::local::external::queue::basic::reply"};
                            log::line( verbose::log, "message: ", message);
 
                            if( auto destination = state.route.message.consume( message.correlation))
@@ -661,7 +661,7 @@ namespace casual
                         {
                            return [&state]( Message& message)
                            {
-                              Trace trace{ "gateway::outbound::handle::local::external::basic::reply"};
+                              Trace trace{ "gateway::group::outbound::handle::local::external::basic::reply"};
                               log::line( verbose::log, "message: ", message);
 
                               if( auto destination = state.route.message.consume( message.correlation))
@@ -699,7 +699,7 @@ namespace casual
                      {
                         return [&state]( common::message::gateway::domain::discover::Reply& message)
                         {
-                           Trace trace{ "gateway::outbound::handle::local::external::domain::discover::reply"};
+                           Trace trace{ "gateway::group::outbound::handle::local::external::domain::discover::reply"};
                            log::line( verbose::log, "message: ", message);
 
                            state.coordinate.discovery( std::move( message));                         
@@ -764,7 +764,7 @@ namespace casual
 
       void unadvertise( state::Lookup::Resources resources)
       {
-         Trace trace{ "gateway::outbound::handle::unadvertise"};
+         Trace trace{ "gateway::group::outbound::handle::unadvertise"};
          log::line( verbose::log, "resources: ", resources);
 
          if( ! resources.services.empty())
@@ -787,7 +787,7 @@ namespace casual
       {
          std::optional< configuration::model::gateway::outbound::Connection> lost( State& state, strong::file::descriptor::id descriptor)
          {
-            Trace trace{ "gateway::outbound::handle::connection::lost"};
+            Trace trace{ "gateway::group::outbound::handle::connection::lost"};
             log::line( verbose::log, "descriptor: ", descriptor);
 
             // unadvertise all 'orphanage' services and queues, if any.
@@ -811,7 +811,7 @@ namespace casual
 
          void disconnect( State& state, common::strong::file::descriptor::id descriptor)
          {
-            Trace trace{ "gateway::outbound::handle::connection::disconnect"};
+            Trace trace{ "gateway::group::outbound::handle::connection::disconnect"};
             log::line( verbose::log, "descriptor: ", descriptor);
 
             // unadvertise all 'orphanage' services and queues, if any.
@@ -827,7 +827,7 @@ namespace casual
 
       void connect( State& state, communication::tcp::Duplex&& device, configuration::model::gateway::outbound::Connection configuration)
       {
-         Trace trace{ "gateway::outbound::handle::connect"};
+         Trace trace{ "gateway::group::outbound::handle::connect"};
 
          gateway::message::domain::connect::Request request;
          request.domain = domain::identity();
@@ -871,7 +871,7 @@ namespace casual
 
       void shutdown( State& state)
       {
-         Trace trace{ "gateway::outbound::handle::shutdown"};
+         Trace trace{ "gateway::group::outbound::handle::shutdown"};
 
          state.runlevel = state::Runlevel::shutdown;
 
@@ -893,7 +893,7 @@ namespace casual
 
       void abort( State& state)
       {
-         Trace trace{ "gateway::outbound::handle::abort"};
+         Trace trace{ "gateway::group::outbound::handle::abort"};
          log::line( log::category::verbose::error, "abort - state: ", state);
 
          state.runlevel = state::Runlevel::error;
@@ -906,5 +906,5 @@ namespace casual
          algorithm::for_each( state.route.message.consume(), error_reply);
       }
 
-   } // gateway::outbound::handle
+   } // gateway::group::outbound::handle
 } // casual

@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include "gateway/outbound/state/route.h"
+#include "gateway/group/outbound/state/route.h"
 #include "gateway/message.h"
 
 #include "common/serialize/macro.h"
@@ -24,7 +24,7 @@
 
 namespace casual
 {
-   namespace gateway::outbound
+   namespace gateway::group::outbound
    {
       namespace state
       {
@@ -115,7 +115,7 @@ namespace casual
                directive.read.remove( descriptor);
                common::algorithm::trim( connections, common::algorithm::remove( connections, descriptor));
                common::algorithm::trim( descriptors, common::algorithm::remove( descriptors, descriptor));
-               if( auto found = algorithm::find( information, descriptor))
+               if( auto found = common::algorithm::find( information, descriptor))
                   return common::algorithm::extract( information, std::begin( found)).configuration;
                
                return {};
@@ -331,5 +331,5 @@ namespace casual
          )
       };
 
-      } // gateway::outbound
+      } // gateway::group::outbound
 } // casual

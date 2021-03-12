@@ -4,7 +4,7 @@
 //! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-#include "gateway/inbound/handle.h"
+#include "gateway/group/inbound/handle.h"
 
 #include "gateway/message.h"
 #include "gateway/common.h"
@@ -19,7 +19,7 @@ namespace casual
 {
    using namespace common;
 
-   namespace gateway::inbound::handle
+   namespace gateway::group::inbound::handle
    {   
       namespace local
       {
@@ -72,7 +72,7 @@ namespace casual
                {
                   return [&state]( Message& message)
                   {
-                     Trace trace{ "gateway::inbound::handle::local::basic_forward"};
+                     Trace trace{ "gateway::group::inbound::handle::local::basic_forward"};
                      common::log::line( verbose::log, "forward message: ", message);
 
                      tcp::send( state, message);
@@ -86,7 +86,7 @@ namespace casual
                   {
                      return [&state]( gateway::message::domain::connect::Request& message)
                      {
-                        Trace trace{ "gateway::inbound::handle::local::internal::connect::request"};
+                        Trace trace{ "gateway::group::inbound::handle::local::internal::connect::request"};
                         common::log::line( verbose::log, "message: ", message);
 
                         auto reply = common::message::reverse::type( message);
@@ -116,7 +116,7 @@ namespace casual
                      {
                         return [&state]( common::message::event::process::Exit& message)
                         {
-                           Trace trace{ "gateway::inbound::handle::local::internal::event::process::exit"};
+                           Trace trace{ "gateway::group::inbound::handle::local::internal::event::process::exit"};
                            common::log::line( verbose::log, "message: ", message);
 
                            state.coordinate.discovery.failed( message.state.pid);
@@ -133,7 +133,7 @@ namespace casual
                      {
                         return [&state]( common::message::service::lookup::Reply& message)
                         {
-                           Trace trace{ "gateway::inbound::handle::local::internal::call::lookup::reply"};
+                           Trace trace{ "gateway::group::inbound::handle::local::internal::call::lookup::reply"};
                            common::log::line( verbose::log, "message: ", message);
 
                            auto send_error_reply = [&state, &message]( auto code)
@@ -191,7 +191,7 @@ namespace casual
                      {
                         return [&state]( casual::queue::ipc::message::lookup::Reply& message)
                         {
-                           Trace trace{ "gateway::inbound::handle::local::internal::queue::lookup::reply"};
+                           Trace trace{ "gateway::group::inbound::handle::local::internal::queue::lookup::reply"};
                            common::log::line( verbose::log, "message: ", message);
 
                            auto request = state.pending.requests.consume( message.correlation);
@@ -249,7 +249,7 @@ namespace casual
                      {
                         return [&state]( common::message::gateway::domain::discover::Reply& message)
                         {
-                           Trace trace{ "gateway::inbound::handle::internal::domain::discover::Reply"};
+                           Trace trace{ "gateway::group::inbound::handle::internal::domain::discover::Reply"};
                            common::log::line( verbose::log, "message: ", message);
 
                            // Might send the accumulated message if all requested has replied.
@@ -290,7 +290,7 @@ namespace casual
                   {
                      return []( gateway::message::domain::connect::Request&& message)
                      {
-                        Trace trace{ "gateway::inbound::handle::local::external::connect::request"};
+                        Trace trace{ "gateway::group::inbound::handle::local::external::connect::request"};
                         common::log::line( verbose::log, "message: ", message);
 
                         // we push it to the internal side, so it's possible to correlate the message.
@@ -308,7 +308,7 @@ namespace casual
                   {
                      return [&state]( const gateway::message::domain::disconnect::Reply& message)
                      {
-                        Trace trace{ "gateway::inbound::handle::local::external::disconnect::reply"};
+                        Trace trace{ "gateway::group::inbound::handle::local::external::disconnect::reply"};
                         common::log::line( verbose::log, "message: ", message);
 
                         if( auto connection = state.consume( message.correlation))
@@ -341,7 +341,7 @@ namespace casual
                      {
                         return [&state]( common::message::service::call::callee::Request& message)
                         {
-                           Trace trace{ "gateway::inbound::handle::local::external::service::call::request"};
+                           Trace trace{ "gateway::group::inbound::handle::local::external::service::call::request"};
                            common::log::line( verbose::log, "message: ", message);
 
                            // Change 'sender' so we get the reply
@@ -373,7 +373,7 @@ namespace casual
                      template< typename M>
                      bool send( State& state, M&& message)
                      {
-                        Trace trace{ "gateway::inbound::handle::local::external::queue::lookup::send"};
+                        Trace trace{ "gateway::group::inbound::handle::local::external::queue::lookup::send"};
 
                         // Prepare queue lookup
                         casual::queue::ipc::message::lookup::Request request{ common::process::handle()};
@@ -404,7 +404,7 @@ namespace casual
                      {
                         return [&state]( casual::queue::ipc::message::group::enqueue::Request& message)
                         {
-                           Trace trace{ "gateway::inbound::handle::local::external::queue::enqueue::Request"};
+                           Trace trace{ "gateway::group::inbound::handle::local::external::queue::enqueue::Request"};
 
                            common::log::line( verbose::log, "message: ", message);
 
@@ -432,7 +432,7 @@ namespace casual
                      {
                         return [&]( casual::queue::ipc::message::group::dequeue::Request& message)
                         {
-                           Trace trace{ "gateway::inbound::handle::queue::dequeue::Request::operator()"};
+                           Trace trace{ "gateway::group::inbound::handle::queue::dequeue::Request::operator()"};
 
                            common::log::line( verbose::log, "message: ", message);
 
@@ -463,7 +463,7 @@ namespace casual
                      {
                         return [&state]( common::message::gateway::domain::discover::Request& message)
                         {
-                           Trace trace{ "gateway::inbound::handle::local::external::connection::discover::request"};
+                           Trace trace{ "gateway::group::inbound::handle::local::external::connection::discover::request"};
                            common::log::line( verbose::log, "message: ", message);
 
                            if( state.runlevel > decltype( state.runlevel())::running)
@@ -504,7 +504,7 @@ namespace casual
 
                            state.coordinate.discovery( std::move( pending), [&state, correlation]( auto received, auto failed)
                            {
-                              Trace trace{ "gateway::inbound::handle::local::external::connection::discover::request coordinate"};
+                              Trace trace{ "gateway::group::inbound::handle::local::external::connection::discover::request coordinate"};
 
                               common::message::gateway::domain::discover::Reply message;
                               message.correlation = correlation;
@@ -619,7 +619,7 @@ namespace casual
       {
          std::optional< configuration::model::gateway::inbound::Connection> lost( State& state, common::strong::file::descriptor::id descriptor)
          {
-            Trace trace{ "gateway::inbound::handle::connection::lost"};
+            Trace trace{ "gateway::group::inbound::handle::connection::lost"};
             log::line( verbose::log, "descriptor: ", descriptor);
 
             auto result = state.external.remove( state.directive, descriptor);
@@ -651,7 +651,7 @@ namespace casual
 
          void disconnect( State& state, common::strong::file::descriptor::id descriptor)
          {
-            Trace trace{ "gateway::inbound::handle::connection::disconnect"};
+            Trace trace{ "gateway::group::inbound::handle::connection::disconnect"};
             log::line( verbose::log, "descriptor: ", descriptor);
 
             if( auto found = algorithm::find( state.external.connections, descriptor))
@@ -705,7 +705,7 @@ namespace casual
 
       void shutdown( State& state)
       {
-         Trace trace{ "gateway::inbound::handle::shutdown"};
+         Trace trace{ "gateway::group::inbound::handle::shutdown"};
 
          // try to do a 'soft' disconnect. copy - connection::disconnect mutates external
          for( auto descriptor : range::to_vector( state.external.descriptors))
@@ -714,7 +714,7 @@ namespace casual
 
       void abort( State& state)
       {
-         Trace trace{ "gateway::inbound::handle::abort"};
+         Trace trace{ "gateway::group::inbound::handle::abort"};
 
          state.runlevel = decltype( state.runlevel())::error;
 
@@ -724,6 +724,6 @@ namespace casual
       }
       
 
-   } // gateway::inbound::handle
+   } // gateway::group::inbound::handle
 
 } // casual

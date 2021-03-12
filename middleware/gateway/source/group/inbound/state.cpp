@@ -4,12 +4,12 @@
 //! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-#include "gateway/inbound/state.h"
+#include "gateway/group/inbound/state.h"
 
 
 namespace casual
 {
-   namespace gateway::inbound
+   namespace gateway::group::inbound
    {
       using namespace common;
 
@@ -91,6 +91,6 @@ namespace casual
          return runlevel > state::Runlevel::running && external.empty();
       }
 
-   } // gateway::inbound
+   } // gateway::group::inbound
 
 } // casual

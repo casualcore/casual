@@ -447,10 +447,6 @@ domain:
                   -  address: 127.0.0.1:7002
                      services:
                         -  casual/example/domain/name
-            -  connections:
-                  -  address: 127.0.0.1:7003
-                     services:
-                        -  casual/example/domain/name
 )";
 
 

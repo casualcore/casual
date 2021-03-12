@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include "gateway/outbound/state.h"
+#include "gateway/group/inbound/state.h"
 
 #include "common/message/dispatch.h"
 #include "common/communication/ipc.h"
@@ -14,40 +14,32 @@
 
 namespace casual
 {
-   namespace gateway::outbound::handle
+   namespace gateway::group::inbound::handle
    {
       using internal_handler = decltype( common::message::dispatch::handler( common::communication::ipc::inbound::device()));
       internal_handler internal( State& state);
 
       using external_handler = decltype( common::message::dispatch::handler( std::declval< common::communication::tcp::Duplex&>()));
       external_handler external( State& state);
-      
-
-      void unadvertise( state::Lookup::Resources keys);
 
       namespace connection
       {
-         //! send error replies to all pending in-flight messages that is associated with the connection
-         //! removes all state associated with the connection.
-         std::optional< configuration::model::gateway::outbound::Connection> lost( State& state, common::strong::file::descriptor::id descriptor);
+         //! tries to compensate for the lost connection
+         std::optional< configuration::model::gateway::inbound::Connection> lost( State& state, common::strong::file::descriptor::id descriptor);
 
-         //! unadvertise all associated resources to descriptor, mark the connection as 'disconnecting'
+         //! will try to disconnect the socket, depending on the protocoll version it's either 'smooth' or 'abrupt'
          void disconnect( State& state, common::strong::file::descriptor::id descriptor);
          
       } // connection
 
-      //! connect to the other domain, add the device to external
-      void connect( State& state, communication::tcp::Duplex&& device, configuration::model::gateway::outbound::Connection configuration);
-
       //! take care of pending tasks, when message dispatch is idle.
-      std::vector< configuration::model::gateway::outbound::Connection> idle( State& state);
-
-      //! soft shutdown - tries to disconnect all connections
+      void idle( State& state);
+      
+      //! soft shutdown - tries to ask pollitely to outbounds, and then disconnect.
       void shutdown( State& state);
 
       //! hard shutdown - try to cancel stuff directly with best effort.
       void abort( State& state);
-   
-   } // gateway::outbound::handle
 
+   } // gateway::group::inbound::handle
 } // casual

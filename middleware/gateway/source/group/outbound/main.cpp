@@ -4,8 +4,9 @@
 //! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-#include "gateway/outbound/state.h"
-#include "gateway/outbound/handle.h"
+#include "gateway/group/outbound/state.h"
+#include "gateway/group/outbound/handle.h"
+#include "gateway/group/connector.h"
 #include "gateway/message.h"
 
 #include "common/exception/guard.h"
@@ -18,7 +19,7 @@
 
 namespace casual
 {
-   namespace gateway::outbound
+   namespace gateway::group::outbound
    {
       using namespace common;
       
@@ -79,7 +80,7 @@ namespace casual
 
             State initialize( Arguments arguments)
             {
-               Trace trace{ "casual::gateway::outbound::local::initialize"};
+               Trace trace{ "gateway::group::outbound::local::initialize"};
 
                // 'connect' to gateway-manager - will send configuration-update-request as soon as possible
                // that we'll handle in the main message pump
@@ -95,45 +96,20 @@ namespace casual
             {
                void connect( State& state)
                {
-                  Trace trace{ "casual::gateway::outbound::local::external::connect"};
+                  Trace trace{ "gateway::group::outbound::local::external::connect"};
 
-                  auto connected = [&state]( auto& connection)
+                  group::connector::external::connect( state.pending.connections, [&state]( auto&& socket, auto&& connection)
                   {
-                     ++connection.metric.attempts;
-                     if( auto socket = communication::tcp::non::blocking::connect( connection.configuration.address))
-                     {
-                        // start the connection phase against the other inbound
-                        outbound::handle::connect( state, std::move( socket), std::move( connection.configuration));
-                        return true;
-                     }
-                     return false;
-                  };
-
-                  auto& pending = state.pending.connections;
-                  algorithm::trim( pending, algorithm::remove_if( pending, connected));
-
-                  // check if we need to set a timeout to keep trying to connect
-
-                  auto min_attempts = []( auto& l, auto& r){ return l.metric.attempts < r.metric.attempts;};
-
-                  if( auto min = algorithm::min( pending, min_attempts))
-                  {
-                     if( min->metric.attempts < 100)
-                        common::signal::timer::set( std::chrono::milliseconds{ 10});
-                     else
-                     {
-                        // is this a good idea, to shorten unittests that connects and so on... Seems hackish, leave it for diskussions...
-                        // static const auto timer = common::chronology::from::string( environment::variable::get( "CASUAL_UNITTEST_OUTBOUND_CONNECT_TIMER", "3s"));
-                        common::signal::timer::set( std::chrono::seconds{ 3});
-                     }
-                  }
+                     // start the connection phase against the other inbound
+                     outbound::handle::connect( state, std::move( socket), std::move( connection.configuration));
+                  });
 
                   log::line( verbose::log, "state: ", state);
                }
 
                void reconnect( State& state, configuration::model::gateway::outbound::Connection configuration)
                {
-                  Trace trace{ "casual::gateway::outbound::local::external::reconnect"};
+                  Trace trace{ "gateway::group::outbound::local::external::reconnect"};
 
                   if( state.runlevel == decltype( state.runlevel())::running)
                   {
@@ -191,7 +167,7 @@ namespace casual
                      {
                         return [&state]( gateway::message::outbound::configuration::update::Request& message)
                         {
-                           Trace trace{ "gateway::outbound::local::internal::handle::configuration::update::request"};
+                           Trace trace{ "gateway::group::outbound::local::internal::handle::configuration::update::request"};
                            log::line( verbose::log, "message: ", message);
 
                            // TODO maintainece - make sure we can handle runtime updates...
@@ -222,7 +198,7 @@ namespace casual
                      {
                         return [&state]( message::outbound::state::Request& message)
                         {
-                           Trace trace{ "gateway::outbound::local::handle::internal::state::request"};
+                           Trace trace{ "gateway::group::outbound::local::handle::internal::state::request"};
                            log::line( verbose::log, "message: ", message);
                            log::line( verbose::log, "state: ", state);
 
@@ -250,7 +226,7 @@ namespace casual
                      {
                         return [&state]( const common::message::shutdown::Request& message)
                         {
-                           Trace trace{ "gateway::outbound::local::internal::handle::shutdown::request"};
+                           Trace trace{ "gateway::group::outbound::local::internal::handle::shutdown::request"};
                            log::line( verbose::log, "message: ", message);
 
                            // remove pending connections
@@ -265,7 +241,7 @@ namespace casual
                   {
                      return [&state]( const common::message::signal::Timeout& message)
                      {
-                        Trace trace{ "gateway::outbound::local::internal::handle::timeout"};
+                        Trace trace{ "gateway::group::outbound::local::internal::handle::timeout"};
 
                         external::connect( state);
                      };
@@ -303,7 +279,7 @@ namespace casual
                {
                   return []()
                   {
-                     Trace trace{ "casual::gateway::outbound::local::signal::callback::timeout"};
+                     Trace trace{ "gateway::group::outbound::local::signal::callback::timeout"};
 
                      // we push it to our own inbound ipc 'queue', and handle the timeout
                      // in our regular message pump.
@@ -330,7 +306,7 @@ namespace casual
 
             void run( State state)
             {
-               Trace trace{ "casual::gateway::outbound::local::run"};
+               Trace trace{ "gateway::group::outbound::local::run"};
                log::line( verbose::log, "state: ", state);
 
                // register the alarm callback.
@@ -338,7 +314,7 @@ namespace casual
 
                auto abort_guard = execute::scope( [&state]()
                {
-                  gateway::outbound::handle::abort( state);
+                  gateway::group::outbound::handle::abort( state);
                });
 
                // start the message dispatch
@@ -366,7 +342,7 @@ namespace casual
          } // <unnamed>
       } // local
 
-   } // gateway::outbound
+   } // gateway::group::outbound
 
 } // casual
 
@@ -375,6 +351,6 @@ int main( int argc, char** argv)
 {
    return casual::common::exception::main::guard( [=]()
    {
-      casual::gateway::outbound::local::main( argc, argv);
+      casual::gateway::group::outbound::local::main( argc, argv);
    });
 } // main

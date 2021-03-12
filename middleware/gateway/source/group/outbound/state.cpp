@@ -4,7 +4,7 @@
 //! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-#include "gateway/outbound/state.h"
+#include "gateway/group/outbound/state.h"
 
 #include "common/predicate.h"
 
@@ -12,7 +12,7 @@ namespace casual
 {
    using namespace common;
 
-   namespace gateway::outbound
+   namespace gateway::group::outbound
    {
       namespace local
       {
@@ -287,6 +287,6 @@ namespace casual
          return route.empty();
       }
 
-   } // gateway::outbound
+   } // gateway::group::outbound
 
 } // casual

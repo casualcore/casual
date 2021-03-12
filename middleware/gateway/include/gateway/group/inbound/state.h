@@ -23,7 +23,7 @@
 
 namespace casual
 {
-   namespace gateway::inbound
+   namespace gateway::group::inbound
    {
       namespace state
       {
@@ -324,5 +324,5 @@ namespace casual
          )
       };
 
-   } // gateway::inbound
+   } // gateway::group::inbound
 } // casual

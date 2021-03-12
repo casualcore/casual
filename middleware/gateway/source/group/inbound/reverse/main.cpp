@@ -4,8 +4,9 @@
 //! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-#include "gateway/inbound/state.h"
-#include "gateway/inbound/handle.h"
+#include "gateway/group/inbound/state.h"
+#include "gateway/group/inbound/handle.h"
+#include "gateway/group/connector.h"
 #include "gateway/message.h"
 
 #include "common/exception/guard.h"
@@ -17,7 +18,7 @@
 
 namespace casual
 {
-   namespace gateway::inbound::reverse
+   namespace gateway::group::inbound::reverse
    {
       using namespace common;
       
@@ -78,7 +79,7 @@ namespace casual
 
             State initialize( Arguments arguments)
             {
-               Trace trace{ "casual::gateway::inbound::reverse::local::initialize"};
+               Trace trace{ "gateway::group::inbound::reverse::local::initialize"};
 
                // 'connect' to gateway-manager - will send configuration-update-request as soon as possible
                // that we'll handle in the main message pump
@@ -94,40 +95,19 @@ namespace casual
             {
                void connect( State& state)
                {
-                  Trace trace{ "casual::gateway::inbound::reverse::local::external::connect"};
+                  Trace trace{ "gateway::group::inbound::reverse::local::external::connect"};
 
-                  auto connected = [&state]( auto& connection)
+                  group::connector::external::connect( state.reverse.connections, [&state]( auto&& socket, auto&& connection)
                   {
-                     ++connection.metric.attempts;
-                     if( auto socket = communication::tcp::non::blocking::connect( connection.configuration.address))
-                     {
-                        state.external.add( state.directive, std::move( socket), std::move( connection.configuration));
-                        return true;
-                     }
-                     return false;
-                  };
-
-                  auto& pending = state.reverse.connections;
-                  algorithm::trim( pending, algorithm::remove_if( pending, connected));
-
-                  // check if we need to set a timeout to keep trying to connect
-
-                  auto min_attempts = []( auto& l, auto& r){ return l.metric.attempts < r.metric.attempts;};
-
-                  if( auto min = algorithm::min( pending, min_attempts))
-                  {
-                     if( min->metric.attempts < 100)
-                        common::signal::timer::set( std::chrono::milliseconds{ 10});
-                     else
-                        common::signal::timer::set( std::chrono::seconds{ 3});
-                  }
+                     state.external.add( state.directive, std::move( socket), std::move( connection.configuration));
+                  });
 
                   log::line( verbose::log, "state: ", state);
                }
 
                void reconnect( State& state, configuration::model::gateway::inbound::Connection configuration)
                {
-                  Trace trace{ "casual::gateway::inbound::local::external::reconnect"};
+                  Trace trace{ "gateway::inbound::local::external::reconnect"};
 
                   if( state.runlevel == decltype( state.runlevel())::running)
                   {
@@ -209,7 +189,7 @@ namespace casual
                      {
                         return [&state]( message::inbound::reverse::state::Request& message)
                         {
-                           Trace trace{ "gateway::inbound::reverse::local::handle::internal::state::request"};
+                           Trace trace{ "gateway::group::inbound::reverse::local::handle::internal::state::request"};
                            log::line( verbose::log, "message: ", message);
                            log::line( verbose::log, "state: ", state);
                            
@@ -235,7 +215,7 @@ namespace casual
                      {
                         return [&state]( const common::message::shutdown::Request& message)
                         {
-                           Trace trace{ "gateway::inbound::reverse::local::handle::internal::shutdown::request"};
+                           Trace trace{ "gateway::group::inbound::reverse::local::handle::internal::shutdown::request"};
                            log::line( verbose::log, "message: ", message);
 
                            state.runlevel = decltype( state.runlevel())::shutdown;
@@ -248,7 +228,7 @@ namespace casual
                   {
                      return [&state]( const common::message::signal::Timeout& message)
                      {
-                        Trace trace{ "gateway::inbound::reverse::local::internal::handle::timeout"};
+                        Trace trace{ "gateway::group::inbound::reverse::local::internal::handle::timeout"};
 
                         external::connect( state);
                      };
@@ -288,7 +268,7 @@ namespace casual
                {
                   return []()
                   {
-                     Trace trace{ "casual::gateway::inbound::reverse::local::signal::callback::timeout"};
+                     Trace trace{ "gateway::group::inbound::reverse::local::signal::callback::timeout"};
 
                      // we push it to our own inbound ipc 'queue', and handle the timeout
                      // in our regular message pump.
@@ -307,12 +287,12 @@ namespace casual
 
             void run( State state)
             {
-               Trace trace{ "casual::gateway::inbound::reverse::local::run"};
+               Trace trace{ "gateway::group::inbound::reverse::local::run"};
                log::line( verbose::log, "state: ", state);
 
                auto abort_guard = execute::scope( [&state]()
                {
-                  gateway::inbound::handle::abort( state);
+                  gateway::group::inbound::handle::abort( state);
                });
 
                // register the alarm callback.
@@ -339,7 +319,7 @@ namespace casual
          } // <unnamed>
       } // local
 
-   } // gateway::inbound::reverse
+   } // gateway::group::inbound::reverse
 
 } // casual
 
@@ -348,6 +328,6 @@ int main( int argc, char** argv)
 {
    return casual::common::exception::main::guard( [=]()
    {
-      casual::gateway::inbound::reverse::local::main( argc, argv);
+      casual::gateway::group::inbound::reverse::local::main( argc, argv);
    });
 } // main

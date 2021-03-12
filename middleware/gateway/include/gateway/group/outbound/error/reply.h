@@ -6,16 +6,16 @@
 
 #pragma once
 
-#include "gateway/outbound/state.h"
+#include "gateway/group/outbound/state/route.h"
 
 namespace casual
 {
-   namespace gateway::outbound::error::reply
+   namespace gateway::group::outbound::error::reply
    {
       //! Tries to send error replise to the in-flight messages (route-points)
       //! @param route 
       void point( const state::route::Point& point);
       void point( const state::route::service::Point& point); 
 
-   } // gateway::outbound::error::reply
+   } // gateway::group::outbound::error::reply
 } // casual

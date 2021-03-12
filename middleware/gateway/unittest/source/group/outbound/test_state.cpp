@@ -7,13 +7,13 @@
 #include "common/unittest.h"
 
 
-#include "gateway/outbound/state.h"
+#include "gateway/group/outbound/state.h"
 
 namespace casual
 {
    using namespace common;
 
-   namespace gateway::outbound
+   namespace gateway::group::outbound
    {
       namespace local
       {
@@ -133,5 +133,5 @@ namespace casual
          EXPECT_TRUE( local::get_connection( lookup, "a", xid) == local::fd( 100));
       }
 
-   } // gateway::outbound
+   } // gateway::group::outbound
 } // casual

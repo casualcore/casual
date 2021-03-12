@@ -111,7 +111,7 @@ namespace casual
                               std::string port{ address.port()};
 
                               if( const int result = ::getaddrinfo( host.data(), port.data(), &hints, &information.value))
-                                 code::raise::log( code::casual::invalid_argument, ::gai_strerror( result), " address: ", address);
+                                 code::raise::log( code::casual::communication_invalid_address, ::gai_strerror( result), " address: ", address);
                            }
 
                            Native() = default;

@@ -4,7 +4,7 @@
 //! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-#include "gateway/outbound/error/reply.h"
+#include "gateway/group/outbound/error/reply.h"
 #include "gateway/common.h"
 #include "gateway/message.h"
 
@@ -16,7 +16,7 @@ namespace casual
 {
    using namespace common;
 
-   namespace gateway::outbound::error::reply
+   namespace gateway::group::outbound::error::reply
    {
       namespace local
       {
@@ -56,7 +56,7 @@ namespace casual
 
       void point( const state::route::Point& point)
       {
-         Trace trace{ "gateway::outbound::error::reply::point"};
+         Trace trace{ "gateway::group::outbound::error::reply::point"};
          log::line( verbose::log, "point: ", point);
 
          switch( point.type)
@@ -105,7 +105,7 @@ namespace casual
 
       void point( const state::route::service::Point& point)
       {
-         Trace trace{ "gateway::outbound::error::reply::point service"};
+         Trace trace{ "gateway::group::outbound::error::reply::point service"};
          log::line( verbose::log, "point: ", point);
 
          common::message::service::call::Reply message;
@@ -117,5 +117,5 @@ namespace casual
       }
 
 
-   } // gateway::outbound::error::reply
+   } // gateway::group::outbound::error::reply
 } // casual
