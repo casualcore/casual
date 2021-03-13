@@ -27,7 +27,7 @@ namespace casual
                // We block all signals but SIG_INT
                signal::thread::scope::Mask block{ signal::set::filled( code::signal::interrupt)};
 
-               communication::device::blocking::optional::put( communication::instance::outbound::domain::manager::device(), complete);
+               communication::device::blocking::optional::send( communication::instance::outbound::domain::manager::device(), complete);
             }
 
             void send( std::error_code code, Severity severity, std::string message)

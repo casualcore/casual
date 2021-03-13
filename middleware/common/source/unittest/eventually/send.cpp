@@ -31,11 +31,10 @@ namespace casual
                      try
                      {
                         log::line( log::debug, "unittest::eventually::send::local::send");
-                        
-                        communication::ipc::outbound::Device ipc{ destination};
 
                         signal::thread::scope::Block block{};
-                        ipc.put( complete, communication::ipc::policy::Blocking{});
+                        communication::device::blocking::send( destination, complete);
+                        
                      }
                      catch( ...)
                      {

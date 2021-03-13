@@ -134,23 +134,20 @@ namespace casual
          using cache_range_type =  device::inbound::cache_range_type;
 
 
-         struct basic_blocking
+         struct Blocking
          {
             cache_range_type receive( const Connector& tcp, cache_type& cache);
             Uuid send( const Connector& tcp, const communication::message::Complete& complete);
          };
 
-         using Blocking = basic_blocking;
-
          namespace non
          {
-            struct basic_blocking
+            struct Blocking
             {
                cache_range_type receive( const Connector& tcp, cache_type& cache);
                Uuid send( const Connector& tcp, const communication::message::Complete& complete);
             };
 
-            using Blocking = basic_blocking;
          } // non
 
       } // policy

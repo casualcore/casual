@@ -287,7 +287,7 @@ namespace casual
                         if( request)
                         {
                            // We got a pending request for this resource, let's oblige
-                           if( common::communication::device::non::blocking::put( instance.process.ipc, request->message))
+                           if( common::communication::device::non::blocking::send( instance.process.ipc, request->message))
                            {
                               instance.state( state::resource::Proxy::Instance::State::busy);
                               state.pending.requests.erase( std::begin( request));

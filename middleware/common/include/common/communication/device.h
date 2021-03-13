@@ -234,20 +234,22 @@ namespace casual
             }
          }
 
-         //! push a complete message to the cache
-         inline Uuid put( message::Complete&& message)
+         //! push a message (or complete) to the cache
+         template< typename M>
+         Uuid push( M&& message)
          {
             // Make sure we consume messages from the real queue first.
             flush();
 
-            m_cache.push_back( std::move( message));
-            return m_cache.back().correlation;
-         }
+            if constexpr( std::is_same_v< std::decay_t< M>, message::Complete>)
+            {
+               static_assert( std::is_rvalue_reference_v< M>, "message::Complete needs to be a rvalue");
+               m_cache.push_back( std::move( message));
+            }
+            else
+               m_cache.push_back( serialize::native::complete( std::forward< M>( message), serialize::native::create::reverse_t< Deserialize>{}));
 
-         template< typename M>
-         Uuid push( M&& message)
-         {
-            return put( serialize::native::complete( std::forward< M>( message), serialize::native::create::reverse_t< Deserialize>{}));
+             return m_cache.back().correlation;
          }
 
          //! flushes the messages on the device into cache. (ie, make the device writable if it was full), if implemented.
@@ -389,33 +391,30 @@ namespace casual
 
          using Base::Base;
 
-         template< typename Policy>
-         Uuid put( const message::Complete& complete, Policy&& policy)
-         {
-            return apply( policy, complete);
-         }
-
          //! Tries to send a message to the connector @p message
          //!
-         //! @return true if we found one, and message is unserialized. false otherwise.
-         //! @note depending on the policy it may not ever return false (ie with a blocking policy)
          template< typename M, typename P>
-         Uuid send( M&& message, P&& policy)
+         auto send( M&& message, P&& policy)
          {
-            if( ! message.execution)
-               message.execution = execution::id();
+            if constexpr ( std::is_same_v< std::decay_t< M>, message::Complete>)
+               return apply( std::forward< P>( policy), message);
+            else
+            {
+               if( ! message.execution)
+                  message.execution = execution::id();
 
-            auto writer = Serialize{}();
-            writer << message;
+               auto writer = Serialize{}();
+               writer << message;
 
-            message::Complete complete{
-               common::message::type( message), 
-               message.correlation ? message.correlation : uuid::make(),
-               writer.consume()};
+               message::Complete complete{
+                  common::message::type( message), 
+                  message.correlation ? message.correlation : uuid::make(),
+                  writer.consume()};
 
-            return apply(
-               std::forward< P>( policy),
-               complete);
+               return apply(
+                  std::forward< P>( policy),
+                  complete);
+            }
          }
 
       private:
@@ -497,13 +496,6 @@ namespace casual
          return device.send( std::forward< Ts>( ts)...);
       }
 
-      template< typename D, typename... Ts>
-      auto put( D&& device, Ts&&... ts) 
-         -> decltype( device.put( std::forward< Ts>( ts)...))
-      {
-         return device.put( std::forward< Ts>( ts)...);
-      }
-
       //! To enable specific devices to customize calls
       //! @{ 
       template< typename D, typename... Ts>
@@ -511,13 +503,6 @@ namespace casual
          -> decltype( customization_point< std::decay_t< D>>::send( std::forward< D>( device), std::forward< Ts>( ts)...))
       {
          return customization_point< std::decay_t< D>>::send( std::forward< D>( device), std::forward< Ts>( ts)...);
-      }
-
-      template< typename D, typename... Ts>
-      auto put( D&& device, Ts&&... ts) 
-         -> decltype( customization_point< std::decay_t< D>>::put( std::forward< D>( device), std::forward< Ts>( ts)...))
-      {
-         return customization_point< std::decay_t< D>>::put( std::forward< D>( device), std::forward< Ts>( ts)...);
       }
       //! @}
 
@@ -552,12 +537,6 @@ namespace casual
             return device::send( std::forward< D>( device), std::forward< Ts>( ts)..., policy::blocking( device));
          }
 
-         template< typename D, typename... Ts>
-         auto put( D&& device, Ts&&... ts) 
-            -> decltype( device::put( std::forward< D>( device), std::forward< Ts>( ts)..., policy::blocking( device)))
-         {
-            return device::put( std::forward< D>( device), std::forward< Ts>( ts)..., policy::blocking( device));
-         }
 
          namespace optional
          {
@@ -576,28 +555,6 @@ namespace casual
                   if( exception::code() == code::casual::communication_unavailable)
                   {
                      log::line( communication::log, code::casual::communication_unavailable, " failed to send message - action: ignore");
-                     return {};
-                  }
-                  // propagate other errors
-                  throw;
-               }
-            }
-
-            //! blocked put of the message, if callee is unreachable (for example. the process has died)
-            //! `false` is returned
-            //! @returns true if sent, false if Unavailable
-            template< typename... Ts>
-            auto put( Ts&&... ts) -> decltype( blocking::put( std::forward< Ts>( ts)...))
-            {
-               try 
-               {
-                  return blocking::put( std::forward< Ts>( ts)...);
-               }
-               catch( ...)
-               {
-                  if( exception::code() == code::casual::communication_unavailable)
-                  {
-                     log::line( communication::log, code::casual::communication_unavailable, " failed to put message - action: ignore");
                      return {};
                   }
                   // propagate other errors
@@ -630,13 +587,6 @@ namespace casual
             return device::send( std::forward< D>( device), std::forward< Ts>( ts)..., policy::non::blocking( device));
          }
 
-         template< typename D, typename... Ts>
-         auto put( D&& device, Ts&&... ts) 
-            -> decltype( device::put( std::forward< D>( device), std::forward< Ts>( ts)..., policy::non::blocking( device)))
-         {
-            return device::put( std::forward< D>( device), std::forward< Ts>( ts)..., policy::non::blocking( device));
-         }
-
          namespace optional
          {
             //! non blocked send of the message, if not possible to send or if callee is unreachable 
@@ -661,8 +611,6 @@ namespace casual
                }
             }
          } // optional
-
-
       } // non::blocking
 
       namespace async

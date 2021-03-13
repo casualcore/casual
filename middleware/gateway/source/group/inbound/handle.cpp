@@ -151,7 +151,7 @@ namespace casual
                               using Enum = decltype( message.state);
                               case Enum::idle:
                               {
-                                 if( ! communication::device::blocking::optional::put( message.process.ipc, request))
+                                 if( ! communication::device::blocking::optional::send( message.process.ipc, request))
                                  {
                                     log::line( common::log::category::error, common::code::xatmi::service_error, " server: ", message.process, " has been terminated during interdomain call - action: reply with: ", common::code::xatmi::service_error);
                                     send_error_reply( common::code::xatmi::service_error);
@@ -198,7 +198,7 @@ namespace casual
 
                            if( message.process)
                            {
-                              communication::device::blocking::put( message.process.ipc, request);
+                              communication::device::blocking::send( message.process.ipc, request);
                               return;
                            }
 

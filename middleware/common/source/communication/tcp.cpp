@@ -565,12 +565,12 @@ namespace casual
             namespace policy
             {
 
-               cache_range_type basic_blocking::receive( const Connector& tcp, cache_type& cache)
+               cache_range_type Blocking::receive( const Connector& tcp, cache_type& cache)
                {
                   return native::local::receive( tcp, cache, {});
                }
 
-               Uuid basic_blocking::send( const Connector& tcp, const communication::message::Complete& complete)
+               Uuid Blocking::send( const Connector& tcp, const communication::message::Complete& complete)
                {
                   return native::send( tcp.socket(), complete, {});
                }
@@ -578,12 +578,12 @@ namespace casual
 
                namespace non
                {
-                  cache_range_type basic_blocking::receive( const Connector& tcp, cache_type& cache)
+                  cache_range_type Blocking::receive( const Connector& tcp, cache_type& cache)
                   {
                      return native::local::receive( tcp, cache, native::Flag::non_blocking);
                   }
 
-                  Uuid basic_blocking::send( const Connector& tcp, const communication::message::Complete& complete)
+                  Uuid Blocking::send( const Connector& tcp, const communication::message::Complete& complete)
                   {
                      return native::send( tcp.socket(), complete, native::Flag::non_blocking);
                   }

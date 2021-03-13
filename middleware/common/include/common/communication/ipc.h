@@ -398,12 +398,6 @@ namespace casual
          {
             return device::send( ipc::outbound::Device{ ipc}, std::forward< Ts>( ts)...);
          }
-
-         template< typename... Ts>
-         static auto put( strong::ipc::id ipc, Ts&&... ts) 
-         {
-            return device::put( ipc::outbound::Device{ ipc}, std::forward< Ts>( ts)...);
-         }
       };
    } // common::communication::device
 

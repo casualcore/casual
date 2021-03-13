@@ -160,7 +160,7 @@ namespace casual
                   {
                      Trace trace{ "transaction::action::resource::instance::request"};
 
-                     if( communication::device::non::blocking::put( instance.process.ipc, message))
+                     if( communication::device::non::blocking::send( instance.process.ipc, message))
                      {
                         instance.state( state::resource::Proxy::Instance::State::busy);
                         instance.metrics.requested = platform::time::clock::type::now();
@@ -203,7 +203,7 @@ namespace casual
             // system but it can occur on OSX/BSD with extremely high loads)
             communication::ipc::inbound::device().flush();
 
-            if( communication::device::non::blocking::put( resource.process.ipc, message.message).empty())
+            if( communication::device::non::blocking::send( resource.process.ipc, message.message).empty())
             {
                log::line( log, "failed to send resource request to 'external' resource -  ", resource.process, " - action: send via pending");
                casual::domain::pending::message::send( resource.process, std::move( message.message));
