@@ -142,9 +142,6 @@ namespace casual
                CASUAL_SERIALIZE( information);
                CASUAL_SERIALIZE( last);
             )
-
-         private:
-            
          };
 
          struct Lookup
@@ -238,6 +235,19 @@ namespace casual
                CASUAL_SERIALIZE( queues);
             )
          };
+
+         namespace pending
+         {
+            struct Target
+            {
+               common::strong::file::descriptor::id descriptor{};
+               std::vector< common::communication::tcp::message::Complete> messages;
+            };
+
+            
+
+
+         } // pending
 
       } // state
 

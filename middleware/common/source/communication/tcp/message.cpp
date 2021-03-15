@@ -43,32 +43,27 @@ namespace casual
 
       }
 
-      Complete::Complete( const message::Header& header)
-         : type{ local::host::header::type( header)}, correlation{ header.correlation}, offset{ header::size}
+      Complete::Complete( common::message::Type type, Uuid correlation, payload_type payload)
+         : payload{ std::move( payload)}
       {
-         log::line( verbose::log, "size: ", local::host::header::size( header));
-         payload.resize( local::host::header::size( header));
-      }
-
-      message::Header Complete::header() const noexcept
-      {
-         Header header;
-         correlation.copy( header.correlation);
-         header.type = network::byteorder::encode( cast::underlying( type));
-         header.size = network::byteorder::size::encode( payload.size());
-         return header;
+         m_header.type = network::byteorder::encode( cast::underlying( type));
+         correlation.copy( m_header.correlation);
+         m_header.size = network::byteorder::size::encode( Complete::payload.size());
       }
 
       bool Complete::complete() const noexcept 
       { 
-         return type != common::message::Type::absent_message 
+         return type() != common::message::Type::absent_message 
             && offset == message::header::size + range::size( payload);
       }
 
       std::ostream& operator << ( std::ostream& out, const Complete& value)
       {
-         return out << "{ type: " << value.type << ", correlation: " << value.correlation << ", size: "
-            << value.payload.size() << std::boolalpha << ", complete: " << value.complete() << '}';
+         return out << "{ header: " << value.m_header 
+            << ", size: "<< value.payload.size() 
+            << ", offset: " << value.offset 
+            << ", total: " << value.payload.size() + message::header::size
+            << std::boolalpha << ", complete: " << value.complete() << '}';
       }
 
    } // common::communication::ipc::message

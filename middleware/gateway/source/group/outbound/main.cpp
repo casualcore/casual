@@ -124,7 +124,8 @@ namespace casual
                {
                   auto create( State& state)
                   {
-                     return [&state, handler = outbound::handle::external( state)]( strong::file::descriptor::id descriptor) mutable
+                     return [&state, handler = outbound::handle::external( state)]
+                        ( strong::file::descriptor::id descriptor, communication::select::tag::read) mutable
                      {
                         auto is_connection = [descriptor]( auto& connection)
                         {
@@ -264,9 +265,12 @@ namespace casual
                   auto create( State& state) 
                   { 
                      state.directive.read.add( ipc::inbound().connector().descriptor());
-                     return [handler = internal::handler( state) ]() mutable
+                     return [handler = internal::handler( state) ]() mutable -> strong::file::descriptor::id
                      {
-                        return predicate::boolean( handler( communication::device::non::blocking::next( ipc::inbound())));
+                        if( handler( communication::device::non::blocking::next( ipc::inbound())))
+                           return ipc::inbound().connector().descriptor();
+
+                        return {};
                      };
                   }
                } // dispatch

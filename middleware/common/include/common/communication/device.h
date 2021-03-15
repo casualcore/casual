@@ -112,7 +112,7 @@ namespace casual
          complete_type next( common::message::Type type, P&& policy)
          {
             return select(
-               [=]( const complete_type& m){ return m.type == type;},
+               [type]( auto& complete){ return complete.type() == type;},
                std::forward< P>( policy));
          }
 
@@ -127,7 +127,7 @@ namespace casual
             -> std::enable_if_t< traits::concrete::is_same< decltype( *std::begin( types)), common::message::Type>::value, complete_type>
          {
             return select(
-               [&]( const complete_type& m){ return ! common::algorithm::find( types, m.type).empty();},
+               [&types]( auto& complete){ return ! common::algorithm::find( types, complete.type()).empty();},
                std::forward< P>( policy));
          }
 
@@ -139,7 +139,7 @@ namespace casual
          complete_type next( const Uuid& correlation, P&& policy)
          {
             return select(
-               [&]( const complete_type& m){ return m.correlation == correlation;},
+               [&correlation]( auto& complete){ return complete.correlation() == correlation;},
                std::forward< P>( policy));
          }
 
@@ -151,7 +151,7 @@ namespace casual
          complete_type next( common::message::Type type, const Uuid& correlation, P&& policy)
          {
             return select(
-               [&]( const complete_type& m){ return m.type == type && m.correlation == correlation;},
+               [type, &correlation]( auto& complete){ return complete.type() == type && complete.correlation() == correlation;},
                std::forward< P>( policy));
          }
 
@@ -212,7 +212,7 @@ namespace casual
          {
             flush();
 
-            auto complete = algorithm::find_if( m_cache, [&]( const auto& m){ return m.correlation == correlation;});
+            auto complete = algorithm::find_if( m_cache, [&]( auto& complete){ return complete.correlation() == correlation;});
 
             if( complete)
             {
@@ -243,7 +243,7 @@ namespace casual
             else
                m_cache.push_back( serialize::native::complete< complete_type>( std::forward< M>( message)));
 
-             return m_cache.back().correlation;
+             return m_cache.back().correlation();
          }
 
          //! flushes the messages on the device into cache. (ie, make the device writable if it was full), if implemented.
@@ -330,7 +330,7 @@ namespace casual
 
          bool discard( const complete_type& complete)
          {
-            auto found = algorithm::find( m_discarded, complete.correlation);
+            auto found = algorithm::find( m_discarded, complete.correlation());
 
             if( found && complete.complete())
             {
@@ -389,17 +389,15 @@ namespace casual
          auto send( M&& message, P&& policy)
          {
             if constexpr ( std::is_same_v< std::decay_t< M>, complete_type>)
-               return apply( std::forward< P>( policy), message);
+               return apply( std::forward< P>( policy), std::forward< M>( message));
             else
             {
                if( ! message.execution)
                   message.execution = execution::id();
 
-               auto complete = serialize::native::complete< complete_type>( message);
-
                return apply(
                   std::forward< P>( policy),
-                  complete);
+                  serialize::native::complete< complete_type>( message));
             }
          }
 
@@ -418,15 +416,15 @@ namespace casual
             connector.reconnect();
          }
 
-         template< typename Policy>
-         Uuid apply( Policy&& policy, const complete_type& complete)
+         template< typename Policy, typename C>
+         auto apply( Policy&& policy, C&& complete)
          {
             while( true)
             {
                try
                {
                   // Delegate the invocation to the policy
-                  return policy.send( Base::connector(), complete);
+                  return policy.send( Base::connector(), std::forward< C>( complete));
                }
                catch( ...)
                {

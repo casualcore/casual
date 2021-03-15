@@ -187,7 +187,7 @@ namespace casual
                   if( local::instance::request( message.message, *found))
                      return true;
                   
-                  log::line( log, "failed to send resource request - type: ", message.message.type, " to: ", found->process, " - action: try later");
+                  log::line( log, "failed to send resource request - type: ", message.message.type(), " to: ", found->process, " - action: try later");
                   return false;  
                }
       

@@ -45,9 +45,9 @@ namespace casual
       void complete( C&& complete, M& message)
       {
          using casual::common::message::type;
-         assert( complete.type == type( message));
+         assert( complete.type() == type( message));
 
-         message.correlation = complete.correlation;
+         message.correlation = complete.correlation();
 
          using reader = typename customization::point< std::decay_t< C>>::reader;
 

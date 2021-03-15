@@ -109,27 +109,10 @@ namespace casual
          using cache_type = std::vector< complete_type>;
          using cache_range_type = range::type_t< cache_type>;
 
-      } // policy
-
-      namespace native
-      {
-         enum class Flag : long
-         {
-            non_blocking = platform::flag::value( platform::flag::tcp::no_wait)
-         };
-
-         Uuid send( const Socket& socket, const policy::complete_type& complete, common::Flags< Flag> flags);
-         policy::complete_type receive( const Socket& socket, common::Flags< Flag> flags);
-
-      } // native
-
-
-      namespace policy
-      {
          struct Blocking
          {
             cache_range_type receive( const Connector& tcp, cache_type& cache);
-            Uuid send( const Connector& tcp, const policy::complete_type& complete);
+            Uuid send( const Connector& tcp, complete_type&& complete);
          };
 
          namespace non
@@ -137,7 +120,7 @@ namespace casual
             struct Blocking
             {
                cache_range_type receive( const Connector& tcp, cache_type& cache);
-               Uuid send( const Connector& tcp, const policy::complete_type& complete);
+               complete_type send( const Connector& tcp, complete_type&& complete);
             };
 
          } // non

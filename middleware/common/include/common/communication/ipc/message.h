@@ -34,9 +34,9 @@ namespace casual
          Complete( common::message::Type type, const Uuid& correlation, payload_type&& payload);
 
          template< typename Chunk>
-         Complete( common::message::Type type, const Uuid& correlation, platform::size::type size, Chunk&& chunk) :
-            type{ type}, correlation{ correlation},
-            payload( size), m_unhandled{ range::make( payload)}
+         Complete( common::message::Type type, const Uuid& correlation, platform::size::type size, Chunk&& chunk)
+            : payload( size), m_type{ type}, m_correlation{ correlation},
+               m_unhandled{ range::make( payload)}
          {
             add( std::forward< Chunk>( chunk));
          }
@@ -49,12 +49,13 @@ namespace casual
 
          explicit operator bool() const;
 
-         bool complete() const;
+         bool complete() const noexcept;
 
-         inline platform::size::type size() const { return payload.size();}
+         inline platform::size::type size() const noexcept { return payload.size();}
 
-         message_type_type type{};
-         Uuid correlation;
+         inline auto type() const noexcept { return m_type;}
+         inline auto& correlation() const noexcept { return m_correlation;}
+
          payload_type payload;
 
          //! @param transport
@@ -104,11 +105,10 @@ namespace casual
          //! So we can send complete messages as part of other
          //! messages
          CASUAL_CONST_CORRECT_SERIALIZE(
-         {
-            CASUAL_SERIALIZE( type);
-            CASUAL_SERIALIZE( correlation);
+            CASUAL_SERIALIZE_NAME( m_type, "type");
+            CASUAL_SERIALIZE_NAME( m_correlation, "correlation");
             CASUAL_SERIALIZE( payload);
-         })
+         )
 
          friend std::ostream& operator << ( std::ostream& out, const Complete& value);
 
@@ -118,10 +118,13 @@ namespace casual
             return complete == correlation;
          }
 
-         friend inline bool operator == ( const Complete& lhs, common::message::Type rhs) { return lhs.type == rhs;}
-         friend inline bool operator == ( common::message::Type lhs, const Complete& rhs) { return lhs == rhs.type;}
+         friend inline bool operator == ( const Complete& lhs, common::message::Type rhs) { return lhs.m_type == rhs;}
+         friend inline bool operator == ( common::message::Type lhs, const Complete& rhs) { return lhs == rhs.m_type;}
 
       private:
+
+         common::message::Type m_type{};
+         Uuid m_correlation;
          std::vector< range_type> m_unhandled;
       };
 
@@ -130,9 +133,9 @@ namespace casual
       template< typename M>
       Complete& operator >> ( Complete& complete, M& message)
       {
-         assert( complete.type == message.type());
+         assert( complete.type() == message.type());
 
-         message.correlation = complete.correlation;
+         message.correlation = complete.correlation();
 
          auto archive = serialize::native::binary::reader( complete.payload);
          archive >> message;

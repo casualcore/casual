@@ -194,10 +194,12 @@ namespace casual
                   auto create( State& state) 
                   {
                      state.directive.read.add( ipc::inbound().connector().descriptor());
-                     return [handler = internal::handler( state)]() mutable
+                     return [handler = internal::handler( state)]() mutable -> strong::file::descriptor::id
                      {
-                        return common::predicate::boolean( handler( common::communication::device::non::blocking::next( ipc::inbound())));
+                        if( handler( communication::device::non::blocking::next( ipc::inbound())))
+                           return ipc::inbound().connector().descriptor();
 
+                        return {};
                      };
                   }
                } // dispatch
@@ -213,7 +215,7 @@ namespace casual
                   {
                      auto create( State& state)
                      {
-                        return [&state]( strong::file::descriptor::id descriptor)
+                        return [&state]( strong::file::descriptor::id descriptor, communication::select::tag::read)
                         {
                            Trace trace{ "gateway::group::inbound::local::external::listener::dispatch"};
 
@@ -246,7 +248,8 @@ namespace casual
                {
                   auto create( State& state) 
                   { 
-                     return [&state, handler = inbound::handle::external( state)]( common::strong::file::descriptor::id descriptor) mutable
+                     return [&state, handler = inbound::handle::external( state)]
+                        ( common::strong::file::descriptor::id descriptor, communication::select::tag::read) mutable
                      {
                         if( auto found = algorithm::find( state.external.connections, descriptor))
                         {

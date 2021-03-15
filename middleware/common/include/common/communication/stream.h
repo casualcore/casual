@@ -36,7 +36,7 @@ namespace casual
 
          namespace header
          {
-            constexpr auto size = communication::tcp::message::header::size;
+            using namespace communication::tcp::message::header;
          } // header
 
          //! TODO: stream probably needs it's own complete
@@ -55,7 +55,7 @@ namespace casual
          struct Blocking
          {
             cache_range_type receive( inbound::Connector& connector, cache_type& cache);
-            Uuid send( outbound::Connector& connector, const complete_type& complete);
+            Uuid send( outbound::Connector& connector, complete_type&& complete);
          };
 
          namespace non

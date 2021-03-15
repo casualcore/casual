@@ -90,13 +90,13 @@ namespace casual
             if( ! complete)
                return {};
 
-            if( auto found = algorithm::find( m_handlers, complete.type))
+            if( auto found = algorithm::find( m_handlers, complete.type()))
             {
                found->second( complete);
-               return complete.correlation;
+               return complete.correlation();
             }
 
-            log::line( log::category::error, code::casual::internal_unexpected_value, " message type: ", complete.type, " not recognized - action: discard");
+            log::line( log::category::error, code::casual::internal_unexpected_value, " message type: ", complete.type(), " not recognized - action: discard");
             return {};
          }
 

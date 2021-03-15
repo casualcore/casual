@@ -43,7 +43,7 @@ namespace casual
          Message( Message&&) noexcept = default;
          Message& operator = ( Message&&) noexcept = default;
 
-         auto type() const noexcept { return complete.type;}
+         auto type() const noexcept { return complete.type();}
 
          //! @returns true if the message is sent to all destinations
          //! @{
@@ -58,10 +58,9 @@ namespace casual
          complete_type complete;
 
          CASUAL_CONST_CORRECT_SERIALIZE(
-         {
             CASUAL_SERIALIZE( destinations);
             CASUAL_SERIALIZE( complete);
-         })
+         )
       };
 
 

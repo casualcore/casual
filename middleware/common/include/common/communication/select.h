@@ -21,35 +21,14 @@ namespace casual
    {
       namespace directive
       {
-         namespace native
-         {
-            struct Set
-            {
-               Set();
-
-               void add( strong::file::descriptor::id descriptor) noexcept;
-               void remove( strong::file::descriptor::id descriptor) noexcept;
-               bool ready( strong::file::descriptor::id descriptor) const noexcept;
-               
-               inline ::fd_set* native() noexcept { return &m_set;}
-
-            private:
-               ::fd_set m_set;
-            };
-         } // native
+ 
+         using range_type = range::type_t< std::vector< strong::file::descriptor::id>>;
          
          struct Set
          {
             void add( strong::file::descriptor::id descriptor) noexcept;
             void remove( strong::file::descriptor::id descriptor) noexcept;
-            bool ready( strong::file::descriptor::id descriptor) const noexcept;
 
-            //! @returns a range of descriptors that are found 'ready' in the set
-            inline auto ready( const native::Set& set) const noexcept
-            {
-               return algorithm::filter( m_descriptors, [&set]( auto descriptor){ return set.ready( descriptor);});
-            }
-            
             template< typename Range>
             auto add( Range&& descriptors) noexcept
                -> decltype( add( range::front( descriptors)))
@@ -63,9 +42,9 @@ namespace casual
             {
                algorithm::for_each( descriptors, [&]( auto descriptor){ remove( descriptor);});
             }
-            
-            inline const native::Set& set() const noexcept { return m_set;}
 
+            range_type descriptors() const noexcept { return range::make( m_descriptors);}
+            
             CASUAL_LOG_SERIALIZE(
                CASUAL_SERIALIZE_NAME( m_descriptors, "descriptors");
             )
@@ -73,19 +52,40 @@ namespace casual
          private:
             // mutable so we can 'filter' for ready - semantically we don't change the state
             mutable std::vector< strong::file::descriptor::id> m_descriptors;
-            native::Set m_set;
          };
+
+         struct Ready
+         {
+            range_type read;
+            range_type write;
+
+            inline explicit operator bool() const noexcept { return read || write;}
+
+            CASUAL_LOG_SERIALIZE(
+               CASUAL_SERIALIZE( read);
+               CASUAL_SERIALIZE( write);
+            )
+         };
+
       } // directive
+
 
       struct Directive 
       {
          directive::Set read;
-         // directive::Set write; no need for write as of now
+         directive::Set write;
 
          CASUAL_LOG_SERIALIZE(
             CASUAL_SERIALIZE( read);
+            CASUAL_SERIALIZE( write);
          )
       };
+
+      namespace tag
+      {
+         struct read{};
+         struct write{};
+      } // tag
 
       namespace dispatch
       {
@@ -96,21 +96,21 @@ namespace casual
 
          namespace detail
          {
-            directive::native::Set select( const directive::native::Set& read);
-            
+            directive::Ready select( const Directive& directive);
+
             namespace consume
             {
                template< typename H>
-               auto handle( H& handler, traits::priority::tag< 1>) -> decltype( handler())
+               auto handle( H& handler, traits::priority::tag< 1>) 
+                  -> decltype( handler() == strong::file::descriptor::id{})
                {
-                  return handler();
+                  return predicate::boolean( handler());
                }
                
-               //! no-op for 'blocking'
+               //! no-op for all others...
                template< typename H> 
                constexpr auto handle( H& handler, traits::priority::tag< 0>)
-                  -> decltype( handler( strong::file::descriptor::id{}))
-               { 
+               {
                   return false;
                }
 
@@ -123,62 +123,77 @@ namespace casual
                   return handle( handler, traits::priority::tag< 1>{}) || dispatch( handlers...);
                }
             } // consume
-
+         
             namespace handle
             {
-               //! blocking handler
+               //! blocking read handler
                template< typename R, typename H> 
-               auto read( R&& ready, H& handler, traits::priority::tag< 1>)
-                  -> decltype( handler( range::front( ready)))
+               auto dispatch( R& ready, H& handler, traits::priority::tag< 2>)
+                  -> decltype( void( handler( range::front( ready.read), tag::read{})))
                {
-                  return algorithm::any_of( ready, std::ref( handler));
+                  // keep the reads that did not find a handler.
+                  ready.read = algorithm::filter( ready.read, [&handler]( auto descriptor)
+                  {
+                     return ! handler( descriptor, tag::read{});
+                  });
                }
 
-               //! no-op for 'consume'
+               //! blocking write handler
                template< typename R, typename H> 
-               auto read( R&& ready, H& handler, traits::priority::tag< 0>) 
-                  -> decltype( handler())
+               auto dispatch( R& ready, H& handler, traits::priority::tag< 1>)
+                  -> decltype( void( handler( range::front( ready.write), tag::write{})))
+               {
+                  // keep the writes that did not find a handler.
+                  ready.write = algorithm::filter( ready.write, [&handler]( auto descriptor)
+                  {
+                     return ! handler( descriptor, tag::write{});
+                  });
+               }
+
+               //! 'consume' handler (only read)
+               template< typename R, typename H> 
+               auto dispatch( R& ready, H& handler, traits::priority::tag< 0>) 
+                  -> decltype( void( handler() == strong::file::descriptor::id{}))
                { 
-                  return false;
+                  // if the consume returns a valid descriptor, remove it from the 'read set'
+                  if( auto result = handler())
+                     ready.read = algorithm::filter( ready.read, [result]( auto descriptor){ return descriptor != result;});
                }
 
                template< typename R, typename H> 
-               auto dispatch( R&& ready, H& handler)
-                  -> decltype( handle::read( ready, handler, traits::priority::tag< 1>{}))
+               void dispatch( R& ready, H& handler)
                {
-                  return handle::read( ready, handler, traits::priority::tag< 1>{});
+                  handle::dispatch( ready, handler, traits::priority::tag< 2>{});
                }
             } // handle
 
-
-
             // "sentinel"
-            template< typename F> 
-            void iterate( F&& functor) {}
+            template< typename F, typename R> 
+            void iterate( F&& functor, R& ready) {}
 
-            template< typename F, typename H, typename... Hs> 
-            void iterate( F&& functor, H& handler, Hs&... handlers)
+            template< typename F, typename R, typename H, typename... Hs> 
+            void iterate( F&& functor, R& ready, H& handler, Hs&... handlers)
             {
-               functor( handler);
-               iterate( functor, handlers...);
+               if( ! ready)
+                  return;
+               
+               functor( ready, handler);
+               iterate( functor, ready, handlers...);
             }
 
             template< typename R, typename... Hs> 
             void dispatch( R&& ready, Hs&... handlers)
             {
-               // take care of blocking, if any
-               iterate( 
-                  [ready = std::forward< R>( ready)]( auto& handler)
+               // 'iterate' over all handlers and dispatch on ready...
+               // this might be done with fold expressions...
+               iterate(
+                  []( auto& ready, auto& handler)
                   {
                      handle::dispatch( ready, handler);
-                  }, 
+                  },
+                  ready,
                   handlers...);
-
-               // take care of consume, if any.
-               consume::dispatch( handlers...);
             }
-
-
 
             namespace handle
             {
@@ -212,7 +227,7 @@ namespace casual
 
                         // we block in `detail::select` with the read set.
                         detail::dispatch( 
-                           directive.read.ready( detail::select( directive.read.set())), 
+                           detail::select( directive),
                            handlers...);
                      }
                      catch( ...)

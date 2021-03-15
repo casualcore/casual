@@ -210,9 +210,9 @@ namespace casual
                               tcp::send( state, reply);
                            };
 
-                           switch( request.type)
+                           switch( request.type())
                            {
-                              using Enum = decltype( request.type);
+                              using Enum = decltype( request.type());
                               case Enum::queue_group_dequeue_request:
                               {
                                  send_error( casual::queue::ipc::message::group::dequeue::Reply{});

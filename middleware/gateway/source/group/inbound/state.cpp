@@ -59,7 +59,7 @@ namespace casual
             {
                auto has_correlation = [&correlations]( auto& value)
                {
-                  return ! algorithm::find( correlations, value.correlation).empty();
+                  return ! algorithm::find( correlations, value).empty();
                };
 
                return {

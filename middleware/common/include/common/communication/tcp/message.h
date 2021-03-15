@@ -34,15 +34,14 @@ namespace casual
          using host_size_type = platform::size::type;
          using network_size_type = common::network::byteorder::type<host_size_type>;
 
-         network_type_type type = 0;
-         network_uuid_type correlation;
-         network_size_type size = 0;
+         network_type_type type{};
+         network_uuid_type correlation{};
+         network_size_type size{};
 
          static_assert( sizeof( network_type_type) ==  8, "Wrong size for type");
          static_assert( sizeof( network_uuid_type) == 16, "Wrong size for uuid");
          static_assert( sizeof( network_size_type) ==  8, "Wrong size for size");
 
-         inline friend constexpr platform::size::type size( const Header&) { return sizeof( Header);};
 
          friend std::ostream& operator << ( std::ostream& out, const Header& value);
 
@@ -59,6 +58,26 @@ namespace casual
       namespace header
       {
          inline constexpr platform::size::type size = sizeof( Header);
+
+
+         namespace detail
+         {
+            inline auto type( const Header& header) noexcept
+            {
+               return static_cast< common::message::Type>( common::network::byteorder::decode< Header::host_type_type>( header.type));
+            }
+
+            inline auto size( const Header& header) noexcept 
+            {
+               return common::network::byteorder::size::decode< Header::host_size_type>( header.size);
+            }
+
+            inline auto correlation( const Header& header)
+            {
+               return common::Uuid{ header.correlation};
+            }
+            
+         } // detail
       } // header
 
       struct Complete
@@ -67,24 +86,33 @@ namespace casual
          using range_type = range::type_t< payload_type>;
 
          Complete() = default;
-         Complete( const message::Header& header);
-         inline Complete( common::message::Type type, Uuid correlation, payload_type payload)
-            : type{ type}, correlation{ std::move( correlation)}, payload{ std::move( payload)} {}
+         Complete( common::message::Type type, Uuid correlation, payload_type payload);
 
-         common::message::Type type{};
-         Uuid correlation;
+         //! this is always in network byteordering, 
+
          platform::size::type offset{};
          payload_type payload;
 
-         message::Header header() const noexcept;
+         //! header functions
+         //! @{
+         inline auto type() const noexcept { return header::detail::type( m_header);}
+         inline auto size() const noexcept { return header::detail::size( m_header);}
+         inline auto correlation() const noexcept { return header::detail::correlation( m_header);}
+         //! @}
+
+         inline const message::Header& header() const noexcept { return m_header;}
+         inline message::Header& header() noexcept { return m_header;}
 
          inline auto empty() const noexcept { return offset == 0;}
-         inline platform::size::type size() const noexcept { return payload.size();}
+         
          bool complete() const noexcept;
          
          inline explicit operator bool() const noexcept { return complete();}
 
          friend std::ostream& operator << ( std::ostream& out, const Complete& value);
+
+      private:
+         message::Header m_header{};
       };
 
    } // common::communication::tcp::message

@@ -300,10 +300,10 @@ namespace casual
                if( native::blocking::receive( handle, transport))
                {
                   auto found = algorithm::find_if( cache,
-                        [&]( const auto& m)
+                        [&]( auto& complete)
                         {
-                           return ! m.complete() 
-                              && transport.message.header.correlation == m.correlation;
+                           return ! complete.complete() 
+                              && transport.message.header.correlation == complete.correlation();
                         });
 
                   if( found)
@@ -327,9 +327,9 @@ namespace casual
 
             Uuid send( const Socket& socket, const Address& destination, const ipc::message::Complete& complete)
             {
-               message::Transport transport{ complete.type, complete.size()};
+               message::Transport transport{ complete.type(), complete.size()};
 
-               complete.correlation.copy( transport.correlation());
+               complete.correlation().copy( transport.correlation());
 
                auto part_begin = std::begin( complete.payload);
 
@@ -349,7 +349,7 @@ namespace casual
                }
                while( part_begin != std::end( complete.payload));
 
-               return complete.correlation;
+               return complete.correlation();
             }
 
          } // blocking
@@ -365,10 +365,10 @@ namespace casual
                   if( native::non::blocking::receive( handle, transport))
                   {
                      auto found = algorithm::find_if( cache,
-                           [&]( const auto& m)
+                           [&]( auto& complete)
                            {
-                              return ! m.complete() 
-                                 && transport.message.header.correlation == m.correlation;
+                              return ! complete.complete() 
+                                 && transport.message.header.correlation == complete.correlation();
                            });
 
                      if( found)
@@ -392,9 +392,9 @@ namespace casual
 
                Uuid send( const Socket& socket, const Address& destination, const ipc::message::Complete& complete)
                {
-                  message::Transport transport{ complete.type, complete.size()};
+                  message::Transport transport{ complete.type(), complete.size()};
 
-                  complete.correlation.copy( transport.correlation());
+                  complete.correlation().copy( transport.correlation());
 
                   auto part_begin = std::begin( complete.payload);
 
@@ -416,7 +416,7 @@ namespace casual
                   }
                   while( part_begin != std::end( complete.payload));
 
-                  return complete.correlation;
+                  return complete.correlation();
                }
             } // blocking
          } // non

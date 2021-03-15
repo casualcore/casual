@@ -136,13 +136,16 @@ namespace casual
                {
                   try
                   {
-
+                     tcp::Duplex tcp{ std::move( socket)};
+                  
                      while( true)
                      {
-                        tcp::native::send(
-                           socket,
-                           tcp::native::receive( socket, {}),
-                           {});
+                        if( auto complete = device::blocking::next( tcp))
+                        {
+                           // we need to set the offset to 0.
+                           complete.offset = 0;
+                           device::blocking::send( tcp, std::move( complete));
+                        }
                      }
                   }
                   catch( ...)
@@ -161,9 +164,7 @@ namespace casual
                      tcp::Listener listener{ std::move( address)};
 
                      while( true)
-                     {
                         workers.emplace_back( &echo::worker, listener());
-                     }
                   }
                   catch( ...)
                   {
@@ -185,29 +186,31 @@ namespace casual
          unittest::Thread server{ &local::echo::server, address};
 
          auto socket = tcp::retry::connect( address, { { std::chrono::milliseconds{ 1}, 0}});
+         EXPECT_TRUE( socket);
 
-         EXPECT_TRUE( local::boolean( socket));
+         tcp::Duplex tcp{ std::move( socket)};
 
-         platform::binary::type payload{ 1,2,3,4,5,6,7,8,9};
+         auto payload = unittest::random::binary( 1024);
          auto correlation = uuid::make();
 
          // send
          {
-            tcp::message::Complete message;
-            message.type = common::message::Type::process_lookup_request;
-            message.correlation = correlation;
-            message.payload = payload;
+            tcp::message::Complete complete{ 
+               common::message::Type::process_lookup_request, 
+               correlation, 
+               payload};
 
-            EXPECT_TRUE( tcp::native::send( socket, message, {}) == correlation);
+            EXPECT_TRUE( device::blocking::send( tcp, std::move( complete)));
          }
 
          // receive
          {
-            auto message = tcp::native::receive( socket, {});
+            auto complete = device::blocking::next( tcp);
 
-            EXPECT_TRUE( message.correlation == correlation);
-            EXPECT_TRUE( message.type == common::message::Type::process_lookup_request);
-            EXPECT_TRUE( message.payload == payload) << "message: " << message;
+            EXPECT_TRUE( complete);
+            EXPECT_TRUE( complete.correlation() == correlation);
+            EXPECT_TRUE( complete.type() == common::message::Type::process_lookup_request);
+            EXPECT_TRUE( complete.payload == payload) << "complete: " << complete;
          }
       }
 
@@ -219,37 +222,37 @@ namespace casual
 
          unittest::Thread server{ &local::echo::server, address};
 
-         std::vector< Socket> connections( 10);
-
-         for( auto& socket : connections)
+         auto connections = algorithm::generate_n< 10>( [&address]()
          {
-            socket = tcp::retry::connect( address, { { std::chrono::milliseconds{ 1}, 0}});
-            EXPECT_TRUE( local::boolean( socket));
-         }
+            auto socket = tcp::retry::connect( address, { { std::chrono::milliseconds{ 1}, 0}});
+            EXPECT_TRUE( socket);
+            return tcp::Duplex{ std::move( socket)};
+         });
 
 
-         platform::binary::type payload{ 1,2,3,4,5,6,7,8,9};
+         auto payload = unittest::random::binary( 1024);
          auto correlation = uuid::make();
 
-         for( auto& socket : connections)
+         for( auto& connection : connections)
          {
             // send
-            tcp::message::Complete message;
-            message.type = common::message::Type::process_lookup_request;
-            message.correlation = correlation;
-            message.payload = payload;
+            tcp::message::Complete complete{ 
+               common::message::Type::process_lookup_request, 
+               correlation, 
+               payload};
 
-            EXPECT_TRUE( tcp::native::send( socket, message, {}) == correlation);
+            EXPECT_TRUE( device::blocking::send( connection, std::move( complete)));
          }
 
          // receive
-         for( auto& socket : connections)
+         for( auto& connection : connections)
          {
-            auto message = tcp::native::receive( socket, {});
+            auto complete = device::blocking::next( connection);
 
-            EXPECT_TRUE( message.correlation == correlation);
-            EXPECT_TRUE( message.type == common::message::Type::process_lookup_request);
-            EXPECT_TRUE( message.payload == payload) << "message: " << message;
+            EXPECT_TRUE( complete);
+            EXPECT_TRUE( complete.correlation() == correlation);
+            EXPECT_TRUE( complete.type() == common::message::Type::process_lookup_request);
+            EXPECT_TRUE( complete.payload == payload) << "complete: " << complete;
          }
       }
 

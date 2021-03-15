@@ -26,47 +26,50 @@ namespace casual
                {
                   Trace trace{ "common::communication::stream::policy::local::receive"};
 
-                  message::Header header{};
-                  auto current = reinterpret_cast< char*>( &header);
+                  message::Complete complete;
+                  auto current = reinterpret_cast< char*>( &complete.header());
 
                   // First we read the header
-                  if( ! in.read( current, size( header)))
+                  if( ! in.read( current, message::header::size))
                      code::raise::log( code::casual::communication_unavailable, "stream is unavailable - header");
 
-                  // we now know the size, read the complete message
-                  message::Complete message{ header};
+                  complete.offset +=  message::header::size;
+                  complete.payload.resize( complete.size());
 
-                  if( ! in.read( message.payload.data(), message.payload.size()))
+                  if( ! in.read( complete.payload.data(), complete.payload.size()))
                      code::raise::log( code::casual::communication_unavailable, "stream is unavailable - pauload");
 
-                  message.offset += message.payload.size();
+                  complete.offset += complete.payload.size();
 
-                  log::line( verbose::log, "stream <-- ", message);
+                  log::line( verbose::log, "stream <-- ", complete);
 
-                  return message;
+                  return complete;
                }
 
-               auto send( std::ostream& out, const message::Complete& complete)
+               auto send( std::ostream& out, message::Complete& complete)
                {
                   Trace trace{ "common::communication::stream::policy::local::send"};
 
                   // First we write the header
                   {
-                     auto header = complete.header();
+                     auto& header = complete.header();
 
                      auto data = reinterpret_cast< const char*>( &header);
-                     if( ! out.write( data, size( header)))
+                     if( ! out.write( data, message::header::size))
                         code::raise::log( code::casual::communication_unavailable, "stream is unavailable");
+
+                     complete.offset += message::header::size;
                   }
 
                   // write the complete message
                   if( ! out.write( complete.payload.data(), complete.payload.size()))
                      code::raise::log( code::casual::communication_unavailable, "stream is unavailable");
-                     
 
+                  complete.offset += complete.payload.size();
+                     
                   log::line( verbose::log, "stream --> ", complete);
 
-                  return complete.correlation;
+                  return complete.correlation();
                }
 
             } // <unnamed>
@@ -85,7 +88,7 @@ namespace casual
             return policy::cache_range_type{ std::end( cache) - 1, std::end( cache)};
          }
 
-         Uuid Blocking::send( outbound::Connector& connector, const message::Complete& complete)
+         Uuid Blocking::send( outbound::Connector& connector, complete_type&& complete)
          {
             Trace trace{ "common::communication::stream::policy::Blocking::send"};
 

@@ -24,11 +24,10 @@ namespace casual
 
             template< typename M>
             auto send( const common::process::Handle& destination, M&& message)
-               -> decltype( common::message::pending::Message{ std::forward< M>( message), destination}.complete.correlation)
             {
                auto pending = common::message::pending::Message{ std::forward< M>( message), destination};
                message::send( pending);
-               return pending.complete.correlation;
+               return pending.complete.correlation();
             }
 
             namespace eventually

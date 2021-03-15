@@ -411,161 +411,189 @@ namespace casual
       }
 
 
-
-      namespace native
-      {
-         namespace local
-         {
-            namespace
-            {
-
-               ssize_t send( const strong::socket::id descriptor, const void* const data, platform::size::type const size, common::Flags< Flag> flags)
-               {
-                  return posix::result( 
-                     ::send( descriptor.value(), data, size, flags.underlaying()));
-               }
-
-               char* receive(
-                     const strong::socket::id descriptor,
-                     char* first,
-                     char* const last,
-                     common::Flags< Flag> flags)
-               {
-                  Trace trace{ "tcp::native::local::receive"};
-
-                  common::log::line( log, "descriptor: ", descriptor, ", data: ", static_cast< void*>( first), ", size: ", last - first, ", flags: ", flags);
-
-
-                  while( first != last)
-                  {
-                     const auto bytes = posix::result(
-                           ::recv( descriptor.value(), first, last - first, flags.underlaying()));
-
-                     if( bytes == 0)
-                     {
-                        // Fake an error-description
-                        code::raise::log( code::casual::communication_unavailable);
-                     }
-                     common::log::line( verbose::log, "bytes: ", bytes); 
-
-                     first += bytes;
-                  }
-                  return first;
-               }
-            } // <unnamed>
-         } // local
-
-
-         Uuid send( const Socket& socket, const policy::complete_type& complete, common::Flags< Flag> flags)
-         {
-            Trace trace{ "tcp::native::send"};
-
-            try
-            {
-               auto local_send = []( auto descriptor, auto first, auto last, auto flags){
-                  while( first != last)
-                  {
-                     const auto bytes = local::send( descriptor, first, std::distance( first, last), flags);
-
-                     assert( bytes <= std::distance( first, last) && "somehow more bytes was sent over the socket than requested");
-
-                     first += bytes;
-                  }
-               };
-
-               // First we send the header
-               {
-                  auto header = complete.header();
-                  log::line( verbose::log, "header: ", header);
-
-                  auto first = reinterpret_cast< const char*>( &header);
-                  auto last = first + message::header::size;
-
-                  local_send( socket.descriptor(), first, last, flags);
-               }
-
-               // Now we can send the payload
-               local_send( socket.descriptor(), complete.payload.data(), complete.payload.data() + complete.payload.size(), flags);
-
-               log::line( log, "tcp send ---> socket: ", socket, ", complete: ", complete);
-
-               return complete.correlation;
-            }
-            catch( ...)
-            {
-               if( exception::code() == code::casual::communication_refused)
-                  return {};
-
-               throw;
-            }
-         }
-
-         policy::complete_type receive( const Socket& socket, common::Flags< Flag> flags)
-         {
-            Trace trace{ "tcp::native::receive"};
-
-            try
-            {
-               message::Header header{};
-
-               auto current = reinterpret_cast< char*>( &header);
-
-               // First we get the header
-               local::receive( socket.descriptor(), current, current + message::header::size, flags);
-               log::line( verbose::log, "header: ", header);
-
-               // Now we can get the payload
-               policy::complete_type message{ header};
-
-               // make sure we always block when we wait for the payload.
-               local::receive( socket.descriptor(), message.payload.data(), message.payload.data() + message.payload.size(), flags - Flag::non_blocking);
-               message.offset += message.payload.size();
-
-               log::line( log, "tcp receive <---- socket: ", socket, " , complete: ", message);
-
-               return message;
-            }
-            catch( ...)
-            {
-               if( exception::code() == code::casual::communication_retry)
-                  return {};
-
-               throw;
-            }
-         }
-
-         namespace local
-         {
-            namespace
-            {
-               policy::cache_range_type receive( const Connector& tcp, policy::cache_type& cache, common::Flags< Flag> flags)
-               {
-                  auto message = native::receive( tcp.socket(), flags);
-
-                  if( message)
-                  {
-                     cache.push_back( std::move( message));
-
-                     return policy::cache_range_type{ std::end( cache) - 1, std::end( cache)};
-                  }
-                  return policy::cache_range_type{};
-               }
-            } // <unnamed>
-         } // local
-
-      } // native
-
       namespace policy
       {
 
+         namespace local
+         {
+            namespace
+            {
+               enum class Flag : long
+               {
+                  non_blocking = platform::flag::value( platform::flag::tcp::no_wait)
+               };
+
+               auto send( const Socket& socket, policy::complete_type& complete, common::Flags< Flag> flags)
+               {
+                  Trace trace{ "common::communication::tcp::policy::local::send"};
+                  log::line( verbose::log, "complete: ", complete, ", flags: ", flags);
+
+                  try
+                  {
+                     auto send_message = []( auto& socket, const ::msghdr* message, auto flags)
+                     {
+                        log::line( verbose::log, "socket: ", socket, ", flags: ", flags);
+                        return posix::result( ::sendmsg( socket.descriptor().value(), message, flags.underlaying()));
+                     };
+
+                     if( complete.offset >= message::header::size)
+                     {
+                        // we've sent the header already. Send the rest of the paylad.
+
+                        ::iovec part{};
+
+                        auto offset = complete.offset - message::header::size;
+
+                        part.iov_base = const_cast< char*>( complete.payload.data()) + offset;
+                        part.iov_len = complete.payload.size() - offset;
+
+                        ::msghdr message{};
+                        message.msg_iov = &part;
+                        message.msg_iovlen = 1;
+
+                        complete.offset += send_message( socket, &message, flags);
+                     }
+                     else
+                     {
+                        // part/all of the header is not sent. 
+                        std::array< ::iovec, 2> parts{};
+
+                        // First we set the header
+                        auto& header = complete.header();
+                        parts[ 0].iov_base = &header + complete.offset;
+                        parts[ 0].iov_len = message::header::size - complete.offset;
+
+                        // then we set the payload
+                        parts[ 1].iov_base = const_cast< char*>( complete.payload.data());
+                        parts[ 1].iov_len = complete.payload.size();
+
+                        ::msghdr message{};
+                        message.msg_iov = parts.data();
+                        message.msg_iovlen = parts.size();
+
+                        complete.offset += send_message( socket, &message, flags);
+                     }
+
+                     log::line( log, "tcp send ---> descriptor: ", socket.descriptor(), ", complete: ", complete);
+
+                     return complete.complete();
+                  }
+                  catch( ...)
+                  {
+                     if( exception::code() == code::casual::communication_refused)
+                        return false;
+
+                     throw;
+                  }
+               }
+
+               auto receive( const Socket& socket, policy::complete_type& complete, common::Flags< Flag> flags)
+               {
+                  Trace trace{ "common::communication::tcp::policy::local::receive"};
+                  log::line( verbose::log, "complete: ", complete, ", flags: ", flags);
+
+                  try
+                  {
+                     auto receive_message = []( auto& socket, auto first, auto count, auto flags)
+                     {
+                        auto bytes = posix::result(
+                           ::recv( socket.descriptor().value(), first, count, flags.underlaying()));
+
+                        // _The return value will be 0 when the peer has performed an orderly shutdown_
+                        if( bytes == 0)
+                           code::raise::log( code::casual::communication_unavailable);
+
+                        return bytes;
+                     };
+
+                     if( complete.offset >= message::header::size)
+                     {
+                        // we receive the paylad (or the rest of it).
+                        auto offset = complete.offset - message::header::size;
+                        auto first = complete.payload.data() + offset;
+                        
+                        complete.offset += receive_message( socket, first, complete.payload.size() - offset, flags);
+                     }
+                     else
+                     {
+                        // we receive the header (or the rest of it)
+                        auto first = reinterpret_cast< char*>( &complete.header()) + complete.offset;
+                        complete.offset += receive_message( socket, first, message::header::size - complete.offset, flags);
+
+                        if( complete.offset == message::header::size)
+                        {
+                           // we've got the header, set up the paylad
+                           complete.payload.resize( complete.size());
+
+                           // try to get the payload (or part of it).
+                           complete.offset += receive_message( socket, complete.payload.data(), complete.payload.size(), flags);
+                        }
+                     }
+
+                     log::line( log, "tcp receive <---- descriptor: ", socket.descriptor(), " , complete: ", complete);
+                  }
+                  catch( ...)
+                  {
+                     if( exception::code() != code::casual::communication_retry)
+                        throw;
+                  }
+
+                  return complete.complete();
+               }
+
+
+               policy::cache_range_type receive( const Socket& socket, policy::cache_type& cache, common::Flags< Flag> flags)
+               {
+                  Trace trace{ "common::communication::tcp::policy::local::receive cache"};
+
+                  auto range_last = []( auto& range)
+                  {
+                     return policy::cache_range_type{ std::end( range) - 1, std::end( range)};
+                  };
+
+                  // check if we got anything in the cache we need to take care of.
+
+                  if( ! cache.empty() && ! cache.back().complete())
+                  {
+                     if( receive( socket, cache.back(), flags))
+                        return range_last( cache);
+                  }
+                  else
+                  {
+                     policy::complete_type complete;
+                     if( receive( socket, complete, flags))
+                     {
+                        cache.push_back( std::move( complete));
+                        return range_last( cache);
+                     }
+                     else if( ! complete.empty())
+                     {
+                        // we got part of the message, put in the cache...
+                        cache.push_back( std::move( complete));
+                     }
+                  }
+
+                  return {};
+               }
+
+            } // <unnamed>
+         } // local
+
          cache_range_type Blocking::receive( const Connector& tcp, cache_type& cache)
          {
-            return native::local::receive( tcp, cache, {});
+            while( true)
+            {
+               if( auto result = local::receive( tcp.socket(), cache, {}))
+                  return result;
+            }
          }
 
-         Uuid Blocking::send( const Connector& tcp, const policy::complete_type& complete)
+         Uuid Blocking::send( const Connector& tcp, complete_type&& complete)
          {
-            return native::send( tcp.socket(), complete, {});
+            while( ! local::send( tcp.socket(), complete, {}))
+               ; // no-op
+
+            return complete.correlation();
          }
 
 
@@ -573,12 +601,13 @@ namespace casual
          {
             cache_range_type Blocking::receive( const Connector& tcp, cache_type& cache)
             {
-               return native::local::receive( tcp, cache, native::Flag::non_blocking);
+               return local::receive( tcp.socket(), cache, local::Flag::non_blocking);
             }
 
-            Uuid Blocking::send( const Connector& tcp, const policy::complete_type& complete)
+            complete_type Blocking::send( const Connector& tcp, complete_type&& complete)
             {
-               return native::send( tcp.socket(), complete, native::Flag::non_blocking);
+               local::send( tcp.socket(), complete, local::Flag::non_blocking);
+               return std::move( complete);
             }
 
          } // non
