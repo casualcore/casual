@@ -80,14 +80,14 @@ casual_common_objectfiles = [
     Compile( 'source/transaction/transaction.cpp'),
     
     Compile( 'source/communication/ipc.cpp'),
+    Compile( 'source/communication/ipc/message.cpp'),
     Compile( 'source/communication/socket.cpp'),
     Compile( 'source/communication/tcp.cpp'),
+    Compile( 'source/communication/tcp/message.cpp'),
     Compile( 'source/communication/instance.cpp'),
     Compile( 'source/communication/select.cpp'),
     Compile( 'source/communication/device.cpp'),
     Compile( 'source/communication/stream.cpp'),
-    
-    Compile( 'source/communication/message.cpp'),
     Compile( 'source/communication/log.cpp'),
         
     Compile( 'source/message/handle.cpp'),

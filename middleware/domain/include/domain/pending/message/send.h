@@ -9,7 +9,7 @@
 #include "domain/common.h"
 
 #include "common/message/pending.h"
-#include "common/communication/message.h"
+#include "common/communication/ipc/message.h"
 #include "common/communication/ipc.h"
 
 namespace casual

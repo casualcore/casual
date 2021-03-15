@@ -6,7 +6,7 @@
 
 #include "common/argument.h"
 #include "common/process.h"
-#include "common/exception/handle.h"
+#include "common/exception/guard.h"
 
 #include "common/environment.h"
 

@@ -156,7 +156,7 @@ namespace casual
             {
                namespace instance
                {
-                  bool request( const common::communication::message::Complete& message, state::resource::Proxy::Instance& instance)
+                  bool request( const common::communication::ipc::message::Complete& message, state::resource::Proxy::Instance& instance)
                   {
                      Trace trace{ "transaction::action::resource::instance::request"};
 

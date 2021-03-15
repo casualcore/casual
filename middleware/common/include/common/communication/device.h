@@ -8,7 +8,6 @@
 #pragma once
 
 
-#include "common/communication/message.h"
 #include "common/communication/log.h"
 
 #include "common/serialize/native/binary.h"
@@ -64,19 +63,14 @@ namespace casual
       } // policy
 
 
-
-      namespace inbound
-      {
-         using cache_type = std::vector< message::Complete>;
-         using cache_range_type = range::type_t< cache_type>;
-      }
-
-      template< typename Connector, typename Deserialize = serialize::native::binary::create::Reader>
+      template< typename Connector>
       struct Inbound
       {
          using connector_type = Connector;
-         using deserialize_type = Deserialize;
 
+         using cache_type = typename Connector::cache_type;
+         using cache_range_type = range::type_t< cache_type>;
+         using complete_type = traits::iterable::value_t< cache_type>;
 
          template< typename... Args>
          Inbound( Args&&... args) : m_connector{ std::forward< Args>( args)...} {}
@@ -88,9 +82,9 @@ namespace casual
                log::Stream warning{ "warning"};
                log::line( warning, "pending messages in cache - ", *this);
             }
-            else if( log::debug)
+            else if( verbose::log)
             {
-               log::Stream debug{ "casual.debug"};
+               log::Stream debug{ "casual.communication.verbose"};
                log::line( debug, "device: ", *this);
             }
          }
@@ -103,7 +97,7 @@ namespace casual
          //! @return a logical complete message if there is one,
          //!         otherwise the message has absent_message as type
          template< typename P>
-         message::Complete next( P&& policy)
+         complete_type next( P&& policy)
          {
             return select(
                []( auto& m){ return true;},
@@ -115,10 +109,10 @@ namespace casual
          //! @return a logical complete message if there is one,
          //!         otherwise the message has absent_message as type
          template< typename P>
-         message::Complete next( common::message::Type type, P&& policy)
+         complete_type next( common::message::Type type, P&& policy)
          {
             return select(
-               [=]( const message::Complete& m){ return m.type == type;},
+               [=]( const complete_type& m){ return m.type == type;},
                std::forward< P>( policy));
          }
 
@@ -130,10 +124,10 @@ namespace casual
          template< typename R, typename P>
          auto next( R&& types, P&& policy) 
             // `types` is a temple to enable other forms of containers than std::vector
-            -> std::enable_if_t< traits::concrete::is_same< decltype( *std::begin( types)), common::message::Type>::value, message::Complete>
+            -> std::enable_if_t< traits::concrete::is_same< decltype( *std::begin( types)), common::message::Type>::value, complete_type>
          {
             return select(
-               [&]( const message::Complete& m){ return ! common::algorithm::find( types, m.type).empty();},
+               [&]( const complete_type& m){ return ! common::algorithm::find( types, m.type).empty();},
                std::forward< P>( policy));
          }
 
@@ -142,10 +136,10 @@ namespace casual
          //! @return a logical complete message if there is one,
          //!         otherwise the message has absent_message as type
          template< typename P>
-         message::Complete next( const Uuid& correlation, P&& policy)
+         complete_type next( const Uuid& correlation, P&& policy)
          {
             return select(
-               [&]( const message::Complete& m){ return m.correlation == correlation;},
+               [&]( const complete_type& m){ return m.correlation == correlation;},
                std::forward< P>( policy));
          }
 
@@ -154,10 +148,10 @@ namespace casual
          //! @return a logical complete message if there is one,
          //!         otherwise the message has absent_message as type
          template< typename P>
-         message::Complete next( common::message::Type type, const Uuid& correlation, P&& policy)
+         complete_type next( common::message::Type type, const Uuid& correlation, P&& policy)
          {
             return select(
-               [&]( const message::Complete& m){ return m.type == type && m.correlation == correlation;},
+               [&]( const complete_type& m){ return m.type == type && m.correlation == correlation;},
                std::forward< P>( policy));
          }
 
@@ -166,7 +160,7 @@ namespace casual
          //! @return a logical complete message if there is one,
          //!         otherwise the message has absent_message as type
          template< typename Predicate, typename Policy>
-         message::Complete select( Predicate&& predicate, Policy&& policy)
+         complete_type select( Predicate&& predicate, Policy&& policy)
          {
             auto found = find(
                   std::forward< Policy>( policy),
@@ -241,13 +235,13 @@ namespace casual
             // Make sure we consume messages from the real queue first.
             flush();
 
-            if constexpr( std::is_same_v< std::decay_t< M>, message::Complete>)
+            if constexpr( std::is_same_v< std::decay_t< M>, complete_type>)
             {
-               static_assert( std::is_rvalue_reference_v< M>, "message::Complete needs to be a rvalue");
+               static_assert( std::is_rvalue_reference_v< M>, "complete_type needs to be a rvalue");
                m_cache.push_back( std::move( message));
             }
             else
-               m_cache.push_back( serialize::native::complete( std::forward< M>( message), serialize::native::create::reverse_t< Deserialize>{}));
+               m_cache.push_back( serialize::native::complete< complete_type>( std::forward< M>( message)));
 
              return m_cache.back().correlation;
          }
@@ -270,11 +264,10 @@ namespace casual
 
 
          CASUAL_LOG_SERIALIZE(
-         {
             CASUAL_SERIALIZE_NAME( m_connector, "connector");
             CASUAL_SERIALIZE_NAME( m_cache, "cache");
             CASUAL_SERIALIZE_NAME( m_discarded, "discarded");
-         })
+         )
 
       private:
 
@@ -301,7 +294,7 @@ namespace casual
          {
             if( complete)
             {
-               serialize::native::complete( complete, message, Deserialize{});
+               serialize::native::complete( complete, message);
                return true;
             }
             return false;
@@ -309,7 +302,7 @@ namespace casual
 
 
          template< typename Policy, typename Predicate>
-         inbound::cache_range_type find( Policy&& policy, Predicate&& predicate)
+         cache_range_type find( Policy&& policy, Predicate&& predicate)
          {
             while( true)
             {
@@ -335,7 +328,7 @@ namespace casual
             }
          }
 
-         bool discard( const communication::message::Complete& complete)
+         bool discard( const complete_type& complete)
          {
             auto found = algorithm::find( m_discarded, complete.correlation);
 
@@ -347,7 +340,7 @@ namespace casual
             return false;
          }
 
-         inbound::cache_type m_cache;
+         cache_type m_cache;
          std::vector< Uuid> m_discarded;
          Connector m_connector;
       };
@@ -375,19 +368,18 @@ namespace casual
          const Connector& connector() const { return m_connector;}
 
          CASUAL_LOG_SERIALIZE(
-         {
             CASUAL_SERIALIZE_NAME( m_connector, "connector");
-         })
+         )
 
       private:
          Connector m_connector;
       };
 
       //! Doesn't do much. More for symmetry with inbound
-      template< typename Connector, typename Serialize = serialize::native::binary::create::Writer, typename Base = device::base_connector< Connector>>
+      template< typename Connector, typename Base = device::base_connector< Connector>>
       struct Outbound : Base
       {
-         using serialize_type = Serialize;
+         using complete_type = typename Connector::complete_type;
 
          using Base::Base;
 
@@ -396,20 +388,14 @@ namespace casual
          template< typename M, typename P>
          auto send( M&& message, P&& policy)
          {
-            if constexpr ( std::is_same_v< std::decay_t< M>, message::Complete>)
+            if constexpr ( std::is_same_v< std::decay_t< M>, complete_type>)
                return apply( std::forward< P>( policy), message);
             else
             {
                if( ! message.execution)
                   message.execution = execution::id();
 
-               auto writer = Serialize{}();
-               writer << message;
-
-               message::Complete complete{
-                  common::message::type( message), 
-                  message.correlation ? message.correlation : uuid::make(),
-                  writer.consume()};
+               auto complete = serialize::native::complete< complete_type>( message);
 
                return apply(
                   std::forward< P>( policy),
@@ -433,7 +419,7 @@ namespace casual
          }
 
          template< typename Policy>
-         Uuid apply( Policy&& policy, const message::Complete& complete)
+         Uuid apply( Policy&& policy, const complete_type& complete)
          {
             while( true)
             {
@@ -460,10 +446,10 @@ namespace casual
       };
 
       //! duplex device - inbound and outbound
-      template< typename Connector, typename Serialize = serialize::native::binary::create::Writer>
-      struct Duplex : device::Outbound< Connector, Serialize, device::Inbound< Connector, common::serialize::native::create::reverse_t< Serialize>>>
+      template< typename Connector>
+      struct Duplex : device::Outbound< Connector, device::Inbound< Connector>>
       {
-         using base_type = device::Outbound< Connector, Serialize, device::Inbound< Connector, common::serialize::native::create::reverse_t< Serialize>>>;
+         using base_type = device::Outbound< Connector, device::Inbound< Connector>>;
          using base_type::base_type;
       };
 

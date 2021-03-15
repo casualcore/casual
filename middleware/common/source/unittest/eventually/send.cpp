@@ -26,7 +26,7 @@ namespace casual
             {
                namespace
                {
-                  void send( strong::ipc::id destination, communication::message::Complete&& complete)
+                  void send( strong::ipc::id destination, communication::ipc::message::Complete&& complete)
                   {
                      try
                      {
@@ -50,7 +50,7 @@ namespace casual
                         return singleton;
                      }
 
-                     void send( strong::ipc::id destination, communication::message::Complete&& complete)
+                     void send( strong::ipc::id destination, communication::ipc::message::Complete&& complete)
                      {
                         clean();
                         calls.push_back( std::async( &local::send, destination, std::move( complete)));
@@ -71,7 +71,8 @@ namespace casual
                   };
                } // <unnamed>
             } // local
-            Uuid send( strong::ipc::id destination, communication::message::Complete&& complete)
+            
+            Uuid send( strong::ipc::id destination, communication::ipc::message::Complete&& complete)
             {
                auto result = complete.correlation;
                local::Instance::instance().send( destination, std::move( complete));

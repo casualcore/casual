@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include "common/communication/ipc/message.h"
 #include "common/communication/device.h"
 #include "common/communication/socket.h"
 #include "common/communication/log.h"
@@ -19,16 +20,12 @@
 #include "common/file.h"
 
 
-
-
 #include <sys/un.h>
 
 namespace casual
 {
    namespace common::communication::ipc
    {
-      using size_type = platform::size::type;
-
       namespace message
       {
          namespace transport
@@ -85,7 +82,7 @@ namespace casual
 
             inline Transport() = default;
 
-            inline Transport( common::message::Type type, size_type size)
+            inline Transport( common::message::Type type, platform::size::type size)
             {
                message.header.type = type;
                message.header.size = size;
@@ -103,17 +100,17 @@ namespace casual
             inline auto& correlation() { return message.header.correlation;}
 
             //! @return payload size
-            inline size_type payload_size() const { return message.header.count;}
+            inline platform::size::type payload_size() const { return message.header.count;}
 
             //! @return the offset of the logical complete message this transport
             //!    message represent.
-            inline size_type payload_offset() const { return message.header.offset;}
+            inline platform::size::type payload_offset() const { return message.header.offset;}
 
             //! @return the size of the complete logical message
-            inline size_type complete_size() const { return message.header.size;}
+            inline platform::size::type complete_size() const { return message.header.size;}
 
             //! @return the total size of the transport message including header.
-            inline size_type size() const { return transport::header_size() + payload_size();}
+            inline platform::size::type size() const { return transport::header_size() + payload_size();}
 
             inline void* data() { return static_cast< void*>( &message);}
             inline const void* data() const { return static_cast< const void*>( &message);}
@@ -145,8 +142,7 @@ namespace casual
             friend std::ostream& operator << ( std::ostream& out, const Transport& value);
          };
 
-
-         inline size_type offset( const Transport& value) { return value.message.header.offset;}
+         inline platform::size::type offset( const Transport& value) { return value.message.header.offset;}
 
       } // message
 
@@ -164,12 +160,10 @@ namespace casual
 
          inline explicit operator bool () const { return ! m_socket.empty();}
 
-         // for logging only
          CASUAL_LOG_SERIALIZE(
-         {
             CASUAL_SERIALIZE_NAME( m_socket, "socket");
             CASUAL_SERIALIZE_NAME( m_ipc, "ipc");
-         })
+         )
 
       private:
          Socket m_socket;
@@ -238,13 +232,14 @@ namespace casual
 
       namespace policy
       {
-         using cache_type = device::inbound::cache_type;
-         using cache_range_type = device::inbound::cache_range_type;
+         using complete_type = message::Complete;
+         using cache_type = std::vector< complete_type>;
+         using cache_range_type = range::type_t< cache_type>;
 
          namespace blocking
          {
             cache_range_type receive( Handle& handle, cache_type& cache);
-            Uuid send( const Socket& socket, const Address& destination, const communication::message::Complete& complete);
+            Uuid send( const Socket& socket, const Address& destination, const complete_type& complete);
          } // blocking
 
 
@@ -258,7 +253,7 @@ namespace casual
             }
 
             template< typename Connector>
-            Uuid send( Connector&& connector, const communication::message::Complete& complete)
+            Uuid send( Connector&& connector, const complete_type& complete)
             {
                return policy::blocking::send( connector.socket(), connector.destination(), complete);
             }
@@ -269,7 +264,7 @@ namespace casual
             namespace blocking
             {
                cache_range_type receive( Handle& handle, cache_type& cache);
-               Uuid send( const Socket& socket, const Address& destination, const communication::message::Complete& complete);
+               Uuid send( const Socket& socket, const Address& destination, const complete_type& complete);
             } // blocking
 
             struct Blocking
@@ -281,7 +276,7 @@ namespace casual
                }
 
                template< typename Connector>
-               Uuid send( Connector&& connector, const communication::message::Complete& complete)
+               Uuid send( Connector&& connector, const complete_type& complete)
                {
                   return policy::non::blocking::send( connector.socket(), connector.destination(), complete);
                }
@@ -299,6 +294,7 @@ namespace casual
             using transport_type = message::Transport;
             using blocking_policy = policy::Blocking;
             using non_blocking_policy = policy::non::Blocking;
+            using cache_type = policy::cache_type;
 
 
             Connector();
@@ -311,18 +307,13 @@ namespace casual
             inline Handle& handle() { return m_handle;}
             inline auto descriptor() const { return m_handle.socket().descriptor();}
 
-            // for logging only
             CASUAL_LOG_SERIALIZE(
-            {
                CASUAL_SERIALIZE_NAME( m_handle, "handle");
-            })
+            )
 
          private:
             Handle m_handle;
          };
-
-         template< typename S>
-         using basic_device = device::Inbound< Connector, S>;
 
          using Device = device::Inbound< Connector>;
 
@@ -341,6 +332,7 @@ namespace casual
             using transport_type = message::Transport;
             using blocking_policy = policy::Blocking;
             using non_blocking_policy = policy::non::Blocking;
+            using complete_type = policy::complete_type;
 
             Connector( strong::ipc::id destination);
             ~Connector() = default;

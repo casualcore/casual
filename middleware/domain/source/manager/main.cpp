@@ -7,6 +7,7 @@
 
 #include "domain/manager/manager.h"
 
+#include "common/communication/ipc.h"
 #include "common/exception/handle.h"
 #include "common/argument.h"
 

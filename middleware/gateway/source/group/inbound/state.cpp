@@ -36,7 +36,7 @@ namespace casual
                   m_size -= Requests::size( message);
                   message.pending = pending;
 
-                  return serialize::native::complete( std::move( message));
+                  return serialize::native::complete< complete_type>( std::move( message));
                }
 
                common::code::raise::log( common::code::casual::invalid_argument, "failed to find correlation: ", correlation);

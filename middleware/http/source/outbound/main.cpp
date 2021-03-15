@@ -8,7 +8,7 @@
 #include "http/outbound/manager.h"
 
 #include "common/argument.h"
-#include "common/exception/handle.h"
+#include "common/exception/guard.h"
 
 namespace casual
 {

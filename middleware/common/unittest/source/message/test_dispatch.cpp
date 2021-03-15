@@ -88,7 +88,7 @@ namespace casual
                local::dispatch_type handler{ local::TestHandler()};
 
                message::shutdown::Request message;
-               auto complete = serialize::native::complete( message);
+               auto complete = serialize::native::complete< communication::ipc::message::Complete>( message);
 
                EXPECT_TRUE( handler( complete));
             }
@@ -100,7 +100,7 @@ namespace casual
                local::dispatch_type handler{ local::TestHandler()};
 
                message::service::call::ACK message;
-               auto complete = serialize::native::complete( message);
+               auto complete = serialize::native::complete< communication::ipc::message::Complete>( message);
 
                // We have not handler for this message-type.
                EXPECT_FALSE( handler( complete));

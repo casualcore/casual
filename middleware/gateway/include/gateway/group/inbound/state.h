@@ -11,6 +11,7 @@
 #include "common/serialize/macro.h"
 #include "common/communication/select.h"
 #include "common/communication/tcp.h"
+#include "common/communication/ipc.h"
 #include "common/domain.h"
 #include "common/message/service.h"
 #include "common/message/coordinate.h"
@@ -41,7 +42,7 @@ namespace casual
 
             struct Requests
             {
-               using complete_type = common::communication::message::Complete;
+               using complete_type = common::communication::ipc::message::Complete;
 
                inline pending::Limit limit() const { return m_limits;}
                inline void limit( pending::Limit limit) { m_limits = limit;}
@@ -57,7 +58,7 @@ namespace casual
                template< typename M>
                inline auto add( M&& message)
                {
-                  m_complete.push_back( common::serialize::native::complete( std::forward< M>( message)));
+                  m_complete.push_back( common::serialize::native::complete< complete_type>( std::forward< M>( message)));
                   m_size += m_complete.back().size();
                }
 
