@@ -19,9 +19,11 @@
    #include <libkern/OSByteOrder.h>
 #elif defined (__OpenBSD__)
    #include <sys/types.h>
-#elif defined (WIN32)
-   #include <stdint.h>
+#elif defined (_WIN64)
+   #include <cstdint>
    #define BYTE_ORDER LITTLE_ENDIAN
+#elif defined (__CYGWIN__)
+   #include <cstdint>
 #elif defined (__vxworks)
    #include <netinet/in.h>
 #else
@@ -95,7 +97,7 @@
    #error "Undefined host byte order"
 #endif
 
-#if defined (WIN32)
+#if defined (_WIN64)
 
    uint16_t __bswap_16 (uint16_t x);
    uint32_t __bswap_32 (uint32_t x);
@@ -114,6 +116,8 @@
    #define __bswap_64(x) OSSwapInt64(x)
 
 #elif defined (__linux__)
+
+#elif defined (__CYGWIN__)
 
 #else
    #error "Unknown Environment"

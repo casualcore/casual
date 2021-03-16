@@ -15,6 +15,7 @@
 #pragma once
 
 #include <stdlib.h>
+#include <stdint.h>
 
 /*
  * Map COBOL record to C struct

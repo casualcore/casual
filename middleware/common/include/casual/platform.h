@@ -31,8 +31,7 @@
 #include <csetjmp>
 
 // time
-#include <time.h>
-
+#include <ctime>
 
 
 // alarm
@@ -44,10 +43,10 @@
 #include <cstring>
 
 
-#ifdef __APPLE__
-#include <limits.h>
-#else
+#ifdef __linux__
 #include <linux/limits.h>
+#else
+#include <limits.h>
 #endif
 
 

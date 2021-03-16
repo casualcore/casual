@@ -49,11 +49,11 @@ domain:
          dependencies: [ user]
    
    servers:
-      - path: "${CASUAL_REPOSITORY_ROOT}/middleware/service/bin/casual-service-manager"
+      - path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/service/bin/casual-service-manager"
         memberships: [ base]
-      - path: "${CASUAL_REPOSITORY_ROOT}/middleware/transaction/bin/casual-transaction-manager"
+      - path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/transaction/bin/casual-transaction-manager"
         memberships: [ base]
-      - path: "${CASUAL_REPOSITORY_ROOT}/middleware/gateway/bin/casual-gateway-manager"
+      - path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/gateway/bin/casual-gateway-manager"
         memberships: [ gateway]
 )";
                
@@ -152,7 +152,7 @@ domain:
    name: A
 
    servers:
-      - path: "${CASUAL_REPOSITORY_ROOT}/middleware/example/server/bin/casual-example-server"
+      - path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-server"
         memberships: [ user]
    gateway:
       inbound:
@@ -166,7 +166,7 @@ domain:
    name: B
 
    servers:
-      -  path: "${CASUAL_REPOSITORY_ROOT}/middleware/queue/bin/casual-queue-manager"
+      -  path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/queue/bin/casual-queue-manager"
          memberships: [ queue]
       
    queue:
@@ -243,7 +243,7 @@ domain:
    name: B
 
    servers:
-      -  path: "${CASUAL_REPOSITORY_ROOT}/middleware/example/server/bin/casual-example-server"
+      -  path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-server"
          memberships: [ user]
 
    gateway:
@@ -320,7 +320,7 @@ domain:
    name: B
 
    servers:
-      -  path: "${CASUAL_REPOSITORY_ROOT}/middleware/example/server/bin/casual-example-server"
+      -  path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-server"
          memberships: [ user]
 
    gateway:
@@ -396,7 +396,7 @@ domain:
    name: B
 
    servers:
-      -  path: "${CASUAL_REPOSITORY_ROOT}/middleware/example/server/bin/casual-example-server"
+      -  path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-server"
          memberships: [ user]
 
    gateway:

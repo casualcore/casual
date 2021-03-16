@@ -199,12 +199,7 @@ namespace casual
 
             public:
 
-               static Holder& instance()
-               {
-                  static Holder singleton;
-                  return singleton;
-               }
-
+               static Holder& instance();
 
                inline platform::buffer::raw::type allocate( const char* type, const char* subtype, platform::binary::size::type size)
                {

@@ -47,10 +47,10 @@ namespace casual
                   linger() = default;
                   linger( std::chrono::seconds time) : m_time( time) {}
 
-                  auto value()
+                  constexpr auto value() const
                   {
                      // using linger defined in sys/socket.h
-                     return ::linger{ 1, static_cast< int>( m_time.count())};
+                     return ::linger{ 1, static_cast< decltype(::linger::l_linger)>( m_time.count())};
                   }
                   std::chrono::seconds m_time{};
                };

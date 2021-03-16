@@ -14,6 +14,7 @@
 #include "common/buffer/type.h"
 #include "common/buffer/pool.h"
 
+#include "common/environment.h"
 
 #include "xatmi.h"
 
@@ -52,8 +53,21 @@ namespace casual
       //const auto FLD_BINARY3 = CASUAL_FIELD_BINARY * CASUAL_FIELD_TYPE_BASE + 2000 + 3;
    };
 
+   namespace
+   {
+      class casual_field_buffer_stream : public ::testing::Test
+      {
+      protected:
 
-   TEST( casual_field_buffer_stream, buffer_long_short)
+         void SetUp() override
+         {
+            casual::common::environment::variable::set( "CASUAL_FIELD_TABLE", "./sample/field.ini");
+         }
+      };
+   } //
+
+
+   TEST_F( casual_field_buffer_stream, buffer_long_short)
    {
       std::stringstream stream;
       {
@@ -83,7 +97,7 @@ namespace casual
    }
 
 
-   TEST( casual_field_buffer_stream, buffer_char_float_double)
+   TEST_F( casual_field_buffer_stream, buffer_char_float_double)
    {
       std::stringstream stream;
       {

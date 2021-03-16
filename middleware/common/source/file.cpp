@@ -42,12 +42,12 @@ namespace casual
             {
                strong::file::descriptor::id in()
                {
-                  return strong::file::descriptor::id{ ::fileno( ::stdin)};
+                  return strong::file::descriptor::id{ ::fileno( stdin)};
                }
 
                strong::file::descriptor::id out()
                {
-                  return strong::file::descriptor::id{ ::fileno( ::stdout)};
+                  return strong::file::descriptor::id{ ::fileno( stdout)};
                }
                
             } // standard

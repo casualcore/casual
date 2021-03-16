@@ -66,6 +66,11 @@ namespace casual
                return singleton;
             }
 
+            Holder& Holder::instance()
+            {
+               static Holder singleton;
+               return singleton;
+            }
 
             platform::buffer::raw::type Holder::allocate( const std::string& type, platform::binary::size::type size)
             {

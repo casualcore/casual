@@ -57,19 +57,19 @@ domain:
          dependencies: [ base]
    
    servers:
-      -  path: "${CASUAL_REPOSITORY_ROOT}/middleware/service/bin/casual-service-manager"
+      -  path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/service/bin/casual-service-manager"
          memberships: [ base]
-      -  path: "${CASUAL_REPOSITORY_ROOT}/middleware/transaction/bin/casual-transaction-manager"
+      -  path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/transaction/bin/casual-transaction-manager"
          memberships: [ base]
          
       -  alias: A
-         path: "${CASUAL_REPOSITORY_ROOT}/middleware/example/server/bin/casual-example-server"
+         path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-server"
          memberships: [ user]
          restrictions:
             -  casual/example/echo
 
       -  alias: B
-         path: "${CASUAL_REPOSITORY_ROOT}/middleware/example/server/bin/casual-example-server"
+         path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-server"
          memberships: [ user]
          restrictions:
             -  casual/example/sink
