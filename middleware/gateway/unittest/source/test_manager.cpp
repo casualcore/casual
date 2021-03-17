@@ -756,10 +756,6 @@ domain:
          // we exposes service "a"
          casual::service::unittest::advertise( { "a"});
 
-         // discover to make sure outbound(s) knows about wanted services
-         auto discovered = unittest::discover( { "a"}, {});
-         ASSERT_TRUE( discovered.replies.size() == 1);
-
          auto outbound = []() -> process::Handle
          {
             auto state = local::call::wait::ready::state();
@@ -777,10 +773,13 @@ domain:
 
          ASSERT_TRUE( outbound);
 
+
+         // discover to make sure outbound(s) knows about wanted services
+         auto discovered = unittest::discover( { "a"}, {});
+         ASSERT_TRUE( discovered.replies.size() == 1) << CASUAL_NAMED_VALUE( discovered);
+
          // subscribe to metric events
          event::subscribe( common::process::handle(), { common::message::event::service::Calls::type()});
-
-         
 
          // Expect us to reach service remote1 via outbound -> inbound -> <service remote1>
          // we act as the server

@@ -7,6 +7,7 @@
 #pragma once
 
 #include "gateway/group/outbound/state/route.h"
+#include "gateway/group/tcp.h"
 #include "gateway/message.h"
 
 #include "common/serialize/macro.h"
@@ -40,23 +41,6 @@ namespace casual
 
          namespace external
          {
-            struct Connection
-            {
-               inline explicit Connection( common::communication::tcp::Duplex&& device)
-                  : device{ std::move( device)} {}
-
-               common::communication::tcp::Duplex device;
-
-               inline friend bool operator == ( const Connection& lhs, common::strong::file::descriptor::id rhs) 
-               { 
-                  return lhs.device.connector().descriptor() == rhs;
-               }
-               
-               CASUAL_LOG_SERIALIZE( 
-                  CASUAL_SERIALIZE( device);
-               )
-            };
-
             namespace connection
             {
                struct Information
@@ -101,7 +85,7 @@ namespace casual
                
             }
 
-            inline state::external::Connection* connection( common::strong::file::descriptor::id descriptor)
+            inline group::tcp::Connection* connection( common::strong::file::descriptor::id descriptor)
             {
                if( auto found = common::algorithm::find( connections, descriptor))
                   return found.data();
@@ -129,7 +113,7 @@ namespace casual
                information.clear();
             }
 
-            std::vector< state::external::Connection> connections;
+            std::vector< group::tcp::Connection> connections;
             std::vector< common::strong::file::descriptor::id> descriptors;
             std::vector< state::external::connection::Information> information;
 
@@ -236,19 +220,6 @@ namespace casual
             )
          };
 
-         namespace pending
-         {
-            struct Target
-            {
-               common::strong::file::descriptor::id descriptor{};
-               std::vector< common::communication::tcp::message::Complete> messages;
-            };
-
-            
-
-
-         } // pending
-
       } // state
 
       struct State
@@ -279,6 +250,7 @@ namespace casual
                CASUAL_SERIALIZE( message);
             )
          } route;
+
          
          state::Lookup lookup;
 
@@ -309,7 +281,7 @@ namespace casual
 
             reply.state.connections = common::algorithm::transform( external.connections, [&]( auto& connection)
             {
-               auto descriptor = connection.device.connector().descriptor();
+               auto descriptor = connection.descriptor();
                message::outbound::state::Connection result;
                result.descriptor = descriptor;
                result.address.local = common::communication::tcp::socket::address::host( descriptor);
@@ -324,6 +296,29 @@ namespace casual
 
                return result;
             });
+
+            // pending
+            {
+               reply.state.pending.messages = common::algorithm::accumulate( route.message.points(), std::vector< message::outbound::state::pending::Message>{}, []( auto result, auto& point)
+               {
+                  if( auto found = common::algorithm::find( result, point.type))
+                     ++found->count;
+                  else
+                     result.push_back( message::outbound::state::pending::Message{ point.type, 1});
+
+                  return result;
+               });
+               
+               if( ! route.service.message.empty())
+               {
+                  reply.state.pending.messages.push_back( 
+                     message::outbound::state::pending::Message{
+                        common::message::Type::service_call, 
+                        route.service.message.size()});
+               }
+
+            }
+
             return reply;
          }
          

@@ -128,11 +128,35 @@ namespace casual
             Configuration configuration;
             platform::time::point::type created{};
 
+            struct
+            {
+               struct Metric
+               {
+                  platform::size::type count{};
+                  platform::size::type pending{};
+
+                  CASUAL_CONST_CORRECT_SERIALIZE(
+                     CASUAL_SERIALIZE( count);
+                     CASUAL_SERIALIZE( pending);
+                  )
+               };
+               
+               Metric send;
+               Metric receive;
+
+               CASUAL_CONST_CORRECT_SERIALIZE(
+                  CASUAL_SERIALIZE( send);
+                  CASUAL_SERIALIZE( receive);
+               )
+               
+            } metric;
+
             CASUAL_CONST_CORRECT_SERIALIZE(
                CASUAL_SERIALIZE( address);
                CASUAL_SERIALIZE( descriptor);
                CASUAL_SERIALIZE( domain);
                CASUAL_SERIALIZE( configuration);
+               CASUAL_SERIALIZE( metric);
                CASUAL_SERIALIZE( created);
             )
          };
@@ -254,6 +278,31 @@ namespace casual
          namespace state
          {
             using Connection = message::state::basic_connection< casual::configuration::model::gateway::outbound::Connection>;
+
+            namespace pending
+            {
+               struct Message
+               {
+                  common::message::Type type{};
+                  platform::size::type count{};
+
+                  inline friend bool operator == ( const Message& lhs, common::message::Type rhs) { return lhs.type == rhs;}
+
+                  CASUAL_CONST_CORRECT_SERIALIZE(
+                     CASUAL_SERIALIZE( type);
+                     CASUAL_SERIALIZE( count);
+                  )
+               };
+            } // pending
+
+            struct Pending
+            {
+               std::vector< pending::Message> messages;
+
+               CASUAL_CONST_CORRECT_SERIALIZE(
+                  CASUAL_SERIALIZE( messages);
+               )
+            };
             
          } // state
 
@@ -265,18 +314,21 @@ namespace casual
 
             std::vector< state::Connection> connections;
 
+            state::Pending pending;
+
             CASUAL_CONST_CORRECT_SERIALIZE(
                CASUAL_SERIALIZE( alias);
                CASUAL_SERIALIZE( note);
                CASUAL_SERIALIZE( order);
                CASUAL_SERIALIZE( connections);
+               CASUAL_SERIALIZE( pending);
             )
          };
 
 
          using Connect = common::message::basic_request< common::message::Type::gateway_outbound_connect>;
 
-         namespace configuration::update
+         namespace configuration::update 
          {
             using base_request = common::message::basic_request< common::message::Type::gateway_outbound_configuration_update_request>;
             struct Request : base_request

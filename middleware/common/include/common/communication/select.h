@@ -85,6 +85,7 @@ namespace casual
       {
          struct read{};
          struct write{};
+         struct consume{};
       } // tag
 
       namespace dispatch
@@ -101,15 +102,15 @@ namespace casual
             namespace consume
             {
                template< typename H>
-               auto handle( H& handler, traits::priority::tag< 1>) 
-                  -> decltype( handler() == strong::file::descriptor::id{})
+               auto dispatch( H& handler, traits::priority::tag< 1>) 
+                  -> decltype( handler( tag::consume{}))
                {
-                  return predicate::boolean( handler());
+                  return handler( tag::consume{});
                }
                
                //! no-op for all others...
                template< typename H> 
-               constexpr auto handle( H& handler, traits::priority::tag< 0>)
+               constexpr auto dispatch( H& handler, traits::priority::tag< 0>)
                {
                   return false;
                }
@@ -120,7 +121,7 @@ namespace casual
                template< typename H, typename... Hs> 
                bool dispatch( H& handler, Hs&... handlers)
                {
-                  return handle( handler, traits::priority::tag< 1>{}) || dispatch( handlers...);
+                  return dispatch( handler, traits::priority::tag< 1>{}) || dispatch( handlers...);
                }
             } // consume
          
@@ -150,14 +151,12 @@ namespace casual
                   });
                }
 
-               //! 'consume' handler (only read)
+               //! 'consume' handler - no op
                template< typename R, typename H> 
                auto dispatch( R& ready, H& handler, traits::priority::tag< 0>) 
-                  -> decltype( void( handler() == strong::file::descriptor::id{}))
+                  -> decltype( void( handler( tag::consume{})))
                { 
-                  // if the consume returns a valid descriptor, remove it from the 'read set'
-                  if( auto result = handler())
-                     ready.read = algorithm::filter( ready.read, [result]( auto descriptor){ return descriptor != result;});
+                  // no-op.
                }
 
                template< typename R, typename H> 
@@ -211,8 +210,8 @@ namespace casual
                   {
                      try 
                      {   
-                        // make sure we try to consume from the handlers before
-                        // we might block forever. Handlers could have cached messages
+                        // make sure we try to consume from the 'consume-handlers' before
+                        // we might block forever. This gives possibilities to consume cached messages
                         // that wont be triggered via multiplexing on file descriptors
                         while( detail::consume::dispatch( handlers...))
                            if( condition::detail::invoke< condition::detail::tag::done>( condition))
@@ -225,7 +224,7 @@ namespace casual
                         if( condition::detail::invoke< condition::detail::tag::done>( condition))
                            return;
 
-                        // we block in `detail::select` with the read set.
+                        // we block in `detail::select` with the read and write sets.
                         detail::dispatch( 
                            detail::select( directive),
                            handlers...);

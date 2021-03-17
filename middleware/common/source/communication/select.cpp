@@ -9,132 +9,131 @@
 
 namespace casual
 {
-   namespace common
+   using namespace common;
+
+   namespace common::communication::select
    {
-      namespace communication
+
+      namespace directive
       {
-         namespace select
+         void Set::add( strong::file::descriptor::id descriptor) noexcept
          {
-            namespace directive
+            if( ! algorithm::find( m_descriptors, descriptor))
+               m_descriptors.push_back( descriptor);
+         }
+
+         void Set::remove( strong::file::descriptor::id descriptor) noexcept
+         {
+            if( auto found = algorithm::find( m_descriptors, descriptor))
+               m_descriptors.erase( std::begin( found));
+         }
+
+      } // directive
+
+
+      namespace dispatch
+      {
+         namespace detail
+         {
+            namespace local
             {
-               void Set::add( strong::file::descriptor::id descriptor) noexcept
+               namespace
                {
-                  m_descriptors.push_back( descriptor);
-               }
-
-               void Set::remove( strong::file::descriptor::id descriptor) noexcept
-               {
-                  if( auto found = algorithm::find( m_descriptors, descriptor))
-                     m_descriptors.erase( std::begin( found));
-               }
-
-            } // directive
-
-
-            namespace dispatch
-            {
-               namespace detail
-               {
-                  namespace local
+                  template< typename T> 
+                  void fd_zero( T& value)
                   {
-                     namespace
-                     {
-                        template< typename T> 
-                        void fd_zero( T& value)
-                        {
 #ifdef __APPLE__
-                           // error: The bzero() function is obsoleted by memset() [clang-analyzer-security.insecureAPI.bzero,-warnings-as-errors]
-                           value = T{};
+                     // error: The bzero() function is obsoleted by memset() [clang-analyzer-security.insecureAPI.bzero,-warnings-as-errors]
+                     value = T{};
 #else
-                           FD_ZERO( &value);
+                     FD_ZERO( &value);
 #endif 
-                        }
-                        
-                        //! takes care of atomic signals...
-                        void select( ::fd_set* read, ::fd_set* write)
-                        {
-                           // block all signals
-                           signal::thread::scope::Block block;
-
-                           // check pending signals
-                           if( signal::pending( block.previous()))
-                              code::raise::log( code::casual::interupted);
-                        
-                           posix::result( 
-                              // will set previous signal mask atomically 
-                              ::pselect( FD_SETSIZE, read, write, nullptr, nullptr, &block.previous().set));
-                        }
-
-                     } // <unnamed>
-                  } // local
-
-                  directive::Ready select( const Directive& directive)
+                  }
+                  
+                  //! takes care of atomic signals...
+                  void select( ::fd_set* read, ::fd_set* write)
                   {
-                     Trace trace{ "common::communication::select::dispatch::detail::select"};
-                     log::line( verbose::log, "directive: ", directive);
+                     // block all signals
+                     signal::thread::scope::Block block;
 
-                     ::fd_set read;
-                     ::fd_set write;
-                     local::fd_zero( read);
-                     local::fd_zero( write);
-
-                     auto set_set = []( auto&& descriptors, auto& set)
-                     {
-                        for( auto descriptor : descriptors)
-                        {
-                           assert( descriptor);
-                           FD_SET( descriptor.value(), &set);
-                        }
-                     };
-
-                     set_set( directive.read.descriptors(), read);
-                     set_set( directive.write.descriptors(), write);
-
-                     // takes care of atomic signals...
-                     local::select( &read, &write);
-
-                     auto filter_ready = []( auto&& descriptors, auto& set)
-                     {
-                        return algorithm::filter( descriptors, [&set]( auto& descriptor)
-                        {
-                           return FD_ISSET( descriptor.value(), &set) != 0;
-                        });
-                     };
-
-                     return directive::Ready{
-                        filter_ready( directive.read.descriptors(), read),
-                        filter_ready( directive.write.descriptors(), write),
-                     };
+                     // check pending signals
+                     if( signal::pending( block.previous()))
+                        code::raise::log( code::casual::interupted);
+                  
+                     posix::result( 
+                        // will set previous signal mask atomically 
+                        ::pselect( FD_SETSIZE, read, write, nullptr, nullptr, &block.previous().set));
                   }
 
-                  namespace handle
-                  {
-                     void error()
-                     {
-                        Trace trace{ "common::communication::select::dispatch::detail::handle::error"};
-                        device::handle::error();
-                     }
-                  } // handle
+               } // <unnamed>
+            } // local
 
-               } // detail
-
-            } // dispatch
-
-            namespace block
+            directive::Ready select( const Directive& directive)
             {
-               void read( strong::file::descriptor::id descriptor)
+               Trace trace{ "common::communication::select::dispatch::detail::select"};
+               log::line( verbose::log, "directive: ", directive);
+
+               ::fd_set read;
+               ::fd_set write;
+               local::fd_zero( read);
+               local::fd_zero( write);
+
+               auto set_set = []( auto&& descriptors, auto& set)
                {
-                  ::fd_set read;
-                  dispatch::detail::local::fd_zero( read);
+                  for( auto descriptor : descriptors)
+                  {
+                     assert( descriptor);
+                     FD_SET( descriptor.value(), &set);
+                  }
+               };
 
-                  assert( descriptor);
-                  FD_SET( descriptor.value(), &read);
+               set_set( directive.read.descriptors(), read);
+               set_set( directive.write.descriptors(), write);
 
-                  dispatch::detail::local::select( &read, nullptr);
+               // takes care of atomic signals...
+               local::select( &read, &write);
+
+               auto filter_ready = []( auto&& descriptors, auto& set)
+               {
+                  return algorithm::filter( descriptors, [&set]( auto& descriptor)
+                  {
+                     return FD_ISSET( descriptor.value(), &set) != 0;
+                  });
+               };
+
+               return directive::Ready{
+                  filter_ready( directive.read.descriptors(), read),
+                  filter_ready( directive.write.descriptors(), write),
+               };
+            }
+
+            namespace handle
+            {
+               void error()
+               {
+                  Trace trace{ "common::communication::select::dispatch::detail::handle::error"};
+                  device::handle::error();
                }
-            } // block
+            } // handle
 
-         } // select
-      } // communication
-   } // common
+         } // detail
+
+      } // dispatch
+
+      namespace block
+      {
+         void read( strong::file::descriptor::id descriptor)
+         {
+            ::fd_set read;
+            dispatch::detail::local::fd_zero( read);
+
+            assert( descriptor);
+            FD_SET( descriptor.value(), &read);
+
+            dispatch::detail::local::select( &read, nullptr);
+         }
+      } // block
+
+
+   } // common::communication::select
 } // casual

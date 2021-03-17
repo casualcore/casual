@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include "gateway/group/tcp.h"
 #include "gateway/message.h"
 
 #include "common/serialize/macro.h"
@@ -107,20 +108,14 @@ namespace casual
 
          namespace external
          {
-            struct Connection
+            struct Connection : group::tcp::Connection 
             {
-               inline explicit Connection( common::communication::Socket&& socket)
-                  : device{ std::move( socket)} {}
+               using group::tcp::Connection::Connection;
 
-               common::communication::tcp::Duplex device;
                message::domain::protocol::Version protocol{};
-
-               inline auto descriptor() const { return device.connector().descriptor();}
-
-               inline friend bool operator == ( const Connection& lhs, common::strong::file::descriptor::id rhs) { return lhs.device == rhs;}
                
                CASUAL_LOG_SERIALIZE( 
-                  CASUAL_SERIALIZE( device);
+                  group::tcp::Connection::serialize( archive);
                   CASUAL_SERIALIZE( protocol);
                )
             };
@@ -294,7 +289,7 @@ namespace casual
 
             reply.state.connections = common::algorithm::transform( external.connections, [&]( auto& connection)
             {
-               auto descriptor = connection.device.connector().descriptor();
+               auto descriptor = connection.descriptor();
                message::inbound::state::Connection result;
                result.descriptor = descriptor;
                result.address.local = common::communication::tcp::socket::address::host( descriptor);

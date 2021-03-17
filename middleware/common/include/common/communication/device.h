@@ -97,11 +97,22 @@ namespace casual
          //! @return a logical complete message if there is one,
          //!         otherwise the message has absent_message as type
          template< typename P>
-         complete_type next( P&& policy)
+         [[nodiscard]] complete_type next( P&& policy)
          {
             return select(
                []( auto& m){ return true;},
                std::forward< P>( policy));
+         }
+
+         //! @return the first complete message from the cache
+         [[nodiscard]] complete_type cached()
+         {
+            auto is_complete = []( auto& message){ return message.complete();};
+
+            if( auto found = algorithm::find_if( m_cache, is_complete))
+               return algorithm::extract( m_cache, std::begin( found));
+
+            return {};
          }
 
          //! Tries to find the first logic complete message with a specific type
@@ -109,7 +120,7 @@ namespace casual
          //! @return a logical complete message if there is one,
          //!         otherwise the message has absent_message as type
          template< typename P>
-         complete_type next( common::message::Type type, P&& policy)
+         [[nodiscard]] complete_type next( common::message::Type type, P&& policy)
          {
             return select(
                [type]( auto& complete){ return complete.type() == type;},
@@ -122,7 +133,7 @@ namespace casual
          //! @return a logical complete message if there is one,
          //!         otherwise the message has absent_message as type
          template< typename R, typename P>
-         auto next( R&& types, P&& policy) 
+         [[nodiscard]] auto next( R&& types, P&& policy) 
             // `types` is a temple to enable other forms of containers than std::vector
             -> std::enable_if_t< traits::concrete::is_same< decltype( *std::begin( types)), common::message::Type>::value, complete_type>
          {
@@ -136,7 +147,7 @@ namespace casual
          //! @return a logical complete message if there is one,
          //!         otherwise the message has absent_message as type
          template< typename P>
-         complete_type next( const Uuid& correlation, P&& policy)
+         [[nodiscard]] complete_type next( const Uuid& correlation, P&& policy)
          {
             return select(
                [&correlation]( auto& complete){ return complete.correlation() == correlation;},
@@ -148,7 +159,7 @@ namespace casual
          //! @return a logical complete message if there is one,
          //!         otherwise the message has absent_message as type
          template< typename P>
-         complete_type next( common::message::Type type, const Uuid& correlation, P&& policy)
+         [[nodiscard]] complete_type next( common::message::Type type, const Uuid& correlation, P&& policy)
          {
             return select(
                [type, &correlation]( auto& complete){ return complete.type() == type && complete.correlation() == correlation;},
@@ -160,22 +171,18 @@ namespace casual
          //! @return a logical complete message if there is one,
          //!         otherwise the message has absent_message as type
          template< typename Predicate, typename Policy>
-         complete_type select( Predicate&& predicate, Policy&& policy)
+         [[nodiscard]] complete_type select( Predicate&& predicate, Policy&& policy)
          {
             auto found = find(
                   std::forward< Policy>( policy),
                   predicate::make_and(
-                        []( const auto& m){ return m.complete();},
+                        []( const auto& message){ return message.complete();},
                         std::forward< Predicate>( predicate)));
 
             if( found)
-            {
-               auto result = std::move( *found);
-               m_cache.erase( std::begin( found));
-               return result;
-            }
-            return {};
+               return algorithm::extract( m_cache, std::begin( found));
 
+            return {};
          }
 
          //! Tries to find a message with the same type as @p message
@@ -257,6 +264,31 @@ namespace casual
          {
             flush();
             std::exchange( m_cache, {});
+         }
+
+         //! @returns the number of messages complete or incomplete in the cache
+         inline platform::size::type size() const noexcept { return m_cache.size();}
+
+         //! @returns the number of complete messages in the cache
+         inline platform::size::type complete() const noexcept 
+         { 
+            return algorithm::accumulate( m_cache, platform::size::type{}, []( auto result, auto& message)
+            {
+               if( message.complete())
+                  return ++result;
+               return result;
+            });
+         }
+
+         //! @returns the number of incomplete messages in the cache
+         inline platform::size::type incomplete() const noexcept
+         { 
+            return algorithm::accumulate( m_cache, platform::size::type{}, []( auto result, auto& message)
+            {
+               if( ! message.complete())
+                  return ++result;
+               return result;
+            });
          }
 
          Connector& connector() { return m_connector;}

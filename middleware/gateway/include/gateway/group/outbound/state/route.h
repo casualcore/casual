@@ -66,8 +66,9 @@ namespace casual
             return common::predicate::boolean( common::algorithm::find( m_points, connection));
          }
 
-         const auto& points() const { return m_points;}
-         bool empty() const { return m_points.empty();}
+         const auto& points() const noexcept { return m_points;}
+         bool empty() const noexcept { return m_points.empty();}
+         platform::size::type size() const noexcept { return m_points.size();}
 
          CASUAL_LOG_SERIALIZE(
             CASUAL_SERIALIZE_NAME( m_points, "points");
@@ -149,5 +150,5 @@ namespace casual
 
       } // service
 
-   } // gateway::group::outbound::state
+   } // gateway::group::outbound::state::route
 } // casual

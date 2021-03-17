@@ -7,6 +7,7 @@
 #include "gateway/group/outbound/handle.h"
 #include "gateway/group/outbound/state.h"
 #include "gateway/group/outbound/error/reply.h"
+#include "gateway/group/ipc.h"
 #include "gateway/message.h"
 
 #include "common/exception/guard.h"
@@ -25,12 +26,6 @@ namespace casual
       {
          namespace
          {
-            namespace ipc
-            {
-               auto& inbound() { return communication::ipc::inbound::device();}
-
-               auto& gateway() { return communication::instance::outbound::gateway::manager::device();}
-            } // ipc
 
             struct Arguments
             {
@@ -73,7 +68,7 @@ namespace casual
 
                // 'connect' to gateway-manager - will send configuration-update-request as soon as possible
                // that we'll handle in the main message pump
-               communication::device::blocking::send( ipc::gateway(), gateway::message::outbound::Connect{ process::handle()});
+               communication::device::blocking::send( ipc::manager::gateway(), gateway::message::outbound::Connect{ process::handle()});
 
                // 'connect' to our local domain
                common::communication::instance::whitelist::connect();
@@ -182,23 +177,7 @@ namespace casual
                   );
                }
 
-               namespace dispatch
-               {
-                  auto create( State& state) 
-                  { 
-                     state.directive.read.add( ipc::inbound().connector().descriptor());
-                     return [handler = internal::handler( state)]() mutable -> strong::file::descriptor::id
-                     {
-                        if( handler( communication::device::non::blocking::next( ipc::inbound())))
-                           return ipc::inbound().connector().descriptor();
-
-                        return {};
-                     };
-                  }
-               } // dispatch
             } // internal
-
-
 
             namespace external
             {
@@ -211,27 +190,23 @@ namespace casual
                      {
                         Trace trace{ "gateway::group::outbound::reverse::local::external::dispatch"};
 
-                        auto is_connection = [descriptor]( auto& connection)
-                        {
-                           return connection.device.connector().descriptor() == descriptor;
-                        };
-
-                        if( auto found = algorithm::find_if( state.external.connections, is_connection))
+                        if( auto connection = state.external.connection( descriptor))
                         {
                            try
                            {
                               state.external.last = descriptor;
-                              handler( communication::device::blocking::next( found->device));
+                              handler( connection->next());  
                            }
                            catch( ...)
                            {
                               if( exception::code() != code::casual::communication_unavailable)
                                  throw;
-                              
-                              outbound::handle::connection::lost( state, descriptor);
+
+                               outbound::handle::connection::lost( state, descriptor);
                            }
                            return true;
                         }
+
                         return false;
                      };
                   }
@@ -253,6 +228,10 @@ namespace casual
 
                               if( auto socket = communication::tcp::socket::accept( found->socket))
                               {
+                                 log::line( log::category::information, 
+                                    "connection established local: ", communication::tcp::socket::address::host( socket.descriptor()),
+                                    " - peer: ", communication::tcp::socket::address::peer( socket.descriptor()));
+
                                  // the socket needs to be 'blocking'
                                  socket.unset( communication::socket::option::File::no_block);
 
@@ -291,8 +270,9 @@ namespace casual
                communication::select::dispatch::pump( 
                   local::condition( state),
                   state.directive, 
-                  internal::dispatch::create( state),
+                  gateway::group::tcp::pending::send::dispatch( state),
                   external::dispatch::create( state),
+                  ipc::dispatch::create( state, &internal::handler),
                   external::listener::dispatch::create( state)
                );
                

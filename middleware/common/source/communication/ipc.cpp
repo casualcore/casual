@@ -245,7 +245,7 @@ namespace casual
                   if( error)
                      return local::check_error( error);
 
-                  log::line( verbose::log, "---> non blocking send - socket: ", socket, ", destination: ", destination, ", transport: ", transport);
+                  log::line( verbose::log, "ipc ---> non blocking send - socket: ", socket, ", destination: ", destination, ", transport: ", transport);
                   return true;
                }
 
@@ -262,7 +262,7 @@ namespace casual
                   if( result == -1)
                      return local::check_error();
 
-                  log::line( verbose::log, "<--- non blocking receive - handle: ", handle, ", transport: ", transport);
+                  log::line( verbose::log, "ipc <--- non blocking receive - handle: ", handle, ", transport: ", transport);
 
                   assert( result == transport.size());
 

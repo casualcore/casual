@@ -5,6 +5,7 @@
 //!
 
 #include "gateway/group/inbound/handle.h"
+#include "gateway/group/ipc.h"
 
 #include "gateway/message.h"
 #include "gateway/common.h"
@@ -25,18 +26,6 @@ namespace casual
       {
          namespace
          {
-            namespace ipc
-            {
-               namespace manager
-               {
-                  auto& service() { return communication::instance::outbound::service::manager::device();}
-                  auto& queue() { return communication::instance::outbound::queue::manager::device();}
-                  auto& transaction() { return common::communication::instance::outbound::transaction::manager::device();}
-
-               } // manager
-               auto& inbound() { return communication::ipc::inbound::device();}
-            } // ipc
-
             namespace tcp
             {
                template< typename M>
@@ -46,11 +35,8 @@ namespace casual
                   {
                      if( auto connection = state.consume( message.correlation))
                      {
-                        communication::device::blocking::send( 
-                           connection->device,
-                           std::forward< M>( message));
-
-                        return connection->device.connector().descriptor();
+                        connection->send( state, std::forward< M>( message));
+                        return connection->descriptor();
                      }
                      
                      log::line( log, code::casual::communication_unavailable, " connection absent when trying to send reply - ", message.type());
@@ -151,7 +137,7 @@ namespace casual
                               using Enum = decltype( message.state);
                               case Enum::idle:
                               {
-                                 if( ! communication::device::blocking::optional::send( message.process.ipc, request))
+                                 if( ! ipc::flush::optional::send( message.process.ipc, request))
                                  {
                                     log::line( common::log::category::error, common::code::xatmi::service_error, " server: ", message.process, " has been terminated during interdomain call - action: reply with: ", common::code::xatmi::service_error);
                                     send_error_reply( common::code::xatmi::service_error);
@@ -198,7 +184,7 @@ namespace casual
 
                            if( message.process)
                            {
-                              communication::device::blocking::send( message.process.ipc, request);
+                              ipc::flush::send( message.process.ipc, request);
                               return;
                            }
 
@@ -360,7 +346,7 @@ namespace casual
                            state.pending.requests.add( std::move( message));
 
                            // Send lookup
-                           communication::device::blocking::send( ipc::manager::service(), request);  
+                           ipc::flush::send( ipc::manager::service(), request);  
                         };
                      }
                   } // call
@@ -382,7 +368,7 @@ namespace casual
                            request.name = message.name;
                         }
 
-                        if( communication::device::blocking::optional::send( ipc::manager::queue(), request))
+                        if( ipc::flush::optional::send( ipc::manager::optional::queue(), request))
                         {
                            // Change 'sender' so we get the reply
                            message.process = common::process::handle();
@@ -488,13 +474,13 @@ namespace casual
                            if( ! message.services.empty())
                            {
                               pending.emplace_back(  
-                                 communication::device::blocking::send( ipc::manager::service(), message),
+                                 ipc::flush::send( ipc::manager::service(), message),
                                  ipc::manager::service().connector().process().pid);
                            }
 
                            if( ! message.queues.empty())
                            {
-                              if( auto correlation = communication::device::blocking::optional::send( ipc::manager::queue(), message))
+                              if( auto correlation = ipc::flush::optional::send( ipc::manager::optional::queue(), message))
                               {
                                  pending.emplace_back(  
                                     correlation,
@@ -537,7 +523,7 @@ namespace casual
                         {
                            // Set 'sender' so we get the reply
                            message.process = common::process::handle();
-                           communication::device::blocking::send( ipc::manager::transaction(), message);
+                           ipc::flush::send( ipc::manager::transaction(), message);
                         };
                      }
 
@@ -639,7 +625,7 @@ namespace casual
                // we don't need the reply
                request.reply = false;
 
-               communication::device::blocking::optional::send( local::ipc::manager::service(), request);
+               ipc::flush::optional::send( ipc::manager::service(), request);
             });
 
             algorithm::trim( state.pending.disconnects, algorithm::remove( state.pending.disconnects, descriptor));
@@ -654,18 +640,16 @@ namespace casual
             Trace trace{ "gateway::group::inbound::handle::connection::disconnect"};
             log::line( verbose::log, "descriptor: ", descriptor);
 
-            if( auto found = algorithm::find( state.external.connections, descriptor))
+            if( auto connection = state.external.connection( descriptor))
             {
-               log::line( verbose::log, "found: ", *found);
+               log::line( verbose::log, "connection: ", *connection);
 
-               if( found->protocol == decltype( found->protocol)::version_1_1)
+               if( connection->protocol == decltype( connection->protocol)::version_1_1)
                {
                   try 
                   {
                      state.correlations.emplace_back( 
-                        communication::device::blocking::send( 
-                           found->device,
-                           message::domain::disconnect::Request{}),
+                        connection->send( state, message::domain::disconnect::Request{}),
                         descriptor
                      );
                   }

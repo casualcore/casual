@@ -433,7 +433,11 @@ namespace casual
                      auto send_message = []( auto& socket, const ::msghdr* message, auto flags)
                      {
                         log::line( verbose::log, "socket: ", socket, ", flags: ", flags);
-                        return posix::result( ::sendmsg( socket.descriptor().value(), message, flags.underlaying()));
+
+                        return posix::alternative( 
+                           ::sendmsg( socket.descriptor().value(), message, flags.underlaying()),
+                           0,
+                           std::errc::resource_unavailable_try_again, std::errc::operation_would_block);
                      };
 
                      if( complete.offset >= message::header::size)
@@ -496,12 +500,16 @@ namespace casual
                   {
                      auto receive_message = []( auto& socket, auto first, auto count, auto flags)
                      {
-                        auto bytes = posix::result(
-                           ::recv( socket.descriptor().value(), first, count, flags.underlaying()));
+                        auto bytes = posix::alternative( 
+                           ::recv( socket.descriptor().value(), first, count, flags.underlaying()),
+                           -1,
+                           std::errc::resource_unavailable_try_again, std::errc::operation_would_block);
 
                         // _The return value will be 0 when the peer has performed an orderly shutdown_
                         if( bytes == 0)
                            code::raise::log( code::casual::communication_unavailable);
+                        else if( bytes == -1)
+                           return 0L;
 
                         return bytes;
                      };

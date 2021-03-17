@@ -6,6 +6,8 @@
 
 #include "gateway/group/outbound/handle.h"
 #include "gateway/group/outbound/error/reply.h"
+#include "gateway/group/tcp.h"
+#include "gateway/group/ipc.h"
 
 #include "gateway/message.h"
 #include "gateway/common.h"
@@ -25,52 +27,13 @@ namespace casual
       {
          namespace
          {
-            namespace ipc
-            {
-               namespace manager
-               {
-                  auto& service() { return communication::instance::outbound::service::manager::device();}
-                  auto& transaction() { return communication::instance::outbound::transaction::manager::device();}
-                  namespace optional
-                  {
-                     auto& queue() { return communication::instance::outbound::queue::manager::optional::device();}
-                  } // optional
-
-               } // manager
-
-               auto& inbound() { return communication::ipc::inbound::device();}
-            } // ipc
-
             namespace tcp
             {
                template< typename M>
                Uuid send( State& state, strong::file::descriptor::id descriptor, M&& message)
                {
-                  try
-                  {
-                     if( auto connection = state.external.connection( descriptor))
-                     {
-                        return communication::device::blocking::send( 
-                           connection->device,
-                           std::forward< M>( message));
-                     }
-                     else
-                     {
-                        log::line( log::category::error, code::casual::internal_correlation, " failed to correlate descriptor: ", descriptor);
-                        log::line( log::category::verbose::error, "state: ", state);
-                     }
-                  }
-                  catch( ...)
-                  {
-                     if( exception::code() != code::casual::communication_unavailable)
-                        throw;
-                           
-                     handle::connection::lost( state, descriptor);  
-                  }
-                  return {};
-               }
-
-               
+                  return group::tcp::send( state, descriptor, std::forward< M>( message), &handle::connection::lost);
+               }     
             } // tcp
 
             namespace internal
@@ -86,7 +49,7 @@ namespace casual
                         Trace trace{ "gateway::group::outbound::handle::local::internal::transaction::involved"};
                         log::line( verbose::log, "message: ", message);
 
-                        communication::device::blocking::send( 
+                        ipc::flush::send( 
                            ipc::manager::transaction(),
                            common::message::transaction::resource::external::involved::create( message));
                      }
@@ -159,13 +122,13 @@ namespace casual
                               return metric;
                            }());
 
-                           communication::device::blocking::optional::send( destination.process.ipc, message);
+                           ipc::flush::optional::send( destination.process.ipc, message);
 
                            // send service metrics if we don't have any more in-flight call request (this one
                            // was the last, or only) OR we've accumulated enough metrics for a batch update
                            if( state.route.service.message.empty() || state.route.service.metric.metrics.size() >= platform::batch::gateway::metrics)
                            {
-                              communication::device::blocking::optional::send( ipc::manager::service(), state.route.service.metric);
+                              ipc::flush::optional::send( ipc::manager::service(), state.route.service.metric);
                               state.route.service.metric.metrics.clear();
                            }
                         }
@@ -187,7 +150,8 @@ namespace casual
                            auto route = state::route::service::Point{
                               message.correlation,
                               message.process,
-                              message.service.name,
+                              // we keep the requested if provided. Will be used for "metric-ack" to service-manager later.
+                              message.service.requested.value_or( message.service.name),
                               message.parent,
                               now,
                               lookup.connection};
@@ -288,7 +252,7 @@ namespace casual
                                     request.order = state.order;
                                     algorithm::copy( services, request.services.add);
 
-                                    communication::device::blocking::send( ipc::manager::service(), request);
+                                    ipc::flush::send( ipc::manager::service(), request);
                                  }
 
                                  if( auto queues = std::get< 0>( algorithm::intersection( reply.queues, advertise.queues, equal_name)))
@@ -300,7 +264,7 @@ namespace casual
                                        return casual::queue::ipc::message::advertise::Queue{ queue.name, queue.retries};
                                     });
 
-                                    communication::device::blocking::send( ipc::manager::optional::queue(), request);
+                                    ipc::flush::send( ipc::manager::optional::queue(), request);
                                  }
                               };
 
@@ -324,7 +288,7 @@ namespace casual
                            {
                               log::line( log, "outbound is in shutdown mode - action: reply with empty discovery");
 
-                              communication::device::blocking::optional::send( 
+                              ipc::flush::optional::send( 
                                  message.process.ipc, 
                                  common::message::reverse::type( message, process::handle()));
                               return;
@@ -339,12 +303,13 @@ namespace casual
 
                               algorithm::for_each( state.external.connections, [&state, &result, &message]( auto& connection)
                               {
-                                 auto descriptor = connection.device.connector().descriptor();
+                                 auto descriptor = connection.descriptor();
 
                                  if( algorithm::find( state.disconnecting, descriptor))
                                     return;
 
-                                 if( auto correlation = communication::device::blocking::optional::send( connection.device, message))
+                                 // TODO: optional-send
+                                 if( auto correlation = connection.send( state, message))
                                     result.emplace_back( correlation, descriptor);
                               });
 
@@ -365,7 +330,7 @@ namespace casual
                               // make sure we're the replier...
                               algorithm::for_each( message.replies, []( auto& reply){ reply.process = process::handle();});
 
-                              communication::device::blocking::optional::send( destination, message);
+                              ipc::flush::optional::send( destination, message);
                            };
                            
                            state.coordinate.discovery( 
@@ -388,7 +353,7 @@ namespace casual
 
                            if( state.runlevel > decltype( state.runlevel())::running)
                            {
-                              communication::device::blocking::optional::send( 
+                              ipc::flush::optional::send( 
                                  message.process.ipc, 
                                  common::message::reverse::type( message));
                               return;
@@ -429,7 +394,7 @@ namespace casual
                               discover::detail::advertise::replies( state, replies, outcome);
 
                               auto reply = common::message::reverse::type( message, process::handle());
-                              communication::device::blocking::optional::send( message.process.ipc, reply);
+                              ipc::flush::optional::send( message.process.ipc, reply);
                            } ;
 
                            state.coordinate.discovery( pending(), std::move( callback));
@@ -458,7 +423,7 @@ namespace casual
                            {
                               log::line( log::category::error, code::casual::invalid_semantics, " failed to look up queue '", message.name);
                               auto reply = common::message::reverse::type( message);
-                              communication::device::blocking::optional::send( message.process.ipc, reply);
+                              ipc::flush::optional::send( message.process.ipc, reply);
                               return;
                            }
 
@@ -597,7 +562,7 @@ namespace casual
                                  common::message::service::Advertise unadvertise{ common::process::handle()};
                                  unadvertise.alias = instance::alias();
                                  unadvertise.services.remove = std::move( services);
-                                 communication::device::blocking::optional::send( ipc::manager::service(), unadvertise);
+                                 ipc::flush::optional::send( ipc::manager::service(), unadvertise);
                               }
 
                               // get the internal "un-branched" trid
@@ -631,7 +596,7 @@ namespace casual
 
                            if( auto destination = state.route.message.consume( message.correlation))
                            {
-                              communication::device::blocking::optional::send( destination.process.ipc, message);
+                              ipc::flush::optional::send( destination.process.ipc, message);
                            }
                            else
                               log::line( log::category::error, code::casual::internal_correlation, " failed to correlate [", message.correlation, "] reply with a destination - action: ignore");
@@ -667,7 +632,7 @@ namespace casual
                               if( auto destination = state.route.message.consume( message.correlation))
                               {
                                  message.process = process::handle();
-                                 communication::device::blocking::optional::send( destination.process.ipc, message);
+                                 ipc::flush::optional::send( destination.process.ipc, message);
                               }
                               else
                                  log::line( log::category::error, code::casual::internal_correlation, " failed to correlate [", message.correlation, "] reply with a destination - action: ignore");
@@ -718,7 +683,7 @@ namespace casual
       internal_handler internal( State& state)
       {
          return {
-            common::message::handle::defaults( local::ipc::inbound()),
+            common::message::handle::defaults( ipc::inbound()),
 
             // service
             local::internal::service::call::request( state),
@@ -772,14 +737,14 @@ namespace casual
             common::message::service::concurrent::Advertise request{ common::process::handle()};
             request.alias = instance::alias();
             request.services.remove = std::move( resources.services);
-            communication::device::blocking::send( local::ipc::manager::service(), request);
+            ipc::flush::send( ipc::manager::service(), request);
          }
 
          if( ! resources.queues.empty())
          {
             casual::queue::ipc::message::Advertise request{ common::process::handle()};
             request.queues.remove = std::move( resources.queues);
-            communication::device::blocking::send( local::ipc::manager::optional::queue(), request);
+            ipc::flush::send( ipc::manager::optional::queue(), request);
          }
       }
 
@@ -836,8 +801,8 @@ namespace casual
          
          log::line( verbose::log, "request: ", request);
 
-         state.route.message.emplace( 
-            communication::device::blocking::send( device, request),
+         state.route.message.emplace(
+            communication::device::blocking::send( device, request), // TODO: non::blocking...
             process::handle(), 
             common::message::type( request), 
             device.connector().descriptor());
@@ -881,7 +846,7 @@ namespace casual
          // send metric for good measure 
          if( ! state.route.service.metric.metrics.empty())
          {
-            communication::device::blocking::optional::send( local::ipc::manager::service(), state.route.service.metric);
+            ipc::flush::optional::send( ipc::manager::service(), state.route.service.metric);
             state.route.service.metric.metrics.clear();
          }
 

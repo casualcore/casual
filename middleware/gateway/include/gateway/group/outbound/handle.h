@@ -47,6 +47,8 @@ namespace casual
 
       //! hard shutdown - try to cancel stuff directly with best effort.
       void abort( State& state);
+
+
    
    } // gateway::group::outbound::handle
 

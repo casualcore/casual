@@ -6,7 +6,8 @@
 
 #include "gateway/group/inbound/state.h"
 #include "gateway/group/inbound/handle.h"
-#include "gateway/group/connector.h"
+#include "gateway/group/tcp.h"
+#include "gateway/group/ipc.h"
 #include "gateway/message.h"
 
 #include "common/exception/guard.h"
@@ -26,13 +27,6 @@ namespace casual
       {
          namespace
          {
-            namespace ipc
-            {
-               auto& inbound() { return communication::ipc::inbound::device();}
-
-               auto& gateway() { return communication::instance::outbound::gateway::manager::device();}
-            } // ipc
-
             struct Arguments
             {
                // might have som arguments in the future
@@ -83,7 +77,7 @@ namespace casual
 
                // 'connect' to gateway-manager - will send configuration-update-request as soon as possible
                // that we'll handle in the main message pump
-               communication::device::blocking::send( ipc::gateway(), gateway::message::inbound::Connect{ process::handle()});
+               ipc::flush::send( ipc::manager::gateway(), gateway::message::inbound::Connect{ process::handle()});
 
                // 'connect' to our local domain
                common::communication::instance::whitelist::connect();
@@ -97,7 +91,7 @@ namespace casual
                {
                   Trace trace{ "gateway::group::inbound::reverse::local::external::connect"};
 
-                  group::connector::external::connect( state.reverse.connections, [&state]( auto&& socket, auto&& connection)
+                  group::tcp::connect( state.reverse.connections, [&state]( auto&& socket, auto&& connection)
                   {
                      state.external.add( state.directive, std::move( socket), std::move( connection.configuration));
                   });
@@ -124,14 +118,14 @@ namespace casual
                      return [&state, handler = inbound::handle::external( state)]
                         ( common::strong::file::descriptor::id descriptor, communication::select::tag::read) mutable
                      {
-                        if( auto found = algorithm::find( state.external.connections, descriptor))
+                        if( auto connection = state.external.connection( descriptor))
                         {
                            try
                            {
-                              if( auto correlation = handler( communication::device::blocking::next( found->device)))
+                              if( auto correlation = handler( connection->next()))
                                  state.correlations.emplace_back( std::move( correlation), descriptor);
                               else
-                                 log::line( log::category::error, code::casual::invalid_semantics, " failed to handle next message for device: ", found->device);
+                                 log::line( log::category::error, code::casual::invalid_semantics, " failed to handle next message for *connection: ", *connection);
                            }
                            catch( ...)
                            {
@@ -178,7 +172,7 @@ namespace casual
                            external::connect( state);
 
                            // send reply
-                           communication::device::blocking::optional::send(
+                           ipc::flush::optional::send(
                               message.process.ipc, common::message::reverse::type( message, common::process::handle()));
                         };
                      }
@@ -201,10 +195,11 @@ namespace casual
                            {
                               message::inbound::state::Connection result;
                               result.configuration = pending.configuration;
+                              result.address.peer = pending.configuration.address;
                               return result;
                            });
                            
-                           communication::device::blocking::optional::send( message.process.ipc, reply);
+                           ipc::flush::optional::send( message.process.ipc, reply);
                         };
                      }
 
@@ -248,21 +243,6 @@ namespace casual
                   );
                }
 
-               namespace dispatch
-               {
-                  auto create( State& state) 
-                  { 
-                     state.directive.read.add( ipc::inbound().connector().descriptor());
-                     return [handler = internal::handler( state)]() mutable -> strong::file::descriptor::id
-                     {
-                        if( handler( communication::device::non::blocking::next( ipc::inbound())))
-                           return ipc::inbound().connector().descriptor();
-
-                        return {};
-                     };
-                  }
-               } // dispatch
-
             } // internal
 
             namespace signal::callback
@@ -304,8 +284,9 @@ namespace casual
                // start the message dispatch
                communication::select::dispatch::pump( 
                   local::condition( state),
-                  state.directive, 
-                  internal::dispatch::create( state),
+                  state.directive,
+                  group::tcp::pending::send::dispatch( state),
+                  ipc::dispatch::create( state, &internal::handler),
                   external::dispatch::create( state)
                );
 

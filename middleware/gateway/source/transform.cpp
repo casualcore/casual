@@ -133,6 +133,15 @@ namespace casual
                      set_general( reply, result);
                      result.connect = connect;
                      result.order = reply.state.order;
+
+                     result.pending.messages = algorithm::transform( reply.state.pending.messages, []( auto& message)
+                     {
+                        return manager::admin::model::outbound::pending::Message{
+                           message.type,
+                           message.count
+                        };
+                     });
+
                      return result;
                   };
                };
