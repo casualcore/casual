@@ -30,6 +30,8 @@ TEST( casual_string_buffer, raw_set_to_allocated_buffer__expecting_correct_parse
 {
    auto buffer = tpalloc( CASUAL_STRING, "", 16);
 
+   ASSERT_TRUE( buffer != nullptr);
+
    const char* source = "Hello";
    std::strncpy( buffer, source, 16);
 
@@ -45,6 +47,8 @@ TEST( casual_string_buffer, raw_set_to_allocated_buffer__expecting_correct_parse
 TEST( casual_string_buffer, set_to_small_allocated_buffer__expecting_resized_buffer)
 {
    auto buffer = tpalloc( CASUAL_STRING, "", 4);
+
+   ASSERT_TRUE( buffer != nullptr);
 
    const char* source = "Hello Casual";
 
@@ -65,6 +69,8 @@ TEST( casual_string_buffer, destroy_buffer__expecting_out_of_bounds)
 {
    auto buffer = tpalloc( CASUAL_STRING, "", 4);
 
+   ASSERT_TRUE( buffer != nullptr);
+
    const char* source = "Hello Casual";
 
    EXPECT_FALSE( casual_string_set( &buffer, source));
@@ -77,7 +83,3 @@ TEST( casual_string_buffer, destroy_buffer__expecting_out_of_bounds)
 
    tpfree( buffer);
 }
-
-
-
-

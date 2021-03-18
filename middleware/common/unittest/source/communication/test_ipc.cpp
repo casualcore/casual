@@ -287,8 +287,8 @@ namespace casual
 
                device::blocking::receive( ipc::inbound::device(), receive_message, correlation);
 
-               EXPECT_TRUE( receive_message.correlation == correlation);
-               EXPECT_TRUE( ( algorithm::equal( receive_message.payload, send_message.payload)));
+               ASSERT_TRUE( receive_message.correlation == correlation);
+               ASSERT_TRUE( algorithm::equal( receive_message.payload, send_message.payload));
             }
          }
 
@@ -342,7 +342,9 @@ namespace casual
                {
                   for( ; message.index < count; ++message.index)
                   {
-                     device::blocking::send( destination, message);
+                     ASSERT_NO_THROW({                     
+                        device::blocking::send( destination, message);
+                     });
                   }
                };
 
@@ -352,15 +354,16 @@ namespace casual
                   
                   auto sender = std::thread{ &local::send_messages, ipc::inbound::ipc(), origin, count};
 
+                  // TODO: May probably be replaced by C++20 std::jthread
+                  const auto joiner = execute::scope( [&sender]() { sender.join();});
+
                   local::Message message;
                   for( auto index = 0; index < count; ++index)
                   {
                      device::blocking::receive( ipc::inbound::device(), message);
-                     EXPECT_TRUE( message.index == index);
-                     EXPECT_TRUE( message.payload == origin.payload) << "\n" << CASUAL_NAMED_VALUE( message) << "\n" << CASUAL_NAMED_VALUE( origin);
+                     ASSERT_EQ( message.index, index);
+                     ASSERT_EQ( message.payload, origin.payload);
                   }
-
-                  sender.join();
                }
             } // <unnamed>
          } // local
