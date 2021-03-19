@@ -142,7 +142,10 @@ namespace casual
             void Metric::update( const common::message::event::service::Metric& metric)
             {
                invoked += metric.duration();
-               pending += metric.pending;
+               
+               if( metric.pending > decltype( metric.pending)::zero())
+                  pending += metric.pending;
+               
                last = metric.end;
             }
 
