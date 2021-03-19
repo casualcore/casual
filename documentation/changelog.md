@@ -3,6 +3,13 @@ This is the changelog for `casual` and all changes are listed in this document.
 
 ## [Unreleased]
 
+## [1.4.10]
+### Fixes
+- gateway - asynchronous writes - mitigate deadlock, performance improvements
+- gateway - handles bad tcp addresses in a more robust way
+- gateway - honour outbound group order for priority
+- configuration - gateway.connections -> outbound-group per connection
+
 ## [1.4.9] - 2021-03-04
 ### Fixes
 - gateway - outbound should prioritize replies from other domains
