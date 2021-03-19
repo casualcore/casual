@@ -3,7 +3,7 @@ This is the changelog for `casual` and all changes are listed in this document.
 
 ## [Unreleased]
 
-## [1.4.10]
+## [1.4.11]
 ### Fixes
 - gateway - asynchronous writes - mitigate deadlock, performance improvements
 - gateway - handles bad tcp addresses in a more robust way

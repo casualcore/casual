@@ -182,6 +182,27 @@ domain:
                };
             } // example
 
+
+            namespace domain
+            {
+               auto name( std::string_view name)
+               {
+                  return local::call( "casual/example/domain/name").get() == name;
+               }
+
+               auto name( std::string_view name, platform::size::type count)
+               {
+                  while( count-- > 0)
+                  {
+                     if( domain::name( name))
+                        return true;
+                     else
+                        process::sleep( std::chrono::milliseconds{ 1});
+                  }
+                  return false;
+               }
+            } // domain
+
          } // <unnamed>
       } // local
 
@@ -457,8 +478,7 @@ domain:
          // we expect to always get to B
          algorithm::for_n< 10>( []()
          {
-            auto buffer = local::call( "casual/example/domain/name");
-            EXPECT_TRUE( buffer.get() == std::string_view{ "B"});
+            EXPECT_TRUE( local::domain::name( "B"));
          });
 
          // shutdown B
@@ -467,8 +487,7 @@ domain:
          // we expect to always get to C
          algorithm::for_n< 10>( []()
          {
-            auto buffer = local::call( "casual/example/domain/name");
-            EXPECT_TRUE( buffer.get() == std::string_view{ "C"});
+            EXPECT_TRUE( local::domain::name( "C"));
          });
 
          // boot B
@@ -479,12 +498,14 @@ domain:
 
          // we need to wait for all to be connected...
          local::state::gateway::until( local::state::gateway::predicate::outbound::connected());
+         
+         // we expect to get to B agin
+         EXPECT_TRUE( local::domain::name( "B", 1000));
 
          // we expect to always get to B, again
          algorithm::for_n< 10>( []()
          {
-            auto buffer = local::call( "casual/example/domain/name");
-            EXPECT_TRUE( buffer.get() == std::string_view{ "B"});
+            EXPECT_TRUE( local::domain::name( "B"));
          });
       }
 
