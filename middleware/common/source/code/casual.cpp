@@ -88,6 +88,7 @@ namespace casual
             case casual::communication_retry: return "communication-retry";
             case casual::communication_no_message: return "communication-no-message";
             case casual::communication_address_in_use: return "communication-address-in-use";
+            case casual::communication_invalid_address: return "communication-invalid-address";
 
             case casual::domain_unavailable: return "domain-unavailable";
             case casual::domain_running: return "domain-running";

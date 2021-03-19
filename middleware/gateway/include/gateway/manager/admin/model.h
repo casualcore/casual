@@ -9,6 +9,7 @@
 
 #include "common/serialize/macro.h"
 #include "casual/platform.h"
+#include "common/message/type.h"
 #include "common/compare.h"
 
 #include "common/domain.h"
@@ -172,6 +173,29 @@ namespace casual
 
          namespace outbound
          {
+            namespace pending
+            {
+               struct Message
+               {
+                  common::message::Type type{};
+                  platform::size::type count{};
+
+                  CASUAL_CONST_CORRECT_SERIALIZE(
+                     CASUAL_SERIALIZE( type);
+                     CASUAL_SERIALIZE( count);
+                  )
+               };
+            } // pending
+
+            struct Pending
+            {
+               std::vector< pending::Message> messages;
+
+               CASUAL_CONST_CORRECT_SERIALIZE(
+                  CASUAL_SERIALIZE( messages);
+               )
+            };
+
             struct Group
             {
                std::string alias;
@@ -179,6 +203,7 @@ namespace casual
                connection::Phase connect{};
                common::process::Handle process;
                platform::size::type order{};
+               Pending pending;
                std::string note;
 
                CASUAL_CONST_CORRECT_SERIALIZE(
@@ -187,6 +212,7 @@ namespace casual
                   CASUAL_SERIALIZE( connect);
                   CASUAL_SERIALIZE( process);
                   CASUAL_SERIALIZE( order);
+                  CASUAL_SERIALIZE( pending);
                   CASUAL_SERIALIZE( note);
                )
             };

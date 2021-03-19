@@ -192,18 +192,17 @@ namespace casual
                {
                   template< typename M>
                   Request( resource::id::type resource, M&& message) 
-                     : resource( resource),  message( common::serialize::native::complete( std::forward< M>( message))) {}
+                     : resource( resource),  message( common::serialize::native::complete< common::communication::ipc::message::Complete>( std::forward< M>( message))) {}
 
                   resource::id::type resource;
-                  common::communication::message::Complete message;
+                  common::communication::ipc::message::Complete message;
 
                   inline friend bool operator == ( const Request& lhs, resource::id::type rhs) { return lhs.resource == rhs;}
 
                   CASUAL_LOG_SERIALIZE(
-                  { 
                      CASUAL_SERIALIZE( resource);
                      CASUAL_SERIALIZE( message);
-                  })
+                  )
                };
 
             } // pending

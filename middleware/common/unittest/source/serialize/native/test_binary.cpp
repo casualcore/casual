@@ -10,6 +10,8 @@
 #include "common/serialize/native/binary.h"
 #include "common/serialize/native/network.h"
 #include "common/serialize/native/complete.h"
+#include "common/communication/ipc/message.h"
+#include "common/communication/tcp/message.h"
 
 #include "common/message/service.h"
 
@@ -30,20 +32,24 @@ namespace casual
             template <typename T>
             struct casual_serialize_native_binary : public ::testing::Test
             {
+               using complete_type = typename T::complete_type;
                using input_type = typename T::input_type;
                using output_type = typename T::output_type;
             };
 
-            template< typename I, typename O>
+            template< typename Complete>
             struct IO
             {
-               using input_type = I;
-               using output_type = O;
+               using complete_type = Complete;
+               using serialization = typename serialize::native::customization::point< complete_type>;
+               using output_type = typename serialization::writer;
+               using input_type = typename serialization::reader;
             };
 
+
             using marshal_types = ::testing::Types<
-                  IO< binary::create::Reader, binary::create::Writer>,
-                  IO< binary::network::create::Reader, binary::network::create::Writer>
+               IO< communication::ipc::message::Complete>,
+               IO< communication::tcp::message::Complete>
             >;
 
             TYPED_TEST_SUITE(casual_serialize_native_binary, marshal_types);
@@ -57,7 +63,7 @@ namespace casual
                using output_type = typename TestFixture::output_type;
 
                long someLong = 3;
-               std::string someString = "banan";
+               std::string someString = "banana";
 
                auto output = output_type{}();
 
@@ -75,8 +81,6 @@ namespace casual
                input >> resultString;
                EXPECT_TRUE( resultString == someString) << resultString;
             }
-
-
 
             TYPED_TEST( casual_serialize_native_binary, binary)
             {
@@ -105,8 +109,7 @@ namespace casual
             {
                common::unittest::Trace trace;
 
-               using input_type = typename TestFixture::input_type;
-               using output_type = typename TestFixture::output_type;
+               using complete_type = typename TestFixture::complete_type;
 
                message::service::Advertise advertise;
 
@@ -126,9 +129,9 @@ namespace casual
                advertise.services.add.push_back( service);
 
 
-               auto complete = serialize::native::complete( advertise, output_type{});
+               auto complete = serialize::native::complete< complete_type>( advertise);
                message::service::Advertise result;
-               serialize::native::complete( complete, result, input_type{});
+               serialize::native::complete( complete, result);
 
                EXPECT_TRUE( result.process.ipc == ipc) << result.process.ipc;
                EXPECT_TRUE( result.services.add.size() == 3) << result.services.add.size();
@@ -140,8 +143,7 @@ namespace casual
             {
                common::unittest::Trace trace;
 
-               using input_type = typename TestFixture::input_type;
-               using output_type = typename TestFixture::output_type;
+               using complete_type = typename TestFixture::complete_type;
 
                message::service::Advertise advertise;
 
@@ -155,11 +157,11 @@ namespace casual
                service.name = "service1";
                advertise.services.add.resize( 10000, service);
 
-               auto complete = serialize::native::complete( advertise, output_type{});
+               auto complete = serialize::native::complete< complete_type>( advertise);
 
                message::service::Advertise result;
 
-               serialize::native::complete( complete, result, input_type{});
+               serialize::native::complete( complete, result);
 
                EXPECT_TRUE( result.process.ipc == ipc) << result.process.ipc;
                EXPECT_TRUE( result.services.add.size() == 10000) << result.services.add.size();

@@ -7,65 +7,61 @@
 
 #include "common/message/pending.h"
 
+#include "common/communication/ipc.h"
+
 namespace casual
 {
-   namespace common
+   namespace common::message::pending
    {
-      namespace message
+
+      bool Message::sent() const
       {
-         namespace pending
+         return destinations.empty();
+      }
+
+      Message::operator bool () const
+      {
+         return sent();
+      }
+
+      void Message::remove( strong::ipc::id ipc)
+      {
+         algorithm::trim( destinations, algorithm::remove( destinations, ipc));
+      }
+
+      void Message::remove( strong::process::id pid)
+      {
+         algorithm::trim( destinations, algorithm::remove( destinations, pid));
+      }
+
+      namespace non
+      {
+         namespace blocking
          {
-
-            bool Message::sent() const
+            bool send( Message& message)
             {
-               return destinations.empty();
-            }
-
-            Message::operator bool () const
-            {
-               return sent();
-            }
-
-            void Message::remove( strong::ipc::id ipc)
-            {
-               algorithm::trim( destinations, algorithm::remove( destinations, ipc));
-            }
-
-            void Message::remove( strong::process::id pid)
-            {
-               algorithm::trim( destinations, algorithm::remove( destinations, pid));
-            }
-
-            namespace non
-            {
-               namespace blocking
+               auto send = [&]( const common::process::Handle& process)
                {
-                  bool send( Message& message)
+                  try
                   {
-                     auto send = [&]( const common::process::Handle& process)
-                     {
-                        try
-                        {
-                           return ! communication::device::non::blocking::put( process.ipc, message.complete).empty();
-                        }
-                        catch( ...)
-                        {
-                           if( exception::code() == code::casual::communication_unavailable)
-                              return true;
-
-                           throw;
-                        }
-                     };
-
-                     algorithm::trim( message.destinations, algorithm::remove_if( message.destinations, send));
-                  
-                     return message.sent();
+                     return ! communication::device::non::blocking::send( process.ipc, message.complete).empty();
                   }
+                  catch( ...)
+                  {
+                     if( exception::code() == code::casual::communication_unavailable)
+                        return true;
 
-               } // blocking
-            } // non
+                     throw;
+                  }
+               };
 
-         } // pending
-      } // message
-   } // common
+               algorithm::trim( message.destinations, algorithm::remove_if( message.destinations, send));
+            
+               return message.sent();
+            }
+
+         } // blocking
+      } // non
+
+   } // common::message::pending
 } // casual

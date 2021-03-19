@@ -17,7 +17,7 @@ namespace casual
       namespace event
       {
 
-         common::message::pending::Message base_dispatch::pending( common::communication::message::Complete&& complete) const
+         common::message::pending::Message base_dispatch::pending( common::communication::ipc::message::Complete&& complete) const
          {
             Trace trace{ "common::event::base_dispatch::pending"};
 

@@ -12,6 +12,7 @@
 
 #include "configuration/model/load.h"
 
+#include "common/communication/ipc.h"
 #include "common/exception/handle.h"
 #include "common/argument.h"
 

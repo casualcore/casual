@@ -98,7 +98,18 @@ namespace casual
          namespace call
          {
             //! Represent service information in a 'call context'
-            using Service = message::Service;
+            struct Service : message::Service
+            {
+               using message::Service::Service;
+
+               // if the requested service name differs from the 'origin', requested is set.
+               std::optional< std::string> requested;
+
+               CASUAL_CONST_CORRECT_SERIALIZE(
+                  service::Base::serialize( archive);
+                  CASUAL_SERIALIZE( requested);
+               )
+            };
          } // call
 
          struct Transaction

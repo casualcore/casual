@@ -74,6 +74,8 @@ make.LinkUnittest( 'bin/test-casual-configuration',
         make.Compile( 'unittest/source/build/test_server.cpp'),
         make.Compile( 'unittest/source/user/test_accumulate.cpp'),
         make.Compile( 'unittest/source/user/test_validate.cpp'),
+
+        make.Compile( 'unittest/source/user/test_backward.cpp'),
    ],
    [ 
        example_archive, 

@@ -364,30 +364,15 @@ namespace casual
                            Trace trace{ "service::manager::handle::service::concurrent::metric"};
                            log::line( verbose::log, "message: ", message);
 
-                           std::vector< common::Uuid> correlations;
-
-                           algorithm::for_each( message.metrics, [&]( auto& metric)
-                           {
-                              correlations.push_back( metric.correlation);
-
+                           for( auto& metric : message.metrics)
                               if( auto service = state.service( metric.service))
                                  service->metric.update( metric);
-                           });
-
-                           if( auto instance = state.concurrent( message.process.pid))
-                              instance->unreserve( correlations);
-
-                           if( auto deadline = state.pending.deadline.remove( correlations))
-                              signal::timer::set( deadline.value());
 
                            if( state.events)
                            {
                               state.metric.add( std::move( message.metrics));
                               handle::metric::batch::send( state);
                            }
-
-                           log::line( verbose::log, "state.pending.deadline: ", state.pending.deadline);
-
                         };
                      }
                   } // concurrent
@@ -440,22 +425,18 @@ namespace casual
                               reply.process = handle;
                               reply.pending = pending;
 
-                              
-                              if( service->timeout.duration > platform::time::unit::zero() || ( ! service->timeout.duration && message.deadline))
+                              if( service->information.name != message.requested)
+                                 reply.service.requested = message.requested;
+
+                              // note: concurrent instances are not subject to timeout within the domain
+                              if( service->timeoutable())
                               {
                                  auto now = platform::time::clock::type::now();
 
-                                 auto deadline = [&]()
-                                 {
-                                    if( service->timeout.duration > platform::time::unit::zero())
-                                       return now + service->timeout.duration.value();
-                                    return message.deadline.value();
-                                 }();
-                                 
-                                 reply.service.timeout.duration = deadline - now;
+                                 reply.service.timeout.duration = service->timeout.duration.value();
 
                                  auto next = state.pending.deadline.add( {
-                                    deadline,
+                                    now + reply.service.timeout.duration,
                                     message.correlation,
                                     handle.pid,
                                     service});
@@ -463,7 +444,10 @@ namespace casual
                                  if( next)
                                     signal::timer::set( next.value() - now);
                               }
-                             
+                              else if( message.deadline)
+                              {
+                                 reply.service.timeout.duration = message.deadline.value() - platform::time::clock::type::now();
+                              }                             
 
                               // TODO maintainence: if the message is not sent, we need to unreserve
                               local::optional::send( message.process.ipc, reply);

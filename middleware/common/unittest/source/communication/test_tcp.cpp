@@ -15,376 +15,378 @@
 
 namespace casual
 {
-   namespace common
+   namespace common::communication
    {
-      namespace communication
+      namespace local
       {
-         namespace local
+         namespace
          {
-            namespace
+            void simple_server( tcp::Address address)
             {
-               void simple_server( tcp::Address address)
+               try
+               {
+                  tcp::Listener listener{ std::move( address)};
+
+                  std::vector< Socket> connections;
+
+                  while( true)
+                  {
+                     connections.push_back( listener());
+
+                     log::line( log::debug, "connections: ", connections);
+                  }
+               }
+               catch( ...)
+               {
+                  exception::sink::log();
+               }
+            }
+
+            template< typename T>
+            bool boolean( T&& value)
+            {
+               return static_cast< bool>( value);
+            }
+
+
+            tcp::Address address()
+            {
+               static long port = 23666;
+               return { string::compose(  "127.0.0.1:", ++port)};
+            }
+
+         } // <unnamed>
+      } // local
+
+      TEST( common_communication_tcp, address_host_port)
+      {   
+         common::unittest::Trace trace;
+
+         {
+            tcp::Address address{ "127.0.0.1:666"};
+            EXPECT_TRUE( address.host() == "127.0.0.1") << "host: " << address.host();
+            EXPECT_TRUE( address.port() == "666") << "port: " << address.host();
+         }
+
+         {
+            tcp::Address address{ "127.0.0.1"};
+            EXPECT_TRUE( address.host() == "127.0.0.1") << "host: " << address.host();
+            EXPECT_TRUE( address.port().empty()) << "port: " << address.host();
+         }
+      }
+
+      TEST( common_communication_tcp, connect_to_non_existent_port__expect_connection_refused)
+      {   
+         common::unittest::Trace trace;
+
+         EXPECT_CODE( {
+            tcp::connect( local::address());
+         }, code::casual::communication_refused);
+      }
+
+      TEST( common_communication_tcp, listener_port)
+      {
+         common::unittest::Trace trace;
+
+         EXPECT_NO_THROW({
+            tcp::Listener listener{ local::address()};
+         });
+      }
+
+
+      TEST( common_communication_tcp, listener_port__connect_to_port__expect_connection)
+      {
+         common::unittest::Trace trace;
+
+         const auto address = local::address();
+
+         unittest::Thread server{ &local::simple_server, address};
+
+         auto socket = tcp::retry::connect( address, { { std::chrono::milliseconds{ 1}, 0}});
+
+         EXPECT_TRUE( local::boolean( socket));
+      }
+
+
+      TEST( common_communication_tcp, listener_port__connect_to_port_10_times__expect_connections)
+      {
+         common::unittest::Trace trace;
+
+         const auto address = local::address();
+
+         unittest::Thread server{ &local::simple_server, address};
+
+         std::vector< Socket> connections;
+
+         algorithm::for_n< 10>( [&](){
+            connections.push_back( tcp::retry::connect( address, { { std::chrono::milliseconds{ 1}, 0}}));
+         });
+
+         for( auto& socket : connections)
+            EXPECT_TRUE( local::boolean( socket)) << CASUAL_NAMED_VALUE( socket);
+      }
+
+      namespace local
+      {
+         namespace
+         {
+            namespace echo
+            {
+               void worker( Socket&& socket)
                {
                   try
                   {
-                     tcp::Listener listener{ std::move( address)};
-
-                     std::vector< Socket> connections;
-
+                     tcp::Duplex tcp{ std::move( socket)};
+                  
                      while( true)
                      {
-                        connections.push_back( listener());
-
-                        log::line( log::debug, "connections: ", connections);
+                        if( auto complete = device::blocking::next( tcp))
+                        {
+                           // we need to set the offset to 0.
+                           complete.offset = 0;
+                           device::blocking::send( tcp, std::move( complete));
+                        }
                      }
                   }
                   catch( ...)
                   {
-                     exception::sink::log();
+                     exception::handle( log::debug);
                   }
+
                }
 
-               template< typename T>
-               bool boolean( T&& value)
+               void server( tcp::Address address)
                {
-                  return static_cast< bool>( value);
-               }
+                  std::vector< unittest::Thread> workers;
 
-
-               tcp::Address address()
-               {
-                  static long port = 23666;
-                  return { string::compose(  "127.0.0.1:", ++port)};
-               }
-
-            } // <unnamed>
-         } // local
-
-         TEST( common_communication_tcp, address_host_port)
-         {   
-            common::unittest::Trace trace;
-
-            {
-               tcp::Address address{ "127.0.0.1:666"};
-               EXPECT_TRUE( address.host() == "127.0.0.1") << "host: " << address.host();
-               EXPECT_TRUE( address.port() == "666") << "port: " << address.host();
-            }
-
-            {
-               tcp::Address address{ "127.0.0.1"};
-               EXPECT_TRUE( address.host() == "127.0.0.1") << "host: " << address.host();
-               EXPECT_TRUE( address.port().empty()) << "port: " << address.host();
-            }
-         }
-
-         TEST( common_communication_tcp, connect_to_non_existent_port__expect_connection_refused)
-         {   
-            common::unittest::Trace trace;
-
-            EXPECT_CODE( {
-               tcp::connect( local::address());
-            }, code::casual::communication_refused);
-         }
-
-         TEST( common_communication_tcp, listener_port)
-         {
-            common::unittest::Trace trace;
-
-            EXPECT_NO_THROW({
-               tcp::Listener listener{ local::address()};
-            });
-         }
-
-
-         TEST( common_communication_tcp, listener_port__connect_to_port__expect_connection)
-         {
-            common::unittest::Trace trace;
-
-            const auto address = local::address();
-
-            unittest::Thread server{ &local::simple_server, address};
-
-            auto socket = tcp::retry::connect( address, { { std::chrono::milliseconds{ 1}, 0}});
-
-            EXPECT_TRUE( local::boolean( socket));
-         }
-
-
-         TEST( common_communication_tcp, listener_port__connect_to_port_10_times__expect_connections)
-         {
-            common::unittest::Trace trace;
-
-            const auto address = local::address();
-
-            unittest::Thread server{ &local::simple_server, address};
-
-            std::vector< Socket> connections;
-
-            algorithm::for_n< 10>( [&](){
-               connections.push_back( tcp::retry::connect( address, { { std::chrono::milliseconds{ 1}, 0}}));
-            });
-
-            for( auto& socket : connections)
-               EXPECT_TRUE( local::boolean( socket)) << CASUAL_NAMED_VALUE( socket);
-         }
-
-         namespace local
-         {
-            namespace
-            {
-               namespace echo
-               {
-                  void worker( Socket&& socket)
+                  try
                   {
-                     try
-                     {
+                     tcp::Listener listener{ std::move( address)};
 
-                        while( true)
-                        {
-                           tcp::native::send(
-                              socket,
-                              tcp::native::receive( socket, {}),
-                              {});
-                        }
-                     }
-                     catch( ...)
-                     {
-                        exception::handle( log::debug);
-                     }
-
+                     while( true)
+                        workers.emplace_back( &echo::worker, listener());
                   }
-
-                  void server( tcp::Address address)
+                  catch( ...)
                   {
-                     std::vector< unittest::Thread> workers;
-
-                     try
-                     {
-                        tcp::Listener listener{ std::move( address)};
-
-                        while( true)
-                        {
-                           workers.emplace_back( &echo::worker, listener());
-                        }
-                     }
-                     catch( ...)
-                     {
-                        exception::handle( log::debug);
-                     }
+                     exception::handle( log::debug);
                   }
+               }
 
-               } // echo
-            } // <unnamed>
-         } // local
+            } // echo
+         } // <unnamed>
+      } // local
 
 
-         TEST( common_communication_tcp, echo_server_port__connect_to_port__expect_connection)
+      TEST( common_communication_tcp, echo_server_port__connect_to_port__expect_connection)
+      {
+         common::unittest::Trace trace;
+
+         const auto address = local::address();
+
+         unittest::Thread server{ &local::echo::server, address};
+
+         auto socket = tcp::retry::connect( address, { { std::chrono::milliseconds{ 1}, 0}});
+         EXPECT_TRUE( socket);
+
+         tcp::Duplex tcp{ std::move( socket)};
+
+         auto payload = unittest::random::binary( 1024);
+         auto correlation = uuid::make();
+
+         // send
          {
-            common::unittest::Trace trace;
+            tcp::message::Complete complete{ 
+               common::message::Type::process_lookup_request, 
+               correlation, 
+               payload};
 
-            const auto address = local::address();
+            EXPECT_TRUE( device::blocking::send( tcp, std::move( complete)));
+         }
 
-            unittest::Thread server{ &local::echo::server, address};
+         // receive
+         {
+            auto complete = device::blocking::next( tcp);
 
+            EXPECT_TRUE( complete);
+            EXPECT_TRUE( complete.correlation() == correlation);
+            EXPECT_TRUE( complete.type() == common::message::Type::process_lookup_request);
+            EXPECT_TRUE( complete.payload == payload) << "complete: " << complete;
+         }
+      }
+
+      TEST( common_communication_tcp, echo_server_port__10_connect_to_port__expect_echo_from_10)
+      {
+         common::unittest::Trace trace;
+
+         const auto address = local::address();
+
+         unittest::Thread server{ &local::echo::server, address};
+
+         auto connections = algorithm::generate_n< 10>( [&address]()
+         {
             auto socket = tcp::retry::connect( address, { { std::chrono::milliseconds{ 1}, 0}});
+            EXPECT_TRUE( socket);
+            return tcp::Duplex{ std::move( socket)};
+         });
 
-            EXPECT_TRUE( local::boolean( socket));
 
-            platform::binary::type payload{ 1,2,3,4,5,6,7,8,9};
-            auto correlation = uuid::make();
+         auto payload = unittest::random::binary( 1024);
+         auto correlation = uuid::make();
 
+         for( auto& connection : connections)
+         {
             // send
-            {
-               communication::message::Complete message{ common::message::Type::process_lookup_request, correlation};
-               message.payload = payload;
+            tcp::message::Complete complete{ 
+               common::message::Type::process_lookup_request, 
+               correlation, 
+               payload};
 
-               EXPECT_TRUE( tcp::native::send( socket, message, {}) == correlation);
-            }
-
-            // receive
-            {
-               auto message = tcp::native::receive( socket, {});
-
-               EXPECT_TRUE( message.correlation == correlation);
-               EXPECT_TRUE( message.type == common::message::Type::process_lookup_request);
-               EXPECT_TRUE( message.payload == payload) << "message: " << message;
-            }
+            EXPECT_TRUE( device::blocking::send( connection, std::move( complete)));
          }
 
-         TEST( common_communication_tcp, echo_server_port__10_connect_to_port__expect_echo_from_10)
+         // receive
+         for( auto& connection : connections)
          {
-            common::unittest::Trace trace;
+            auto complete = device::blocking::next( connection);
 
-            const auto address = local::address();
-
-            unittest::Thread server{ &local::echo::server, address};
-
-            std::vector< Socket> connections( 10);
-
-            for( auto& socket : connections)
-            {
-               socket = tcp::retry::connect( address, { { std::chrono::milliseconds{ 1}, 0}});
-               EXPECT_TRUE( local::boolean( socket));
-            }
-
-
-            platform::binary::type payload{ 1,2,3,4,5,6,7,8,9};
-            auto correlation = uuid::make();
-
-            for( auto& socket : connections)
-            {
-               // send
-               communication::message::Complete message{ common::message::Type::process_lookup_request, correlation};
-               message.payload = payload;
-
-               EXPECT_TRUE( tcp::native::send( socket, message, {}) == correlation);
-            }
-
-            // receive
-            for( auto& socket : connections)
-            {
-               auto message = tcp::native::receive( socket, {});
-
-               EXPECT_TRUE( message.correlation == correlation);
-               EXPECT_TRUE( message.type == common::message::Type::process_lookup_request);
-               EXPECT_TRUE( message.payload == payload) << "message: " << message;
-            }
+            EXPECT_TRUE( complete);
+            EXPECT_TRUE( complete.correlation() == correlation);
+            EXPECT_TRUE( complete.type() == common::message::Type::process_lookup_request);
+            EXPECT_TRUE( complete.payload == payload) << "complete: " << complete;
          }
+      }
 
-         TEST( common_communication_tcp, echo_server_port__tcp_device_send_receive__expect_connection)
+      TEST( common_communication_tcp, echo_server_port__tcp_device_send_receive__expect_connection)
+      {
+         common::unittest::Trace trace;
+
+         const auto address = local::address();
+
+         unittest::Thread server{ &local::echo::server, address};
+
+         tcp::Duplex tcp{ tcp::retry::connect( address, { { std::chrono::milliseconds{ 1}, 0}})};
+
+
+         auto send = [&](){
+            common::message::service::lookup::Request message;
+            message.process = process::handle();
+            message.requested = "testservice";
+
+            return device::blocking::send( tcp, message);
+         };
+
+
+         auto correlation = send();
+
+
+         // receive (the echo)
          {
-            common::unittest::Trace trace;
+            common::message::service::lookup::Request message;
 
-            const auto address = local::address();
+            device::blocking::receive( tcp, message, correlation);
 
-            unittest::Thread server{ &local::echo::server, address};
-
-            tcp::Duplex outbound{ tcp::retry::connect( address, { { std::chrono::milliseconds{ 1}, 0}})};
-
-
-            auto send = [&](){
-               common::message::service::lookup::Request message;
-               message.process = process::handle();
-               message.requested = "testservice";
-
-               //return outbound.blocking_send( message);
-               return device::blocking::send( outbound, message);
-            };
-
-
-            auto correlation = send();
-
-
-            // receive (the echo)
-            {
-               common::message::service::lookup::Request message;
-               tcp::Duplex tcp{ outbound.connector().socket()};
-
-               device::blocking::receive( tcp, message, correlation);
-
-               EXPECT_TRUE( message.process == process::handle());
-               EXPECT_TRUE( message.requested == "testservice");
-            }
+            EXPECT_TRUE( message.process == process::handle());
+            EXPECT_TRUE( message.requested == "testservice");
          }
+      }
 
 
-         TEST( common_communication_tcp, echo_server_port__tcp_device_send_receive__10k_payload)
+      TEST( common_communication_tcp, echo_server_port__tcp_device_send_receive__10k_payload)
+      {
+         common::unittest::Trace trace;
+
+         const auto address = local::address();
+
+         unittest::Thread server{ &local::echo::server, address};
+
+         tcp::Duplex tcp{ tcp::retry::connect( address, { { std::chrono::milliseconds{ 1}, 0}})};
+
+         auto send_message = unittest::random::message( 10 * 1024);
+
+         auto correlation = device::blocking::send( tcp, send_message);
+
+
+         // receive (the echo)
          {
-            common::unittest::Trace trace;
+            unittest::Message receive_message;
+            device::blocking::receive( tcp, receive_message, correlation);
 
-            const auto address = local::address();
-
-            unittest::Thread server{ &local::echo::server, address};
-
-            tcp::Duplex tcp{ tcp::retry::connect( address, { { std::chrono::milliseconds{ 1}, 0}})};
-
-            auto send_message = unittest::random::message( 10 * 1024);
-
-            auto correlation = device::blocking::send( tcp, send_message);
-
-
-            // receive (the echo)
-            {
-               unittest::Message receive_message;
-               device::blocking::receive( tcp, receive_message, correlation);
-
-               EXPECT_TRUE( common::algorithm::equal( receive_message.payload, send_message.payload));
-            }
+            EXPECT_TRUE( common::algorithm::equal( receive_message.payload, send_message.payload));
          }
+      }
 
-         TEST( common_communication_tcp, echo_server_port__tcp_device_send_receive_100k_payload)
+      TEST( common_communication_tcp, echo_server_port__tcp_device_send_receive_100k_payload)
+      {
+         common::unittest::Trace trace;
+
+         const auto address = local::address();
+
+         unittest::Thread server{ &local::echo::server, address};
+
+         tcp::Duplex tcp{ tcp::retry::connect( address, { { std::chrono::milliseconds{ 1}, 0}})};
+
+         auto send_message = unittest::random::message( 100 * 1024);
+
+         auto correlation = device::blocking::send( tcp, send_message);
+
+
+         // receive (the echo)
          {
-            common::unittest::Trace trace;
+            unittest::Message receive_message;
+            device::blocking::receive( tcp, receive_message, correlation);
 
-            const auto address = local::address();
-
-            unittest::Thread server{ &local::echo::server, address};
-
-            tcp::Duplex tcp{ tcp::retry::connect( address, { { std::chrono::milliseconds{ 1}, 0}})};
-
-            auto send_message = unittest::random::message( 100 * 1024);
-
-            auto correlation = device::blocking::send( tcp, send_message);
-
-
-            // receive (the echo)
-            {
-               unittest::Message receive_message;
-               device::blocking::receive( tcp, receive_message, correlation);
-
-               EXPECT_TRUE( common::algorithm::equal( receive_message.payload, send_message.payload));
-            }
+            EXPECT_TRUE( common::algorithm::equal( receive_message.payload, send_message.payload));
          }
+      }
 
-         TEST( common_communication_tcp, echo_server_port__tcp_device_send_receive__1M_paylad)
+      TEST( common_communication_tcp, echo_server_port__tcp_device_send_receive__1M_paylad)
+      {
+         common::unittest::Trace trace;
+
+         const auto address = local::address();
+
+         unittest::Thread server{ &local::echo::server, address};
+
+         tcp::Duplex tcp{ tcp::retry::connect( address, { { std::chrono::milliseconds{ 1}, 0}})};
+
+         auto send_message = unittest::random::message( 1024 * 1024);;
+
+         auto correlation = device::blocking::send( tcp, send_message);
+
+
+         // receive (the echo)
          {
-            common::unittest::Trace trace;
+            unittest::Message receive_message;
+            device::blocking::receive( tcp, receive_message, correlation);
 
-            const auto address = local::address();
-
-            unittest::Thread server{ &local::echo::server, address};
-
-            tcp::Duplex tcp{ tcp::retry::connect( address, { { std::chrono::milliseconds{ 1}, 0}})};
-
-            auto send_message = unittest::random::message( 1024 * 1024);;
-
-            auto correlation = device::blocking::send( tcp, send_message);
-
-
-            // receive (the echo)
-            {
-               unittest::Message receive_message;
-               device::blocking::receive( tcp, receive_message, correlation);
-
-               EXPECT_TRUE( common::algorithm::equal( receive_message.payload, send_message.payload));
-            }
+            EXPECT_TRUE( common::algorithm::equal( receive_message.payload, send_message.payload));
          }
+      }
 
 
-         TEST( common_communication_tcp, echo_server_port__tcp_device_send_receive__10M_payload)
+      TEST( common_communication_tcp, echo_server_port__tcp_device_send_receive__10M_payload)
+      {
+         common::unittest::Trace trace;
+
+         const auto address = local::address();
+
+         unittest::Thread server{ &local::echo::server, address};
+
+         tcp::Duplex tcp{ tcp::retry::connect( address, { { std::chrono::milliseconds{ 1}, 0}})};
+
+         auto send_message = unittest::random::message( 10 * 1024 * 1024);
+         unittest::random::range( send_message.payload);
+
+         auto correlation = device::blocking::send( tcp, send_message);
+
+
+         // receive (the echo)
          {
-            common::unittest::Trace trace;
+            unittest::Message receive_message;
+            device::blocking::receive( tcp, receive_message, correlation);
 
-            const auto address = local::address();
-
-            unittest::Thread server{ &local::echo::server, address};
-
-            tcp::Duplex tcp{ tcp::retry::connect( address, { { std::chrono::milliseconds{ 1}, 0}})};
-
-            auto send_message = unittest::random::message( 10 * 1024 * 1024);
-            unittest::random::range( send_message.payload);
-
-            auto correlation = device::blocking::send( tcp, send_message);
-
-
-            // receive (the echo)
-            {
-               unittest::Message receive_message;
-               device::blocking::receive( tcp, receive_message, correlation);
-
-               EXPECT_TRUE( common::algorithm::equal( receive_message.payload, send_message.payload));
-            }
+            EXPECT_TRUE( common::algorithm::equal( receive_message.payload, send_message.payload));
          }
-      } // communication
-   } // common
+      }
+   } // common::communication
 } // casual

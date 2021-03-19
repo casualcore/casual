@@ -9,17 +9,15 @@
 #include "common/code/convert.h"
 #include "common/code/system.h"
 #include "common/code/raise.h"
+#include "common/algorithm/compare.h"
 
 #include <system_error>
 #include <string>
 
 namespace casual
 {
-   namespace common
+   namespace common::posix
    {
-      namespace posix
-      {
-
          namespace detail
          {
             inline bool predicate( int result) { return result != -1;}
@@ -29,8 +27,6 @@ namespace casual
          //! checks posix result, if -1 or nullptr -> transform `errno` to `code::casual` and throws this.
          //! 
          //! @returns value of result, if no errors detected 
-         //! @{
-
          template< typename R, typename... Ts>
          auto result( R result, Ts&&... ts)
          {
@@ -40,7 +36,23 @@ namespace casual
             auto code = code::system::last::error();
             code::raise::log( code::convert::to::casual( code), std::forward< Ts>( ts)..., " - errno: ", code);
          }
-         //! @}
+
+         //! checks posix result, if -1 or nullptr 
+         //! if errno is one of the provided codes, `alternative` is returned. 
+         /// if not, errno is transformed  to `code::casual` and throwned
+         template< typename R, typename A, typename... Codes>
+         auto alternative( R result, A alternative, Codes&&... codes) -> std::common_type_t< R, A>
+         {
+            if( detail::predicate( result))
+               return result;
+
+            auto code = code::system::last::error();
+
+            if( algorithm::compare::any( code, codes...))
+               return alternative;
+
+            code::raise::log( code::convert::to::casual( code), " - errno: ", code);
+         }
 
          namespace log
          {
@@ -71,6 +83,5 @@ namespace casual
             return { code::system::last::error()};
          }
 
-      } // posix
-   } // common
+   } // common::posix
 } // casual

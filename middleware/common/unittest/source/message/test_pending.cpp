@@ -39,7 +39,7 @@ namespace casual
                {
                   auto tie = []( const pending::Message& m)
                   { 
-                     return std::tie( m.destinations, m.complete.type, m.complete.correlation, m.complete.payload);
+                     return std::make_tuple( m.destinations, m.complete.type(), m.complete.correlation(), std::cref( m.complete.payload));
                   };
 
                   return tie( lhs) == tie( rhs);

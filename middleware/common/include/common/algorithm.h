@@ -542,7 +542,7 @@ namespace casual
          //!   * a value if `where` is an iterator
          //!   * a vector with the extracted values if `where` is a range.
          template< typename C, typename W>
-         auto extract( C& container, W&& where)
+         [[nodiscard]] auto extract( C& container, W&& where)
             -> decltype( detail::extract( container, std::forward< W>( where), traits::priority::tag< 1>{}))
          {
             return detail::extract( container, std::forward< W>( where), traits::priority::tag< 1>{});

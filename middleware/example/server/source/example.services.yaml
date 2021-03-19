@@ -29,6 +29,9 @@ server:
       # name of the function the service should bind to
       function: casual_example_echo
 
+    - name: casual/example/domain/name
+      function: casual_example_domain_name
+
     - name: casual/example/forward/echo
       function: casual_example_forward_echo
       transaction: auto

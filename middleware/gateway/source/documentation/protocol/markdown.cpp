@@ -24,33 +24,22 @@
 
 namespace casual
 {
-   namespace common
+   namespace common::serialize::customize::composit
    {
-      namespace serialize
+      //! just a local marshaler to help format Header...
+      template< typename A>
+      struct Value< communication::tcp::message::Header, A>
       {
-         namespace customize
+         template< typename V>  
+         static void serialize( A& archive, V&& value)
          {
+            CASUAL_SERIALIZE_NAME( static_cast< communication::tcp::message::Header::host_type_type>( value.type), "type");
+            CASUAL_SERIALIZE_NAME( common::view::binary::make( value.correlation), "correlation");
+            CASUAL_SERIALIZE_NAME( static_cast< communication::tcp::message::Header::host_size_type>( value.size), "size");
+         }
+      };
 
-            namespace composit
-            {
-               //! just a local marshaler to help format Header...
-               template< typename A>
-               struct Value< communication::message::complete::network::Header, A>
-               {
-                  template< typename V>  
-                  static void serialize( A& archive, V&& value)
-                  {
-                     CASUAL_SERIALIZE_NAME( static_cast< communication::message::complete::network::Header::host_type_type>( value.type), "type");
-                     CASUAL_SERIALIZE_NAME( common::view::binary::make( value.correlation), "correlation");
-                     CASUAL_SERIALIZE_NAME( static_cast< communication::message::complete::network::Header::host_size_type>( value.size), "size");
-                  }
-               };
-            } // composit
-            
-         } // customize
-         
-      } // serialize
-   } // common
+   } // common::serialize::customize::composit
 
    namespace gateway
    {
@@ -466,7 +455,7 @@ namespace casual
 
                void message_header( std::ostream& out)
                {
-                  common::communication::message::complete::network::Header header;
+                  common::communication::tcp::message::Header header;
 
                   out << R"(
 # casual domain protocol _version 1000_

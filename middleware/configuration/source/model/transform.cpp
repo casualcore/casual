@@ -331,23 +331,25 @@ namespace casual
                {
                   log::line( log::category::warning, code::casual::invalid_configuration, " domain.gateway.connections are deprecated - use domain.gateway.outbounds");
 
-                  gateway::outbound::Group group;
-                  group.connect = decltype( group.connect)::regular;
-                  group.connections = common::algorithm::transform( gateway.connections.value(), []( const auto& value)
+                  result.outbound.groups = common::algorithm::transform( gateway.connections.value(), []( const auto& value)
                   {
-                     gateway::outbound::Connection result;
-
+                     gateway::outbound::Group result;
+                     result.connect = decltype( result.connect)::regular;
                      result.note = value.note.value_or( "");
-                     result.address = value.address;
+                     gateway::outbound::Connection connection;
                      
+                     connection.note = result.note;
+                     connection.address = value.address;
+                  
                      if( value.services)
-                        result.services = value.services.value();
+                        connection.services = value.services.value();
                      if( value.queues)
-                        result.queues = value.queues.value();
+                        connection.queues = value.queues.value();
+
+                     result.connections.push_back( std::move( connection));
 
                      return result;
                   });
-                  result.outbound.groups.push_back( std::move( group));
                }
 
                auto append_inbounds = []( auto& source, auto& target, auto connect)

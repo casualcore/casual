@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include "common/communication/message.h"
+#include "common/communication/ipc/message.h"
 #include "common/serialize/native/complete.h"
 
 namespace casual
@@ -17,12 +17,12 @@ namespace casual
       {
          namespace eventually
          {
-            Uuid send( strong::ipc::id destination, communication::message::Complete&& complete);
+            Uuid send( strong::ipc::id destination, communication::ipc::message::Complete&& complete);
 
-            template< typename M, typename C = serialize::native::binary::create::Writer>
-            Uuid send( strong::ipc::id destination, M&& message, C creator = serialize::native::binary::create::Writer{})
+            template< typename M>
+            Uuid send( strong::ipc::id destination, M&& message)
             {
-               return send( destination, serialize::native::complete( std::forward< M>( message), creator));
+               return send( destination, serialize::native::complete< communication::ipc::message::Complete>( std::forward< M>( message)));
             }
                
          } // eventually

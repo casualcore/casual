@@ -121,21 +121,6 @@ namespace casual
                return out << "<unknown>";
             }
 
-            void Concurrent::unreserve( const std::vector< common::Uuid>& correlations)
-            {
-               algorithm::trim( callers, algorithm::remove_if( callers, [&correlations]( auto& caller)
-               {
-                  return predicate::boolean( algorithm::find( correlations, caller.correlation));
-               }));
-            }
-
-            instance::Caller Concurrent::consume( const common::Uuid& correlation)
-            {
-               if( auto found = algorithm::find( callers, correlation))
-                  return algorithm::extract( callers, std::begin( found));
-               return {};
-            }
-
             bool operator < ( const Concurrent& lhs, const Concurrent& rhs)
             {
                return lhs.order < rhs.order;
@@ -151,17 +136,16 @@ namespace casual
                   if( auto caller = instance.get().consume( correlation))
                      return caller;
 
-               for( auto& instance : concurrent)
-                  if( auto caller = instance.get().consume( correlation))
-                     return caller;
-
                return {};
             }
 
             void Metric::update( const common::message::event::service::Metric& metric)
             {
                invoked += metric.duration();
-               pending += metric.pending;
+               
+               if( metric.pending > decltype( metric.pending)::zero())
+                  pending += metric.pending;
+               
                last = metric.end;
             }
 
@@ -285,10 +269,16 @@ namespace casual
             if( instances.sequential.empty() && ! instances.concurrent.empty())
             {
                ++metric.remote;
-               return instances.concurrent.front().reserve( caller, correlation);
+               return instances.concurrent.front().process();
             }
+
             return {};
          }
+
+         bool Service::timeoutable() const noexcept
+         {
+            return ! instances.sequential.empty() && timeout.duration > platform::time::unit::zero();
+         }         
 
 
          std::ostream& operator << ( std::ostream& out, Runlevel value)
@@ -315,16 +305,6 @@ namespace casual
             return &found->second;
 
          return nullptr;
-      }
-
-      std::vector< state::Service*> State::origin_services( const std::string& origin)
-      {
-         return algorithm::accumulate( services, std::vector< state::Service*>{}, [&origin]( auto result, auto& pair)
-         {
-            if( pair.second.information.name == origin)
-               result.push_back( &pair.second);
-            return result;
-         });
       }
 
       
@@ -429,14 +409,10 @@ namespace casual
             {
                Trace trace{ "service::manager::local::remove_services"};
 
-               auto remove = [&]( auto& name)
-               {
-                  // unadvertise only comes with origin service names.
-                  for( auto& service : state.origin_services( name))
-                     service->remove( instance.process.pid);
-               };
-
-               algorithm::for_each( services, remove);
+               // unadvertise only comes with origin service names.
+               for( auto& pair : state.services)
+                  if( algorithm::find( services, pair.second.information.name))
+                     pair.second.remove( instance.process.pid);
             }
 
             template< typename M>

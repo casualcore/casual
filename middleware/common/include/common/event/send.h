@@ -8,9 +8,11 @@
 #pragma once
 
 #include "common/message/event.h"
+#include "common/communication/ipc/message.h"
 #include "common/serialize/native/complete.h"
 #include "common/exception/handle.h"
 #include "common/code/raise.h"
+#include "common/string.h"
 
 #include <string>
 
@@ -21,7 +23,7 @@ namespace casual
       namespace detail
       {
          
-         void send( communication::message::Complete&& message);
+         void send( communication::ipc::message::Complete&& message);
 
          using Severity = message::event::Error::Severity;
          void send( std::error_code code, Severity severity, std::string message);
@@ -31,7 +33,7 @@ namespace casual
       constexpr void send( Event&& event)
       {
          static_assert( message::is::event::message< std::decay_t< Event>>(), "only events can be sent");
-         detail::send( serialize::native::complete( std::forward< Event>( event)));
+         detail::send( serialize::native::complete< communication::ipc::message::Complete>( std::forward< Event>( event)));
       }
 
       namespace error

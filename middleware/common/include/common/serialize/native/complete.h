@@ -7,62 +7,55 @@
 
 #pragma once
 
-
-#include "common/communication/message.h"
 #include "common/serialize/native/binary.h"
+#include "common/message/type.h"
 
 namespace casual
 {
-   namespace common
+   namespace common::serialize::native
    {
-      namespace serialize::native
+      namespace customization
       {
-         template< typename M, typename C = binary::create::Writer>
-         communication::message::Complete complete( M&& message, C creator = binary::create::Writer{})
-         {
-            if( ! message.execution)
-               message.execution = execution::id();
+         //! needs to be specialized for all 'complete message' types (ipc, tcp, stream...)
+         template< typename Complete>
+         struct point;
+         
+      } // customization
 
-            auto archive = creator();
-            archive << message;
 
-            using casual::common::message::type;
-            return communication::message::Complete{
-               type( message), 
-               message.correlation ? message.correlation : uuid::make(),
-               archive.consume()};
-         }
-
-         template< typename M, typename C = binary::create::Reader>
-         void complete( communication::message::Complete& complete, M& message, C creator = binary::create::Reader{})
-         {
-            using casual::common::message::type;
-            assert( complete.type == type( message));
-
-            message.correlation = complete.correlation;
-
-            auto archive = creator( complete.payload);
-            archive >> message;
-         }
-
-      } // serialize::native
-
-      namespace communication::message
+      template< typename C, typename M>
+      C complete( M&& message)
       {
-         template< typename M>
-         communication::message::Complete& operator >> ( communication::message::Complete& complete, M& message)
-         {
-            assert( complete.type == message.type());
+         if( ! message.execution)
+            message.execution = execution::id();
 
-            message.correlation = complete.correlation;
+         using writer = typename customization::point< std::decay_t< C>>::writer;
 
-            auto archive = serialize::native::binary::reader( complete.payload);
-            archive >> message;
+         auto archive = writer{}();
+         archive << message;
 
-            return complete;
-         }
-      } // communication::message
-   } // common
+         using casual::common::message::type;
+         return C{
+            type( message), 
+            message.correlation ? message.correlation : uuid::make(),
+            archive.consume()};
+      }
+
+      template< typename C, typename M>
+      void complete( C&& complete, M& message)
+      {
+         using casual::common::message::type;
+         assert( complete.type() == type( message));
+
+         message.correlation = complete.correlation();
+
+         using reader = typename customization::point< std::decay_t< C>>::reader;
+
+         auto archive = reader{}( complete.payload);
+         archive >> message;
+      }
+
+   } // common::serialize::native
 } // casual
 
 

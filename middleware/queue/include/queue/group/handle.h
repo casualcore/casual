@@ -11,6 +11,7 @@
 #include "queue/group/state.h"
 
 #include "common/message/dispatch.h"
+#include "common/communication/ipc.h"
 
 namespace casual
 {

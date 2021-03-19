@@ -14,48 +14,44 @@
 
 namespace casual
 {
-   namespace common
+   namespace common::event
    {
-      namespace event
+      namespace detail
       {
-         namespace detail
+         void send( communication::ipc::message::Complete&& complete)
          {
-            void send( communication::message::Complete&& complete)
+            Trace trace{ "common::domain::event::detail::send"};
+
+            // We block all signals but SIG_INT
+            signal::thread::scope::Mask block{ signal::set::filled( code::signal::interrupt)};
+
+            communication::device::blocking::optional::send( communication::instance::outbound::domain::manager::device(), complete);
+         }
+
+         void send( std::error_code code, Severity severity, std::string message)
+         {
+            Trace trace{ "common::domain::event::error::send"};
+
+            auto stream = []( auto severity) -> std::ostream&
             {
-               Trace trace{ "common::domain::event::detail::send"};
+               if( severity == Severity::warning)
+                  return log::category::warning;
+               return log::category::error;
+            };
 
-               // We block all signals but SIG_INT
-               signal::thread::scope::Mask block{ signal::set::filled( code::signal::interrupt)};
+            log::line( stream( severity), code, ' ', message);
 
-               communication::device::blocking::optional::put( communication::instance::outbound::domain::manager::device(), complete);
-            }
+            // We block all signals but SIG_INT
+            signal::thread::scope::Mask block{ signal::set::filled( code::signal::interrupt)};
 
-            void send( std::error_code code, Severity severity, std::string message)
-            {
-               Trace trace{ "common::domain::event::error::send"};
+            message::event::Error error{ process::handle()};
+            error.code = code;
+            error.message = std::move( message);
+            error.severity = severity;
 
-               auto stream = []( auto severity) -> std::ostream&
-               {
-                  if( severity == Severity::warning)
-                     return log::category::warning;
-                  return log::category::error;
-               };
+            communication::device::blocking::send( communication::instance::outbound::domain::manager::device(), error);
+         }
+      } // detail
 
-               log::line( stream( severity), code, ' ', message);
-
-               // We block all signals but SIG_INT
-               signal::thread::scope::Mask block{ signal::set::filled( code::signal::interrupt)};
-
-               message::event::Error error{ process::handle()};
-               error.code = code;
-               error.message = std::move( message);
-               error.severity = severity;
-
-               communication::device::blocking::send( communication::instance::outbound::domain::manager::device(), error);
-            }
-         } // detail
-
-
-      } // event
-   } // common
+   } // common::event
 } // casual

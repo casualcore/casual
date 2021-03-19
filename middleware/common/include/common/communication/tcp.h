@@ -7,13 +7,12 @@
 
 #pragma once
 
-
-
+#include "common/communication/tcp/message.h"
+#include "common/communication/log.h"
 #include "common/communication/socket.h"
-#include "common/communication/message.h"
 #include "common/communication/device.h"
+
 #include "common/serialize/native/network.h"
-#include "common/pimpl.h"
 
 #include "casual/platform.h"
 #include "common/flag.h"
@@ -36,6 +35,8 @@ namespace casual
 
          std::string_view host() const;
          std::string_view port() const;
+
+         inline friend std::ostream& operator << ( std::ostream& out, const Address& value) { return out << value.m_address;}
 
          CASUAL_FORWARD_SERIALIZE( m_address)
 
@@ -98,66 +99,40 @@ namespace casual
          Socket m_listener;
       };
 
-
       // Forwards
       struct Connector;
-
-      namespace message
-      {
-         struct Policy
-         {
-            static constexpr platform::size::type message_size() { return platform::tcp::message::size;}
-            static constexpr platform::size::type header_size( platform::size::type header_size, platform::size::type type_size) { return header_size + type_size;}
-         };
-
-      } // message
-
-
-      namespace native
-      {
-         enum class Flag : long
-         {
-            non_blocking = platform::flag::value( platform::flag::tcp::no_wait)
-         };
-
-         Uuid send( const Socket& socket, const communication::message::Complete& complete, common::Flags< Flag> flags);
-         communication::message::Complete receive( const Socket& socket, common::Flags< Flag> flags);
-
-      } // native
 
 
       namespace policy
       {
-         using cache_type = device::inbound::cache_type;
-         using cache_range_type =  device::inbound::cache_range_type;
+         using complete_type = message::Complete;
+         using cache_type = std::vector< complete_type>;
+         using cache_range_type = range::type_t< cache_type>;
 
-
-         struct basic_blocking
+         struct Blocking
          {
             cache_range_type receive( const Connector& tcp, cache_type& cache);
-            Uuid send( const Connector& tcp, const communication::message::Complete& complete);
+            Uuid send( const Connector& tcp, complete_type&& complete);
          };
-
-         using Blocking = basic_blocking;
 
          namespace non
          {
-            struct basic_blocking
+            struct Blocking
             {
                cache_range_type receive( const Connector& tcp, cache_type& cache);
-               Uuid send( const Connector& tcp, const communication::message::Complete& complete);
+               complete_type send( const Connector& tcp, complete_type&& complete);
             };
 
-            using Blocking = basic_blocking;
          } // non
 
       } // policy
 
       struct Connector
       {
-         using handle_type = Socket;
          using blocking_policy = policy::Blocking;
          using non_blocking_policy = policy::non::Blocking;
+         using cache_type = policy::cache_type;
+         using complete_type = policy::complete_type;
 
          Connector() noexcept;
          Connector( Socket&& socket) noexcept;
@@ -169,8 +144,8 @@ namespace casual
          Connector( Connector&&) = default;
          Connector& operator = ( Connector&&) = default;
 
-         inline const handle_type& socket() const { return m_socket;};
-         inline handle_type& socket() { return m_socket;};
+         inline const Socket& socket() const { return m_socket;};
+         inline Socket& socket() { return m_socket;};
          inline auto descriptor() const { return m_socket.descriptor();}
 
          CASUAL_LOG_SERIALIZE(
@@ -178,20 +153,20 @@ namespace casual
          )
 
       private:
-         handle_type m_socket;
+         Socket m_socket;
       };
 
-      using Duplex = communication::device::Duplex< Connector, serialize::native::binary::network::create::Writer>;
-
+      using Duplex = communication::device::Duplex< Connector>;
 
    } // common::communication::tcp
+
 
    namespace common::serialize::traits::is::network
    {
       template<>
       struct normalizing< communication::tcp::Duplex>: std::true_type {};
-   
-   } // common::serialize::traits::is::network
+      
+   } //common::serialize::traits::is::network
 
 } // casual
 

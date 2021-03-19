@@ -39,20 +39,10 @@ namespace casual
       {
          namespace
          {
-            struct Domain
+            namespace configuration
             {
-               
-               Domain( std::string configuration) : domain{ { std::move( configuration)}} 
-               {
-               }
-
-               Domain() : Domain( Domain::configuration) {}
-
-               casual::domain::manager::unittest::Process domain;
-
-               static constexpr auto configuration = R"(
+               constexpr auto base = R"(
 domain: 
-   name: gateway-domain
 
    groups: 
       - name: base
@@ -66,6 +56,26 @@ domain:
          memberships: [ base]
       -  path: "./bin/casual-gateway-manager"
          memberships: [ gateway]
+
+)";
+               
+            } // configuration
+
+            namespace domain
+            {
+               auto extended( std::string_view content)
+               {
+                  return casual::domain::manager::unittest::Process{ { 
+                     local::configuration::base,
+                     content}};
+               }
+
+               auto gateway()
+               {
+                  static constexpr auto configuration = R"(
+domain: 
+   name: gateway-domain
+
    gateway:
       inbound:
          groups:
@@ -78,8 +88,10 @@ domain:
                connections:
                   -  address: 127.0.0.1:6669
 )";
+                  return extended( configuration);
+               }
 
-            };
+            } // domain
 
 
 
@@ -146,7 +158,7 @@ domain:
          common::unittest::Trace trace;
 
          EXPECT_NO_THROW( {
-            local::Domain domain;
+            auto domain = local::domain::gateway();
          });
       }
 
@@ -154,7 +166,7 @@ domain:
       {
          common::unittest::Trace trace;
 
-         local::Domain domain;
+         auto domain = local::domain::gateway();
 
          EXPECT_TRUE( common::communication::instance::fetch::handle( common::communication::instance::identity::gateway::manager.id));
 
@@ -164,6 +176,47 @@ domain:
          EXPECT_TRUE( algorithm::any_of( state.connections, []( const auto& connection){
             return connection.bound == decltype( connection.bound)::out;
          }));
+      }
+
+      TEST( gateway_manager_tcp, outbound_groups_3___expect_order)
+      {
+         common::unittest::Trace trace;
+
+         constexpr auto configuration = R"(
+domain:
+   name: A
+   gateway:
+      inbound:
+         groups:
+            -  connections:
+                  -  address: 127.0.0.1:7001
+      outbound:
+         groups:
+            -  connections:
+                  -  address: 127.0.0.1:7001
+            -  connections:
+                  -  address: 127.0.0.1:7001
+            -  connections:
+                  -  address: 127.0.0.1:7001
+
+)";
+
+         auto domain = local::domain::extended( configuration);
+
+         EXPECT_TRUE( common::communication::instance::fetch::handle( common::communication::instance::identity::gateway::manager.id));
+
+         auto state = local::call::wait::ready::state();
+         auto& groups = state.outbound.groups;
+
+         EXPECT_TRUE( groups.size() == 3);
+
+         auto order_less = []( auto& l, auto& r){ return l.order < r.order;};
+         auto order_equal = []( auto& l, auto& r){ return l.order == r.order;};
+
+         auto unique = algorithm::unique( algorithm::sort( groups, order_less), order_equal);
+
+         EXPECT_TRUE( unique.size() == 3);
+
       }
 
       namespace local
@@ -207,7 +260,7 @@ domain:
          common::unittest::Trace trace;
 
          
-         local::Domain domain;
+         auto domain = local::domain::gateway();
 
          // we exposes service "remote1"
          casual::service::unittest::advertise( { "a"});
@@ -250,7 +303,7 @@ domain:
       {
          common::unittest::Trace trace;
 
-         local::Domain domain;
+         auto domain = local::domain::gateway();
 
          // we exposes service "a"
          casual::service::unittest::advertise( { "a"});
@@ -314,21 +367,10 @@ domain:
          static constexpr auto configuration = R"(
 domain: 
    name: gateway-domain
-
-   groups: 
-      -  name: base
-      -  name: gateway
-         dependencies: [ base]
    
    servers:
-      -  path: "${CASUAL_HOME}/bin/casual-service-manager"
-         memberships: [ base]
-      -  path: "${CASUAL_HOME}/bin/casual-transaction-manager"
-         memberships: [ base]
       -  path: "${CASUAL_HOME}/bin/casual-queue-manager"
          memberships: [ base]
-      -  path: "./bin/casual-gateway-manager"
-         memberships: [ gateway]
    gateway:
       inbound:
          groups:
@@ -348,7 +390,7 @@ domain:
 )";
 
 
-         local::Domain domain{ configuration};
+         auto domain = local::domain::extended( configuration);
 
          EXPECT_TRUE( common::communication::instance::fetch::handle( common::communication::instance::identity::gateway::manager.id));
 
@@ -395,7 +437,7 @@ domain:
       {
          common::unittest::Trace trace;
 
-         local::Domain domain;
+         auto domain = local::domain::gateway();
 
          EXPECT_TRUE( common::communication::instance::fetch::handle( common::communication::instance::identity::gateway::manager.id));
 
@@ -438,19 +480,6 @@ domain:
          static constexpr auto configuration = R"(
 domain: 
    name: gateway-domain
-
-   groups: 
-      -  name: base
-      -  name: gateway
-         dependencies: [ base]
-   
-   servers:
-      -  path: "${CASUAL_HOME}/bin/casual-service-manager"
-         memberships: [ base]
-      -  path: "${CASUAL_HOME}/bin/casual-transaction-manager"
-         memberships: [ base]
-      -  path: "./bin/casual-gateway-manager"
-         memberships: [ gateway]
    gateway:
       inbound: 
          groups:
@@ -472,7 +501,7 @@ domain:
 )";
 
 
-         local::Domain domain{ configuration};
+         auto domain = local::domain::extended( configuration);
 
          EXPECT_TRUE( common::communication::instance::fetch::handle( common::communication::instance::identity::gateway::manager.id));
 
@@ -489,18 +518,6 @@ domain:
 domain: 
    name: gateway-domain
 
-   groups: 
-      - name: base
-      - name: gateway
-        dependencies: [ base]
-   
-   servers:
-      - path: "${CASUAL_HOME}/bin/casual-service-manager"
-        memberships: [ base]
-      - path: "${CASUAL_HOME}/bin/casual-transaction-manager"
-        memberships: [ base]
-      - path: "./bin/casual-gateway-manager"
-        memberships: [ gateway]
    gateway:
       inbound:
          groups:
@@ -531,7 +548,7 @@ domain:
 )";
 
 
-         local::Domain domain{ configuration};
+         auto domain = local::domain::extended( configuration);
 
          EXPECT_TRUE( common::communication::instance::fetch::handle( common::communication::instance::identity::gateway::manager.id));
 
@@ -544,7 +561,7 @@ domain:
       {
          common::unittest::Trace trace;
 
-         local::Domain domain;
+         auto domain = local::domain::gateway();
 
          EXPECT_TRUE( common::communication::instance::fetch::handle( common::communication::instance::identity::gateway::manager.id)); 
 
@@ -588,18 +605,6 @@ domain:
 domain: 
    name: gateway-domain
 
-   groups: 
-      - name: base
-      - name: gateway
-        dependencies: [ base]
-   
-   servers:
-      - path: "${CASUAL_HOME}/bin/casual-service-manager"
-        memberships: [ base]
-      - path: "${CASUAL_HOME}/bin/casual-transaction-manager"
-        memberships: [ base]
-      - path: "./bin/casual-gateway-manager"
-        memberships: [ gateway]
    gateway:
       outbound:
          groups:
@@ -608,7 +613,7 @@ domain:
 )";
 
 
-         local::Domain domain{ configuration};
+         auto domain = local::domain::extended( configuration);
 
          auto state = local::call::state();
          ASSERT_TRUE( state.connections.size() == 1);
@@ -653,18 +658,6 @@ domain:
 domain: 
    name: gateway-domain
 
-   groups: 
-      - name: base
-      - name: gateway
-        dependencies: [ base]
-   
-   servers:
-      - path: "${CASUAL_HOME}/bin/casual-service-manager"
-        memberships: [ base]
-      - path: "${CASUAL_HOME}/bin/casual-transaction-manager"
-        memberships: [ base]
-      - path: "./bin/casual-gateway-manager"
-        memberships: [ gateway]
    gateway:
       outbound:
          groups: 
@@ -674,7 +667,7 @@ domain:
 )";
 
 
-         local::Domain domain{ configuration};
+         auto domain = local::domain::extended( configuration);
 
          EXPECT_NO_THROW(
             casual::domain::discovery::rediscovery::blocking::request();
@@ -689,18 +682,6 @@ domain:
 domain: 
    name: gateway-domain
 
-   groups: 
-      - name: base
-      - name: gateway
-        dependencies: [ base]
-   
-   servers:
-      - path: "${CASUAL_HOME}/bin/casual-service-manager"
-        memberships: [ base]
-      - path: "${CASUAL_HOME}/bin/casual-transaction-manager"
-        memberships: [ base]
-      - path: "./bin/casual-gateway-manager"
-        memberships: [ gateway]
    gateway:
       inbound:
          groups:
@@ -714,7 +695,7 @@ domain:
 )";
 
 
-         local::Domain domain{ configuration};
+         auto domain = local::domain::extended( configuration);
 
          local::wait_for_outbounds( 1);
 
@@ -729,7 +710,7 @@ domain:
 
          constexpr auto count = 5;
          
-         local::Domain domain;
+         auto domain = local::domain::gateway();
 
          EXPECT_TRUE( common::communication::instance::fetch::handle( common::communication::instance::identity::gateway::manager.id)); 
 
@@ -758,10 +739,12 @@ domain:
 
          ASSERT_TRUE( outbound);
 
+
+         // discover to make sure outbound(s) knows about wanted services
+         unittest::discover( { "a"}, {});
+
          // subscribe to metric events
          event::subscribe( common::process::handle(), { common::message::event::service::Calls::type()});
-
-         
 
          // Expect us to reach service remote1 via outbound -> inbound -> <service remote1>
          // we act as the server
