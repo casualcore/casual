@@ -214,6 +214,11 @@ namespace casual
                            Trace trace{ "gateway::group::outbound::local::internal::handle::shutdown::request"};
                            log::line( verbose::log, "message: ", message);
 
+                           log::line( log::category::information, "state: ", state);
+                           log::line( log::category::information, "ipc::inbound: ", ipc::inbound());
+                           log::line( log::category::information, "ipc::manager::service: ", ipc::manager::service());
+
+
                            // remove pending connections
                            state.unconnected.clear();
 

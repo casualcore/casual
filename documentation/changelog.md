@@ -3,12 +3,13 @@ This is the changelog for `casual` and all changes are listed in this document.
 
 ## [Unreleased]
 
-## [1.4.10]
+## [1.4.12]
 ### Fixes
 - gateway - asynchronous writes - mitigate deadlock, performance improvements
 - gateway - handles bad tcp addresses in a more robust way
 - gateway - honour outbound group order for priority
 - configuration - gateway.connections -> outbound-group per connection
+- cli - call keep logical message to one correlation id
 
 ## [1.4.9] - 2021-03-04
 ### Fixes

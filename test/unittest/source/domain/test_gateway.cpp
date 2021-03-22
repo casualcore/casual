@@ -149,6 +149,27 @@ domain:
                return memory::guard( buffer, &tpfree);
             };
 
+
+            auto call( std::string_view service, const platform::binary::type& binary)
+            {
+               auto buffer = local::allocate( binary.size());
+               assert( buffer);
+               algorithm::copy( binary, buffer);
+
+               auto len = tptypes( buffer, nullptr, nullptr);
+
+               tpcall( service.data(), buffer, len, &buffer, &len, 0);
+               EXPECT_TRUE( tperrno == 0) << "tperrno: " << tperrnostring( tperrno);
+
+               return memory::guard( buffer, &tpfree);
+            };
+
+            template< typename B>
+            auto size( B&& buffer)
+            {
+               return tptypes( buffer.get(), nullptr, nullptr);
+            }
+
             template< typename T>
             void sink( T&& value)
             {
@@ -181,6 +202,27 @@ domain:
 
                };
             } // example
+
+
+            namespace domain
+            {
+               auto name( std::string_view name)
+               {
+                  return local::call( "casual/example/domain/name").get() == name;
+               }
+
+               auto name( std::string_view name, platform::size::type count)
+               {
+                  while( count-- > 0)
+                  {
+                     if( domain::name( name))
+                        return true;
+                     else
+                        process::sleep( std::chrono::milliseconds{ 1});
+                  }
+                  return false;
+               }
+            } // domain
 
          } // <unnamed>
       } // local
@@ -309,6 +351,49 @@ domain:
          {
             auto buffer = local::call( "casual/example/domain/name");
             EXPECT_TRUE( buffer.get() == std::string_view{ "B"});
+         });
+      }
+
+      TEST( test_domain_gateway, domain_A_to_B___echo_send_large_message)
+      {
+         common::unittest::Trace trace;
+
+         // sink child signals 
+         signal::callback::registration< code::signal::child>( [](){});
+
+         auto b = local::example::domain( "B", "7001");
+
+         constexpr auto A = R"(
+domain: 
+   name: A
+  
+   gateway:
+      outbound:
+         groups:
+            -  connections:
+                  -  address: 127.0.0.1:7001
+                     services:
+                        -  casual/example/echo
+)";
+
+
+         local::Manager a{ { local::configuration::base, A}};
+
+         local::state::gateway::until( local::state::gateway::predicate::outbound::connected());
+
+         const auto binary = unittest::random::binary( 3 * platform::ipc::transport::size);
+
+         algorithm::for_n< 10>( [&binary]()
+         {
+            auto buffer = local::call( "casual/example/echo", binary);
+            auto size = local::size( buffer);
+
+            EXPECT_EQ( size, range::size( binary));
+
+            auto range = range::make( buffer.get(), size);
+            EXPECT_TRUE( algorithm::equal( range, binary)) 
+               << "buffer: " << transcode::hex::encode( range)
+               << "\nbinary: " << transcode::hex::encode( binary);
          });
       }
 
@@ -457,8 +542,7 @@ domain:
          // we expect to always get to B
          algorithm::for_n< 10>( []()
          {
-            auto buffer = local::call( "casual/example/domain/name");
-            EXPECT_TRUE( buffer.get() == std::string_view{ "B"});
+            EXPECT_TRUE( local::domain::name( "B"));
          });
 
          // shutdown B
@@ -467,8 +551,7 @@ domain:
          // we expect to always get to C
          algorithm::for_n< 10>( []()
          {
-            auto buffer = local::call( "casual/example/domain/name");
-            EXPECT_TRUE( buffer.get() == std::string_view{ "C"});
+            EXPECT_TRUE( local::domain::name( "C"));
          });
 
          // boot B
@@ -479,12 +562,14 @@ domain:
 
          // we need to wait for all to be connected...
          local::state::gateway::until( local::state::gateway::predicate::outbound::connected());
+         
+         // we expect to get to B agin
+         EXPECT_TRUE( local::domain::name( "B", 1000));
 
          // we expect to always get to B, again
          algorithm::for_n< 10>( []()
          {
-            auto buffer = local::call( "casual/example/domain/name");
-            EXPECT_TRUE( buffer.get() == std::string_view{ "B"});
+            EXPECT_TRUE( local::domain::name( "B"));
          });
       }
 

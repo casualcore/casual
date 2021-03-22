@@ -75,6 +75,7 @@ namespace casual
                
                bool operator () ( common::communication::select::tag::consume)
                {
+                  // we consume the cache.
                   return common::predicate::boolean( m_handler( ipc::inbound().cached()));
                }
 

@@ -16,115 +16,106 @@
 
 namespace casual
 {
-   namespace common
+   namespace common::unittest
    {
-      namespace unittest
+
+      Message::Message() = default;
+      
+      Message::Message( platform::binary::type payload) 
+         : payload{ std::move( payload)} {}
+
+      Message::Message( platform::size::type size) 
+      : Message{ random::binary( size)} {}
+
+      namespace message::transport
       {
+         unittest::Message size( platform::size::type size)
+         {
+            constexpr platform::size::type overhead = sizeof( platform::size::type) + sizeof( Uuid::uuid_type);
+            assert( size >= overhead);
+
+            return { size - overhead};
+         }
+         
+      } // message::transport
+
+
+      namespace random
+      {
+
          namespace local
          {
             namespace
             {
-               size_type transform_size( size_type size)
+               std::mt19937& engine()
                {
-                  const size_type size_type_size = sizeof( platform::binary::type::size_type);
-
-                  if( size < size_type_size)
-                     code::raise::log( code::casual::invalid_argument, "mockup message size is to small");
-
-                  return size - size_type_size;
+                  //static std::random_device device;
+                  static std::mt19937 engine{ std::random_device{}()};
+                  return engine;
                }
+
+               auto distribution()
+               {
+                  using limit_type = std::numeric_limits< platform::binary::type::value_type>;
+
+                  std::uniform_int_distribution<> distribution( limit_type::min(), limit_type::max());
+
+                  return distribution;
+               }
+
+               template< typename C>
+               void randomize( C& container)
+               {
+                  auto dist = local::distribution();
+
+                  for( auto& value : container)
+                  {
+                     value = dist( local::engine());
+                  }
+               }
+
             } // <unnamed>
          } // local
 
-         Message::Message() = default;
-         Message::Message( size_type size) : payload( local::transform_size( size)) {}
-
-         size_type Message::size() const { return payload.size() + sizeof( platform::binary::type::size_type);}
-
-         namespace random
+         namespace detail
          {
-
-            namespace local
+            long long integer()
             {
-               namespace
-               {
-                  std::mt19937& engine()
-                  {
-                     //static std::random_device device;
-                     static std::mt19937 engine{ std::random_device{}()};
-                     return engine;
-                  }
-
-                  auto distribution()
-                  {
-                     using limit_type = std::numeric_limits< platform::binary::type::value_type>;
-
-                     std::uniform_int_distribution<> distribution( limit_type::min(), limit_type::max());
-
-                     return distribution;
-                  }
-
-                  template< typename C>
-                  void randomize( C& container)
-                  {
-                     auto dist = local::distribution();
-
-                     for( auto& value : container)
-                     {
-                        value = dist( local::engine());
-                     }
-                  }
-
-               } // <unnamed>
-            } // local
-
-            namespace detail
-            {
-               long long integer()
-               {
-                  std::uniform_int_distribution< long long> distribution( std::numeric_limits< long long>::min(), std::numeric_limits< long long>::max());
-                  return distribution( local::engine());
-               }
-            } // detail
-
-            platform::binary::type::value_type byte()
-            {
-               auto distribution = local::distribution();
-
+               std::uniform_int_distribution< long long> distribution( std::numeric_limits< long long>::min(), std::numeric_limits< long long>::max());
                return distribution( local::engine());
             }
+         } // detail
 
-            platform::binary::type binary( size_type size)
-            {
-               platform::binary::type result( size);
+         platform::binary::type::value_type byte()
+         {
+            auto distribution = local::distribution();
 
-               local::randomize( result);
+            return distribution( local::engine());
+         }
 
-               return result;
-            }
+         platform::binary::type binary( platform::size::type size)
+         {
+            platform::binary::type result( size);
 
-            std::string string( size_type size)
-            {
-               std::string result( size, '\0');
+            local::randomize( result);
 
-               std::uniform_int_distribution< short> distribution( 32, 123);
+            return result;
+         }
 
-               for( auto& value : result)
-                  value = distribution( local::engine());
+         std::string string( platform::size::type size)
+         {
+            std::string result( size, '\0');
 
-               return result;
-            }
+            std::uniform_int_distribution< short> distribution( 32, 123);
 
-            unittest::Message message( size_type size)
-            {
-               unittest::Message result( size);
+            for( auto& value : result)
+               value = distribution( local::engine());
 
-               local::randomize( result.payload);
-               return result;
-            }
-         } // random
+            return result;
+         }
 
-      } // unittest
-   } // common
+      } // random
+
+   } // common::unittest
 } // casual
 
