@@ -25,8 +25,17 @@ namespace casual
 
       std::ostream& operator << ( std::ostream& out, const Complete& value)
       {
-         return out << "{ type: " << value.type() << ", correlation: " << value.correlation() << ", size: "
-               << value.payload.size() << std::boolalpha << ", complete: " << value.complete() << '}';
+         out << "{ type: " << value.type() << ", correlation: " << value.correlation() << ", size: "
+            << value.payload.size() << std::boolalpha << ", complete: " << value.complete() << ", unhandled: [";
+         
+         algorithm::for_each_interleave( value.m_unhandled, 
+            [&]( auto& range)
+            {
+               out << " { offset: " << range.data() - value.payload.data() << ", size: " << range.size() << '}';
+            }, 
+            [&out](){ out << ",";});
+
+         return out << "]}";
       }
 
       bool operator == ( const Complete& complete, const Uuid& correlation)

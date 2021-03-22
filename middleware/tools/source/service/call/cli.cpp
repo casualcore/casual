@@ -152,6 +152,7 @@ namespace casual
                      request.process = process::handle();
                      request.service = lookup.service;
                      request.pending = lookup.pending;
+                     request.correlation = uuid::make();
 
                      using Type = common::service::transaction::Type;
                      if( algorithm::compare::any( lookup.service.transaction, Type::automatic, Type::join, Type::branch))
@@ -287,6 +288,9 @@ namespace casual
                      condition( state), 
                      handler( state), 
                      pipe);
+
+                  // we're done
+                  casual::cli::pipe::done();
 
                }
             } // blocking

@@ -101,7 +101,7 @@ namespace casual
          CASUAL_LOG_SERIALIZE( 
             CASUAL_SERIALIZE_NAME( m_device, "device");
             CASUAL_SERIALIZE_NAME( m_unsent, "unsent");
-            CASUAL_SERIALIZE_NAME( m_unsent.capacity(), "capacity.capacity");
+            CASUAL_SERIALIZE_NAME( m_unsent.capacity(), "unsent.capacity");
          )
 
       private:

@@ -301,7 +301,7 @@ namespace casual
 
          tcp::Duplex tcp{ tcp::retry::connect( address, { { std::chrono::milliseconds{ 1}, 0}})};
 
-         auto send_message = unittest::random::message( 10 * 1024);
+         auto send_message = unittest::message::transport::size( 10 * 1024);
 
          auto correlation = device::blocking::send( tcp, send_message);
 
@@ -325,7 +325,7 @@ namespace casual
 
          tcp::Duplex tcp{ tcp::retry::connect( address, { { std::chrono::milliseconds{ 1}, 0}})};
 
-         auto send_message = unittest::random::message( 100 * 1024);
+         auto send_message = unittest::message::transport::size( 100 * 1024);
 
          auto correlation = device::blocking::send( tcp, send_message);
 
@@ -349,7 +349,7 @@ namespace casual
 
          tcp::Duplex tcp{ tcp::retry::connect( address, { { std::chrono::milliseconds{ 1}, 0}})};
 
-         auto send_message = unittest::random::message( 1024 * 1024);;
+         auto send_message = unittest::message::transport::size( 1024 * 1024);;
 
          auto correlation = device::blocking::send( tcp, send_message);
 
@@ -374,7 +374,7 @@ namespace casual
 
          tcp::Duplex tcp{ tcp::retry::connect( address, { { std::chrono::milliseconds{ 1}, 0}})};
 
-         auto send_message = unittest::random::message( 10 * 1024 * 1024);
+         auto send_message = unittest::message::transport::size( 10 * 1024 * 1024);
          unittest::random::range( send_message.payload);
 
          auto correlation = device::blocking::send( tcp, send_message);

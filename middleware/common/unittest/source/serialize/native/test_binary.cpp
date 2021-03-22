@@ -145,27 +145,14 @@ namespace casual
 
                using complete_type = typename TestFixture::complete_type;
 
-               message::service::Advertise advertise;
+               auto origin = unittest::Message{ 10000};
+               origin.correlation = uuid::make();
 
-               const auto ipc = strong::ipc::id{ uuid::make()};
+               unittest::Message result;
 
-               advertise.process.ipc = ipc;
+               serialize::native::complete( serialize::native::complete< complete_type>( origin), result);
 
-
-               traits::iterable::value_t< decltype( advertise.services.add)> service;
-
-               service.name = "service1";
-               advertise.services.add.resize( 10000, service);
-
-               auto complete = serialize::native::complete< complete_type>( advertise);
-
-               message::service::Advertise result;
-
-               serialize::native::complete( complete, result);
-
-               EXPECT_TRUE( result.process.ipc == ipc) << result.process.ipc;
-               EXPECT_TRUE( result.services.add.size() == 10000) << result.services.add.size();
-
+               EXPECT_TRUE( origin == result) << CASUAL_NAMED_VALUE( origin) << '\n' << CASUAL_NAMED_VALUE( result);
             }
 
             TYPED_TEST( casual_serialize_native_binary, transaction_id_null)
