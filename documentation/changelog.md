@@ -2,6 +2,9 @@
 This is the changelog for `casual` and all changes are listed in this document.
 
 ## [Unreleased]
+## target [1.4.13]
+### Fixes
+- gateway - outbound correlates multiple branched trids correctly
 
 ## [1.4.12]
 ### Fixes

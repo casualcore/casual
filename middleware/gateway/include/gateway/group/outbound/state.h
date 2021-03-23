@@ -211,7 +211,8 @@ namespace casual
             //! @returns all resources that should be unadvertised
             Resources clear();
             
-            void remove( const common::transaction::ID& internal);
+            //! removes the "mapping", based on the external (branched) trid.
+            void remove( const common::transaction::ID& external);
 
             CASUAL_LOG_SERIALIZE( 
                CASUAL_SERIALIZE( services);

@@ -163,6 +163,38 @@ domain:
 
                return memory::guard( buffer, &tpfree);
             };
+/*
+            auto acall( std::string_view service, const platform::binary::type& binary)
+            {
+               auto buffer = memory::guard( local::allocate( binary.size()), &tpfree);
+               assert( buffer);
+               algorithm::copy( binary, buffer.get());
+
+               auto len = tptypes( buffer.get(), nullptr, nullptr);
+
+               auto result = tpacall( service.data(), buffer.get(), len, 0);
+               EXPECT_TRUE( tperrno == 0) << "tperrno: " << tperrnostring( tperrno);
+
+               return result;
+            };
+
+            auto receive( int descriptor)
+            {
+               auto buffer = local::allocate( 128);
+               assert( buffer);
+
+               auto len = tptypes( buffer, nullptr, nullptr);
+
+               tpgetrply( &descriptor, &buffer, &len, 0);
+               EXPECT_TRUE( tperrno == 0) << "tperrno: " << tperrnostring( tperrno);
+
+               platform::binary::type result;
+               algorithm::copy( range::make( buffer, len), std::back_inserter( result));
+               tpfree( buffer);
+
+               return result;
+            };
+            */
 
             template< typename B>
             auto size( B&& buffer)
@@ -178,7 +210,7 @@ domain:
 
             namespace example
             {
-               auto domain( std::string name, std::string port)
+               auto domain( std::string name, std::string port, std::string_view extended = {})
                {
                   constexpr auto template_config = R"(
 domain: 
@@ -187,6 +219,7 @@ domain:
    servers:
       - path: "${CASUAL_REPOSITORY_ROOT}/middleware/example/server/bin/casual-example-server"
         memberships: [ user]
+        arguments: [ --sleep, 500ms]
    gateway:
       inbound:
          groups:
@@ -198,9 +231,40 @@ domain:
                      return std::regex_replace( text, std::regex{ pattern}, value); 
                   };
 
-                  return local::Manager{ { local::configuration::base, replace( replace( template_config, "NAME", name), "PORT", port)}};
-
+                  if( extended.empty())
+                     return local::Manager{ { local::configuration::base, replace( replace( template_config, "NAME", name), "PORT", port)}};
+                  else
+                     return local::Manager{ { local::configuration::base, replace( replace( template_config, "NAME", name), "PORT", port), extended}};
                };
+
+               namespace reverse
+               {
+                  auto domain( std::string name, std::string port, std::string_view extended = {})
+                  {
+                     constexpr auto template_config = R"(
+domain: 
+   name: NAME
+
+   servers:
+      - path: "${CASUAL_REPOSITORY_ROOT}/middleware/example/server/bin/casual-example-server"
+        memberships: [ user]
+        arguments: [ --sleep, 500ms]
+   gateway:
+      reverse:
+         inbound:
+            groups:
+               -  connections: 
+                  -  address: 127.0.0.1:PORT
+)";               
+                     auto replace = []( auto text, auto pattern, auto value)
+                     {
+                        return std::regex_replace( text, std::regex{ pattern}, value); 
+                     };
+
+                     return local::Manager{ { local::configuration::base, replace( replace( template_config, "NAME", name), "PORT", port)}};
+                  }
+                  
+               } // reverse
             } // example
 
 
@@ -354,48 +418,6 @@ domain:
          });
       }
 
-      TEST( test_domain_gateway, domain_A_to_B___echo_send_large_message)
-      {
-         common::unittest::Trace trace;
-
-         // sink child signals 
-         signal::callback::registration< code::signal::child>( [](){});
-
-         auto b = local::example::domain( "B", "7001");
-
-         constexpr auto A = R"(
-domain: 
-   name: A
-  
-   gateway:
-      outbound:
-         groups:
-            -  connections:
-                  -  address: 127.0.0.1:7001
-                     services:
-                        -  casual/example/echo
-)";
-
-
-         local::Manager a{ { local::configuration::base, A}};
-
-         local::state::gateway::until( local::state::gateway::predicate::outbound::connected());
-
-         const auto binary = unittest::random::binary( 3 * platform::ipc::transport::size);
-
-         algorithm::for_n< 10>( [&binary]()
-         {
-            auto buffer = local::call( "casual/example/echo", binary);
-            auto size = local::size( buffer);
-
-            EXPECT_EQ( size, range::size( binary));
-
-            auto range = range::make( buffer.get(), size);
-            EXPECT_TRUE( algorithm::equal( range, binary)) 
-               << "buffer: " << transcode::hex::encode( range)
-               << "\nbinary: " << transcode::hex::encode( binary);
-         });
-      }
 
       TEST( BACKWARD_test_domain_gateway, domain_A_to__B_C_D__outbound_separated_groups___expect_prio_B)
       {
@@ -441,6 +463,426 @@ domain:
             EXPECT_TRUE( buffer.get() == std::string_view{ "B"});
          });
       }
+
+
+      TEST( test_domain_gateway, domain_A_to_B___echo_send_large_message)
+      {
+         common::unittest::Trace trace;
+
+         // sink child signals 
+         signal::callback::registration< code::signal::child>( [](){});
+
+         auto b = local::example::domain( "B", "7001");
+
+         constexpr auto A = R"(
+domain: 
+   name: A
+  
+   gateway:
+      outbound:
+         groups:
+            -  connections:
+                  -  address: 127.0.0.1:7001
+                     services:
+                        -  casual/example/echo
+)";
+
+
+         local::Manager a{ { local::configuration::base, A}};
+
+         local::state::gateway::until( local::state::gateway::predicate::outbound::connected());
+
+         const auto binary = unittest::random::binary( 3 * platform::ipc::transport::size);
+
+         algorithm::for_n< 10>( [&binary]()
+         {
+            auto buffer = local::call( "casual/example/echo", binary);
+            auto size = local::size( buffer);
+
+            EXPECT_EQ( size, range::size( binary));
+
+            auto range = range::make( buffer.get(), size);
+            EXPECT_TRUE( algorithm::equal( range, binary)) 
+               << "buffer: " << transcode::hex::encode( range)
+               << "\nbinary: " << transcode::hex::encode( binary);
+         });
+      }
+
+      TEST( test_domain_gateway, domain_A_to_B___echo_send_message_in_transaction)
+      {
+         common::unittest::Trace trace;
+
+         // sink child signals 
+         signal::callback::registration< code::signal::child>( [](){});
+
+         auto b = local::example::domain( "B", "7001");
+
+         constexpr auto A = R"(
+domain: 
+   name: A
+  
+   gateway:
+      outbound:
+         groups:
+            -  connections:
+                  -  address: 127.0.0.1:7001
+                     services:
+                        -  casual/example/echo
+)";
+
+
+         local::Manager a{ { local::configuration::base, A}};
+
+         local::state::gateway::until( local::state::gateway::predicate::outbound::connected());
+
+         const auto binary = unittest::random::binary( platform::ipc::transport::size);
+
+         ASSERT_TRUE( tx_begin() == TX_OK);
+
+         algorithm::for_n< 10>( [&binary]()
+         {
+            auto buffer = local::call( "casual/example/echo", binary);
+            auto size = local::size( buffer);
+
+            EXPECT_EQ( size, range::size( binary));
+         });
+
+         ASSERT_TRUE( tx_commit() == TX_OK);
+      }
+
+      TEST( test_domain_gateway, domain_A_to_B_C___call_A_B__in_same_transaction)
+      {
+         common::unittest::Trace trace;
+
+         // sink child signals 
+         signal::callback::registration< code::signal::child>( [](){});
+
+         auto b = local::example::domain( "B", "7001");
+         auto c = local::example::domain( "C", "7002");
+
+         constexpr auto A = R"(
+domain: 
+   name: A
+  
+   gateway:
+      outbound:
+         groups:
+            -  connections:
+                  -  address: 127.0.0.1:7001
+                  -  address: 127.0.0.1:7002
+)";
+
+
+         local::Manager a{ { local::configuration::base, A}};
+
+         local::state::gateway::until( local::state::gateway::predicate::outbound::connected());
+
+         const auto binary = unittest::random::binary( platform::ipc::transport::size);
+
+         ASSERT_TRUE( tx_begin() == TX_OK);
+
+         algorithm::for_n< 2>( [&binary]()
+         {
+            {
+               auto buffer = local::call( "casual/example/domain/echo/B", binary);
+               auto size = local::size( buffer);
+
+               EXPECT_EQ( size, range::size( binary));
+            }
+            {
+               auto buffer = local::call( "casual/example/domain/echo/C", binary);
+               auto size = local::size( buffer);
+
+               EXPECT_EQ( size, range::size( binary));
+            }
+         });
+
+         ASSERT_TRUE( tx_commit() == TX_OK);
+      }
+
+
+      TEST( test_domain_gateway, domain_A_to_B__to__C_D___call_C_D__in_same_transaction)
+      {
+         common::unittest::Trace trace;
+
+         // sink child signals 
+         signal::callback::registration< code::signal::child>( [](){});
+
+         auto c = local::example::domain( "C", "7002");
+         auto d = local::example::domain( "D", "7003");
+
+         constexpr auto B = R"(
+domain: 
+   name: B
+  
+   gateway:
+      inbound:
+         groups:
+            -  connections:
+                  -  address: 127.0.0.1:7001
+
+      outbound:
+         groups:
+            -  connections:
+                  -  address: 127.0.0.1:7002
+                     services: [ casual/example/domain/echo/C]
+                  -  address: 127.0.0.1:7003
+                     services: [ casual/example/domain/echo/D]
+)";
+
+
+         local::Manager b{ { local::configuration::base, B}};
+         local::state::gateway::until( local::state::gateway::predicate::outbound::connected());
+
+         constexpr auto A = R"(
+domain:
+   name: A
+
+   gateway:
+      outbound:
+         groups:
+            -  connections:
+                  -  address: 127.0.0.1:7001
+)";
+
+
+         local::Manager a{ { local::configuration::base, A}};
+         local::state::gateway::until( local::state::gateway::predicate::outbound::connected());
+
+         const auto binary = unittest::random::binary( platform::ipc::transport::size);
+
+         ASSERT_TRUE( tx_begin() == TX_OK);
+
+         algorithm::for_n< 2>( [&binary]()
+         {
+            {
+               auto buffer = local::call( "casual/example/domain/echo/C", binary);
+               auto size = local::size( buffer);
+
+               EXPECT_EQ( size, range::size( binary));
+            }
+            {
+               auto buffer = local::call( "casual/example/domain/echo/D", binary);
+               auto size = local::size( buffer);
+
+               EXPECT_EQ( size, range::size( binary));
+            }
+         });
+
+         ASSERT_TRUE( tx_commit() == TX_OK);
+      }
+
+
+      TEST( test_domain_gateway, domain_A_to_B__reverse_to__C_D___call_C_D__in_same_transaction)
+      {
+         common::unittest::Trace trace;
+
+         // sink child signals 
+         signal::callback::registration< code::signal::child>( [](){});
+
+
+         constexpr auto B = R"(
+domain: 
+   name: B
+  
+   gateway:
+      inbound:
+         groups:
+            -  connections:
+                  -  address: 127.0.0.1:7001
+
+      reverse:
+         outbound:
+            groups:
+               -  connections:
+                     -  address: 127.0.0.1:7002
+                        services:
+                           -  casual/example/domain/echo/C
+                           -  casual/example/domain/echo/D
+)";
+
+
+         local::Manager b{ { local::configuration::base, B}};
+
+         auto c = local::example::reverse::domain( "C", "7002");
+         auto d = local::example::reverse::domain( "D", "7002");
+
+
+         constexpr auto A = R"(
+domain:
+   name: A
+
+   gateway:
+      outbound:
+         groups:
+            -  connections:
+                  -  address: 127.0.0.1:7001
+)";
+
+
+         local::Manager a{ { local::configuration::base, A}};
+         local::state::gateway::until( local::state::gateway::predicate::outbound::connected());
+
+         const auto binary = unittest::random::binary( platform::ipc::transport::size);
+
+         ASSERT_TRUE( tx_begin() == TX_OK);
+
+         algorithm::for_n< 2>( [&binary]()
+         {
+            {
+               auto buffer = local::call( "casual/example/domain/echo/C", binary);
+               auto size = local::size( buffer);
+
+               EXPECT_EQ( size, range::size( binary));
+            }
+            {
+               auto buffer = local::call( "casual/example/domain/echo/D", binary);
+               auto size = local::size( buffer);
+
+               EXPECT_EQ( size, range::size( binary));
+            }
+         });
+
+         ASSERT_TRUE( tx_commit() == TX_OK);
+      }
+
+      TEST( test_domain_gateway, domain_A_to_B__to__C_D___call_C_D__from_A__call_D_from_C__in_same_transaction)
+      {
+         common::unittest::Trace trace;
+
+         // sink child signals 
+         signal::callback::registration< code::signal::child>( [](){});
+
+         auto c = local::example::domain( "C", "7002", R"(
+domain:
+   gateway:
+      outbound:
+         groups:
+            -  connections:
+                  -  address: 127.0.0.1:7001
+
+)");
+         auto d = local::example::domain( "D", "7003");
+
+         constexpr auto B = R"(
+domain: 
+   name: B
+  
+   gateway:
+      inbound:
+         groups:
+            -  connections:
+                  -  address: 127.0.0.1:7001
+
+      outbound:
+         groups:
+            -  connections:
+                  -  address: 127.0.0.1:7002
+                     services: [ casual/example/domain/echo/C]
+                  -  address: 127.0.0.1:7003
+                     services: [ casual/example/domain/echo/D]
+)";
+
+
+         local::Manager b{ { local::configuration::base, B}};
+         local::state::gateway::until( local::state::gateway::predicate::outbound::connected());
+
+         constexpr auto A = R"(
+domain:
+   name: A
+
+   gateway:
+      outbound:
+         groups:
+            -  connections:
+                  -  address: 127.0.0.1:7001
+)";
+
+
+         local::Manager a{ { local::configuration::base, A}};
+         local::state::gateway::until( local::state::gateway::predicate::outbound::connected());
+
+         const auto binary = unittest::random::binary( platform::ipc::transport::size);
+
+         ASSERT_TRUE( tx_begin() == TX_OK);
+
+         algorithm::for_n< 2>( [&binary]()
+         {
+            {
+               auto buffer = local::call( "casual/example/domain/echo/C", binary);
+               auto size = local::size( buffer);
+
+               EXPECT_EQ( size, range::size( binary));
+            }
+            {
+               auto buffer = local::call( "casual/example/domain/echo/D", binary);
+               auto size = local::size( buffer);
+
+               EXPECT_EQ( size, range::size( binary));
+            }
+         });
+
+         {
+            // 'enter' domain C
+            c.activate();
+
+            auto buffer = local::call( "casual/example/domain/echo/D", binary);
+            auto size = local::size( buffer);
+
+            EXPECT_EQ( size, range::size( binary));
+         }
+
+         ASSERT_TRUE( tx_commit() == TX_OK);
+      }
+
+/*
+      TEST( test_domain_gateway, domain_A_to_B___tpacall__sleep___shutdown_B___expect_reply___call_sleep_again__expect__TPENOENT)
+      {
+         // sink child signals 
+         signal::callback::registration< code::signal::child>( [](){});
+
+         common::unittest::Trace trace;
+
+         auto b = local::example::domain( "B", "7001");
+
+         constexpr auto A = R"(
+domain: 
+   name: A
+  
+   gateway:
+      outbound:
+         groups:
+            -  connections:
+                  -  address: 127.0.0.1:7001
+                     services:
+                        -  casual/example/sleep
+)";
+
+
+         local::Manager a{ { local::configuration::base, A}};
+
+         local::state::gateway::until( local::state::gateway::predicate::outbound::connected());
+
+         const auto binary = unittest::random::binary( 2048);
+
+         auto descriptors = algorithm::generate_n< 2>( [&binary]()
+         {
+            return local::acall( "casual/example/sleep", binary);
+         });
+
+         // shutdown B  ---- , we need to do this in another thread
+         local::sink( std::move( b));
+
+         for( auto descriptor : descriptors)
+         {
+            auto result = local::receive( descriptor);
+            EXPECT_TRUE( result == binary);
+         }
+
+         // expect new calls to get TPENOENT
+         local::call( "casual/example/sleep", TPENOENT);
+      }
+      */
 
       TEST( test_domain_gateway, domain_A_to__B_C_D__outbound_separated_groups___expect_prio_B__shutdown_B__expect_C__shutdown__C__expect_D)
       {
@@ -846,6 +1288,7 @@ domain:
          local::call( "foo", 0);
 
       }
+
 
    } // test::domain
 } // casual

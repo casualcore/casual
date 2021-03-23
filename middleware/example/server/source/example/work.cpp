@@ -14,6 +14,7 @@
 #include "common/argument.h"
 #include "common/environment/string.h"
 #include "common/chronology.h"
+#include "common/domain.h"
 
 
 #include <locale>
@@ -66,7 +67,15 @@ namespace casual
                   if( local::global.startup != platform::time::unit::zero())
                      common::process::sleep( local::global.startup);
 
-                  tpadvertise( "casual/example/advertised/echo", &casual_example_echo);
+                  auto advertise_echo = []( std::string_view name)
+                  {
+                     tpadvertise( name.data(), &casual_example_echo);
+                  };
+
+                  advertise_echo( "casual/example/advertised/echo");
+                  advertise_echo( common::string::compose( "casual/example/domain/echo/", common::domain::identity().name));
+                  advertise_echo( common::string::compose( "casual/example/domain/echo/", common::domain::identity().id));
+
 
                   common::log::line( common::log::category::information, "sleep: ", local::global.sleep);
                   common::log::line( common::log::category::information, "work: ", local::global.work);

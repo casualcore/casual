@@ -13,7 +13,9 @@
 extern "C" {
 #endif
 
-#define XIDDATASIZE     128       /* size in bytes */
+#define XIDDATASIZE     128   /* size in bytes */
+#define MAXGTRIDSIZE    64    /* maximum size in bytes of gtrid */
+#define MAXBQUALSIZE    64    /* maximum size in bytes of bqual */ 
 
 struct xid_t {
    long formatID; /* format identifier */

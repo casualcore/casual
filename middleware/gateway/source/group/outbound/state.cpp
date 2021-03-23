@@ -216,9 +216,15 @@ namespace casual
 
          common::strong::file::descriptor::id Lookup::connection( const common::transaction::ID& external) const
          {
-            if( auto global = algorithm::find_if( transactions, local::predicate::is_global( external)))
+            auto global = algorithm::find_if( transactions, local::predicate::is_global( external));
+
+            while( global)
+            {
                if( auto found = algorithm::find( global->externals, external))
                   return found->connection;
+
+               global = algorithm::find_if( ++global, local::predicate::is_global( external));
+            }
                   
             return {};
          }
@@ -269,12 +275,26 @@ namespace casual
             return result;
          }  
 
-         void Lookup::remove( const common::transaction::ID& internal)
+         void Lookup::remove( const common::transaction::ID& external)
          {
-            if( auto found = algorithm::find_if( transactions, local::predicate::is_internal( internal)))
+            auto remove_external = [&external]( auto& transaction)
+            {
+               if( transaction::id::range::global( transaction.internal) != transaction::id::range::global( external))
+                  return false;
+
+               auto found = algorithm::find( transaction.externals, external);
+
+               if( ! found)
+                  return false;
+
+               transaction.externals.erase( std::begin( found));
+               return true;
+            };
+
+            if( auto found = algorithm::find_if( transactions, remove_external))
                transactions.erase( std::begin( found));
             else
-               log::line( log::category::error, code::casual::invalid_semantics, " failed to correlate the internal trid: ", internal, " - action: ignore");
+               log::line( log::category::error, code::casual::invalid_semantics, " failed to correlate the external trid: ", external, " - action: ignore");
          }
 
       } // state
