@@ -10,6 +10,11 @@
 #include "common/server/context.h"
 #include "common/log/stream.h"
 
+#include "common/execution.h"
+#include "common/uuid.h"
+
+#include <array>
+#include <vector>
 
 void casual_service_forward( const char* service, char* data, long size)
 {
@@ -115,4 +120,15 @@ long casual_instance_index()
       return instance.value().index;
 
    return -1;
+}
+
+
+void casual_execution_id_set( const uuid_t* id)
+{
+   casual::common::execution::id( casual::common::Uuid( *id));
+}
+
+const uuid_t* casual_execution_id_get()
+{
+   return &casual::common::execution::id().get();
 }
