@@ -329,9 +329,9 @@ namespace casual
                   {
 
                      template< typename R>
-                     process::Handle reconnect( R&& singleton_policy)
+                     process::Handle connect( R&& singleton_policy)
                      {
-                        Trace trace{ "communication::instance::outbound::domain::manager::local::reconnect"};
+                        Trace trace{ "communication::instance::outbound::domain::manager::local::connect"};
 
                         auto from_environment = []()
                         {
@@ -343,29 +343,40 @@ namespace casual
 
                         auto process = from_environment();
 
-                        common::log::line( verbose::log, "process: ", process);
-
-
-                        if( ipc::exists( process.ipc))
+                        if( process.ipc)
                         {
-                           return process;
-                        }
+                           common::log::line( verbose::log, "process: ", process);
+   
+                           if( ipc::exists( process.ipc))
+                           {
+                              return process;
+                           }
 
-                        common::log::line( log, "failed to locate domain manager via ", environment::variable::name::ipc::domain::manager, " - trying 'singleton file'");
+                           common::log::line( log, "failed to locate via ", environment::variable::name::ipc::domain::manager);
+                        }
 
                         process = singleton_policy();
 
-                        if( ! ipc::exists( process.ipc))
-                           code::raise::log( code::casual::domain_unavailable, "failed to locate domain manager");
+                        if( process.ipc)
+                        {
+                           common::log::line( verbose::log, "process: ", process);
 
-                        return process;
+                           if( ipc::exists( process.ipc))
+                           {
+                              return process;
+                           }
+
+                           common::log::line( log, "failed to locate via 'singleton file'");
+                        }
+
+                        code::raise::log( code::casual::domain_unavailable, "failed to locate domain manager");
                      }
 
                   } // <unnamed>
                } // local
 
                Connector::Connector() 
-                  : detail::base_connector{ local::reconnect( [](){ return common::domain::singleton::read().process;})}
+                  : detail::base_connector{ local::connect( [](){ return common::domain::singleton::read().process;})}
                {
                   log::line( verbose::log, "connector: ", *this);
                }
@@ -374,7 +385,7 @@ namespace casual
                {
                   Trace trace{ "communication::instance::outbound::domain::manager::Connector::reconnect"};
 
-                  reset( local::reconnect( [](){ return common::domain::singleton::read().process;}));
+                  reset( local::connect( [](){ return common::domain::singleton::read().process;}));
 
                   log::line( verbose::log, "connector: ", *this);
                }
@@ -397,7 +408,7 @@ namespace casual
                namespace optional
                {
                   Connector::Connector()
-                  : detail::base_connector{ local::reconnect( [](){
+                  : detail::base_connector{ local::connect( [](){
                      return common::domain::singleton::read().process;
                   })}
                   {
@@ -408,7 +419,7 @@ namespace casual
                   {
                      Trace trace{ "communication::instance::outbound::domain::manager::optional::Connector::reconnect"};
 
-                     reset( local::reconnect( [](){
+                     reset( local::connect( [](){
                         return common::domain::singleton::read().process;
                      }));
 
