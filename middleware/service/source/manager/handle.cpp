@@ -698,7 +698,7 @@ namespace casual
                               auto pending = algorithm::accumulate( busy, state.pending.shutdown.empty_pendings(), []( auto result, auto& instance)
                               {
                                  auto& caller = instance.caller();
-                                 result.emplace_back( caller.correlation, caller.process.pid);
+                                 result.emplace_back( caller.correlation, instance.process.pid);
                                  return result;
                               });
 
@@ -706,17 +706,18 @@ namespace casual
                                  message = common::message::reverse::type( message, common::process::handle()), 
                                  instances = range::to_vector( busy),
                                  destination = message.process]
-                                 ( auto&& replies, auto&& failed) mutable
+                                 ( auto&& replies, auto&& outcome) mutable
                               {
                                  Trace trace{ "service::manager::handle::local::process::prepare::shutdown callback"};
-                                 log::line( verbose::log, "replies: ", replies, ", failed: ", failed);
-                                 
+                                 log::line( verbose::log, "replies: ", replies);
+
+                                 auto failed = algorithm::filter( outcome, []( auto& pending){ return pending.state == decltype( pending.state)::failed;});
+                                 log::line( verbose::log, "failed: ", failed);
+
                                  // take care of failed, if any
-                                 algorithm::for_each( failed, [&]( auto& failed)
-                                 {
+                                 for( auto& failed : failed)
                                     if( auto found = algorithm::find( instances, failed.id))
                                        local::error::reply( found->caller(), code::xatmi::service_error);
-                                 });
 
                                  // take care of replies
                                  algorithm::for_each( replies, [&]( auto& reply)
@@ -734,6 +735,7 @@ namespace casual
                               };
 
                               state.pending.shutdown( std::move( pending), std::move( callback));
+                              log::line( verbose::log, "state.pending.shutdown: ", state.pending.shutdown);
                            }               
                         };
                      }

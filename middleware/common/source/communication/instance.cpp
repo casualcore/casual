@@ -224,10 +224,19 @@ namespace casual
                      } // <unnamed>
                   } // local
 
+                  base_connector::base_connector()
+                     : m_socket{ ipc::native::detail::create::domain::socket()}
+                  {}
+
+                  void base_connector::reset( process::Handle process)
+                  {
+                     m_process = std::move( process);
+                     m_connector = ipc::outbound::Connector{ m_process.ipc};
+                  }
+
                   template< fetch::Directive directive>
                   basic_connector< directive>::basic_connector( const Uuid& identity, std::string environment)
-                     : base_connector( local::fetch( identity, environment, directive)),
-                       m_identity{ identity}, m_environment{ std::move( environment)}
+                     : m_identity{ identity}, m_environment{ std::move( environment)}
                   {
                      log::line( log, "instance created - ", m_environment, " ipc: ", m_process.ipc);
                      log::line( verbose::log, "connector: ", *this);
@@ -393,12 +402,6 @@ namespace casual
                         } // <unnamed>
                      } // local
 
-                     Connector::Connector() 
-                        : detail::base_connector{ local::reconnect( [](){ return common::domain::singleton::read().process;})}
-                     {
-                        log::line( verbose::log, "connector: ", *this);
-                     }
-
                      void Connector::reconnect()
                      {
                         Trace trace{ "communication::instance::outbound::domain::manager::Connector::reconnect"};
@@ -424,14 +427,6 @@ namespace casual
 
                      namespace optional
                      {
-                        Connector::Connector()
-                        : detail::base_connector{ local::reconnect( [](){
-                           return common::domain::singleton::read().process;
-                        })}
-                        {
-                           log::line( verbose::log, "connector: ", *this);
-                        }
-
                         void Connector::reconnect()
                         {
                            Trace trace{ "communication::instance::outbound::domain::manager::optional::Connector::reconnect"};

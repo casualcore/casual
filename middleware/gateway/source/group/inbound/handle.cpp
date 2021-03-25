@@ -131,6 +131,7 @@ namespace casual
                            };
 
                            auto request = state.pending.requests.consume( message.correlation, message.pending);
+                           
 
                            switch( message.state)
                            {

@@ -556,13 +556,13 @@ namespace casual
                               {
                                  auto services = state.lookup.remove( destination.connection, { destination.service}, {}).services;
 
-                                 if( services.empty())
-                                    return; 
-                                 
-                                 common::message::service::Advertise unadvertise{ common::process::handle()};
-                                 unadvertise.alias = instance::alias();
-                                 unadvertise.services.remove = std::move( services);
-                                 ipc::flush::optional::send( ipc::manager::service(), unadvertise);
+                                 if( ! services.empty())
+                                 {                                 
+                                    common::message::service::Advertise unadvertise{ common::process::handle()};
+                                    unadvertise.alias = instance::alias();
+                                    unadvertise.services.remove = std::move( services);
+                                    ipc::flush::optional::send( ipc::manager::service(), unadvertise);
+                                 }
                               }
 
                               // get the internal "un-branched" trid

@@ -174,6 +174,7 @@ namespace casual
 
       struct Address
       {
+         Address() = default;
          explicit Address( strong::ipc::id id);
 
          inline const ::sockaddr_un& native() const noexcept { return m_native;}
@@ -334,6 +335,7 @@ namespace casual
             using non_blocking_policy = policy::non::Blocking;
             using complete_type = policy::complete_type;
 
+            Connector() = default;
             Connector( strong::ipc::id destination);
             ~Connector() = default;
 

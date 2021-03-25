@@ -61,7 +61,7 @@ unittest_object = [
 if "CASUAL_UNITTEST_HTTP_INBOUND_CONFIG" in os.environ and "CASUAL_UNITTEST_HTTP_INBOUND_PATH" in os.environ:
    unittest_object.append( Compile( 'unittest/source/domain/test_http.cpp'))
 
-LinkUnittest( 'unittest/bin/test-casual-basic',
+LinkUnittest( 'unittest/bin/test-casual',
    unittest_object,
    [ 
       'casual-common', 
@@ -71,6 +71,7 @@ LinkUnittest( 'unittest/bin/test-casual-basic',
       'casual-unittest',
       'casual-mockup-rm',
       'casual-domain-unittest',
+      'casual-domain-admin-cli',
       'casual-serviceframework',
    ])
 	

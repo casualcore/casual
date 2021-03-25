@@ -11,6 +11,7 @@
 #include "common/unittest.h"
 
 #include "domain/manager/unittest/process.h"
+#include "domain/manager/admin/cli.h"
 
 #include "common/communication/instance.h"
 #include "serviceframework/service/protocol/call.h"
@@ -163,7 +164,7 @@ domain:
 
                return memory::guard( buffer, &tpfree);
             };
-/*
+
             auto acall( std::string_view service, const platform::binary::type& binary)
             {
                auto buffer = memory::guard( local::allocate( binary.size()), &tpfree);
@@ -194,7 +195,6 @@ domain:
 
                return result;
             };
-            */
 
             template< typename B>
             auto size( B&& buffer)
@@ -219,7 +219,7 @@ domain:
    servers:
       - path: "${CASUAL_REPOSITORY_ROOT}/middleware/example/server/bin/casual-example-server"
         memberships: [ user]
-        arguments: [ --sleep, 500ms]
+        arguments: [ --sleep, 10ms]
    gateway:
       inbound:
          groups:
@@ -248,7 +248,7 @@ domain:
    servers:
       - path: "${CASUAL_REPOSITORY_ROOT}/middleware/example/server/bin/casual-example-server"
         memberships: [ user]
-        arguments: [ --sleep, 500ms]
+        arguments: [ --sleep, 10ms]
    gateway:
       reverse:
          inbound:
@@ -835,7 +835,7 @@ domain:
          ASSERT_TRUE( tx_commit() == TX_OK);
       }
 
-/*
+
       TEST( test_domain_gateway, domain_A_to_B___tpacall__sleep___shutdown_B___expect_reply___call_sleep_again__expect__TPENOENT)
       {
          // sink child signals 
@@ -843,19 +843,37 @@ domain:
 
          common::unittest::Trace trace;
 
-         auto b = local::example::domain( "B", "7001");
+         local::Manager b{ { local::configuration::base, R"(
+domain: 
+   name: B
+
+   servers:
+      -  path: "${CASUAL_REPOSITORY_ROOT}/middleware/example/server/bin/casual-example-server"
+         memberships: [ user]
+         arguments: [ --sleep, 100ms]
+         instances: 5
+   gateway:
+      inbound:
+         groups:
+            -  connections: 
+               -  address: 127.0.0.1:7001
+)"}};
+
+
 
          constexpr auto A = R"(
 domain: 
    name: A
-  
+
+   services:
+      -  name: casual/example/sleep
+         routes: [ sleepy]
+
    gateway:
       outbound:
          groups:
             -  connections:
                   -  address: 127.0.0.1:7001
-                     services:
-                        -  casual/example/sleep
 )";
 
 
@@ -865,14 +883,88 @@ domain:
 
          const auto binary = unittest::random::binary( 2048);
 
-         auto descriptors = algorithm::generate_n< 2>( [&binary]()
+         auto descriptors = algorithm::generate_n< 10>( [&binary]()
+         {
+            return local::acall( "sleepy", binary);
+         });
+
+         // shutdown B 
+         local::sink( std::move( b));
+         // <-- b is down.
+
+
+         // receive the 10 calls
+         for( auto descriptor : descriptors)
+         {
+            auto result = local::receive( descriptor);
+            EXPECT_TRUE( result == binary);
+         }
+
+         // expect new calls to get TPENOENT
+         local::call( "sleepy", TPENOENT);
+      }
+
+
+      TEST( test_domain_gateway, domain_A_to_B___tpacall__sleep___scale_B_down__expect__TPENOENT)
+      {
+         // sink child signals 
+         signal::callback::registration< code::signal::child>( [](){});
+
+         common::unittest::Trace trace;
+
+         local::Manager b{ { local::configuration::base, R"(
+domain: 
+   name: B
+
+   servers:
+      -  path: "${CASUAL_REPOSITORY_ROOT}/middleware/example/server/bin/casual-example-server"
+         memberships: [ user]
+         arguments: [ --sleep, 100ms]
+         instances: 5
+   gateway:
+      inbound:
+         groups:
+            -  connections: 
+               -  address: 127.0.0.1:7001
+)"}};
+
+
+
+         constexpr auto A = R"(
+domain: 
+   name: A
+
+   gateway:
+      outbound:
+         groups:
+            -  connections:
+                  -  address: 127.0.0.1:7001
+)";
+
+
+         local::Manager a{ { local::configuration::base, A}};
+
+         local::state::gateway::until( local::state::gateway::predicate::outbound::connected());
+
+         const auto binary = unittest::random::binary( 2048);
+
+         auto descriptors = algorithm::generate_n< 5>( [&binary]()
          {
             return local::acall( "casual/example/sleep", binary);
          });
 
-         // shutdown B  ---- , we need to do this in another thread
-         local::sink( std::move( b));
+         
+         {
+            b.activate();
 
+            casual::domain::manager::admin::cli cli;
+            common::argument::Parse parse{ "", cli.options()};
+            parse( { "domain", "--scale-instances", "casual-example-server", "0"});
+         }
+
+         a.activate();
+
+         // receive the 10 calls
          for( auto descriptor : descriptors)
          {
             auto result = local::receive( descriptor);
@@ -882,7 +974,6 @@ domain:
          // expect new calls to get TPENOENT
          local::call( "casual/example/sleep", TPENOENT);
       }
-      */
 
       TEST( test_domain_gateway, domain_A_to__B_C_D__outbound_separated_groups___expect_prio_B__shutdown_B__expect_C__shutdown__C__expect_D)
       {

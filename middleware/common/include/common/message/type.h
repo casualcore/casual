@@ -46,7 +46,10 @@ namespace casual
 
             // domain
             DOMAIN_BASE = 1000,
-            domain_spawn_entities,
+            
+            domain_manager_shutdown_request,
+            domain_manager_shutdown_reply,
+
             domain_process_connect_request,
             domain_process_connect_reply,
 
@@ -381,10 +384,9 @@ namespace casual
             friend bool operator == ( strong::process::id lhs, const basic_request& rhs) { return rhs == lhs;}
 
             CASUAL_CONST_CORRECT_SERIALIZE(
-            {
                basic_message< type>::serialize( archive);
                CASUAL_SERIALIZE( process);
-            })
+            )
 
          };
 

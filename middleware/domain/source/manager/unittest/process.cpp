@@ -6,6 +6,7 @@
 
 #include "domain/manager/unittest/process.h"
 #include "domain/manager/task.h"
+#include "domain/manager/admin/server.h"
 
 #include "common/environment.h"
 #include "common/communication/ipc.h"
@@ -14,6 +15,7 @@
 #include "common/execute.h"
 #include "common/message/event.h"
 #include "common/message/handle.h"
+#include "common/serialize/binary.h"
 
 #include "common/code/raise.h"
 #include "common/code/casual.h"
@@ -25,226 +27,313 @@ namespace casual
 {
    using namespace common;
 
-   namespace domain
+   namespace domain::manager::unittest
    {
-      namespace manager
+
+      namespace local
       {
-         namespace unittest
+         namespace
          {
-            namespace local
+            namespace configuration
             {
-               namespace
+
+               std::vector< file::scoped::Path> files( std::vector< std::string_view> configuration)
                {
-                  namespace configuration
-                  {
+                  return algorithm::transform( configuration, []( auto& c){
+                     return file::scoped::Path{ common::unittest::file::temporary::content( ".yaml", c)};
+                  });
+               }
 
-                     std::vector< file::scoped::Path> files( std::vector< std::string_view> configuration)
-                     {
-                        return algorithm::transform( configuration, []( auto& c){
-                           return file::scoped::Path{ common::unittest::file::temporary::content( ".yaml", c)};
-                        });
-                     }
+               auto arguments( const std::vector< file::scoped::Path>& files, const common::Uuid& id)
+               {
+                  std::vector< std::string> result{ 
+                     "--bare", "true",
+                     "--event-ipc", common::string::compose( common::communication::ipc::inbound::ipc()),
+                     "--event-id", common::string::compose( id),
+                     "--configuration-files"
+                  };
+                  algorithm::append( files, result);
 
-                     auto arguments( const std::vector< file::scoped::Path>& files, const common::Uuid& id)
-                     {
-                        std::vector< std::string> result{ 
-                           "--bare", "true",
-                           "--event-ipc", common::string::compose( common::communication::ipc::inbound::ipc()),
-                           "--event-id", common::string::compose( id),
-                           "--configuration-files"
-                        };
-                        algorithm::append( files, result);
+                  return result;
+               }
 
-                        return result;
-                     }
+            } // configuration
 
-                  } // configuration
-
-                  namespace repository
-                  {
-                     auto root()
-                     {
-                        return environment::variable::get( "CASUAL_REPOSITORY_ROOT");
-                     }
-                  } // repository
-                  
-                  namespace instance::devices
-                  {
-                     void reset()
-                     {
-                        // reset domain instance, if any.
-                        exception::guard( [](){ communication::instance::outbound::domain::manager::device().connector().clear();});
-                        exception::guard( [](){ communication::instance::outbound::domain::manager::optional::device().connector().clear();});
-
-                        // reset service instance, if any.
-                        exception::guard( [](){ communication::instance::outbound::service::manager::device().connector().clear();});
-                     }
-
-                  } // instance::devices
-
-               } // <unnamed>
-            } // local
-
-            struct Process::Implementation
+            namespace repository
             {
-               Implementation( std::vector< std::string_view> configuration, std::function< void( const std::string&)> callback = nullptr)
-                  : environment( std::move( callback)),
-                  files( local::configuration::files( configuration))
+               auto root()
                {
-                  log::Trace trace{ "domain::manager::unittest::Process::Implementation", verbose::log};
+                  return environment::variable::get( "CASUAL_REPOSITORY_ROOT");
+               }
+            } // repository
+            
+            namespace instance::devices
+            {
+               void reset()
+               {
+                  // reset domain instance, if any.
+                  exception::guard( [](){ communication::instance::outbound::domain::manager::device().connector().clear();});
+                  exception::guard( [](){ communication::instance::outbound::domain::manager::optional::device().connector().clear();});
 
-                  common::domain::identity( {});
+                  // reset service instance, if any.
+                  exception::guard( [](){ communication::instance::outbound::service::manager::device().connector().clear();});
+               }
 
-                  local::instance::devices::reset();
+            } // instance::devices
 
-                  auto tasks = std::vector< common::Uuid>{ uuid::make()};
 
-                  auto condition = event::condition::compose( 
-                     event::condition::prelude( [&]()
-                     {
-                        // spawn the domain-manager
-                        process = common::Process{ 
-                           local::repository::root() + "/middleware/domain/bin/casual-domain-manager", 
-                           local::configuration::arguments( files, tasks.front())};
-                     }),
-                     event::condition::done( [&tasks]()
-                     {
-                        // we're done waiting when we got the ipc of domain-manager
+            void shutdown( const process::Handle& manager)
+            {
+               log::Trace trace{ "domain::manager::unittest::local::shutdown", verbose::log};
+
+               signal::thread::scope::Block blocked_signals{ { code::signal::child}};
+
+               auto gracefully = []( auto& manager)
+               {
+                  auto handler = []( auto& tasks)
+                  {
+                     return message::dispatch::handler( communication::ipc::inbound::device(),
+                        [&tasks]( message::event::Task& event)
+                        {
+                           if( event.done())
+                              algorithm::trim( tasks, algorithm::remove( tasks, event.correlation));
+                        },
+                        []( message::event::Error& event)
+                        {
+                           log::line( log::category::error, "event: ", event);
+                        }
+                     );
+                  };
+
+                  auto tasks = communication::ipc::call(
+                      manager.ipc, common::message::domain::manager::shutdown::Request{ process::handle()}).tasks;
+
+                  auto condition = common::message::dispatch::condition::compose(
+                     common::event::condition::done( [&tasks]()
+                     { 
                         return tasks.empty();
                      })
                   );
 
-                  // let's boot and listen to events
-                  event::only::unsubscribe::listen( condition,
-                     [&]( const manager::task::message::domain::Information& event)
-                     {
-                        log::line( log::debug, "event: ", event);
-                        domain = event.domain;
-                        common::domain::identity( domain);
-                        process.handle( event.process);
-                     },
-                     [&tasks]( const message::event::Task& event)
-                     {
-                        log::line( log::debug, "event: ", event);
+                  // listen for events
+                  common::message::dispatch::relaxed::pump( 
+                     condition,
+                     handler( tasks), 
+                     communication::ipc::inbound::device());
 
-                        if( event.done())
-                           algorithm::trim( tasks, algorithm::remove( tasks, event.correlation));
-                     },
-                     []( const message::event::Error& event)
-                     {
-                        log::line( log::debug, "event: ", event);
+                  process::wait( manager.pid);
+               };
 
-                        if( event.severity == decltype( event.severity)::fatal)
-                           code::raise::error( code::casual::shutdown, "fatal error: ", event);
-                     }
-                  );
+               if( manager)
+                  gracefully( manager);
+               else if( manager.pid)
+               {
+                  process::terminate( manager.pid);
+                  process::wait( manager.pid);
+               }
+            }
 
-                  log::line( verbose::log, "domain-manager booted: ", process);
-                  
-                  // Set environment variable to make it easier for other processes to
-                  // reach domain-manager (should work any way...)
-                  common::environment::variable::process::set(
-                     common::environment::variable::name::ipc::domain::manager,
-                     process.handle());
-                  
+
+            struct Manager : common::Process
+            {
+               using common::Process::Process;
+
+               ~Manager()
+               {
+                  exception::guard( [&]()
+                  {
+                     local::shutdown( *this);
+                     pid = {};
+                     ipc = {};
+                  });
                }
 
-               Implementation() : Implementation( { R"(
-domain:
-   name: default-domain
-               )"})
-               {}
-
-               void activate()
-               {
-                  log::Trace trace{ "domain::manager::unittest::Process::Implementation::activate", verbose::log};
-
-                  common::domain::identity( domain);
-
-                  environment.activate();
-
-                  local::instance::devices::reset();
-               }
-               
-               struct Environment
-               {
-                  Environment( std::function< void( const std::string&)> callback)
-                     : callback{ std::move( callback)}
-                  {
-                     activate();
-                  }
-
-                  void activate()
-                  {
-                     environment::variable::set( "CASUAL_HOME", local::repository::root() + "/test/home");
-                     environment::variable::set( "CASUAL_DOMAIN_HOME", home);
-                     
-                     if( callback)
-                        callback( home);
-
-                     // reset all (hopefolly) environment based 'values' 
-                     environment::reset();
-                  }
-   
-                  //! domain root directory
-                  common::unittest::directory::temporary::Scoped home;
-                  std::function< void( const std::string&)> callback;
-
-                  CASUAL_LOG_SERIALIZE(
-                  {
-                     CASUAL_SERIALIZE( home);
-                  })
-
-               } environment;
-
-
-               std::vector< common::file::scoped::Path> files;
-               common::Process process;
-               common::domain::Identity domain;
-
-               CASUAL_LOG_SERIALIZE(
-                  CASUAL_SERIALIZE( files);
-                  CASUAL_SERIALIZE( process);
-                  CASUAL_SERIALIZE( domain);
-               )
-
+               Manager( Manager&&) noexcept = default;
+               Manager& operator = ( Manager&&) noexcept = default;
             };
 
-            Process::Process( std::vector< std::string_view> configuration)
-               : m_implementation( configuration) {}
+         } // <unnamed>
+      } // local
 
-            Process::Process( std::vector< std::string_view> configuration, std::function< void( const std::string&)> callback)
-               : m_implementation( configuration, std::move( callback)) {}
+      struct Process::Implementation
+      {
+         Implementation( std::vector< std::string_view> configuration, std::function< void( const std::string&)> callback = nullptr)
+            : environment( std::move( callback)),
+            files( local::configuration::files( configuration))
+         {
+            log::Trace trace{ "domain::manager::unittest::Process::Implementation", verbose::log};
 
-            Process::Process() {}
+            common::domain::identity( {});
 
-            Process::~Process()
+            local::instance::devices::reset();
+
+            auto unsubscribe_scope = execute::scope( [&]()
             {
-               log::Trace trace{ "domain::manager::unittest::Process::~Process", verbose::log};
-               log::line( verbose::log, "this: ", *this);
+               if( ! manager.ipc)
+                  return;
+
+               communication::device::blocking::optional::send( 
+                  manager.ipc, common::message::event::subscription::End{ process::handle()});
+            });
+            
+            auto condition = []( auto& tasks)
+            { 
+               return message::dispatch::condition::compose( 
+                  event::condition::done( [&tasks]()
+                  {
+                     // we're done waiting when we got the ipc of domain-manager
+                     return tasks.empty();
+                  }));
+            };
+
+
+            auto handler = []( auto& state, auto& tasks)
+            {
+               return common::message::dispatch::handler( communication::ipc::inbound::device(),
+                  common::message::handle::discard< message::event::process::Spawn>(),
+                  common::message::handle::discard< message::event::process::Exit>(),
+                  common::message::handle::discard< message::event::sub::Task>(),
+                  [&]( const manager::task::message::domain::Information& event)
+                  {
+                     log::line( log::debug, "event: ", event);
+                     state.domain = event.domain;
+                     common::domain::identity( event.domain);
+                     state.manager.handle( event.process);
+
+                     // Set environment variable to make it easier for other processes to
+                     // reach domain-manager (should work any way...)
+                     common::environment::variable::process::set(
+                        common::environment::variable::name::ipc::domain::manager,
+                        state.manager);
+                  },
+                  [&tasks]( const message::event::Task& event)
+                  {
+                     log::line( log::debug, "event: ", event);
+
+                     if( event.done())
+                        algorithm::trim( tasks, algorithm::remove( tasks, event.correlation));
+                  },
+                  []( const message::event::Error& event)
+                  {
+                     log::line( log::debug, "event: ", event);
+
+                     if( event.severity == decltype( event.severity)::fatal)
+                        code::raise::error( code::casual::shutdown, "fatal error: ", event);
+                  });
+            };
+
+            auto tasks = std::vector< common::Uuid>{ uuid::make()};
+
+            // spawn the domain-manager
+            manager = local::Manager{ local::repository::root() + "/middleware/domain/bin/casual-domain-manager",
+               local::configuration::arguments( files, tasks.front())};
+
+            common::message::dispatch::relaxed::pump( 
+               condition( tasks), 
+               handler( *this, tasks), 
+               communication::ipc::inbound::device());
+
+            log::line( verbose::log, "domain-manager booted: ", manager);
+            
+         }
+
+         Implementation() : Implementation( { R"(
+domain:
+   name: default-domain
+)"})
+         {}
+
+
+         ~Implementation()
+         {}
+
+         void activate()
+         {
+            log::Trace trace{ "domain::manager::unittest::Process::Implementation::activate", verbose::log};
+
+            common::domain::identity( domain);
+
+            environment.activate();
+
+            local::instance::devices::reset();
+         }
+         
+         struct Environment
+         {
+            Environment( std::function< void( const std::string&)> callback)
+               : callback{ std::move( callback)}
+            {
+               activate();
             }
 
-            Process::Process( Process&&) noexcept = default;
-            Process& Process::operator = ( Process&&) noexcept = default;
-
-            const common::process::Handle& Process::handle() const noexcept
+            void activate()
             {
-               return m_implementation->process.handle();
+               environment::variable::set( "CASUAL_HOME", local::repository::root() + "/test/home");
+               environment::variable::set( "CASUAL_DOMAIN_HOME", home);
+               
+               if( callback)
+                  callback( home);
+
+               // reset all (hopefolly) environment based 'values' 
+               environment::reset();
             }
 
-            void Process::activate()
-            {
-               m_implementation->activate();
-            }
+            //! domain root directory
+            common::unittest::directory::temporary::Scoped home;
+            std::function< void( const std::string&)> callback;
 
-            std::ostream& operator << ( std::ostream& out, const Process& value)
-            {
-               if( value.m_implementation)
-                  return common::stream::write( out, *value.m_implementation);
-               return out << "nil";
-            }
+            CASUAL_LOG_SERIALIZE(
+               CASUAL_SERIALIZE( home);
+            )
 
-         } // unittest
-      } // manager
-   } // domain
+         } environment;
+
+
+         std::vector< common::file::scoped::Path> files;
+         local::Manager manager;
+         common::domain::Identity domain;
+
+         CASUAL_LOG_SERIALIZE(
+            CASUAL_SERIALIZE( files);
+            CASUAL_SERIALIZE( manager);
+            CASUAL_SERIALIZE( domain);
+         )
+
+      };
+
+      Process::Process( std::vector< std::string_view> configuration)
+         : m_implementation( configuration) {}
+
+      Process::Process( std::vector< std::string_view> configuration, std::function< void( const std::string&)> callback)
+         : m_implementation( configuration, std::move( callback)) {}
+
+      Process::Process() {}
+
+      Process::~Process()
+      {
+         log::Trace trace{ "domain::manager::unittest::Process::~Process", verbose::log};
+         log::line( verbose::log, "this: ", *this);
+      }
+
+      Process::Process( Process&&) noexcept = default;
+      Process& Process::operator = ( Process&&) noexcept = default;
+
+      const common::process::Handle& Process::handle() const noexcept
+      {
+         return m_implementation->manager;
+      }
+
+      void Process::activate()
+      {
+         m_implementation->activate();
+      }
+
+      std::ostream& operator << ( std::ostream& out, const Process& value)
+      {
+         if( value.m_implementation)
+            return common::stream::write( out, *value.m_implementation);
+         return out << "nil";
+      }
+
+   } // domain::manager::unittest
 } // casual

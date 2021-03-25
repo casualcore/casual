@@ -200,8 +200,6 @@ namespace casual
 
                if( auto connection = state.external.connection( descriptor))
                {
-                  // TODO: remove
-                  common::log::line( common::log::category::information, "connection: ", *connection);
                   connection->unsent( state);
                   return true;
                }

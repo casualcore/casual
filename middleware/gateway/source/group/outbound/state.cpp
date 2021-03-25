@@ -140,25 +140,20 @@ namespace casual
                template< typename R>
                auto connection( common::strong::file::descriptor::id descriptor, R& resources, const std::vector< std::string>& keys) 
                {
-                  std::vector< std::string> result;
-
-                  algorithm::copy_if( keys, result, [descriptor, &resources]( auto& key)
+                  return algorithm::accumulate( keys, std::vector< std::string>{}, [descriptor, &resources]( auto result, auto& key)
                   {
                      if( auto found = algorithm::find( resources, key))
                      {
-                        auto& connections = found->second;
-                        algorithm::trim( connections, algorithm::remove( connections, descriptor));
-
-                        if( ! connections.empty())
+                        // if connections become 'absent' we remove the 'resource' and add key to the 'unadvertise-directive'
+                        if( algorithm::trim( found->second, algorithm::remove( found->second, descriptor)).empty())
                         {
                            resources.erase( std::begin( found));
-                           return true;
+                           result.push_back( key);
                         }
                      }
-                     return false;
-                  });
 
-                  return result;
+                     return result;
+                  });
                }
                
             } // remove

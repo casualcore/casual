@@ -58,10 +58,6 @@ namespace casual
                   auto data = writer.consume< std::string>();
                   auto reader = serialize::yaml::relaxed::reader( data);
                   reader >> CASUAL_NAMED_VALUE_NAME( result, "value");
-
-                  // TODO remove
-                  if( unittest::serialize::hash( from) != unittest::serialize::hash( result))
-                     std::cerr << "data: " << data;
                }
                return result;
             }

@@ -55,6 +55,9 @@ server:
     - name: casual/example/lowercase
       function: casual_example_lowercase
 
+    - name: casual/example/forward
+      function: casual_example_forward
+
     - name: casual/example/sleep
       function: casual_example_sleep
 

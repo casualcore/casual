@@ -15,39 +15,33 @@
 
 namespace casual
 {
-   namespace domain
+   namespace domain::manager::unittest
    {
-      namespace manager
+      struct Process 
       {
-         namespace unittest
-         {
-            struct Process 
-            {
-               Process();
-               Process( std::vector< std::string_view> configuration);
+         Process();
+         Process( std::vector< std::string_view> configuration);
 
-               //! callback to be able to enable other _environment_ stuff before boot
-               //! @attention `callback` has to be idempotent (if activate is used)
-               Process( std::vector< std::string_view> configuration, std::function< void( const std::string&)> callback);
-               ~Process();
+         //! callback to be able to enable other _environment_ stuff before boot
+         //! @attention `callback` has to be idempotent (if activate is used)
+         Process( std::vector< std::string_view> configuration, std::function< void( const std::string&)> callback);
+         ~Process();
 
-               Process( Process&&) noexcept;
-               Process& operator = ( Process&&) noexcept;
+         Process( Process&&) noexcept;
+         Process& operator = ( Process&&) noexcept;
 
-               const common::process::Handle& handle() const noexcept;
-               
-               //! tries to "activate" the domain, i.e. resets environment variables and such
-               //! only usefull if more than one instance is used
-               void activate();
+         const common::process::Handle& handle() const noexcept;
+         
+         //! tries to "activate" the domain, i.e. resets environment variables and such
+         //! only usefull if more than one instance is used
+         void activate();
 
-               friend std::ostream& operator << ( std::ostream& out, const Process& value);
+         friend std::ostream& operator << ( std::ostream& out, const Process& value);
 
-            private:
-               struct Implementation;
-               common::move::basic_pimpl< Implementation> m_implementation;
-            };
+      private:
+         struct Implementation;
+         common::move::basic_pimpl< Implementation> m_implementation;
+      };
 
-         } // unittest
-      } // manager
-   } // domain
+   } // domain::manager::unittest
 } // casual
