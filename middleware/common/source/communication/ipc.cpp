@@ -128,6 +128,9 @@ namespace casual
                      return false;
 #endif 
                   
+                  if( code == std::errc::invalid_argument)
+                     code::raise::condition( code::casual::invalid_argument);
+
                   if( code == std::errc::no_such_file_or_directory)
                      code::raise::condition( code::casual::communication_unavailable);
 

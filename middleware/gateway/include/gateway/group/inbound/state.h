@@ -59,6 +59,7 @@ namespace casual
                template< typename M>
                inline auto add( M&& message)
                {
+                  static_assert( ! std::is_same_v< std::decay_t< M>, common::message::service::call::callee::Request>);
                   m_complete.push_back( common::serialize::native::complete< complete_type>( std::forward< M>( message)));
                   m_size += m_complete.back().size();
                }
@@ -70,7 +71,7 @@ namespace casual
                }
 
                //! consumes pending calls, and sets the 'pending-roundtrip-state'
-               complete_type consume( const common::Uuid& correlation, platform::time::unit pending);
+               complete_type consume( const common::Uuid& correlation, const common::message::service::lookup::Reply& lookup);
                complete_type consume( const common::Uuid& correlation);
 
                //! consumes all pending associated with the correlations, if any.

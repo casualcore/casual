@@ -134,10 +134,10 @@ namespace casual
 
                void start()
                {
+                  handle::service::advertise();
+
                   // connect to the domain
                   communication::instance::connect();
-
-                  handle::service::advertise();
 
                   auto& device = communication::ipc::inbound::device();
 
