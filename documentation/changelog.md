@@ -3,7 +3,7 @@ This is the changelog for `casual` and all changes are listed in this document.
 
 ## [Unreleased]
 
-## [1.4.13] - 2021-03-28
+## [1.4.14] - 2021-03-28
 ### Fixes
 - gateway - outbound handle no-entry call reply correctly
 - gateway - outbound correlates multiple branched trids correctly

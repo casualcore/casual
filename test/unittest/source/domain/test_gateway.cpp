@@ -826,6 +826,9 @@ domain:
             // 'enter' domain C
             c.activate();
 
+            // the outbound in C might not have been able to connect to A yet, wait for it.
+            local::state::gateway::until( local::state::gateway::predicate::outbound::connected());
+
             auto buffer = local::call( "casual/example/domain/echo/D", binary);
             auto size = local::size( buffer);
 

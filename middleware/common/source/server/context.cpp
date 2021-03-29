@@ -94,6 +94,7 @@ namespace casual
          void Context::advertise( const std::string& service, void (*address)( TPSVCINFO *))
          {
             Trace trace{ "server::Context::advertise"};
+            log::line( verbose::log, "service: ", service);
 
             auto prospect = xatmi::service( service, address);
 
