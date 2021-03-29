@@ -57,6 +57,7 @@ namespace casual
                         auto ack = []( auto& request)
                         {
                            message::service::call::ACK ack;
+                           ack.correlation = request.correlation;
                            ack.metric.start = platform::time::clock::type::now();
                            ack.metric.service = request.service.name;
                            ack.metric.parent = request.parent;

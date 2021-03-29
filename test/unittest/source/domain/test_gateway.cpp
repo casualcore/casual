@@ -956,6 +956,12 @@ domain:
             return local::acall( "casual/example/sleep", binary);
          });
 
+         // all calls will take at least 100ms, we need to 'make sure' that the calls are 
+         // in-flight. We'll sleep for 50ms to mitigate that calls did not make it to the service
+         // before scaling down. 50ms should be enough for even the slowest of systems.
+         // another way is to accept TPENOENT replies, but then we wouldn't really make sure
+         // we test the thing we want to test.
+         process::sleep( std::chrono::milliseconds{ 50});
          
          {
             b.activate();
