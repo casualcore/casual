@@ -558,13 +558,13 @@ namespace casual
                               {
                                  auto services = state.lookup.remove( destination.connection, { destination.service}, {}).services;
 
-                                 if( services.empty())
-                                    return; 
-                                 
-                                 common::message::service::Advertise unadvertise{ common::process::handle()};
-                                 unadvertise.alias = instance::alias();
-                                 unadvertise.services.remove = std::move( services);
-                                 ipc::flush::optional::send( ipc::manager::service(), unadvertise);
+                                 if( ! services.empty())
+                                 {                                 
+                                    common::message::service::Advertise unadvertise{ common::process::handle()};
+                                    unadvertise.alias = instance::alias();
+                                    unadvertise.services.remove = std::move( services);
+                                    ipc::flush::optional::send( ipc::manager::service(), unadvertise);
+                                 }
                               }
 
                               // get the internal "un-branched" trid
@@ -621,39 +621,69 @@ namespace casual
                {
                   namespace resource
                   {
-                     namespace basic
+                     namespace detail
                      {
-                        template< typename Message>
-                        auto reply( State& state)
+                        template< typename M>
+                        void send( State& state, M&& message)
                         {
-                           return [&state]( Message& message)
+                           if( auto destination = state.route.message.consume( message.correlation))
                            {
-                              Trace trace{ "gateway::group::outbound::handle::local::external::basic::reply"};
-                              log::line( verbose::log, "message: ", message);
-
-                              if( auto destination = state.route.message.consume( message.correlation))
-                              {
-                                 message.process = process::handle();
-                                 ipc::flush::optional::send( destination.process.ipc, message);
-                              }
-                              else
-                                 log::line( log::category::error, code::casual::internal_correlation, " failed to correlate [", message.correlation, "] reply with a destination - action: ignore");
-                           };
+                              message.process = process::handle();
+                              ipc::flush::optional::send( destination.process.ipc, message);
+                           }
+                           else
+                              log::line( log::category::error, code::casual::internal_correlation, " failed to correlate [", message.correlation, "] reply with a destination - action: ignore");
                         }
-
-                     } // basic
-
+                     } // detail
                      namespace prepare
                      {
-                        auto reply = basic::reply< common::message::transaction::resource::prepare::Reply>;
+                        auto reply( State& state)
+                        {
+                           return [&state]( common::message::transaction::resource::prepare::Reply& message)
+                           {
+                              Trace trace{ "gateway::group::outbound::handle::local::external::transaction::resource::prepare::reply"};
+                              log::line( verbose::log, "message: ", message);
+
+                              // this trid is NOT done, we have to wait until commit or rollback
+
+                              detail::send( state, message);
+                           };
+                        }
+                        
                      } // prepare
                      namespace commit
                      {
-                        auto reply = basic::reply< common::message::transaction::resource::commit::Reply>;
+                        auto reply( State& state)
+                        {
+                           return [&state]( common::message::transaction::resource::commit::Reply& message)
+                           {
+                              Trace trace{ "gateway::group::outbound::handle::local::external::transaction::resource::commit::reply"};
+                              log::line( verbose::log, "message: ", message);
+
+                              // this trid is done, remove it from the state
+                              state.lookup.remove( message.trid);
+
+                              detail::send( state, message);
+                           };
+                        }
+
                      } // commit
                      namespace rollback
                      {
-                        auto reply = basic::reply< common::message::transaction::resource::rollback::Reply>;
+                        auto reply( State& state)
+                        {
+                           return [&state]( common::message::transaction::resource::rollback::Reply& message)
+                           {
+                              Trace trace{ "gateway::group::outbound::handle::local::external::transaction::resource::rollback::reply"};
+                              log::line( verbose::log, "message: ", message);
+
+                              // this trid is done, remove it from the state
+                              state.lookup.remove( message.trid);
+
+                              detail::send( state, message);
+                           };
+                        }
+
                      } // commit
                   } // resource
                } // transaction

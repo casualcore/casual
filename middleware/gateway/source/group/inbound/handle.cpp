@@ -115,7 +115,8 @@ namespace casual
                               tcp::send( state, reply);
                            };
 
-                           auto request = state.pending.requests.consume( message.correlation, message.pending);
+                           auto request = state.pending.requests.consume( message.correlation, message);
+                           
 
                            switch( message.state)
                            {

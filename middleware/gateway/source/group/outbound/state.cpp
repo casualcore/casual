@@ -140,25 +140,20 @@ namespace casual
                template< typename R>
                auto connection( common::strong::file::descriptor::id descriptor, R& resources, const std::vector< std::string>& keys) 
                {
-                  std::vector< std::string> result;
-
-                  algorithm::copy_if( keys, result, [descriptor, &resources]( auto& key)
+                  return algorithm::accumulate( keys, std::vector< std::string>{}, [descriptor, &resources]( auto result, auto& key)
                   {
                      if( auto found = algorithm::find( resources, key))
                      {
-                        auto& connections = found->second;
-                        algorithm::trim( connections, algorithm::remove( connections, descriptor));
-
-                        if( ! connections.empty())
+                        // if connections become 'absent' we remove the 'resource' and add key to the 'unadvertise-directive'
+                        if( algorithm::trim( found->second, algorithm::remove( found->second, descriptor)).empty())
                         {
                            resources.erase( std::begin( found));
-                           return true;
+                           result.push_back( key);
                         }
                      }
-                     return false;
-                  });
 
-                  return result;
+                     return result;
+                  });
                }
                
             } // remove
@@ -216,9 +211,15 @@ namespace casual
 
          common::strong::file::descriptor::id Lookup::connection( const common::transaction::ID& external) const
          {
-            if( auto global = algorithm::find_if( transactions, local::predicate::is_global( external)))
+            auto global = algorithm::find_if( transactions, local::predicate::is_global( external));
+
+            while( global)
+            {
                if( auto found = algorithm::find( global->externals, external))
                   return found->connection;
+
+               global = algorithm::find_if( ++global, local::predicate::is_global( external));
+            }
                   
             return {};
          }
@@ -269,12 +270,26 @@ namespace casual
             return result;
          }  
 
-         void Lookup::remove( const common::transaction::ID& internal)
+         void Lookup::remove( const common::transaction::ID& external)
          {
-            if( auto found = algorithm::find_if( transactions, local::predicate::is_internal( internal)))
+            auto remove_external = [&external]( auto& transaction)
+            {
+               if( transaction::id::range::global( transaction.internal) != transaction::id::range::global( external))
+                  return false;
+
+               auto found = algorithm::find( transaction.externals, external);
+
+               if( ! found)
+                  return false;
+
+               transaction.externals.erase( std::begin( found));
+               return true;
+            };
+
+            if( auto found = algorithm::find_if( transactions, remove_external))
                transactions.erase( std::begin( found));
             else
-               log::line( log::category::error, code::casual::invalid_semantics, " failed to correlate the internal trid: ", internal, " - action: ignore");
+               log::line( log::category::error, code::casual::invalid_semantics, " failed to correlate the external trid: ", external, " - action: ignore");
          }
 
       } // state

@@ -43,17 +43,21 @@ namespace casual
 
          // domain
          DOMAIN_BASE = 1000,
-         domain_spawn_entities,
+
          domain_process_connect_request,
          domain_process_connect_reply,
+
          domain_process_singleton_connect_request,
          domain_process_singleton_connect_reply,
 
-         domain_process_lookup_request,
-         domain_process_lookup_reply,
-
          domain_process_prepare_shutdown_request,
          domain_process_prepare_shutdown_reply,
+
+         domain_manager_shutdown_request,
+         domain_manager_shutdown_reply,
+
+         domain_process_lookup_request,
+         domain_process_lookup_reply,
 
          domain_configuration_request = DOMAIN_BASE + 200,
          domain_configuration_reply,

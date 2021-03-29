@@ -438,7 +438,6 @@ namespace casual
          template< typename C>
          static void reconnect( C& connector, traits::priority::tag< 0>)
          {
-            // rethrow the exception::system::communication::Unavailable 
             throw;
          }
          template< typename C>
@@ -461,7 +460,7 @@ namespace casual
                catch( ...)
                {
                   auto error = exception::error();
-                  if( error.code() == code::casual::communication_unavailable)
+                  if( error.code() == code::casual::communication_unavailable || error.code() == code::casual::invalid_argument)
                   {
                      // Let connector take a crack at resolving this problem, if implemented...
                      reconnect( Base::connector(), traits::priority::tag< 1>{});

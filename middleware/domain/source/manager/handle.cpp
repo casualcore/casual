@@ -468,16 +468,46 @@ namespace casual
       {
          namespace
          {
-            auto shutdown( State& state)
+            namespace shutdown
             {
-               return [&state]( common::message::shutdown::Request& message)
+               auto request( State& state)
                {
-                  Trace trace{ "domain::manager::handle::Shutdown"};
-                  log::line( verbose::log, "message: ", message);
+                  return [&state]( common::message::shutdown::Request& message)
+                  {
+                     Trace trace{ "domain::manager::handle::shutdown"};
+                     log::line( verbose::log, "message: ", message);
 
-                  handle::shutdown( state);
-               };
-            }
+                     handle::shutdown( state);
+                  };
+               }
+
+               namespace manager
+               {
+                  auto request( State& state)
+                  {
+                     return [&state]( common::message::domain::manager::shutdown::Request& message)
+                     {
+                        Trace trace{ "domain::manager::handle::manager::shutdown"};
+                        log::line( verbose::log, "message: ", message);
+
+                        // register event subscripion for caller
+                        {
+                           common::message::event::subscription::Begin subscripton{ message.process};
+                           subscripton.types = { 
+                              common::message::event::Task::type(),
+                              common::message::event::Error::type()
+                           };
+                           state.event.subscription( subscripton);
+                        }
+
+                        auto reply = common::message::reverse::type( message);
+                        reply.tasks = handle::shutdown( state);
+
+                        casual::domain::manager::ipc::send( state, message.process, reply);
+                     };
+                  }  
+               } // manager
+            } // shutdown
 
             namespace scale
             {
@@ -695,7 +725,7 @@ namespace casual
                      };
                   }
                } // discoverable
-               } // event
+            } // event
 
             namespace process
             {
@@ -996,7 +1026,8 @@ namespace casual
 
          return {
             common::message::handle::defaults( ipc::device()),
-            handle::local::shutdown( state),
+            handle::local::shutdown::request( state),
+            handle::local::shutdown::manager::request( state),
             handle::local::scale::prepare::shutdown( state),
             handle::local::event::process::spawn( state),
             handle::local::event::process::exit( state),

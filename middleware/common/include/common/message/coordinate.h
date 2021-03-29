@@ -123,8 +123,10 @@ namespace casual
 
                inline bool coordinate( message_type message)
                {
-                  if( auto found = algorithm::find( m_pending, message.correlation))
-                     found->state = Pending::State::received;
+                  auto found = algorithm::find( m_pending, message.correlation);
+                  assert( found);
+
+                  found->state = Pending::State::received;
                   
                   m_received.push_back( std::move( message));
 
@@ -133,17 +135,18 @@ namespace casual
 
                inline bool failed( id_type id)
                {
-                  auto is_pending = [id]( auto& pending){ return pending.id == id && pending.state == Pending::State::pending;};
-                  
-                  for( auto& pending : algorithm::filter( m_pending, is_pending))
-                     pending.state = Pending::State::failed;
-
+                  algorithm::for_each( m_pending, [id]( auto& pending)
+                  {
+                     if( pending.id == id && pending.state == Pending::State::pending)
+                        pending.state = Pending::State::failed;
+                  });
+                     
                   return done();
                }
 
                inline friend bool operator == ( const Entry & lhs, const common::Uuid& rhs) 
                { 
-                  return ! algorithm::find( lhs.m_pending, rhs).empty();
+                  return predicate::boolean( algorithm::find( lhs.m_pending, rhs));
                }
 
                CASUAL_LOG_SERIALIZE(

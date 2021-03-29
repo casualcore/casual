@@ -14,84 +14,102 @@
 #include "common/argument.h"
 #include "common/environment/string.h"
 #include "common/chronology.h"
+#include "common/domain.h"
 
 
 #include <locale>
 
 namespace casual
 {
-
-   namespace example
+   namespace example::server
    {
-      namespace server
+
+      namespace local
       {
-         namespace local
+         namespace
          {
-            namespace
+            struct
             {
-               struct
-               {
-                  casual::platform::time::unit startup{};
-                  casual::platform::time::unit sleep{};
-                  casual::platform::time::unit work{};
-               } global;
-            } // <unnamed>
-         } // local
+               casual::platform::time::unit startup{};
+               casual::platform::time::unit sleep{};
+               casual::platform::time::unit work{};
+               std::string forward;
+            } global;
+         } // <unnamed>
+      } // local
 
-         extern "C"
+      extern "C"
+      {
+         void casual_example_echo( TPSVCINFO* info);
+         
+         int tpsvrinit( int argc, char* argv[])
          {
-            void casual_example_echo( TPSVCINFO* info);
-            
-            int tpsvrinit( int argc, char* argv[])
+            return common::exception::main::guard( [&]()
             {
-               return common::exception::main::guard( [&]()
-               {
-                  auto arguments = common::range::make( argv + 1, argc - 1);
-                  common::log::line( common::log::category::information, "example server started with arguments: ", arguments);
+               auto arguments = common::range::make( argv + 1, argc - 1);
+               common::log::line( common::log::category::information, "example server started with arguments: ", arguments);
 
-                  auto time_value = []( auto& time)
+               auto time_value = []( auto& time)
+               {
+                  return [&time]( std::string value)
                   {
-                     return [&time]( std::string value)
-                     {
-                        time = common::chronology::from::string( common::environment::string( value));
-                     };
+                     time = common::chronology::from::string( common::environment::string( value));
                   };
+               };
 
-                  common::argument::Parse{ "Shows a few ways services can be develop",
-                     common::argument::Option{ time_value( local::global.startup), {"--startup"}, "startup time"},
-                     common::argument::Option{ time_value( local::global.sleep), {"--sleep"}, "sleep time"},
-                     common::argument::Option{ time_value( local::global.work), {"--work"}, "work time"},
-                  }( argc, argv);
+               common::argument::Parse{ "Shows a few ways services can be develop",
+                  common::argument::Option{ time_value( local::global.startup), {"--startup"}, "startup time"},
+                  common::argument::Option{ time_value( local::global.sleep), {"--sleep"}, "sleep time"},
+                  common::argument::Option{ time_value( local::global.work), {"--work"}, "work time"},
+                  common::argument::Option{ std::tie( local::global.forward), {"--forward"}, "service that casual/example/forward should call"},
+               }( argc, argv);
 
-                  if( local::global.startup != platform::time::unit::zero())
-                     common::process::sleep( local::global.startup);
+               if( local::global.startup != platform::time::unit::zero())
+                  common::process::sleep( local::global.startup);
 
-                  tpadvertise( "casual/example/advertised/echo", &casual_example_echo);
-
-                  common::log::line( common::log::category::information, "sleep: ", local::global.sleep);
-                  common::log::line( common::log::category::information, "work: ", local::global.work);
-               });
-            }
-
-            void casual_example_sleep( TPSVCINFO* info)
-            {
-               common::process::sleep( local::global.sleep);
-               tpreturn( TPSUCCESS, 0, info->data, info->len, 0);
-            }
-
-            void casual_example_work( TPSVCINFO* info)
-            {
-               auto deadline = platform::time::clock::type::now() + local::global.work;
-
-               while( deadline < platform::time::clock::type::now())
+               auto advertise_echo = []( std::string_view name)
                {
-                  ; // no-op
-               }
+                  tpadvertise( name.data(), &casual_example_echo);
+               };
 
-               tpreturn( TPSUCCESS, 0, info->data, info->len, 0);
-            }
+               advertise_echo( "casual/example/advertised/echo");
+               advertise_echo( common::string::compose( "casual/example/domain/echo/", common::domain::identity().name));
+               advertise_echo( common::string::compose( "casual/example/domain/echo/", common::domain::identity().id));
+
+
+               common::log::line( common::log::category::information, "sleep: ", local::global.sleep);
+               common::log::line( common::log::category::information, "work: ", local::global.work);
+            });
          }
-      } // server
-   } // example
+
+        void casual_example_forward( TPSVCINFO* info)
+         {
+            auto len = info->len;
+            if( tpcall( local::global.forward.data(), info->data, info->len, &info->data, &len, 0) == 0)
+               tpreturn( TPSUCCESS, 0, info->data, info->len, 0);
+
+            tpreturn( TPFAIL, 0, nullptr, 0, 0);
+         }
+         
+         void casual_example_sleep( TPSVCINFO* info)
+         {
+            common::process::sleep( local::global.sleep);
+            tpreturn( TPSUCCESS, 0, info->data, info->len, 0);
+         }
+
+         void casual_example_work( TPSVCINFO* info)
+         {
+            auto deadline = platform::time::clock::type::now() + local::global.work;
+
+            while( deadline < platform::time::clock::type::now())
+            {
+               ; // no-op
+            }
+
+            tpreturn( TPSUCCESS, 0, info->data, info->len, 0);
+         }
+      }
+
+   } // example::server
 } // casual
 

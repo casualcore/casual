@@ -35,6 +35,8 @@ namespace casual
                lookup.add( fd( 110), { "b", "d"}, {});
                lookup.add( fd( 111), { "b", "d"}, {});
 
+               lookup.add( fd( 120), { "x"}, {});
+
 
                return lookup;
             }
@@ -55,7 +57,7 @@ namespace casual
       } // local
 
 
-      TEST( gateway_reverse_outbound_state, lookup_add)
+      TEST( gateway_outbound_state, lookup_add)
       {
          state::Lookup lookup;
 
@@ -65,7 +67,7 @@ namespace casual
          EXPECT_TRUE(( advertise.queues == std::vector< std::string>{ "a", "b"})) << CASUAL_NAMED_VALUE( advertise.queues);
       }
 
-      TEST( gateway_reverse_outbound_state, lookup_service_a__nil_xic__expect_round_robin)
+      TEST( gateway_outbound_state, lookup_service_a__nil_xic__expect_round_robin)
       {
          auto lookup = local::lookup();
 
@@ -83,7 +85,7 @@ namespace casual
          EXPECT_TRUE( local::get_connection( lookup, "a") == local::fd( 10));
       }
 
-      TEST( gateway_reverse_outbound_state, lookup_service_a__some_with_same_xid___expect_round_robin_unless_xid_matches)
+      TEST( gateway_outbound_state, lookup_service_a__some_with_same_xid___expect_round_robin_unless_xid_matches)
       {
          auto lookup = local::lookup();
 
@@ -118,7 +120,7 @@ namespace casual
       }
 
 
-      TEST( gateway_reverse_outbound_state, lookup_service_b_with_xid___a_with_same_xid___expect_same_connection)
+      TEST( gateway_outbound_state, lookup_service_b_with_xid___a_with_same_xid___expect_same_connection)
       {
          auto lookup = local::lookup();
 
@@ -131,6 +133,35 @@ namespace casual
 
          // same xid as before - expect same fd as before - hence xid-correlation
          EXPECT_TRUE( local::get_connection( lookup, "a", xid) == local::fd( 100));
+      }
+
+      TEST( gateway_outbound_state, remove_x__expect_x_unadvertised)
+      {
+         auto lookup = local::lookup();
+
+         auto xid = transaction::id::create();
+
+         EXPECT_TRUE( local::get_connection( lookup, "x", xid) == local::fd( 120));
+         auto removed = lookup.remove( local::fd( 120), { "x"}, {});
+
+         ASSERT_TRUE( removed.services.size() == 1) << CASUAL_NAMED_VALUE( lookup);
+         ASSERT_TRUE( removed.services.at( 0) == "x");
+
+         EXPECT_TRUE( ! local::get_connection( lookup, "x", xid));
+      }
+
+      TEST( gateway_outbound_state, remove_a__expect_no_unadvertised)
+      {
+         auto lookup = local::lookup();
+
+         auto xid = transaction::id::create();
+
+         EXPECT_TRUE( local::get_connection( lookup, "a", xid) == local::fd( 10));
+         auto removed = lookup.remove( local::fd( 120), { "a"}, {});
+
+         EXPECT_TRUE( removed.services.empty()) << CASUAL_NAMED_VALUE( lookup);
+
+         EXPECT_TRUE( local::get_connection( lookup, "a", xid));
       }
 
    } // gateway::group::outbound

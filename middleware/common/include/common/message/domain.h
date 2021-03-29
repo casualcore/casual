@@ -19,6 +19,35 @@ namespace casual
    {
       namespace domain
       {
+         namespace manager::shutdown
+         {
+            using base_request = message::basic_request< Type::domain_manager_shutdown_request>;
+            struct Request : base_request
+            {
+               using base_request::base_request;
+
+               CASUAL_CONST_CORRECT_SERIALIZE(
+                  base_request::serialize( archive);
+               )               
+
+            };
+
+            using base_reply = message::basic_message< Type::domain_manager_shutdown_reply>;
+            struct Reply : base_reply
+            {
+               using base_reply::base_reply;
+
+               //! correlations for the task
+               std::vector< common::Uuid> tasks;
+
+               CASUAL_CONST_CORRECT_SERIALIZE(
+                  base_reply::serialize( archive);
+                  CASUAL_SERIALIZE( tasks);
+               )
+            };
+            
+         } // manager::shutdown
+
          namespace process
          {
             namespace singleton::connect
@@ -270,6 +299,9 @@ namespace casual
 
          template<>
          struct type_traits< domain::process::connect::Request> : detail::type< domain::process::connect::Reply> {};
+
+         template<>
+         struct type_traits< domain::manager::shutdown::Request> : detail::type< domain::manager::shutdown::Reply> {};
 
 
          template<>

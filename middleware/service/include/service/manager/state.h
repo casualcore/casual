@@ -131,26 +131,12 @@ namespace casual
             {
                using base_instance::base_instance;
                
-               //std::vector< instance::Caller> callers;
                platform::size::type order;
-               
-               /*
-               inline void reserve( const common::process::Handle& caller, const common::Uuid& correlation)
-               {
-                  callers.push_back( instance::Caller{ caller, correlation});
-               }
-
-               void unreserve( const std::vector< common::Uuid>& correlations);
-
-               //! @returns and consumes associated caller to the correlation. 'empty' caller if not found.
-               //instance::Caller consume( const common::Uuid& correlation);
-               */
                
                friend bool operator < ( const Concurrent& lhs, const Concurrent& rhs);
 
                CASUAL_LOG_SERIALIZE(
-                  base_instance::serialize( archive);   
-                  //CASUAL_SERIALIZE( callers);
+                  base_instance::serialize( archive);
                   CASUAL_SERIALIZE( order);
                )
             };

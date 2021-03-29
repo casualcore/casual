@@ -65,7 +65,7 @@ unittest_object = [
 if "CASUAL_UNITTEST_HTTP_INBOUND_CONFIG" in os.environ and "CASUAL_UNITTEST_HTTP_INBOUND_PATH" in os.environ:
    unittest_object.append( make.Compile( 'unittest/source/domain/test_http.cpp'))
 
-make.LinkUnittest( 'unittest/bin/test-casual-basic',
+make.LinkUnittest( 'unittest/bin/test-casual',
    unittest_object,
    [ 
       'casual-common', 
@@ -75,6 +75,7 @@ make.LinkUnittest( 'unittest/bin/test-casual-basic',
       'casual-unittest',
       'casual-mockup-rm',
       'casual-domain-unittest',
+      'casual-domain-admin-cli',
       'casual-serviceframework',
    ])
 	

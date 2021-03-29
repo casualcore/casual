@@ -186,7 +186,7 @@ domain_unittest_library = make.LinkLibrary( 'bin/casual-domain-unittest',
     [
         common_archive,
         'casual-common',
-        'casual-unittest',
+        'casual-unittest'
         
     ]
 )

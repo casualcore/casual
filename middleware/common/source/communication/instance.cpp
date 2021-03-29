@@ -212,12 +212,21 @@ namespace casual
                } // <unnamed>
             } // local
 
+            base_connector::base_connector()
+               : m_socket{ ipc::native::detail::create::domain::socket()}
+            {}
+
+            void base_connector::reset( process::Handle process)
+            {
+               m_process = std::move( process);
+               m_connector = ipc::outbound::Connector{ m_process.ipc};
+            }
+
             template< fetch::Directive directive>
             basic_connector< directive>::basic_connector( instance::Identity identity)
-               : base_connector( local::fetch( identity, directive)),
-                  m_identity{ identity}
+               : m_identity{ identity}
             {
-               log::line( log, "instance created - ", m_identity, " ipc: ", m_process.ipc);
+               log::line( log, "instance created - identity: ", m_identity);
                log::line( verbose::log, "connector: ", *this);
             }
 
@@ -375,11 +384,6 @@ namespace casual
                   } // <unnamed>
                } // local
 
-               Connector::Connector() 
-                  : detail::base_connector{ local::connect( [](){ return common::domain::singleton::read().process;})}
-               {
-                  log::line( verbose::log, "connector: ", *this);
-               }
 
                void Connector::reconnect()
                {
@@ -407,14 +411,6 @@ namespace casual
 
                namespace optional
                {
-                  Connector::Connector()
-                  : detail::base_connector{ local::connect( [](){
-                     return common::domain::singleton::read().process;
-                  })}
-                  {
-                     log::line( verbose::log, "connector: ", *this);
-                  }
-
                   void Connector::reconnect()
                   {
                      Trace trace{ "communication::instance::outbound::domain::manager::optional::Connector::reconnect"};

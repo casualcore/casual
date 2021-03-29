@@ -118,6 +118,13 @@ namespace casual
 
          namespace id
          {
+            namespace max::size
+            {
+               inline constexpr auto global = MAXGTRIDSIZE;
+               inline constexpr auto branch = MAXBQUALSIZE;
+               
+            } // max::size
+
             //! Creates a new unique transaction id, global and branch
             ID create();
             ID create( const process::Handle& owner);

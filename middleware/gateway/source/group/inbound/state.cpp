@@ -28,13 +28,16 @@ namespace casual
 
          namespace pending
          {
-            Requests::complete_type Requests::consume( const common::Uuid& correlation, platform::time::unit pending)
+            Requests::complete_type Requests::consume( const common::Uuid& correlation, const common::message::service::lookup::Reply& lookup)
             {
                if( auto found = common::algorithm::find( m_services, correlation))
                {
                   auto message = algorithm::extract( m_services, std::begin( found));
                   m_size -= Requests::size( message);
-                  message.pending = pending;
+                  message.pending = lookup.pending;
+
+                  if( message.service.name != lookup.service.name)
+                     message.service.name = lookup.service.name;
 
                   return serialize::native::complete< complete_type>( std::move( message));
                }

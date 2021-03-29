@@ -3,7 +3,13 @@ This is the changelog for `casual` and all changes are listed in this document.
 
 ## [Unreleased]
 
-## [1.4.12]
+## [1.4.14] - 2021-03-28
+### Fixes
+- gateway - outbound handle no-entry call reply correctly
+- gateway - outbound correlates multiple branched trids correctly
+- gateway - inbound respect service route name
+
+## [1.4.12] - 2021-03-05
 ### Fixes
 - gateway - asynchronous writes - mitigate deadlock, performance improvements
 - gateway - handles bad tcp addresses in a more robust way
