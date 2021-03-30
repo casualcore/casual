@@ -19,6 +19,9 @@
 #include "gateway/manager/admin/model.h"
 #include "gateway/manager/admin/server.h"
 
+#include "service/manager/admin/server.h"
+#include "service/manager/admin/model.h"
+
 #include "queue/api/queue.h"
 
 #include "casual/xatmi.h"
@@ -63,63 +66,76 @@ domain:
                
             } // configuration
 
-            namespace state::gateway
+            namespace state
             {
-               auto call()
+               template< typename P, typename F>
+               auto until( P&& predicate, F&& fetch)
                {
-                  serviceframework::service::protocol::binary::Call call;
-                  auto reply = call( casual::gateway::manager::admin::service::name::state);
-
-                  casual::gateway::manager::admin::model::State result;
-                  reply >> CASUAL_NAMED_VALUE( result);
-
-                  return result;
-               }
-
-               template< typename P>
-               auto until( P&& predicate)
-               {
-                  auto state = state::gateway::call();
+                  auto state = fetch();
 
                   auto count = 1000;
 
                   while( ! predicate( state) && count-- > 0)
                   {
                      process::sleep( std::chrono::milliseconds{ 2});
-                     state = state::gateway::call();
+                     state = fetch();
                   }
 
                   return state;
                }
 
-               namespace predicate::outbound
+               namespace gateway
                {
-                  // returns a predicate that checks if all out-connections has a 'remote id'
-                  auto connected()
+                  auto call()
                   {
-                     return []( auto& state)
-                     {
-                        return algorithm::all_of( state.connections, []( auto& connection)
-                        {
-                           return connection.bound != decltype( connection.bound)::out || connection.remote.id;
-                        }); 
-                     };
-                  };
+                     serviceframework::service::protocol::binary::Call call;
+                     auto reply = call( casual::gateway::manager::admin::service::name::state);
 
-                  // returns a predicate that checks if all out-connections has NOT a 'remote id'
-                  auto disconnected()
+                     casual::gateway::manager::admin::model::State result;
+                     reply >> CASUAL_NAMED_VALUE( result);
+
+                     return result;
+                  }
+
+                  template< typename P>
+                  auto until( P&& predicate)
                   {
-                     return []( auto& state)
+                     return state::until( std::forward< P>( predicate), []()
                      {
-                        return algorithm::all_of( state.connections, []( auto& connection)
-                        {
-                           return connection.bound != decltype( connection.bound)::out || ! connection.remote.id;
-                        }); 
-                     };
-                  };
-               } // predicate::outbound
+                        return state::gateway::call();
+                     });
+                  }
 
-            } // state::gateway
+                  namespace predicate::outbound
+                  {
+                     // returns a predicate that checks if all out-connections has a 'remote id'
+                     auto connected()
+                     {
+                        return []( auto& state)
+                        {
+                           return algorithm::all_of( state.connections, []( auto& connection)
+                           {
+                              return connection.bound != decltype( connection.bound)::out || connection.remote.id;
+                           }); 
+                        };
+                     };
+
+                     // returns a predicate that checks if all out-connections has NOT a 'remote id'
+                     auto disconnected()
+                     {
+                        return []( auto& state)
+                        {
+                           return algorithm::all_of( state.connections, []( auto& connection)
+                           {
+                              return connection.bound != decltype( connection.bound)::out || ! connection.remote.id;
+                           }); 
+                        };
+                     };
+                  } // predicate::outbound
+
+               } // gateway
+
+            } // state
 
             auto allocate( platform::size::type size = 128)
             {
@@ -410,11 +426,13 @@ domain:
 
          local::state::gateway::until( local::state::gateway::predicate::outbound::connected());
 
+         // we might get to the "wrong" domain until all services are advertised.
+         EXPECT_TRUE( local::domain::name( "B", 1000));
+
          // we expect to always get to B
          algorithm::for_n< 10>( []()
          {
-            auto buffer = local::call( "casual/example/domain/name");
-            EXPECT_TRUE( buffer.get() == std::string_view{ "B"});
+            EXPECT_TRUE( local::domain::name( "B"));
          });
       }
 
@@ -456,11 +474,13 @@ domain:
 
          local::state::gateway::until( local::state::gateway::predicate::outbound::connected());
 
+         // we might get to the "wrong" domain until all services are advertised.
+         EXPECT_TRUE( local::domain::name( "B", 1000));
+
          // we expect to always get to B
          algorithm::for_n< 10>( []()
          {
-            auto buffer = local::call( "casual/example/domain/name");
-            EXPECT_TRUE( buffer.get() == std::string_view{ "B"});
+            EXPECT_TRUE( local::domain::name( "B"));
          });
       }
 
@@ -1029,11 +1049,13 @@ domain:
 
          local::state::gateway::until( local::state::gateway::predicate::outbound::connected());
 
+         // we might get to the "wrong" domain until all services are advertised.
+         EXPECT_TRUE( local::domain::name( "B", 1000));
+
          // we expect to always get to B
          algorithm::for_n< 10>( []()
          {
-            auto buffer = local::call( "casual/example/domain/name");
-            EXPECT_TRUE( buffer.get() == std::string_view{ "B"});
+            EXPECT_TRUE( local::domain::name( "B"));
          });
 
          // shutdown B
@@ -1042,8 +1064,7 @@ domain:
          // we expect to always get to C
          algorithm::for_n< 10>( []()
          {
-            auto buffer = local::call( "casual/example/domain/name");
-            EXPECT_TRUE( buffer.get() == std::string_view{ "C"});
+            EXPECT_TRUE( local::domain::name( "C"));
          });
 
          // shutdown C
@@ -1052,8 +1073,7 @@ domain:
          // we expect to always get to D ( the only on left...)
          algorithm::for_n< 10>( []()
          {
-            auto buffer = local::call( "casual/example/domain/name");
-            EXPECT_TRUE( buffer.get() == std::string_view{ "D"});
+            EXPECT_TRUE( local::domain::name( "D"));
          });
       }
 
@@ -1089,7 +1109,10 @@ domain:
 
          local::state::gateway::until( local::state::gateway::predicate::outbound::connected());
 
-         // we expect to always get to B
+         // we might get to C until all services are advertised.
+         EXPECT_TRUE( local::domain::name( "B", 1000));
+
+         // after both ar up, we expect to always get to B
          algorithm::for_n< 10>( []()
          {
             EXPECT_TRUE( local::domain::name( "B"));
