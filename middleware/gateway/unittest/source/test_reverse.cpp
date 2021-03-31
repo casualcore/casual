@@ -49,11 +49,11 @@ domain:
         dependencies: [ base]
    
    servers:
-      - path: "${CASUAL_HOME}/bin/casual-service-manager"
+      - path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/service/bin/casual-service-manager
         memberships: [ base]
-      - path: "${CASUAL_HOME}/bin/casual-transaction-manager"
+      - path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/transaction/bin/casual-transaction-manager
         memberships: [ base]
-      - path: "bin/casual-gateway-manager"
+      - path: bin/casual-gateway-manager
         memberships: [ gateway]
    gateway:
       reverse:

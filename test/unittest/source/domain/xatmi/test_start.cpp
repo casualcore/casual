@@ -58,15 +58,15 @@ domain:
         dependencies: [ queue]
 
    servers:
-      - path: ${CASUAL_HOME}/bin/casual-service-manager
+      - path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/service/bin/casual-service-manager
         memberships: [ base]
-      - path: ${CASUAL_HOME}/bin/casual-transaction-manager
+      - path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/transaction/bin/casual-transaction-manager
         memberships: [ transaction]
-      - path: ${CASUAL_HOME}/bin/casual-queue-manager
+      - path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/queue/bin/casual-queue-manager
         memberships: [ queue]
-      - path: ${CASUAL_HOME}/bin/casual-example-error-server
+      - path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-error-server
         memberships: [ example]
-      - path: ${CASUAL_HOME}/bin/casual-example-server
+      - path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-server
         memberships: [ example]
 )"
                }};
@@ -103,9 +103,6 @@ domain:
          EXPECT_TRUE( local::global::init);
          EXPECT_TRUE( local::global::done);
       }
-
-   
-
 
    } // test
 

@@ -63,7 +63,7 @@ namespace casual
             {
                auto root()
                {
-                  return environment::variable::get( "CASUAL_REPOSITORY_ROOT");
+                  return environment::variable::get( "CASUAL_MAKE_SOURCE_ROOT");
                }
             } // repository
             

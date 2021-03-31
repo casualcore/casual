@@ -44,8 +44,8 @@ domain:
         arguments: [ -p, "${CASUAL_DOMAIN_HOME}", -c, "${CASUAL_UNITTEST_HTTP_INBOUND_CONFIG}" ]
    
    servers:
-      - path: ${CASUAL_HOME}/bin/casual-example-server
-      - path: ${CASUAL_HOME}/bin/casual-service-manager
+      - path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/service/bin/casual-service-manager
+      - path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-server
 )";
                   }
 
@@ -58,8 +58,8 @@ domain:
       log: ":memory:"
 
    servers:
-      - path: ${CASUAL_HOME}/bin/casual-service-manager
-      - path: ${CASUAL_HOME}/bin/casual-http-outbound
+      - path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/service/bin/casual-service-manager
+      - path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/http/bin/casual-http-outbound
         arguments: [ --configuration, )" + outbound + "]";
       
                   }

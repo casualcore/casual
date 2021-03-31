@@ -233,7 +233,7 @@ domain:
    name: NAME
 
    servers:
-      - path: "${CASUAL_REPOSITORY_ROOT}/middleware/example/server/bin/casual-example-server"
+      - path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-server"
         memberships: [ user]
         arguments: [ --sleep, 10ms]
    gateway:
@@ -262,7 +262,7 @@ domain:
    name: NAME
 
    servers:
-      - path: "${CASUAL_REPOSITORY_ROOT}/middleware/example/server/bin/casual-example-server"
+      - path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-server"
         memberships: [ user]
         arguments: [ --sleep, 10ms]
    gateway:
@@ -432,7 +432,7 @@ domain:
          // we expect to always get to B
          algorithm::for_n< 10>( []()
          {
-            EXPECT_TRUE( local::domain::name( "B"));
+            ASSERT_TRUE( local::domain::name( "B"));
          });
       }
 
@@ -871,7 +871,7 @@ domain:
    name: B
 
    servers:
-      -  path: "${CASUAL_REPOSITORY_ROOT}/middleware/example/server/bin/casual-example-server"
+      -  path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-server"
          memberships: [ user]
          arguments: [ --sleep, 100ms]
          instances: 5
@@ -948,7 +948,7 @@ domain:
    name: B
 
    servers:
-      -  path: "${CASUAL_REPOSITORY_ROOT}/middleware/example/server/bin/casual-example-server"
+      -  path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-server"
          memberships: [ user]
          arguments: [ --sleep, 100ms]
          instances: 5
@@ -1292,7 +1292,7 @@ domain:
    name: B
 
    servers:
-      -  path: "${CASUAL_REPOSITORY_ROOT}/middleware/example/server/bin/casual-example-server"
+      -  path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-server"
          memberships: [ user]
 
    services:

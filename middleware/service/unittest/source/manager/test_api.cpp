@@ -49,7 +49,7 @@ domain:
    name: service-domain
 
    servers:
-      - path: "./bin/casual-service-manager"
+      - path: bin/casual-service-manager
 )";
 
                casual::domain::manager::unittest::Process manager{ { configuration}};

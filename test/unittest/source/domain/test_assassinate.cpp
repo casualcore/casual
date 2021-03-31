@@ -41,9 +41,9 @@ domain:
    name: A
 
    groups: 
-      -  name: base
-      -  name: user
-         dependencies: [ base]
+      - name: base
+      - name: user
+        dependencies: [ base]
    
    service:
       execution:
@@ -51,15 +51,13 @@ domain:
             duration: 2ms
             contract: kill
    servers:
-      -  path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/service/bin/casual-service-manager"
-         memberships: [ base]
-      -  path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/transaction/bin/casual-transaction-manager"
-         memberships: [ base]
-         
-      -  path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-server"
-         memberships: [ user]
-         arguments: [ --sleep, 1s]
-
+      - path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/service/bin/casual-service-manager
+        memberships: [ base]
+      - path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/transaction/bin/casual-transaction-manager
+        memberships: [ base]
+      - path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-server
+        memberships: [ user]
+        arguments: [ --sleep, 1s]
 )";
 
 

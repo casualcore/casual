@@ -63,13 +63,13 @@ domain:
         dependencies: [ queue]
    
    servers:
-      - path: "${CASUAL_HOME}/bin/casual-service-manager"
+      - path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/service/bin/casual-service-manager
         memberships: [ base]
-      - path: "${CASUAL_HOME}/bin/casual-transaction-manager"
+      - path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/transaction/bin/casual-transaction-manager
         memberships: [ base]
-      - path: "./bin/casual-queue-manager"
+      - path: bin/casual-queue-manager
         memberships: [ queue]
-      - path: "./bin/casual-queue-forward-queue"
+      - path: bin/casual-queue-forward-queue
         arguments: [ --forward, queueA3, queueB3]
         memberships: [ forward]
 
@@ -743,11 +743,11 @@ domain:
         dependencies: [ base]
    
    servers:
-      - path: "${CASUAL_HOME}/bin/casual-service-manager"
+      - path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/service/bin/casual-service-manager
         memberships: [ base]
-      - path: "${CASUAL_HOME}/bin/casual-transaction-manager"
+      - path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/transaction/bin/casual-transaction-manager
         memberships: [ base]
-      - path: "./bin/casual-queue-manager"
+      - path: bin/casual-queue-manager
         memberships: [ queue]
 
    queue:

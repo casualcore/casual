@@ -46,7 +46,7 @@ domain:
    name: service-domain
 
    servers:
-      - path: "./bin/casual-service-manager"
+      - path: bin/casual-service-manager
 )";
 
             struct Domain
@@ -186,7 +186,7 @@ domain:
 domain:
    name: route-domain
    servers:
-      - path: "./bin/casual-service-manager"
+      - path: bin/casual-service-manager
    services:
       - name: A
         routes: [ B]
@@ -217,7 +217,7 @@ domain:
 domain:
    name: route-domain
    servers:
-      -  path: "./bin/casual-service-manager"
+      -  path: bin/casual-service-manager
    services:
       -  name: a
          execution:
@@ -268,7 +268,7 @@ domain:
             - key: SB
               value: B
    servers:
-      - path: "./bin/casual-service-manager"
+      - path: bin/casual-service-manager
    services:
       - name: ${SA}
         routes: [ "${SB}"]
@@ -297,7 +297,7 @@ domain:
    name: route-domain
 
    servers:
-      - path: "./bin/casual-service-manager"
+      - path: bin/casual-service-manager
    services:
       - name: A
         routes: [ B]

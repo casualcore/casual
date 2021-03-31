@@ -50,13 +50,12 @@ domain:
         dependencies: [ base]
    
    servers:
-      -  path: "${CASUAL_HOME}/bin/casual-service-manager"
-         memberships: [ base]
-      -  path: "${CASUAL_HOME}/bin/casual-transaction-manager"
-         memberships: [ base]
-      -  path: "./bin/casual-gateway-manager"
-         memberships: [ gateway]
-
+      - path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/service/bin/casual-service-manager
+        memberships: [ base]
+      - path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/transaction/bin/casual-transaction-manager
+        memberships: [ base]
+      - path: bin/casual-gateway-manager
+        memberships: [ gateway]
 )";
                
             } // configuration
@@ -369,8 +368,8 @@ domain:
    name: gateway-domain
    
    servers:
-      -  path: "${CASUAL_HOME}/bin/casual-queue-manager"
-         memberships: [ base]
+      - path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/queue/bin/casual-queue-manager
+        memberships: [ base]
    gateway:
       inbound:
          groups:

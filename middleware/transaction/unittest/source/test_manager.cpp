@@ -79,9 +79,9 @@ domain:
            openinfo: "${CASUAL_UNITTEST_OPEN_INFO_RM2}"
 
    servers:
-      - path: "${CASUAL_HOME}/bin/casual-service-manager"
+      - path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/service/bin/casual-service-manager
         memberships: [ first]
-      - path: "./bin/casual-transaction-manager"
+      - path: bin/casual-transaction-manager
         arguments: [ --transaction-log, ":memory:"]
         memberships: [ second]
          
@@ -89,7 +89,7 @@ domain:
                   std::string resource = R"(
 resources:
   - key: rm-mockup
-    server: "./bin/rm-proxy-casual-mockup"
+    server: bin/rm-proxy-casual-mockup
     xa_struct_name: casual_mockup_xa_switch_static
     libraries:
       - casual-mockup-rm
@@ -297,9 +297,9 @@ domain:
            openinfo: openinfo2
 
    servers:
-      - path: "${CASUAL_HOME}/bin/casual-service-manager"
+      - path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/service/bin/casual-service-manager
         memberships: [ first]
-      - path: "./bin/casual-transaction-manager"
+      - path: bin/casual-transaction-manager
         arguments: [ --transaction-log, ":memory:"]
         memberships: [ second]
          

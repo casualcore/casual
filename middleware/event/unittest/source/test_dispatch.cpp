@@ -34,7 +34,7 @@ domain:
    name: service-domain
 
    servers:
-      - path: "${CASUAL_HOME}/bin/casual-service-manager"
+      - path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/service/bin/casual-service-manager
 )";
 
             struct Domain

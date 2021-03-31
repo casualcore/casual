@@ -36,11 +36,11 @@ domain:
         dependencies: [ first]
 
    servers:
-      - path: "${CASUAL_HOME}/bin/casual-service-manager"
+      - path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/service/bin/casual-service-manager
         memberships: [ first]
 
    executables:
-      - path: "bin/casual-event-service-log"
+      - path: bin/casual-event-service-log
         arguments: [ --file, "${SERVICE_LOG_FILE}"]
         memberships: [ second]
         
@@ -148,11 +148,11 @@ domain:
       - name: second
         dependencies: [ first]
    servers:
-      - path: "${CASUAL_HOME}/bin/casual-service-manager"
+      - path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/service/bin/casual-service-manager
         memberships: [ first]
 
    executables:
-      - path: "bin/casual-event-service-log"
+      - path: bin/casual-event-service-log
         arguments: [ --file, "${SERVICE_LOG_FILE}", --filter-exclusive, '^[.].*$']
         memberships: [ second]
         
@@ -190,11 +190,11 @@ domain:
       - name: second
         dependencies: [ first]
    servers:
-      - path: "${CASUAL_HOME}/bin/casual-service-manager"
+      - path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/service/bin/casual-service-manager
         memberships: [ first]
 
    executables:
-      - path: "bin/casual-event-service-log"
+      - path: bin/casual-event-service-log
         arguments: [ --file, "${SERVICE_LOG_FILE}", --filter-inclusive, '^[.].*$']
         memberships: [ second]
         
