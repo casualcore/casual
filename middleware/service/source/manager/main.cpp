@@ -75,7 +75,7 @@ namespace casual
 
                // Start forward
                {
-                  Trace trace{ "service::manager:local::initialize spawn forward"};
+                  Trace trace{ "service::manager:local::setup spawn forward"};
 
                   state.forward = common::Process( process::directory() + "/casual-service-forward");
                   state.forward.ipc = common::communication::instance::fetch::handle( forward::instance::identity.id).ipc;
@@ -107,11 +107,11 @@ namespace casual
 
                auto handler = manager::handler( state);
 
-               // Connect to domain
-               communication::instance::whitelist::connect( communication::instance::identity::service::manager);
-
                // register that we can answer discovery questions.
                casual::domain::discovery::inbound::registration();
+
+               // Connect to domain
+               communication::instance::whitelist::connect( communication::instance::identity::service::manager);
 
                log::line( common::log::category::information, "casual-service-manager is on-line");
                log::line( verbose::log, "state: ", state);
