@@ -122,7 +122,7 @@ namespace casual
                   {
                      return [&state]()
                      {
-                        auto error = exception::error();
+                        auto error = exception::capture();
 
                         if( error.code() == code::casual::shutdown)
                         {
@@ -201,7 +201,7 @@ namespace casual
                }
                catch( ...)
                {
-                  auto error = common::exception::error();
+                  auto error = common::exception::capture();
 
                   if( ipc)
                   {

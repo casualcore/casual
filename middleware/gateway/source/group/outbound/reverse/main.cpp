@@ -199,7 +199,7 @@ namespace casual
                            }
                            catch( ...)
                            {
-                              if( exception::error().code() != code::casual::communication_unavailable)
+                              if( exception::capture().code() != code::casual::communication_unavailable)
                                  throw;
 
                                outbound::handle::connection::lost( state, descriptor);

@@ -459,7 +459,7 @@ namespace casual
                }
                catch( ...)
                {
-                  auto error = exception::error();
+                  auto error = exception::capture();
                   if( error.code() == code::casual::communication_unavailable || error.code() == code::casual::invalid_argument)
                   {
                      // Let connector take a crack at resolving this problem, if implemented...
@@ -567,7 +567,7 @@ namespace casual
                }
                catch( ...)
                {
-                  if( exception::error().code() == code::casual::communication_unavailable)
+                  if( exception::capture().code() == code::casual::communication_unavailable)
                   {
                      log::line( communication::log, code::casual::communication_unavailable, " failed to send message - action: ignore");
                      return {};
@@ -616,7 +616,7 @@ namespace casual
                }
                catch( ...)
                {
-                  if( exception::error().code() == code::casual::communication_unavailable)
+                  if( exception::capture().code() == code::casual::communication_unavailable)
                   {
                      log::line( communication::log, code::casual::communication_unavailable, " failed to send message - action: ignore");
                      return {};

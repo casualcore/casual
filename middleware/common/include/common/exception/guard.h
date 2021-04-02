@@ -8,6 +8,7 @@
 #pragma once
 
 #include "common/traits.h"
+#include "common/log.h"
 #include "common/exception/handle.h"
 #include "common/code/casual.h"
 
@@ -28,15 +29,18 @@ namespace casual
                try 
                {
                   callable();
-                  return 0;
                }
                catch( ...)
                {
-                  auto error = exception::error();
-                  if( error.code() == code::casual::shutdown)
-                     return 0;
-                  return error.code().value();
+                  const auto error = exception::capture();
+                  if( error.code() != code::casual::shutdown)
+                  {
+                     log::line( common::log::category::error, error);
+                     return error.code().value();
+                  }
                }
+
+               return 0;
             }
 
             template< typename F> 
@@ -45,15 +49,18 @@ namespace casual
                try 
                {
                   callable();
-                  return 0;
                }
                catch( ...)
                {
-                  auto error = exception::handle( out);
-                  if( error.code() == code::casual::shutdown)
-                     return 0;
-                  return error.code().value();
+                  const auto error = exception::capture();
+                  if( error.code() != code::casual::shutdown)
+                  {
+                     log::line( out, error);
+                     return error.code().value();
+                  }
                }
+
+               return 0;
             } 
          } // main
 
@@ -69,7 +76,7 @@ namespace casual
                }
                catch( ...)
                {
-                  exception::sink::silent();
+                  log::line( log::category::error, exception::capture());
                }
                return std::forward< B>( fallback);
             }
@@ -84,7 +91,7 @@ namespace casual
                }
                catch( ...)
                {
-                  exception::sink::silent();
+                  log::line( log::category::error, exception::capture());
                }
                return fallback();
             }
@@ -107,7 +114,7 @@ namespace casual
             }
             catch( ...)
             {
-               exception::sink::silent();
+               log::line( log::category::error, exception::capture());
             }
          }
 

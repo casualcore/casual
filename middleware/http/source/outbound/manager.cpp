@@ -41,9 +41,9 @@ namespace casual
                         }
                         catch( ...)
                         {
-                           auto error = exception::error();
+                           auto error = exception::capture();
                            if( error.code() != code::casual::communication_unavailable)
-                              throw error;
+                              throw;
 
                            log::line( log, error, " failed to send message - type: ", common::message::type( message), " to: ", process, " - action: ignore");
                         }
@@ -153,7 +153,7 @@ namespace casual
                               }
                               catch( ...)
                               {
-                                 auto error = exception::error();
+                                 auto error = exception::capture();
                                  log::line( log::category::verbose::error, common::code::xatmi::protocol, " failed to transcode payload - reason: ", error);
                                  message.code.result = common::code::xatmi::protocol; 
                               }
@@ -246,7 +246,7 @@ namespace casual
             }
             catch( ...)
             {
-               exception::handle( log::category::error, "shutdown - send service error replies");
+               log::line( log::category::error, exception::capture(), " shutdown - send service error replies");
             }
 
          }

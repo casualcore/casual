@@ -61,7 +61,7 @@ namespace casual
                }
                catch( ...)
                {
-                  log::line( log::category::error, exception::error(), " conversation connect");
+                  log::line( log::category::error, exception::capture(), " conversation connect failed");
                   log::line( log::category::verbose::error, "message: ", message);
                }
 

@@ -36,7 +36,7 @@ namespace casual
             }
             catch( ...)
             {
-               exception::handle( log::category::error, "Thread::~Thread");
+               log::line( log::category::error, exception::capture(), " Thread::~Thread");
             }
          }
 

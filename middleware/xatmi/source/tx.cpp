@@ -25,7 +25,7 @@ namespace local
 
       auto code()
       {
-         auto error = casual::common::exception::error();
+         auto error = casual::common::exception::capture();
 
          if( casual::common::code::is::category< casual::common::code::tx>( error.code()))
             return static_cast< casual::common::code::tx>( error.code().value());

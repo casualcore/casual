@@ -48,11 +48,11 @@ namespace casual
                   }
                   catch( ...)
                   {
-                     if( exception::error().code() == code::casual::communication_unavailable)
-                        return true;
-
-                     throw;
-                  }
+                     if( exception::capture().code() != code::casual::communication_unavailable)
+                        throw;
+   
+                     return true;
+               }
                };
 
                algorithm::trim( message.destinations, algorithm::remove_if( message.destinations, send));

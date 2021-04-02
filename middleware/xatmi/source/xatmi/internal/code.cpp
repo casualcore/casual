@@ -17,7 +17,6 @@ namespace casual
       namespace internal
       {
 
-
          namespace exception
          {
             common::code::xatmi code( std::error_code code) noexcept
@@ -30,7 +29,7 @@ namespace casual
 
             common::code::xatmi code() noexcept
             {
-               return exception::code( common::exception::error().code());
+               return exception::code( common::exception::capture().code());
             }
          } // exception
 

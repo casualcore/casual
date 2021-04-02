@@ -139,7 +139,7 @@ namespace casual
             }
             catch( ...)
             {
-               auto error = common::exception::error();
+               auto error = common::exception::capture();
                common::log::line( common::log::category::error, error, " connect severely failed for address: '", connection.configuration.address, "' - action: discard connection");
                return true;
             }
@@ -179,7 +179,7 @@ namespace casual
          }
          catch( ...)
          {
-            if( common::exception::error().code() != common::code::casual::communication_unavailable)
+            if( common::exception::capture().code() != common::code::casual::communication_unavailable)
                throw;
             
             lost( state, descriptor);

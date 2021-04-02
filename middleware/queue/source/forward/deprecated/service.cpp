@@ -74,7 +74,7 @@ namespace casual
                }
                catch( ...)
                {
-                  common::exception::sink::log();
+                  common::exception::sink();
                }
             }
 

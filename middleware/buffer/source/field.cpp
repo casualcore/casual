@@ -45,8 +45,6 @@
 
 namespace casual
 {
-   using namespace common;
-
    namespace buffer
    {
       namespace field
@@ -100,7 +98,7 @@ namespace casual
                   }
 
                   if( cursor > end)
-                     code::raise::error( code::xatmi::argument, "buffer is comprised");
+                     common::code::raise::error( common::code::xatmi::argument, "buffer is comprised");
                }
 
                void shrink()
@@ -176,7 +174,7 @@ namespace casual
                   // GCC returns null for std::vector::data with capacity zero
                   buffer.capacity( size ? size : 1);
 
-                  common::log::line( verbose::log, "allocated buffer: ", buffer);
+                  common::log::line( common::verbose::log, "allocated buffer: ", buffer);
 
                   return buffer.handle();
                }
@@ -196,7 +194,7 @@ namespace casual
                      result->capacity( size ? size : 1);
                   }
 
-                  common::log::line( verbose::log, "reallocated buffer: ", *result);
+                  common::log::line( common::verbose::log, "reallocated buffer: ", *result);
 
                   return result->handle();
                }
@@ -243,13 +241,13 @@ namespace casual
                   }
                   catch( ...)
                   {
-                     auto error = common::exception::error();
+                     const auto error = common::exception::capture();
+
+                     if( error.code() == common::code::xatmi::argument)
+                        return CASUAL_FIELD_INVALID_HANDLE;
 
                      std::cerr << "error: " << error << '\n';
                      
-                     if( error.code() == code::xatmi::argument)
-                        return CASUAL_FIELD_INVALID_HANDLE;
-
                      return CASUAL_FIELD_INTERNAL_FAILURE;
                   }
                }
@@ -322,7 +320,7 @@ namespace casual
                   if( type != (id / CASUAL_FIELD_TYPE_BASE))
                   {
 
-                     log::line( casual::buffer::verbose::log, "buffer::field::add::data: invalid argument - id: ", id, " - type: ", type);
+                     common::log::line( casual::buffer::verbose::log, "buffer::field::add::data: invalid argument - id: ", id, " - type: ", type);
                      return CASUAL_FIELD_INVALID_ARGUMENT;
                   }
 
@@ -1310,7 +1308,7 @@ namespace casual
                   {   
                      auto groups( std::vector< std::string> files)
                      {
-                        log::line( verbose::log, "files: ", files);
+                        common::log::line( common::verbose::log, "files: ", files);
 
                         std::vector< model::group> result;
 
@@ -1321,10 +1319,10 @@ namespace casual
                            std::vector< model::group> groups;
                            archive >> CASUAL_NAMED_VALUE( groups);
 
-                           algorithm::move( groups, result);
+                           common::algorithm::move( groups, result);
                         };
 
-                        algorithm::for_each( files, append_groups);
+                        common::algorithm::for_each( files, append_groups);
 
                         return result;
                      }
@@ -1350,14 +1348,12 @@ namespace casual
                                  }
                                  else
                                  {
-                                    // TODO: Much better
-                                    log::line( log::category::warning, "id for ", field.name, " is invalid");
+                                    common::log::line( common::log::category::warning, "id for ", field.name, " is invalid");
                                  }
                               }
                               catch( const std::out_of_range&)
                               {
-                                 // TODO: Much better
-                                 log::line( log::category::warning, "type for ", field.name, " is invalid");
+                                 common::log::line( common::log::category::warning, "type for ", field.name, " is invalid");
                               }
                            }
                         }
@@ -1386,15 +1382,13 @@ namespace casual
                      {
                         if( ! result.emplace( field.name, field.id).second)
                         {
-                           // TODO: Much better
-                           log::line( log::category::warning, "name for ", field.name, " is not unique");
+                           common::log::line( common::log::category::warning, "name for ", field.name, " is not unique");
                         }
                      }
                   }
                   catch( ...)
                   {
-                     // TODO: Handle this in an other way ?
-                     common::exception::sink::log();
+                     common::log::line( common::log::category::warning, "failed to match name and id ", common::exception::capture());
                   }
 
                   return result;
@@ -1412,15 +1406,13 @@ namespace casual
                      {
                         if( ! result.emplace( field.id, field.name).second)
                         {
-                           // TODO: Much better
-                           log::line( log::category::warning, "id for ", field.name, " is not unique");
+                           common::log::line( common::log::category::warning, "id for ", field.name, " is not unique");
                         }
                      }
                   }
                   catch( ...)
                   {
-                     // TODO: Handle this in an other way ?
-                     common::exception::sink::log();
+                     common::log::line( common::log::category::warning, "failed to match id and name ", common::exception::capture());
                   }
 
                   return result;
@@ -1663,7 +1655,7 @@ namespace casual
                {
                   Trace trace{ "field::internal::stream in"};
 
-                  log::line( verbose::log, "protocol: ", protocol);
+                  common::log::line( common::verbose::log, "protocol: ", protocol);
 
                   auto archive = common::serialize::create::reader::relaxed::from( protocol, stream);
 
@@ -1695,7 +1687,7 @@ namespace casual
                }
                catch( ...)
                {
-                  common::exception::sink::log();
+                  common::exception::sink();
                }
                return nullptr;
             }

@@ -168,7 +168,7 @@ int casual_service_asynchronous_receive( int *const descriptor, char** odata, lo
    }
    catch( ...)
    {
-      auto error = casual::common::exception::error();
+      auto error = casual::common::exception::capture();
       
       // we "need" to treat no_entry as service_error to conform to xatmi-spec.
       if( error.code() == casual::common::code::xatmi::no_entry)

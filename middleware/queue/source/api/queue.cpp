@@ -354,7 +354,7 @@ namespace casual
                      }
                      catch( ...)
                      {
-                        auto error = common::exception::error();
+                        auto error = common::exception::capture();
                         if( error.code() != queue::code::no_queue)
                            throw;
 

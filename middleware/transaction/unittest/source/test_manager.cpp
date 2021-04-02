@@ -198,7 +198,7 @@ resources:
                }
                catch( ...)
                {
-                  return exception::error().code();
+                  return exception::capture().code();
                }
             }
 

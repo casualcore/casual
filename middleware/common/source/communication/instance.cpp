@@ -200,12 +200,11 @@ namespace casual
                      }
                      catch( ...)
                      {
-                        if( exception::error().code() == code::casual::communication_unavailable)
-                        {
-                           common::log::line( log, "failed to fetch instance with identity: ", identity);
-                           return {};
-                        }
-                        throw;
+                        if( exception::capture().code() != code::casual::communication_unavailable)
+                           throw;
+
+                        common::log::line( log, "failed to fetch instance with identity: ", identity);
+                        return {};
                      }
                   }
 

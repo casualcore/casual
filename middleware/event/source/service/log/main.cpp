@@ -111,7 +111,7 @@ namespace casual
                   auto conditions = common::event::condition::compose(
                      common::event::condition::error( [&done]() 
                      { 
-                        auto error = common::exception::error();
+                        auto error = common::exception::capture();
                         common::log::line( event::verbose::log, "event listen - condition error: ", error);
                         
                         if( error.code() == common::code::signal::terminate)

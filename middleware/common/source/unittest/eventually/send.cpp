@@ -38,7 +38,7 @@ namespace casual
                      }
                      catch( ...)
                      {
-                        exception::handle( log::category::error, "unittest::eventually::send::local::send");
+                        log::line( log::category::error, exception::capture(), " unittest::eventually::send::local::send");
                      }
                   }
 

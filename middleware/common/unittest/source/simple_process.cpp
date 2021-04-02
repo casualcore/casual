@@ -27,6 +27,6 @@ int main( int argc, char** argv)
    }
    catch( ...)
    {
-      return exception::error().code().value();
+      return exception::capture().code().value();
    }
 }

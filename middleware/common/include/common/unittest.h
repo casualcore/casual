@@ -142,7 +142,7 @@ namespace casual
             }
             catch( ...)
             {
-               auto error = exception::error();
+               auto error = exception::capture();
 
                if( error.code() == code)
                   return ::testing::AssertionSuccess();
@@ -168,7 +168,7 @@ try                                                                             
 }                                                                                         \
 catch( ...)                                                                               \
 {                                                                                         \
-   auto error = ::casual::common::exception::error();                                  \
+   auto error = ::casual::common::exception::capture();                                  \
    ASSERT_TRUE( error.code() == code_value) << "expected: " << code_value << " - got: " << error.code();    \
 }
 

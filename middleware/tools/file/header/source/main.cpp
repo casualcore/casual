@@ -8,6 +8,7 @@
 #include "common/exception/handle.h"
 #include "common/argument.h"
 #include "common/file.h"
+#include "common/log.h"
 
 #include <iostream>
 #include <fstream>
@@ -119,7 +120,7 @@ namespace casual
                }
                catch( ...)
                {
-                  common::exception::handle( std::cerr);
+                  common::log::line( std::cerr, common::exception::capture());
                }
                return 0;
             }

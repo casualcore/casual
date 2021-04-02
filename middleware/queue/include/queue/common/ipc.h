@@ -66,11 +66,12 @@ namespace casual
                }
                catch( ...)
                {
-                  if( common::exception::error().code() != common::code::casual::communication_unavailable)
+                  if( common::exception::capture().code() != common::code::casual::communication_unavailable)
                      throw;
 
                   common::log::line( common::communication::log, common::code::casual::communication_unavailable, " failed to send message - action: ignore");
-                     return {};
+
+                  return {};
                }
             }
          } // optional

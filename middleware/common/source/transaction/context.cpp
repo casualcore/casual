@@ -357,7 +357,7 @@ namespace casual
                catch( ...)
                {
                   result.state = message::service::Transaction::State::error;
-                  exception::handle( log::category::error, "failed to rollback transaction: ", transaction.trid);
+                  log::line( log::category::error, exception::capture(), " failed to rollback transaction: ", transaction.trid);
                }
             };
 
@@ -372,7 +372,7 @@ namespace casual
                   catch( ...)
                   {
                      result.state = message::service::Transaction::State::error;
-                     exception::handle( log::category::error, "failed to commit transaction: ", transaction.trid);
+                     log::line( log::category::error, exception::capture(), " failed to commit transaction: ", transaction.trid);
                   } 
                }
                else

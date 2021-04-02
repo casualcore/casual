@@ -23,8 +23,6 @@
 
 namespace casual
 {
-   using namespace common;
-
    namespace http
    {
       namespace inbound
@@ -60,7 +58,7 @@ namespace casual
                      if( found != store.end())
                         return found;
 
-                     code::raise::error( code::casual::invalid_argument, "could not find lookup object for key: ", key);
+                     common::code::raise::error( common::code::casual::invalid_argument, "could not find lookup object for key: ", key);
                   }
 
                   common::service::non::blocking::Lookup consume( long key)
@@ -161,18 +159,18 @@ namespace casual
                      for ( const auto& parameter : parameters)
                      {
                         buffer.push_back('"');
-                        algorithm::append( parameter.first, buffer);
+                        common::algorithm::append( parameter.first, buffer);
                         buffer.push_back('"');
                         buffer.push_back(':');
                         buffer.push_back('"');
-                        algorithm::append( parameter.second, buffer);
+                        common::algorithm::append( parameter.second, buffer);
                         buffer.push_back('"');
                         buffer.push_back(',');
                      }
                      if ( buffer.back() == ',') buffer.pop_back();
                      buffer.push_back('}');
 
-                     log::line( verbose::log, "parameters: ", std::string( buffer.begin(), buffer.end()));
+                     common::log::line( common::verbose::log, "parameters: ", std::string( buffer.begin(), buffer.end()));
                      return buffer;
                   }
 
@@ -187,12 +185,12 @@ namespace casual
                      for ( const auto& parameter : parameters)
                      {
                         buffer.push_back('<');
-                        algorithm::append( parameter.first, buffer);
+                        common::algorithm::append( parameter.first, buffer);
                         buffer.push_back('>');
-                        algorithm::append( parameter.second, buffer);
+                        common::algorithm::append( parameter.second, buffer);
                         buffer.push_back('<');
                         buffer.push_back('/');
-                        algorithm::append( parameter.first, buffer);
+                        common::algorithm::append( parameter.first, buffer);
                         buffer.push_back('>');
                      }
                      buffer.push_back('<');
@@ -200,7 +198,7 @@ namespace casual
                      std::copy( root.begin(), root.end(), std::back_inserter( buffer));
                      buffer.push_back('>');
 
-                     log::line( verbose::log, "parameters: ", std::string( buffer.begin(), buffer.end()));
+                     common::log::line( common::verbose::log, "parameters: ", std::string( buffer.begin(), buffer.end()));
                      return buffer;
                   }
                }
@@ -239,24 +237,24 @@ namespace casual
                      }
                      catch( common::service::call::Fail& exception)
                      {
-                        transport->code = cast::underlying( code::xatmi::service_fail);
+                        transport->code = common::cast::underlying( common::code::xatmi::service_fail);
                         http::buffer::transcode::to::wire( exception.result.buffer);
                         transport->payload = buffer::copy( exception.result.buffer.memory);
                         usercode = exception.result.user;
                      }
                      catch( ...)
                      {
-                        auto error = common::exception::error();
+                        auto error = common::exception::capture();
 
-                        if( error.code() == code::xatmi::no_message)
+                        if( error.code() == common::code::xatmi::no_message)
                            return AGAIN; // No reply yet, try again later
 
-                        if( code::is::category< code::xatmi>( error.code()))
+                        if( common::code::is::category< common::code::xatmi>( error.code()))
                            transport->code = error.code().value();
                         else 
-                           transport->code = cast::underlying( code::xatmi::os);
+                           transport->code = common::cast::underlying( common::code::xatmi::os);
 
-                        transport->payload = buffer::copy( string::compose( error));
+                        transport->payload = buffer::copy( common::string::compose( error));
                      }
 
                      // Handle reply headers
@@ -278,7 +276,7 @@ namespace casual
                      const http::Trace trace("casual::http::inbound::local::service::lookup");
                      const auto& service = transport->service;
 
-                     log::line( verbose::log, "service: ", service);
+                     common::log::line( common::verbose::log, "service: ", service);
 
                      try
                      { 
@@ -286,11 +284,11 @@ namespace casual
                            transport->lookup_key = lookup::add( service);
 
                         const auto key = transport->lookup_key;
-                        log::line( verbose::log, "key: ", key);
+                        common::log::line( common::verbose::log, "key: ", key);
 
                         return lookup::get( key) ? OK : AGAIN;
                      }
-                     catch ( ...)
+                     catch( ...)
                      {
                         lookup::remove( transport->lookup_key);
                         return exception::handle( transport);
@@ -303,22 +301,22 @@ namespace casual
                      const auto& protocol = transport->protocol;
                      const auto& service = transport->service;
 
-                     log::line( verbose::log, "protocol: ", protocol);
-                     log::line( verbose::log, "service: ", service);
+                     common::log::line( common::verbose::log, "protocol: ", protocol);
+                     common::log::line( common::verbose::log, "service: ", service);
 
                      transport->context = cTPACALL;
 
                      try
                      {
                         // Lookup done, ready to call
-                        log::line( verbose::log, "key: ", transport->lookup_key);
+                        common::log::line( common::verbose::log, "key: ", transport->lookup_key);
 
                         // Handle header
                         const auto& header = header::copy( transport->header_in);
 
                         // Handle parameter
                         const auto& parameters = parameter::copy( transport->parameter);
-                        log::line( verbose::log, "parameters: ", parameters);
+                        common::log::line( common::verbose::log, "parameters: ", parameters);
 
                         // possible transcode buffer from wire-encoding
                         common::buffer::Payload payload( protocol::convert::to::buffer( protocol), buffer::assemble( transport, parameters, protocol));
@@ -332,26 +330,26 @@ namespace casual
                            header,
                            call::async::Flag::no_block);
                      }
-                     catch (...)
+                     catch( ...)
                      {
                         return exception::handle( transport);
                      }
 
-                     transport->code = cast::underlying( common::code::xatmi::ok);
+                     transport->code = common::cast::underlying( common::code::xatmi::ok);
 
                      return OK;
                   }
 
-                  long receive( casual_http_buffer_type* transport)
+                  long receive( casual_http_buffer_type* const transport)
                   {
                      const http::Trace trace("casual::http::inbound::service::local::receive");
                      const auto& protocol = transport->protocol;
                      const auto& descriptor = transport->descriptor;
                      const auto& service = transport->service;
 
-                     log::line( verbose::log, "protocol: ", protocol);
-                     log::line( verbose::log, "service: ", service);
-                     log::line( verbose::log, "descriptor: ", descriptor);
+                     common::log::line( common::verbose::log, "protocol: ", protocol);
+                     common::log::line( common::verbose::log, "service: ", service);
+                     common::log::line( common::verbose::log, "descriptor: ", descriptor);
 
                      transport->context = cTPGETRPLY;
 
@@ -366,8 +364,8 @@ namespace casual
                         if( reply.buffer.null())
                         {
                            ::strncpy( transport->protocol, http::protocol::null, sizeof( transport->protocol));
-                           algorithm::copy( "NULL", reply.buffer.memory);
-                           log::line( verbose::log, "protocol: ", transport->protocol);
+                           common::algorithm::copy( "NULL", reply.buffer.memory);
+                           common::log::line( common::verbose::log, "protocol: ", transport->protocol);
                         }
                         else 
                         {
@@ -378,13 +376,13 @@ namespace casual
                         transport->payload = buffer::copy( reply.buffer.memory);
 
                         // Handle reply headers
-                        auto header = header::codes::add( cast::underlying( common::code::xatmi::ok), reply.user);
+                        auto header = header::codes::add( common::cast::underlying( common::code::xatmi::ok), reply.user);
                         transport->header_out = header::copy( header);
 
 
                         return OK;
                      }
-                     catch (...)
+                     catch( ...)
                      {
                         return exception::handle( transport);
                      }
@@ -397,9 +395,9 @@ namespace casual
                      const auto& descriptor = transport->descriptor;
                      const auto& service = transport->service;
 
-                     log::line( verbose::log, "protocol: ", protocol);
-                     log::line( verbose::log, "service: ", service);
-                     log::line( verbose::log, "descriptor: ", descriptor);
+                     common::log::line( common::verbose::log, "protocol: ", protocol);
+                     common::log::line( common::verbose::log, "service: ", service);
+                     common::log::line( common::verbose::log, "descriptor: ", descriptor);
 
                      transport->context = cTPGETRPLY;
 
@@ -411,7 +409,7 @@ namespace casual
 
                         return OK;
                      }
-                     catch (...)
+                     catch( ...)
                      {
                         return exception::handle( transport);
                      }

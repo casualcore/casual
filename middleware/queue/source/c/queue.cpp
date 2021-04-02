@@ -42,10 +42,12 @@ namespace casual
                }
                catch( ...)
                {
-                  auto error = common::exception::error();
+                  auto error = common::exception::capture();
 
                   if( common::code::is::category< queue::code>( error.code()))
+                  {
                      global::code = static_cast< queue::code>( error.code().value());
+                  }
                   else
                   {
                      common::log::line( common::log::category::error, common::code::casual::internal_unexpected_value, " unexpected error: ", error);

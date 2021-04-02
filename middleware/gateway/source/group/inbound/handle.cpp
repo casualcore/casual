@@ -46,7 +46,7 @@ namespace casual
                   }
                   catch( ...)
                   {
-                     exception::sink::error();
+                     log::line( log::category::error, exception::capture());
                   }
                   return {};
                }
@@ -603,7 +603,7 @@ namespace casual
                   }
                   catch( ...)
                   {
-                     exception::sink::log();
+                     exception::sink();
                      handle::connection::lost( state, descriptor);
                   }
                }

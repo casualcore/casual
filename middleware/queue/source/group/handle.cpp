@@ -64,7 +64,7 @@ namespace casual
                            }
                            catch( ...)
                            {
-                              auto error = exception::error();
+                              auto error = exception::capture();
                               
                               if( error.code() != code::casual::communication_unavailable)
                                  throw;
@@ -247,7 +247,7 @@ namespace casual
                         }
                         catch( ...)
                         {
-                           exception::handle( log::category::error, "failed with enqueue request");
+                           log::line( log::category::error, exception::capture(), " failed with enqueue request");
                         }
                      };
                   }
@@ -317,7 +317,7 @@ namespace casual
                         }
                         catch( ...)
                         {
-                           exception::handle( log::category::error, "failed with dequeue request");
+                           log::line( log::category::error, exception::capture(), " failed with dequeue request");
                            return true;
                         }
                         
@@ -395,7 +395,7 @@ namespace casual
                            }
                            catch( ...)
                            {
-                              common::exception::handle( common::log::category::error, "transaction commit request");
+                              log::line( log::category::error, exception::capture(), " transaction commit request failed");
                               reply.state = common::code::xa::resource_fail;
                            }
 
@@ -450,7 +450,7 @@ namespace casual
                            }
                            catch( ...)
                            {
-                              common::log::line( common::log::category::error, common::code::xa::resource_fail, " transaction rollback request - ", common::exception::error());
+                              common::log::line( common::log::category::error, common::code::xa::resource_fail, " transaction rollback request - ", common::exception::capture());
                               reply.state = common::code::xa::resource_fail;
                            }
                            

@@ -50,7 +50,7 @@ namespace casual
                      }
                      catch( ...)
                      {
-                        auto error = exception::error();
+                        auto error = exception::capture();
                         if( error.code() != code::casual::communication_unavailable)
                            throw;
 

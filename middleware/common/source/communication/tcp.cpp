@@ -362,11 +362,11 @@ namespace casual
             catch( ...)
             {
                // if refused we return 'nil' socket
-               if( exception::error().code() != code::casual::communication_refused)
+               if( exception::capture().code() != code::casual::communication_refused)
                   throw;
             }
-            return {};
 
+            return {};
          }
       } // non::blocking
 
@@ -385,10 +385,11 @@ namespace casual
                catch( ...)
                {
                   // if refused : no-op - we go to sleep
-                  if( exception::error().code() != code::casual::communication_refused)
+                  if( exception::capture().code() != code::casual::communication_refused)
                      throw;
                }
             }
+
             while( sleep());
 
             return {};
@@ -484,10 +485,11 @@ namespace casual
                   }
                   catch( ...)
                   {
-                     if( exception::error().code() == code::casual::communication_refused)
-                        return false;
+                     if( exception::capture().code() != code::casual::communication_refused)
+                        throw;
+   
+                     return false;
 
-                     throw;
                   }
                }
 
@@ -542,7 +544,7 @@ namespace casual
                   }
                   catch( ...)
                   {
-                     if( exception::error().code() != code::casual::communication_retry)
+                     if( exception::capture().code() != code::casual::communication_retry)
                         throw;
                   }
 

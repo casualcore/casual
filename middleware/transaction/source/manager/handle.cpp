@@ -55,7 +55,7 @@ namespace casual
                      }
                      catch( ...)
                      {
-                        auto error = common::exception::error();
+                        auto error = common::exception::capture();
                         if( error.code() != common::code::casual::communication_unavailable)
                            throw;
 
@@ -1024,7 +1024,7 @@ namespace casual
                }
                catch( ...)
                {
-                  auto error = common::exception::error();
+                  auto error = common::exception::capture();
 
                   auto reply = local::transform::reply( message);
                   reply.stage = decltype( reply.stage)::error;

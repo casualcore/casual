@@ -29,7 +29,7 @@ namespace casual
                }
                catch( ...)
                {
-                  auto error = exception::error();
+                  auto error = exception::capture();
                   EXPECT_TRUE( error.code() == signal)  << "expected: " << signal << " - got: " << error.code();
                   return;
                }
@@ -44,7 +44,7 @@ namespace casual
                }
                catch( ...)
                {
-                  auto error = exception::error();
+                  auto error = exception::capture();
                   EXPECT_TRUE( error.code() == signal)  << "expected: " << signal << " - got: " << error.code();
                   return;
                }

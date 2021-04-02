@@ -38,7 +38,7 @@ namespace casual
                }
                catch( ...)
                {
-                  exception::sink::log();
+                  exception::sink();
                }
             }
 
@@ -150,7 +150,7 @@ namespace casual
                   }
                   catch( ...)
                   {
-                     exception::handle( log::debug);
+                     log::line( log::debug, exception::capture());
                   }
 
                }
@@ -168,7 +168,7 @@ namespace casual
                   }
                   catch( ...)
                   {
-                     exception::handle( log::debug);
+                     log::line( log::debug, exception::capture());
                   }
                }
 

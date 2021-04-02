@@ -124,7 +124,7 @@ namespace casual
                }
                catch( ...)
                {
-                  if( common::exception::error().code() == common::code::xatmi::argument)
+                  if( common::exception::capture().code() == common::code::xatmi::argument)
                      return CASUAL_OCTET_INVALID_HANDLE;
 
                   return CASUAL_OCTET_INTERNAL_FAILURE;

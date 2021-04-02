@@ -115,7 +115,7 @@ namespace casual
             }
             catch( ...)
             {
-               exception::handle( log::category::error);
+               log::line( log::category::error, exception::capture());
             }
          }
 

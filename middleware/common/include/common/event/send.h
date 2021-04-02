@@ -93,7 +93,7 @@ namespace casual
             }
             catch( ...)
             {
-               auto error = exception::error();
+               auto error = exception::capture();
                event::error::send( error.code(), event::error::Severity::fatal);
                throw error;
             }
