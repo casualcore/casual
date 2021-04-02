@@ -31,7 +31,7 @@ namespace casual
          absent_message = 0,
 
          UTILITY_BASE = 500,
-         flush_ipc, // dummy message used to flush queue (into cache)
+         flush_ipc = UTILITY_BASE, // dummy message used to flush queue (into cache)
          poke,
          shutdown_request,
          shutdown_reply,
@@ -44,7 +44,7 @@ namespace casual
          // domain
          DOMAIN_BASE = 1000,
 
-         domain_process_connect_request,
+         domain_process_connect_request = DOMAIN_BASE,
          domain_process_connect_reply,
 
          domain_process_singleton_connect_request,
@@ -87,7 +87,7 @@ namespace casual
 
          // Server
          SERVER_BASE = 2000,
-         server_connect_request,
+         server_connect_request = SERVER_BASE,
          server_connect_reply,
          server_disconnect,
          server_ping_request,
@@ -95,7 +95,7 @@ namespace casual
 
          // Service
          SERVICE_BASE = 3000,
-         service_advertise,
+         service_advertise = SERVICE_BASE,
          service_name_lookup_request,
          service_name_lookup_reply,
          service_name_lookup_discard_request,
@@ -114,7 +114,7 @@ namespace casual
 
          // event messages
          EVENT_BASE = 4000,
-         event_subscription_begin,
+         event_subscription_begin = EVENT_BASE,
          event_subscription_end,
          event_idle,
 
@@ -142,13 +142,13 @@ namespace casual
          event_service_calls,
          EVENT_SERVICE_BASE_END,
          
-         EVENT_BASE_END,
+         EVENT_BASE_END = EVENT_SERVICE_BASE_END,
 
 
 
          // Transaction
          TRANSACTION_BASE = 5000,
-         transaction_client_connect_request,
+         transaction_client_connect_request = TRANSACTION_BASE,
          transaction_client_connect_reply,
          transaction_manager_connect_request,
          transaction_manager_connect_reply,
@@ -309,10 +309,10 @@ namespace casual
          cli_transaction_propagate,
 
          UNITTEST_BASE = 10000000, // avoid conflict with real messages
-         unittest_message,
+         unittest_message = UNITTEST_BASE,
       };
 
-      inline std::ostream& operator << ( std::ostream& out, Type value) { return out << cast::underlying( value);}
+      std::ostream& operator << ( std::ostream& out, Type value);
 
 
       //! Deduce witch type of message it is.
