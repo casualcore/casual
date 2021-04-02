@@ -200,8 +200,6 @@ namespace casual
 
             struct Metric 
             {
-
-
                std::string service;
                std::string parent;
                metric::Type type = metric::Type::sequential;

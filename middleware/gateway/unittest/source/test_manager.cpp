@@ -718,8 +718,6 @@ domain:
          // we exposes service "a"
          casual::service::unittest::advertise( { "a"});
 
-         // discover to make sure outbound(s) knows about wanted services
-         unittest::discover( { "a"}, {});
 
          auto outbound = []() -> process::Handle
          {
@@ -785,8 +783,15 @@ domain:
             {
                common::message::event::service::Calls event;
                common::communication::device::blocking::receive( common::communication::ipc::inbound::device(), event);
-               //EXPECT_TRUE( false) << CASUAL_NAMED_VALUE( event);
-               algorithm::append( event.metrics, metrics);
+
+               auto is_sequential = []( auto& metric)
+               {
+                  return metric.type == decltype( metric.type)::sequential;
+               };
+               
+               // since we only have one domain, we will (possible) get the metric from outbound also,
+               // and we're only interested in _sequential_ (local) services metric
+               algorithm::append( algorithm::filter( event.metrics, is_sequential), metrics);
             }
 
             auto order_pending = []( auto& lhs, auto& rhs){ return lhs.pending < rhs.pending;};
