@@ -14,6 +14,7 @@
 #include "queue/code.h"
 
 #include "common/process.h"
+#include "common/file.h"
 #include "common/message/domain.h"
 
 #include "common/transaction/context.h"
@@ -26,6 +27,9 @@
 
 #include "domain/manager/unittest/process.h"
 
+#include "common/code/signal.h"
+#include "common/signal.h"
+
 
 
 #include <fstream>
@@ -33,7 +37,7 @@
 
 namespace casual
 {
-
+   
    namespace queue
    {
       namespace local
@@ -866,6 +870,139 @@ domain:
          }
       }
 
+      namespace local
+      {
+         namespace
+         {
+            namespace zombie
+            {
+               constexpr auto configuration_with_queue_B = R"(
+domain: 
+   name: queue-domain
+   groups: 
+      - name: base
+      - name: queue
+        dependencies: [ base]
+   
+   servers:
+      - path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/service/bin/casual-service-manager
+        memberships: [ base]
+      - path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/transaction/bin/casual-transaction-manager
+        memberships: [ base]
+      - path: bin/casual-queue-manager
+        memberships: [ queue]
 
+   queue:
+      groups:
+         -  alias: "group_A"
+            queuebase: ".casual/zombies.db"
+
+            queues:
+               - name: queue_A
+               - name: queue_B
+)";
+
+               constexpr auto configuration_without_queue_B = R"(
+domain: 
+   name: queue-domain
+   groups: 
+      - name: base
+      - name: queue
+        dependencies: [ base]
+   
+   servers:
+      - path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/service/bin/casual-service-manager
+        memberships: [ base]
+      - path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/transaction/bin/casual-transaction-manager
+        memberships: [ base]
+      - path: bin/casual-queue-manager
+        memberships: [ queue]
+
+   queue:
+      groups:
+         -  alias: "group_A"
+            queuebase: ".casual/zombies.db"
+            queues:
+               - name: queue_A
+)";
+
+               constexpr auto database{".casual/zombies.db"};
+            } // zombie
+         } // <unnamed>
+      } // local
+
+      TEST( casual_queue, detect_zombie_queue__remove_empty_queues__no_zombies)
+      {
+         common::unittest::Trace trace;
+         common::file::scoped::Path database{ local::zombie::database};
+
+         // sink child signals 
+         common::signal::callback::registration< common::code::signal::child>( [](){});
+
+         {
+            local::Domain domain{ local::zombie::configuration_with_queue_B};
+            auto state = local::call::state();
+
+            EXPECT_TRUE( state.queues.size() == 2 * 2) << "state.queues.size(): " << state.queues.size();
+            EXPECT_TRUE( state.zombies.size() == 0) << "state.zombies.size(): " << state.zombies.size();
+         }
+
+         {
+            local::Domain domain{ local::zombie::configuration_without_queue_B};
+            auto state = local::call::state();
+
+            EXPECT_TRUE( state.queues.size() == 1 * 2) << "state.queues.size(): " << state.queues.size();
+            EXPECT_TRUE( state.zombies.size() == 0) << "state.zombies.size(): " << state.zombies.size();
+         }
+      }
+
+      TEST( casual_queue, detect_zombie_queue__add_message__cannot_remove_queue__1_zombie_queue)
+      {
+         common::unittest::Trace trace;
+         common::file::scoped::Path database{ local::zombie::database};
+
+         // sink child signals 
+         common::signal::callback::registration< common::code::signal::child>( [](){});
+
+         {
+            local::Domain domain{ local::zombie::configuration_with_queue_B};
+            auto state = local::call::state();
+
+            EXPECT_TRUE( state.queues.size() == 2 * 2) << "state.queues.size(): " << state.queues.size();
+            EXPECT_TRUE( state.zombies.size() == 0) << "state.zombies.size(): " << state.zombies.size();
+
+            queue::Message message;
+
+            queue::enqueue( "queue_B", message);
+            auto messages = local::call::messages( "queue_B");
+
+            EXPECT_TRUE( messages.size() == 1);
+         }
+
+         {
+            local::Domain domain{ local::zombie::configuration_without_queue_B};
+            auto state = local::call::state();
+
+            EXPECT_TRUE( state.queues.size() == 1 * 2) << "state.queues.size(): " << state.queues.size();
+            EXPECT_TRUE( state.zombies.size() == 1 * 2) << "state.zombies.size(): " << state.zombies.size();
+ 
+            {
+               // Send request
+               ipc::message::lookup::Request request;
+               request.process = common::process::handle();
+               // queue_B should not be advertised now because it is a zombie
+               request.name = "queue_B";
+
+               common::communication::device::blocking::send( 
+                  common::communication::instance::outbound::queue::manager::device(), 
+                  request);
+
+               ipc::message::lookup::Reply reply;
+               common::communication::device::blocking::receive( common::communication::ipc::inbound::device(), reply);
+
+               EXPECT_FALSE( reply.queue) << CASUAL_NAMED_VALUE( reply);
+            }
+         }
+      }
    } // queue
 } // casual

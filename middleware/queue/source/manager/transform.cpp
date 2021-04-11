@@ -47,7 +47,16 @@ namespace casual
                   return result;
                };
 
-               algorithm::transform( group.queues, std::back_inserter( result.queues), transform_queue);
+               algorithm::transform_if( group.queues, 
+                  std::back_inserter( result.queues), 
+                  transform_queue,
+                  [&group]( auto& queue){ return !algorithm::find( group.zombies, queue.id);});
+ 
+               algorithm::transform_if( group.queues, 
+                  std::back_inserter( result.zombies), 
+                  transform_queue,
+                  [&group]( auto& queue){ return algorithm::find( group.zombies, queue.id);});
+ 
             }
             
             

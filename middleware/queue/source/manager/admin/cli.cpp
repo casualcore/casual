@@ -636,6 +636,28 @@ use auto-complete to help which options has legends)"
                   
                } // queues
 
+               namespace zombies
+               {
+                  auto option()
+                  {
+                     auto invoke = []()
+                     {
+                        auto state = call::state();
+
+                        auto formatter = format::queues( state);
+
+                        formatter.print( std::cout, algorithm::sort( state.zombies));
+                     };
+
+                     return argument::Option{
+                        std::move( invoke),
+                        { "-z", "--list-zombies"},
+                        R"(list information of all zombie queues in current domain)"
+                     };
+                  }
+                  
+               } // queues
+
                namespace remote
                {
                   namespace queues
@@ -1351,6 +1373,7 @@ casual queue --metric-reset a b)"
 
                   return argument::Group{ [](){}, { "queue"}, "queue related administration",
                      local::list::queues::option(),
+                     local::list::zombies::option(),
                      local::list::remote::queues::option(),
                      local::list::groups::option(),
                      local::list::messages::option(),

@@ -559,6 +559,7 @@ namespace casual
                std::string note;
 
                std::vector< Queue> queues;
+               std::vector< common::strong::queue::id> zombies;
 
                CASUAL_CONST_CORRECT_SERIALIZE(
                   base_reply::serialize( archive);
@@ -566,6 +567,7 @@ namespace casual
                   CASUAL_SERIALIZE( queuebase);
                   CASUAL_SERIALIZE( note);
                   CASUAL_SERIALIZE( queues);
+                  CASUAL_SERIALIZE( zombies);
                )
             };
 

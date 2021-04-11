@@ -166,6 +166,7 @@ namespace casual
                         reply.queues = state.queuebase.queues();
                         reply.alias = state.alias;
                         reply.queuebase = state.queuebase.file();
+                        reply.zombies = state.zombies;
 
                         common::communication::device::blocking::send( message.process.ipc, reply);
                      };
@@ -562,22 +563,30 @@ namespace casual
                {
                   namespace detail
                   {
-                     auto update( State& state, std::vector< queuebase::Queue> wanted)
+                     auto update( State& state, std::vector< queuebase::Queue> wanted, 
+                        const std::vector<casual::common::strong::queue::id>& remove = {}, 
+                        const std::vector<casual::common::strong::queue::id>& zombies = {})
                      {
                         Trace trace{ "queue::handle::local::local::configuration::update::request::detail::update"};
-                        log::line( verbose::log, "wanted: ", wanted);
+                        log::line( verbose::log, "wanted: ", wanted);                     
+                        log::line( verbose::log, "remove: ", remove);
+                        log::line( verbose::log, "zombies: ", zombies);
 
-                        state.queuebase.update( wanted, {});
+
+                        state.queuebase.update( wanted, remove);
 
                         // ok, wanted queues are added, if any. Take care of reply.
                         // TODO remove queues, if any, if possible.
                         auto queues = state.queuebase.queues();
 
-                        return algorithm::transform( queues, []( auto& queue)
-                        {
+                        return algorithm::transform_if( queues, 
+                        []( auto& queue){
                            return queue::ipc::message::group::configuration::update::Queue{ queue.id, queue.name};
-                        });
-
+                        },
+                        [&zombies]( auto& queue){
+                           return ! algorithm::find( zombies, queue.id);
+                        }
+                        );
                      }
                   } // detail
 
@@ -605,12 +614,12 @@ namespace casual
 
                         log::line( verbose::log, "wanted: ", wanted);
 
+                        auto existing = state.queuebase.queues();
                         // correlate existing ids
                         {
-                           auto existing = state.queuebase.queues();
                            log::line( verbose::log, "existing: ", existing);
 
-                           auto correlate_id = [existing = std::move( existing)]( auto& queue)
+                           auto correlate_id = [&existing]( auto& queue)
                            {
                               if( auto found = algorithm::find( existing, queue.name))
                               {
@@ -622,10 +631,55 @@ namespace casual
                            algorithm::for_each( wanted, correlate_id);
                         }
 
+                        auto zombies = algorithm::difference( existing, wanted, []( auto& exists, auto& wants)
+                        {
+                           return exists.id == wants.id || exists.id == wants.error;
+                        });
+
+                        using zombie_type = decltype( zombies)::value_type;
+                        std::vector< std::tuple< zombie_type, zombie_type> > joined;
+
+                        auto join_with_error_queue = [&joined, &zombies]( auto& queue)
+                        {
+                           if( auto found = algorithm::find_if( zombies, 
+                              [&queue](auto& item){ return queue.error == item.id;}))
+                           {
+                              joined.emplace_back( std::make_tuple( queue, *found));
+                           }
+                        };
+
+                        using Type = queue::ipc::message::group::state::queue::Type;
+                        algorithm::for_each_if( zombies, join_with_error_queue, []( auto& queue){ return queue.type() == Type::queue;});
+
+                        auto has_messages = []( auto& item){ return std::get<0>(item).metric.count > 0 || std::get<1>(item).metric.count > 0;};
+
+                        auto separated = algorithm::partition( joined, has_messages);
+                        auto nonempty_queues = std::get<0>( separated);
+                        auto empty_queues = std::get<1>( separated);
+
+                        log::line( verbose::log, "nonempty_queues: ", nonempty_queues);
+                        log::line( verbose::log, "empty_queues: ", empty_queues);
+
+                        std::vector<casual::common::strong::queue::id> remove;
+
+                        auto populate = []( auto& queues, auto& out){
+                           algorithm::transform( queues, 
+                              std::back_inserter( out), 
+                              []( auto& item) { return std::get<0>(item).id;});
+                           algorithm::transform( queues, 
+                              std::back_inserter( out), 
+                              []( auto& item) { return std::get<1>(item).id;});
+                        };
+
+                        populate( empty_queues, remove);
+                        populate( nonempty_queues, state.zombies);
+
+                        log::line( verbose::log, "remove: ", remove);
+
                         // if something goes wrong we send fatal event
                         auto queues = event::guard::fatal( [&]()
                         { 
-                           return detail::update( state, wanted);
+                           return detail::update( state, wanted, remove, state.zombies);
                         });
 
                         {
@@ -635,7 +689,11 @@ namespace casual
                            communication::device::blocking::send( message.process.ipc, reply);
                         }
 
-
+                        algorithm::for_each( nonempty_queues,
+                           []( auto& queuepair){
+                              common::log::line( common::log::category::warning, "reconfigure zombie queues and remove messages to remove it: ", std::get<0>( queuepair).name, " - ", std::get<1>( queuepair).name);
+                           });
+ 
                         log::line( verbose::log, "state: ", state);
 
                         // everything went ok, do not rollback.

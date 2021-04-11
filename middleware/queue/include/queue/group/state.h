@@ -82,6 +82,8 @@ namespace casual
          //! a given transaction.
          std::vector< common::transaction::ID> involved;
 
+         std::vector< common::strong::queue::id> zombies;
+
          std::string alias;
          std::string note;
 
@@ -91,6 +93,7 @@ namespace casual
             CASUAL_SERIALIZE( runlevel);
             CASUAL_SERIALIZE( pending);
             CASUAL_SERIALIZE( involved);
+            CASUAL_SERIALIZE( zombies);
             CASUAL_SERIALIZE( alias);
             CASUAL_SERIALIZE( note);
          )

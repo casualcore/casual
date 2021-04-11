@@ -321,6 +321,8 @@ namespace casual
       {
          std::vector< Group> groups;
          std::vector< Queue> queues;
+         std::vector< Queue> zombies;
+
 
          Forward forward;
 
@@ -339,6 +341,7 @@ namespace casual
          CASUAL_CONST_CORRECT_SERIALIZE(
             CASUAL_SERIALIZE( groups);
             CASUAL_SERIALIZE( queues);
+            CASUAL_SERIALIZE( zombies);
             CASUAL_SERIALIZE( forward);
             CASUAL_SERIALIZE( remote);
          )
