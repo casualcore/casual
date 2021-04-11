@@ -169,7 +169,7 @@ namespace casual
             namespace pending
             {
                template< typename P>
-               auto consume( P& pending, const common::Uuid& correlation)
+               auto consume( P& pending, const strong::correlation::id& correlation)
                {
                   auto found = common::algorithm::find( pending, correlation);
                   assert( found);
@@ -192,7 +192,7 @@ namespace casual
                      {
                         ipc::message::group::dequeue::Request request{ common::process::handle()};
                         request.trid = common::transaction::id::create( common::process::handle());
-                        request.correlation = common::uuid::make();
+                        request.correlation = strong::correlation::id::emplace( common::uuid::make());
                         request.queue = forward.source.id;
                         request.name = forward.source.queue;
                         request.selector = forward.selector;

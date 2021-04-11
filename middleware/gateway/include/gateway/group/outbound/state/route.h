@@ -39,7 +39,7 @@ namespace casual
          }
          
          //! consumes and @returns the point - 'empty' point if not found 
-         Point consume( const common::Uuid& correlation)
+         Point consume( const common::strong::correlation::id& correlation)
          {
             if( auto found = common::algorithm::find( m_points, correlation))
                return common::algorithm::extract( m_points, std::begin( found));
@@ -84,19 +84,19 @@ namespace casual
          Point() = default;
 
          inline Point( 
-            const common::Uuid& correlation, 
+            const common::strong::correlation::id& correlation, 
             common::process::Handle process, 
             common::message::Type type, 
             common::strong::file::descriptor::id connection)
             : correlation{ correlation}, process{ process}, type{ type}, connection{ connection} {}
 
-         common::Uuid correlation;
+         common::strong::correlation::id correlation;
          common::process::Handle process;
          common::message::Type type;
          common::strong::file::descriptor::id connection;
 
-         inline explicit operator bool () const noexcept { return ! correlation.empty();}
-         inline friend bool operator == ( const Point& lhs, const common::Uuid& rhs) { return lhs.correlation == rhs;}
+         inline explicit operator bool () const noexcept { return common::predicate::boolean( correlation);}
+         inline friend bool operator == ( const Point& lhs, const common::strong::correlation::id& rhs) { return lhs.correlation == rhs;}
          inline friend bool operator == ( const Point& lhs, common::strong::file::descriptor::id rhs) { return lhs.connection == rhs;}
          
          CASUAL_LOG_SERIALIZE(
@@ -116,7 +116,7 @@ namespace casual
             //! constructs an empty Point
             Point() = default;
 
-            inline Point( const common::Uuid& correlation,
+            inline Point( const common::strong::correlation::id& correlation,
                   common::process::Handle process,
                   std::string service,
                   std::string parent,
@@ -125,15 +125,15 @@ namespace casual
                : correlation( correlation), process( process), 
                   service( std::move( service)), parent( std::move( parent)), start( start), connection{ connection} {}
 
-            common::Uuid correlation;
+            common::strong::correlation::id correlation;
             common::process::Handle process;
             std::string service;
             std::string parent;
             platform::time::point::type start;
             common::strong::file::descriptor::id connection;
 
-            inline explicit operator bool () const noexcept { return ! correlation.empty();}
-            inline friend bool operator == ( const Point& lhs, const common::Uuid& rhs) { return lhs.correlation == rhs;}
+            inline explicit operator bool () const noexcept { return common::predicate::boolean( correlation);}
+            inline friend bool operator == ( const Point& lhs, const common::strong::correlation::id& rhs) { return lhs.correlation == rhs;}
             inline friend bool operator == ( const Point& lhs, common::strong::file::descriptor::id rhs) { return lhs.connection == rhs;}
 
             CASUAL_LOG_SERIALIZE(

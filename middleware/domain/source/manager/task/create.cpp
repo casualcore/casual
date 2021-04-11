@@ -180,7 +180,7 @@ namespace casual
                                     // a server instance that we're interseted in has connected, remove the tagged ones (one)
                                     // and scale "down" another one, if any.
 
-                                    auto has_tag = []( auto& handle){ return handle.ipc.empty();};
+                                    auto has_tag = []( auto& handle){ return ! handle.ipc.valid();};
                                     
                                     algorithm::trim( handles, algorithm::remove_if( handles, has_tag));
 
@@ -491,12 +491,12 @@ namespace casual
                      } // <unnamed>
                   } // local
      
-                  manager::Task boot( std::vector< state::dependency::Group> groups, common::Uuid correlation)
+                  manager::Task boot( std::vector< state::dependency::Group> groups, common::strong::correlation::id correlation)
                   {
                      Trace trace{ "domain::manager::task::create::scale::boot"};
 
                      if( ! correlation)
-                        correlation = uuid::make();
+                        correlation = decltype( correlation)::emplace( uuid::make());
                      
                      // make sure we sett runlevel when we're done.
                      auto done_callback = []( State& state)

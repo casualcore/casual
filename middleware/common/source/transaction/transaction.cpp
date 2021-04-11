@@ -23,13 +23,13 @@ namespace casual
          Transaction::operator bool() const { return static_cast< bool>( trid);}
 
 
-         void Transaction::associate( const Uuid& correlation)
+         void Transaction::associate( const correlation_type& correlation)
          {
             m_external = true;
             m_pending.push_back( correlation);
          }
 
-         void Transaction::replied( const Uuid& correlation)
+         void Transaction::replied( const correlation_type& correlation)
          {
             algorithm::trim( m_pending, algorithm::remove( m_pending, correlation));
          }
@@ -61,12 +61,12 @@ namespace casual
             return ! m_pending.empty();
          }
 
-         bool Transaction::associated( const Uuid& correlation) const
+         bool Transaction::associated( const correlation_type& correlation) const
          {
             return ! algorithm::find( m_pending, correlation).empty();
          }
 
-         const std::vector< Uuid>& Transaction::correlations() const
+         const std::vector< Transaction::correlation_type>& Transaction::correlations() const
          {
             return m_pending;
          }

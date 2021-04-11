@@ -286,8 +286,8 @@ namespace casual
          inline Process( const std::string& path) : Process( path, {}) {}
          ~Process();
          
-         Process( Process&&) noexcept = default;
-         Process& operator = ( Process&&) noexcept = default;
+         Process( Process&&) noexcept;
+         Process& operator = ( Process&&) noexcept;
 
          inline const process::Handle& handle() const noexcept { return *this;}
          void handle( const process::Handle& handle);

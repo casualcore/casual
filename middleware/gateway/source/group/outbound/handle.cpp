@@ -32,7 +32,7 @@ namespace casual
             namespace tcp
             {
                template< typename M>
-               Uuid send( State& state, strong::file::descriptor::id descriptor, M&& message)
+               auto send( State& state, strong::file::descriptor::id descriptor, M&& message)
                {
                   return group::tcp::send( state, descriptor, std::forward< M>( message), &handle::connection::lost);
                }     
@@ -828,7 +828,7 @@ namespace casual
 
          gateway::message::domain::connect::Request request;
          request.domain = common::domain::identity();
-         request.correlation = uuid::make();
+         request.correlation = strong::correlation::id::emplace( uuid::make());
          request.versions = range::to_vector( gateway::message::domain::protocol::versions);
          
          log::line( verbose::log, "request: ", request);

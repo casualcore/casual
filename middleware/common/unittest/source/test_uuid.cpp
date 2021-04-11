@@ -91,8 +91,6 @@ namespace casual
       }
 
 
-
-
       TEST( common_uuid, operator_bool_on_default_constructed__expect_false)
       {
          common::unittest::Trace trace;
@@ -102,26 +100,13 @@ namespace casual
          EXPECT_FALSE( oneUuid) << uuid::string( oneUuid);
       }
 
-
       TEST( common_uuid, operator_bool_on_created__expect_true)
       {
          common::unittest::Trace trace;
 
          Uuid oneUuid = uuid::make();
 
-         EXPECT_TRUE( static_cast< bool>( oneUuid) ) << uuid::string( oneUuid);
-      }
-
-      TEST( common_uuid, move_ctor)
-      {
-         common::unittest::Trace trace;
-
-         auto value = uuid::make();
-         Uuid moved{ std::move( value)};
-
-
-         EXPECT_TRUE( value.empty()) << uuid::string( value); // NOLINT
-         EXPECT_TRUE( ! moved.empty());
+         EXPECT_TRUE( oneUuid) << uuid::string( oneUuid);
       }
 
    } // common

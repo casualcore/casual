@@ -55,7 +55,7 @@ namespace casual
          struct Blocking
          {
             cache_range_type receive( inbound::Connector& connector, cache_type& cache);
-            Uuid send( outbound::Connector& connector, complete_type&& complete);
+            strong::correlation::id send( outbound::Connector& connector, complete_type&& complete);
          };
 
          namespace non

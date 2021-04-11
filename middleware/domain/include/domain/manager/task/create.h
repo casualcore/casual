@@ -22,7 +22,7 @@ namespace casual
             {
                namespace scale
                {
-                  manager::Task boot( std::vector< state::dependency::Group> groups, common::Uuid correlation);
+                  manager::Task boot( std::vector< state::dependency::Group> groups, common::strong::correlation::id correlation);
                   manager::Task shutdown( std::vector< state::dependency::Group> groups);
 
                   manager::Task aliases( std::string description, std::vector< state::dependency::Group> groups);

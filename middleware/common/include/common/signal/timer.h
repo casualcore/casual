@@ -8,7 +8,9 @@
 
 #include "casual/platform.h"
 #include "common/move.h"
-#include "common/value/optional.h"
+#include "common/serialize/macro.h"
+
+#include <optional>
 
 namespace casual
 {
@@ -16,15 +18,6 @@ namespace casual
    {
       namespace unit
       {
-         namespace detail
-         {
-            struct policy
-            {
-               constexpr static auto initialize() noexcept { return platform::time::unit::min();}
-               constexpr static bool empty( platform::time::unit value) noexcept { return value == platform::time::unit::min();}
-            };
-         } // detail
-
          //using type = value::basic_optional< platform::time::unit, detail::policy>; 
          using type = std::optional< platform::time::unit>;
       } // unit

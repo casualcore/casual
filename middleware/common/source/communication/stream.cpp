@@ -88,7 +88,7 @@ namespace casual
             return policy::cache_range_type{ std::end( cache) - 1, std::end( cache)};
          }
 
-         Uuid Blocking::send( outbound::Connector& connector, complete_type&& complete)
+         strong::correlation::id Blocking::send( outbound::Connector& connector, complete_type&& complete)
          {
             Trace trace{ "common::communication::stream::policy::Blocking::send"};
 

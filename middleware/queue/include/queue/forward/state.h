@@ -10,7 +10,7 @@
 #include "queue/common/ipc.h"
 
 #include "common/serialize/macro.h"
-#include "common/value/id.h"
+#include "common/strong/type.h"
 #include "common/strong/id.h"
 #include "common/process.h"
 #include "common/buffer/type.h"
@@ -39,11 +39,19 @@ namespace casual
 
          namespace forward
          {
-            namespace tag
+            namespace detail
             {
-               struct type{};
-            } // tag
-            using id = common::value::basic_id< int, common::value::id::policy::unique_initialize< int, tag::type, 0>>;
+               struct policy
+               {
+                  inline static int generate() 
+                  {
+                     static int value{};
+                     return value++;
+                  }
+               };
+            } // detail
+
+            using id = common::strong::Type< int, detail::policy>;
 
             struct Source
             {
@@ -133,7 +141,7 @@ namespace casual
 
                using Reply = forward::queue::Target;
 
-               forward::id id;
+               forward::id id = forward::id::generate();
 
                forward::Source source;
                Target target;
@@ -164,7 +172,7 @@ namespace casual
 
             struct Queue
             {
-               forward::id id;
+               forward::id id = forward::id::generate();
 
                forward::Source source;
                forward::queue::Target target;
@@ -197,9 +205,9 @@ namespace casual
             struct base
             {
                forward::id id;
-               common::Uuid correlation;
+               common::strong::correlation::id correlation;
 
-               inline friend bool operator == ( const base& lhs, const common::Uuid& rhs) { return lhs.correlation == rhs;}
+               inline friend bool operator == ( const base& lhs, const common::strong::correlation::id& rhs) { return lhs.correlation == rhs;}
 
                CASUAL_LOG_SERIALIZE(
                   CASUAL_SERIALIZE( id);

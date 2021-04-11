@@ -338,7 +338,7 @@ namespace casual
 
                      auto transform_resource = []( const auto& r)
                      {
-                        state::resource::Proxy proxy{ state::resource::Proxy::generate_id{}};
+                        state::resource::Proxy proxy;
 
                         proxy.name = common::coalesce( r.name, common::string::compose( ".rm.", r.key, '.', proxy.id.value()));
                         proxy.concurency = r.instances;

@@ -49,7 +49,7 @@ namespace casual
 
       } // inbound
       
-      common::Uuid request( const Request& request)
+      correlation_type request( const Request& request)
       {
          Trace trace{ "domain::discovery::request"};
          return communication::device::blocking::optional::send( local::instance::device(), request);
@@ -70,7 +70,7 @@ namespace casual
             registration( process::handle(), directive);
          }
 
-         common::Uuid request( const Request& request)
+         correlation_type request( const Request& request)
          {
             Trace trace{ "domain::discovery::outbound::request"};
             return communication::device::blocking::optional::send( local::instance::device(), request);
@@ -96,7 +96,7 @@ namespace casual
       namespace rediscovery
       {
 
-         common::Uuid request()
+         correlation_type request()
          {
             Trace trace{ "domain::discovery::rediscovery::request"};
             message::discovery::rediscovery::Request message{ process::handle()};

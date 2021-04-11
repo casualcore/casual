@@ -60,8 +60,8 @@ namespace casual
                      common::buffer::Payload payload;
                      platform::size::type offset = 0;
                      common::process::Handle destination;
-                     common::Uuid correlation;
-                     common::Uuid execution;
+                     common::strong::correlation::id correlation;
+                     common::strong::execution::id execution;
                      platform::time::point::type start = platform::time::point::limit::zero();
                      std::string service;
                      std::string parent;

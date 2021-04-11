@@ -203,7 +203,7 @@ namespace casual
             // system but it can occur on OSX/BSD with extremely high loads)
             communication::ipc::inbound::device().flush();
 
-            if( communication::device::non::blocking::send( resource.process.ipc, message.message).empty())
+            if( ! communication::device::non::blocking::send( resource.process.ipc, message.message))
             {
                log::line( log, "failed to send resource request to 'external' resource -  ", resource.process, " - action: send via pending");
                casual::domain::pending::message::send( resource.process, std::move( message.message));

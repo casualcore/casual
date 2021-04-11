@@ -86,7 +86,7 @@ namespace casual
 
                struct
                {
-                  std::vector< Uuid> calls;
+                  std::vector< strong::correlation::id> calls;
 
                   auto empty() const { return calls.empty();}
 
@@ -152,7 +152,7 @@ namespace casual
                      request.process = process::handle();
                      request.service = lookup.service;
                      request.pending = lookup.pending;
-                     request.correlation = uuid::make();
+                     request.correlation = strong::correlation::id::emplace( uuid::make());
 
                      using Type = common::service::transaction::Type;
                      if( algorithm::compare::any( lookup.service.transaction, Type::automatic, Type::join, Type::branch))

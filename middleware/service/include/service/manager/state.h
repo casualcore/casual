@@ -39,10 +39,10 @@ namespace casual
             struct Caller
             {
                common::process::Handle process;
-               common::Uuid correlation;
+               common::strong::correlation::id correlation;
 
                inline explicit operator bool() const noexcept { return common::predicate::boolean( process);}
-               inline friend bool operator == ( const Caller& lhs, const common::Uuid& rhs) { return lhs.correlation == rhs;}
+               inline friend bool operator == ( const Caller& lhs, const common::strong::correlation::id& rhs) { return lhs.correlation == rhs;}
 
                CASUAL_LOG_SERIALIZE(
                   CASUAL_SERIALIZE( process);
@@ -80,7 +80,7 @@ namespace casual
                void reserve( 
                   state::Service* service,
                   const common::process::Handle& caller,
-                  const common::Uuid& correlation);
+                  const common::strong::correlation::id& correlation);
 
                void unreserve( const common::message::event::service::Metric& metric);
 
@@ -101,7 +101,7 @@ namespace casual
                void remove( const std::string& service);
 
                //! @returns and consumes associated caller to the correlation. 'empty' caller if not found.
-               inline instance::Caller consume( const common::Uuid& correlation)
+               inline instance::Caller consume( const common::strong::correlation::id& correlation)
                {
                   if( m_caller == correlation)
                      return std::exchange( m_caller, {});
@@ -156,7 +156,7 @@ namespace casual
                   common::message::service::lookup::Request request;
                   platform::time::point::type when;
 
-                  inline friend bool operator == ( const Lookup& lhs, const common::Uuid& rhs) { return lhs.request == rhs;}
+                  inline friend bool operator == ( const Lookup& lhs, const common::strong::correlation::id& rhs) { return lhs.request == rhs;}
                   inline friend bool operator == ( const Lookup& lhs, const std::string& service) { return lhs.request.requested == service;}
 
                   CASUAL_LOG_SERIALIZE( 
@@ -170,12 +170,12 @@ namespace casual
                   struct Entry
                   {   
                      platform::time::point::type when;
-                     common::Uuid correlation;
+                     common::strong::correlation::id correlation;
                      common::strong::process::id target;
                      state::Service* service = nullptr;
 
                      inline friend bool operator < ( const Entry& lhs, const Entry& rhs) { return lhs.when < rhs.when;}
-                     inline friend bool operator == ( const Entry& lhs, const common::Uuid& rhs) { return lhs.correlation == rhs;}
+                     inline friend bool operator == ( const Entry& lhs, const common::strong::correlation::id& rhs) { return lhs.correlation == rhs;}
 
                      CASUAL_LOG_SERIALIZE( 
                         CASUAL_SERIALIZE( when);
@@ -190,8 +190,8 @@ namespace casual
                struct Deadline
                {      
                   std::optional< platform::time::point::type> add( deadline::Entry entry);
-                  std::optional< platform::time::point::type> remove( const common::Uuid& correlation);
-                  std::optional< platform::time::point::type> remove( const std::vector< common::Uuid>& correlations);
+                  std::optional< platform::time::point::type> remove( const common::strong::correlation::id& correlation);
+                  std::optional< platform::time::point::type> remove( const std::vector< common::strong::correlation::id>& correlations);
 
                   struct Expired
                   {
@@ -230,7 +230,7 @@ namespace casual
                   inline auto& reserve(                      
                      state::Service* service,
                      const common::process::Handle& caller,
-                     const common::Uuid& correlation)
+                     const common::strong::correlation::id& correlation)
                   {
                      get().reserve( service, caller, correlation);
                      return get().process;
@@ -284,7 +284,7 @@ namespace casual
                inline bool empty() const { return sequential.empty() && concurrent.empty();}
 
                //! @returns and consumes associated caller to the correlation. 'empty' caller if not found.
-               state::instance::Caller consume( const common::Uuid& correlation);
+               state::instance::Caller consume( const common::strong::correlation::id& correlation);
 
                inline void partition() { common::algorithm::sort( concurrent);}
 
@@ -336,12 +336,12 @@ namespace casual
             //! @return a reserved instance or 'null-handle' if no one is found.
             common::process::Handle reserve( 
                const common::process::Handle& caller, 
-               const common::Uuid& correlation);
+               const common::strong::correlation::id& correlation);
 
             bool timeoutable() const noexcept;
 
             //! @returns and consumes associated caller to the correlation. 'empty' caller if not found.
-            inline auto consume( const common::Uuid& correlation) { return instances.consume( correlation);}
+            inline auto consume( const common::strong::correlation::id& correlation) { return instances.consume( correlation);}
 
             CASUAL_LOG_SERIALIZE(
                CASUAL_SERIALIZE( information);

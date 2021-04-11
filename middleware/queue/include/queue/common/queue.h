@@ -8,7 +8,7 @@
 #pragma once
 
 #include "queue/common/ipc/message.h"
-//#include "common/value/optional.h"
+#include "common/strong/type.h"
 
 #include <string>
 
@@ -26,7 +26,7 @@ namespace casual
 
       private:
          std::string m_name;
-         common::Uuid m_correlation;
+         common::strong::correlation::id m_correlation;
 
       };
 

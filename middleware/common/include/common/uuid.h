@@ -27,14 +27,7 @@ namespace casual
       {
          using uuid_type = platform::uuid::type;
 
-
          Uuid() noexcept = default;
-
-         Uuid( Uuid&& other) noexcept;
-         Uuid& operator = ( Uuid&& other) noexcept;
-
-         Uuid( const Uuid&) = default;
-         Uuid& operator = ( const Uuid&) = default;
 
          Uuid( const uuid_type& uuid);
          explicit Uuid( std::string_view string);

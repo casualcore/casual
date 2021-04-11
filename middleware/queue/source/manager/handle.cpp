@@ -106,7 +106,7 @@ namespace casual
 
                namespace discovery
                {
-                  auto send( std::vector< std::string> queues, const Uuid& correlation = uuid::make())
+                  auto send( std::vector< std::string> queues, const strong::correlation::id& correlation = strong::correlation::id::emplace( uuid::make()))
                   {
                      Trace trace{ "queue::manager::handle::local::discovery::send"};
 

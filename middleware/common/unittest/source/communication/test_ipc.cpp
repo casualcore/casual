@@ -72,9 +72,7 @@ namespace casual
                {
                   assert( ! parts.empty());
 
-                  auto& front = parts.front();
-
-                  message::Complete message{ front.type(), front.correlation(), front.complete_size(), front};
+                  message::Complete message{ parts.front()};
 
                   for( auto& transport : range::make( std::begin( parts) + 1, std::end( parts)))
                   {
@@ -240,7 +238,7 @@ namespace casual
                EXPECT_FALSE( ipc::native::receive( ipc::inbound::handle(), dummy, ipc::native::Flag::non_blocking));
             }
 
-            message::Complete complete{ transport.type(), transport.correlation(), transport.complete_size(), transport};
+            message::Complete complete{ transport};
             serialize::native::complete( complete, receive_message);
          }
 
@@ -264,7 +262,7 @@ namespace casual
             EXPECT_TRUE( transport.message.header.offset == 0);
             EXPECT_TRUE( transport.message.header.count == ipc::message::transport::max_payload_size());
 
-            message::Complete complete{ transport.type(), transport.correlation(), transport.complete_size(), transport};
+            message::Complete complete{ transport};
 
             EXPECT_TRUE( ipc::native::receive( ipc::inbound::handle(), transport, ipc::native::Flag::none));
             EXPECT_TRUE( transport.message.header.offset == transport.message.header.count);
@@ -302,7 +300,7 @@ namespace casual
          common::unittest::Trace trace;
 
          auto send_message = unittest::message::transport::size( 1103);
-         send_message.correlation = uuid::make();
+         send_message.correlation = strong::correlation::id::emplace( uuid::make());
 
          unittest::eventually::send( ipc::inbound::ipc(), send_message);
 
@@ -318,7 +316,7 @@ namespace casual
       {
          common::unittest::Trace trace;
 
-         std::vector< common::Uuid> correlations;
+         std::vector< strong::correlation::id> correlations;
 
          auto send_message = unittest::message::transport::size( 3 * ipc::message::transport::max_payload_size());
 
@@ -345,8 +343,8 @@ namespace casual
 
          common::message::service::call::Reply message;
          {
-            message.correlation = uuid::make();
-            message.execution = uuid::make();
+            message.correlation = strong::correlation::id::emplace( uuid::make());
+            message.execution = strong::execution::id::emplace( uuid::make());
             message.transaction.trid = transaction::id::create( process::handle());
             message.transaction.state = common::message::service::Transaction::State::rollback;
             message.buffer.type = ".binary";

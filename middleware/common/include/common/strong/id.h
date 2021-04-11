@@ -7,106 +7,109 @@
 
 #pragma once
 
-
-#include "common/value/optional.h"
 #include "casual/platform.h"
+#include "common/strong/type.h"
 #include "common/uuid.h"
 
 namespace casual
 {
-   namespace common
+   namespace common::strong
    {
-      namespace strong 
+      namespace detail::integral
       {
-         namespace process
+         template< typename T, typename Tag, T initial>
+         struct policy
          {
-            struct policy
-            {
-               constexpr static platform::process::native::type initialize() noexcept { return -1;}
-               constexpr static bool empty( platform::process::native::type value) noexcept { return value < 0;}
-            };
-            using id = common::value::basic_optional< platform::process::native::type, policy>;
-         } // process
+            constexpr static T initialize() noexcept { return initial;}
+            constexpr static bool valid( const T& value) noexcept { return value != initial;}
+         };
 
-         namespace ipc
+         //! just a helper for common integral id's
+         template< typename T, typename Tag, T initial>
+         using Type = strong::Type< T, policy< T, Tag, initial>>;
+
+      } // detail::integral
+         
+
+      namespace process
+      {
+         struct tag{};
+         using id = detail::integral::Type< platform::process::native::type, tag, -1>;
+
+      } // process
+
+      namespace ipc
+      {
+         struct tag{};
+         using id = common::strong::Type< Uuid, tag>;
+
+      } // ipc
+
+      namespace file
+      {
+         namespace descriptor
          {
-            namespace tag
-            {
-               struct type{};
-            } // tag
+            struct tag{};
+            using id = detail::integral::Type< platform::file::descriptor::native::type, tag, platform::file::descriptor::native::invalid>;
+         
+         } // descriptor
+      } // file
 
-            struct policy
-            {
-               constexpr static Uuid initialize() noexcept { return {};}
-               static bool empty( const Uuid& value) noexcept { return value.empty();}
-            };
+      namespace socket
+      {
 
-            using id = value::basic_optional< Uuid, policy>;            
-         } // ipc
-
-         namespace file
+         namespace detail
          {
-            namespace descriptor
-            {
-               namespace tag
-               {
-                  struct type{};
-               } // tag
+            struct tag{};
+            using base_type = strong::detail::integral::Type< platform::socket::native::type, tag, platform::socket::native::invalid>;
+         } // detail
+         
+         struct id : detail::base_type
+         {
+            using detail::base_type::base_type;
+
+            //! implicit conversion to file descriptor
+            operator file::descriptor::id () const { return file::descriptor::id{ value()};}
+         };
+         
+      } // socket
+
+      namespace resource
+      {
+         struct policy
+         {
+            constexpr static auto initialize() noexcept { return platform::resource::native::invalid;}
+            constexpr static bool valid( platform::resource::native::type value) noexcept { return value != initialize();}
+            static std::ostream& stream( std::ostream& out, platform::resource::native::type value);
+            static platform::resource::native::type generate();
+         };
+
+         using id = strong::Type< platform::resource::native::type, policy>;
+
+      } // resource
+
+      namespace queue
+      {
+         struct tag{};
+         using id = detail::integral::Type< platform::queue::native::type, tag, platform::queue::native::invalid>;
+         
+      } // queue
+
+      namespace correlation
+      {
+         struct policy
+         {
+            using extended_equality = void;
+         };
+         using id = strong::Type< Uuid, policy>;
+      } // correlation
       
-               using id = value::Optional< platform::file::descriptor::native::type,platform::file::descriptor::native::invalid, tag::type>;
-            
-            } // descriptor
-         } // file
 
-         namespace socket
-         {
-            namespace tag
-            {
-               struct type{};
-            } // tag
-   
-            //using id = value::Optional< platform::socket::native::type, platform::socket::native::invalid, tag::type>;
-            namespace detail
-            {
-               using base_type = value::Optional< platform::socket::native::type, platform::socket::native::invalid, tag::type>;
-            } // detail
-            
-            struct id : detail::base_type
-            {
-               using detail::base_type::base_type;
+      namespace execution
+      {
+         struct tag{};
+         using id = strong::Type< Uuid, tag>;
+      } // execution
 
-               //! implicit conversion to file descriptor
-               operator file::descriptor::id () const { return file::descriptor::id{ value()};}
-            };
-            
-         } // socket
-
-         namespace resource
-         {
-            struct stream
-            {
-               static std::ostream& print( std::ostream& out, bool valid, platform::resource::native::type value);
-            };
-            namespace tag
-            {
-               struct type{};
-            } // tag
-
-            using id = value::Optional< platform::resource::native::type, platform::resource::native::invalid, tag::type, stream>;
-
-         } // resource
-
-         namespace queue
-         {
-            namespace tag
-            {
-               struct type{};
-            } // tag
-   
-            using id = value::Optional< platform::queue::native::type, platform::queue::native::invalid, tag::type>;
-            
-         } // queue
-
-      } // strong 
-   } // common
+   } // common::strong
 } // casual

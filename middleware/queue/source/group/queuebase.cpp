@@ -318,7 +318,7 @@ namespace casual
          // remove
          common::algorithm::for_each( remove, [&]( auto id){ this->remove( id);});
 
-         auto split = algorithm::partition( update, []( auto& queue){ return ! queue.id.empty();});
+         auto split = algorithm::partition( update, []( auto& queue){ return queue.id.valid();});
 
          // update 
          common::algorithm::for_each( std::get< 0>( split), [&]( auto& queue){ this->update( queue);});

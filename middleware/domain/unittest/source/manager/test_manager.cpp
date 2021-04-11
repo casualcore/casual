@@ -226,7 +226,7 @@ domain:
 
                   auto scale( const std::vector< admin::model::scale::Alias>& aliases)
                   {
-                     return unittest::call< std::vector< common::Uuid>>( admin::service::name::scale::aliases, aliases);
+                     return unittest::call< std::vector< strong::correlation::id>>( admin::service::name::scale::aliases, aliases);
                   }
 
                   auto scale( const std::string& alias, platform::size::type instances)
@@ -238,7 +238,7 @@ domain:
                   {
                      auto aliases( const std::vector< admin::model::restart::Alias>& aliases)
                      {
-                        return unittest::call< std::vector< common::Uuid>>( admin::service::name::restart::aliases, aliases);
+                        return unittest::call< std::vector< strong::correlation::id>>( admin::service::name::restart::aliases, aliases);
                      }
 
                      auto aliases( std::vector< std::string> aliases)
@@ -257,7 +257,7 @@ domain:
                            return admin::model::restart::Group{ std::move( name)};
                         };
 
-                        return unittest::call< std::vector< common::Uuid>>( admin::service::name::restart::groups, algorithm::transform( groups, transform));
+                        return unittest::call< std::vector< strong::correlation::id>>( admin::service::name::restart::groups, algorithm::transform( groups, transform));
                      }
                   } // restart
 

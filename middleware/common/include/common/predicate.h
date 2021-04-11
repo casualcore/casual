@@ -59,7 +59,7 @@ namespace casual
          }
 
          template< typename T>
-         auto boolean( T&& value)
+         auto boolean( T&& value) -> decltype( static_cast< bool>( value))
          {
             return static_cast< bool>( value);
          }

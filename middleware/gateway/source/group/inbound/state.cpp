@@ -28,7 +28,7 @@ namespace casual
 
          namespace pending
          {
-            Requests::complete_type Requests::consume( const common::Uuid& correlation, const common::message::service::lookup::Reply& lookup)
+            Requests::complete_type Requests::consume( const strong::correlation::id& correlation, const common::message::service::lookup::Reply& lookup)
             {
                if( auto found = common::algorithm::find( m_services, correlation))
                {
@@ -45,7 +45,7 @@ namespace casual
                common::code::raise::log( common::code::casual::invalid_argument, "failed to find correlation: ", correlation);
             }
 
-            Requests::complete_type Requests::consume( const common::Uuid& correlation)
+            Requests::complete_type Requests::consume( const strong::correlation::id& correlation)
             {
                if( auto found = algorithm::find( m_complete, correlation))
                {
@@ -58,7 +58,7 @@ namespace casual
                code::raise::log( code::casual::invalid_argument, "failed to find correlation: ", correlation);
             } 
 
-            Requests::Result Requests::consume( const std::vector< common::Uuid>& correlations)
+            Requests::Result Requests::consume( const std::vector< strong::correlation::id>& correlations)
             {
                auto has_correlation = [&correlations]( auto& value)
                {
@@ -76,7 +76,7 @@ namespace casual
 
       } // state
 
-      state::external::Connection* State::consume( const common::Uuid& correlation)
+      state::external::Connection* State::consume( const strong::correlation::id& correlation)
       {
          if( auto found = algorithm::find( correlations, correlation))
          {

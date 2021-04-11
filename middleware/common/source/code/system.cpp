@@ -12,33 +12,27 @@
 
 namespace casual
 {
-   namespace common
+   namespace common::code::system
    {
-      namespace code
+      namespace last
       {
-         namespace system
+         std::errc error()
          {
-            namespace last
-            {
-               std::errc error()
-               {
-                  return static_cast< std::errc>( errno);
-               }
-               
-            } // last
+            return static_cast< std::errc>( errno);
+         }
+         
+      } // last
 
-            void raise() noexcept( false)
-            {
-               code::raise::log( code::convert::to::casual( last::error()));
-            }
+      void raise() noexcept( false)
+      {
+         code::raise::log( code::convert::to::casual( last::error()));
+      }
 
-            void raise( const std::string& context) noexcept( false)
-            {
-               auto error = last::error();
-               code::raise::log( code::convert::to::casual( error), context, " - ", error);
-            }
-
-         } // system
-      } // code
-   } // common
+      void raise( const std::string& context) noexcept( false)
+      {
+         auto error = last::error();
+         code::raise::log( code::convert::to::casual( error), context, " - ", error);
+      }
+      
+   } // common::code::system
 } // casual

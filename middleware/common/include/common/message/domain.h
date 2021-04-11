@@ -38,7 +38,7 @@ namespace casual
                using base_reply::base_reply;
 
                //! correlations for the task
-               std::vector< common::Uuid> tasks;
+               std::vector< common::strong::correlation::id> tasks;
 
                CASUAL_CONST_CORRECT_SERIALIZE(
                   base_reply::serialize( archive);

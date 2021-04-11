@@ -10,9 +10,9 @@ namespace casual
 {
    namespace common::communication::ipc::message
    {
-      Complete::Complete( message_type_type type, const Uuid& correlation) : m_type{ type}, m_correlation{ correlation} {}
+      Complete::Complete( message_type_type type, const correlation_type& correlation) : m_type{ type}, m_correlation{ correlation} {}
 
-      Complete::Complete( common::message::Type type, const Uuid& correlation, payload_type&& payload)
+      Complete::Complete( common::message::Type type, const correlation_type& correlation, payload_type&& payload)
          : payload{ std::move( payload)}, m_type{ type}, m_correlation{ correlation} {}
 
 
@@ -38,7 +38,7 @@ namespace casual
          return out << "]}";
       }
 
-      bool operator == ( const Complete& complete, const Uuid& correlation)
+      bool operator == ( const Complete& complete, const Complete::correlation_type& correlation)
       {
          return complete.correlation() == correlation;
       }

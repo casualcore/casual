@@ -84,7 +84,7 @@ namespace casual
             }
 
 
-            std::vector< common::Uuid> put( State& state, casual::configuration::Model wanted)
+            std::vector< common::strong::correlation::id> put( State& state, casual::configuration::Model wanted)
             {
                Trace trace{ "domain::manager::configuration::put"};
                log::line( verbose::log, "model: ", wanted);

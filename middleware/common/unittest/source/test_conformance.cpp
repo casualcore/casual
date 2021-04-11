@@ -13,6 +13,7 @@
 #include "common/traits.h"
 #include "common/signal.h"
 #include "common/code/system.h"
+#include "common/strong/type.h"
 
 #include <type_traits>
 
@@ -273,6 +274,7 @@ namespace casual
          }
       }
 
+
       /*
        * generates error with -Werror=return-type
        *
@@ -296,28 +298,7 @@ namespace casual
 
 
 
-      /*
-       * To bad std::function does not support move-only functors...
-       *
-      struct move_only_functor
-      {
-         move_only_functor( move_only_functor&&) = default;
-         move_only_functor& operator = ( move_only_functor&&) = default;
-
-         bool operator () ( long value)
-         {
-            return value == 42;
-         }
-      };
-
-
-      TEST( common_conformance, std_function__move_only_functor)
-      {
-         std::function< bool(long)> f1{ move_only_functor{}};
-
-         EXPECT_TRUE( f1( 42));
-      }
-      */
+      
 
 
    } // common

@@ -72,7 +72,7 @@ namespace casual
                } // <unnamed>
             } // local
             
-            Uuid send( strong::ipc::id destination, communication::ipc::message::Complete&& complete)
+            strong::correlation::id send( strong::ipc::id destination, communication::ipc::message::Complete&& complete)
             {
                auto result = complete.correlation();
                local::Instance::instance().send( destination, std::move( complete));

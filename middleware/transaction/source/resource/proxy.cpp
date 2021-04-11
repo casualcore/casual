@@ -8,6 +8,7 @@
 #include "transaction/resource/proxy.h"
 #include "transaction/common.h"
 
+#include "common/transaction/id.h"
 #include "common/message/transaction.h"
 #include "common/process.h"
 #include "common/message/dispatch.h"
@@ -21,8 +22,6 @@
 #include "common/communication/instance.h"
 
 #include "serviceframework/log.h"
-
-
 
 
 namespace casual

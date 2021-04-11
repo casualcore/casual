@@ -38,9 +38,9 @@ namespace casual
 
       } // mandatory
 
-      void boot( State& state, common::Uuid correlation);
+      void boot( State& state, common::strong::correlation::id correlation);
 
-      std::vector< common::Uuid> shutdown( State& state);
+      std::vector< common::strong::correlation::id> shutdown( State& state);
 
       namespace start
       {
@@ -57,15 +57,15 @@ namespace casual
          void instances( State& state, state::Server& server);
          void instances( State& state, state::Executable& executable);
 
-         std::vector< common::Uuid> aliases( State& state, std::vector< admin::model::scale::Alias> aliases);
+         std::vector< common::strong::correlation::id> aliases( State& state, std::vector< admin::model::scale::Alias> aliases);
 
       } // scale
 
    
       namespace restart
       {
-         std::vector< common::Uuid> aliases( State& state, std::vector< std::string> aliases);
-         std::vector< common::Uuid> groups( State& state, std::vector< std::string> groups);
+         std::vector< common::strong::correlation::id> aliases( State& state, std::vector< std::string> aliases);
+         std::vector< common::strong::correlation::id> groups( State& state, std::vector< std::string> groups);
       } // restart
 
       namespace event

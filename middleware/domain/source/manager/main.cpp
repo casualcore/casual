@@ -34,7 +34,7 @@ namespace casual
                struct
                {
                   common::strong::ipc::id ipc;
-                  common::Uuid correlation;
+                  common::strong::correlation::id correlation;
 
                   CASUAL_LOG_SERIALIZE(
                      CASUAL_SERIALIZE( ipc);

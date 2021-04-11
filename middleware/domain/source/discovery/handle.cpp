@@ -31,7 +31,7 @@ namespace casual
                struct Destination
                {
                   strong::ipc::id ipc;
-                  Uuid correlation;
+                  strong::correlation::id correlation;
 
                   CASUAL_LOG_SERIALIZE( 
                      CASUAL_SERIALIZE( ipc);

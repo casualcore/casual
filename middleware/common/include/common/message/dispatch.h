@@ -85,7 +85,7 @@ namespace casual
 
       private:
 
-         Uuid dispatch( complete_type& complete)
+         auto dispatch( complete_type& complete) -> std::decay_t< decltype( complete.correlation())>
          {
             if( ! complete)
                return {};

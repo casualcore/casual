@@ -7,6 +7,7 @@
 #pragma once
 
 #include "common/message/type.h"
+#include "common/transaction/id.h"
 
 #include "configuration/model.h"
 
@@ -120,7 +121,7 @@ namespace casual
             std::string name;
             platform::size::type order{};
 
-            inline explicit operator bool () const { return ! process.ipc.empty();}
+            inline explicit operator bool () const { return process.ipc.valid();}
             inline bool remote() const { return order > 0;}
 
             CASUAL_CONST_CORRECT_SERIALIZE({

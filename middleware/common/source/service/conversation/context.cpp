@@ -55,7 +55,7 @@ namespace casual
                      {
                         message::conversation::connect::caller::Request message{ std::move( buffer)};
 
-                        message.correlation = uuid::make();
+                        message.correlation = strong::correlation::id{ uuid::make()};
                         message.service = service;
                         message.process = process::handle();
                         message.flags = flags;
@@ -95,7 +95,7 @@ namespace casual
 
                      auto& descriptor( State& state, connect::Flags flags)
                      {
-                        auto& result = state.descriptors.reserve( uuid::make());
+                        auto& result = state.descriptors.reserve( strong::correlation::id{ uuid::make()});
                         result.duplex = flags.exist( connect::Flag::receive_only) ?
                               state::descriptor::Information::Duplex::receive
                             : state::descriptor::Information::Duplex::send;

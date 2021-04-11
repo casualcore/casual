@@ -30,7 +30,7 @@ namespace casual
          {
             namespace id
             {
-               using type = common::Uuid;             
+               using type = common::strong::correlation::id;
             } // id
 
             struct Context
@@ -164,9 +164,9 @@ namespace casual
 
             template< typename T>
             explicit Task( std::string description, T&& task, Property property) 
-               : Task{ common::uuid::make(), std::move( description), std::forward< T>( task), property}
-            {
-            }
+               : Task{ task::id::type::emplace( common::uuid::make()), 
+                  std::move( description), std::forward< T>( task), property}
+            {}
 
             
             Task( Task&&) = default; // noexcept is deduced

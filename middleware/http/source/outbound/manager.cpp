@@ -37,7 +37,7 @@ namespace casual
                      {
                         try
                         {
-                           return ! communication::device::non::blocking::send( process.ipc, message).empty();
+                           return predicate::boolean( communication::device::non::blocking::send( process.ipc, message));
                         }
                         catch( ...)
                         {

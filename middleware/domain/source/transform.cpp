@@ -262,7 +262,7 @@ namespace casual
                      auto transform_task = []( auto& task)
                      {
                         manager::admin::model::Task result;
-                        result.id = task.context().id;
+                        result.id = task.context().id.value();
                         result.description = task.context().descripton;
                         return result;
                      };

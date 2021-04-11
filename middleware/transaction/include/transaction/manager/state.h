@@ -115,13 +115,7 @@ namespace casual
 
                   };
 
-                  struct generate_id {};
-
-                  using id_sequence = common::value::id::sequence< id::type>;
-
-                  inline Proxy( generate_id) : id( id_sequence::next()) {}
-
-                  id::type id;
+                  id::type id = id::type::generate();
 
                   std::string key;
                   std::string openinfo;
@@ -392,7 +386,7 @@ namespace casual
             platform::time::point::type deadline;
 
             //! Used to keep track of the origin for commit request.
-            common::Uuid correlation;
+            common::strong::correlation::id correlation;
 
             //! Indicate if the transaction is owned by a remote domain,
             //! and what RM id that domain act as.

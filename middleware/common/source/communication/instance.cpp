@@ -133,7 +133,6 @@ namespace casual
 
             common::message::domain::process::singleton::connect::Request request{ process};
             request.identification = identity.id;
-            request.correlation = identity.id;
             request.environment = identity.environment;
 
             local::connect( request);

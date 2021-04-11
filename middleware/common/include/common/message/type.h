@@ -7,13 +7,12 @@
 
 #pragma once
 
-
 #include "casual/platform.h"
-#include "common/transaction/id.h"
-#include "common/service/type.h"
 
+#include "common/strong/type.h"
 #include "common/serialize/macro.h"
-
+#include "common/execution.h"
+#include "common/process.h"
 
 #include <type_traits>
 
@@ -338,16 +337,16 @@ namespace casual
       {
          constexpr static Type type() { return message_type;}
 
-         Uuid correlation;
+         strong::correlation::id correlation;
 
          //! The execution-id
-         mutable Uuid execution;
+         mutable strong::execution::id execution;
 
          constexpr friend bool operator == ( const basic_message& lhs, message::Type rhs) { return message::type( lhs) == rhs;}
          constexpr friend bool operator == ( message::Type lhs, const basic_message& rhs) { return message::type( rhs) == lhs;}
 
-         constexpr friend bool operator == ( const basic_message& lhs, const Uuid& rhs) { return lhs.correlation == rhs;}
-         constexpr friend bool operator == ( const Uuid& lhs, const basic_message& rhs) { return rhs == lhs;}
+         constexpr friend bool operator == ( const basic_message& lhs, const strong::correlation::id& rhs) { return lhs.correlation == rhs;}
+         constexpr friend bool operator == ( const strong::correlation::id& lhs, const basic_message& rhs) { return rhs == lhs;}
 
 
          CASUAL_CONST_CORRECT_SERIALIZE(
@@ -377,12 +376,6 @@ namespace casual
             CASUAL_SERIALIZE( end);
          })
       };
-
-      template< typename M>
-      auto correlation( M& message) -> decltype( message.correlation)
-      {
-         return message.correlation;
-      }
 
       // Below, some basic message related types that is used by others
 

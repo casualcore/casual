@@ -44,7 +44,7 @@ namespace casual
                   });
                }
 
-               auto arguments( const std::vector< file::scoped::Path>& files, const common::Uuid& id)
+               auto arguments( const std::vector< file::scoped::Path>& files, const strong::correlation::id& id)
                {
                   std::vector< std::string> result{ 
                      "--bare", "true",
@@ -85,6 +85,7 @@ namespace casual
             void shutdown( const process::Handle& manager)
             {
                log::Trace trace{ "domain::manager::unittest::local::shutdown", verbose::log};
+               log::line( verbose::log, "manager: ", manager);
 
                signal::thread::scope::Block blocked_signals{ { code::signal::child}};
 
@@ -134,22 +135,32 @@ namespace casual
             }
 
 
-            struct Manager : common::Process
+            struct Manager
             {
-               using common::Process::Process;
+               Manager() = default;
+               Manager( const std::string& path, std::vector< std::string> arguments)
+                  : process{ path, arguments} 
+               {}
 
                ~Manager()
                {
                   exception::guard( [&]()
                   {
-                     local::shutdown( *this);
-                     pid = {};
-                     ipc = {};
+                     if( process)
+                        local::shutdown( process);
+                     
+                     process.clear();
                   });
                }
 
-               Manager( Manager&&) noexcept = default;
-               Manager& operator = ( Manager&&) noexcept = default;
+               Manager( Manager&& other) noexcept = default;
+               Manager& operator = ( Manager&& other) noexcept = default;
+
+               CASUAL_LOG_SERIALIZE(
+                  CASUAL_SERIALIZE( process);
+               )
+
+               common::Process process;
             };
 
          } // <unnamed>
@@ -169,11 +180,11 @@ namespace casual
 
             auto unsubscribe_scope = execute::scope( [&]()
             {
-               if( ! manager.ipc)
+               if( ! manager.process.ipc)
                   return;
 
                communication::device::blocking::optional::send( 
-                  manager.ipc, common::message::event::subscription::End{ process::handle()});
+                  manager.process.ipc, common::message::event::subscription::End{ process::handle()});
             });
             
             auto condition = []( auto& tasks)
@@ -198,13 +209,13 @@ namespace casual
                      log::line( log::debug, "event: ", event);
                      state.domain = event.domain;
                      common::domain::identity( event.domain);
-                     state.manager.handle( event.process);
+                     state.manager.process.handle( event.process);
 
                      // Set environment variable to make it easier for other processes to
                      // reach domain-manager (should work any way...)
                      common::environment::variable::process::set(
                         common::environment::variable::name::ipc::domain::manager,
-                        state.manager);
+                        state.manager.process);
                   },
                   [&tasks]( const message::event::Task& event)
                   {
@@ -222,7 +233,7 @@ namespace casual
                   });
             };
 
-            auto tasks = std::vector< common::Uuid>{ uuid::make()};
+            auto tasks = std::vector< strong::correlation::id>{ strong::correlation::id::emplace( uuid::make())};
 
             // spawn the domain-manager
             manager = local::Manager{ local::repository::root() + "/middleware/domain/bin/casual-domain-manager",
@@ -320,7 +331,7 @@ domain:
 
       const common::process::Handle& Process::handle() const noexcept
       {
-         return m_implementation->manager;
+         return m_implementation->manager.process;
       }
 
       void Process::activate()

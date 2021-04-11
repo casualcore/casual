@@ -8,7 +8,7 @@
 
 #include "casual/platform.h"
 
-#include "common/value/id.h"
+#include "common/strong/type.h"
 
 namespace casual
 {
@@ -17,11 +17,21 @@ namespace casual
       namespace strong
       {
          using namespace common::strong;
-         
+
          namespace detail
          {
             template< typename Tag>
-            using basic_id = common::value::basic_id< platform::size::type, common::value::id::policy::unique_initialize< platform::size::type, Tag, 1>>;
+            struct policy
+            {
+               static auto generate()
+               {
+                  static platform::size::type value{};
+                  return ++value;
+               }
+            };
+
+            template< typename Tag>
+            using basic_id = common::strong::Type< platform::size::type, policy< Tag>>;
          } // detail
 
          namespace group

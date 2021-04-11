@@ -544,14 +544,14 @@ namespace casual
             log::line( verbose::log, "process::terminate processes: ", processes);
 
             auto result = algorithm::transform( processes, local::terminate);
-            return algorithm::trim( result, algorithm::remove_if( result, []( auto pid){ return pid.empty();}));
+            return algorithm::trim( result, algorithm::remove_if( result, []( auto pid){ return ! pid.valid();}));
          }
 
 
 
          namespace lifetime
          {
-            Exit::operator bool () const { return ! pid.empty();}
+            Exit::operator bool () const { return pid.valid();}
 
             bool Exit::deceased() const
             {
@@ -660,11 +660,19 @@ namespace casual
 
       Process::~Process() 
       {
-         Trace trace{ "common::Process::~Process"};
-         log::line( verbose::log, "this: ", *this);
-
          if( pid)
             exception::guard( [&](){ process::terminate( *this);});
+      }
+
+      Process::Process( Process&& other) noexcept
+      {
+         pid = std::exchange( other.pid, {});
+      }
+
+      Process& Process::operator = ( Process&& other) noexcept
+      {
+         pid = std::exchange( other.pid, {});
+         return *this;
       }
 
       void Process::handle( const process::Handle& handle)

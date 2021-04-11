@@ -12,6 +12,7 @@
 #include "common/transaction/id.h"
 #include "common/algorithm.h"
 #include "common/transaction/id.h"
+#include "common/strong/type.h"
 
 #include "common/code/raise.h"
 #include "common/code/xatmi.h"
@@ -42,7 +43,7 @@ namespace casual
 
                bool active = false;
                descriptor::type descriptor;
-               common::Uuid correlation;
+               strong::correlation::id correlation;
 
                friend bool operator == ( descriptor::type cd, const basic_information& d) { return cd == d.descriptor;}
                friend bool operator == ( const basic_information& d, descriptor::type cd) { return cd == d.descriptor;}
@@ -63,7 +64,7 @@ namespace casual
                using descriptor_type = basic_information< Information>;
 
                //! Reserves a descriptor and associates it to message-correlation
-               descriptor_type& reserve( const Uuid& correlation);
+               descriptor_type& reserve( const strong::correlation::id& correlation);
 
                void unreserve( descriptor::type descriptor);
 
@@ -107,7 +108,7 @@ namespace casual
             };
 
             template< typename I>
-            typename Holder< I>::descriptor_type& Holder< I>::reserve( const Uuid& correlation)
+            typename Holder< I>::descriptor_type& Holder< I>::reserve( const strong::correlation::id& correlation)
             {
                auto& descriptor = reserve();
 

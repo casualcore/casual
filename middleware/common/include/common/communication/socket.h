@@ -78,8 +78,8 @@ namespace casual
             Socket( Socket&&) noexcept;
             Socket& operator = ( Socket&&) noexcept;
 
-            inline bool empty() const noexcept { return m_descriptor.empty();}
-            inline explicit operator bool () const noexcept { return ! empty();}
+            inline bool empty() const noexcept { return ! m_descriptor.valid();}
+            inline explicit operator bool () const noexcept { return m_descriptor.valid();}
 
             //! Releases the responsibility of the socket
             //!

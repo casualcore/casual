@@ -62,7 +62,7 @@ namespace casual
          local::Coordinate coordinate;
          bool invoked = false;
 
-         auto correlation = uuid::make();
+         auto correlation = strong::correlation::id::emplace( uuid::make());
 
          coordinate( { { correlation, process::id()}}, [&invoked]( auto received, auto failed)
          {
@@ -80,7 +80,7 @@ namespace casual
          local::Coordinate coordinate;
          bool invoked = false;
 
-         auto correlation = uuid::make();
+         auto correlation = strong::correlation::id::emplace( uuid::make());
 
          coordinate( { { correlation, process::id()}}, [&invoked]( auto received, auto failed)
          {
@@ -107,7 +107,7 @@ namespace casual
          const auto origin = algorithm::generate_n< 10>( []( auto index)
          {
             local::Reply message{ process::Handle{ strong::process::id( process::id().value() + index), communication::ipc::inbound::ipc()}};
-            message.correlation = uuid::make();
+            message.correlation = strong::correlation::id::emplace( uuid::make());
             return message;
          });
 
@@ -146,7 +146,7 @@ namespace casual
          const auto origin = algorithm::generate_n< 10>( []()
          {
             local::Reply message{ process::handle()};
-            message.correlation = uuid::make();
+            message.correlation = strong::correlation::id::emplace( uuid::make());
             return message;
          });
 
@@ -186,7 +186,7 @@ namespace casual
          const auto origin = algorithm::generate_n< 10>( []()
          {
             local::Reply message{ process::handle()};
-            message.correlation = uuid::make();
+            message.correlation = strong::correlation::id::emplace( uuid::make());
             return message;
          });
 

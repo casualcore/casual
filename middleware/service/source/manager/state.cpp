@@ -55,7 +55,7 @@ namespace casual
             void Sequential::reserve(
                state::Service* service,
                const common::process::Handle& caller,
-               const common::Uuid& correlation)
+               const strong::correlation::id& correlation)
             {
                assert( m_service == nullptr);
 
@@ -130,7 +130,7 @@ namespace casual
 
          namespace service
          {
-            state::instance::Caller Instances::consume( const common::Uuid& correlation)
+            state::instance::Caller Instances::consume( const strong::correlation::id& correlation)
             {
                for( auto& instance : sequential)
                   if( auto caller = instance.get().consume( correlation))
@@ -164,7 +164,7 @@ namespace casual
                   return { inserted->when};
                }
 
-               std::optional< platform::time::point::type> Deadline::remove( const common::Uuid& correlation)
+               std::optional< platform::time::point::type> Deadline::remove( const strong::correlation::id& correlation)
                {
                   if( auto found = algorithm::find( m_entries, correlation))
                   {
@@ -174,7 +174,7 @@ namespace casual
                   return {};
                }
 
-               std::optional< platform::time::point::type> Deadline::remove( const std::vector< common::Uuid>& correlations)
+               std::optional< platform::time::point::type> Deadline::remove( const std::vector< strong::correlation::id>& correlations)
                {
 
                   auto [ keep, remove] = algorithm::stable_partition( m_entries, [&correlations]( auto& entry)
@@ -261,7 +261,7 @@ namespace casual
 
          common::process::Handle Service::reserve( 
             const common::process::Handle& caller, 
-            const common::Uuid& correlation)
+            const strong::correlation::id& correlation)
          {
             if( auto found = algorithm::find_if( instances.sequential, []( auto& i){ return i.idle();}))
                return found->reserve( this, caller, correlation);

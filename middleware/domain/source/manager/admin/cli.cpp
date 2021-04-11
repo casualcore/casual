@@ -38,7 +38,7 @@ namespace casual
          {
             namespace event
             {
-               auto handler( std::vector< Uuid>& tasks) 
+               auto handler( std::vector< common::strong::correlation::id>& tasks) 
                {
                   return message::dispatch::handler( communication::ipc::inbound::device(),
                      []( message::event::process::Spawn& event)
@@ -91,7 +91,7 @@ namespace casual
 
                      auto reply = call( admin::service::name::scale::aliases);
 
-                     std::vector< Uuid> result;
+                     std::vector< common::strong::correlation::id> result;
                      reply >> CASUAL_NAMED_VALUE( result);
 
                      return result;
@@ -107,7 +107,7 @@ namespace casual
 
                      auto reply = call( admin::service::name::restart::aliases);
 
-                     std::vector< Uuid> result;
+                     std::vector< common::strong::correlation::id> result;
                      reply >> CASUAL_NAMED_VALUE( result);
 
                      return result;
@@ -120,7 +120,7 @@ namespace casual
 
                      auto reply = call( admin::service::name::restart::groups);
 
-                     std::vector< Uuid> result;
+                     std::vector< common::strong::correlation::id> result;
                      reply >> CASUAL_NAMED_VALUE( result);
 
                      return result;
@@ -128,9 +128,9 @@ namespace casual
                   
                } // restart
 
-               std::vector< Uuid> boot( const std::vector< std::string>& pattern)
+               std::vector< common::strong::correlation::id> boot( const std::vector< std::string>& pattern)
                {
-                  auto correlation = uuid::make();
+                  auto correlation = common::strong::correlation::id::emplace( uuid::make());
          
                   auto get_arguments = [&]()
                   {
@@ -165,7 +165,7 @@ namespace casual
                   serviceframework::service::protocol::binary::Call call;
                   auto reply = call( admin::service::name::shutdown);
 
-                  std::vector< Uuid> result;
+                  std::vector< common::strong::correlation::id> result;
                   reply >> CASUAL_NAMED_VALUE( result);
                   return result;
                }
@@ -214,7 +214,7 @@ namespace casual
                         return call( admin::service::name::configuration::put);
                      }();
                      
-                     std::vector< Uuid> result;
+                     std::vector< common::strong::correlation::id> result;
                      reply >> CASUAL_NAMED_VALUE( result);
                      common::log::line( casual::domain::log, "result: ", result);
                      return result;
@@ -681,7 +681,7 @@ for all servers and executables
                         return;
                      }
 
-                     std::vector< Uuid> tasks;
+                     std::vector< common::strong::correlation::id> tasks;
 
                      auto condition = common::event::condition::compose(
                         common::event::condition::prelude( [&]()
@@ -726,7 +726,7 @@ for all servers and executables
                         return;
                      }
 
-                     std::vector< Uuid> tasks;
+                     std::vector< common::strong::correlation::id> tasks;
 
                      auto condition = common::event::condition::compose(
                         common::event::condition::prelude( [&]()
@@ -888,7 +888,7 @@ The semantics are similar to http PUT:
                                     server.instances, 
                                     std::back_inserter( result),
                                     []( auto& instance){ return std::to_string( instance.handle.pid.value());},
-                                    []( auto& instance){ return ! instance.handle.pid.empty();});
+                                    []( auto& instance){ return instance.handle.pid.valid();});
                               }
                            );
 

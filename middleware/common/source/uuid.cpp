@@ -56,19 +56,6 @@ namespace casual
 
       } // uuid
 
-      Uuid::Uuid( Uuid&& other) noexcept
-      {
-         ::uuid_copy( m_uuid, other.m_uuid);
-         ::uuid_clear( other.m_uuid);
-      }
-      
-      Uuid& Uuid::operator = ( Uuid&& other) noexcept
-      {
-         ::uuid_copy( m_uuid, other.m_uuid);
-         ::uuid_clear( other.m_uuid);
-         return *this;
-      }
-
       Uuid::Uuid( const uuid_type& uuid)
       {
          uuid_copy( m_uuid, uuid);

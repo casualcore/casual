@@ -256,8 +256,7 @@ unittest_objectfiles = [
     
     make.Compile( 'unittest/source/test_domain.cpp'),
 
-    make.Compile( 'unittest/source/value/test_optional.cpp'),
-    make.Compile( 'unittest/source/value/test_id.cpp'),
+    make.Compile( 'unittest/source/strong/test_type.cpp'),
 
     make.Compile( 'unittest/source/test_predicate.cpp'),
     make.Compile( 'unittest/source/test_functional.cpp'),

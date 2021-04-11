@@ -7,15 +7,17 @@
 #pragma once
 
 #include "casual/platform.h"
-#include "common/uuid.h"
 #include "common/strong/id.h"
+#include "common/strong/type.h"
 #include "common/service/type.h"
+#include "common/message/type.h"
 
 namespace casual
 {
    namespace common::service::call
    {
       using descriptor_type = platform::descriptor::type;
+      using correlation_type = strong::correlation::id;
 
       struct State
       {
@@ -31,7 +33,7 @@ namespace casual
 
                descriptor_type descriptor;
                bool active;
-               Uuid correlation;
+               correlation_type correlation;
                common::strong::process::id target{};
                Contract contract{ Contract::linger};
 
@@ -43,14 +45,14 @@ namespace casual
             Pending();
 
             //! Reserves a descriptor and associates it to message-correlation
-            Descriptor& reserve( const Uuid& correlation);
+            Descriptor& reserve( const correlation_type& correlation);
 
             void unreserve( descriptor_type descriptor);
 
             bool active( descriptor_type descriptor) const;
 
             const Descriptor& get( descriptor_type descriptor) const;
-            const Descriptor& get( const Uuid& correlation) const;
+            const Descriptor& get( const correlation_type& correlation) const;
             Descriptor& get( descriptor_type descriptor);
 
             //! Tries to discard descriptor, throws if fail.

@@ -8,6 +8,7 @@
 #pragma once
 
 #include "common/serialize/native/binary.h"
+#include "common/strong/type.h"
 #include "common/message/type.h"
 
 namespace casual
@@ -34,10 +35,9 @@ namespace casual
          auto archive = writer{}();
          archive << message;
 
-         using casual::common::message::type;
          return C{
-            type( message), 
-            message.correlation ? message.correlation : uuid::make(),
+            casual::common::message::type( message), 
+            message.correlation ? message.correlation : strong::correlation::id{ uuid::make()},
             archive.consume()};
       }
 

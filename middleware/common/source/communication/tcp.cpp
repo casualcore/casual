@@ -598,7 +598,7 @@ namespace casual
             }
          }
 
-         Uuid Blocking::send( const Connector& tcp, complete_type&& complete)
+         strong::correlation::id Blocking::send( const Connector& tcp, complete_type&& complete)
          {
             while( ! local::send( tcp.socket(), complete, {}))
                ; // no-op

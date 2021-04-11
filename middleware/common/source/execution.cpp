@@ -35,25 +35,25 @@ namespace casual
                   return environment::variable::get( environment, &reset);
                }
 
-               Uuid& id()
+               execution::type& id()
                {
-                  static Uuid id = initialize();
+                  static execution::type id{ initialize()};
                   return id;
                }
             } // <unnamed>
          } // local
 
-         void id( const Uuid& id)
+         void id( const type& id)
          {
             local::id() = id;
          }
 
          void reset()
          {
-            local::id() = local::reset();
+            local::id() = execution::type{ local::reset()};
          }
 
-         const Uuid& id()
+         const type& id()
          {
             return local::id();
          }

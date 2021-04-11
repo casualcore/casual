@@ -74,7 +74,7 @@ namespace casual
 
             inline auto correlation( const Header& header)
             {
-               return common::Uuid{ header.correlation};
+               return strong::correlation::id::emplace( header.correlation);
             }
             
          } // detail
@@ -86,7 +86,7 @@ namespace casual
          using range_type = range::type_t< payload_type>;
 
          Complete() = default;
-         Complete( common::message::Type type, Uuid correlation, payload_type payload);
+         Complete( common::message::Type type, strong::correlation::id correlation, payload_type payload);
 
          //! this is always in network byteordering, 
 

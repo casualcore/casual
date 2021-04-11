@@ -15,7 +15,6 @@
 #include "common/message/type.h"
 #include "common/code/raise.h"
 #include "common/code/casual.h"
-#include "common/uuid.h"
 #include "common/algorithm.h"
 
 
@@ -23,23 +22,43 @@ namespace casual
 {
    namespace common::communication::ipc::message
    {
+      namespace detail
+      {
+         template< typename T>
+         using is_transport_like_decl = decltype( T{}.type(), T{}.correlation(), T{}.complete_size());
+
+         template< typename T>
+         inline constexpr bool is_transport_like_v = traits::detect::is_detected< is_transport_like_decl, T>::value;
+
+      } // detail
+
       struct Complete
       {
          using message_type_type = common::message::Type;
          using payload_type = platform::binary::type;
          using range_type = range::type_t< payload_type>;
+         using correlation_type = strong::correlation::id;
 
          Complete() = default;
-         Complete( common::message::Type type, const Uuid& correlation);
-         Complete( common::message::Type type, const Uuid& correlation, payload_type&& payload);
+         Complete( common::message::Type type, const correlation_type& correlation);
+         Complete( common::message::Type type, const correlation_type& correlation, payload_type&& payload);
 
          template< typename Chunk>
-         Complete( common::message::Type type, const Uuid& correlation, platform::size::type size, Chunk&& chunk)
+         Complete( common::message::Type type, const correlation_type& correlation, platform::size::type size, Chunk&& chunk)
             : payload( size), m_type{ type}, m_correlation{ correlation},
                m_unhandled{ range::make( payload)}
          {
             add( std::forward< Chunk>( chunk));
          }
+
+         template< typename Transport>
+         Complete( const Transport& transport, std::enable_if_t< detail::is_transport_like_v< Transport>>* = 0) 
+            : payload( transport.complete_size()), m_type{ transport.type()}, m_correlation{ correlation_type::emplace( transport.correlation())},
+               m_unhandled{ range::make( payload)}
+         {
+            add( transport);
+         }
+
 
          Complete( Complete&&) noexcept = default;
          Complete& operator = ( Complete&&) noexcept = default;
@@ -112,8 +131,8 @@ namespace casual
 
          friend std::ostream& operator << ( std::ostream& out, const Complete& value);
 
-         friend bool operator == ( const Complete& complete, const Uuid& correlation);
-         friend inline bool operator == ( const Uuid& correlation, const Complete& complete)
+         friend bool operator == ( const Complete& complete, const correlation_type& correlation);
+         friend inline bool operator == ( const correlation_type& correlation, const Complete& complete)
          {
             return complete == correlation;
          }
@@ -124,7 +143,7 @@ namespace casual
       private:
 
          common::message::Type m_type{};
-         Uuid m_correlation;
+         correlation_type m_correlation;
          std::vector< range_type> m_unhandled;
       };
 

@@ -22,20 +22,20 @@ namespace casual
 
          auto id = execution::id();
 
-         EXPECT_EQ( uuid::string(id).size(), 32U);
+         EXPECT_EQ( uuid::string( id.value()).size(), 32U);
       }
 
       TEST( casual_common_execution, c_execution_set)
       {
          common::unittest::Trace trace;
 
-         Uuid set_uuid;
+         auto set_id = execution::type{ uuid::make()};
 
-         execution::id( set_uuid);
+         execution::id( set_id);
 
-         auto get_uuid = execution::id();
+         auto get_id = execution::id();
 
-         EXPECT_EQ( uuid::string(set_uuid), uuid::string(get_uuid));
+         EXPECT_EQ( set_id, get_id);
       }
 
 

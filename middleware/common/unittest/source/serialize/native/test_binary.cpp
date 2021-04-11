@@ -146,7 +146,7 @@ namespace casual
                using complete_type = typename TestFixture::complete_type;
 
                auto origin = unittest::Message{ 10000};
-               origin.correlation = uuid::make();
+               origin.correlation = strong::correlation::id::emplace( uuid::make());
 
                unittest::Message result;
 

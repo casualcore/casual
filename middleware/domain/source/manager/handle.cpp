@@ -250,7 +250,7 @@ namespace casual
       } // mandatory
 
 
-      void boot( State& state, common::Uuid correlation)
+      void boot( State& state, common::strong::correlation::id correlation)
       {
          Trace trace{ "domain::manager::handle::boot"};
                                           
@@ -266,7 +266,7 @@ namespace casual
          state.tasks.add( manager::task::create::scale::boot( state.bootorder(), correlation));
       }
 
-      std::vector< common::Uuid> shutdown( State& state)
+      std::vector< common::strong::correlation::id> shutdown( State& state)
       {
          Trace trace{ "domain::manager::handle::shutdown"};
 
@@ -337,7 +337,7 @@ namespace casual
             local::scale::out( state, executable);
          }
 
-         std::vector< common::Uuid> aliases( State& state, std::vector< admin::model::scale::Alias> aliases)
+         std::vector< common::strong::correlation::id> aliases( State& state, std::vector< admin::model::scale::Alias> aliases)
          {
             Trace trace{ "domain::manager::handle::scale::aliases"};
             log::line( verbose::log, "aliases: ", aliases);
@@ -404,7 +404,7 @@ namespace casual
                
             } // <unnamed>
          } // local
-         std::vector< common::Uuid> aliases( State& state, std::vector< std::string> aliases)
+         std::vector< common::strong::correlation::id> aliases( State& state, std::vector< std::string> aliases)
          {
             Trace trace{ "domain::manager::handle::restart::aliases"};
             log::line( verbose::log, "aliases: ", aliases);
@@ -422,7 +422,7 @@ namespace casual
             return { state.tasks.add( manager::task::create::restart::aliases( { std::move( group)}))};
          }
 
-         std::vector< common::Uuid> groups( State& state, std::vector< std::string> names)
+         std::vector< common::strong::correlation::id> groups( State& state, std::vector< std::string> names)
          {
             Trace trace{ "domain::manager::handle::restart::groups"};
             log::line( verbose::log, "names: ", names);
@@ -527,7 +527,7 @@ namespace casual
                               common::message::shutdown::Request shutdown{ common::process::handle()};
 
                               // Just to make each shutdown easy to follow in log.
-                              shutdown.execution = uuid::make();
+                              shutdown.execution = decltype( shutdown.execution)::emplace( uuid::make());
 
                               manager::ipc::send( state, process, shutdown);
                            }

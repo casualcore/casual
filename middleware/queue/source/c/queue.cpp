@@ -12,7 +12,7 @@
 
 #include "casual/platform.h"
 #include "common/exception/handle.h"
-#include "common/value/optional.h"
+#include "common/strong/type.h"
 #include "common/algorithm.h"
 #include "common/string.h"
 #include "common/log/category.h"
@@ -114,12 +114,13 @@ namespace casual
             {
                namespace descriptor
                {
-                  namespace tag
+                  struct policy
                   {
-                     struct type{};
-                  } // tag
+                     constexpr static long initialize() { return -1;}
+                     constexpr static bool valid( long value) { return value != initialize();}
+                  };
          
-                  using id = common::value::Optional< long, -1l, tag::type>;
+                  using id = common::strong::Type< long, policy>;
                
                } // descriptor
 
@@ -213,12 +214,13 @@ namespace casual
             {
                namespace descriptor
                {
-                  namespace tag
+                  struct policy
                   {
-                     struct type{};
-                  } // tag
+                     constexpr static long initialize() { return -1;}
+                     constexpr static bool valid( long value) { return value != initialize();}
+                  };
          
-                  using id = common::value::Optional< long, -1l, tag::type>;
+                  using id = common::strong::Type< long, policy>;
                
                } // descriptor
 

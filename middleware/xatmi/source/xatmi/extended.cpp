@@ -125,10 +125,10 @@ long casual_instance_index()
 
 void casual_execution_id_set( const uuid_t* id)
 {
-   casual::common::execution::id( casual::common::Uuid( *id));
+   casual::common::execution::id( casual::common::strong::execution::id::emplace( *id));
 }
 
 const uuid_t* casual_execution_id_get()
 {
-   return &casual::common::execution::id().get();
+   return &casual::common::execution::id().underlaying().get();
 }

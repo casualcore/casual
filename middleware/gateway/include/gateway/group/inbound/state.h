@@ -70,8 +70,8 @@ namespace casual
                }
 
                //! consumes pending calls, and sets the 'pending-roundtrip-state'
-               complete_type consume( const common::Uuid& correlation, const common::message::service::lookup::Reply& lookup);
-               complete_type consume( const common::Uuid& correlation);
+               complete_type consume( const common::strong::correlation::id& correlation, const common::message::service::lookup::Reply& lookup);
+               complete_type consume( const common::strong::correlation::id& correlation);
 
                //! consumes all pending associated with the correlations, if any.
                struct Result
@@ -80,7 +80,7 @@ namespace casual
                   std::vector< complete_type> complete;
                };
 
-               Result consume( const std::vector< common::Uuid>& correlations);
+               Result consume( const std::vector< common::strong::correlation::id>& correlations);
 
                CASUAL_LOG_SERIALIZE( 
                   CASUAL_SERIALIZE_NAME( m_services, "services");
@@ -215,13 +215,13 @@ namespace casual
          struct Correlation
          {
             Correlation() = default;
-            Correlation( common::Uuid correlation, common::strong::file::descriptor::id descriptor)
+            Correlation( common::strong::correlation::id correlation, common::strong::file::descriptor::id descriptor)
                : correlation{ std::move( correlation)}, descriptor{ descriptor} {}
 
-            common::Uuid correlation;
+            common::strong::correlation::id correlation;
             common::strong::file::descriptor::id descriptor;
 
-            inline friend bool operator == ( const Correlation& lhs, const common::Uuid& rhs) { return lhs.correlation == rhs;}
+            inline friend bool operator == ( const Correlation& lhs, const common::strong::correlation::id& rhs) { return lhs.correlation == rhs;}
             inline friend bool operator == ( const Correlation& lhs, common::strong::file::descriptor::id rhs) { return lhs.descriptor == rhs;} 
 
             CASUAL_LOG_SERIALIZE( 
@@ -234,7 +234,7 @@ namespace casual
          {
             platform::time::point::type deadline;
             common::strong::process::id pid;
-            common::Uuid correlation;
+            common::strong::correlation::id correlation;
 
             CASUAL_LOG_SERIALIZE( 
                CASUAL_SERIALIZE( deadline);
@@ -273,7 +273,7 @@ namespace casual
 
 
          //! @return the correlated connection, and remove the correlation
-         state::external::Connection* consume( const common::Uuid& correlation);
+         state::external::Connection* consume( const common::strong::correlation::id& correlation);
 
          //! @return true if the state is ready to 'terminate'
          bool done() const noexcept;

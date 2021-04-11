@@ -83,8 +83,15 @@ namespace casual
             return *this = std::move( copy);
          }
 
-         Socket::Socket( Socket&&) noexcept = default;
-         Socket& Socket::operator =( Socket&&) noexcept = default;
+         Socket::Socket( Socket&& other) noexcept
+            : m_descriptor{ std::exchange( other.m_descriptor, {})}
+         {}
+
+         Socket& Socket::operator =( Socket&& other) noexcept
+         {
+            m_descriptor = std::exchange( other.m_descriptor, {});
+            return *this;
+         }
 
 
          strong::socket::id Socket::descriptor() const noexcept

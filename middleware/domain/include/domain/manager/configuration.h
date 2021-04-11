@@ -29,7 +29,7 @@ namespace casual
 
             //! if element(s) _keys_ is found, there will be an update, otherwise the element(s) will be added
             //! @return id's of tasks that fullfills the 'put'
-            std::vector< common::Uuid> put( State& state, casual::configuration::Model model);
+            std::vector< common::strong::correlation::id> put( State& state, casual::configuration::Model model);
 
          } // configuration
       } // manager

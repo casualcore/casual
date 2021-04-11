@@ -23,12 +23,13 @@ namespace casual
 
       using Request = message::discovery::Request;
       using Reply = message::discovery::Reply;
+      using correlation_type = common::strong::correlation::id;
 
       //! sends an discovery request to casual-domain-discovery, 
       //! that will "ask" all regestrated _inbounds_, and possible outbounds, and accumulate one reply.
       //! @returns the correlation id.
       //! @attention reply will be sent to the process in the request.
-      common::Uuid request( const Request& request);
+      correlation_type request( const Request& request);
       
       namespace outbound
       {
@@ -43,7 +44,7 @@ namespace casual
          //! that will "ask" all regestrated _outbounds_, and accumulate one reply.
          //! @returns the correlation id.
          //! @attention reply will be sent to the process in the request.
-         common::Uuid request( const Request& request);
+         correlation_type request( const Request& request);
 
          namespace blocking
          {
@@ -59,7 +60,7 @@ namespace casual
          using Request = message::discovery::rediscovery::Request;
          using Reply = message::discovery::rediscovery::Reply;
 
-         common::Uuid request();
+         correlation_type request();
 
          namespace blocking
          {

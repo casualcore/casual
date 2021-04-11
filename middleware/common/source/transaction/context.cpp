@@ -77,7 +77,7 @@ namespace casual
             return m_transactions.back();
          }
 
-         bool Context::associated( const Uuid& correlation)
+         bool Context::associated( const strong::correlation::id& correlation)
          {
             return algorithm::any_of( m_transactions, [&correlation]( auto& transaction)
             {

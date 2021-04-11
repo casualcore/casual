@@ -110,33 +110,37 @@ namespace casual
          {
             namespace
             {
-               bool check_error( std::error_condition code)
+               bool check_error( std::errc code)
                {
-#ifdef __APPLE__
-                  if( code == std::errc::no_buffer_space)
+                  switch( code)
                   {
-                     // try again...
-                     std::this_thread::sleep_for( std::chrono::microseconds{ 100});
-                     return false;
-                  }
+
+#ifdef __APPLE__
+                     case std::errc::no_buffer_space:
+                     {
+                        // try again...
+                        std::this_thread::sleep_for( std::chrono::microseconds{ 100});
+                        return false;
+                     }
 #endif
-                  if( code == std::errc::resource_unavailable_try_again)
-                     return false;
+                     case std::errc::resource_unavailable_try_again:
+                        return false;
 
 #if EAGAIN != EWOULDBLOCK
-                  if( code == std::errc::operation_would_block)
-                     return false;
+                     case std::errc::operation_would_block:
+                        return false;
 #endif 
                   
-                  if( code == std::errc::invalid_argument)
-                     code::raise::condition( code::casual::invalid_argument);
+                     case std::errc::invalid_argument:
+                        code::raise::condition( code::casual::invalid_argument);
 
-                  if( code == std::errc::no_such_file_or_directory)
-                     code::raise::condition( code::casual::communication_unavailable);
+                     case std::errc::no_such_file_or_directory:
+                        code::raise::condition( code::casual::communication_unavailable);
 
-                     
-                  // will allways throw
-                  code::raise::error( code::casual::internal_unexpected_value, "ipc - errno: ", code);                        
+                     default:
+                        // will allways throw
+                        code::raise::error( code::casual::internal_unexpected_value, "ipc - errno: ", code);
+                  }
                }
 
                bool check_error()
@@ -193,7 +197,7 @@ namespace casual
                      return true;
                   }
 
-                  local::check_error( error);
+                  local::check_error( std::errc{ error.value()});
                   log::line( verbose::log, "ipc ---> blocking send - error: ", error, ", destination: ", destination);
 
                }
@@ -246,7 +250,7 @@ namespace casual
                   );
 
                   if( error)
-                     return local::check_error( error);
+                     return local::check_error( std::errc{ error.value()});
 
                   log::line( verbose::log, "ipc ---> non blocking send - socket: ", socket, ", destination: ", destination, ", transport: ", transport);
                   return true;
@@ -318,7 +322,7 @@ namespace casual
                   {
                      cache.emplace_back(
                            transport.type(),
-                           transport.correlation(),
+                           strong::correlation::id{ common::Uuid{ transport.correlation()}},
                            transport.complete_size(),
                            transport);
 
@@ -328,11 +332,11 @@ namespace casual
                return cache_range_type{};
             }
 
-            Uuid send( const Socket& socket, const Address& destination, const ipc::message::Complete& complete)
+            strong::correlation::id send( const Socket& socket, const Address& destination, const ipc::message::Complete& complete)
             {
                message::Transport transport{ complete.type(), complete.size()};
 
-               complete.correlation().copy( transport.correlation());
+               complete.correlation().value().copy( transport.correlation());
 
                auto part_begin = std::begin( complete.payload);
 
@@ -346,7 +350,7 @@ namespace casual
 
                   // send the physical message
                   if( ! native::blocking::send( socket, destination, transport))
-                     return uuid::empty();
+                     return {};
 
                   part_begin = part_end;
                }
@@ -383,7 +387,7 @@ namespace casual
                      {
                         cache.emplace_back(
                               transport.type(),
-                              transport.correlation(),
+                              strong::correlation::id{ common::Uuid{ transport.correlation()}},
                               transport.complete_size(),
                               transport);
 
@@ -393,11 +397,11 @@ namespace casual
                   return cache_range_type{};
                }
 
-               Uuid send( const Socket& socket, const Address& destination, const ipc::message::Complete& complete)
+               strong::correlation::id send( const Socket& socket, const Address& destination, const ipc::message::Complete& complete)
                {
                   message::Transport transport{ complete.type(), complete.size()};
 
-                  complete.correlation().copy( transport.correlation());
+                  complete.correlation().value().copy( transport.correlation());
 
                   auto part_begin = std::begin( complete.payload);
 
@@ -411,9 +415,7 @@ namespace casual
 
                      // send the physical message
                      if( ! native::non::blocking::send( socket, destination, transport))
-                     {
-                        return uuid::empty();
-                     }
+                        return {};
 
                      part_begin = part_end;
                   }

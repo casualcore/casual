@@ -163,7 +163,7 @@ namespace casual
       }
 
       template< typename State, typename M, typename L>
-      common::Uuid send( State& state, common::strong::file::descriptor::id descriptor, M&& message, L&& lost)
+      common::strong::correlation::id send( State& state, common::strong::file::descriptor::id descriptor, M&& message, L&& lost)
       {
          try
          {

@@ -8,6 +8,7 @@
 #pragma once
 
 #include "common/message/type.h"
+#include "common/transaction/id.h"
 
 #include "common/strong/id.h"
 #include "common/code/xa.h"

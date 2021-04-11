@@ -71,6 +71,7 @@ namespace casual
          using cache_type = typename Connector::cache_type;
          using cache_range_type = range::type_t< cache_type>;
          using complete_type = traits::iterable::value_t< cache_type>;
+         using correlation_type = strong::correlation::id;
 
          template< typename... Args>
          Inbound( Args&&... args) : m_connector{ std::forward< Args>( args)...} {}
@@ -147,7 +148,7 @@ namespace casual
          //! @return a logical complete message if there is one,
          //!         otherwise the message has absent_message as type
          template< typename P>
-         [[nodiscard]] complete_type next( const Uuid& correlation, P&& policy)
+         [[nodiscard]] complete_type next( const correlation_type& correlation, P&& policy)
          {
             return select(
                [&correlation]( auto& complete){ return complete.correlation() == correlation;},
@@ -159,7 +160,7 @@ namespace casual
          //! @return a logical complete message if there is one,
          //!         otherwise the message has absent_message as type
          template< typename P>
-         [[nodiscard]] complete_type next( common::message::Type type, const Uuid& correlation, P&& policy)
+         [[nodiscard]] complete_type next( common::message::Type type, const correlation_type& correlation, P&& policy)
          {
             return select(
                [type, &correlation]( auto& complete){ return complete.type() == type && complete.correlation() == correlation;},
@@ -204,7 +205,7 @@ namespace casual
          //! @return true if we found one, and message is deserialized. false otherwise.
          //! @note depending on the policy it may not ever return false (ie with a blocking policy)
          template< typename M, typename P>
-         bool receive( M& message, const Uuid& correlation, P&& policy)
+         bool receive( M& message, const correlation_type& correlation, P&& policy)
          {
             return deserialize(
                   this->next(
@@ -215,7 +216,7 @@ namespace casual
          }
 
          //! Discards any message that correlates.
-         void discard( const Uuid& correlation)
+         void discard( const correlation_type& correlation)
          {
             flush();
 
@@ -237,7 +238,7 @@ namespace casual
 
          //! push a message (or complete) to the cache
          template< typename M>
-         Uuid push( M&& message)
+         correlation_type push( M&& message)
          {
             // Make sure we consume messages from the real queue first.
             flush();
@@ -373,7 +374,7 @@ namespace casual
          }
 
          cache_type m_cache;
-         std::vector< Uuid> m_discarded;
+         std::vector< correlation_type> m_discarded;
          Connector m_connector;
       };
 

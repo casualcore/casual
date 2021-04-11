@@ -50,14 +50,14 @@ namespace casual
                }
 
                Pending() = default;
-               inline Pending( common::Uuid correlation, id_type id)
+               inline Pending( strong::correlation::id correlation, id_type id)
                   : id{ id}, correlation{ std::move( correlation)}{}
 
                State state = State::pending;
                id_type id;
-               common::Uuid correlation;
+               strong::correlation::id correlation;
                
-               inline friend bool operator == ( const Pending& lhs, const common::Uuid& rhs) { return lhs.correlation == rhs;}
+               inline friend bool operator == ( const Pending& lhs, const strong::correlation::id& rhs) { return lhs.correlation == rhs;}
                inline friend bool operator == ( const Pending& lhs, id_type rhs) { return lhs.id == rhs;}
                inline friend bool operator == ( const Pending& lhs, State rhs) { return lhs.state == rhs;}
 
@@ -144,7 +144,7 @@ namespace casual
                   return done();
                }
 
-               inline friend bool operator == ( const Entry & lhs, const common::Uuid& rhs) 
+               inline friend bool operator == ( const Entry & lhs, const strong::correlation::id& rhs) 
                { 
                   return predicate::boolean( algorithm::find( lhs.m_pending, rhs));
                }

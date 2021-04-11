@@ -10,7 +10,7 @@
 
 #include "common/message/type.h"
 #include "common/service/type.h"
-
+#include "common/transaction/id.h"
 #include "common/domain.h"
 #include "common/code/xatmi.h"
 
@@ -205,8 +205,8 @@ namespace casual
                metric::Type type = metric::Type::sequential;
                
                common::process::Handle process;
-               Uuid correlation;
-               Uuid execution;
+               strong::correlation::id correlation;
+               execution::type execution;
                common::transaction::ID trid;
 
                platform::time::point::type start{};

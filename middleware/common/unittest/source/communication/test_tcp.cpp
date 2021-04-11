@@ -191,7 +191,7 @@ namespace casual
          tcp::Duplex tcp{ std::move( socket)};
 
          auto payload = unittest::random::binary( 1024);
-         auto correlation = uuid::make();
+         auto correlation = strong::correlation::id{ uuid::make()};
 
          // send
          {
@@ -231,7 +231,7 @@ namespace casual
 
 
          auto payload = unittest::random::binary( 1024);
-         auto correlation = uuid::make();
+         auto correlation = strong::correlation::id{ uuid::make()};
 
          for( auto& connection : connections)
          {

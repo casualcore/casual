@@ -240,7 +240,7 @@ namespace casual
          namespace blocking
          {
             cache_range_type receive( Handle& handle, cache_type& cache);
-            Uuid send( const Socket& socket, const Address& destination, const complete_type& complete);
+            strong::correlation::id send( const Socket& socket, const Address& destination, const complete_type& complete);
          } // blocking
 
 
@@ -254,7 +254,7 @@ namespace casual
             }
 
             template< typename Connector>
-            Uuid send( Connector&& connector, const complete_type& complete)
+            auto send( Connector&& connector, const complete_type& complete)
             {
                return policy::blocking::send( connector.socket(), connector.destination(), complete);
             }
@@ -265,7 +265,7 @@ namespace casual
             namespace blocking
             {
                cache_range_type receive( Handle& handle, cache_type& cache);
-               Uuid send( const Socket& socket, const Address& destination, const complete_type& complete);
+               strong::correlation::id send( const Socket& socket, const Address& destination, const complete_type& complete);
             } // blocking
 
             struct Blocking
@@ -277,7 +277,7 @@ namespace casual
                }
 
                template< typename Connector>
-               Uuid send( Connector&& connector, const complete_type& complete)
+               auto send( Connector&& connector, const complete_type& complete)
                {
                   return policy::non::blocking::send( connector.socket(), connector.destination(), complete);
                }

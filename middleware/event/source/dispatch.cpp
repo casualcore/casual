@@ -34,7 +34,7 @@ namespace casual
                   auto metric(common::message::event::service::Metric&& metric)
                   {
                      R result;
-                     metric.execution.copy( result.execution);
+                     metric.execution.underlaying().copy( result.execution);
                      result.service.name = std::move( metric.service);
                      result.service.parent = std::move( metric.parent);
                      result.process.pid = metric.process.pid.value();

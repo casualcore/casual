@@ -18,7 +18,6 @@
 #include "common/uuid.h"
 #include "common/state/machine.h"
 #include "common/process.h"
-#include "common/value/id.h"
 
 #include "common/event/dispatch.h"
 
@@ -39,13 +38,6 @@ namespace casual
       namespace state
       {
 
-         namespace id
-         {
-            template< typename Tag>
-            using type = common::value::basic_id< platform::size::type, common::value::id::policy::unique_initialize< platform::size::type, Tag, 0>>;
-            
-         } // id
-
          struct Group
          {
             using id_type = strong::group::id;
@@ -54,7 +46,7 @@ namespace casual
             Group( std::string name, std::vector< id_type> dependencies, std::string note = "")
                : name( std::move( name)), note( std::move( note)), dependencies( std::move( dependencies)) {}
 
-            id_type id;
+            id_type id = id_type::generate();
 
             std::string name;
             std::string note;
@@ -79,8 +71,7 @@ namespace casual
 
             inline friend bool operator < ( const Group& l, const Group& r) { return l.id < r.id;}
 
-            CASUAL_LOG_SERIALIZE
-            (
+            CASUAL_LOG_SERIALIZE(
                CASUAL_SERIALIZE( id);
                CASUAL_SERIALIZE( name);
                CASUAL_SERIALIZE( note);
@@ -95,7 +86,7 @@ namespace casual
          {
             using id_type = ID;
 
-            id_type id;
+            id_type id = id_type::generate();
 
             std::string alias;
             std::string path;
@@ -108,8 +99,7 @@ namespace casual
             {
                std::vector< common::environment::Variable> variables;
                
-               CASUAL_CONST_CORRECT_SERIALIZE
-               (
+               CASUAL_CONST_CORRECT_SERIALIZE(
                   CASUAL_SERIALIZE( variables);
                )
             } environment;
@@ -172,11 +162,11 @@ namespace casual
             friend bool operator == ( const Instance& lhs, common::strong::process::id pid) { return lhs.handle == pid;}
             friend bool operator == ( common::strong::process::id pid, const Instance& rhs) { return pid == rhs.handle;}
 
-            CASUAL_LOG_SERIALIZE({
+            CASUAL_LOG_SERIALIZE(
                CASUAL_SERIALIZE( handle);
                CASUAL_SERIALIZE( state);
                CASUAL_SERIALIZE( spawnpoint);
-            })
+            )
          };
 
 
@@ -273,11 +263,11 @@ namespace casual
                std::vector< Server::id_type> servers;
                std::vector< Executable::id_type> executables;
 
-               CASUAL_LOG_SERIALIZE({
+               CASUAL_LOG_SERIALIZE(
                   CASUAL_SERIALIZE( description);
                   CASUAL_SERIALIZE( executables);
                   CASUAL_SERIALIZE( servers);
-               })
+               )
             };
             
          } // dependency
@@ -292,7 +282,7 @@ namespace casual
          struct Parent
          {
             common::strong::ipc::id ipc;
-            common::Uuid correlation;
+            common::strong::correlation::id correlation;
 
             inline explicit operator bool() const noexcept { return common::predicate::boolean( ipc);}
 

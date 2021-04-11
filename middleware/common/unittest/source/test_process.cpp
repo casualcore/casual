@@ -43,18 +43,6 @@ namespace casual
          EXPECT_TRUE( handle.ipc == handle);
       }
 
-      TEST( common_process, moved_from_not_valid)
-      {
-         common::unittest::Trace trace;
-
-         auto moved_from = process::handle();
-         EXPECT_TRUE( moved_from);
-
-         auto moved_to = std::move( moved_from);
-         EXPECT_TRUE( moved_to != moved_from); // NOLINT
-         EXPECT_FALSE( moved_from); // NOLINT
-      }
-
       TEST( common_process, spawn_one_process)
       {
          common::unittest::Trace trace;
