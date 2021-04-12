@@ -3,6 +3,11 @@ This is the changelog for `casual` and all changes are listed in this document.
 
 ## [Unreleased]
 
+## [1.4.15] - 2021-04-12
+### Fixes
+- gateway - made sure we terminate a detected 'loop' for calls
+- gateway - improved connect to be more robust
+
 ## [1.4.14] - 2021-03-28
 ### Fixes
 - gateway - outbound handle no-entry call reply correctly

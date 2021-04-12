@@ -1077,6 +1077,9 @@ domain:
 
          local::state::gateway::until( local::state::gateway::predicate::outbound::connected());
 
+         // we might get to the "wrong" domain until all services are advertised.
+         EXPECT_TRUE( local::domain::name( "B", 1000));
+         
          // we expect to always get to B
          algorithm::for_n< 10>( []()
          {
