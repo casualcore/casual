@@ -106,8 +106,9 @@ namespace casual
                         std::string host{ address.host()};
                         std::string port{ address.port()};
 
+                        // if not successful we just log and keep the address::Native in an invalid state.
                         if( const int result = ::getaddrinfo( host.data(), port.data(), &hints, &information.value))
-                           code::raise::log( code::casual::communication_invalid_address, ::gai_strerror( result), " address: ", address);
+                           log::line( verbose::log, ::gai_strerror( result), " address: ", address);
                      }
 
                      Native() = default;
@@ -120,6 +121,8 @@ namespace casual
 
                      Native( Native&&) noexcept = default;
                      Native& operator = ( Native&&) noexcept = default;
+
+                     explicit operator bool() const noexcept { return predicate::boolean( information);}
 
                      struct iterator
                      {
@@ -154,7 +157,11 @@ namespace casual
                {
                   Trace trace( "common::communication::tcp::local::socket::create");
 
-                  address::Native native{ address, flags}; 
+                  address::Native native{ address, flags};
+
+                  if( ! native)
+                     return {};
+
                   log::line( verbose::log, "native: ", native);
 
                   for( auto& info : native)
@@ -171,8 +178,7 @@ namespace casual
                         return socket; 
                      }
                   }
-
-                  code::raise::log( code::convert::to::casual( code::system::last::error()), "address: ", address);
+                  return {};
                }
 
                Socket connect( const Address& address)
@@ -193,8 +199,27 @@ namespace casual
                      if( ::connect( socket.descriptor().value(), info.ai_addr, info.ai_addrlen) == 0)
                         return true;
 
-                     log::line( verbose::log, code::system::last::error(), ", socket: ", socket, ", info: ", info);
-                     return false;
+                     auto error = code::system::last::error();
+                     
+                     // some "error" has occur, some errors are ok, and the rest will raise 
+                     switch( error)
+                     {
+                        case std::errc::already_connected:
+                           return true;
+                        case std::errc::connection_refused:
+                        case std::errc::connection_reset:
+                        case std::errc::address_not_available:
+                        case std::errc::address_in_use:
+                        case std::errc::address_family_not_supported:
+                        case std::errc::network_unreachable:
+                        case std::errc::network_down:
+                        case std::errc::timed_out:
+                        case std::errc::host_unreachable:
+                           return false;
+                        
+                        default:
+                           code::raise::error( code::convert::to::casual( error), "errno: ", error, ", socket: ", socket, ", info: ", info);
+                     }
                   });
                }
 
@@ -349,27 +374,6 @@ namespace casual
          return local::socket::connect( address);
       }
 
-      namespace non::blocking
-      {
-         Socket connect( const Address& address)
-         {
-            Trace trace( "common::communication::tcp::non::blocking::connect");
-
-            try
-            {
-               return tcp::connect( address);
-            }
-            catch( ...)
-            {
-               // if refused we return 'nil' socket
-               if( exception::code() != code::casual::communication_refused)
-                  throw;
-            }
-            return {};
-
-         }
-      } // non::blocking
-
       namespace retry
       {
          Socket connect( const Address& address, process::pattern::Sleep sleep)
@@ -378,16 +382,8 @@ namespace casual
 
             do
             {
-               try
-               {
-                  return tcp::connect( address);
-               }
-               catch( ...)
-               {
-                  // if refused : no-op - we go to sleep
-                  if( exception::code() != code::casual::communication_refused)
-                     throw;
-               }
+               if( auto socket = tcp::connect( address))
+                  return socket;
             }
             while( sleep());
 
