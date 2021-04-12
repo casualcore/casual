@@ -37,6 +37,11 @@ namespace casual
          {
             m_points.push_back( std::move( point));
          }
+
+         bool contains( const common::Uuid& correlation) const noexcept
+         {
+            return common::predicate::boolean( common::algorithm::find( m_points, correlation));
+         }
          
          //! consumes and @returns the point - 'empty' point if not found 
          Point consume( const common::Uuid& correlation)

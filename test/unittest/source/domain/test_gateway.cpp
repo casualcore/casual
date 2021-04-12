@@ -978,6 +978,68 @@ domain:
          local::call( "casual/example/sleep", TPENOENT);
       }
 
+      TEST( test_domain_gateway, domain_A_to_B__B_to_A__A_knows_of_echo_in_B__scale_echo_down__call_echo_from_B____expect_TPNOENT)
+      {
+         // sink child signals 
+         signal::callback::registration< code::signal::child>( [](){});
+
+         common::unittest::Trace trace;
+
+         local::Manager b{ { local::configuration::base, R"(
+domain: 
+   name: B
+
+   servers:
+      -  path: "${CASUAL_REPOSITORY_ROOT}/middleware/example/server/bin/casual-example-server"
+         memberships: [ user]
+         arguments: [ --sleep, 100ms]
+         instances: 1
+   gateway:
+      inbound:
+         groups:
+            -  connections: 
+                  -  address: 127.0.0.1:7001
+
+      outbound:
+         groups:
+            -  connections:
+                  -  address: 127.0.0.1:7002
+)"}};
+
+
+
+         local::Manager a{ { local::configuration::base, R"(
+domain: 
+   name: A
+
+   gateway:
+      inbound:
+         groups:
+            -  connections:
+                  -  address: 127.0.0.1:7002
+      outbound:
+         groups:
+            -  connections:
+                  -  address: 127.0.0.1:7001
+                     services: [ casual/example/sleep]
+)"}};
+
+
+         local::state::gateway::until( local::state::gateway::predicate::outbound::connected());
+         
+         // jump in to B
+         b.activate();
+
+         casual::domain::manager::admin::cli cli;
+         common::argument::Parse parse{ "", cli.options()};
+         parse( { "domain", "--scale-instances", "casual-example-server", "0"});
+
+
+         // calls to get TPENOENT
+         local::call( "casual/example/sleep", TPENOENT);
+      }
+
+
       TEST( test_domain_gateway, domain_A_to__B_C_D__outbound_separated_groups___expect_prio_B__shutdown_B__expect_C__shutdown__C__expect_D)
       {
          common::unittest::Trace trace;
