@@ -9,6 +9,9 @@
 
 #include "common/algorithm.h"
 #include "common/terminal.h"
+#include "common/strong/id.h"
+#include "common/message/internal.h"
+#include "common/communication/instance.h"
 
 #include "domain/manager/admin/cli.h"
 #include "service/manager/admin/cli.h"
@@ -115,6 +118,40 @@ valid directives:
                }
 
             } // information
+
+            namespace internal
+            {
+               auto options()
+               {
+                  auto state_dump = []()
+                  {
+                     auto invoke = []( std::vector< common::strong::process::id::value_type> pids)
+                     {
+                        auto send_message = []( auto pid)
+                        {
+                           if( auto handle = communication::instance::fetch::handle( common::strong::process::id{ pid}, communication::instance::fetch::Directive::direct))
+                              communication::device::blocking::optional::send( handle.ipc, common::message::internal::dump::State{});
+                        };
+
+                        algorithm::for_each( pids, send_message);
+                     };
+
+                     return common::argument::Option{
+                        std::move( invoke),
+                        { "--state-dump"},
+                        "dump state to casual.log for the provided pids, if the pid is able"
+                     };
+                  };
+                 
+                  return common::argument::Group{
+                     [](){}, { "internal"}, "internal casual stuff for trubleshoting etc...",
+                     state_dump()
+                  };
+
+               }
+               
+            } // internal
+
          } // <unnamed>
       } // local
 
@@ -123,9 +160,9 @@ valid directives:
          struct
          {
             domain::manager::admin::cli domain;
-            service::manager::admin::cli service;
+            casual::service::manager::admin::cli service;
             queue::manager::admin::cli queue;
-            transaction::manager::admin::CLI transaction;
+            casual::transaction::manager::admin::CLI transaction;
             gateway::manager::admin::cli gateway;
             tools::service::call::cli service_call;
             tools::service::describe::cli describe;
@@ -156,6 +193,7 @@ Where <option> is one of the listed below
                cli.buffer.options(),
                cli.configuration.options(),
                common::terminal::output::directive().options(),
+               local::internal::options(),
             };
          }
       };

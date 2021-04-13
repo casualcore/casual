@@ -863,6 +863,13 @@ namespace casual
 
       std::vector< configuration::model::gateway::outbound::Connection> idle( State& state)
       {
+         // we need to check metric, we don't know when we're about to be called again.
+         if( ! state.route.service.metric.metrics.empty())
+         {
+            ipc::flush::optional::send( ipc::manager::service(), state.route.service.metric);
+            state.route.service.metric.metrics.clear();
+         }
+
          if( state.disconnecting.empty())
             return {};
 

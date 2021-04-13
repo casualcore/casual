@@ -12,6 +12,7 @@
 
 #include "common/server/handle/call.h"
 #include "common/message/handle.h"
+#include "common/message/internal.h"
 #include "common/communication/instance.h"
 
 #include "common/event/send.h"
@@ -451,6 +452,7 @@ namespace casual
 
          return common::message::dispatch::handler( ipc::inbound(),
             common::message::handle::defaults( ipc::inbound()),
+            common::message::internal::dump::state::handle( state),
             handle::local::process::exit( state),
             handle::local::domain::discover::request( state),
             handle::local::domain::discover::reply( state),

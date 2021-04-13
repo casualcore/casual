@@ -13,6 +13,7 @@
 #include "common/log/stream.h"
 #include "common/communication/instance.h"
 #include "common/argument.h"
+#include "common/message/internal.h"
 
 
 namespace casual
@@ -177,6 +178,7 @@ namespace casual
                {
                   // we add the common/general inbound logic
                   return inbound::handle::internal( state) + common::message::dispatch::handler( ipc::inbound(),
+                     common::message::internal::dump::state::handle( state),
                      handle::configuration::update::request( state),
                      handle::state::request( state),
                      handle::shutdown::request( state)

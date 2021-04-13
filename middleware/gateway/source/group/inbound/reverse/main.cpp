@@ -14,6 +14,7 @@
 #include "common/signal/timer.h"
 #include "common/signal.h"
 #include "common/message/signal.h"
+#include "common/message/internal.h"
 
 #include "common/communication/instance.h"
 
@@ -236,6 +237,7 @@ namespace casual
                {
                   // we add the common/general inbound handlers
                   return inbound::handle::internal( state) + common::message::dispatch::handler( ipc::inbound(),
+                     common::message::internal::dump::state::handle( state),
                      handle::configuration::update::request( state),
                      handle::state::request( state),
                      handle::shutdown::request( state),

@@ -293,6 +293,9 @@ namespace casual
             cli_transaction_finalize,
             cli_transaction_propagate,
 
+            INTERNAL_BASE  = 11000,
+            internal_dump_state = INTERNAL_BASE,
+
             UNITTEST_BASE = 10000000, // avoid conflict with real messages
             unittest_message,
          };
