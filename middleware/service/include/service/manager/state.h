@@ -428,6 +428,8 @@ namespace casual
 
          //! holds all the routes, for services that has routes
          std::map< std::string, std::vector< std::string>> routes;
+         //! the same as above from the route to actual service.
+         std::map< std::string, std::string> reverse_routes;
 
          //! holds all alias restrictions.
          std::map< std::string, std::vector< std::string>> restrictions;

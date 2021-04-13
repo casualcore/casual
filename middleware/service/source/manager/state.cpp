@@ -70,6 +70,7 @@ namespace casual
 
                m_service->metric.update( metric);
                m_service = nullptr;
+               m_caller = {};
             }
 
             void Sequential::discard()

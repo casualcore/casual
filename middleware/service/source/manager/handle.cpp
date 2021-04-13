@@ -18,6 +18,7 @@
 #include "common/process.h"
 #include "common/message/dispatch.h"
 #include "common/message/handle.h"
+#include "common/message/internal.h"
 #include "common/event/listen.h"
 #include "common/event/send.h"
 
@@ -160,7 +161,10 @@ namespace casual
                   else 
                   {
                      for( auto& route : service.routes)
+                     {
                         state.services.emplace( route, result);
+                        state.reverse_routes.emplace( route, service.name);
+                     }
 
                      state.routes.emplace( service.name, std::move( service.routes));
                   }
@@ -856,14 +860,24 @@ namespace casual
                      // This message can only come from a local instance
                      if( auto instance = state.sequential( message.metric.process.pid))
                      {
+                        log::line( verbose::log, "instance: ", *instance);
+
                         instance->unreserve( message.metric);
+                        
 
                         // Check if there are pending request for services that this
                         // instance has.
 
-                        auto has_pending = [instance]( const auto& pending)
+                        auto has_pending = [&state, instance]( const auto& pending)
                         {
-                           return instance->service( pending.request.requested);
+                           if( instance->service( pending.request.requested))
+                              return true;
+                           
+                           // we need to check routes...
+                           if( auto found = algorithm::find( state.reverse_routes, pending.request.requested))
+                              return instance->service( found->second);
+
+                           return false;
                         };
 
                         if( auto found = common::algorithm::find_if( state.pending.lookups, has_pending))
@@ -997,6 +1011,7 @@ namespace casual
                handle::local::event::process::exit( state),
                handle::local::event::discoverable::available( state)
             ),
+            common::message::internal::dump::state::handle( state),
             handle::local::process::prepare::shutdown( state),
             handle::local::service::advertise( state),
             handle::local::service::lookup( state),

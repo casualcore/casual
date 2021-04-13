@@ -703,6 +703,46 @@ domain:
          }
       }
 
+      TEST( service_manager, a_route_b__advertise_a__lookup_b_twice__expect_first_idle__send_ack___expect_second_idle)
+      {
+         common::unittest::Trace trace;
+
+         constexpr auto configuration = R"(
+domain:
+   name: route
+
+   servers:
+      - path: "./bin/casual-service-manager"
+   services:
+      - name: A
+        routes: [ B]
+
+)";
+
+         local::Domain domain{ configuration};
+         service::unittest::advertise( { "A"});
+
+         // we reserve (lock) our instance to the 'call', via the route
+         struct 
+         {
+            common::service::Lookup first{ "B"};
+            common::service::Lookup second{ "B"};
+         } lookup;
+
+         // 'emulate' that a call is in progress (more like consuming the lookup reply...)
+         EXPECT_TRUE( lookup.first().state == decltype( lookup.first().state)::idle);
+
+         // expect a second "call" to get busy
+         EXPECT_TRUE( lookup.second().state == decltype( lookup.second().state)::busy);
+
+         // pretend the first call has been done
+         service::unittest::send::ack( lookup.first());
+
+         // expect the second to be idle now.
+         EXPECT_TRUE( lookup.second().state == decltype( lookup.second().state)::idle);
+
+      }
+
       TEST( service_manager, service_lookup__send_ack__expect_metric)
       {
          common::unittest::Trace trace;

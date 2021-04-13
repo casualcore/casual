@@ -3,8 +3,9 @@ This is the changelog for `casual` and all changes are listed in this document.
 
 ## [Unreleased]
 
-## [1.4.15] - 2021-04-12
+## [1.4.15] - 2021-04-14
 ### Fixes
+- service - pending lookups did not work correctly for _routes_
 - gateway - made sure we terminate a detected 'loop' for calls
 - gateway - improved connect to be more robust
 
