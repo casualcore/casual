@@ -182,6 +182,7 @@ namespace casual
             case Type::cli_transaction_associated: return out << "cli_transaction_associated";
             case Type::cli_transaction_finalize: return out << "cli_transaction_finalize";
             case Type::cli_transaction_propagate: return out << "cli_transaction_propagate";
+            case Type::internal_dump_state: return out << "internal_dump_state";
             case Type::unittest_message: return out << "unittest_message";
 
             // end markers...

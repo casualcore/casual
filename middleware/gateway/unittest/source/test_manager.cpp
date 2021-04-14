@@ -177,6 +177,62 @@ domain:
          }));
       }
 
+      TEST( gateway_manager_tcp, outbound_connect_non_existent__expect_keep_trying)
+      {
+         common::unittest::Trace trace;
+
+         constexpr auto configuration = R"(
+domain:
+   name: A
+   gateway:
+      outbound:
+         groups:
+            -  connections:
+                  -  address: non.existent.local:70001
+
+)";
+
+         auto domain = local::domain::extended( configuration);
+
+         EXPECT_TRUE( common::communication::instance::fetch::handle( common::communication::instance::identity::gateway::manager.id));
+
+         auto state = local::call::state( []( auto& state)
+         {
+            return state.connections.size() == 1 && state.connections.at( 0).bound == decltype( state.connections.at( 0).bound)::out;
+         });
+
+         ASSERT_TRUE( state.connections.size() == 1) << CASUAL_NAMED_VALUE( state);
+         EXPECT_TRUE( state.connections.at( 0).bound == decltype( state.connections.at( 0).bound)::out);
+      }
+
+      TEST( gateway_manager_tcp, outbound_connect_empty_address__expect_keep_trying)
+      {
+         common::unittest::Trace trace;
+
+         constexpr auto configuration = R"(
+domain:
+   name: A
+   gateway:
+      outbound:
+         groups:
+            -  connections:
+                  -  address: ${non_existent_environment}
+
+)";
+
+         auto domain = local::domain::extended( configuration);
+
+         EXPECT_TRUE( common::communication::instance::fetch::handle( common::communication::instance::identity::gateway::manager.id));
+
+         auto state = local::call::state( []( auto& state)
+         {
+            return state.connections.size() == 1 && state.connections.at( 0).bound == decltype( state.connections.at( 0).bound)::out;
+         });
+
+         ASSERT_TRUE( state.connections.size() == 1) << CASUAL_NAMED_VALUE( state);
+         EXPECT_TRUE( state.connections.at( 0).bound == decltype( state.connections.at( 0).bound)::out);
+      }
+
       TEST( gateway_manager_tcp, outbound_groups_3___expect_order)
       {
          common::unittest::Trace trace;

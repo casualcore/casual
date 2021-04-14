@@ -104,6 +104,8 @@ namespace casual
                         {
                            Trace trace{ "gateway::group::outbound::handle::local::internal::service::call::reply::send"};
 
+                           ipc::flush::optional::send( destination.process.ipc, message);
+
                            state.route.service.metric.metrics.push_back( [&]()
                            {
                               common::message::event::service::Metric metric;
@@ -124,8 +126,6 @@ namespace casual
                               return metric;
                            }());
 
-                           ipc::flush::optional::send( destination.process.ipc, message);
-
                            // send service metrics if we don't have any more in-flight call request (this one
                            // was the last, or only) OR we've accumulated enough metrics for a batch update
                            if( state.route.service.message.empty() || state.route.service.metric.metrics.size() >= platform::batch::gateway::metrics)
@@ -143,6 +143,20 @@ namespace casual
                            Trace trace{ "gateway::group::outbound::handle::local::internal::service::call::request"};
                            log::line( verbose::log, "message: ", message);
 
+                           auto send_error_reply = []( auto& state, auto route, auto& message, auto code)
+                           {
+                              // we can't send error reply if the caller using 'fire and forget'.
+                              if( message.flags.exist( common::message::service::call::request::Flag::no_reply))
+                                 return;
+
+                              auto reply = common::message::reverse::type( message);
+                              reply.code.result = code;
+                              reply.transaction.trid = message.trid;
+
+                              service::call::reply::send( state, std::move( route), reply);
+                           };
+
+
                            auto now = platform::time::clock::type::now();
 
                            auto [ lookup, involved] = state.lookup.service( message.service.name, message.trid);
@@ -158,24 +172,26 @@ namespace casual
                               now,
                               lookup.connection};
 
-                           auto origin_trid = std::exchange( message.trid, lookup.trid);
 
-                           
+                           // check if we've has been called with the same correlation id before, hence we are in a
+                           // loop between gateways.
+                           if( state.route.service.message.contains( message.correlation))
+                           {
+                              log::line( log, code::casual::invalid_semantics, " a call with the same correlation id is in flight - ", message.correlation, " - action: reply with ", code::xatmi::no_entry);
+                              send_error_reply( state, std::move( route), message, code::xatmi::no_entry);
+                              return;
+                           }
+
                            if( ! lookup.connection)
                            {
                               log::line( log::category::error, code::casual::invalid_semantics, " failed to look up service '", message.service.name, "' - action: reply with ", code::xatmi::system);
 
-                              // we can't send error reply if the caller using 'fire and forget'.
-                              if( message.flags.exist( common::message::service::call::request::Flag::no_reply))
-                                 return;
-
-                              auto reply = common::message::reverse::type( message);
-                              reply.code.result = code::xatmi::system;
-                              reply.transaction.trid = origin_trid;
-
-                              service::call::reply::send( state, std::move( route), reply);
+                              send_error_reply( state, std::move( route), message, code::xatmi::system);
                               return;
                            }
+
+                           // set the branched trid for the message, if any.
+                           std::exchange( message.trid, lookup.trid);
 
                            // notify TM that we act as a "resource" and are involved in the transaction
                            if( involved)
@@ -420,8 +436,9 @@ namespace casual
 
                            auto [ lookup, involved] = state.lookup.queue( message.name, message.trid);
 
-                           
-                           if( ! lookup.connection)
+                           // check if we've has been called with the same correlation id before, hence we are in a
+                           // loop between gateways.
+                           if( ! lookup.connection || state.route.message.contains( message.correlation))
                            {
                               log::line( log::category::error, code::casual::invalid_semantics, " failed to look up queue '", message.name);
                               auto reply = common::message::reverse::type( message);
@@ -848,6 +865,13 @@ namespace casual
 
       std::vector< configuration::model::gateway::outbound::Connection> idle( State& state)
       {
+         // we need to check metric, we don't know when we're about to be called again.
+         if( ! state.route.service.metric.metrics.empty())
+         {
+            ipc::flush::optional::send( ipc::manager::service(), state.route.service.metric);
+            state.route.service.metric.metrics.clear();
+         }
+
          if( state.disconnecting.empty())
             return {};
 

@@ -69,13 +69,9 @@ namespace casual
          Socket accept( const Socket& listener);
 
       } // socket
-
+      
+      //! @returns a connected socket if success, otherwise a 'nil' socket.
       Socket connect( const Address& address);
-
-      namespace non::blocking
-      {
-         Socket connect( const Address& address);
-      } // non::blocking
 
       namespace retry
       {

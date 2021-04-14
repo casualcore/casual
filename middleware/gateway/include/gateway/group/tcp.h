@@ -123,7 +123,7 @@ namespace casual
             try
             {
                ++connection.metric.attempts;
-               if( auto socket = common::communication::tcp::non::blocking::connect( connection.configuration.address))
+               if( auto socket = common::communication::tcp::connect( connection.configuration.address))
                {
                   common::log::line( common::log::category::information, 
                      "connection established local: ", common::communication::tcp::socket::address::host( socket.descriptor()),
