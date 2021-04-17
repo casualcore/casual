@@ -11,17 +11,16 @@
 #include "common/process.h"
 #include "common/uuid.h"
 #include "common/event/listen.h"
-#include "common/file.h"
 
 #include "common/code/raise.h"
 #include "common/code/casual.h"
-
+#include "common/file.h"
 
 #include "common/communication/instance.h"
 #include "common/algorithm.h"
 
-#include <fstream>
 #include <iostream>
+#include <filesystem>
 
 
 namespace casual
@@ -45,8 +44,8 @@ namespace casual
             };
             struct Settings
             {
+               std::filesystem::path file = "statistics.log";
                std::string delimiter = "|";
-               std::string file = "statistics.log";
                Filter filter;
 
                CASUAL_LOG_SERIALIZE({
@@ -61,18 +60,18 @@ namespace casual
             {
                struct Log
                {
-                  Log( std::string path, std::string delimiter) 
-                     : file{ Log::open( path)}, delimiter{ std::move( delimiter)}, path{ std::move( path)} {}
+                  Log( std::filesystem::path path, std::string delimiter) 
+                     : file{ Log::open( std::move( path))}, delimiter{ std::move( delimiter)} {}
                   
-                  std::ofstream file;
+                  common::file::Output file;
                   std::string delimiter;
-                  std::string path;
 
                   void reopen()
                   {  
-                     common::log::line( event::log, "reopen: ", path);
+                     common::log::line( event::log, "reopen: ", file.path());
+
                      file.flush();
-                     file = open( path);
+                     file = open( file.path());
                   }
 
                   void flush()
@@ -82,17 +81,12 @@ namespace casual
 
                private:
 
-                  static std::ofstream open( const std::string& path)
+                  static common::file::Output open( std::filesystem::path path)
                   {
                      // make sure we got the directory
-                     common::directory::create( common::directory::name::base( path));                           
+                     std::filesystem::create_directories( path.parent_path());
 
-                     std::ofstream file{ path, std::ios::app};
-
-                     if( ! file)
-                        common::code::raise::error( common::code::casual::invalid_path, "failed to open file: ", path);
-
-                     return file;
+                     return { std::move( path), std::ios::app};
                   }
                };
             } // state
@@ -232,7 +226,7 @@ namespace casual
                {
                   using namespace casual::common::argument;
                   Parse{ "service log", 
-                     Option( std::tie( settings.file), { "-f", "--file"}, "path to log-file (default: '" + settings.file + "')"),
+                     Option( std::tie( settings.file), { "-f", "--file"}, "path to log-file (default: '" + settings.file.string() + "')"),
                      Option( std::tie( settings.delimiter), { "-d", "--delimiter"}, "delimiter between columns (default: '" + settings.delimiter + "')"),
                      option::filter::inclusive( settings),
                      option::filter::exclusive( settings),

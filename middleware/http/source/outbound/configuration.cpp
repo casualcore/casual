@@ -30,7 +30,7 @@ namespace casual
             {
                namespace
                {
-                  Model get( Model current, const std::string& name)
+                  Model get( Model current, const std::filesystem::path& name)
                   {
                      Trace trace{ "http::outbound::configuration::local::get"};
 
@@ -39,7 +39,7 @@ namespace casual
                      // Create the reader and deserialize configuration
                      Model http;
                      common::file::Input file{ name};
-                     auto reader = common::serialize::create::reader::consumed::from( file.extension(), file);
+                     auto reader = common::serialize::create::reader::consumed::from( file);
                      
                      reader >> CASUAL_NAMED_VALUE( http);
                      reader.validate();
@@ -47,10 +47,9 @@ namespace casual
                      common::log::line( verbose::log, "http: ", http);
 
                      return current + http;
-
                   }
 
-                  Model accumulate( const std::vector< std::string>& paths)
+                  Model accumulate( const std::vector< std::filesystem::path>& paths)
                   {
                      auto result = common::algorithm::accumulate( paths, Model{}, &local::get);
 
@@ -75,6 +74,18 @@ namespace casual
                lhs.casual_default = lhs.casual_default + rhs.casual_default;
                common::algorithm::append( rhs.services, lhs.services);
                return lhs;
+            }
+
+            Model get( const std::filesystem::path& path)
+            {
+               Trace trace{ "http::outbound::configuration::get"};
+               return local::accumulate( { path});
+            }
+
+            Model get( const std::vector< std::filesystem::path>& paths)
+            {
+               Trace trace{ "http::outbound::configuration::get"};
+               return local::accumulate( paths);
             }
 
             Model get( const std::string& pattern)

@@ -12,8 +12,6 @@
 #include "configuration/example/build/executable.h"
 #include "configuration/example/resource/property.h"
 
-#include "common/string.h"
-#include "common/file.h"
 #include "common/serialize/create.h"
 #include "common/serialize/macro.h"
 
@@ -21,18 +19,20 @@
 #include "common/argument.h"
 #include "common/exception/guard.h"
 
+#include <fstream>
+#include <filesystem>
+
 namespace casual
 {
    namespace configuration
    {
       namespace documentation
       {
-         auto file( const std::string& root, const std::string& name)
+         auto file( const std::filesystem::path& root, const std::filesystem::path& name)
          {
-            auto path = common::string::compose( root, "/", name);
             // make sure we create directories if not present
-            common::directory::create( common::directory::name::base( path));
-            return std::ofstream{ path};
+            std::filesystem::create_directories( root);
+            return std::ofstream{ root / name};
          }
 
          namespace write
@@ -69,7 +69,7 @@ Below follows examples in human readable formats that `casual` can handle
                   write::example( out, format, configuration);
             }
 
-            void domain( const std::string& root)
+            void domain( const std::filesystem::path& root)
             {
                auto out = documentation::file( root, "domain.operation.md");
 
@@ -270,9 +270,9 @@ retry.delay    | if message is rolled backed, how long delay before message is a
                examples( out, wrapper( example::domain(), "domain"));
             }
         
-            void resource_property( const std::string& root)
+            void resource_property( const std::filesystem::path& root)
             {
-               auto out = documentation::file( root, "resource/property.operation.md");
+               auto out = documentation::file( root / "resource", "property.operation.md");
 
                out << R"(# configuration resource-property
 
@@ -296,9 +296,9 @@ paths          | include and library paths, during _build time_
                examples( out, wrapper( example::resource::property::example(), "resources"));           
             }
 
-            void build_server( const std::string& root)
+            void build_server( const std::filesystem::path& root)
             {
-               auto out = documentation::file( root, "build/server.development.md");
+               auto out = documentation::file( root / "build", "server.development.md");
 
                out << R"(# configuration build-server
 
@@ -328,9 +328,9 @@ given name. This is the preferred way, since it is a lot more explicit.
                examples( out, wrapper( example::build::server::example(), "server"));
             }
 
-            void build_executable( const std::string& root)
+            void build_executable( const std::filesystem::path& root)
             {
-               auto out = documentation::file( root, "build/executable.development.md");
+               auto out = documentation::file( root / "build", "executable.development.md");
 
                out << R"(# configuration build-executable
 

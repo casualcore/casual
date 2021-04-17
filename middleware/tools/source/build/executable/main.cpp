@@ -13,6 +13,7 @@
 #include "common/argument.h"
 #include "common/environment.h"
 #include "common/execute.h"
+#include "common/file.h"
 
 #include "common/exception/guard.h"
 #include "common/code/raise.h"
@@ -141,15 +142,19 @@ namespace casual
 
                         common::algorithm::append_unique_value( "casual-xatmi", settings.directive.libraries);
 
-                        if( common::environment::variable::exists( "CASUAL_HOME"))
+                        if( common::environment::variable::exists( common::environment::variable::name::home))
                         {
-                           auto casual_home = common::environment::variable::get( "CASUAL_HOME");
+                           auto append = []( const auto& path, auto& target)
+                           {
+                              if( std::filesystem::exists( path))
+                                 common::algorithm::append_unique_value( path.string(), target);
+                           };
 
-                           if( common::directory::exists( casual_home + "/include"))
-                              common::algorithm::append_unique_value( casual_home + "/include", settings.directive.paths.include);
+                           std::filesystem::path home =
+                              common::environment::variable::get( common::environment::variable::name::home);
 
-                           if( common::directory::exists( casual_home + "/lib"))
-                              common::algorithm::append_unique_value( casual_home + "/lib", settings.directive.paths.library);
+                           append( home / "include", settings.directive.paths.include);
+                           append( home / "lib", settings.directive.paths.library);
                         }
 
                         // add resource stuff

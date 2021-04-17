@@ -17,7 +17,6 @@
 #include "common/algorithm.h"
 #include "common/memory.h"
 #include "common/flag.h"
-#include "common/file.h"
 
 
 #include <sys/un.h>

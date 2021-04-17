@@ -22,7 +22,7 @@ namespace casual
             auto load_configuration = []( auto content)
             {
                auto path = common::unittest::file::temporary::content( ".yaml", std::move( content));
-               return configuration::user::load( { path.path()});
+               return configuration::user::load( { path});
             };
 
             namespace invalid::configuration

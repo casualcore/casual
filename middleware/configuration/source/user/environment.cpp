@@ -10,6 +10,7 @@
 #include "common/environment/string.h"
 #include "common/environment.h"
 #include "common/algorithm.h"
+#include "common/file.h"
 #include "common/serialize/create.h"
 
 namespace casual
@@ -26,7 +27,7 @@ namespace casual
 
                // Create the reader and deserialize configuration
                common::file::Input file{ name};
-               auto reader = common::serialize::create::reader::consumed::from( file.extension(), file);
+               auto reader = common::serialize::create::reader::consumed::from( file);
 
                reader >> CASUAL_NAMED_VALUE( environment);
                reader.validate();

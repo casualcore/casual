@@ -83,25 +83,21 @@ namespace casual
 
       Address::Address( strong::ipc::id ipc)
       {
-         const auto& directory = environment::ipc::directory();
-         const auto postfix = '/' + uuid::string( ipc.value());
-         const auto max_size = sizeof( m_native.sun_path) - postfix.size() - 1;
+         const auto path = ( environment::ipc::directory() / uuid::string( ipc.value())).string();
 
-         if( directory.size() > max_size)
-            code::raise::error( code::casual::invalid_path, "transient directory path to long - max size: ", max_size);
+         if( path.size() > ( sizeof( m_native.sun_path) - 1))
+            code::raise::error( code::casual::invalid_path, "transient directory path too long");
 
          auto target = std::begin( m_native.sun_path);
 
-         algorithm::copy( directory, target);
-         algorithm::copy( postfix, target + directory.size());
+         algorithm::copy( path, target);
 
          m_native.sun_family = AF_UNIX;
       }
 
       std::ostream& operator << ( std::ostream& out, const Address& rhs)
       {
-         return out << "{ path: " << rhs.m_native.sun_path
-            << '}';
+         return out << "{ path: " << rhs.m_native.sun_path << '}';
       }
 
       namespace native

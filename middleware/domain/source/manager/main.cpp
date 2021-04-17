@@ -59,11 +59,7 @@ namespace casual
 
                   //state.bare = settings.bare;
 
-                  // log the source of the configuration
-                  if( patterns == files)
-                     log::line( log::category::information, "used configuration: ", files);
-                  else
-                     log::line( log::category::information, "used configuration: ", files, " - from patterns: ", patterns);
+                  log::line( log::category::information, "used configuration: ", files, " from patterns: ", patterns);
 
                   return state;
                }

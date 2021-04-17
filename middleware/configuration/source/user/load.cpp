@@ -22,7 +22,7 @@ namespace casual
          {
             namespace
             {
-               auto load( Domain current, const std::string& file)
+               auto load( Domain current, const std::filesystem::path& file)
                {
                   Trace trace{ "configuration::user::local::load"};
                   log::line( verbose::log, "file: ", file);
@@ -30,7 +30,7 @@ namespace casual
                   user::Domain domain;
 
                   common::file::Input stream{ file};
-                  auto archive = common::serialize::create::reader::consumed::from( stream.extension(), stream);
+                  auto archive = common::serialize::create::reader::consumed::from( stream);
                   archive >> CASUAL_NAMED_VALUE( domain);
                   archive.validate();
                   domain.normalize();
@@ -45,7 +45,7 @@ namespace casual
 
 
 
-         Domain load( const std::vector< std::string>& files)
+         Domain load( const std::vector< std::filesystem::path>& files)
          {
             Trace trace{ "configuration::user::load"};
             log::line( verbose::log, "files: ", files);

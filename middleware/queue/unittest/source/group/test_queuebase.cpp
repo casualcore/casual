@@ -153,17 +153,27 @@ namespace casual
          EXPECT_TRUE( queues.at( 1).name == "foo-bar");
       }
 
+      namespace local
+      {
+         namespace
+         {
+            auto path()
+            {
+               common::file::scoped::Path result{ common::environment::directory::temporary()};
+               result /= common::uuid::string( common::uuid::make());
+               result += "unittest_queue_server_database.db";
+               return result;
+            }
+         } //
+      } // local
+
 
       TEST( casual_queue_group_database, create_queue_on_disc_and_open_again)
       {
          common::unittest::Trace trace;
 
-         common::file::scoped::Path path{
-            common::file::name::unique(
-               common::environment::directory::temporary() + "/",
-               "unittest_queue_server_database.db")
-            };
-
+         auto path = local::path();
+         
          {
             group::Queuebase database( path);
             database.create( queuebase::Queue{ "unittest_queue"});
@@ -188,12 +198,8 @@ namespace casual
       {
          common::unittest::Trace trace;
 
-         common::file::scoped::Path path{
-            common::file::name::unique(
-               common::environment::directory::temporary() + "/",
-               "unittest_queue_server_database.db")
-            };
-
+         auto path = local::path();
+         
          {
             group::Queuebase database( path);
 

@@ -9,7 +9,6 @@
 
 
 #include "common/strong/id.h"
-#include "common/file.h"
 #include "common/uuid.h"
 
 #include "common/algorithm.h"
@@ -17,11 +16,10 @@
 
 #include "common/serialize/macro.h"
 
-
-
 #include <string>
 #include <vector>
 #include <chrono>
+#include <filesystem>
 
 namespace casual
 {
@@ -33,13 +31,7 @@ namespace casual
       {
 
          //! @return the path of the current process
-         const std::string& path();
-
-         //! @return the basename of the current process
-         const std::string& basename();
-
-         //! @return the directory of the current process
-         const std::string& directory();
+         const std::filesystem::path& path();
 
          //! Holds pid and ipc-queue for a given process
          struct Handle : Compare< Handle>
@@ -281,9 +273,9 @@ namespace casual
 
       struct Process : process::Handle
       {
-         Process() = default;
-         Process( const std::string& path, std::vector< std::string> arguments);
-         inline Process( const std::string& path) : Process( path, {}) {}
+         Process();
+         Process( const std::filesystem::path& path, std::vector< std::string> arguments);
+         Process( const std::filesystem::path& path);
          ~Process();
          
          Process( Process&&) noexcept;

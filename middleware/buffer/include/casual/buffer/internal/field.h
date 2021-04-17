@@ -11,9 +11,10 @@
 #include "casual/platform.h"
 #include "common/buffer/type.h"
 
-#include <unordered_map>
 #include <string>
 #include <iosfwd>
+#include <filesystem>
+#include <unordered_map>
 
 
 namespace casual
@@ -27,8 +28,8 @@ namespace casual
             namespace detail
             {
                //! only exposed for unittest
-               std::unordered_map< std::string, long> name_to_id( std::vector< std::string> files);
-               std::unordered_map< long, std::string> id_to_name( std::vector< std::string> files);
+               std::unordered_map< std::string, long> name_to_id( std::vector< std::filesystem::path> files);
+               std::unordered_map< long, std::string> id_to_name( std::vector< std::filesystem::path> files);
 
                //! only exposed for unittest
                //! uses CASUAL_FIELD_TABLE to fetch table files

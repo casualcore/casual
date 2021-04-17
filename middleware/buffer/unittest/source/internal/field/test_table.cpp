@@ -101,11 +101,11 @@ groups:
             auto file = local::file_1();
 
             {
-               auto table = internal::detail::id_to_name( { file.path()});
+               auto table = internal::detail::id_to_name( { file});
                EXPECT_TRUE( table.size() == 4);
             }
             {
-               auto table = internal::detail::name_to_id( { file.path()});
+               auto table = internal::detail::name_to_id( { file});
                EXPECT_TRUE( table.size() == 4);
             }
          }
@@ -119,11 +119,11 @@ groups:
             auto file_2 = local::file_2();
 
             {
-               auto table = internal::detail::id_to_name( { file_1.path(), file_2.path()});
+               auto table = internal::detail::id_to_name( { file_1, file_2});
                EXPECT_TRUE( table.size() == 6);
             }
             {
-               auto table = internal::detail::name_to_id( { file_1.path(), file_2.path()});
+               auto table = internal::detail::name_to_id( { file_1, file_2});
                EXPECT_TRUE( table.size() == 6);
             }
          }
@@ -135,7 +135,7 @@ groups:
             auto file_1 = local::file_1();
             auto file_2 = local::file_2();
 
-            environment::variable::set( "CASUAL_FIELD_TABLE", string::compose( file_1, '|', file_2));
+            environment::variable::set( "CASUAL_FIELD_TABLE", string::compose( file_1.string(), '|', file_2.string()));
 
             {
                auto table = internal::detail::id_to_name();

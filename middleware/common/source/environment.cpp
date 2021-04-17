@@ -202,45 +202,46 @@ namespace casual
                //! unittests
                struct Paths 
                {
-                  std::string domain = create_path( get_domain());
-                  std::string detail = create_path( get_domain() + "/.casual");
-                  std::string tmp = environment::directory::temporary();
+                  std::filesystem::path domain = create_path( get_domain());
+                  std::filesystem::path detail = create_path( get_domain() / ".casual");
+                  std::filesystem::path tmp = environment::directory::temporary();
                   
-                  std::string casual = []() -> std::string
+                  std::filesystem::path casual = []() -> std::filesystem::path
                   {
                      if( variable::exists( variable::name::home))
                         return variable::get( variable::name::home);
 
+                     // TODO: Use some more platform independant solution
                      return "/opt/casual";
                   }();
 
-                  std::string log = []() -> std::string
+                  std::filesystem::path log = []() -> std::filesystem::path
                   {
-                     auto file = []( ) -> std::string
+                     auto file = []( ) -> std::filesystem::path
                      {
                         if( variable::exists( variable::name::log::path))
                            return variable::get( variable::name::log::path);
 
-                        return get_domain() + "/casual.log";
+                        return get_domain() / "casual.log";
                      }();
 
-                     create_path( common::directory::name::base( file));
+                     std::filesystem::create_directories( file.parent_path());
                      return file;
                   }();
 
-                  std::string ipc = []() 
+                  std::filesystem::path ipc = []() 
                   {
-                     auto get = []()
+                     auto get = []() -> std::filesystem::path
                      {
                         if( variable::exists( variable::name::ipc::directory))
                            return variable::get( variable::name::ipc::directory);
 
-                        return environment::directory::temporary() + "/.casual/ipc";
+                        return environment::directory::temporary() / ".casual" / "ipc";
                      };
                      return create_path( get());
                   }();
 
-                  std::string singleton = get_domain() + "/.casual/singleton";
+                  std::filesystem::path singleton = get_domain() / ".casual" / "singleton";
 
                   
                   CASUAL_LOG_SERIALIZE(
@@ -255,19 +256,18 @@ namespace casual
                   })
 
                private:
-                  static std::string get_domain()
+
+                  static std::filesystem::path get_domain()
                   {
                      if( variable::exists( variable::name::domain::home))
-                        return variable::get( variable::name::domain::home);
+                        return { variable::get( variable::name::domain::home)};
 
-                     return "./";
+                     return { "./"};
                   }
 
-                  static std::string create_path( std::string path)
+                  static std::filesystem::path create_path( std::filesystem::path path)
                   {
-                     if( ! common::directory::exists( path))
-                        common::directory::create( path);
-
+                     std::filesystem::create_directories( path);
                      return path;
                   }
                };
@@ -289,18 +289,18 @@ namespace casual
 
          namespace directory
          {
-            const std::string& domain()
+            const std::filesystem::path& domain()
             {
                return local::paths().domain;
             }
 
-            const std::string& temporary()
+            const std::filesystem::path& temporary()
             {
-               static const std::string singleton{ environment::variable::get( "TMP", platform::directory::temporary)};
+               static const std::filesystem::path singleton{ common::directory::temporary()};
                return singleton;               
             }
 
-            const std::string& casual()
+            const std::filesystem::path& casual()
             {
                return local::paths().casual;
             }
@@ -308,7 +308,7 @@ namespace casual
 
          namespace log
          {
-            const std::string& path()
+            const std::filesystem::path& path()
             {
                return local::paths().log;
             }
@@ -316,7 +316,7 @@ namespace casual
 
          namespace ipc
          {
-            const std::string& directory()
+            const std::filesystem::path& directory()
             {
                 return local::paths().ipc;
             }
@@ -326,10 +326,12 @@ namespace casual
          {
             namespace singleton
             {
-               const std::string& file() { return local::paths().singleton;}
+               const std::filesystem::path& file()
+               { 
+                  return local::paths().singleton;
+               }
             } // singleton
          } // domain
-
 
 
          void reset()

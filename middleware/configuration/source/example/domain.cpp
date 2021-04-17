@@ -9,7 +9,6 @@
 #include "configuration/example/create.h"
 #include "configuration/common.h"
 
-#include "common/file.h"
 #include "common/serialize/macro.h"
 #include "common/serialize/create.h"
 

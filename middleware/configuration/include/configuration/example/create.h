@@ -21,13 +21,22 @@ namespace casual
             namespace file
             {
 
+               namespace detail
+               {
+                  inline common::file::scoped::Path temporary(std::string_view extension)
+                  {
+                     const auto prefix = common::directory::temporary() / "configuration_";
+                     return { common::file::name::unique( prefix.string(), extension)};
+                  }
+               } // detail
+
                template< typename M>
                common::file::scoped::Path temporary( M&& model, std::string_view root, std::string_view extension)
                {
-                  common::file::scoped::Path path{ common::file::name::unique( common::directory::temporary() + "/configuration_", extension)};
+                  common::file::scoped::Path path = detail::temporary( extension);
 
-                  common::file::Output file{ path};
-                  auto archive = common::serialize::create::writer::from( file.extension());
+                  std::ofstream file{ path};
+                  auto archive = common::serialize::create::writer::from( extension);
                   archive << CASUAL_NAMED_VALUE_NAME( model, root.data());;
                   archive.consume( file);
 

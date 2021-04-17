@@ -13,6 +13,7 @@
 
 #include <vector>
 #include <string>
+#include <filesystem>
 
 namespace casual::configuration
 {
@@ -64,7 +65,7 @@ namespace casual::configuration
 
          struct Executable : common::Compare< Executable>
          {
-            std::string path;
+            std::filesystem::path path;
             std::string alias;
             std::string note;
             std::vector< std::string> arguments;

@@ -34,7 +34,7 @@ namespace casual
                auto load_configuration = []( auto content)
                {
                   auto path = common::unittest::file::temporary::content( ".yaml", std::move( content));
-                  return configuration::user::load( { path.path()});
+                  return configuration::user::load( { path});
                };
  
 
@@ -175,7 +175,7 @@ domain:
            instances: 2
          )");
 
-            auto value = user::load( { file_a.path(), file_b.path()});
+            auto value = user::load( { file_a, file_b});
 
             ASSERT_TRUE( value.transaction);
             auto& tran = value.transaction.value();
@@ -239,7 +239,7 @@ domain:
       - name: A2
          )");
 
-            auto value = user::load( { file_a.path(), file_b.path()});
+            auto value = user::load( { file_a, file_b});
             auto& groups = value.groups;
             ASSERT_TRUE( groups.size() == 4);
             EXPECT_TRUE( groups.at( 0).name == "A1");
@@ -270,7 +270,7 @@ domain:
 )");
 
             EXPECT_CODE({
-               auto value = user::load( { file_a.path(), file_b.path()});
+               auto value = user::load( { file_a, file_b});
             }, common::code::casual::invalid_configuration);
          }
 
@@ -294,7 +294,7 @@ domain:
       - name: B2
 )");
 
-            auto value = user::load( { file_a.path(), file_b.path()});
+            auto value = user::load( { file_a, file_b});
 
             auto& groups = value.groups;
             ASSERT_TRUE( groups.size() == 4);
@@ -325,7 +325,7 @@ domain:
       - path: B2
 )");
 
-            auto value = user::load( { file_a.path(), file_b.path()});
+            auto value = user::load( { file_a, file_b});
 
             auto& executables = value.executables;
             ASSERT_TRUE( executables.size() == 4);
@@ -355,7 +355,7 @@ domain:
       - path: B2
 )");
 
-            auto value = user::load( { file_a.path(), file_b.path()});
+            auto value = user::load( { file_a, file_b});
 
             auto& servers = value.servers;
             ASSERT_TRUE( servers.size() == 4);
@@ -389,7 +389,7 @@ domain:
         alias: b_A2
 )");
 
-            auto value = user::load( { file_a.path(), file_b.path()});
+            auto value = user::load( { file_a, file_b});
 
             auto& servers = value.servers;
             ASSERT_TRUE( servers.size() == 4);
@@ -417,7 +417,7 @@ domain:
 )");
 
             EXPECT_CODE({
-               auto value = user::load( { file_a.path()});
+               auto value = user::load( { file_a});
             }, common::code::casual::invalid_configuration );
          }
 
@@ -451,7 +451,7 @@ domain:
 )");
 
             
-            auto value = user::load( { file.path()});
+            auto value = user::load( { file});
 
             {
                auto& connections = value.gateway.value().inbound.value().groups.at( 0).connections;

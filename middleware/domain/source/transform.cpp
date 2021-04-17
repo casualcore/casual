@@ -35,7 +35,7 @@ namespace casual
                      {
                         if( process.alias.empty())
                         {
-                           process.alias = file::name::base( process.path);
+                           process.alias = process.path.filename();
 
                            if( process.alias.empty())
                               code::raise::error( code::casual::invalid_configuration, "executables has to have a path - process: ", process);

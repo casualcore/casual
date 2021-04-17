@@ -98,7 +98,7 @@ domain:
 
          auto log_file = common::unittest::file::temporary::name( ".log");
 
-         common::environment::variable::set( "SERVICE_LOG_FILE", log_file);
+         common::environment::variable::set( "SERVICE_LOG_FILE", log_file.string());
 
          local::Domain domain;
 
@@ -116,7 +116,7 @@ domain:
          
          // move the file
          auto rotated = common::unittest::file::temporary::name( ".log");
-         common::file::move( log_file, rotated);
+         common::file::rename( log_file, rotated);
 
          
          // send hangup to service-log, to open the (new) file again
@@ -137,7 +137,7 @@ domain:
 
          auto log_file = common::unittest::file::temporary::name( ".log");
 
-         common::environment::variable::set( "SERVICE_LOG_FILE", log_file);
+         common::environment::variable::set( "SERVICE_LOG_FILE", log_file.string());
 
          local::Domain domain{ R"(
 domain:
@@ -179,7 +179,7 @@ domain:
 
          auto log_file = common::unittest::file::temporary::name( ".log");
 
-         common::environment::variable::set( "SERVICE_LOG_FILE", log_file);
+         common::environment::variable::set( "SERVICE_LOG_FILE", log_file.string());
 
          local::Domain domain{ R"(
 domain:

@@ -168,7 +168,7 @@ namespace casual
                   {
                      state::Server server;
                      server.alias = "casual-domain-pending-message";
-                     server.path = string::compose( process::directory(), "/casual-domain-pending-message");
+                     server.path = process::path().parent_path() / "casual-domain-pending-message";
                      server.scale( 1);
                      server.memberships.push_back( state.group_id.core);
                      server.note = "handles pending internal messages";
@@ -180,7 +180,7 @@ namespace casual
                   {
                      state::Server server;
                      server.alias = "casual-domain-discovery";
-                     server.path = string::compose( process::directory(), "/casual-domain-discovery");
+                     server.path = process::path().parent_path() / "casual-domain-discovery";
                      server.scale( 1);
                      server.memberships.push_back( state.group_id.core);
                      server.note = "handles discovery from/to other domains";
@@ -201,7 +201,7 @@ namespace casual
                {
                   state::Server manager;
                   manager.alias = "casual-service-manager";
-                  manager.path = string::compose( process::directory(), "/casual-service-manager");
+                  manager.path = process::path().parent_path() / "casual-service-manager";
                   manager.scale( 1);
                   manager.memberships.push_back( state.group_id.master);
                   manager.note = "service lookup and management";
@@ -212,7 +212,7 @@ namespace casual
                {
                   state::Server tm;
                   tm.alias = "casual-transaction-manager";
-                  tm.path = string::compose( process::directory(), "/casual-transaction-manager");
+                  tm.path = process::path().parent_path() / "casual-transaction-manager";
                   tm.scale( 1);
                   tm.memberships.push_back( state.group_id.transaction);
                   tm.note = "manage transaction in this domain";
@@ -227,7 +227,7 @@ namespace casual
                {
                   state::Server queue;
                   queue.alias = "casual-queue-manager";
-                  queue.path = string::compose( process::directory(), "/casual-queue-manager");
+                  queue.path = process::path().parent_path() / "casual-queue-manager";
                   queue.scale( 1);
                   queue.memberships.push_back( state.group_id.queue);
                   queue.note = "manage queues in this domain";
@@ -238,7 +238,7 @@ namespace casual
                {
                   state::Server gateway;
                   gateway.alias = "casual-gateway-manager";
-                  gateway.path = string::compose( process::directory(), "/casual-gateway-manager");
+                  gateway.path = process::path().parent_path() / "casual-gateway-manager";
                   gateway.scale( 1);
                   gateway.memberships.push_back( state.group_id.gateway);
                   gateway.note = "manage connections to and from other domains";

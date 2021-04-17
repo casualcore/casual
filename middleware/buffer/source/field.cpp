@@ -23,6 +23,7 @@
 #include "common/algorithm.h"
 #include "common/transcode.h"
 #include "common/execute.h"
+#include "common/file.h"
 
 #include "common/serialize/create.h"
 
@@ -1306,7 +1307,7 @@ namespace casual
 
                   namespace fetch
                   {   
-                     auto groups( std::vector< std::string> files)
+                     auto groups( std::vector< std::filesystem::path> files)
                      {
                         common::log::line( common::verbose::log, "files: ", files);
 
@@ -1327,7 +1328,7 @@ namespace casual
                         return result;
                      }
 
-                     auto fields( std::vector< std::string> files)
+                     auto fields( std::vector< std::filesystem::path> files)
                      {
                         const auto groups = fetch::groups( std::move( files));
 
@@ -1363,14 +1364,16 @@ namespace casual
 
                      auto files()
                      {
-                        return common::string::split( common::environment::variable::get( "CASUAL_FIELD_TABLE"), '|');
+                        return common::algorithm::transform( 
+                           common::string::split( common::environment::variable::get( "CASUAL_FIELD_TABLE"), '|'),
+                           []( const auto& file) { return std::filesystem::path{ file};});
                      }
 
                   } // fetch
 
                } // <unnamed>
 
-               std::unordered_map< std::string, long> name_to_id( std::vector< std::string> files)
+               std::unordered_map< std::string, long> name_to_id( std::vector< std::filesystem::path> files)
                {
                   std::unordered_map< std::string, long> result;
 
@@ -1394,7 +1397,7 @@ namespace casual
                   return result;
                }
 
-               std::unordered_map< long, std::string> id_to_name( std::vector< std::string> files)
+               std::unordered_map< long, std::string> id_to_name( std::vector< std::filesystem::path> files)
                {
                   std::unordered_map< long, std::string> result;
 

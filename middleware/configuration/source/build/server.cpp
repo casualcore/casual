@@ -55,7 +55,7 @@ namespace casual
 
                // Create the reader and deserialize configuration
                common::file::Input file{ name};
-               auto reader = common::serialize::create::reader::consumed::from( file.extension(), file);
+               auto reader = common::serialize::create::reader::consumed::from( file);
 
                reader >> CASUAL_NAMED_VALUE( server);
 

@@ -71,7 +71,7 @@ namespace casual
             if( information())
                return information().value().alias;
 
-            return process::basename();
+            return process::path().filename();
          }
 
       } // instance

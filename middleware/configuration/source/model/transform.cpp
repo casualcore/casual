@@ -59,7 +59,7 @@ namespace casual
                {
                   {
                      auto state = std::map< std::string, std::size_t>{};
-                     auto normalizer = normalize::mutator( state, []( auto& value){ return file::name::base( value.path);});
+                     auto normalizer = normalize::mutator( state, []( auto& value){ return value.path.filename();});
                      algorithm::for_each( model.domain.executables, normalizer);
                      algorithm::for_each( model.domain.servers, normalizer);
                   }

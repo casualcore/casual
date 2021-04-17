@@ -25,6 +25,7 @@
 
 #include "common/serialize/macro.h"
 
+#include <filesystem>
 #include <unordered_map>
 #include <vector>
 
@@ -89,7 +90,7 @@ namespace casual
             id_type id = id_type::generate();
 
             std::string alias;
-            std::string path;
+            std::filesystem::path path;
             std::vector< std::string> arguments;
             std::string note;
 

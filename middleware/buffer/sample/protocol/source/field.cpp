@@ -10,14 +10,12 @@
 
 #include "casual/platform.h"
 #include "common/algorithm.h"
-#include "common/file.h"
 #include "common/network/byteorder.h"
 #include "common/execute.h"
 
 #include "xatmi.h"
 
-
-
+#include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <iomanip>
@@ -146,16 +144,15 @@ Every field in the buffer has the following parts: `<field-id><size><data>`
             out << '\n';
          }
 
-         int main(int argc, char **argv)
+         int main( int argc, char **argv)
          {
-            auto directory = common::directory::name::base( __FILE__) + "/..";
+            auto directory = std::filesystem::path( __FILE__).parent_path().parent_path();
 
-            std::ofstream binary( directory + "/field.bin" , std::ios::binary);
+            std::ofstream binary( directory / "field.bin" , std::ios::binary);
             dump( binary);
 
-            std::ofstream markdown(  directory + "/field.md");
+            std::ofstream markdown( directory / "field.md");
             buffer::markdown( markdown);
-
 
             return 0;
          }
@@ -166,10 +163,8 @@ Every field in the buffer has the following parts: `<field-id><size><data>`
 
 
 
-int main(int argc, char **argv)
+int main( int argc, char **argv)
 {
    return casual::buffer::main( argc, argv);
 }
-
-
 

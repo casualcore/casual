@@ -32,7 +32,7 @@ namespace casual
             {
                namespace
                {
-                  std::vector< std::string> keys() { return { "ini", buffer::type::ini()};};
+                  std::vector< std::string> keys() { return { "ini", ".ini", buffer::type::ini()};};
 
                   const std::string magic{ '@' };
 

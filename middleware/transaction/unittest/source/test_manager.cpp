@@ -107,7 +107,7 @@ resources:
                   Environment( const std::string& configuration) 
                      : resource{ common::unittest::file::temporary::content( ".yaml", configuration)}
                   {
-                     common::environment::variable::set( "CASUAL_RESOURCE_CONFIGURATION_FILE", resource);
+                     common::environment::variable::set( "CASUAL_RESOURCE_CONFIGURATION_FILE", resource.string());
 
                      if( ! common::environment::variable::exists( environment::rm1))
                         common::environment::variable::set( environment::rm1, "");

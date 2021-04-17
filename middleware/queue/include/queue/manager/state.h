@@ -70,9 +70,8 @@ namespace casual
 
          namespace entity
          {
-            inline auto path( const Group&) { return common::string::compose( common::process::directory(), "casual-queue-group");};
-            inline auto path( const forward::Group&) { return common::string::compose( common::process::directory(), "casual-queue-forward-group");};
-            
+            inline auto path( const Group&) { return common::process::path().parent_path() / "casual-queue-group";}
+            inline auto path( const forward::Group&) { return common::process::path().parent_path() / "casual-queue-forward-group";}
          } // entity
 
 

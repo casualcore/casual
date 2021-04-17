@@ -49,7 +49,7 @@ http:
       discard_transaction: true
 
 )");
-                     common::environment::variable::set( "CASUAL_UNITTEST_HTTP_CONFIGURATION", result.path());
+                     common::environment::variable::set( "CASUAL_UNITTEST_HTTP_CONFIGURATION", result.string());
                      return result;
                   }();
 

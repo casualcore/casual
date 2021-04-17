@@ -308,10 +308,11 @@ namespace casual
             {
                auto initialize_log = []( auto&& settings, auto&& configuration)
                {
+                  std::string file = environment::directory::domain() / "transaction" / "log.db";
                   return common::environment::string( common::coalesce( 
                      std::move( settings), 
                      std::move( configuration), 
-                     environment::directory::domain() + "/transaction/log.db"));
+                     std::move( file)));
 
                };
 
@@ -355,7 +356,7 @@ namespace casual
                         if( common::algorithm::find( properties, r.key))
                            return true;
                         
-                        common::event::error::send( code::casual::invalid_argument, event::error::Severity::fatal, "failed to correlate resource key '", r.key);
+                        common::event::error::send( code::casual::invalid_argument, event::error::Severity::fatal, "failed to correlate resource key: '", r.key, "'");
                         return false;   
                      };
 

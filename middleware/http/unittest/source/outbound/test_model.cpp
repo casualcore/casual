@@ -109,8 +109,7 @@ http:
       discard_transaction: true
 )");
 
-            auto pattern = common::file::name::without::extension( file) + "*yaml";
-            auto model = configuration::get(  pattern);
+            auto model = configuration::get( file.replace_extension( "").string() + "*yaml");
             ASSERT_TRUE( model.services.size() == 1);
             EXPECT_TRUE( model.services.at( 0).discard_transaction.value() == true) << CASUAL_NAMED_VALUE( model);
          }
@@ -156,7 +155,7 @@ http:
 
 )");
 
-            auto model = configuration::get( std::vector< std::string>{ file_a.path(), file_b.path()});
+            auto model = configuration::get( std::vector< std::filesystem::path>{ file_a, file_b});
             EXPECT_TRUE( model.services.size() == 2);
             EXPECT_TRUE( model.services.at( 0).name == "a");
             EXPECT_TRUE( model.services.at( 0).url == "a.se/a");

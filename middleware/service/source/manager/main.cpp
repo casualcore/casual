@@ -77,7 +77,7 @@ namespace casual
                {
                   Trace trace{ "service::manager:local::setup spawn forward"};
 
-                  state.forward = common::Process( process::directory() + "/casual-service-forward");
+                  state.forward = common::Process( process::path().parent_path() / "casual-service-forward");
                   state.forward.ipc = common::communication::instance::fetch::handle( forward::instance::identity.id).ipc;
 
                   log::line( log, "forward: ", state.forward);

@@ -8,7 +8,6 @@
 #include "common/unittest.h"
 
 #include "common/process.h"
-#include "common/file.h"
 
 #include "common/code/signal.h"
 #include "common/code/casual.h"
@@ -23,9 +22,9 @@ namespace casual
       {
          namespace
          {
-            std::string processPath()
+            auto processPath()
             {
-               return directory::name::base( __FILE__) + "../../bin/simple_process";
+               return std::filesystem::path{ __FILE__}.parent_path().parent_path().parent_path() / "bin" / "simple_process";
             }
          }
       }
@@ -127,8 +126,11 @@ namespace casual
       {
          common::unittest::Trace trace;
 
+         auto path = local::processPath();
+         path += "_non_existing_file";
+
          EXPECT_CODE({
-            process::spawn( local::processPath() + "_non_existing_file", {});
+            process::spawn( path, {});
          }, code::casual::invalid_path);
       }
 

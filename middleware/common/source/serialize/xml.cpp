@@ -32,7 +32,7 @@ namespace casual
             {
                namespace
                {
-                  std::vector< std::string> keys() { return { "xml", buffer::type::xml()};};
+                  std::vector< std::string> keys() { return { "xml", ".xml", buffer::type::xml()};};
 
                   namespace reader
                   {

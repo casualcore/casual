@@ -32,7 +32,7 @@ namespace casual
             auto configuration = []( auto content)
             {
                auto path = unittest::file::temporary::content( ".yaml", std::move( content));
-               return configuration::model::load( { path.path()});
+               return configuration::model::load( { path});
             };
          } // <unnamed>
       } // local

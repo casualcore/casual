@@ -7,6 +7,8 @@
 
 #include "common/unittest.h"
 
+#include "common/file.h"
+
 #include "configuration/user/environment.h"
 #include "configuration/common.h"
 
@@ -70,13 +72,18 @@ namespace casual
       {
          namespace
          {
+            common::file::scoped::Path temporary( const std::string& extension)
+            {
+               const auto prefix = common::directory::temporary() / "domain";
+               return { common::file::name::unique( prefix.string(), extension)};
+            }
 
             common::file::scoped::Path serialize( const user::Environment& environment, const std::string& extension)
             {
-               common::file::scoped::Path name{ common::file::name::unique( common::directory::temporary() + "/domain", extension)};
+               common::file::scoped::Path name{ temporary( extension)};
                
-               common::file::Output file{ name};
-               auto archive = common::serialize::create::writer::from( file.extension());
+               std::ofstream file{ name};
+               auto archive = common::serialize::create::writer::from( extension);
                archive << CASUAL_NAMED_VALUE( environment);
                archive.consume( file);
 

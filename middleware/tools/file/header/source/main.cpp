@@ -68,7 +68,7 @@ namespace casual
                return result;
             }
 
-            void header( const Directive& directive, const std::string& file)
+            void header( const Directive& directive, const std::filesystem::path& file)
             {
                std::ifstream input{ file};
                std::string line;
@@ -78,7 +78,7 @@ namespace casual
                   ; // std::cout << line << '\n'; // no-op
 
                // create temporary file
-               common::file::scoped::Path guard{ common::file::name::unique( file)};
+               common::file::scoped::Path guard{ common::file::name::unique( file.string())};
                std::ofstream output{ guard};
 
                output << directive.header;
@@ -90,7 +90,7 @@ namespace casual
                // write the rest of the file.
                output << input.rdbuf();
 
-               common::file::move( guard, file);
+               common::file::rename( guard, file);
                guard.release();
             }
 

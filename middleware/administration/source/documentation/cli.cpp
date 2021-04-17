@@ -12,6 +12,9 @@
 #include "common/terminal.h"
 #include "common/exception/handle.h"
 
+#include <fstream>
+#include <filesystem>
+
 namespace casual
 {
    using namespace common;
@@ -36,7 +39,7 @@ namespace casual
                   terminal::output::directive().plain();
 
                   // make sure we create directories if not present
-                  directory::create( directory::name::base( path));
+                  std::filesystem::create_directories( std::filesystem::path{ path}.parent_path());
                   std::ofstream out{ path};
                   header( out);
 

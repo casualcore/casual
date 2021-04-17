@@ -42,7 +42,7 @@ namespace casual
             {
                namespace
                {
-                  std::vector< std::string> keys() { return { "json", "jsn", buffer::type::json()};};
+                  std::vector< std::string> keys() { return { "json", ".json", "jsn", ".jsn", buffer::type::json()};};
 
                   namespace reader
                   {

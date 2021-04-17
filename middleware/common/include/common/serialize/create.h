@@ -35,6 +35,12 @@ namespace casual
 
             serialize::Reader from( std::string_view key, std::istream& stream);
             serialize::Reader from( std::string_view key, const platform::binary::type& data);
+
+            template< typename F>
+            inline auto from( F&& file)
+            { 
+               return from( file.path().extension().string(), file);
+            }
          }
 
          namespace strict 
@@ -49,6 +55,13 @@ namespace casual
 
             serialize::Reader from( std::string_view key, std::istream& stream);
             serialize::Reader from( std::string_view key, const platform::binary::type& data);
+
+
+            template< typename F>
+            inline auto from( F&& file)
+            { 
+               return from( file.path().extension().string(), file);
+            }
          }
 
          namespace relaxed 
@@ -65,9 +78,9 @@ namespace casual
             serialize::Reader from( std::string_view key, const platform::binary::type& data);
 
             template< typename F>
-            inline auto from( F&& file) -> decltype( from( file.extension(), file))
+            inline auto from( F&& file)
             { 
-               return from( file.extension(), file);
+               return from( file.path().extension().string(), file);
             }
          }
 

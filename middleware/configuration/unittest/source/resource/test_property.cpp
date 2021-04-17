@@ -39,7 +39,7 @@ namespace casual
          {
             // serialize and deserialize
             auto resources = resource::property::get(
-               example::create::file::temporary( example::resource::property::example(), "resources", GetParam()));
+               example::create::file::temporary( example::resource::property::example(), "resources", GetParam()).string());
 
             EXPECT_TRUE( resources.size() >= 2);
          }
@@ -49,7 +49,7 @@ namespace casual
          {
             // serialize and deserialize
             auto resources = resource::property::get(
-               example::create::file::temporary( example::resource::property::example(), "resources", GetParam()));
+               example::create::file::temporary( example::resource::property::example(), "resources", GetParam()).string());
 
             ASSERT_TRUE( resources.size() >= 2);
             EXPECT_TRUE( resources.at( 0).key == "db2");
@@ -61,7 +61,7 @@ namespace casual
          {
             // serialize and deserialize
             auto resources = resource::property::get(
-               example::create::file::temporary( example::resource::property::example(), "resources", GetParam()));
+               example::create::file::temporary( example::resource::property::example(), "resources", GetParam()).string());
 
             ASSERT_TRUE( resources.size() >= 2);
             EXPECT_TRUE( resources.at( 0).xa_struct_name == "db2xa_switch_static_std");

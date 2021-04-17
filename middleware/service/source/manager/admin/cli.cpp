@@ -13,7 +13,6 @@
 #include "domain/manager/admin/model.h"
 #include "domain/manager/admin/server.h"
 
-#include "common/file.h"
 #include "common/argument.h"
 #include "common/chronology.h"
 #include "common/terminal.h"

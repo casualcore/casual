@@ -7,8 +7,6 @@
 #include <gtest/gtest.h>
 #include "common/unittest.h"
 
-#include "common/file.h"
-
 #include "common/communication/pipe.h"
 
 #include "common/message/type.h"
@@ -74,16 +72,7 @@ namespace casual
                };
             } // <unnamed>
          } // local
-         TEST( common_communication_pipe, native_create)
-         {  
-            unittest::Trace trace;
-
-            //file::scoped::Path file{ file::name::unique()};
-            //auto handle = pipe::native::create( file);
-            //EXPECT_TRUE( handle.id());
-            
-         } 
-
+         
 
          TEST( common_communication_pipe, inbound_construct)
          {  

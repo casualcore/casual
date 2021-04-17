@@ -16,7 +16,6 @@
 #include <vector>
 #include <string>
 
-
 namespace casual
 {
    namespace configuration::resource

@@ -162,11 +162,6 @@ namespace casual
 
       // Some os-specific if-defs?
 
-      namespace directory
-      {
-         constexpr auto temporary = "/tmp";
-      } // directory
-
       namespace character
       {
          using type = char;

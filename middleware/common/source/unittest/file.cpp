@@ -13,22 +13,30 @@
 
 #include <fstream>
 
-#include <ftw.h>
-
-
 namespace casual
 {
    namespace common
    {
       namespace unittest
       {
+         namespace local
+         {
+            namespace
+            {
+               auto prefix()
+               {
+                  return common::directory::temporary() / "unittest-";
+               }
+           } //
+         } // local
+
          namespace file
          {
             namespace temporary
             {
                common::file::scoped::Path name( std::string_view extension)
                {
-                  return { common::file::name::unique( common::directory::temporary() + "/unittest-", extension)};
+                  return { common::file::name::unique( local::prefix().string(), extension)};
                }
 
                common::file::scoped::Path content( std::string_view extension, std::string_view content)
@@ -45,36 +53,16 @@ namespace casual
          {
             namespace temporary
             {
-               namespace local
-               {
-                  namespace
-                  {
-                     int unlink( const char* path, const struct stat *sb, int type, struct FTW* buffer)
-                     {
-                        return ::remove( path);
-                     }
 
-                     void clear( const std::string& path)
-                     {
-                        if( ::nftw( path.c_str(), &local::unlink, 64, FTW_DEPTH | FTW_PHYS))
-                           log::line( log::category::error, "failed to remove path - ", common::code::system::last::error());
-                     }
-                  } // <unnamed>
-               } // local
                Scoped::Scoped()
-                  : m_path{ common::file::name::unique( common::directory::temporary() + "/unittest-") }
+                  : m_path{ common::file::name::unique( local::prefix().string()) }
                {
-                  common::directory::create( m_path);
+                  std::filesystem::create_directories( m_path);
                }
+
                Scoped::~Scoped()
                {
-                  if( ! m_path.empty())
-                  {
-                     common::exception::guard( [&path = m_path]()
-                     {
-                        local::clear( path);
-                     });
-                  }  
+                  std::filesystem::remove_all( m_path);
                }
 
                Scoped::Scoped( Scoped&& rhs) noexcept

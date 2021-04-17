@@ -12,6 +12,7 @@
 #include <string>
 #include <vector>
 #include <functional>
+#include <filesystem>
 
 namespace casual
 {
@@ -92,6 +93,8 @@ namespace casual
             };
 
 
+            Model get( const std::filesystem::path& path);
+            Model get( const std::vector< std::filesystem::path>& path);
             Model get( const std::string& pattern);
             Model get( const std::vector< std::string>& patterns);
 

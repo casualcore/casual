@@ -86,13 +86,10 @@ namespace casual
 
                auto& path = environment::domain::singleton::file();
 
-               auto temp_file = file::scoped::Path{ file::name::unique( path, ".tmp")};
+               file::scoped::Path temp_file{ file::name::unique( path.string(), ".tmp")};
 
                std::ofstream output( temp_file);
 
-               if( ! output)
-                  code::raise::error( code::casual::invalid_path, "failed to write temporary domain singleton file: ", temp_file);
-               
                output << process.ipc << '\n';
                output << process.pid << '\n';
                output << identity.name << '\n';
@@ -100,7 +97,7 @@ namespace casual
 
                log::line( log::debug, "domain information - id: ", identity, " - process: ", process);
 
-               if( common::file::exists( path))
+               if( std::filesystem::exists( path))
                {
                   auto content = singleton::read( path);
 
@@ -117,7 +114,7 @@ namespace casual
 
                domain::identity( identity);
 
-               common::file::move( temp_file, path);
+               common::file::rename( temp_file, path);
 
                temp_file.release();
 

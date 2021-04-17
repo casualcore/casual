@@ -106,7 +106,7 @@ namespace casual
                         configuration::Model mockup;
 
                         common::file::Input stream( file);
-                        auto archive = common::serialize::create::reader::consumed::from( stream.extension(), stream);
+                        auto archive = common::serialize::create::reader::consumed::from( stream);
                         archive >> CASUAL_NAMED_VALUE( mockup);
 
                         return mockup;

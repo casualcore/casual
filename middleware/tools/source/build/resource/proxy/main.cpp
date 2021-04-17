@@ -131,7 +131,7 @@ int main( int argc, char** argv)
 
 
 
-                     int build( const std::string& file, const configuration::resource::Property& resource, const Settings& settings)
+                     int build( const std::filesystem::path& file, const configuration::resource::Property& resource, const Settings& settings)
                      {
                         trace::Exit log( "build resource proxy", settings.verbose);
 
@@ -231,9 +231,10 @@ int main( int argc, char** argv)
                         common::file::scoped::Path path( common::file::name::unique( "rm_proxy_", ".cpp"));
 
                         {
-                           trace::Exit log( "generate file:  " + path.path(), settings.verbose);
-
                            std::ofstream file( path);
+
+                           trace::Exit log( "generate file: " + path.string(), settings.verbose);
+
                            local::generate( file, xa_switch);
                         }
 

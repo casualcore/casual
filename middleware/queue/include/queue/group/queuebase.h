@@ -108,7 +108,7 @@ namespace casual
          Queuebase() = default;
 
          //! open/creates the queuebase, and starts a transaction
-         Queuebase( const std::string& database);
+         Queuebase( const std::filesystem::path& database);
          //! commits current transaction, if any.
          ~Queuebase();
 
@@ -117,7 +117,7 @@ namespace casual
 
          inline explicit operator bool() const noexcept { return m_connection && true;}
 
-         std::string file() const;
+         const std::filesystem::path&  file() const;
 
          //! creates or updates a queue
          //! @returns the created or updated queue

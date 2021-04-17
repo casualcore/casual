@@ -19,7 +19,7 @@ namespace casual
       namespace model
       {
 
-         configuration::Model load( const std::vector< std::string>& files)
+         configuration::Model load( const std::vector< std::filesystem::path>& files)
          {
             Trace trace{ "configuration::model::load"};
             log::line( verbose::log, "files: ", files);

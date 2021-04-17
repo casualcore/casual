@@ -13,11 +13,9 @@
 #include "common/code/system.h"
 #include "common/code/convert.h"
 
-#include "common/file.h"
 #include "common/log.h"
 #include "common/signal.h"
 #include "common/signal/timer.h"
-#include "common/string.h"
 #include "common/environment.h"
 #include "common/environment/normalize.h"
 #include "common/uuid.h"
@@ -49,8 +47,6 @@
    #include <unistd.h>
 #endif
 
-
-
 namespace casual
 {
    namespace common
@@ -61,7 +57,7 @@ namespace casual
          {
             namespace
             {
-               std::string get_process_path()
+               std::filesystem::path get_process_path()
                {
 #ifdef __APPLE__
                   std::uint32_t size = platform::size::max::path;
@@ -74,14 +70,14 @@ namespace casual
 
                   return {};
 #else
-                  return file::name::link( "/proc/self/exe");
+                  return std::filesystem::read_symlink( "/proc/self/exe");
 #endif
                }
 
 
                namespace global
                {
-                  auto pid = strong::process::id{ ::getpid()};
+                  const auto pid = strong::process::id{ ::getpid()};
                   
                } // global
 
@@ -96,30 +92,15 @@ namespace casual
 
                namespace global
                {
-                  const std::string path = get_process_path();
-                  const std::string basename = file::name::base( path);
-                  const std::string directory = directory::name::base( path);
-
+                  const std::filesystem::path path = get_process_path();
                } // global
 
             } // <unnamed>
          } // local
 
-         const std::string& path()
+         const std::filesystem::path& path()
          {
             return local::global::path;
-         }
-
-         // TODO maintenance: could be std::string_view
-         const std::string& basename()
-         {
-            return local::global::basename;
-         }
-
-         // TODO maintenance: could be std::string_view
-         const std::string& directory()
-         {
-            return local::global::directory;
          }
 
          strong::process::id id()
@@ -652,10 +633,15 @@ namespace casual
 
       } // process
 
-      Process::Process( const std::string& path, std::vector< std::string> arguments)
+      Process::Process() = default;
+
+      Process::Process( const std::filesystem::path& path, std::vector< std::string> arguments)
          : process::Handle{ process::spawn( path, std::move( arguments))}
       {
+      }
 
+      Process::Process( const std::filesystem::path& path) : Process( path, {})
+      {
       }
 
       Process::~Process() 

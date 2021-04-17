@@ -8,8 +8,8 @@
 
 #include "configuration/model.h"
 
-#include <string>
 #include <vector>
+#include <filesystem>
 
 namespace casual
 {
@@ -19,7 +19,7 @@ namespace casual
       {
          //! for each file: load the user configuration and transform it to the model
          //! @return an accumulated model of all user configuration files
-         configuration::Model load( const std::vector< std::string>& files);
+         configuration::Model load( const std::vector< std::filesystem::path>& files);
 
       } // model
    } // configuration

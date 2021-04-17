@@ -69,7 +69,7 @@ namespace casual
                   {
                      const common::Trace trace( "Database::select");
 
-                     auto connection = sql::database::Connection( common::environment::directory::domain() + "/monitor.db");
+                     auto connection = sql::database::Connection( common::environment::directory::domain() / "monitor.db");
                      //auto query = connection.query( "SELECT service, parentservice, callid, transactionid, start, end FROM calls;");
                      auto query = connection.query( "SELECT service, parentservice, callid, start, end FROM calls;");
 

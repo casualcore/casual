@@ -14,6 +14,7 @@
 
 #include <string>
 #include <vector>
+#include <filesystem>
 
 namespace casual
 {
@@ -70,7 +71,7 @@ namespace casual
          };
 
          
-         void task( const std::string& input, const Directive& directive);
+         void task( const std::filesystem::path& input, const Directive& directive);
 
       } // build
    } // tools

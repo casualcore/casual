@@ -180,7 +180,7 @@ namespace casual
       } // queuebase
 
 
-      Queuebase::Queuebase( const std::string& database) 
+      Queuebase::Queuebase( const std::filesystem::path& database) 
          : m_connection{ database}
       {
          Trace trace{ "queue::group::Queuebase::Queuebase"};
@@ -229,7 +229,7 @@ namespace casual
             m_connection.commit();
       }
 
-      std::string Queuebase::file() const
+      const std::filesystem::path& Queuebase::file() const
       {
          return m_connection.file();
       }

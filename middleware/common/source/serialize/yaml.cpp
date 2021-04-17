@@ -29,7 +29,7 @@ namespace casual
          {
             namespace
             {
-               std::vector< std::string> keys() { return { "yaml", "yml", buffer::type::yaml()};};
+               std::vector< std::string> keys() { return { "yaml", ".yaml", "yml", ".yml", buffer::type::yaml()};};
 
                namespace reader
                {

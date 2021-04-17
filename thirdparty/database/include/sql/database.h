@@ -10,7 +10,6 @@
 
 
 #include "common/algorithm.h"
-#include "common/file.h"
 #include "common/string.h"
 #include "common/compare.h"
 #include "common/code/raise.h"
@@ -22,6 +21,7 @@
 #include <string>
 #include <memory>
 #include <chrono>
+#include <filesystem>
 
 
 #include <cstring>
@@ -532,14 +532,14 @@ namespace sql
       {
          Connection() = default;
 
-         inline Connection( std::string filename) : m_handle( open( filename)), m_file( std::move( filename))
+         inline Connection( std::filesystem::path file) : m_handle( open( file)), m_file( std::move( file))
          {
             //sqlite3_exec( m_handle.get(), "PRAGMA journal_mode = WAL;", 0, 0, 0);
          }
 
          inline explicit operator bool() const noexcept { return m_handle && true;}
 
-         inline const std::string& file() const
+         inline const std::filesystem::path& file() const
          {
             return m_file;
          }
@@ -614,10 +614,10 @@ namespace sql
 
       private:
          
-         inline static std::shared_ptr< sqlite3> open( const std::string& file)
+         inline static std::shared_ptr< sqlite3> open( const std::filesystem::path& file)
          {
             sqlite3* handle = nullptr;
-            auto code = code::make( sqlite3_open( file.c_str(), &handle));
+            auto code = code::make( sqlite3_open( file.string().data(), &handle));
 
             std::shared_ptr< sqlite3> result( handle, sqlite3_close);
 
@@ -626,11 +626,10 @@ namespace sql
             
             if( code == code::sql::cant_open)
             {
-               if( casual::common::file::exists( file))
+               if( std::filesystem::exists( file))
                   code::raise( code, result);
 
-               if( ! casual::common::directory::create( casual::common::directory::name::base( file)))
-                  code::raise( code, result);
+               std::filesystem::create_directories( file.parent_path());;
 
                return open( file);
             }
@@ -639,7 +638,7 @@ namespace sql
          }
 
          std::shared_ptr< sqlite3> m_handle;
-         std::string m_file;
+         std::filesystem::path m_file;
       };
 
       namespace scoped

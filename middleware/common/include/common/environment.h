@@ -248,32 +248,32 @@ namespace casual
          namespace directory
          {
             //! @return default temp directory
-            const std::string& temporary();
+            const std::filesystem::path& temporary();
 
             //! @return Home of current domain
-            const std::string& domain();
+            const std::filesystem::path& domain();
 
             //! @return Where casual is installed
-            const std::string& casual();
+            const std::filesystem::path& casual();
          }
 
          namespace log
          {
-            const std::string& path();
+            const std::filesystem::path& path();
          } // log
 
          namespace ipc
          {
             //! where to hold ipc files, such as named-pipes.
             //! default: /<tmp>/casual/ipc
-            const std::string& directory();
+            const std::filesystem::path& directory();
          } // log
 
          namespace domain
          {
             namespace singleton
             {
-               const std::string& file();
+               const std::filesystem::path& file();
             } // singleton
          } // domain
 

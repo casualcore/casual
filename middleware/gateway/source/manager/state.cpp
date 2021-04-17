@@ -26,7 +26,7 @@ namespace casual
             {
                auto path( std::string_view name)
                {
-                  return string::compose( directory::name::base( process::path()), '/', name);
+                  return process::path().parent_path() / name;
                }
             } // <unnamed>
          } // local

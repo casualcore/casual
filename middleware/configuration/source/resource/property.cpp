@@ -14,6 +14,7 @@
 #include "common/code/casual.h"
 
 
+#include "common/file.h"
 #include "common/environment.h"
 #include "common/serialize/line.h"
 
@@ -41,7 +42,7 @@ namespace casual
                         std::vector< Property> resources;
 
                         // Create the reader and deserialize configuration
-                        auto reader = common::serialize::create::reader::consumed::from( file.extension(), file);
+                        auto reader = common::serialize::create::reader::consumed::from( file);
 
                         reader >> CASUAL_NAMED_VALUE( resources);
                         reader.validate();
@@ -76,7 +77,7 @@ namespace casual
             if( ! file.empty())
                return get( file);
 
-            auto base = common::environment::directory::casual() + "/configuration/resources";
+            std::string base = common::environment::directory::casual() / "configuration" / "resources";
 
             return local::get( {
                base + ".yaml",

@@ -52,7 +52,12 @@ namespace casual
                      "--event-id", common::string::compose( id),
                      "--configuration-files"
                   };
-                  algorithm::append( files, result);
+                  algorithm::append( 
+                     algorithm::transform( 
+                        files, 
+                        []( const auto& file) 
+                        { return file.string();}), 
+                     result);
 
                   return result;
                }

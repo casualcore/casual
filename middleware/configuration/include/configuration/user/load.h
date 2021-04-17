@@ -8,8 +8,8 @@
 
 #include "configuration/user.h"
 
-#include <string>
 #include <vector>
+#include <filesystem>
 
 namespace casual
 {
@@ -20,8 +20,7 @@ namespace casual
          //! for each file: load the user configuration and accumulate. 
          //! Then normalize the whole model
          //! @return an accumulated model of all user configuration files
-         Domain load( const std::vector< std::string>& files);
-
+         Domain load( const std::vector< std::filesystem::path>& files);
       } // user
    } // configuration
 

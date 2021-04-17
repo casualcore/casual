@@ -78,7 +78,7 @@ namespace casual
                      auto path = common::environment::log::path();
 
                      // make sure we got the directory
-                     common::directory::create( common::directory::name::base( path));                           
+                     std::filesystem::create_directories( path.parent_path());
 
                      std::ofstream file{ path, std::ios::app};
 

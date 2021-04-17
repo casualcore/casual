@@ -21,13 +21,8 @@
 
 // std
 #include <cstdio>
-#include <fstream>
 
 // posix
-#include <dirent.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <unistd.h>
 #include <glob.h>
 
 namespace casual
@@ -49,105 +44,62 @@ namespace casual
                {
                   return strong::file::descriptor::id{ ::fileno( stdout)};
                }
-               
             } // standard
          } // descriptor
 
-   
-         Input::Input( std::string path) : std::ifstream( path), m_path( std::move( path)) 
+         Input::Input( std::filesystem::path path, std::ios_base::openmode mode) : std::ifstream{ path, mode}, m_path{ std::move( path)}
          {
             if( ! is_open())
                code::raise::log( code::casual::invalid_path, "failed to open file: ", m_path);
          }
 
-         std::string Input::extension() const { return file::name::extension( m_path);}
-
-         Output::Output( std::string path) : std::ofstream( path), m_path( std::move( path)) 
+         Output::Output( std::filesystem::path path, std::ios_base::openmode mode) : std::ofstream{ path, mode}, m_path{ std::move( path)}
          {
             if( ! is_open())
                code::raise::log( code::casual::invalid_path, "failed to open file: ", m_path);
          }
 
-         std::string Output::extension() const { return file::name::extension( m_path);}
-
-
-         void remove( std::string_view path)
+         void remove( const std::filesystem::path& path)
          {
             if( ! path.empty())
             {
-               if( std::remove( path.data()))
-                  log::line( log::category::error, code::casual::invalid_path, " failed to remove file: ", path);
-               else
+               if( std::filesystem::remove( path))
                   log::line( log::debug, "removed file: ", path);
+               else
+                  log::line( log::category::error, code::casual::invalid_path, " failed to remove file: ", path);
             }
          }
 
-         void move( std::string_view source, std::string_view destination)
+         void rename( const std::filesystem::path& source, const std::filesystem::path& target)
          {
-            posix::result( ::rename( source.data(), destination.data()), "source: ", source, " destination: ", destination);
-            log::line( log::debug, "moved file source: ", source, " -> destination: ", destination);
+            std::filesystem::rename( source, target);
+            log::line( log::debug, "moved file source: ", source, " -> target: ", target);
          }
-
 
          namespace scoped
          {
-            Path::Path( std::string path)
-               : m_path( std::move( path))
-            {
-            }
-
-            Path::Path() = default;
-
-
             Path::~Path()
             {
-               if( ! m_path.empty())
-               {
-                  remove( m_path);
-               }
+               if( ! empty())
+                  file::remove( *this);
             }
 
-            Path::Path( Path&& rhs) noexcept : m_path( std::move( rhs.m_path))
+            std::filesystem::path Path::release()
             {
-            }
-
-
-            Path& Path::operator = ( Path&& rhs) noexcept
-            {
-               m_path = std::exchange( rhs.m_path, {});
-               return *this;
-            }
-
-            Path::operator const std::string&() const &
-            {
-               return path();
-            }
-
-            Path::operator std::string_view() const &
-            {
-               return path();
-            }
-
-
-            const std::string& Path::path() const &
-            {
-               return m_path;
-            }
-
-            std::string Path::release()
-            {
-               return std::exchange( m_path, {});
+               return std::exchange( *this, {});
             }
 
             std::ostream& operator << ( std::ostream& out, const Path& value)
             {
-               return out << value.path();
+               //
+               // Needed because std::ostream and std::filesystem::path uses std::quoted
+               return out << value.string();
             }
 
          } // scoped
 
 
-         std::vector< std::string> find( std::string_view pattern)
+         std::vector< std::filesystem::path> find( std::string_view pattern)
          {
             Trace trace{ "common::file::find"};
             log::line( verbose::log, "pattern: ", pattern);
@@ -166,9 +118,9 @@ namespace casual
             return { buffer.gl_pathv, buffer.gl_pathv + buffer.gl_pathc};
          }
 
-         std::vector< std::string> find( const std::vector< std::string>& patterns)
+         std::vector< std::filesystem::path> find( const std::vector< std::string>& patterns)
          {
-            std::vector< std::string> result;
+            std::vector< std::filesystem::path> result;
 
             for( auto& pattern : patterns)
                algorithm::append_unique( find( pattern), result);
@@ -176,104 +128,22 @@ namespace casual
             return result;
          }
 
-
-         std::string absolute( std::string_view path)
-         {
-            auto absolute = memory::guard( realpath( path.data(), nullptr), &free);
-
-            if( absolute)
-               return absolute.get();
-
-            code::raise::log( code::casual::invalid_path, path);
-         }
-
          namespace name
          {
-
-            bool absolute( std::string_view path)
-            {
-               if( ! path.empty())
-                  return path[ 0] == '/';
-
-               return false;
-            }
-
             std::string unique( std::string_view prefix, std::string_view postfix)
             {
                return string::compose( prefix, uuid::string( uuid::make()), postfix);
             }
-
-            std::string base( std::string_view path)
-            {
-               auto basenameStart = std::find( path.crbegin(), path.crend(), '/');
-               return std::string( basenameStart.base(), path.end());
-            }
-
-
-            std::string extension( std::string_view file)
-            {
-               std::string filename = base( file);
-               auto extensionEnd = std::find( filename.crbegin(), filename.crend(), '.');
-
-               if( extensionEnd == filename.crend())
-               {
-                  return std::string{};
-               }
-
-               return std::string( extensionEnd.base(), filename.cend());
-            }
-
-            namespace without
-            {
-               std::string extension( std::string_view path)
-               {
-                  auto found = std::find( std::crbegin( path), std::crend( path), '.');
-                  return std::string( path.begin(), found.base());
-               }
-
-            } // without
-
-            std::string link( std::string_view path)
-            {
-               std::vector< char> link_name( PATH_MAX);
-
-               posix::result( ::readlink( path.data(), link_name.data(), link_name.size()), "file::name::link");
-
-               if( link_name.data())
-                  return link_name.data();
-
-               return {};
-            }
-
          } // name
 
 
-         bool exists( std::string_view path)
-         {
-            return access( path.data(), F_OK) == 0;
-         }
-
          namespace permission
          {
-            bool execution( std::string_view path)
+            bool execution( const std::filesystem::path& path)
             {
-               // Check if path contains any directory, if so, we can check it directly
-               if( algorithm::find( path, '/'))
-                  return access( path.data(), R_OK | X_OK) == 0;
-               else
-               {
-                  // We need to go through PATH environment variable...
-                  for( auto total_path : string::split( environment::variable::get( "PATH", ""), ':'))
-                  {
-                     total_path.push_back( '/');
-                     total_path += path;
-                     if( access( total_path.data(), F_OK) == 0)
-                        return access( total_path.data(), X_OK) == 0;
-                  }
-               }
-               return false;
+               namespace fs = std::filesystem;
+               return ( fs::status( path).permissions() & fs::perms::owner_exec) != fs::perms::none;
             }
-
          } // permission
 
       } // file
@@ -281,88 +151,12 @@ namespace casual
       namespace directory
       {
 
-         std::string temporary()
+         std::filesystem::path temporary()
          {
-            return "/tmp";
+            return std::filesystem::temp_directory_path();
          }
 
-         std::string current()
-         {
-            char buffer[ platform::size::max::path];
-
-            if( getcwd( buffer, sizeof( buffer)) == nullptr)
-               code::system::raise( "directory::current");
-
-            return buffer;
-         }
-
-
-         std::string change( std::string_view path)
-         {
-            auto current = directory::current();
-
-            posix::result( chdir( path.data()), "directory::change");
-
-            return current;
-         }
-
-         namespace scope
-         {
-            Change::Change( std::string_view path) : m_previous{ change( path)} {}
-            Change::~Change()
-            {
-               change( m_previous);
-            }
-         } // scope
-
-
-         namespace name
-         {
-            std::string base( std::string_view path)
-            {
-               // Remove trailing '/'
-               auto end = std::find_if( std::crbegin( path), std::crend( path), []( const char value) { return value != '/';});
-
-               end = std::find( end, std::crend( path), '/');
-
-               // To be conformant to dirname, we have to return at least '/'
-               if( end == std::crend( path))
-                  return "/";
-
-               return std::string{ std::begin( path), end.base()};
-            }
-
-         } // name
-
-         bool exists( std::string_view path)
-         {
-            return memory::guard( opendir( path.data()), &closedir).get() != nullptr;
-         }
-
-         bool create( std::string_view path)
-         {
-            auto parent = name::base( path);
-
-            if( parent.size() < path.size() && parent != "/")
-            {
-               // We got a parent, make sure we create it first
-               create( parent);
-            }
-
-            if( mkdir( path.data(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) != 0 && errno != EEXIST)
-               return false;
-
-            return true;
-         }
-
-         bool remove( std::string_view path)
-         {
-            if( rmdir( path.data()) != 0)
-               return false;
-
-            return true;
-         }
-      }
+      } // directory
 
    } // common
 } // casual

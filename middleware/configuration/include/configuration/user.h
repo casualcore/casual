@@ -14,6 +14,7 @@
 #include <string>
 #include <vector>
 #include <optional>
+#include <filesystem>
 
 namespace casual
 {
@@ -39,7 +40,7 @@ namespace casual
 
       struct Environment
       {
-         std::optional< std::vector< std::string>> files;
+         std::optional< std::vector< std::filesystem::path>> files;
          std::optional< std::vector< environment::Variable>> variables;
 
          Environment& operator += ( Environment rhs);

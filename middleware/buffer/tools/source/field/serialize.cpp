@@ -76,7 +76,7 @@ namespace casual
                      {
                         std::vector< Mapping> mapping;
                         common::file::Input stream( file);
-                        auto archive = common::serialize::create::reader::consumed::from( stream.extension(), stream);
+                        auto archive = common::serialize::create::reader::consumed::from( stream);
                         archive >> CASUAL_NAMED_VALUE( mapping);
                         archive.validate();
 
