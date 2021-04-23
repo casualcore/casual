@@ -178,7 +178,7 @@ namespace casual
                std::optional< platform::time::point::type> Deadline::remove( const std::vector< strong::correlation::id>& correlations)
                {
 
-                  auto [ keep, remove] = algorithm::stable_partition( m_entries, [&correlations]( auto& entry)
+                  auto [ keep, remove] = algorithm::stable::partition( m_entries, [&correlations]( auto& entry)
                   {
                      return ! predicate::boolean( algorithm::find( correlations, entry.correlation));
                   });
@@ -568,7 +568,7 @@ namespace casual
          local::remove_services( *this, instance, message.services.remove);
 
          // find all potentially pending.
-         auto [ keep, remove] = algorithm::stable_partition( pending.lookups, [&]( auto& pending)
+         auto [ keep, remove] = algorithm::stable::partition( pending.lookups, [&]( auto& pending)
          {
             if( auto found = algorithm::find( services, pending.request.requested))
                return found->second.instances.empty(); // false/remove if not empty, hence what we 'want' to return

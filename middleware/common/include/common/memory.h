@@ -47,11 +47,9 @@ namespace casual
 
 
          template< typename T>
-         std::enable_if_t< 
-            traits::is_trivially_copyable< traits::remove_cvref_t< T>>::value
-            && ! traits::is::binary::like< traits::remove_cvref_t< T>>::value, 
-         size_type>
-         append( T&& value, platform::binary::type& destination)
+         auto append( T&& value, platform::binary::type& destination)
+            -> std::enable_if_t< std::is_trivially_copyable_v< traits::remove_cvref_t< T>> 
+               && ! traits::is::binary::like_v< traits::remove_cvref_t< T>>, size_type>
          {
             auto first = reinterpret_cast< const platform::character::type*>( &value);
             auto last = first + memory::size( value);
@@ -65,10 +63,8 @@ namespace casual
          }
 
          template< typename T>
-         std::enable_if_t< 
-            traits::is::binary::like< traits::remove_cvref_t< T>>::value, 
-         size_type>
-         append( T&& value, platform::binary::type& destination)
+         auto append( T&& value, platform::binary::type& destination) 
+            -> std::enable_if_t< traits::is::binary::like_v< traits::remove_cvref_t< T>>, size_type>
          {
             destination.insert(
                   std::end( destination),
@@ -87,8 +83,8 @@ namespace casual
          //! @return the new offset ( @p offset + memory::size( value) )
          //!
          template< typename S, typename T>
-         std::enable_if_t< traits::is_trivially_copyable< T>::value, size_type>
-         copy( S&& source, size_type offset, T& value)
+         auto copy( S&& source, size_type offset, T& value)
+            -> std::enable_if_t< std::is_trivially_copyable_v< T>, size_type>
          {
             auto size = memory::size( value);
             auto first = std::begin( source) + offset;
@@ -102,10 +98,8 @@ namespace casual
          }
 
          template< typename S, typename T>
-         std::enable_if_t< 
-            traits::is::binary::like< traits::remove_cvref_t< T>>::value, 
-         size_type>
-         copy( S&& source, size_type offset, T&& value)
+         auto copy( S&& source, size_type offset, T&& value)
+            -> std::enable_if_t< traits::is::binary::like_v< traits::remove_cvref_t< T>>, size_type>
          {
             auto size = std::distance( std::begin( value), std::end( value));
             auto first = std::begin( source) + offset;

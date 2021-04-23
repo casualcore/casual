@@ -118,7 +118,7 @@ namespace casual
             // there are different semantics if the resource has a specific name
             // if so, we strictly correlate to that name, if not we go with the more general key
 
-            auto [ named, unnamed] = common::algorithm::stable_partition( resources, []( auto& r){ return ! r.name.empty();});
+            auto [ named, unnamed] = common::algorithm::stable::partition( resources, []( auto& r){ return ! r.name.empty();});
 
             auto names = algorithm::transform( named, 
                []( auto& resource){ return resource.name;});
@@ -386,12 +386,12 @@ namespace casual
             algorithm::for_each( transactions, pending_check);
 
             // Ignore 'null trid':s
-            auto actual_transactions = std::get< 0>( algorithm::stable_partition( transactions, [&]( const Transaction& transaction){
+            auto actual_transactions = std::get< 0>( algorithm::stable::partition( transactions, [&]( const Transaction& transaction){
                return ! transaction.trid.null();
             }));
 
 
-            auto owner_split = algorithm::stable_partition( actual_transactions, [&]( const Transaction& transaction){
+            auto owner_split = algorithm::stable::partition( actual_transactions, [&]( const Transaction& transaction){
                return transaction.trid.owner() != process;
             });
 

@@ -631,10 +631,10 @@ namespace casual
                            algorithm::for_each( wanted, correlate_id);
                         }
 
-                        auto zombies = algorithm::difference( existing, wanted, []( auto& exists, auto& wants)
+                        auto zombies = std::get< 1>( algorithm::intersection( existing, wanted, []( auto& exists, auto& wants)
                         {
                            return exists.id == wants.id || exists.id == wants.error;
-                        });
+                        }));
 
                         using zombie_type = decltype( zombies)::value_type;
                         std::vector< std::tuple< zombie_type, zombie_type> > joined;

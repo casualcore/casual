@@ -516,7 +516,7 @@ namespace casual
 
 //! customization macro to make it easier to define customization points for all interdomain messages
 #define CASUAL_CUSTOMIZATION_POINT_NETWORK( type, statement) \
-template< typename A> struct Value< type, A, std::enable_if_t< common::serialize::traits::is::network::normalizing< A>::value>>  \
+template< typename A> struct Value< type, A, std::enable_if_t< common::serialize::traits::is::network::normalizing_v< A>>>  \
 { \
    template< typename V> static void serialize( A& archive, V&& value) \
    {  \

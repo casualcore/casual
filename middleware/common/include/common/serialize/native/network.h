@@ -32,7 +32,7 @@ namespace casual
                   {
 
                      template< typename T>
-                     using is_network_array = common::traits::is::binary::like< T>;
+                     inline constexpr auto is_network_array_v = common::traits::is::binary::like_v< T>;
 
                      template< typename T>
                      constexpr auto cast( T value) -> std::enable_if_t< ! std::is_enum< T>::value, T>
@@ -50,18 +50,17 @@ namespace casual
 
                   struct Policy
                   {
-
                      template< typename T>
-                     static std::enable_if_t< ! detail::is_network_array< T>::value>
-                     write( const T& value, platform::binary::type& buffer)
+                     static auto write( const T& value, platform::binary::type& buffer) 
+                        -> std::enable_if_t< ! detail::is_network_array_v< T>>
                      {
                         auto net_value = common::network::byteorder::encode( detail::cast( value));
                         memory::append( net_value, buffer);
                      }
 
                      template< typename T>
-                     static std::enable_if_t< detail::is_network_array< T>::value>
-                     write( const T& value, platform::binary::type& buffer)
+                     static auto write( const T& value, platform::binary::type& buffer)
+                        -> std::enable_if_t< detail::is_network_array_v< T>>
                      {
                         memory::append( value, buffer);
                      }
@@ -75,7 +74,7 @@ namespace casual
 
 
                      template< typename T>
-                     static std::enable_if_t< ! detail::is_network_array< T>::value, size_type>
+                     static std::enable_if_t< ! detail::is_network_array_v< T>, size_type>
                      read( const platform::binary::type& buffer, size_type offset, T& value)
                      {
                         using value_type = decltype( detail::cast( value));
@@ -87,7 +86,7 @@ namespace casual
                      }
 
                      template< typename T>
-                     static std::enable_if_t< detail::is_network_array< T>::value, size_type>
+                     static std::enable_if_t< detail::is_network_array_v< T>, size_type>
                      read( const platform::binary::type& buffer, size_type offset, T& value)
                      {
                         return memory::copy( buffer, offset, value);

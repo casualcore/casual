@@ -20,4 +20,15 @@ namespace casual
       std::terminate();
    }
 
+   //! logs `context` to error and terminates
+   template< typename P, typename... Ts>
+   auto assertion( P&& predicate, Ts&&... context) noexcept
+   {
+      if( ! predicate)
+         casual::terminate( std::forward< Ts>( context)...);
+
+      return std::forward< P>( predicate);
+
+   }
+
 } // casual

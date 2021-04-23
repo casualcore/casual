@@ -48,7 +48,7 @@ namespace casual
                         auto extract = [&]( auto& entities, auto& output)
                         {
                            // Partition executables so we get the ones that has current group as a dependency
-                           auto slice = algorithm::stable_partition( entities, [&]( const auto& e){
+                           auto slice = algorithm::stable::partition( entities, [&]( const auto& e){
                               return static_cast< bool>( algorithm::find( e.get().memberships, group.id));
                            });
 

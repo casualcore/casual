@@ -11,29 +11,18 @@
 
 namespace casual
 {
-   namespace common
+   namespace common::serialize::detail
    {
-      namespace serialize
+      template< typename A, typename V> 
+      auto dispatch( A& archive, V&& value, const char* name)
       {
-         namespace detail
-         {
-            template< typename A, typename V> 
-            auto dispatch( A& archive, V&& value, const char* name) -> 
-               std::enable_if_t< traits::need::named< A>::value>
-            {
-               archive & named::value::make( std::forward< V>( value), name);
-            }
-
-            template< typename A, typename V> 
-            auto dispatch( A& archive, V&& value, const char*) -> 
-               std::enable_if_t< ! traits::need::named< A>::value>
-            {
-               archive & std::forward< V>( value);
-            }
-         } // detail
-
-      } // serialize
-   } // common
+         if constexpr( traits::need::named_v< A>)
+            archive & named::value::make( std::forward< V>( value), name);
+         else
+            archive & std::forward< V>( value);
+      }
+ 
+   } // common::serialize::detail
 } // casual
 
 #define CASUAL_CONST_CORRECT_SERIALIZE( statement) \

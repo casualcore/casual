@@ -140,7 +140,7 @@ value:
 
       TEST( common_serialize_yaml, write_read_large_long)
       {
-         long value = 2170471909096019789;
+         constexpr long value = 2170471909096019789;
 
          auto writer = serialize::yaml::writer();
          writer << CASUAL_NAMED_VALUE( value);
@@ -151,6 +151,21 @@ value:
          reader >> CASUAL_NAMED_VALUE_NAME( result, "value");
 
          EXPECT_TRUE( value == result) << CASUAL_NAMED_VALUE( result);
+      }
+
+      TEST( common_serialize_yaml, write_read_tuple)
+      {
+         auto origin = std::make_tuple( 1, std::string{ "foo"}, true);
+
+         auto writer = serialize::yaml::writer();
+         writer << origin;
+
+         auto yaml = writer.consume< platform::binary::type>();
+         auto reader = serialize::yaml::strict::reader( yaml);
+         auto result = decltype( origin){};
+         reader >> result;
+
+         EXPECT_TRUE( origin == result) << CASUAL_NAMED_VALUE( result);
       }
 
       TEST( common_serialize_yaml, write_read_vector_pod)

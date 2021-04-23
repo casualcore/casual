@@ -114,6 +114,19 @@ namespace casual
             EXPECT_TRUE( archive.consume< std::string>() == "value: { long_value: 42, short_value: 2}") << CASUAL_NAMED_VALUE( value);
          }
 
+         TEST( casual_serialize_line, log_tuple)
+         {
+            common::unittest::Trace trace;
+
+            auto tuple = std::make_tuple( 1, std::string{"foo"}, true);
+
+            auto archive = serialize::create::writer::from( "line");
+            
+            archive << CASUAL_NAMED_VALUE( tuple);
+
+            EXPECT_TRUE( archive.consume< std::string>() == R"(tuple: [ 1, "foo", true])") << CASUAL_NAMED_VALUE( tuple);
+         }
+
 
          
       } //serialize

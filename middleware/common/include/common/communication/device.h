@@ -136,7 +136,7 @@ namespace casual
          template< typename R, typename P>
          [[nodiscard]] auto next( R&& types, P&& policy) 
             // `types` is a temple to enable other forms of containers than std::vector
-            -> std::enable_if_t< traits::concrete::is_same< decltype( *std::begin( types)), common::message::Type>::value, complete_type>
+            -> std::enable_if_t< traits::is::same_v< traits::remove_cvref_t< decltype( *std::begin( types))>, common::message::Type>, complete_type>
          {
             return select(
                [&types]( auto& complete){ return ! common::algorithm::find( types, complete.type()).empty();},

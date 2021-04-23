@@ -17,105 +17,106 @@
 
 namespace casual
 {
-   namespace common
+   namespace common::serialize::line
    {
-      namespace serialize
+      namespace detail
       {
-         namespace line
+         constexpr auto first = "";
+         constexpr auto scope = ", ";
+         
+         template<typename T, typename C = traits::remove_cvref_t< T>>
+         auto write( std::ostream& out, T&& value, traits::priority::tag< 2>)
+            -> decltype( stream::customization::supersede::point< C>::stream( out, std::forward< T>( value)))
          {
-            namespace detail
-            {
-               constexpr auto first = "";
-               constexpr auto scope = ", ";
-               
-               template<typename T>
-               auto write( std::ostream& out, T&& value, traits::priority::tag< 1>)
-                  -> decltype( stream::customization::supersede::point< traits::remove_cvref_t< T>>::stream( out, std::forward< T>( value)))
-               {
-                  stream::customization::supersede::point< traits::remove_cvref_t< T>>::stream( out, std::forward< T>( value));
-               }
+            stream::customization::supersede::point< C>::stream( out, std::forward< T>( value));
+         }
 
-               template<typename T>
-               auto write( std::ostream& out, T&& value, traits::priority::tag< 0>)
-                  -> decltype( void( out << std::forward< T>( value)))
-               {
-                  out << std::forward< T>( value);
-               }
+         template<typename T>
+         auto write( std::ostream& out, T&& value, traits::priority::tag< 1>)
+            -> decltype( void( out << std::forward< T>( value)))
+         {
+            out << std::forward< T>( value);
+         }
 
-               //! to enable to override std ostream stream operatator, and use our specializations
-               template<typename T>
-               auto write( std::ostream& out, T&& value)
-                  -> decltype( write( out, std::forward< T>( value), traits::priority::tag< 1>{}))
-               {
-                  write( out, std::forward< T>( value), traits::priority::tag< 1>{});
-               }
-               
-            } // detail
+         template<typename T, typename C = traits::remove_cvref_t< T>>
+         auto write( std::ostream& out, T&& value, traits::priority::tag< 0>)
+            -> decltype( stream::customization::point< C >::stream( out, std::forward< T>( value)))
+         {
+            stream::customization::point< C >::stream( out, std::forward< T>( value));
+         }
 
-            struct Writer
-            {
-               Writer();
-               
-               inline constexpr static auto archive_type() { return archive::Type::static_need_named;}
+         //! to enable to override std ostream stream operatator, and use our specializations
+         template<typename T>
+         auto write( std::ostream& out, T&& value)
+            -> decltype( write( out, std::forward< T>( value), traits::priority::tag< 2>{}))
+         {
+            write( out, std::forward< T>( value), traits::priority::tag< 2>{});
+         }
+         
+      } // detail
 
-               static std::vector< std::string> keys();
+      struct Writer
+      {
+         Writer();
+         
+         inline constexpr static auto archive_type() { return archive::Type::static_need_named;}
 
-               platform::size::type container_start( const platform::size::type size, const char* name);
-               void container_end( const char*);
+         static std::vector< std::string> keys();
 
-               void composite_start( const char* name);
-               void composite_end( const char*);
+         platform::size::type container_start( const platform::size::type size, const char* name);
+         void container_end( const char*);
 
-               template<typename T>
-               auto write( T&& value, const char* name)
-                  -> decltype( detail::write( std::declval< std::ostream&>(), std::forward< T>( value)))
-               {
-                  in_scope();
-                  detail::write( maybe_name( name), std::forward< T>( value));
-               }
+         void composite_start( const char* name);
+         void composite_end( const char*);
 
-               void write( bool value, const char* name);
-               void write( view::immutable::Binary value, const char* name);
-               void write( const platform::binary::type& value, const char* name);
-               void write( const std::string& value, const char* name);
-               void write( const string::immutable::utf8& value, const char* name);
+         template<typename T>
+         auto write( T&& value, const char* name)
+            -> decltype( detail::write( std::declval< std::ostream&>(), std::forward< T>( value)))
+         {
+            in_scope();
+            detail::write( maybe_name( name), std::forward< T>( value));
+         }
+
+         void write( bool value, const char* name);
+         void write( view::immutable::Binary value, const char* name);
+         void write( const platform::binary::type& value, const char* name);
+         void write( const std::string& value, const char* name);
+         void write( const string::immutable::utf8& value, const char* name);
 
 
-               template< typename T>
-               auto operator << ( T&& value)
-                  -> decltype( void( serialize::value::write( *this, std::forward< T>( value), nullptr)), *this)
-               {
-                  serialize::value::write( *this, std::forward< T>( value), nullptr);
-                  return *this;
-               }
+         template< typename T>
+         auto operator << ( T&& value)
+            -> decltype( void( serialize::value::write( *this, std::forward< T>( value), nullptr)), *this)
+         {
+            serialize::value::write( *this, std::forward< T>( value), nullptr);
+            return *this;
+         }
 
-               template< typename T>
-               Writer& operator & ( T&& value)
-               {
-                  return *this << std::forward< T>( value);
-               }
+         template< typename T>
+         Writer& operator & ( T&& value)
+         {
+            return *this << std::forward< T>( value);
+         }
 
-               void consume( std::ostream& destination);
-               std::string consume();
+         void consume( std::ostream& destination);
+         std::string consume();
 
-            private:
+      private:
 
-               std::ostream& maybe_name( const char* name);
+         std::ostream& maybe_name( const char* name);
 
-               void begin_scope();
-               void in_scope();
+         void begin_scope();
+         void in_scope();
 
-               std::ostringstream m_stream;
-               const char* m_prefix = detail::first;
-            };
+         std::ostringstream m_stream;
+         const char* m_prefix = detail::first;
+      };
 
-            //! type erased line writer 
-            serialize::Writer writer();
+      //! type erased line writer 
+      serialize::Writer writer();
 
-         } // line
 
-      } // serialize
-   } // common
+   } // common::serialize::line
 } // casual
 
 

@@ -53,7 +53,7 @@ namespace casual
 
 
             template< typename C1, typename C2>
-            auto encode( C1&& source, C2& target) -> std::enable_if_t< traits::has::resize< decltype( target)>::value>
+            auto encode( C1&& source, C2& target) -> std::enable_if_t< traits::has::resize_v< decltype( target)>>
             {
                static_assert( sizeof( traits::iterable::value_t< C1>) == sizeof( traits::iterable::value_t< C2>), "not the same value type size");
 
@@ -80,7 +80,7 @@ namespace casual
             //! @throw exception::Casual on failure
             template< typename Iter>
             auto encode( Iter first, Iter last) -> 
-               std::enable_if_t< traits::is::iterator< Iter>::value, std::string>
+               std::enable_if_t< traits::is::iterator_v< Iter>, std::string>
             {
                return encode( range::make( first, last));
             }
@@ -101,8 +101,8 @@ namespace casual
             //!
             template< typename Source, typename Iter>
             std::enable_if_t<
-               traits::is::string::like< Source>::value
-               && traits::is::binary::iterator< Iter>::value,
+               traits::is::string::like_v< Source>
+               && traits::is::binary::iterator_v< Iter>,
                Iter >
             decode( Source&& source, Iter first, Iter last)
             {
@@ -183,7 +183,7 @@ namespace casual
             //! @param last end of binary (exclusive)
             //! @return hex-encoded string of [first, last)
             template< typename Iter>
-            std::enable_if_t< traits::is::binary::iterator< Iter>::value, std::string>
+            std::enable_if_t< traits::is::binary::iterator_v< Iter>, std::string>
             encode( Iter first, Iter last)
             {
                auto cast = []( auto&& i){ return reinterpret_cast< const char*>( &(*i));}; 
@@ -191,7 +191,7 @@ namespace casual
             }
 
             template< typename Iter>
-            std::enable_if_t< traits::is::binary::iterator< Iter>::value, std::ostream&>
+            std::enable_if_t< traits::is::binary::iterator_v< Iter>, std::ostream&>
             encode( std::ostream& out, Iter first, Iter last)
             {
                auto cast = []( auto&& i){ return reinterpret_cast< const char*>( &(*i));}; 
@@ -201,7 +201,7 @@ namespace casual
 
             template< typename R>
             auto encode( std::ostream& out, R&& range) -> 
-               std::enable_if_t< traits::is::binary::like< R>::value, std::ostream&>
+               std::enable_if_t< traits::is::binary::like_v< R>, std::ostream&>
             {
                return encode( out, std::begin( range), std::end( range));
             }
@@ -224,8 +224,8 @@ namespace casual
 
             template< typename Source, typename Iter>
             std::enable_if_t< 
-               traits::is::string::like< Source>::value
-               && traits::is::binary::iterator< Iter>::value
+               traits::is::string::like_v< Source>
+               && traits::is::binary::iterator_v< Iter>
             >
             decode( Source&& source, Iter first, Iter last)
             {
@@ -242,8 +242,8 @@ namespace casual
             //! @return binary representation of @p value
             template< typename Source, typename Target>
             std::enable_if_t< 
-               traits::is::string::like< Source>::value
-               && traits::is::binary::like< Target>::value
+               traits::is::string::like_v< Source>
+               && traits::is::binary::like_v< Target>
             >
             decode( Source&& source, Target&& target)
             {

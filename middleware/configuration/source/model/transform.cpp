@@ -746,7 +746,7 @@ namespace casual
 
                   // inbounds
                   {
-                     auto [ reversed, regular] = algorithm::stable_partition( model.inbound.groups, is_reversed);
+                     auto [ reversed, regular] = algorithm::stable::partition( model.inbound.groups, is_reversed);
 
                      if( reversed)
                      {
@@ -768,7 +768,7 @@ namespace casual
                   {
                      auto less_order = []( auto& lhs, auto& rhs){ return lhs.order < rhs.order;};
 
-                     auto [ reversed, regular] = algorithm::stable_partition( model.outbound.groups, is_reversed);
+                     auto [ reversed, regular] = algorithm::stable::partition( model.outbound.groups, is_reversed);
 
                      if( reversed)
                      {

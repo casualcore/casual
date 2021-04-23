@@ -69,7 +69,7 @@ namespace casual
             template< typename T, typename... Args>
             auto implementation( T&& value, Args&&... args) ->
                std::conditional_t<
-                  traits::is_same< T, Args...>::value,
+                  traits::is::same_v< T, Args...>,
                   T, // only if T and Args are exactly the same, we use T, otherwise we convert to common type
                   std::common_type_t< T, Args...>>
             {
@@ -112,7 +112,7 @@ namespace casual
       namespace algorithm
       {
 
-         template< typename R, typename = std::enable_if_t< common::traits::is::iterable< R>::value>>
+         template< typename R, typename = std::enable_if_t< common::traits::is::iterable_v< R>>>
          decltype( auto) reverse( R&& range)
          {
             std::reverse( std::begin( range), std::end( range));
@@ -121,10 +121,10 @@ namespace casual
 
          namespace detail
          {
-            template< typename P, std::enable_if_t< traits::is::iterable< P>::value>* dummy = nullptr>
+            template< typename P, std::enable_if_t< traits::is::iterable_v< P>>* dummy = nullptr>
             auto pivot( P&& pivot) { return std::begin( pivot);}
 
-            template< typename P, std::enable_if_t< traits::is::iterator< P>::value>* dummy = nullptr>
+            template< typename P, std::enable_if_t< traits::is::iterator_v< P>>* dummy = nullptr>
             auto pivot( P&& pivot) { return pivot;}
 
          } // detail
@@ -138,29 +138,33 @@ namespace casual
             return std::make_tuple( range::make( std::begin( range), middle), range::make( middle, std::end( range)));
          }
 
-         template< typename R, typename C, typename = std::enable_if_t< common::traits::is::iterable< R>::value>>
-         decltype( auto) sort( R&& range, C compare)
+         template< typename R, typename C>
+         auto sort( R&& range, C compare) 
+            -> decltype( void( std::sort( std::begin( range), std::end( range), compare)), std::forward< R>( range))
          {
             std::sort( std::begin( range), std::end( range), compare);
             return std::forward< R>( range);
          }
 
-         template< typename R, typename = std::enable_if_t< common::traits::is::iterable< R>::value>>
-         decltype( auto) sort( R&& range)
+         template< typename R>
+         auto sort( R&& range) 
+            -> decltype( void( std::sort( std::begin( range), std::end( range))), std::forward< R>( range))
          {
             std::sort( std::begin( range), std::end( range));
             return std::forward< R>( range);
          }
 
-         template< typename R, typename C, typename = std::enable_if_t< common::traits::is::iterable< R>::value>>
-         decltype( auto) stable_sort( R&& range, C compare)
+         template< typename R, typename C>
+         auto stable_sort( R&& range, C compare)
+            -> decltype( void( std::stable_sort( std::begin( range), std::end( range), compare)), std::forward< R>( range))
          {
             std::stable_sort( std::begin( range), std::end( range), compare);
             return std::forward< R>( range);
          }
 
-         template< typename R, typename = std::enable_if_t< common::traits::is::iterable< R>::value>>
-         decltype( auto) stable_sort( R&& range)
+         template< typename R>
+         auto stable_sort( R&& range) 
+            -> decltype( void( std::stable_sort( std::begin( range), std::end( range))), std::forward< R>( range))
          {
             std::stable_sort( std::begin( range), std::end( range));
             return std::forward< R>( range);
@@ -178,15 +182,14 @@ namespace casual
          namespace detail
          {
             template< typename T>
-            constexpr auto is_resize_copy = traits::has::resize< T>::value &&
-               std::is_default_constructible< traits::remove_cvref_t< traits::iterable::value_t< T>>>::value;
-
+            constexpr bool has_resize_copy_v = traits::has::resize_v< T> &&
+               std::is_default_constructible_v< traits::remove_cvref_t< traits::iterable::value_t< T>>>;
 
             namespace output
             {
                template< typename C> 
                auto iterator( C& value, traits::priority::tag< 2>)
-                 -> std::enable_if_t< traits::has::push_back< C>::value, decltype( std::back_inserter( value))>
+                 -> std::enable_if_t< traits::has::push_back_v< C>, decltype( std::back_inserter( value))>
                {
                   return std::back_inserter( value);
                }
@@ -836,30 +839,26 @@ namespace casual
             return std::forward< R>( range);
          }
 
-
          //! appends `range` to `output`.
          //! @return output
-         //! @{
-         template< typename R, typename Out, typename std::enable_if_t< 
-            detail::is_resize_copy< Out>
-            && common::traits::is::iterable< R>::value, int> = 0>
+         template< typename R, typename Out>
          decltype( auto) append( R&& range, Out&& output)
          {
-            auto size = std::distance( std::begin( range), std::end( range));
-            output.resize( output.size() + size);
-            std::copy( std::begin( range), std::end( range), std::end( output) - size);
-            return std::forward< Out>( output);
-         }
+            static_assert( common::traits::is::iterable_v< R>);
 
-         template< typename R, typename Out, typename std::enable_if_t< 
-            ! detail::is_resize_copy< Out> && traits::has::push_back< Out>::value
-            && common::traits::is::iterable< R>::value, int> = 0>
-         decltype( auto) append( R&& range, Out&& output)
-         {
-            std::copy( std::begin( range), std::end( range), std::back_inserter( output));
+            if constexpr( detail::has_resize_copy_v< Out>)
+            {
+               auto size = std::distance( std::begin( range), std::end( range));
+               output.resize( output.size() + size);
+               std::copy( std::begin( range), std::end( range), std::end( output) - size);
+            }
+            else if constexpr( traits::has::push_back_v< Out>)
+               std::copy( std::begin( range), std::end( range), std::back_inserter( output));
+            else
+               static_assert( traits::dependent_false< Out>::value, "output needs to be resizable or have push_back");
+
             return std::forward< Out>( output);
          }
-         //! @}
 
 
          namespace detail
@@ -969,28 +968,39 @@ namespace casual
             return std::forward< O>( output);
          }
 
-         template< typename R, typename P, typename = std::enable_if_t< common::traits::is::iterable< R>::value>>
+         //! partition `range` based on `predicate`
+         //! @returns tuple with [begin( range), partition-end) [partition-end, end( range)] 
+         template< typename R, typename P>
          auto partition( R&& range, P predicate)
+            -> decltype( std::make_tuple( range::make( range), range::make( std::partition( std::begin( range), std::end( range), predicate), std::end( range))))
          {
             auto middle = std::partition( std::begin( range), std::end( range), predicate);
             return std::make_tuple( range::make( std::begin( range), middle), range::make( middle, std::end( range)));
          }
 
-         template< typename R, typename P, typename = std::enable_if_t< common::traits::is::iterable< R>::value>>
-         auto stable_partition( R&& range, P predicate)
+         //! @returns std::get< 0>( algorithm::partition( range, predicate));
+         template< typename R, typename P>
+         auto filter( R&& range, P predicate) -> traits::remove_cvref_t< decltype( std::get< 0>( partition( range, predicate)))>
          {
-            auto middle = std::stable_partition( std::begin( range), std::end( range), predicate);
-            return std::make_tuple( range::make( std::begin( range), middle), range::make( middle, std::end( range)));
+            return std::get< 0>( partition( range, predicate));
          }
 
-         //! @return a range that is a sub range of @p range that fullfills @p predicate
-         //!
-         //! same sematics as std::get< 0>( algorithm::partition( range, predicate));
-         template< typename R, typename P, typename = std::enable_if_t< common::traits::is::iterable< R>::value>>
-         auto filter( R&& range, P predicate)
+         namespace stable
          {
-            return range::make( std::begin( range), std::partition( std::begin( range), std::end( range), predicate));
-         }
+            template< typename R, typename P, typename = std::enable_if_t< common::traits::is::iterable_v< R>>>
+            auto partition( R&& range, P predicate)
+            {
+               auto middle = std::stable_partition( std::begin( range), std::end( range), predicate);
+               return std::make_tuple( range::make( std::begin( range), middle), range::make( middle, std::end( range)));
+            }
+
+            //! @returns std::get< 0>( algorithm::statple::partition( range, predicate));
+            template< typename R, typename P>
+            auto filter( R&& range, P predicate) -> traits::remove_cvref_t< decltype( std::get< 0>( partition( range, predicate)))>
+            {
+               return std::get< 0>( partition( range, predicate));
+            }            
+         } // stable
 
          //! Divide @p range in two parts [range-first, divider), [divider, range-last).
          //! where divider is the first occurrence that is equal to @p value
@@ -1108,7 +1118,7 @@ namespace casual
                   return functor( v, l);
                });
             };
-            return stable_partition( std::forward< R1>( range), lambda);
+            return stable::partition( std::forward< R1>( range), lambda);
          }
 
          //! Divide @p range in two parts [range-first, intersection-end), [intersection-end, range-last).
@@ -1120,21 +1130,6 @@ namespace casual
          auto intersection( R1&& range, R2&& lookup)
          {
             return intersection( std::forward< R1>( range), std::forward< R2>( lookup), std::equal_to<>{});
-         }
-
-         //! @returns a range from @p source with values not found in @p other
-         //! @deprecated use intersection instead...
-         template< typename R1, typename R2>
-         auto difference( R1&& source, R2&& other)
-         {
-            return std::get< 1>( intersection( std::forward< R1>( source), std::forward< R2>( other)));
-         }
-
-         //! @returns a range from @p source with values not found in @p other
-         template< typename R1, typename R2, typename F>
-         auto difference( R1&& source, R2&& other, F functor)
-         {
-            return std::get< 1>( intersection( std::forward< R1>( source), std::forward< R2>( other), functor));
          }
 
 
@@ -1173,8 +1168,10 @@ namespace casual
          template< typename R1, typename R2>
          bool includes( R1&& source, R2&& other)
          {
-            auto lambda = [&]( const auto& value){ return find( std::forward< R1>( source), value);};
-            return all_of( other, lambda);
+            return all_of( other, [&]( const auto& value)
+            { 
+               return find( std::forward< R1>( source), value);
+            });
          }
 
          //! Uses @p compare to compare for equality
@@ -1183,9 +1180,10 @@ namespace casual
          template< typename R1, typename R2, typename Compare>
          bool includes( R1&& source, R2&& other, Compare compare)
          {
-            auto lambda = [&]( const auto& v)
-                  { return find_if( source, [&]( const auto& s){ return compare( s, v);});};
-            return all_of( other, lambda);
+            return all_of( other, [&]( const auto& v)
+            { 
+               return find_if( source, [&]( const auto& s){ return compare( s, v);});
+            });
 
          }
 
@@ -1196,12 +1194,9 @@ namespace casual
             auto first = std::begin( range);
 
             for( auto&& value : range)
-            {
                if( value != *first)
-               {
                   return false;
-               }
-            }
+
             return true;
          }
 

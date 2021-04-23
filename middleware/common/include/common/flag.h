@@ -129,7 +129,7 @@ namespace casual
          template< typename... Enums>
          static constexpr underlaying_type bitmask( enum_type e, Enums... enums)
          {
-            static_assert( traits::is_same< enum_type, Enums...>::value, "wrong enum type");
+            static_assert( traits::is::same_v< enum_type, Enums...>, "wrong enum type");
 
             return underlaying( e) | bitmask( enums...);
          }

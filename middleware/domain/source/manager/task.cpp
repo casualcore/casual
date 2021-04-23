@@ -201,7 +201,7 @@ namespace casual
                Trace trace{ "domain::manager::task::Queue::remove"};
 
                // move all mandatory first, and remove the complement (not mandatory)
-               auto split = algorithm::stable_partition( m_pending, local::has::completion( Task::Property::Completion::mandatory));
+               auto split = algorithm::stable::partition( m_pending, local::has::completion( Task::Property::Completion::mandatory));
                
                local::send::abort( state, std::get< 1>( split));
                algorithm::trim( m_pending, std::get< 0>( split));

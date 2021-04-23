@@ -43,7 +43,7 @@ namespace casual
             }
          };
 
-         static_assert( traits::is::string::like< Variable>::value, "environment::Variable should be string-like");
+         static_assert( traits::is::string::like_v< Variable>, "environment::Variable should be string-like");
 
       } // environment
    } // common

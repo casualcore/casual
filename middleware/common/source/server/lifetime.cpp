@@ -61,7 +61,7 @@ namespace casual
                   auto result = soft::shutdown( servers, timeout);
 
 
-                  auto running = algorithm::difference( origin, result);
+                  auto running = std::get< 1>( algorithm::intersection( origin, result));
 
                   log::line( log::debug, "still on-line: ", running);
 

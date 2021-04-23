@@ -104,7 +104,7 @@ namespace casual
                      // we need to keep the actual original order, hence we work with references.
                      auto instances = range::to_reference( source_instances);
 
-                     auto split = algorithm::stable_partition( instances, []( auto& i)
+                     auto split = algorithm::stable::partition( instances, []( auto& i)
                      {
                         return algorithm::compare::any( i.get().state, state_type::running, state_type::scale_out);
                      });

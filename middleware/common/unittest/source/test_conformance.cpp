@@ -40,22 +40,22 @@ namespace casual
    {
       // static test of traits
 
-      static_assert( traits::is_same< traits::remove_cvref_t< char const&>, char>::value, "traits::remove_cvref_t does not work...");
+      static_assert( traits::is::same_v< traits::remove_cvref_t< char const&>, char>, "traits::remove_cvref_t does not work...");
 
-      static_assert( traits::is::string::like< decltype( "some string")>::value, "traits::is::string::like does not work...");
+      static_assert( traits::is::string::like_v< decltype( "some string")>, "traits::is::string::like_v does not work...");
 
-      static_assert( traits::is::string::like< char const (&)[7]>::value, "traits::is::string::like does not work...");
-      static_assert( traits::is::string::like< char[ 20]>::value, "traits::is::string::like does not work...");
+      static_assert( traits::is::string::like_v< char const (&)[7]>, "traits::is::string::like_v does not work...");
+      static_assert( traits::is::string::like_v< char[ 20]>, "traits::is::string::like_v does not work...");
 
-      static_assert( ! traits::is::string::like< char* [ 20]>::value, "traits::is::string::like does not work...");
+      static_assert( ! traits::is::string::like_v< char* [ 20]>, "traits::is::string::like_v does not work...");
 
 
-      static_assert( traits::is::iterable< char[ 20]>::value, "traits::is::iterable does not work...");
+      static_assert( traits::is::iterable_v< char[ 20]>, "traits::is::iterable does not work...");
 
-      static_assert( ! traits::is_any< char, unsigned char, signed char>::value, "traits::is_any does not work...");
-      static_assert( traits::is_any< char, unsigned char, signed char, char>::value, "traits::is_any does not work...");
+      static_assert( ! traits::is::any_v< char, unsigned char, signed char>, "traits::is::any_v does not work...");
+      static_assert( traits::is::any_v< char, unsigned char, signed char, char>, "traits::is_any does not work...");
 
-      static_assert( traits::is::tuple< std::pair< int, long>>::value, "traits::is::tuple does not work...");
+      static_assert( traits::is::tuple_v< std::pair< int, long>>, "traits::is::tuple_v does not work...");
 
       template< int... values>
       constexpr auto size_of_parameter_pack()

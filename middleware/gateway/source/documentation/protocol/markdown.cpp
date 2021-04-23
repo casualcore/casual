@@ -94,7 +94,7 @@ namespace casual
                }
 
                template< typename T>
-               auto network( T&& value) -> std::enable_if_t< ! common::serialize::native::binary::network::detail::is_network_array< T>::value, Type>
+               auto network( T&& value) -> std::enable_if_t< ! common::serialize::native::binary::network::detail::is_network_array_v< T>, Type>
                {
                   auto network = common::network::byteorder::encode( common::serialize::native::binary::network::detail::cast( value));
                   const auto size = common::memory::size( network);
@@ -102,7 +102,7 @@ namespace casual
                }
 
                template< typename T>
-               auto network( T&& value) -> std::enable_if_t< common::serialize::native::binary::network::detail::is_network_array< T>::value, Type>
+               auto network( T&& value) -> std::enable_if_t< common::serialize::native::binary::network::detail::is_network_array_v< T>, Type>
                {
                   const auto size = common::memory::size( value);
                   return Type{ "fixed array", { size, size}};
@@ -185,7 +185,7 @@ namespace casual
 
                template< typename T> 
                auto write( T&& value, const char* name)
-                  -> std::enable_if_t< common::serialize::traits::is::archive::write::type< common::traits::remove_cvref_t< T>>::value>
+                  -> std::enable_if_t< common::serialize::traits::is::archive::write::type_v< common::traits::remove_cvref_t< T>>>
                { 
                   canonical.push( name);
                   write( std::forward< T>( value));

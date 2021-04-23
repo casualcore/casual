@@ -322,8 +322,8 @@ namespace casual
                   // container sequences
                   template< typename T> 
                   struct value_traits< T, std::enable_if_t< 
-                     traits::is::container::sequence::like< T>::value
-                     && ! traits::is::string::like< T>::value>>
+                     traits::is::container::sequence::like_v< T>
+                     && ! traits::is::string::like_v< T>>>
                   {
                      using value_type = std::decay_t< decltype( *std::begin( std::declval< T&>()))>;
                      using value_cardinality = decltype( value_traits< value_type>::cardinality());
@@ -349,7 +349,7 @@ namespace casual
 
                   // tuple
                   template< typename T> 
-                  struct value_traits< T, std::enable_if_t< traits::is::tuple< T>::value>>
+                  struct value_traits< T, std::enable_if_t< traits::is::tuple_v< T>>>
                   {
                      constexpr static auto cardinality() 
                      { 
@@ -365,7 +365,7 @@ namespace casual
 
                   // optional like
                   template< typename T> 
-                  struct value_traits< T, std::enable_if_t< traits::is::optional_like< T>::value>>
+                  struct value_traits< T, std::enable_if_t< traits::is::optional_like_v< T>>>
                   {
                      
                      using value_type = std::decay_t< decltype( std::declval< T&>().value())>;
@@ -470,7 +470,7 @@ namespace casual
                   struct Invoke;
 
                   template< typename C>
-                  struct Invoke< C, std::enable_if_t< traits::is::function< C>::value>> 
+                  struct Invoke< C, std::enable_if_t< traits::is::function_v< C>>> 
                   {
                      using value_type = value_holder< typename traits::function< C>::decayed>;
                      
@@ -503,7 +503,7 @@ namespace casual
                   };
 
                   template< typename T> 
-                  struct Invoke< T, std::enable_if_t< traits::is::tuple< T>::value>> : value_holder< T>
+                  struct Invoke< T, std::enable_if_t< traits::is::tuple_v< T>>> : value_holder< T>
                   {
                      using base_type = value_holder< T>;
                      using base_type::base_type;
@@ -1024,9 +1024,9 @@ namespace casual
                {
                   template< typename T, 
                      std::enable_if_t< 
-                        traits::is::function< T>::value
+                        traits::is::function_v< T>
                         && traits::function< T>::arguments() == 1
-                        && std::is_same< typename traits::function< T>::result_type, void>::value,
+                        && std::is_same_v< typename traits::function< T>::result_type, void>,
                      int> = 0> 
                   auto many( T&& callable)
                   {

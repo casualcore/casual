@@ -8,26 +8,20 @@
 
 namespace casual
 {
-   namespace common
+   //! to enable customization points for stream/logging
+   namespace common::stream::customization
    {
-      namespace stream
-      {
-         //! to enable customization points for stream/logging
-         namespace customization
-         {
-            //! kicks in if T does not have an ostream stream operator
-            template< typename T, typename Enable = void>
-            struct point;
+      //! kicks in if T does not have an ostream stream operator
+      template< typename T, typename Enable = void>
+      struct point;
 
-            namespace supersede
-            {
-               // highest priority, and will supersede ostream stream operator
-               // used to 'override' standard defined stream operators
-               template< typename T, typename Enable = void>
-               struct point;
-            } // supersede
-                        
-         } // customization
-      } // stream
-   } // common
+      namespace supersede
+      {
+         // highest priority, and will supersede ostream stream operator
+         // used to 'override' standard defined stream operators
+         template< typename T, typename Enable = void>
+         struct point;
+      } // supersede
+
+   } // common::stream::customization
 } // casual

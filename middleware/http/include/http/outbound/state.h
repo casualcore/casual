@@ -133,7 +133,7 @@ namespace casual
                   common::move::basic_pimpl< State> m_state;
                };
                static_assert( common::traits::is_nothrow_movable< Request>::value, "not movable");
-               static_assert( ! common::traits::is_copyable< Request>::value, "not movable");
+               static_assert( ! common::traits::is::copyable_v< Request>, "not movable");
 
 
 

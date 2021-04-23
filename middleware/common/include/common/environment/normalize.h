@@ -51,7 +51,7 @@ namespace casual
 
             template< typename T> 
             auto read( T&& value, const char*)
-               -> std::enable_if_t< serialize::traits::is::archive::write::type< traits::remove_cvref_t< T>>::value, bool>
+               -> std::enable_if_t< serialize::traits::is::archive::write::type_v< traits::remove_cvref_t< T>>, bool>
             { 
                return read( std::forward< T>( value));
             }

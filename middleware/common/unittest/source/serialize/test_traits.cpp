@@ -24,7 +24,7 @@ namespace casual
             {
             };
 
-            EXPECT_FALSE( ( traits::has::serialize< Value, long>::value));
+            EXPECT_FALSE( ( traits::has::serialize_v< Value, long>));
          }
 
          namespace local
@@ -43,7 +43,7 @@ namespace casual
          {
             common::unittest::Trace trace;
 
-            EXPECT_TRUE( ( traits::has::serialize< local::Value, long>::value));
+            EXPECT_TRUE( ( traits::has::serialize_v< local::Value, long>));
          }
 
 
@@ -69,12 +69,12 @@ namespace casual
          TEST( casual_serialize_traits, need_named__true)
          {
 
-            EXPECT_TRUE( ( traits::need::named< local::archive::Named>::value));
+            EXPECT_TRUE( ( traits::need::named_v< local::archive::Named>));
          }
 
          TEST( casual_serialize_traits, need_named__false)
          {
-            EXPECT_TRUE( ( ! traits::need::named< local::archive::Order>::value));
+            EXPECT_TRUE( ( ! traits::need::named_v< local::archive::Order>));
          }
       } // serialize
    } // common

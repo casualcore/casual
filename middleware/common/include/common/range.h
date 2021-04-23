@@ -107,13 +107,13 @@ namespace casual
          };
          friend constexpr bool operator != ( const Range& lhs, const Range& rhs) { return !( lhs == rhs);}
 
-         template< typename C, std::enable_if_t< ! traits::is::string::like< C>::value, int> = 0>
+         template< typename C, std::enable_if_t< ! traits::is::string::like_v< C>, int> = 0>
          friend constexpr bool operator == ( const Range& lhs, const C& rhs)
          {
             return equal( lhs, rhs);
          }
 
-         template< typename C, std::enable_if_t< ! traits::is::string::like< C>::value, int> = 0>
+         template< typename C, std::enable_if_t< ! traits::is::string::like_v< C>, int> = 0>
          friend constexpr bool operator == ( C& lhs, const Range< Iter>& rhs)
          {
             return equal( lhs, rhs);
@@ -161,25 +161,25 @@ namespace casual
             struct tag {};
 
             template< typename T>
-            struct tag< T, std::enable_if_t< traits::is::container::sequence::like< T>::value>>
+            struct tag< T, std::enable_if_t< traits::is::container::sequence::like_v< T>>>
             {
                using type = category::container;
             };
 
             template< typename T>
-            struct tag< T, std::enable_if_t< traits::is::container::associative::like< T>::value>>
+            struct tag< T, std::enable_if_t< traits::is::container::associative::like_v< T>>>
             {
                using type = category::associative;
             };
 
             template< typename T>
-            struct tag< T, std::enable_if_t< traits::is::output::iterator< T>::value>>
+            struct tag< T, std::enable_if_t< traits::is::output::iterator_v< T>>>
             {
                using type = category::output_iterator;
             };
 
             template< typename T>
-            struct tag< T, std::enable_if_t< traits::is::container::array::like< T>::value>>
+            struct tag< T, std::enable_if_t< traits::is::container::array::like_v< T>>>
             {
                using type = category::fixed;
             };            
@@ -189,21 +189,21 @@ namespace casual
 
          } // category
 
-         template< typename Iter, std::enable_if_t< common::traits::is::iterator< Iter>::value, int> = 0>
+         template< typename Iter, std::enable_if_t< common::traits::is::iterator_v< Iter>, int> = 0>
          auto make( Iter first, Iter last)
          {
             return Range< Iter>( first, last);
          }
 
          template< typename Iter, typename Count, std::enable_if_t< 
-            common::traits::is::iterator< Iter>::value 
-            && std::is_integral< Count>::value, int> = 0>
+            common::traits::is::iterator_v< Iter> 
+            && std::is_integral_v< Count>, int> = 0>
          auto make( Iter first, Count count)
          {
             return Range< Iter>( first, first + count);
          }
 
-         template< typename C, std::enable_if_t< std::is_lvalue_reference< C>::value && common::traits::is::iterable< C>::value, int> = 0>
+         template< typename C, std::enable_if_t< std::is_lvalue_reference_v< C> && common::traits::is::iterable_v< C>, int> = 0>
          auto make( C&& container)
          {
             return make( std::begin( container), std::end( container));
@@ -231,7 +231,7 @@ namespace casual
          constexpr auto reverse( R&& range)
          {
             // R can't be an owning r-value container.
-            static_assert( ! traits::is::container::like< R>::value || std::is_lvalue_reference< R>::value, "");
+            static_assert( ! traits::is::container::like_v< R> || std::is_lvalue_reference_v< R>, "");
 
             return make( 
                detail::make_reverse_iterator( std::end( range)),
@@ -254,13 +254,13 @@ namespace casual
          template< typename R, std::enable_if_t< std::is_array< std::remove_reference_t< R>>::value, int> = 0>
          constexpr platform::size::type size( R&& range) { return sizeof( R) / sizeof( *range);}
 
-         template< typename R, std::enable_if_t< common::traits::has::size< R>::value, int> = 0>
+         template< typename R, std::enable_if_t< common::traits::has::size_v< R>, int> = 0>
          constexpr platform::size::type size( R&& range) { return range.size();}
 
-         template< typename R, std::enable_if_t< std::is_array< std::remove_reference_t< R>>::value, int> = 0>
+         template< typename R, std::enable_if_t< std::is_array_v< std::remove_reference_t< R>>, int> = 0>
          constexpr bool empty( R&& range) { return false;}
 
-         template< typename R, std::enable_if_t< common::traits::has::empty< R>::value, int> = 0>
+         template< typename R, std::enable_if_t< common::traits::has::empty_v< R>, int> = 0>
          constexpr bool empty( R&& range) { return range.empty();}
 
          namespace position

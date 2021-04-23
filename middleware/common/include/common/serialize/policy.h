@@ -213,7 +213,7 @@ namespace casual
             auto source = canonical();
             auto consumed = m_canonical();
 
-            if( auto not_consumed = common::algorithm::difference( source, consumed))
+            if( auto not_consumed = std::get< 1>( common::algorithm::intersection( source, consumed)))
             {
                common::log::line( verbose::log, "source: ", source);
                common::log::line( verbose::log, "consumed: ", consumed);

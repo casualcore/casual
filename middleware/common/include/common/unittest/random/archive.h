@@ -67,10 +67,10 @@ namespace casual
 
 
                template< typename T>
-               constexpr static bool is_integer() { return traits::is_any< T, short, int, long, long long, unsigned short, unsigned int, unsigned long, unsigned long long>::value;}
+               constexpr static bool is_integer() { return traits::is::any_v< T, short, int, long, long long, unsigned short, unsigned int, unsigned long, unsigned long long>;}
 
                template< typename T>
-               constexpr static bool is_float() { return traits::is_any< T, float, double, long double>::value;}
+               constexpr static bool is_float() { return traits::is::any_v< T, float, double, long double>;}
 
                inline std::tuple< platform::size::type, bool> container_start( platform::size::type size, const char*) 
                {

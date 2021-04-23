@@ -231,10 +231,20 @@ namespace casual
             } // has
          } // traits
 
+         namespace detail::has::value
+         {
+            template< typename A, typename V>
+            using serialize = decltype( common::serialize::value::serialize( std::declval< A&>(), std::declval< traits::remove_cvref_t< V>&>()));
+
+            template< typename A, typename V>
+            inline constexpr bool serialize_v = common::traits::detect::is_detected_v< serialize, A, V>;
+            
+         } // detail::has::value
+
 
          //! Specialization for serializable
          template< typename T, typename A>
-         struct Value< T, A, std::enable_if_t< traits::has::value::serialize< A, T>::value>>
+         struct Value< T, A, std::enable_if_t< detail::has::value::serialize_v< A, T>>>
          {
             template< typename V> 
             static void write( A& archive, V&& value, const char* name)
@@ -258,7 +268,7 @@ namespace casual
 
          //! Specialization for enum
          template< typename T, typename A>
-         struct Value< T, A, std::enable_if_t< std::is_enum< T>::value>>
+         struct Value< T, A, std::enable_if_t< std::is_enum_v< T>>>
          {
             template< typename V> 
             static void write( A& archive, V&& value, const char* name)
@@ -318,68 +328,58 @@ namespace casual
                   static void serialize( A&, T&) {}
                };
 
-               //! SFINAE expression to choose tuple_start instead of container_start if archive support it.
-               //! @{
                template< typename A>
-               auto tuple_start( A& archive, platform::size::type size, const char* name, common::traits::priority::tag< 1>)
-                  -> decltype( archive.tuple_start( size, name))
+               using has_tuple_start = decltype( std::declval< A&>().tuple_start( platform::size::type{}, ""));
+
+               template< typename A>
+               using has_tuple_end = decltype( std::declval< A&>().tuple_end( ""));
+
+               template< typename A>
+               auto start( A& archive, platform::size::type size, const char* name)
                {
-                  return archive.tuple_start( size, name);
+                  if constexpr( common::traits::detect::is_detected_v< has_tuple_start, A>)
+                     return archive.tuple_start( size, name);
+                  else
+                     return archive.container_start( size, name);
                }
 
                template< typename A>
-               auto tuple_start( A& archive, platform::size::type size, const char* name, common::traits::priority::tag< 0>)
-                  -> decltype( archive.container_start( size, name))
+               auto end( A& archive, const char* name)
                {
-                  return archive.container_start( size, name);
+                  if constexpr( common::traits::detect::is_detected_v< has_tuple_end, A>)
+                     return archive.tuple_end( name);
+                  else
+                     return archive.container_end( name);
                }
 
-               //! SFINAE expression to choose tuple_end instead of container_end if archive support it.
-               //! @{
-               template< typename A>
-               auto tuple_end( A& archive, const char* name, common::traits::priority::tag< 1>)
-                  -> decltype( archive.tuple_end( name))
-               {
-                  return archive.tuple_end( name);
-               }
-
-               template< typename A>
-               auto tuple_end( A& archive, const char* name, common::traits::priority::tag< 0>)
-                  -> decltype( archive.container_end( name))
-               {
-                  return archive.container_end( name);
-               }
-               //! @}
             } // tuple
          } // detail
 
          //! Specialization for tuple
          template< typename T, typename A>
-         struct Value< T, A, std::enable_if_t< common::traits::is::tuple< T>::value>>
+         struct Value< T, A, std::enable_if_t< common::traits::is::tuple_v< T>>>
          {
             template< typename V> 
             static void write( A& archive, V&& value, const char* name)
             {
-               detail::tuple::tuple_start( archive, std::tuple_size< T>::value, name, common::traits::priority::tag< 1>{});
+               detail::tuple::start( archive, std::tuple_size< T>::value, name);
                detail::tuple::Write< std::tuple_size< T>::value>::serialize( archive, value);
-               detail::tuple::tuple_end( archive, name, common::traits::priority::tag< 1>{});
+               detail::tuple::end( archive, name);
             }
 
             static bool read( A& archive, T& value, const char* name)
             {
                constexpr auto expected_size = std::tuple_size< T>::value;
-               const auto context = detail::tuple::tuple_start( archive, expected_size, name, common::traits::priority::tag< 1>{});
+               const auto [ size, exists] = detail::tuple::start( archive, expected_size, name);
 
-               if( std::get< 1>( context))
+               if( exists)
                {
-                  auto size = std::get< 0>( context);
-
                   if( expected_size != size)
                      throw std::system_error{ std::make_error_code( std::errc::invalid_argument), "unexpected tuple size"};
 
                   detail::tuple::Read< std::tuple_size< T>::value>::serialize( archive, value);
 
-                  detail::tuple::tuple_end( archive, name, common::traits::priority::tag< 1>{});
+                  detail::tuple::end( archive, name);
                   return true;
                }
                return false;
@@ -390,12 +390,10 @@ namespace casual
          {
             namespace is
             {
-               template< typename T> 
-               using container = traits::bool_constant< 
-                  common::traits::is::container::like< traits::remove_cvref_t< T>>::value
-                  && ! common::traits::is::string::like< traits::remove_cvref_t< T>>::value
-                  && ! serialize::traits::is::pod< traits::remove_cvref_t< T>>::value
-               >; 
+               template< typename T, typename C = common::traits::remove_cvref_t< T>> 
+               inline constexpr auto container_v = common::traits::is::container::like_v< C>
+                  && ! common::traits::is::string::like_v< C>
+                  && ! serialize::traits::is::pod_v< C>;
             } // is
    
             namespace container
@@ -415,49 +413,39 @@ namespace casual
                   archive.container_start( container.size(), name);
 
                   for( auto& element : container)
-                  {
                      serialize::value::write( archive, element, nullptr);
-                  }
+
                   archive.container_end( name);
                }
 
                template< typename A, typename C>
-               auto read( A& archive, C& container, const char* name) ->
-                  std::enable_if_t< common::traits::is::container::associative::like< traits::remove_cvref_t< C>>::value, bool>
+               auto read( A& archive, C& container, const char* name)
                {
-                  auto properties = archive.container_start( container.size(), name);
+                  auto [ size, exists] = archive.container_start( container.size(), name);
 
-                  if( std::get< 1>( properties))
+                  if( exists)
                   {
-                     auto count = std::get< 0>( properties);
-
-                     while( count-- > 0)
+                     if constexpr( common::traits::is::container::associative::like_v< traits::remove_cvref_t< C>>)
                      {
-                        // we need to get rid of const key (if pair), so we can serialize
-                        container::value_t< typename traits::remove_cvref_t< C>::value_type> element;
-                        serialize::value::read( archive, element, nullptr);
+                        auto count = size;
 
-                        container.insert( std::move( element));
+                        while( count-- > 0)
+                        {
+                           // we need to get rid of const key (if pair), so we can serialize
+                           container::value_t< typename traits::remove_cvref_t< C>::value_type> element;
+                           serialize::value::read( archive, element, nullptr);
+
+                           container.insert( std::move( element));
+                        }
                      }
+                     else
+                     {
+                        static_assert( common::traits::is::container::sequence::like_v< traits::remove_cvref_t< C>>);
+                        container.resize( size);
 
-                     archive.container_end( name);
-                     return true;
-                  }
-                  return false;
-               }
-
-               template< typename A, typename C>
-               auto read( A& archive, C& container, const char* name) ->
-                  std::enable_if_t< common::traits::is::container::sequence::like< traits::remove_cvref_t< C>>::value, bool>
-               {
-                  auto properties = archive.container_start( container.size(), name);
-
-                  if( std::get< 1>( properties))
-                  {
-                     container.resize( std::get< 0>( properties));
-
-                     for( auto& element : container)
-                        serialize::value::read( archive, element, nullptr);
+                        for( auto& element : container)
+                           serialize::value::read( archive, element, nullptr);
+                     }
 
                      archive.container_end( name);
                      return true;
@@ -472,7 +460,7 @@ namespace casual
 
          //! Specialization for containers
          template< typename T, typename A>
-         struct Value< T, A, std::enable_if_t< detail::is::container< T>::value>>
+         struct Value< T, A, std::enable_if_t< detail::is::container_v< T>>>
          {
             template< typename C> 
             static void write( A& archive, C&& container, const char* name)
@@ -489,8 +477,8 @@ namespace casual
          //! Specialization for binary array likes
          template< typename T, typename A>
          struct Value< T, A, std::enable_if_t< 
-            common::traits::is::container::array::like< T>::value
-            && common::traits::is::binary::like< T>::value
+            common::traits::is::container::array::like_v< T>
+            && common::traits::is::binary::like_v< T>
          >>
          {
             template< typename V> 
@@ -529,27 +517,19 @@ namespace casual
                }
 
                template< typename A, typename V> 
-               std::enable_if_t< traits::archive::type< A>::value == archive::Type::static_need_named>
-               write( A& archive, V&& value, const char* name)
+               void write( A& archive, V&& value, const char* name)
                {
-                  write_named( archive, value, name);
-               }
-               
-               template< typename A, typename V> 
-               std::enable_if_t< traits::archive::type< A>::value == archive::Type::static_order_type>
-               write( A& archive, V&& value, const char*)
-               {  
-                  write_order_type( archive, value);
-               }
-
-               template< typename A, typename V> 
-               std::enable_if_t< traits::archive::type< A>::value == archive::Type::dynamic_type>
-               write( A& archive, V&& value, const char* name)
-               {  
-                  if( archive.type() == archive::dynamic::Type::named)
+                  if constexpr( traits::archive::type_v< A> == archive::Type::static_need_named)
                      write_named( archive, value, name);
-                  else
+                  else if constexpr( traits::archive::type_v< A> == archive::Type::static_order_type)
                      write_order_type( archive, value);
+                  else if constexpr( traits::archive::type_v< A> == archive::Type::dynamic_type)
+                  {
+                     if( archive.type() == archive::dynamic::Type::named)
+                        write_named( archive, value, name);
+                     else
+                        write_order_type( archive, value);
+                  }
                }
 
                template< typename A, typename V>
@@ -582,27 +562,19 @@ namespace casual
                }
 
                template< typename A, typename V>
-               std::enable_if_t< traits::archive::type< A>::value == archive::Type::static_need_named, bool>
-               read( A& archive, V& value, const char* name)
+               auto read( A& archive, V& value, const char* name)
                {
-                  return read_named( archive, value, name);
-               }
-
-               template< typename A, typename V>
-               std::enable_if_t< traits::archive::type< A>::value == archive::Type::static_order_type, bool>
-               read( A& archive, V& value, const char*)
-               {
-                  return read_order_type( archive, value);
-               }
-
-               template< typename A, typename V>
-               std::enable_if_t< traits::archive::type< A>::value == archive::Type::dynamic_type, bool>
-               read( A& archive, V& value, const char* name)
-               {
-                  if( archive.type() == archive::dynamic::Type::named)
+                  if constexpr( traits::archive::type_v< A> == archive::Type::static_need_named)
                      return read_named( archive, value, name);
-                  else
+                  else if constexpr( traits::archive::type_v< A> == archive::Type::static_order_type)
                      return read_order_type( archive, value);
+                  else if constexpr( traits::archive::type_v< A> == archive::Type::dynamic_type)
+                  {
+                     if( archive.type() == archive::dynamic::Type::named)
+                        return read_named( archive, value, name);
+                     else
+                        return read_order_type( archive, value);
+                  }
                }
             } // optional
          } // detail
@@ -610,8 +582,8 @@ namespace casual
          //! Specialization for optional-like (that hasn't 'serialize')
          template< typename T, typename A>
          struct Value< T, A, std::enable_if_t< 
-            common::traits::is::optional_like< T>::value 
-            && ! traits::has::serialize< T, A>::value
+            common::traits::is::optional_like_v< T>
+            && ! traits::has::serialize_v< T, A>
          >>
          {
             template< typename V> 
@@ -736,9 +708,7 @@ namespace casual
 
          //! Specialization for named value
          template< typename T, typename A>
-         struct Value< T, A, std::enable_if_t< 
-            traits::is::named::value< T>::value
-         >>
+         struct Value< T, A, std::enable_if_t< traits::is::named::value_v< T>>>
          {
             template< typename V>
             static auto write( A& archive, V&& value, const char*)

@@ -189,10 +189,6 @@ namespace casual
          constexpr static bool nothrow_copy_construct = std::is_nothrow_copy_constructible_v< T>;
       };
 
-
-      template< typename T>
-      using is_trivially_copyable = std::is_trivially_copyable< T>;
-
       //!
       //! SFINAE friendly underlying_type
       //! @{
@@ -210,7 +206,7 @@ namespace casual
 
       template< typename T>
       struct is_by_value_friendly : bool_constant< 
-         is_trivially_copyable< remove_cvref_t< T>>::value
+         std::is_trivially_copyable_v< remove_cvref_t< T>>
          && sizeof( remove_cvref_t< T>) <= platform::size::by::value::max> {};
 
 
@@ -224,56 +220,12 @@ namespace casual
       struct is_nothrow_movable : bool_constant<
          std::is_nothrow_move_constructible< T>::value && std::is_nothrow_move_assignable< T>::value> {}; 
 
-#if __cplusplus > 201402L // vector will have nothrow move in c++17
       template< typename T>
       using is_movable = is_nothrow_movable< T>;
-      
-#else
-      //!  containers and std::string is not noexcept movable with gcc 4.9.x
-      template< typename T>
-      struct is_movable : bool_constant<
-         std::is_move_constructible< T>::value && std::is_move_assignable< T>::value> {};
-#endif
 
-
-
-      template< typename T>
-      struct is_copyable : bool_constant< 
-         std::is_copy_constructible< T>::value && std::is_copy_assignable< T>::value> {};
-
-
-
-
-      //! Arbitrary number of types to compare if same
-      //! @{
-      template< typename T1, typename T2, typename... Args>
-      struct is_same : bool_constant< is_same< T1, T2>::value && is_same< T2, Args...>::value> {};
-
-      template< typename T1, typename T2>
-      struct is_same< T1, T2> : std::is_same< T1, T2> {};
-      //! @}
-
-      namespace concrete
-      {
-         //! Arbitrary number of types to compare if the `concrete` type is the same
-         //! @{
-         template< typename T1, typename T2, typename... Args>
-         struct is_same : bool_constant< is_same< T1, T2>::value && is_same< T2, Args...>::value> {};
-
-         template< typename T1, typename T2>
-         struct is_same< T1, T2> : std::is_same< remove_cvref_t< T1>, remove_cvref_t< T2>> {};
-      //! @}
-         
-      } // concrete
-
-      //! Answer the question if T is the same type as any of the options
-      //! @{
-      template< typename T, typename Option, typename... Options>
-      struct is_any : bool_constant< is_same< T, Option>::value || is_any< T, Options...>::value> {};
-
-      template< typename T, typename Option>
-      struct is_any< T, Option> : std::is_same< T, Option> {};
-      //! @}
+      //! usable in else branch in constexpr if context
+      template< typename T> 
+      struct dependent_false : std::false_type {};
 
       /* not needed right now, but could be... 
       //!
@@ -360,45 +312,39 @@ namespace casual
          } // detail
 
          template< typename T>
-         using size = detect::is_detected< detail::size, T>;
+         inline constexpr bool size_v = detect::is_detected_v< detail::size, T>;
 
          template< typename T>
-         inline constexpr bool size_v = size< T>::value;
+         inline constexpr bool resize_v = detect::is_detected_v< detail::resize, T>;
 
          template< typename T>
-         using resize = detect::is_detected< detail::resize, T>;
+         inline constexpr bool reserve_v = detect::is_detected_v< detail::reserve, T>;
 
          template< typename T>
-         using reserve = detect::is_detected< detail::reserve, T>;
+         inline constexpr bool empty_v = detect::is_detected_v< detail::empty, T>;
 
          template< typename T>
-         inline constexpr bool reserve_v = reserve< T>::value;
-
-         template< typename T>
-         using empty = detect::is_detected< detail::empty, T>;
-
-         template< typename T>
-         using insert = detect::is_detected< detail::insert, T>;
+         inline constexpr bool insert_v = detect::is_detected_v< detail::insert, T>;
 
          namespace value
          {
             template< typename T>
-            using insert = detect::is_detected< detail::value::insert, T>;
+            inline constexpr bool insert_v = detect::is_detected_v< detail::value::insert, T>;
          } // value
 
          template< typename T>
-         using push_back = detect::is_detected< detail::push_back, T>;
+         inline constexpr bool push_back_v = detect::is_detected_v< detail::push_back, T>;
 
          template< typename T>
-         using ostream_stream_operator = detect::is_detected< detail::ostream_stream_operator, T>;
+         inline constexpr bool ostream_stream_operator_v = detect::is_detected_v< detail::ostream_stream_operator, T>;
 
          template< typename T>
-         using flush = detect::is_detected< detail::flush, T>;
+         inline constexpr bool flush_v = detect::is_detected_v< detail::flush, T>;
          
          namespace tuple
          {
             template< typename T>
-            using size = detect::is_detected< detail::tuple::size, T>;
+            inline constexpr bool size_v = detect::is_detected_v< detail::tuple::size, T>;
          } // tuple
          
          namespace any
@@ -408,6 +354,9 @@ namespace casual
 
             template< typename T, typename Option>
             struct base< T, Option> : std::is_base_of< Option, T> {};
+
+            template< typename T, typename... Ts>
+            inline constexpr bool base_v = base< T, Ts...>::value;
          } // any
 
       } // has
@@ -416,6 +365,18 @@ namespace casual
       {
          namespace detail
          {
+            template< typename T1, typename T2, typename... Args>
+            struct same : bool_constant< same< T1, T2>::value && same< T2, Args...>::value> {};
+
+            template< typename T1, typename T2>
+            struct same< T1, T2> : std::is_same< T1, T2> {};
+
+            template< typename T, typename Option, typename... Options>
+            struct any : bool_constant< std::is_same< T, Option>::value || any< T, Options...>::value> {};
+
+            template< typename T, typename Option>
+            struct any< T, Option> : std::is_same< T, Option> {};
+
             template< typename T> 
             using function = decltype( function< T>::arguments());
 
@@ -429,7 +390,10 @@ namespace casual
             using iterator = typename std::iterator_traits< std::remove_reference_t< T>>::iterator_category;
 
             template< typename T>
-            using iterator_value = decltype( *std::begin( std::declval< T&>()));
+            using begin_dereferenced = decltype( *std::begin( std::declval< T&>()));
+
+            template< typename T>
+            using dereferenced = decltype( *std::declval< T>());
 
             namespace output
             {
@@ -440,58 +404,60 @@ namespace casual
    
          } // detail
 
-         template< typename T>
-         using function = detect::is_detected< detail::function, T>;
 
          template< typename T>
-         using iterable = detect::is_detected< detail::iterable, T>;
+         inline constexpr bool copyable_v = std::is_copy_constructible_v< T> && std::is_copy_assignable_v< T>;
+
+         //! Arbitrary number of types to compare if same
+         template< typename T1, typename T2, typename... Ts>
+         inline constexpr bool same_v = detail::same< T1, T2, Ts...>::value;
+
+         //! Answer the question if T is the same type as any of the other types
+         template< typename T1, typename T2, typename... Ts>
+         inline constexpr bool any_v = detail::any< T1, T2, Ts...>::value;
 
          template< typename T>
-         inline constexpr bool iterable_v = iterable< T>::value;
+         inline constexpr bool function_v = detect::is_detected_v< detail::function, T>;
 
          template< typename T>
-         using iterator = detect::is_detected< detail::iterator, T>;
+         inline constexpr bool iterable_v = detect::is_detected_v< detail::iterable, T>;
 
          template< typename T>
-         using tuple = bool_constant< has::tuple::size< T>::value && ! is::iterable< T>::value>;
+         inline constexpr bool iterator_v = detect::is_detected_v< detail::iterator, T>;
 
-         static_assert( is::tuple< std::tuple< int, int>>::value, "");
-         static_assert( is::tuple< std::pair< int, int>>::value, "");
-         static_assert( ! is::tuple< int>::value, "");
+         template< typename T>
+         inline constexpr bool tuple_v = has::tuple::size_v< T> && ! is::iterable_v< T>;
+
+         static_assert( is::tuple_v< std::tuple< int, int>>, "");
+         static_assert( is::tuple_v< std::pair< int, int>>, "");
+         static_assert( ! is::tuple_v< int>, "");
 
 
          template< typename T>
-         using optional_like = detect::is_detected< detail::optional, T>;
-
+         inline constexpr bool optional_like_v = detect::is_detected_v< detail::optional, T>;
 
 
          namespace output
          {
             template< typename T>
-            using iterator = detect::is_detected< detail::output::iterator, T>;
+            inline constexpr bool iterator_v = detect::is_detected_v< detail::output::iterator, T>;
             
          } // output
-         
-         template< typename T>
-         using char_type = bool_constant< is_any< 
-            remove_cvref_t< T>, char, unsigned char, signed char>::value>;
+
 
          template< typename T>
-         using char_pointer = bool_constant< std::is_pointer< T>::value 
-            && is::char_type< decltype( *T())>::value>;
+         inline constexpr bool char_type_v = is::any_v< remove_cvref_t< T>, char, unsigned char, signed char>;
+
+         template< typename T>
+         inline constexpr bool char_pointer_v = std::is_pointer_v< T> && is::char_type_v< decltype( *T())>;
 
          namespace string
          {
             template< typename T>
-            using like = bool_constant< is::iterable< T>::value 
-               && is::char_type< decltype( *std::begin( std::declval< T&>()))>::value>;
+            inline constexpr bool like_v = is::iterable_v< T> && is::char_type_v< detect::detected_t< detail::begin_dereferenced, T>>;
 
             template< typename T>
-            inline constexpr bool like_v = like< T>::value;
-
-            template< typename T>
-            using iterator = bool_constant< is::iterator< T>::value 
-               && is::char_type< decltype( *std::declval< T>())>::value>;
+            inline constexpr bool iterator_v = is::iterator_v< T> && is::char_type_v< detect::detected_t< detail::dereferenced, T>>;
          } // string
 
 
@@ -499,15 +465,13 @@ namespace casual
          namespace binary
          {
             template< typename T>
-            using value = char_type< T>;
+            inline constexpr bool value_v = char_type_v< T>;
 
             template< typename T>
-            using iterator = bool_constant< is::iterator< T>::value 
-               && is::binary::value< decltype( *std::declval< T>())>::value>;
+            inline constexpr bool iterator_v = is::iterator_v< T> && is::binary::value_v< detect::detected_t< detail::dereferenced, T>>;
 
             template< typename T>
-            using like = bool_constant< is::iterable< T>::value 
-               && is::binary::value< detect::detected_t< detail::iterator_value, T>>::value>;
+            inline constexpr bool like_v = is::iterable_v< T> && is::binary::value_v< detect::detected_t< detail::begin_dereferenced, T>>;
          } // binary
 
 
@@ -516,31 +480,25 @@ namespace casual
             namespace sequence
             {
                template< typename T>
-               using like = bool_constant< is::iterable< T>::value 
-                  && has::resize< T>::value>;
+               inline constexpr bool like_v = is::iterable_v< T> && has::resize_v< T>;
                
             } // sequence
 
             namespace associative
             {
                template< typename T>
-               using like = bool_constant< is::iterable< T>::value 
-                  && has::value::insert< T>::value>;
+               inline constexpr bool like_v = is::iterable_v< T> && has::value::insert_v< T>;
                
             } // associative
 
             namespace array
             {
                template< typename T>
-               using like = bool_constant< 
-                  std::is_array< T>::value 
-                  || ( is::iterable< T>::value && has::tuple::size< T>::value)
-               >;
+               inline constexpr bool like_v = std::is_array_v< T> || ( is::iterable_v< T> && has::tuple::size_v< T>);
             } // fixed
 
             template< typename T>
-            using like = bool_constant< is::container::sequence::like< T>::value 
-               || is::container::associative::like< T>::value>;
+            inline constexpr bool like_v = is::container::sequence::like_v< T> || is::container::associative::like_v< T>;
          } // container
 
          namespace reverse
@@ -552,7 +510,7 @@ namespace casual
             } // detail
 
             template< typename T>
-            using iterable = detect::is_detected< detail::iterable, T>;
+            inline constexpr bool iterable_v = detect::is_detected_v< detail::iterable, T>;
          } // reverse
          
       } // is
