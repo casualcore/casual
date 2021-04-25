@@ -32,10 +32,14 @@ install_bins = []
 install_libs = []
 install_headers = []
 
-common_archive = make.LinkArchive( 'bin/casual-domain-common', 
+common_library = make.LinkLibrary( 'bin/casual-domain-common', 
  [
     make.Compile( 'source/common.cpp'),
+],
+[
+    'casual-common'
 ])
+install_libs.append(common_library)
 
 manager_archive = make.LinkArchive( 'bin/casual-domain-manager', 
  [
@@ -57,7 +61,7 @@ pending_library = make.LinkLibrary( 'bin/casual-domain-utility',
         make.Compile( 'source/configuration/fetch.cpp'),
     ],
     [
-        common_archive,
+        common_library,
         'casual-common',
         'casual-serviceframework'
      ]
@@ -72,7 +76,7 @@ target_domain_manager = make.LinkExecutable( 'bin/casual-domain-manager',
     [
      manager_archive,
      pending_library,
-     common_archive,
+     common_library,
      'casual-common',
      'casual-configuration',
      'casual-serviceframework'
@@ -88,7 +92,7 @@ target = make.LinkLibrary( 'bin/casual-domain-admin-cli',
    ],
    [
       manager_archive,
-      common_archive,
+      common_library,
       'casual-common',
       'casual-configuration',
       'casual-serviceframework'
@@ -103,7 +107,7 @@ domain_api = make.LinkLibrary( 'bin/casual-domain-api',
       make.Compile( 'source/manager/api/internal/transform.cpp'),
    ],
    [
-      common_archive,
+      common_library,
       'casual-common',
       'casual-serviceframework'
    ]
@@ -167,7 +171,7 @@ pending_executable = make.LinkExecutable( 'bin/casual-domain-pending-message',
     ],
     [
      pending_library,
-     common_archive,
+     common_library,
      'casual-common',
      'casual-configuration',
      'casual-serviceframework'
@@ -184,7 +188,7 @@ domain_unittest_library = make.LinkLibrary( 'bin/casual-domain-unittest',
         make.Compile( 'source/manager/unittest/process.cpp'),
     ],
     [
-        common_archive,
+        common_library,
         'casual-common',
         'casual-unittest'
         
@@ -210,13 +214,12 @@ target_test_domain = make.LinkUnittest( 'bin/test-casual-domain',
         make.Compile( 'unittest/source/test_discovery.cpp'),
     ],
     [
-        common_archive,
+        common_library,
         manager_archive,
         domain_discovery_library,
         domain_unittest_library,
         pending_library,
         domain_api,
-        common_archive,
         'casual-common',
         'casual-xatmi',
         'casual-configuration',
