@@ -49,7 +49,7 @@ namespace casual
                if( auto found = Holder::find_concept( type))
                   return *found;
 
-               code::raise::log( code::xatmi::buffer_input, "invalid buffer type");
+               code::raise::error( code::xatmi::buffer_input, "invalid buffer type");
             }
 
             Holder::concept& Holder::get_concept( platform::buffer::raw::immutable::type handle)
@@ -57,7 +57,7 @@ namespace casual
                if( auto found = local::find( m_pools, handle))
                   return **found;
 
-               code::raise::log( code::xatmi::argument, "buffer not valid");
+               code::raise::error( code::xatmi::argument, "buffer not valid");
             }
 
             const Payload& Holder::null_payload() const

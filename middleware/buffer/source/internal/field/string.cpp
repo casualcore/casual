@@ -32,7 +32,7 @@ namespace casual
                   switch( result)
                   {
                      case CASUAL_FIELD_SUCCESS: return;
-                     case CASUAL_FIELD_INVALID_HANDLE: common::code::raise::log( common::code::xatmi::argument);
+                     case CASUAL_FIELD_INVALID_HANDLE: common::code::raise::error( common::code::xatmi::argument);
                      case CASUAL_FIELD_INVALID_ARGUMENT: throw std::invalid_argument{ "invalid argument"};
                      case CASUAL_FIELD_OUT_OF_MEMORY: throw std::bad_alloc{};
                      case CASUAL_FIELD_OUT_OF_BOUNDS: throw std::out_of_range{ "field not consumable"};

@@ -25,7 +25,7 @@ int casual_start_reource_proxy( struct casual_resource_proxy_service_argument* s
 
 int casual_start_resource_proxy( struct casual_resource_proxy_service_argument* serverArguments)
 {
-   return casual::common::exception::main::guard( [&]()
+   return casual::common::exception::main::log::guard( [&]()
    {
       casual::transaction::Trace trace{ "casual_start_resource_proxy"};
 

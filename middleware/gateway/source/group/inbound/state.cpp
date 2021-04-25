@@ -42,7 +42,7 @@ namespace casual
                   return serialize::native::complete< complete_type>( std::move( message));
                }
 
-               common::code::raise::log( common::code::casual::invalid_argument, "failed to find correlation: ", correlation);
+               common::code::raise::error( common::code::casual::invalid_argument, "failed to find correlation: ", correlation);
             }
 
             Requests::complete_type Requests::consume( const strong::correlation::id& correlation)
@@ -55,7 +55,7 @@ namespace casual
                   return result;
                }
 
-               code::raise::log( code::casual::invalid_argument, "failed to find correlation: ", correlation);
+               code::raise::error( code::casual::invalid_argument, "failed to find correlation: ", correlation);
             } 
 
             Requests::Result Requests::consume( const std::vector< strong::correlation::id>& correlations)

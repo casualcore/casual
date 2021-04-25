@@ -63,7 +63,7 @@ namespace casual
                template< typename A> 
                int start( const A& argument)
                {
-                  return common::exception::main::guard( [&argument]()
+                  return common::exception::main::log::guard( [&argument]()
                   {
                      casual::xatmi::Trace trace{ "casual::xatmi::server::local::start"};
 

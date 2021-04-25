@@ -42,7 +42,7 @@ namespace casual
                         if( auto found = find( fields, key))
                            return *found;
                         
-                        code::raise::log( code::casual::invalid_argument, "service header key not found: ", key);
+                        code::raise::error( code::casual::invalid_argument, "service header key not found: ", key);
                      }
 
                   } // <unnamed>

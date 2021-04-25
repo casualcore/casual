@@ -125,7 +125,7 @@ namespace casual
                if( found)
                   found->active = false;
                else
-                  code::raise::generic( code::xatmi::descriptor, log::debug, "invalid descriptor: ", descriptor);
+                  code::raise::error( code::xatmi::descriptor, "invalid descriptor: ", descriptor);
             }
 
             template< typename I>
@@ -134,7 +134,7 @@ namespace casual
                auto found = algorithm::find( m_descriptors, descriptor);
                
                if( ! ( found && found->active))
-                  code::raise::generic( code::xatmi::descriptor, log::debug, "invalid call descriptor: ", descriptor);
+                  code::raise::error( code::xatmi::descriptor, "invalid call descriptor: ", descriptor);
 
                return *found;
             }

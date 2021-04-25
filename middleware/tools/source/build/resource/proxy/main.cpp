@@ -192,7 +192,7 @@ int main( int argc, char** argv)
                         if( found)
                            return *found;
 
-                        common::code::raise::generic( common::code::casual::invalid_argument, std::cerr, "resource-key: ", settings.key, " not found");
+                        common::code::raise::error( common::code::casual::invalid_argument, "resource-key: ", settings.key, " not found");
                      }
 
                      void main( int argc, char* argv[])
@@ -255,7 +255,7 @@ int main( int argc, char** argv)
 
 int main( int argc, char **argv)
 {
-   return casual::common::exception::main::guard( std::cerr, [=]()
+   return casual::common::exception::main::cli::guard( [=]()
    {
       casual::tools::build::resource::proxy::local::main( argc, argv);
    });

@@ -36,7 +36,7 @@ namespace local
          using enum_type = typename Flags::enum_type;
 
          if( flags.exist( enum_type::no_change) && result.buffer.type != output.payload().type)
-            casual::common::code::raise::log( casual::common::code::xatmi::buffer_output);
+            casual::common::code::raise::error( casual::common::code::xatmi::buffer_output);
 
          casual::common::buffer::pool::Holder::instance().deallocate( *odata);
          std::tie( *odata, *olen) = casual::common::buffer::pool::Holder::instance().insert( std::move( result.buffer));

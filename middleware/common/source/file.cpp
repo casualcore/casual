@@ -50,13 +50,13 @@ namespace casual
          Input::Input( std::filesystem::path path, std::ios_base::openmode mode) : std::ifstream{ path, mode}, m_path{ std::move( path)}
          {
             if( ! is_open())
-               code::raise::log( code::casual::invalid_path, "failed to open file: ", m_path);
+               code::raise::error( code::casual::invalid_path, "failed to open file: ", m_path);
          }
 
          Output::Output( std::filesystem::path path, std::ios_base::openmode mode) : std::ofstream{ path, mode}, m_path{ std::move( path)}
          {
             if( ! is_open())
-               code::raise::log( code::casual::invalid_path, "failed to open file: ", m_path);
+               code::raise::error( code::casual::invalid_path, "failed to open file: ", m_path);
          }
 
          void remove( const std::filesystem::path& path)

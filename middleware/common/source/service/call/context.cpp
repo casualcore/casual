@@ -233,7 +233,7 @@ namespace casual
             {
                // We fetch any
                if( ! local::receive( reply, flags))
-                  code::raise::log( code::xatmi::no_message);
+                  code::raise::error( code::xatmi::no_message);
 
                return std::make_pair(
                   std::move( reply),
@@ -244,7 +244,7 @@ namespace casual
                auto& pending = m_state.pending.get( descriptor);
 
                if( ! local::receive( reply, flags, pending.correlation))
-                  code::raise::log( code::xatmi::no_message);
+                  code::raise::error( code::xatmi::no_message);
 
                return std::make_pair(
                   std::move( reply),

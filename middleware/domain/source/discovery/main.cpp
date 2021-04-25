@@ -79,7 +79,7 @@ namespace casual
 
 int main( int argc, char** argv)
 {
-   casual::common::exception::main::guard( [=]()
+   casual::common::exception::main::log::guard( [=]()
    {
       casual::domain::discovery::local::main( argc, argv);
    });

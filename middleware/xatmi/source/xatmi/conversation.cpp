@@ -132,7 +132,7 @@ int tprecv( int id, char ** odata, long *olen, long bitmask, long* event)
             flag);
 
       if( ( flag & Flag::no_change) && buffer.payload().type != result.buffer.type)
-         casual::common::code::raise::log( casual::common::code::xatmi::buffer_output);
+         casual::common::code::raise::error( casual::common::code::xatmi::buffer_output);
 
       casual::common::buffer::pool::Holder::instance().deallocate( *odata);
       std::tie( *odata, *olen) = casual::common::buffer::pool::Holder::instance().insert( std::move( result.buffer));

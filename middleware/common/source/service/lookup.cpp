@@ -102,7 +102,7 @@ namespace casual
                   break;
                case State::absent:
                   m_correlation = {};
-                  code::raise::log( code::xatmi::no_entry, "lookup: ", *this);
+                  code::raise::error( code::xatmi::no_entry, "lookup: ", *this);
                   break;
                case State::busy:
                   m_reply = std::move( reply);

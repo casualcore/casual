@@ -23,45 +23,28 @@ namespace casual
       {
          namespace main
          {
-            template< typename F> 
-            int guard( F&& callable)
+            namespace log
             {
-               try 
+               namespace detail
                {
-                  callable();
+                  int void_return( common::function< void()> callable);
+                  int int_return( common::function< int()> callable);
                }
-               catch( ...)
+               
+               template< typename C>
+               int guard( C&& callable)
                {
-                  const auto error = exception::capture();
-                  if( error.code() != code::casual::shutdown)
-                  {
-                     log::line( common::log::category::error, error);
-                     return error.code().value();
-                  }
+                  if constexpr( std::is_same_v< decltype( callable()), void>)
+                     return detail::void_return( std::forward< C>( callable));
+                  else
+                     return detail::int_return( std::forward< C>( callable));
                }
+            } // log
 
-               return 0;
-            }
-
-            template< typename F> 
-            int guard( std::ostream& out, F&& callable)
+            namespace cli
             {
-               try 
-               {
-                  callable();
-               }
-               catch( ...)
-               {
-                  const auto error = exception::capture();
-                  if( error.code() != code::casual::shutdown)
-                  {
-                     log::line( out, error);
-                     return error.code().value();
-                  }
-               }
-
-               return 0;
-            } 
+               int guard( common::function< void()> callable);
+            } // cli
          } // main
 
          namespace detail
@@ -105,18 +88,7 @@ namespace casual
             return detail::guard( std::forward< F>( callable), std::forward< B>( fallback), traits::priority::tag< 1>{});
          }
 
-         template< typename F> 
-         void guard( F&& callable)
-         {
-            try 
-            {
-               callable();
-            }
-            catch( ...)
-            {
-               log::line( log::category::error, exception::capture());
-            }
-         }
+         void guard( common::function< void()> callable);
 
       } // exception
    } // common

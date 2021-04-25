@@ -127,7 +127,7 @@ namespace casual
 
 int main(int argc, char** argv)
 {
-   return casual::common::exception::main::guard( std::cerr, [=]()
+   return casual::common::exception::main::cli::guard( [=]()
    {
       casual::tools::build::server::generate::local::main( argc, argv);
    });

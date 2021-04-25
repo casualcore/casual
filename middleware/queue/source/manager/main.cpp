@@ -134,7 +134,7 @@ Manages casual queue, the provided queue functionality.
 
 int main( int argc, char **argv)
 {
-   return casual::common::exception::main::guard( [=]()
+   return casual::common::exception::main::log::guard( [=]()
    {
       casual::queue::manager::local::main( argc, argv);
    });

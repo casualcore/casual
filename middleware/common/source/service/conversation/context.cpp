@@ -114,7 +114,7 @@ namespace casual
                         constexpr connect::Flags duplex{ connect::Flag::send_only, connect::Flag::receive_only};
 
                         if( ( flags & duplex) == duplex || ! ( flags & duplex))
-                           code::raise::log( code::xatmi::argument, "send or receive intention must be provided - flags: ", flags);
+                           code::raise::error( code::xatmi::argument, "send or receive intention must be provided - flags: ", flags);
                      }
 
                      void send( const State::descriptor_type& descriptor)
@@ -124,7 +124,7 @@ namespace casual
                         log::line( log::debug, "descriptor: ", descriptor);
 
                         if( descriptor.duplex != state::descriptor::Information::Duplex::send)
-                           code::raise::log( code::xatmi::protocol, "caller has not the control of the conversation");
+                           code::raise::error( code::xatmi::protocol, "caller has not the control of the conversation");
                      }
 
                      void receive( const State::descriptor_type& descriptor)
@@ -134,7 +134,7 @@ namespace casual
                         log::line( log::debug, "descriptor: ", descriptor);
 
                         if( descriptor.duplex != state::descriptor::Information::Duplex::receive)
-                           code::raise::log( code::xatmi::protocol, "caller has not the control of the conversation");
+                           code::raise::error( code::xatmi::protocol, "caller has not the control of the conversation");
                      }
 
                      void disconnect( const State::descriptor_type& descriptor)
@@ -144,7 +144,7 @@ namespace casual
                         log::line( log::debug, "descriptor: ", descriptor);
 
                         if( ! descriptor.initiator)
-                           code::raise::log( code::xatmi::descriptor, "caller has not the control of the conversation");
+                           code::raise::error( code::xatmi::descriptor, "caller has not the control of the conversation");
                      }
 
                   } // validate
@@ -323,7 +323,7 @@ namespace casual
                      message, 
                      descriptor.correlation))
                   {
-                     code::raise::log( code::xatmi::no_message);
+                     code::raise::error( code::xatmi::no_message);
                   }
                }
                else

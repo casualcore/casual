@@ -514,7 +514,7 @@ namespace casual
             if( transaction.trid)
             {
                if( m_control != Control::stacked)
-                  code::raise::log( code::tx::protocol, "begin - already in transaction mode - ", transaction);
+                  code::raise::error( code::tx::protocol, "begin - already in transaction mode - ", transaction);
 
                // Tell the RM:s to suspend
                resources_end( transaction, flag::xa::Flag::suspend);
@@ -593,7 +593,7 @@ namespace casual
             const auto process = process::handle();
 
             if( ! transaction.trid)
-               code::raise::log( code::tx::no_begin, "commit - no ongoing transaction");
+               code::raise::error( code::tx::no_begin, "commit - no ongoing transaction");
 
             if( transaction.trid.owner() != process)
                code::raise::error( code::tx::protocol, "commit - not owner of transaction: ", transaction.trid);
@@ -700,7 +700,7 @@ namespace casual
             log::line( log::category::transaction, "transaction: ", transaction);
 
             if( ! transaction)
-               code::raise::log( code::tx::protocol, "no ongoing transaction");
+               code::raise::error( code::tx::protocol, "no ongoing transaction");
 
             const auto process = process::handle();
 
@@ -848,10 +848,10 @@ namespace casual
             Trace trace{ "transaction::Context::resume"};
 
             if( xid == nullptr)
-               code::raise::log( code::tx::argument, "resume: argument xid is null");
+               code::raise::error( code::tx::argument, "resume: argument xid is null");
 
             if( id::null( *xid))
-               code::raise::log( code::tx::argument, "resume: attempt to resume a 'null xid'");
+               code::raise::error( code::tx::argument, "resume: attempt to resume a 'null xid'");
 
             auto& ongoing = current();
 

@@ -31,13 +31,13 @@ namespace casual
 
                   // First we read the header
                   if( ! in.read( current, message::header::size))
-                     code::raise::log( code::casual::communication_unavailable, "stream is unavailable - header");
+                     code::raise::error( code::casual::communication_unavailable, "stream is unavailable - header");
 
                   complete.offset +=  message::header::size;
                   complete.payload.resize( complete.size());
 
                   if( ! in.read( complete.payload.data(), complete.payload.size()))
-                     code::raise::log( code::casual::communication_unavailable, "stream is unavailable - payload");
+                     code::raise::error( code::casual::communication_unavailable, "stream is unavailable - payload");
 
                   complete.offset += complete.payload.size();
 
@@ -56,14 +56,14 @@ namespace casual
 
                      auto data = reinterpret_cast< const char*>( &header);
                      if( ! out.write( data, message::header::size))
-                        code::raise::log( code::casual::communication_unavailable, "stream is unavailable");
+                        code::raise::error( code::casual::communication_unavailable, "stream is unavailable");
 
                      complete.offset += message::header::size;
                   }
 
                   // write the complete message
                   if( ! out.write( complete.payload.data(), complete.payload.size()))
-                     code::raise::log( code::casual::communication_unavailable, "stream is unavailable");
+                     code::raise::error( code::casual::communication_unavailable, "stream is unavailable");
 
                   complete.offset += complete.payload.size();
                      

@@ -197,11 +197,11 @@ namespace casual
                   case code::CURLE_OK: break;
 
                   case CURLE_COULDNT_CONNECT:
-                     common::code::raise::log( common::code::casual::communication_refused, "failed to connect - code: ", value, ' ', error::buffer().data());
+                     common::code::raise::error( common::code::casual::communication_refused, "failed to connect - code: ", value, ' ', error::buffer().data());
 
                   case CURLE_GOT_NOTHING:
                   case CURLE_RECV_ERROR:
-                     common::code::raise::log( common::code::casual::communication_no_message, "failed to receive - code: ", value, ' ', error::buffer().data());
+                     common::code::raise::error( common::code::casual::communication_no_message, "failed to receive - code: ", value, ' ', error::buffer().data());
 
                   default: 
                      common::code::raise::error( common::code::casual::internal_unexpected_value, value);

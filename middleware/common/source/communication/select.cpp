@@ -58,7 +58,7 @@ namespace casual
 
                      // check pending signals
                      if( signal::pending( block.previous()))
-                        code::raise::log( code::casual::interupted);
+                        code::raise::error( code::casual::interupted);
                   
                      posix::result( 
                         // will set previous signal mask atomically 

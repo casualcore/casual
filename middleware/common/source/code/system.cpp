@@ -25,13 +25,13 @@ namespace casual
 
       void raise() noexcept( false)
       {
-         code::raise::log( code::convert::to::casual( last::error()));
+         code::raise::error( code::convert::to::casual( last::error()));
       }
 
       void raise( const std::string& context) noexcept( false)
       {
          auto error = last::error();
-         code::raise::log( code::convert::to::casual( error), context, " - ", error);
+         code::raise::error( code::convert::to::casual( error), context, " - ", error);
       }
       
    } // common::code::system

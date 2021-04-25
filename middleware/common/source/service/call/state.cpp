@@ -62,7 +62,7 @@ namespace casual
          if( auto found = algorithm::find( m_descriptors, descriptor))
             found->active = false;
          else
-            code::raise::generic( code::xatmi::descriptor, log::debug, "invalid call descriptor: ", descriptor);
+            code::raise::error( code::xatmi::descriptor, "invalid call descriptor: ", descriptor);
       }
 
       bool State::Pending::active( descriptor_type descriptor) const
@@ -77,7 +77,7 @@ namespace casual
       {
          auto found = algorithm::find( m_descriptors, descriptor);
          if( ! found || ! found->active)
-            code::raise::generic( code::xatmi::descriptor, log::debug, "invalid call descriptor: ", descriptor);
+            code::raise::error( code::xatmi::descriptor, "invalid call descriptor: ", descriptor);
 
          return *found;
       }
@@ -86,7 +86,7 @@ namespace casual
       {
          auto found = algorithm::find( m_descriptors, descriptor);
          if( ! found || ! found->active)
-            code::raise::generic( code::xatmi::descriptor, log::debug, "invalid call descriptor: ", descriptor);
+            code::raise::error( code::xatmi::descriptor, "invalid call descriptor: ", descriptor);
 
          return *found;
       }
@@ -95,7 +95,7 @@ namespace casual
       {
          auto found = algorithm::find_if( m_descriptors, [&]( const auto& d){ return d.correlation == correlation;});
          if( ! ( found && found->active))
-            code::raise::generic( code::xatmi::descriptor, log::debug, "failed to locate pending from correlation: ", correlation);
+            code::raise::error( code::xatmi::descriptor, "failed to locate pending from correlation: ", correlation);
             
          return *found;
       }
@@ -106,7 +106,7 @@ namespace casual
 
          // Can't be associated with a transaction
          if( common::transaction::Context::instance().associated( holder.correlation))
-            code::raise::generic( code::xatmi::transaction, log::debug, "descriptor is associated with a transaction - ", holder.descriptor);
+            code::raise::error( code::xatmi::transaction, "descriptor is associated with a transaction - ", holder.descriptor);
 
          // Discards the correlation (directly if in cache, or later if not)
          communication::ipc::inbound::device().discard( holder.correlation);

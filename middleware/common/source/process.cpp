@@ -63,7 +63,7 @@ namespace casual
                   std::uint32_t size = platform::size::max::path;
                   std::vector< char> path( platform::size::max::path);
                   if( ::_NSGetExecutablePath( path.data(), &size) != 0)
-                     code::raise::log( code::casual::invalid_path, "failed to get the path to the current executable");
+                     code::raise::error( code::casual::invalid_path, "failed to get the path to the current executable");
 
                   if( path.data()) 
                      return path.data();
@@ -309,7 +309,7 @@ namespace casual
             // could still go wrong, since we don't know if the path will actually execute,
             // but we'll probably get rid of most of the errors (due to bad configuration and such)
             if( ! file::permission::execution( path))
-               code::raise::log( code::casual::invalid_path, "spawn failed - path: ", path);
+               code::raise::error( code::casual::invalid_path, "spawn failed - path: ", path);
 
             log::line( log::debug, "process::spawn ", path, ' ', arguments);
             log::line( verbose::log, "environment: ", environment);
@@ -338,7 +338,7 @@ namespace casual
                   const_cast< char* const*>( c_environment.data()));
 
                if( status != 0)
-                  code::raise::log( code::casual::invalid_path, "spawn failed - path: ", path, " system: ", static_cast< std::errc>( status));
+                  code::raise::error( code::casual::invalid_path, "spawn failed - path: ", path, " system: ", static_cast< std::errc>( status));
             
                return strong::process::id{ native_pid};
             }();

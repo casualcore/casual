@@ -162,7 +162,7 @@ namespace casual
 
             int main( int argc, const char **argv)
             {
-               return common::exception::main::guard( []()
+               return common::exception::main::log::guard( []()
                {
                   local::start();
                });

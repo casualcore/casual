@@ -128,10 +128,10 @@ namespace casual
 #endif 
                   
                      case std::errc::invalid_argument:
-                        code::raise::condition( code::casual::invalid_argument);
+                        code::raise::error( code::casual::invalid_argument);
 
                      case std::errc::no_such_file_or_directory:
-                        code::raise::condition( code::casual::communication_unavailable);
+                        code::raise::error( code::casual::communication_unavailable);
 
                      default:
                         // will allways throw

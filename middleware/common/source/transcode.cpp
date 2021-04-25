@@ -56,7 +56,7 @@ namespace casual
                         target.bytes);
 
                   if( length < 0)
-                     code::raise::log( code::casual::failed_transcoding, "base64 encode failed");
+                     code::raise::error( code::casual::failed_transcoding, "base64 encode failed");
 
                   return length;
                }
@@ -70,7 +70,7 @@ namespace casual
                         std::distance( dest_first, dest_last));
 
                   if( length < 0)
-                     code::raise::log( code::casual::failed_transcoding, "base64 decode failed");
+                     code::raise::error( code::casual::failed_transcoding, "base64 decode failed");
 
                   return length;
                }
@@ -100,7 +100,7 @@ namespace casual
                      : m_descriptor( iconv_open( target.c_str(), source.c_str()))
                   {
                      if( m_descriptor == reinterpret_cast< iconv_t>( -1))
-                        code::raise::log( code::casual::failed_transcoding, "iconv_open - errc: ", code::system::last::error());
+                        code::raise::error( code::casual::failed_transcoding, "iconv_open - errc: ", code::system::last::error());
                   }
 
                   ~converter()
@@ -129,7 +129,7 @@ namespace casual
                            {
                               case std::errc::argument_list_too_long: break;
                               default:
-                                 code::raise::log( code::casual::failed_transcoding, "iconv - errc: ", code);
+                                 code::raise::error( code::casual::failed_transcoding, "iconv - errc: ", code);
                            }
                         }
 

@@ -387,7 +387,7 @@ Produces configuration documentation
 
 int main( int argc, char **argv)
 {
-   return casual::common::exception::main::guard( std::cerr, [=]()
+   return casual::common::exception::main::cli::guard( [=]()
    {
       casual::configuration::documentation::main( argc, argv);
    });

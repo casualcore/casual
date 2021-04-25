@@ -504,7 +504,7 @@ namespace casual
 
                         // _The return value will be 0 when the peer has performed an orderly shutdown_
                         if( bytes == 0)
-                           code::raise::log( code::casual::communication_unavailable);
+                           code::raise::error( code::casual::communication_unavailable);
                         else if( bytes == -1)
                            return 0L;
 

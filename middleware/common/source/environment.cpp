@@ -75,7 +75,7 @@ namespace casual
                         lock_type lock { m_mutex};
 
                         if( setenv( name.data(), value.data(), 1) == -1)
-                           code::raise::log( code::convert::to::casual( code::system::last::error()), "environment::set");
+                           code::raise::error( code::convert::to::casual( code::system::last::error()), "environment::set");
                      }
 
                      void unset( std::string_view name) const
@@ -83,7 +83,7 @@ namespace casual
                         lock_type lock { m_mutex};
 
                         if( ::unsetenv( name.data()) == -1)
-                           code::raise::log( code::convert::to::casual( code::system::last::error()), "environment::unset");
+                           code::raise::error( code::convert::to::casual( code::system::last::error()), "environment::unset");
                      }
 
                      std::mutex& mutex() const

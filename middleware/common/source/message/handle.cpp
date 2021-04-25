@@ -39,7 +39,7 @@ namespace casual
 
             void Shutdown::operator () ( const message::shutdown::Request& message)
             {
-               code::raise::generic( code::casual::shutdown, log::debug, "shutdown received from: ", message.process);
+               code::raise::error( code::casual::shutdown, "shutdown received from: ", message.process);
             }
 
             void Ping::operator () ( const server::ping::Request& message)

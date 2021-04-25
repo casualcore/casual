@@ -80,7 +80,7 @@ namespace casual
 
          EXPECT_CODE( 
          {
-            code::raise::log( TestFixture::code());
+            code::raise::error( TestFixture::code());
          }, TestFixture::code());
          
       }

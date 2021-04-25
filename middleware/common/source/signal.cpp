@@ -157,7 +157,7 @@ namespace casual
                        if( auto found = algorithm::find_if( m_handlers, [signal]( auto& handler){ return handler.signal == signal;}))
                            found->callbacks.push_back( std::move( callback));
                         else 
-                           code::raise::generic( code::casual::invalid_argument, log::stream::get( "error"), "failed to find signal handler for: ", signal);
+                           code::raise::error( code::casual::invalid_argument, "failed to find signal handler for: ", signal);
                      }
 
                      callback::detail::Replace replace( callback::detail::Replace wanted)
@@ -224,7 +224,7 @@ namespace casual
 
                               // if we don't have any handlers we need to propagate the signal via exception.
                               if( callbacks.empty())
-                                 code::raise::log( signal, "raise signal");
+                                 code::raise::error( signal, "raise signal");
                               
                               // execute the "callbacks"
                               algorithm::for_each( callbacks, []( auto& callback){ callback();});

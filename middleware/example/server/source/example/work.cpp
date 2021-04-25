@@ -44,7 +44,7 @@ namespace casual
          
          int tpsvrinit( int argc, char* argv[])
          {
-            return common::exception::main::guard( [&]()
+            return common::exception::main::log::guard( [&]()
             {
                auto arguments = common::range::make( argv + 1, argc - 1);
                common::log::line( common::log::category::information, "example server started with arguments: ", arguments);

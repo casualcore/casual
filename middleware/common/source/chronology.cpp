@@ -153,7 +153,7 @@ namespace casual
                   if( unit == "d") return std::chrono::hours( count * 24);
                   if( unit == "ns") return std::chrono::duration_cast< time_unit>( std::chrono::nanoseconds( count));
 
-                  code::raise::log( code::casual::invalid_argument, "invalid time representation: ", string::view::make( value));
+                  code::raise::error( code::casual::invalid_argument, "invalid time representation: ", string::view::make( value));
                }
 
             } // <unnamed>

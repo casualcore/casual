@@ -22,39 +22,22 @@ namespace casual
       {
          namespace raise
          {
-            template< typename Code>
-            [[noreturn]] void condition( Code code) noexcept( false)
+            namespace detail::string
             {
-               throw std::system_error{ std::error_code{ code}};
+               //! composes a string from several parts, using the stream operator
+               template< typename... Parts>
+               inline std::string compose( Parts&&... parts)
+               {
+                  std::ostringstream out;
+                  stream::write( out, std::forward< Parts>( parts)...);
+                  return std::move( out).str();
+               }
             }
 
-            template< typename Code>
-            [[noreturn]] void generic( Code code, std::ostream& category) noexcept( false)
-            {
-               common::stream::write( category, code, '\n');
-               raise::condition( code);
-            }
-
-            template< typename Code, typename... Ts>
-            [[noreturn]] void generic( Code code, std::ostream& category, Ts&&... ts) noexcept( false)
-            {
-               common::stream::write( category, code, ' ', std::forward< Ts>( ts)..., '\n');
-               raise::condition( code);
-            }
-            
-            //! streams to error and throws `code`
             template< typename Code, typename... Ts>
             [[noreturn]] void error( Code code, Ts&&... ts) noexcept( false)
             {
-               raise::generic( code, common::log::category::error, std::forward< Ts>( ts)...);
-            }
-
-            //! streams to debug and throws `code`
-            template< typename Code, typename... Ts>
-            [[noreturn]] void log( Code code, Ts&&... ts) noexcept( false)
-            {
-               
-               raise::generic( code, code::stream( code), std::forward< Ts>( ts)...);
+               throw std::system_error( std::error_code{ code}, detail::string::compose( std::forward< Ts>( ts)...));
             }
          } // raise
       } // code

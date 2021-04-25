@@ -178,7 +178,7 @@ namespace casual
                   for( auto& type : P::types())
                   {
                      if( Holder::find_concept( type))
-                        code::raise::generic( code::casual::buffer_type_duplicate, log::stream::get( "error"), "buffer type already registered: ", type);
+                        code::raise::error( code::casual::buffer_type_duplicate, "buffer type already registered: ", type);
                   }
 
                   auto subtype = std::make_unique< model< P>>( std::forward< P>( pool));
@@ -304,7 +304,7 @@ namespace casual
                   if( auto found = find( handle))
                      return *found;
 
-                  code::raise::generic( code::xatmi::argument, log::category::buffer, "failed to find buffer");
+                  code::raise::error( code::xatmi::argument, "failed to find buffer");
                }
 
 
@@ -318,7 +318,7 @@ namespace casual
                      return result;
                   }
 
-                  code::raise::generic( code::xatmi::argument, log::category::buffer, "failed to find buffer");
+                  code::raise::error( code::xatmi::argument, "failed to find buffer");
                }
 
 

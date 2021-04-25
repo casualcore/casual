@@ -231,7 +231,7 @@ namespace casual
             if( auto found = algorithm::find( instances.sequential, instance))
                return *found;
 
-            code::raise::generic( code::casual::domain_instance_unavailable, verbose::log, "missing id: ", instance);
+            code::raise::error( code::casual::domain_instance_unavailable, "missing id: ", instance);
          }
 
          void Service::add( state::instance::Sequential& instance)

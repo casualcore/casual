@@ -237,7 +237,7 @@ namespace casual
                reset( local::fetch( m_identity, directive));
 
                if( ! m_process)
-                  code::raise::generic( code::casual::communication_unavailable, verbose::log, "process absent: ", m_process);
+                  code::raise::error( code::casual::communication_unavailable, "process absent: ", m_process);
 
                log::line( verbose::log, "connector: ", *this);
             }
@@ -376,7 +376,7 @@ namespace casual
                            common::log::line( log, "failed to locate via 'singleton file'");
                         }
 
-                        code::raise::log( code::casual::domain_unavailable, "failed to locate domain manager");
+                        code::raise::error( code::casual::domain_unavailable, "failed to locate domain manager");
                      }
 
                   } // <unnamed>

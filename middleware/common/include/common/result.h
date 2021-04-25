@@ -34,7 +34,7 @@ namespace casual
                return result;
 
             auto code = code::system::last::error();
-            code::raise::log( code::convert::to::casual( code), std::forward< Ts>( ts)..., " - errno: ", code);
+            code::raise::error( code::convert::to::casual( code), std::forward< Ts>( ts)..., " - errno: ", code);
          }
 
          //! checks posix result, if -1 or nullptr 
@@ -51,7 +51,7 @@ namespace casual
             if( algorithm::compare::any( code, codes...))
                return alternative;
 
-            code::raise::log( code::convert::to::casual( code), " - errno: ", code);
+            code::raise::error( code::convert::to::casual( code), " - errno: ", code);
          }
 
          namespace log

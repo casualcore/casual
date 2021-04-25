@@ -69,7 +69,7 @@ if not provided, environment variable CASUAL_FIELD_TABLE will be used.
 
 int main( int argc, char* argv[])
 {
-   return casual::exception::main::guard( std::cerr, [=]()
+   return casual::exception::main::cli::guard( [=]()
    {
       casual::buffer::field::local::main( argc, argv);
    });

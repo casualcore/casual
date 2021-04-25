@@ -31,7 +31,7 @@ namespace casual
             {
                int start( const casual_executable_arguments& argument) noexcept
                {
-                  return common::exception::main::guard( [&]()
+                  return common::exception::main::log::guard( [&]()
                   {
                      casual::xatmi::Trace trace{ "casual::xatmi::executable::local::start"};
 

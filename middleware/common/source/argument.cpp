@@ -417,7 +417,7 @@ namespace casual
          {  
             void correlation( const std::string& key)
             {
-               code::raise::log( code::casual::invalid_argument, "failed to correlate option ", key);
+               code::raise::error( code::casual::invalid_argument, "failed to correlate option ", key);
             }
 
          } // exception
@@ -466,7 +466,7 @@ namespace casual
                void cardinality( const std::string& key, const Cardinality& cardinality, size_type value)
                {
                   if( ! cardinality.valid( value))
-                     code::raise::log( code::casual::invalid_argument, "cardinality not satisfied for option: ", key);
+                     code::raise::error( code::casual::invalid_argument, "cardinality not satisfied for option: ", key);
                }
 
                namespace value
@@ -476,7 +476,7 @@ namespace casual
                      if( cardinality.valid( values.size()))
                         return;
 
-                     code::raise::log( code::casual::invalid_argument, 
+                     code::raise::error( code::casual::invalid_argument, 
                         "cardinality not satisfied for values to option: ", key, 
                         " - ", cardinality, ", values: ", values);
                   }

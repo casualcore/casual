@@ -141,7 +141,7 @@ namespace casual
             Trace log{ "server::Context::unadvertise"};
 
             if( m_state.services.erase( service) != 1)
-               code::raise::generic( code::xatmi::no_entry, log::debug, "service is not currently advertised - ", service);
+               code::raise::error( code::xatmi::no_entry, "service is not currently advertised - ", service);
 
             message::service::Advertise message{ process::handle()};
             message.alias = instance::alias();
