@@ -577,15 +577,14 @@ namespace casual
                         Trace trace{ "domain::manager::handle::event::process::spawn"};
                         log::line( verbose::log, "message: ", message);
 
-                        // dispatch to tasks
-                        state.tasks.event( state, message);
-
                         // Are there any listeners to this event?
                         manager::task::event::dispatch( state, [&message]() -> decltype( message)
                         {
                            return message;
                         });
                         
+                        // Dispatch to tasks
+                        state.tasks.event( state, message);
                      };
                   }
 

@@ -127,7 +127,7 @@ domain:
                auto state( P&& predicate)
                {
                   auto state = local::call::state();
-                  auto count = 200;
+                  auto count = 500;
 
                   while( ! predicate( state) && count-- > 0)
                   {
@@ -138,31 +138,8 @@ domain:
                   return state;
                }
 
-
-               namespace wait
-               {
-                  namespace ready
-                  {
-                     auto state()
-                     {
-                        auto ready = []( auto& state)
-                        {
-                           if( state.connections.empty())
-                              return false;
-
-                           return algorithm::all_of( state.connections, []( auto& connection)
-                           {
-                              return connection.remote.id && ! connection.remote.name.empty();
-                           });
-                        };
-
-                        return local::call::state( std::move( ready));
-                     }
-
-                  } // ready
-               } // wait
             } // call
-         } // <unnamed>
+         } // 
       } // local
 
 
@@ -198,7 +175,7 @@ domain:
 
          EXPECT_TRUE( common::communication::instance::fetch::handle( common::communication::instance::identity::gateway::manager.id));
 
-         auto state = local::call::wait::ready::state();
+         auto state = local::call::state( []( const auto& state){ return state.connections.size() >= 2;});
 
          EXPECT_TRUE( state.connections.size() == 2);
          EXPECT_TRUE( algorithm::any_of( state.connections, []( const auto& connection){
@@ -289,7 +266,7 @@ domain:
 
          EXPECT_TRUE( common::communication::instance::fetch::handle( common::communication::instance::identity::gateway::manager.id));
 
-         auto state = local::call::wait::ready::state();
+         auto state = local::call::state( []( const auto& state){ return state.outbound.groups.size() >= 3;});
          auto& groups = state.outbound.groups;
 
          EXPECT_TRUE( groups.size() == 3);
@@ -323,17 +300,7 @@ domain:
 
                   communication::device::blocking::send( request.process.ipc, reply);
 
-                  {
-                     common::message::service::call::ACK ack;
-                     ack.metric.process = process::handle();
-                     ack.metric.trid = reply.transaction.trid;
-                     ack.metric.pending = request.pending;
-                     ack.metric.start = platform::time::clock::type::now();
-                     ack.metric.end = platform::time::clock::type::now();
-                     ack.metric.service = request.service.name;
-
-                     communication::device::blocking::send( communication::instance::outbound::service::manager::device(), ack);
-                  }
+                  casual::service::unittest::send::ack( request);
                };
             } // service
          } // <unnamed>
@@ -350,15 +317,14 @@ domain:
          casual::service::unittest::advertise( { "a"});
 
          {
-            auto state = local::call::wait::ready::state();
+            auto state = local::call::state( []( const auto& state){ return state.connections.size() >= 2;});
             ASSERT_TRUE( state.connections.size() == 2);
          }
 
          // discover to make sure outbound(s) knows about wanted services
          unittest::discover( { "a"}, {});
 
-         auto state = local::call::wait::ready::state();
-
+         auto state = local::call::state( []( const auto& state){ return state.connections.size() >= 2;});
          algorithm::sort( state.connections);
 
          auto count = algorithm::count_if( state.services, []( auto service)
@@ -366,7 +332,7 @@ domain:
             return service.name == "a";
          });
 
-         EXPECT_TRUE( count == 1);
+         EXPECT_TRUE( count == 1) << count;
 
          auto data = common::unittest::random::binary( 128);
 
@@ -403,12 +369,12 @@ domain:
          // we exposes service "a"
          casual::service::unittest::advertise( { "a"});
 
-         auto state = local::call::wait::ready::state();
+         auto state = local::call::state( []( const auto& state){ return state.connections.size() >= 2;});
+         ASSERT_TRUE( state.connections.size() == 2);
+
 
          // discover to make sure outbound(s) knows about wanted services
          unittest::discover( { "a"}, {});
-
-         ASSERT_TRUE( state.connections.size() == 2);
 
          algorithm::sort( state.connections);
 
@@ -489,16 +455,12 @@ domain:
 
          EXPECT_TRUE( common::communication::instance::fetch::handle( common::communication::instance::identity::gateway::manager.id));
 
-         {
-            auto state = local::call::wait::ready::state();
-            ASSERT_TRUE( state.connections.size() == 2);
-         }
+         auto state = local::call::state( []( const auto& state){ return state.connections.size() >= 2;});
+         ASSERT_TRUE( state.connections.size() == 2);
+         algorithm::sort( state.connections);
 
          // discover to make sure outbound(s) knows about wanted queues
          unittest::discover( { }, { "a"});
-
-         auto state = local::call::wait::ready::state();
-         algorithm::sort( state.connections);
 
          auto count = algorithm::count_if( state.queues, []( auto queue)
          {
@@ -547,7 +509,7 @@ domain:
 
          EXPECT_TRUE( common::communication::instance::fetch::handle( common::communication::instance::identity::gateway::manager.id));
 
-         auto state = local::call::wait::ready::state();
+         auto state = local::call::state( []( const auto& state){ return state.connections.size() >= 2;});
 
          ASSERT_TRUE( state.connections.size() == 2);
 
@@ -613,11 +575,7 @@ domain:
 
          EXPECT_TRUE( common::communication::instance::fetch::handle( common::communication::instance::identity::gateway::manager.id));
 
-         auto state = local::call::state( []( auto& state)
-         {
-            return state.connections.size() == 2 * 10;
-         });
-
+         auto state = local::call::state( []( const auto& state){ return state.connections.size() >= 2 * 10;});
 
 
          using Bound = manager::admin::model::connection::Bound;
@@ -678,10 +636,7 @@ domain:
 
          EXPECT_TRUE( common::communication::instance::fetch::handle( common::communication::instance::identity::gateway::manager.id));
 
-         auto state = local::call::state( []( auto& state)
-         {
-            return state.connections.size() == 2 * 10;
-         });
+         auto state = local::call::state( []( const auto& state){ return state.connections.size() >= 2 * 10;});
 
          auto count_bound = []( auto bound)
          {
@@ -707,7 +662,7 @@ domain:
 
          EXPECT_TRUE( common::communication::instance::fetch::handle( common::communication::instance::identity::gateway::manager.id)); 
 
-         auto state = local::call::wait::ready::state();
+         auto state = local::call::state( []( const auto& state){ return state.connections.size() >= 2;});
 
          ASSERT_TRUE( state.connections.size() == 2);
 
@@ -864,7 +819,7 @@ domain:
 
          auto outbound = []() -> process::Handle
          {
-            auto state = local::call::wait::ready::state();
+            auto state = local::call::state( []( const auto& state){ return state.connections.size() > 0;});
 
             auto is_outbound = []( auto& connection)
             { 
@@ -973,8 +928,7 @@ domain:
 
          EXPECT_TRUE( common::communication::instance::fetch::handle( common::communication::instance::identity::gateway::manager.id));
 
-         auto state = local::call::wait::ready::state();
-
+         auto state = local::call::state( []( const auto& state){ return state.connections.size() >= 2;});
          ASSERT_TRUE( state.connections.size() == 2);
 
          {
