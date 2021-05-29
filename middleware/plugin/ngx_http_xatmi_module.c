@@ -1,575 +1,554 @@
-//! 
-//! Copyright (c) 2015, The casual project
-//!
-//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
-//!
-
-//
-// Nginx
-//
 #include <ngx_config.h>
 #include <ngx_core.h>
 #include <ngx_http.h>
 
-#include "ngx_http_xatmi_common_declaration.h"
-#include "xatmi_handler.h"
+// ----[ MODULE SET-UP ]-------------------------------------------------------
+
+static void* ngx_http_xatmi_create_loc_conf(ngx_conf_t *cf);
+static char* ngx_http_xatmi_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child);
+static char* ngx_http_xatmi_proxy_pass_setup(ngx_conf_t *cf, ngx_command_t *cmd, void *conf);
+static ngx_int_t ngx_http_xatmi_request_handler(ngx_http_request_t *r);
+static void ngx_http_xatmi_request_data_handler(ngx_http_request_t *r);
+static void timer_handler(ngx_event_t *ev);
 
 
+// 
+// LOCATION CONFIGURATION DATA
+// ---------------------------
+// Stores data from nginx.conf for this http server location.
+// Updates when reloading nginx.conf.
 //
-// Local configuration. Not needed.
-//
-typedef struct
+typedef struct ngx_http_xatmi_loc_conf
 {
-   char server[30];
-   ngx_flag_t enable;
+    ngx_str_t name;
+    int initialized;
 } ngx_http_xatmi_loc_conf_t;
 
 //
-// Constants
-//
-const long cServiceLocationStart = sizeof("/casual/") - 1;
-
-//
-// Nginx "drivers"
-//
-static char* ngx_http_xatmi_setup(ngx_conf_t* cf, ngx_command_t* cmd, void* conf);
-static void* ngx_http_xatmi_create_loc_conf(ngx_conf_t* cf);
-static char* ngx_http_xatmi_merge_loc_conf(ngx_conf_t* cf, void* parent, void* child);
-static void ngx_http_xatmi_body_read(ngx_http_request_t* r);
-static void ngx_http_xatmi_request_handler(ngx_event_t* ev);
-static ngx_int_t ngx_xatmi_backend_init(ngx_http_xatmi_loc_conf_t* cf);
-
-//
-// Some handlers
-//
-
-static ngx_int_t bufferhandler( ngx_http_request_t* r, ngx_str_t* body);
-static void restart_cycle( ngx_http_request_t* r);
-
-//
-// xatmi specific
-//
-static ngx_int_t call( ngx_http_request_t* r);
-static ngx_int_t receive( ngx_http_request_t* r);
-
-static ngx_command_t ngx_http_xatmi_commands[] = {
-   {
-      ngx_string("casual_pass"),
-      NGX_HTTP_LOC_CONF | NGX_CONF_NOARGS,
-      ngx_http_xatmi_setup,
-      NGX_HTTP_LOC_CONF_OFFSET,
-      0,
-      NULL
-   },
+// MODULE CONFIGURATION CALLBACKS
+// ------------------------------
+// Configures the callbacks for each directive in nginx.conf.
+// Sets the name, the valid locations, and expected arguments.
+// When using default callbacks, the address of the loc_conf members must be given.
+// The list is terminated with ngx_null_command.
+// 
+static ngx_command_t
+ngx_http_xatmi_commands[] =
+{
+    {   // directive to set HTTP request handler for end-point location
+        ngx_string("casual_pass"), // directive name in nginx.conf
+        NGX_HTTP_LOC_CONF | NGX_CONF_NOARGS, // is valid for http location scope without argument
+        ngx_http_xatmi_proxy_pass_setup, // directive callback that sets the HTTP request handler
+        NGX_HTTP_LOC_CONF_OFFSET, // offset for ngx_http_xatmi_loc_conf_t; used by nginx to calculate data pointer address
+        0, // not used; offset to struct member; is passed to callback. offsetof(ngx_http_xatmi_loc_conf_t, <struct member>)
+        NULL // post handler
+    },
+    {   // directive to set server name for location
+        ngx_string("plugin_name"),
+        NGX_HTTP_LOC_CONF | NGX_CONF_TAKE1, // is valid for http location scope with one argument
+        ngx_conf_set_str_slot, // sets value of ngx_http_xatmi_loc_conf_t.name if specified
+        NGX_HTTP_LOC_CONF_OFFSET,
+        offsetof(ngx_http_xatmi_loc_conf_t, name),
+        NULL // post handler
+    },
    ngx_null_command
 };
 
-static ngx_http_module_t ngx_http_xatmi_module_ctx = {
-   NULL, /* preconfiguration */
-   NULL, /* postconfiguration */
-
-   NULL, /* create main configuration */
-   NULL, /* init main configuration */
-
-   NULL, /* create server configuration */
-   NULL, /* merge server configuration */
-
-   ngx_http_xatmi_create_loc_conf, /* create location configuration */
-   ngx_http_xatmi_merge_loc_conf /* merge location configuration */
+//
+// MODULE CALLBACKS
+// ----------------
+// Sets the callbacks for when nginx.conf is processed.
+// Only the location scope callbacks are used;
+//   - `create` allocates and initializes the location scope data.
+//   - `merge` can set location scope data from outer scopes if unset locally in nginx.conf.
+//
+static ngx_http_module_t
+ngx_http_xatmi_module_ctx =
+{
+    NULL, // preconfiguration
+    NULL, // postconfiguration
+    NULL, // create main configuration
+    NULL, // init main configuration
+    NULL, // create server configuration
+    NULL, // merge server configuration
+    ngx_http_xatmi_create_loc_conf, // allocates and initializes location-scope struct
+    ngx_http_xatmi_merge_loc_conf   // sets location-scope struct values from outer scope if left unset in location scope
 };
 
-ngx_module_t ngx_http_xatmi_module = { NGX_MODULE_V1,
-   &ngx_http_xatmi_module_ctx, /* module context */
-   ngx_http_xatmi_commands, /* module directives */
-   NGX_HTTP_MODULE, /* module type */
-   NULL, /* init master */
-   NULL, /* init module */
-   NULL, /* init process */
-   NULL, /* init thread */
-   NULL, /* exit thread */
-   NULL, /* exit process */
-   NULL, /* exit master */
-   NGX_MODULE_V1_PADDING };
-
-
-static ngx_int_t bufferhandler( ngx_http_request_t* r, ngx_str_t* body)
+//
+// MODULE
+// ------
+// Struct that plugs into nginx modules list.
+// No callbacks are used; they would otherwise be called at startup and shutdown of nginx.
+//
+ngx_module_t
+ngx_http_xatmi_module =
 {
-   //
-   // we read data from r->request_body->bufs
-   //
-   if (r->request_body == NULL || r->request_body->bufs == NULL)
-   {
-      ngx_log_debug0( NGX_LOG_DEBUG_ALL, r->connection->log, 0, "xatmi: No data in body.");
-      return NGX_DONE;
-   }
-   else
-   {
-      ngx_log_debug0(NGX_LOG_DEBUG_ALL, r->connection->log, 0, "xatmi: Data in body.");
-   }
+    NGX_MODULE_V1,
+    &ngx_http_xatmi_module_ctx, // module callbacks
+    ngx_http_xatmi_commands,    // module configuration callbacks
+    NGX_HTTP_MODULE,             // module type is HTTP
+    NULL,        // init master
+    NULL,        // init module
+    NULL,        // init process
+    NULL,        // init thread
+    NULL,        // exit thread
+    NULL,        // exit process
+    NULL,        // exit master
+    NGX_MODULE_V1_PADDING
+};
 
-   long content_length = r->headers_in.content_length_n;
-   ngx_log_debug1(NGX_LOG_DEBUG_ALL, r->connection->log, 0, "xatmi: content_length: %d", content_length);
 
-   u_char* input =  ngx_pcalloc(r->pool, content_length);
+static char* plugin_init(ngx_conf_t *cf, ngx_http_xatmi_loc_conf_t *location_conf);
+static void plugin_exit(void *conf);
 
-   //
-   // Any data from caller?
-   //
-   if (content_length > 0)
-   {
-      ngx_log_debug0(NGX_LOG_DEBUG_ALL, r->connection->log, 0, "xatmi: Copying body.");
 
-      ngx_chain_t* bufs = r->request_body->bufs;
+// 
+// CONFIGURATION INIT
+// ------------------
+// Callback for initialization of configuration struct. Allocates and initializes values as "unset".
+// 
+static void*
+ngx_http_xatmi_create_loc_conf(ngx_conf_t *cf)
+{
+    ngx_conf_log_error(NGX_LOG_WARN, cf, 0, "plugin: %s", __FUNCTION__);
 
-      u_char* p = input;
-      ngx_int_t fileReading = 0;
-      while ( 1)
-      {
-         u_int buffer_length = bufs->buf->last - bufs->buf->pos;
-         ngx_log_debug1(NGX_LOG_DEBUG_ALL, r->connection->log, 0, "xatmi: buffer_length: %d", buffer_length);
-         if ( buffer_length > 0 )
-         {
-            ngx_memcpy(p, bufs->buf->start, buffer_length);
-            ngx_log_debug1(NGX_LOG_DEBUG_ALL, r->connection->log, 0, "xatmi: tmp p=%s", (const char*) p);
-         }
-         else
-         {
-            //
-            // Lagrat temporärt på disk
-            //
-            if (bufs->buf->file_last > 0)
+    // allocates and initializes location-scope struct
+    ngx_http_xatmi_loc_conf_t *location_conf = ngx_pcalloc(cf->pool, sizeof(ngx_http_xatmi_loc_conf_t));
+    if (location_conf != NULL)
+    {   // initialize as unset if merged with other conf
+        
+    }
+    return location_conf;
+}
+
+// 
+// CONFIGURATION SETUP
+// -------------------
+// Callback for merging configuration data coming from different scopes in nginx.conf (main, server, or location).
+// If unset in both previous and current scope, the default value is used. Only location configuration scope is used.
+//
+static char*
+ngx_http_xatmi_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child)
+{
+    ngx_conf_log_error(NGX_LOG_WARN, cf, 0, "plugin: %s", __FUNCTION__);
+
+    ngx_http_xatmi_loc_conf_t *prev = parent;
+    ngx_http_xatmi_loc_conf_t *conf = child;
+    ngx_conf_merge_str_value(conf->name, prev->name, /*default*/ "/casual/");
+
+    return NGX_CONF_OK;
+}
+
+// 
+// PROXY PASS SET-UP
+// -----------------
+// This callback sets the HTTP request handler that proxies to back-end.
+// Gets the HTTP module's location configuration struct to update its handler.
+//
+static char*
+ngx_http_xatmi_proxy_pass_setup(ngx_conf_t *cf, ngx_command_t *cmd, /*ngx_http_xatmi_loc_conf_t*/ void *conf)
+{
+    ngx_conf_log_error(NGX_LOG_WARN, cf, 0, "plugin: %s", __FUNCTION__);
+
+    ngx_http_core_loc_conf_t *http_loc_conf = ngx_http_conf_get_module_loc_conf(cf, ngx_http_core_module);
+    http_loc_conf->handler = ngx_http_xatmi_request_handler; // sets HTTP request handler
+
+    ngx_http_xatmi_loc_conf_t *location_conf = conf;
+    if (!location_conf->initialized)
+    {
+        return plugin_init(cf, location_conf);
+    }
+    return NGX_CONF_OK;
+}
+
+
+// ----[ REQUEST HANDLER IMPLEMENTATION ]-----------------------------------------------
+
+//
+// REQUEST CONTEXT DATA
+// --------------------
+// Stores data for a single client HTTP request.
+//
+typedef struct ngx_http_xatmi_ctx
+{
+    ngx_http_request_t *r;
+    ngx_chain_t *chain;
+    ngx_chain_t *chain_last;
+    ssize_t content_length;
+   //  ngx_str_t service;
+    int response_status;
+    ngx_event_t timer;
+    int state;
+    size_t received;
+    int last_buffer;
+    ngx_str_t content_type;
+    u_char *data;
+    int number_of_calls;
+    int buffer_count;
+} ngx_http_xatmi_ctx_t;
+
+static ngx_int_t process_request_parameters(ngx_http_request_t *r, ngx_http_xatmi_ctx_t *request_context);
+static ngx_int_t send_response(ngx_http_request_t *r, ngx_http_xatmi_ctx_t *request_context);
+static ngx_int_t plugin_call(ngx_http_xatmi_ctx_t *request_context);
+static ngx_int_t plugin_receive(ngx_http_xatmi_ctx_t *request_context);
+// static ngx_int_t plugin_cancel(ngx_http_xatmi_ctx_t *request_context);
+
+// 
+// REQUEST CLEANUP CALLBACK
+// ------------------------
+// Callback invoked when the request struct is destroyed 
+// 
+static void
+request_cleanup(void *data)
+{
+    ngx_http_xatmi_ctx_t *request_context = data;
+    ngx_log_error(NGX_LOG_NOTICE, request_context->r->connection->log, 0, "plugin: %s", __FUNCTION__);
+}
+
+//
+// REQUEST HANDLER
+// ---------------
+// Entry-point callback for each HTTP request. Only accepts GET and POST.
+//
+static ngx_int_t
+ngx_http_xatmi_request_handler(ngx_http_request_t *r)
+{
+    ngx_log_error(NGX_LOG_NOTICE, r->connection->log, 0, "plugin: %s", __FUNCTION__);
+    if (!(r->method & (NGX_HTTP_GET|NGX_HTTP_POST)))
+    {
+        return NGX_HTTP_NOT_ALLOWED; // or NGX_DECLINED
+    }
+    ngx_http_xatmi_ctx_t *request_context = ngx_pcalloc(r->pool, sizeof(ngx_http_xatmi_ctx_t)); // NOTE: zero-initialized
+    if (request_context == NULL)
+    {
+        return NGX_HTTP_INTERNAL_SERVER_ERROR;
+    }
+    request_context->r = r;
+    ngx_http_set_ctx(r, request_context, ngx_http_xatmi_module); // makes context retrievable from r with ngx_http_get_module_ctx(r, ngx_http_xatmi_module)
+
+    ngx_int_t ret;
+    if ((ret = process_request_parameters(r, request_context)) != NGX_OK)
+    {
+        return ret;
+    }
+
+    if ((r->method & NGX_HTTP_GET) && ngx_http_discard_request_body(r) != NGX_OK)
+    {
+        return NGX_HTTP_INTERNAL_SERVER_ERROR;
+    }
+    ret = ngx_http_read_client_request_body(r, ngx_http_xatmi_request_data_handler); // delegates to body handler callback
+    if (ret >= NGX_HTTP_SPECIAL_RESPONSE)
+    {
+        return ret;
+    }
+    return NGX_DONE; // doesn't destroy request until ngx_http_finalize_request is called
+}
+
+// 
+// REQUEST DATA HANDLER
+// --------------------
+// Receives and buffers each data chunk before proxying a contiguous buffer to back-end.
+//
+static void
+ngx_http_xatmi_request_data_handler(ngx_http_request_t *r)
+{
+    ngx_log_error(NGX_LOG_NOTICE, r->connection->log, 0, "plugin: %s", __FUNCTION__);
+
+    ngx_http_xatmi_ctx_t *request_context = ngx_http_get_module_ctx(r, ngx_http_xatmi_module);
+
+    if (request_context->received)
+    {
+        ngx_log_error(NGX_LOG_NOTICE, r->connection->log, 0, "plugin: ngx_http_xatmi_request_data_handler called twice");
+    }
+
+    int last_buffer = 1; // assume true in case no buffer was received
+
+    {ngx_chain_t *it = r->request_body->bufs;
+    if (it == NULL)
+    {
+        ngx_log_error(NGX_LOG_ERR, r->connection->log, 0, "plugin: r->request_body->bufs == NULL");
+        ngx_http_finalize_request(r, NGX_HTTP_INTERNAL_SERVER_ERROR);
+        return;
+    }
+    if (!request_context->chain)
+    {
+        request_context->chain = r->request_body->bufs;
+        request_context->chain_last = r->request_body->bufs;
+    }
+    else
+    {
+        request_context->chain_last->next = r->request_body->bufs;
+        request_context->chain_last = r->request_body->bufs;
+    }
+    while ( it->next != NULL)
+    {
+        it = it->next;
+        request_context->chain_last = it;
+        request_context->received += ngx_buf_size(it->buf);
+        last_buffer = it->buf->last_buf;
+        request_context->buffer_count += 1;
+    }}
+
+    if (last_buffer)
+    {
+        if (request_context->buffer_count == 1)
+        {
+            ngx_buf_t *buf = request_context->chain->buf;
+            off_t buffer_size = ngx_buf_size(buf);
+            if (buf->in_file || buf->temp_file)
             {
-               fileReading = 1;
-               ngx_log_debug0(NGX_LOG_DEBUG_ALL, r->connection->log, 0,  "xatmi: reading from file");
-               ngx_log_debug1(NGX_LOG_DEBUG_ALL, r->connection->log, 0, "xatmi: bufs->buf->file_pos=%d", bufs->buf->file_pos);
-               ngx_log_debug1(NGX_LOG_DEBUG_ALL, r->connection->log, 0, "xatmi: bufs->buf->file_last=%d", bufs->buf->file_last);
-               lseek( bufs->buf->file->fd, 0, SEEK_SET);
-               if ( read(bufs->buf->file->fd, (void*)input, bufs->buf->file_last) == 0)
-               {
-                  ngx_log_debug0(NGX_LOG_DEBUG_ALL, r->connection->log, 0, "xatmi: error reading tempfile");
-                  return NGX_ERROR;
-               }
+                request_context->data = ngx_palloc(r->pool, request_context->received);
+                ssize_t bytes_read = ngx_read_file(buf->file, request_context->data, buffer_size, buf->file_pos);
+                if ((size_t)bytes_read != request_context->received)
+                {
+                    ngx_log_error(NGX_LOG_ERR, r->connection->log, 0, "plugin: error reading tempfile; ret=%zu", bytes_read);
+                    ngx_http_finalize_request(r, NGX_HTTP_INTERNAL_SERVER_ERROR);
+                    return;
+                }
             }
             else
             {
-               return NGX_ERROR;
+                request_context->data = buf->pos;
             }
-         }
+            ngx_str_t str = {buffer_size, request_context->data};
+            ngx_log_error(NGX_LOG_NOTICE, r->connection->log, 0, "plugin: request buffer (single) = [%V]", &str);
+        }
+        else // copy all buffers to contiguous memory
+        {
+            request_context->data = ngx_palloc(r->pool, request_context->received);
+            u_char *pos = request_context->data;
 
-         if (bufs->next == NULL)
-         {
-            p = NULL;
-
-            if (bufs->buf->last_buf != 1 && !fileReading)
+            for (ngx_chain_t *it = request_context->chain; it != NULL; it = it->next)
             {
-               return NGX_AGAIN;
+                off_t buffer_size = ngx_buf_size(it->buf);
+                if (it->buf->in_file || it->buf->temp_file)
+                {
+                    ssize_t bytes_read = ngx_read_file(it->buf->file, pos, buffer_size, it->buf->file_pos);
+                    if (bytes_read != buffer_size)
+                    {
+                        ngx_log_error(NGX_LOG_ERR, r->connection->log, 0, "plugin: error reading tempfile; ret=%zu", bytes_read);
+                        ngx_http_finalize_request(r, NGX_HTTP_INTERNAL_SERVER_ERROR);
+                        return;
+                    }
+                }
+                else
+                {
+                    ngx_memcpy(pos, it->buf->pos, buffer_size);
+                }
+                ngx_str_t str = {buffer_size, pos};
+                ngx_log_error(NGX_LOG_NOTICE, r->connection->log, 0, "plugin: request buffer = [%V]", &str);
+                pos += buffer_size;
             }
-            break;
-         }
-         bufs = bufs->next;
-         //
-         // Never mind the nullterminator
-         //
-         p += buffer_length;
-      }
+        }
 
-      body->data = ngx_pcalloc( r->pool, content_length);
-      ngx_memcpy( body->data, input, content_length);
-      body->len = content_length;
-
-      ngx_log_debug1(NGX_LOG_DEBUG_ALL, r->connection->log, 0, "xatmi: 1 body=%V", body);
-   }
-   else
-   {
-      content_length = 0;
-      ngx_log_debug0(NGX_LOG_DEBUG_ALL, r->connection->log, 0, "xatmi: Empty body.");
-
-      body->data = ngx_palloc(r->pool, content_length);
-      ngx_log_debug1(NGX_LOG_DEBUG_ALL, r->connection->log, 0, "xatmi: 2 body=%V", body);
-   }
-   return NGX_OK;
+        ngx_int_t ret = plugin_call(request_context);
+        if (ret == NGX_AGAIN)
+        {
+            request_context->number_of_calls = 1;
+            request_context->timer.data = request_context;
+            request_context->timer.handler = timer_handler;
+            request_context->timer.log = r->connection->log;
+            ngx_add_timer(&request_context->timer, /*msec*/0);
+        }
+        else if (ret == NGX_OK) // response available immediately (response data is set in buffer chain)
+        {
+            ngx_log_error(NGX_LOG_NOTICE, r->connection->log, 0, "plugin: plugin_call() => \"response available immediately\"");
+            ngx_http_finalize_request(r, send_response(r, request_context));
+        }
+        else // NGX_ERROR
+        {
+            ngx_http_finalize_request(r, NGX_HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
 }
 
-//
-// call xatmi server asynchronous
-//
-static ngx_int_t call(ngx_http_request_t* r)
-{
-   ngx_http_xatmi_ctx_t* client_context = ngx_http_get_module_ctx(r, ngx_http_xatmi_module);
-   ngx_log_debug1(NGX_LOG_DEBUG_ALL, r->connection->log, 0, "xatmi: call Allocating buffer with len=%d", client_context->call.len);
-   ngx_log_debug2(NGX_LOG_DEBUG_ALL, r->connection->log, 0, "xatmi: call protocol=%s, service=%s", client_context->protocol, client_context->service);
-
-   return xatmi_call( client_context, r);
-}
-
-//
-// Fetch the reply from xatmi
-//
-static ngx_int_t receive( ngx_http_request_t* r)
-{
-   ngx_http_xatmi_ctx_t* client_context = ngx_http_get_module_ctx(r, ngx_http_xatmi_module);
-
-   ngx_log_debug1(NGX_LOG_DEBUG_ALL, r->connection->log, 0, "xatmi: Waiting for answer: descriptor=%d", client_context->descriptor);
-   ngx_log_debug1(NGX_LOG_DEBUG_ALL, r->connection->log, 0, "xatmi: Waiting for answer: number_of_calls=%d", client_context->number_of_calls);
-   ngx_log_debug1(NGX_LOG_DEBUG_ALL, r->connection->log, 0, "xatmi: Waiting for answer: Initial size of client_context->reply: [%d]", client_context->reply.len);
-
-   return xatmi_receive( client_context, r);
-
-}
-
-static ngx_int_t extract_information( ngx_http_request_t* r, ngx_http_xatmi_ctx_t* client_context)
-{
-   ngx_log_debug1(NGX_LOG_DEBUG_ALL, r->connection->log, 0, "xatmi: uri=%V", &r->uri);
-
-   u_char* start_of_service = &r->uri.data[ cServiceLocationStart];
-   u_char* end_of_service = &r->uri.data[ r->uri.len];
-
-   //
-   // Copy some data to context for later use
-   //
-   //
-   // Service
-   //
-   const int service_len = ((end_of_service - start_of_service) / sizeof (u_char));
-   client_context->service = ngx_pcalloc(r->pool, service_len + 1);
-   ngx_memcpy( client_context->service, start_of_service, service_len);
-   client_context->service[ service_len] = '\0';
-
-   //
-   // Protocol
-   //
-   if ( r->headers_in.content_type)
-   {
-      const int protocol_len = r->headers_in.content_type->value.len;
-      client_context->protocol = ngx_pcalloc(r->pool, protocol_len + 1);
-      ngx_memcpy( client_context->protocol, r->headers_in.content_type->value.data, protocol_len);
-      client_context->protocol[ protocol_len] = '\0';
-   }
-   else
-   {
-      client_context->protocol = ngx_pcalloc(r->pool, 1);
-      client_context->protocol[ 0] = '\0';
-   }
-
-   ngx_log_debug1(NGX_LOG_DEBUG_ALL, r->connection->log, 0, "xatmi: service=%s", client_context->service);
-   ngx_log_debug1(NGX_LOG_DEBUG_ALL, r->connection->log, 0, "xatmi: protocol=%s", client_context->protocol);
-
-   //
-   // Errorchecking
-   //
-   if ( service_len <= 0 || service_len > xatmi_max_service_length())
-   {
-      return NGX_HTTP_BAD_REQUEST;
-   }
-
-   ngx_log_debug1(NGX_LOG_DEBUG_ALL, r->connection->log, 0, "xatmi: r->args=%V", &r->args);
-
-   return NGX_OK;
-}
-
-static ngx_int_t ngx_xatmi_backend_handler( ngx_http_request_t* r)
-{
-   ngx_log_debug0(NGX_LOG_DEBUG_ALL, r->connection->log, 0,
-      "xatmi: ngx_xatmi_backend_handler.\n");
-
-   ngx_int_t rc;
-   ngx_chain_t out;
-   ngx_buf_t *b;
-
-   ngx_http_xatmi_ctx_t* client_context = ngx_http_get_module_ctx(r, ngx_http_xatmi_module);
-
-   //
-   // Extract parameters from URL
-   //
-   if ( client_context == NULL)
-   {
-      client_context = ngx_pcalloc(r->pool, sizeof(ngx_http_xatmi_ctx_t));
-      if (client_context == NULL)
-      {
-         return NGX_ERROR;
-      }
-      client_context->timeout = 1;
-      client_context->state = NGX_OK;
-      ngx_str_null( &client_context->call);
-
-      //
-      // Set unique context for this request
-      //
-      ngx_http_set_ctx( r, client_context, ngx_http_xatmi_module);
-
-      rc = extract_information( r, client_context);
-      if ( rc != NGX_OK)
-      {
-         const char* message = "{\n   \"error\" : \"INPUT DATA ERROR\"\n}";
-         error_reporter(r, client_context, rc, message);
-         goto produce_output;
-      }
-
-      //
-      // GET and POST supported
-      //
-      if( !((r->method & NGX_HTTP_POST) || (r->method & NGX_HTTP_GET)))
-      {
-         const char* message = "{\n   \"error\" : \"INPUT DATA ERROR\"\n}";
-         error_reporter(r, client_context, NGX_HTTP_NOT_ALLOWED, message);
-         goto produce_output;
-      }
-
-      ngx_log_debug0(NGX_LOG_DEBUG_ALL, r->connection->log, 0, "xatmi: post http-check");
-
-      r->headers_out.status = NGX_HTTP_OK;
-   }
-
-   if (client_context->state != NGX_OK)
-   {
-      const char* message = "{\n   \"error\" : \"RESOURCE FAILIURE\"\n}";
-      error_reporter(r, client_context, NGX_HTTP_NOT_ALLOWED, message);
-      goto produce_output;
-   }
-
-   //
-   // Check if this is a phase for handling the reply from xatmi
-   //
-   if (client_context->descriptor > 0)
-   {
-      goto receive;
-   }
-
-   if (client_context->call.data != NULL)
-   {
-      goto send;
-   }
-
-   //
-   // Extract body
-   //
-   rc = ngx_http_read_client_request_body(r, ngx_http_xatmi_body_read);
-
-   if (rc == NGX_AGAIN)
-   {
-      r->main->count++;
-      client_context->waiting_more_body = 1;
-      return NGX_DONE;
-   }
-
-   rc = bufferhandler(r, &client_context->call);
-   ngx_log_debug1(NGX_LOG_DEBUG_ALL, r->connection->log, 0, "xatmi: rc=%d", rc);
-
-   if ( rc != NGX_OK && rc != NGX_DONE)
-   {
-      ngx_log_debug0(NGX_LOG_DEBUG_ALL, r->connection->log, 0, "xatmi: returning due to error");
-      return rc;
-   }
-
-   ngx_log_debug1(NGX_LOG_DEBUG_ALL, r->connection->log, 0, "xatmi: client_context->call=%V", &client_context->call);
-
-   send:
-
-   //
-   // Make the call
-   //
-   if ( call( r) == NGX_ERROR)
-   {
-      //Errorhantering p.g.a. fel vid försök till tpacall eller bufferhantering m.a.a. detta
-      error_handler(r, client_context);
-      goto produce_output;
-   }
-   else
-   {
-      restart_cycle( r);
-      return NGX_DONE;
-   }
-
-   receive:
-
-   rc = receive( r);
-   if ( rc == NGX_AGAIN)
-   {
-      restart_cycle( r);
-      return NGX_DONE;
-   }
-   else if ( rc == NGX_ERROR)
-   {
-      xatmi_cancel(client_context, r);
-      //Errorhantering p.g.a. fel vid försök till tpgetreply eller bufferhantering m.a.a. detta
-      error_handler(r, client_context);
-   }
-
-   produce_output:
-
-   if (client_context->state != NGX_OK)
-   {
-      xatmi_terminate();
-      // Se till att ny application context initieras pga tpterm nu har avslutat pågående context
-   }
-
-
-   ngx_log_debug0(NGX_LOG_DEBUG_ALL, r->connection->log, 0, "Start producing output");
-   //
-   // Start preparing the answer
-   //
-   r->headers_out.content_type.len = ngx_strlen( client_context->protocol);
-   r->headers_out.content_type.data = ngx_pcalloc( r->pool, r->headers_out.content_type.len + 1);
-   ngx_sprintf( r->headers_out.content_type.data, "%s", client_context->protocol);
-
-   //
-   // Finish packaging the result
-   //
-   r->headers_out.content_length_n = client_context->reply.len;
-
-   b = ngx_pcalloc(r->pool, sizeof(ngx_buf_t));
-   if (b == NULL )
-   {
-      ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-         "xatmi: Failed to allocate response buffer.");
-      return NGX_HTTP_INTERNAL_SERVER_ERROR;
-   }
-
-   out.buf = b;
-   out.next = NULL;
-   ngx_log_debug1(NGX_LOG_DEBUG_ALL, r->connection->log, 0, "xatmi: client_context->reply=%V", &client_context->reply);
-
-   b->pos = client_context->reply.data;
-   b->last = client_context->reply.data + r->headers_out.content_length_n;
-
-   b->memory = 1;
-   b->last_buf = 1;
-
-   rc = ngx_http_send_header(r);
-
-   if (rc == NGX_ERROR || rc > NGX_OK || r->header_only)
-   {
-      ngx_log_debug1(NGX_LOG_DEBUG_ALL, r->connection->log, 0, "xatmi: rc=%d", rc);
-      return rc;
-   }
-
-   rc = ngx_http_output_filter(r, &out);
-
-   ngx_log_debug1(NGX_LOG_DEBUG_ALL, r->connection->log, 0, "xatmi: filtering result=%d", rc);
-   ngx_log_debug0(NGX_LOG_DEBUG_ALL, r->connection->log, 0, "xatmi: exiting ngx_xatmi_backend_handler");
-
-   return rc == NGX_OK ? NGX_DONE : rc;
-}
-
-static char *
-ngx_http_xatmi_setup(ngx_conf_t* cf, ngx_command_t* cmd, void* conf)
-{
-   ngx_http_core_loc_conf_t *clcf;
-   ngx_http_xatmi_loc_conf_t *cglcf = conf;
-
-   clcf = ngx_http_conf_get_module_loc_conf(cf, ngx_http_core_module) ;
-   clcf->handler = ngx_xatmi_backend_handler;
-
-   cglcf->enable = 1;
-
-   return NGX_CONF_OK;
-}
-
-static void ngx_http_xatmi_body_read(ngx_http_request_t* r)
-{
-   ngx_http_xatmi_ctx_t* client_context = ngx_http_get_module_ctx(r, ngx_http_xatmi_module);
-
-   ngx_log_debug1(NGX_LOG_DEBUG_ALL, r->connection->log, 0,
-      "xatmi: http post read request body: count=%d", r->main->count);
-
-   r->read_event_handler = ngx_http_request_empty_handler;
-
-   r->main->count--;
-
-   if (client_context->waiting_more_body )
-   {
-      client_context->waiting_more_body = 0;
-      ngx_http_core_run_phases(r);
-   }
-}
-
-static ngx_int_t ngx_xatmi_backend_init(ngx_http_xatmi_loc_conf_t* cglcf)
-{
-
-   strncpy(cglcf->server, "xatmiserver", 13);
-
-   return NGX_OK;
-}
-
-static void *
-ngx_http_xatmi_create_loc_conf(ngx_conf_t* cf)
-{
-   ngx_http_xatmi_loc_conf_t *conf;
-
-   conf = ngx_pcalloc(cf->pool, sizeof(ngx_http_xatmi_loc_conf_t));
-   conf->enable = NGX_CONF_UNSET;
-   return conf;
-}
-
-static char *
-ngx_http_xatmi_merge_loc_conf(ngx_conf_t* cf, void* parent, void* child)
-{
-   ngx_http_xatmi_loc_conf_t *conf = child;
-
-   if (conf->enable)
-   {
-      ngx_xatmi_backend_init(conf);
-   }
-
-   return NGX_CONF_OK ;
-}
-
-static void restart_cycle( ngx_http_request_t* r)
-{
-   ngx_http_xatmi_ctx_t* client_context = ngx_http_get_module_ctx(r, ngx_http_xatmi_module);
-   //
-   // Adjust timeout
-   //
-   if (client_context->number_of_calls > 500)
-   {
-      client_context->timeout = 500;
-   }
-   else if (client_context->number_of_calls > 100)
-   {
-      client_context->timeout = 100;
-   }
-   else if (client_context->number_of_calls > 50)
-   {
-      client_context->timeout = 50;
-   }
-
-   r->main->count++;
-   //
-   // Start timer again
-   //
-   r->connection->read->handler = ngx_http_xatmi_request_handler;
-   r->read_event_handler = ngx_http_core_run_phases;
-   r->connection->read->log = r->connection->log;
-   ngx_add_timer( r->connection->read, client_context->timeout );
-   client_context->number_of_calls++;
-
-}
 static void
-ngx_http_xatmi_request_handler(ngx_event_t* ev)
+timer_handler(ngx_event_t *ev)
 {
-   //
-   // A copy of standard ngx_http_request_handler
-   //
-   ngx_connection_t    *c;
-   ngx_http_request_t  *r;
-   ngx_http_log_ctx_t  *ctx;
+    ngx_http_xatmi_ctx_t *request_context = ev->data;
+    ngx_http_request_t *r = request_context->r;
+    ngx_log_error(NGX_LOG_NOTICE, r->connection->log, 0, "plugin: %s", __FUNCTION__);
 
-   c = ev->data;
-   r = c->data;
+    ngx_int_t ret = NGX_ERROR;
+    if (request_context->state < 3)
+    {
+        ret = plugin_call(request_context);
+        if (ret == NGX_OK)
+        {
+            ret = plugin_receive(request_context);
+        }
+    }
+    else
+    {
+        ret = plugin_receive(request_context);
+    }
 
-   ctx = c->log->data;
-   ctx->current_request = r;
-
-   ngx_log_debug2(NGX_LOG_DEBUG_HTTP, c->log, 0,
-      "xatmi: http run request: \"%V?%V\"", &r->uri, &r->args);
-
-   if (ev->write) {
-      r->write_event_handler(r);
-
-   } else {
-      r->read_event_handler(r);
-   }
-
-   ngx_http_run_posted_requests(c);
+    if (ret == NGX_AGAIN)
+    {
+        request_context->number_of_calls += 1;
+        request_context->timer.data = request_context;
+        request_context->timer.handler = timer_handler;
+        request_context->timer.log = r->connection->log;
+        ngx_add_timer(&request_context->timer, /*msec*/10);
+    }
+    else if (ret == NGX_ERROR)
+    {
+        ngx_http_finalize_request(r, NGX_HTTP_INTERNAL_SERVER_ERROR);
+    }
+    else
+    {
+        ngx_http_finalize_request(r, send_response(r, request_context));
+    }
 }
 
+// 
+// SEND RESPONSE
+// -------------
+// Send HTTP header then HTTP body.
+// 
+static ngx_int_t
+send_response(ngx_http_request_t *r, ngx_http_xatmi_ctx_t *request_context)
+{
+    ngx_log_error(NGX_LOG_NOTICE, r->connection->log, 0, "plugin: %s", __FUNCTION__);
+
+    ngx_pool_cleanup_t *cp = ngx_pool_cleanup_add(r->pool, 0);
+    if (NULL == cp)
+    {
+        request_cleanup(r);
+        return NGX_HTTP_INTERNAL_SERVER_ERROR;
+    }
+
+    cp->handler = request_cleanup; // set request's cleanup callback
+    cp->data = request_context; // handler argument
+
+    ngx_buf_t *buf = ngx_create_temp_buf(r->pool, request_context->content_length); // allocates and initializes buffer-struct with allocated memory
+    ngx_chain_t *chain = ngx_alloc_chain_link(r->pool);
+    if (buf == NULL || request_context->chain == NULL)
+    {
+        ngx_log_error(NGX_LOG_ERR, r->connection->log, 0, "plugin: failed to allocate memory for response buffer.");
+        return NGX_HTTP_INTERNAL_SERVER_ERROR;
+    }
+    else // set up the chain with the response in a single buffer
+    {
+        ngx_memcpy(buf->pos, request_context->data, request_context->content_length);
+        buf->last = buf->pos + request_context->content_length;
+        buf->last_in_chain = 1;
+        buf->last_buf = 1;
+        chain->buf = buf;
+        chain->next = NULL;
+    }
+
+    r->headers_out.status = request_context->response_status;
+    r->headers_out.content_length_n = request_context->content_length;
+    if (ngx_http_send_header(r) != NGX_OK)
+    {
+        ngx_log_error(NGX_LOG_ERR, r->connection->log, 0, "plugin: ngx_http_send_header(r) != NGX_OK");
+        return NGX_HTTP_INTERNAL_SERVER_ERROR;
+    }
+    if (request_context->content_length > 0)
+    {
+        if (ngx_http_output_filter(r, chain) != NGX_OK)
+        {
+            ngx_log_error(NGX_LOG_ERR, r->connection->log, 0, "plugin: ngx_http_output_filter() != NGX_OK");
+            return NGX_HTTP_INTERNAL_SERVER_ERROR;
+        }
+    }
+    else
+    {
+        ngx_log_error(NGX_LOG_NOTICE, r->connection->log, 0, "plugin: request_context->content_length == %zu", request_context->content_length);
+    }
+    return r->headers_out.status;
+}
+
+// 
+// PROCESS REQUEST PARAMATERS
+// --------------------------
+// Invoked on request to process the request data set by nginx.
+//
+static ngx_int_t
+process_request_parameters(ngx_http_request_t *r, ngx_http_xatmi_ctx_t *request_context)
+{
+    ngx_log_error(NGX_LOG_NOTICE, r->connection->log, 0, "plugin: url = '%V'", &r->unparsed_uri);
+
+    if (r->headers_in.content_type)
+    {
+        request_context->content_type.data = r->headers_in.content_type->value.data;
+        request_context->content_type.len = r->headers_in.content_type->value.len;
+    }
+    else // no content-type header was sent
+    {
+        request_context->content_type.data = (u_char*)"";
+        request_context->content_type.len = 0;
+    }
+
+    return NGX_OK;
+}
+
+
+
+// ----[ BACK-END INTERFACE CALLS ]-------------------------------------------------------
+
+static char* plugin_init(ngx_conf_t *cf, ngx_http_xatmi_loc_conf_t *location_conf)
+{
+    ngx_conf_log_error(NGX_LOG_WARN, cf, 0, "plugin: %s", __FUNCTION__);
+    location_conf->initialized = 1;
+
+    ngx_pool_cleanup_t *cln = ngx_pool_cleanup_add(cf->pool, 0);
+    if (cln != NULL)
+    {
+        cln->handler = plugin_exit;
+        cln->data = location_conf;
+    }
+    else
+    {
+        ngx_conf_log_error(NGX_LOG_EMERG, cf, 0, "ngx_pool_cleanup_add -> NULL");
+        plugin_exit(location_conf);
+        return NGX_CONF_ERROR;
+    }
+
+    return NGX_CONF_OK;
+}
+
+static void plugin_exit(void *conf)
+{
+    // ngx_http_xatmi_loc_conf_t *location_conf = conf;
+
+}
+
+
+static ngx_int_t plugin_call(ngx_http_xatmi_ctx_t *request_context)
+{
+    if (++request_context->state < 3)
+    {
+        return NGX_AGAIN;
+    }
+    else
+    {
+        return NGX_OK;
+    }
+}
+
+
+static ngx_int_t plugin_receive(ngx_http_xatmi_ctx_t *request_context)
+{
+    if (++request_context->state < 6)
+    {
+        return NGX_AGAIN;
+    }
+    else
+    {
+        ngx_str_t str = {request_context->received, request_context->data};
+        ngx_log_error(NGX_LOG_NOTICE, request_context->r->connection->log, 0, "plugin: received = [%V]", &str);
+        // you can't send the request data back as response.
+        request_context->data = (u_char*)"response";
+        request_context->content_length = sizeof "response" - 1;
+        request_context->response_status = NGX_HTTP_OK;
+        return NGX_OK;
+    }
+}
+
+// static ngx_int_t plugin_cancel(ngx_http_xatmi_ctx_t *request_context)
+// {
+
+// }
