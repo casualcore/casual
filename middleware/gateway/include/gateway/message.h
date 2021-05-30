@@ -58,11 +58,10 @@ namespace casual
                std::vector< protocol::Version> versions;
 
                CASUAL_CONST_CORRECT_SERIALIZE(
-               {
                   base_request::serialize( archive);
                   CASUAL_SERIALIZE( domain);
                   CASUAL_SERIALIZE( versions);
-               })
+               )
             };
 
             using base_reply = common::message::basic_message< common::message::Type::gateway_domain_connect_reply>;
@@ -74,11 +73,10 @@ namespace casual
                protocol::Version version = protocol::Version::invalid;
 
                CASUAL_CONST_CORRECT_SERIALIZE(
-               {
                   base_reply::serialize( archive);
                   CASUAL_SERIALIZE( domain);
                   CASUAL_SERIALIZE( version);
-               })
+               )
             };
          } // connect
 
@@ -87,6 +85,24 @@ namespace casual
             using Request = common::message::basic_message< common::message::Type::gateway_domain_disconnect_request>;
             using Reply = common::message::basic_message< common::message::Type::gateway_domain_disconnect_reply>;
          } // disconnect
+
+         //! Sent from group-connector when the logical connection is done
+         using base_connected = common::message::basic_message< common::message::Type::gateway_domain_connected>;
+         struct Connected : base_connected
+         {
+            using base_connected::base_connected;
+
+            common::strong::process::id connector;
+            common::domain::Identity domain;
+            protocol::Version version = protocol::Version::invalid;
+
+            CASUAL_CONST_CORRECT_SERIALIZE(
+               base_connected::serialize( archive);
+               CASUAL_SERIALIZE( connector);
+               CASUAL_SERIALIZE( domain);
+               CASUAL_SERIALIZE( version);
+            )
+         };
 
          namespace discovery
          {
@@ -99,6 +115,8 @@ namespace casual
             using Request = casual::domain::message::discovery::Request;
             using Reply = casual::domain::message::discovery::Reply;
          } // discovery
+
+            
       } // domain
 
       namespace state

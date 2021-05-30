@@ -163,6 +163,7 @@ namespace casual
             case Type::gateway_domain_connect_reply: return out << "gateway_domain_connect_reply";
             case Type::gateway_domain_disconnect_request: return out << "gateway_domain_disconnect_request";
             case Type::gateway_domain_disconnect_reply: return out << "gateway_domain_disconnect_reply";
+            case Type::gateway_domain_connected: return out << "gateway_domain_connected";
             case Type::domain_discovery_request: return out << "domain_discovery_request";
             case Type::domain_discovery_reply: return out << "domain_discovery_reply";
             case Type::configuration_request: return out << "configuration_request";

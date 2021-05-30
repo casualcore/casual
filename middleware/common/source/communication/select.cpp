@@ -18,14 +18,29 @@ namespace casual
       {
          void Set::add( strong::file::descriptor::id descriptor) noexcept
          {
+            assert( descriptor.value() >= 0 && descriptor.value() < FD_SETSIZE);
+
             if( ! algorithm::find( m_descriptors, descriptor))
+            {
                m_descriptors.push_back( descriptor);
+               m_highest = std::max( m_highest, descriptor);
+            }
          }
 
          void Set::remove( strong::file::descriptor::id descriptor) noexcept
          {
             if( auto found = algorithm::find( m_descriptors, descriptor))
+            {
                m_descriptors.erase( std::begin( found));
+
+               if( m_highest != descriptor)
+                  return;
+
+               if( auto found = algorithm::max( m_descriptors))
+                  m_highest = *found;
+               else
+                  m_highest = {};
+            }
          }
 
       } // directive
@@ -51,7 +66,7 @@ namespace casual
                   }
                   
                   //! takes care of atomic signals...
-                  void select( ::fd_set* read, ::fd_set* write)
+                  void select( strong::file::descriptor::id highest, ::fd_set* read, ::fd_set* write)
                   {
                      // block all signals
                      signal::thread::scope::Block block;
@@ -62,7 +77,8 @@ namespace casual
                   
                      posix::result( 
                         // will set previous signal mask atomically 
-                        ::pselect( FD_SETSIZE, read, write, nullptr, nullptr, &block.previous().set));
+                        // note: first argument: nfds is the highest-numbered file descriptor in any of the three sets, plus 1.
+                        ::pselect( highest.value() + 1, read, write, nullptr, nullptr, &block.previous().set));
                   }
 
                } // <unnamed>
@@ -91,7 +107,7 @@ namespace casual
                set_set( directive.write.descriptors(), write);
 
                // takes care of atomic signals...
-               local::select( &read, &write);
+               local::select( directive.highest(), &read, &write);
 
                auto filter_ready = []( auto&& descriptors, auto& set)
                {
@@ -130,7 +146,7 @@ namespace casual
             assert( descriptor);
             FD_SET( descriptor.value(), &read);
 
-            dispatch::detail::local::select( &read, nullptr);
+            dispatch::detail::local::select( descriptor, &read, nullptr);
          }
       } // block
 

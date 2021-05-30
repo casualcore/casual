@@ -36,9 +36,6 @@ namespace casual
          
       } // connection
 
-      //! connect to the other domain, add the device to external
-      void connect( State& state, common::communication::tcp::Duplex&& device, configuration::model::gateway::outbound::Connection configuration);
-
       //! take care of pending tasks, when message dispatch is idle.
       std::vector< configuration::model::gateway::outbound::Connection> idle( State& state);
 

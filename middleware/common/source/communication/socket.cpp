@@ -58,12 +58,15 @@ namespace casual
             }
          }
 
+         Socket::Socket( Socket&& other) noexcept
+            : m_descriptor{ std::exchange( other.m_descriptor, {})}
+         {}
 
-         Socket::Socket( const Socket& other)
-            : m_descriptor{ local::duplicate( other.m_descriptor)}
+         Socket& Socket::operator =( Socket&& other) noexcept
          {
+            m_descriptor = std::exchange( other.m_descriptor, m_descriptor);
+            return *this;
          }
-
 
          void Socket::set( socket::option::File option)
          {
@@ -75,22 +78,6 @@ namespace casual
          {
             auto flags = ::fcntl( m_descriptor.value(), F_GETFL);
             posix::result( ::fcntl( m_descriptor.value(), F_SETFL, flags & ~cast::underlying( option)), "fcntl");
-         }
-
-         Socket& Socket::operator = ( const Socket& other)
-         {
-            Socket copy{ other};
-            return *this = std::move( copy);
-         }
-
-         Socket::Socket( Socket&& other) noexcept
-            : m_descriptor{ std::exchange( other.m_descriptor, {})}
-         {}
-
-         Socket& Socket::operator =( Socket&& other) noexcept
-         {
-            m_descriptor = std::exchange( other.m_descriptor, {});
-            return *this;
          }
 
 

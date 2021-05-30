@@ -3,6 +3,10 @@ This is the changelog for `casual` and all changes are listed in this document.
 
 ## [Unreleased]
 
+## [1.4.16] - 2021-05-29
+### Fixes
+- gateway - improved tcp connection phase robustness -> spawns a process that take cares of the logical connection phase
+
 ## [1.4.15] - 2021-04-14
 ### Fixes
 - service - pending lookups did not work correctly for _routes_

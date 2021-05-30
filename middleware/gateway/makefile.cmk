@@ -42,6 +42,7 @@ common_archive = make.LinkArchive( 'bin/casual-gateway-common',
         make.Compile( 'source/transform.cpp'),
         make.Compile( 'source/common.cpp'),
         make.Compile( 'source/manager/state.cpp'),
+        make.Compile( 'source/group/tcp.cpp'),
     ])
         
 
@@ -146,6 +147,17 @@ target = make.LinkExecutable( 'bin/casual-gateway-inbound-reverse-group',
         'casual-common',  
     ])
      
+install_bin.append( target)
+
+target = make.LinkExecutable( 'bin/casual-gateway-group-tcp-connector',
+    [
+        make.Compile( 'source/group/tcp/connector/main.cpp')
+    ],
+    [
+        common_archive,
+        'casual-common',
+    ])
+
 install_bin.append( target)
 
 # protocol example

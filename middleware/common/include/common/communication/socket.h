@@ -72,9 +72,6 @@ namespace casual
             explicit Socket( strong::socket::id descriptor) noexcept;
             ~Socket() noexcept;
 
-            Socket( const Socket&);
-            Socket& operator = ( const Socket&);
-
             Socket( Socket&&) noexcept;
             Socket& operator = ( Socket&&) noexcept;
 

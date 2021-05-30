@@ -647,7 +647,13 @@ namespace casual
       Process::~Process() 
       {
          if( pid)
-            exception::guard( [&](){ process::terminate( *this);});
+            exception::guard( [&]()
+            {
+               Trace trace{ "common::Process::~Process"};
+               log::line( verbose::log, "this: ", *this);
+
+                process::terminate( *this);
+            });
       }
 
       Process::Process( Process&& other) noexcept

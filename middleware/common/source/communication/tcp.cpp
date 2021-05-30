@@ -609,10 +609,11 @@ namespace casual
                return local::receive( tcp.socket(), cache, local::Flag::non_blocking);
             }
 
-            complete_type Blocking::send( const Connector& tcp, complete_type&& complete)
+            strong::correlation::id Blocking::send( const Connector& tcp, complete_type& complete)
             {
-               local::send( tcp.socket(), complete, local::Flag::non_blocking);
-               return std::move( complete);
+               if( local::send( tcp.socket(), complete, local::Flag::non_blocking))
+                  return complete.correlation();
+               return {};
             }
 
          } // non
@@ -627,11 +628,6 @@ namespace casual
 
       }
 
-      Connector::Connector( const Socket& socket)
-         : m_socket{ socket}
-      {
-
-      }
 
    } // common::communication::tcp
 } // casual

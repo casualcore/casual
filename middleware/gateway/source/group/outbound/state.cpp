@@ -277,13 +277,10 @@ namespace casual
                if( transaction::id::range::global( transaction.internal) != transaction::id::range::global( external))
                   return false;
 
-               auto found = algorithm::find( transaction.externals, external);
-
-               if( ! found)
-                  return false;
-
-               transaction.externals.erase( std::begin( found));
-               return true;
+               if( auto found = algorithm::find( transaction.externals, external))
+                  transaction.externals.erase( std::begin( found));
+               
+               return transaction.externals.empty();
             };
 
             if( auto found = algorithm::find_if( transactions, remove_external))

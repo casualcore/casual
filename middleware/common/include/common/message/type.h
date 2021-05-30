@@ -279,6 +279,9 @@ namespace casual
          domain_discovery_request   = 7300,
          domain_discovery_reply     = 7301,
 
+         //! sent from the connector when the logical connected is established
+         gateway_domain_connected,
+
 
          CONFIGURATION_BASE = 8000,
          configuration_request = CONFIGURATION_BASE,

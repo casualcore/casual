@@ -5,6 +5,7 @@
 //!
 
 #include "gateway/group/outbound/handle.h"
+#include "gateway/group//handle.h"
 #include "gateway/group/outbound/state.h"
 #include "gateway/group/outbound/error/reply.h"
 #include "gateway/group/ipc.h"
@@ -196,7 +197,7 @@ namespace casual
                         {
                            try
                            {
-                              state.external.last = descriptor;
+                              state.external.last( descriptor);
                               handler( connection->next());  
                            }
                            catch( ...)
@@ -214,40 +215,7 @@ namespace casual
                   }
                } // dispatch
 
-               namespace listener
-               {
-                  namespace dispatch
-                  {
-                     auto create( State& state)
-                     {
-                        return [&state]( strong::file::descriptor::id descriptor, communication::select::tag::read)
-                        {
-                           Trace trace{ "gateway::group::outbound::reverse::local::external::listener::dispatch"};
-
-                           if( auto found = algorithm::find( state.listeners, descriptor))
-                           {
-                              log::line( verbose::log, "found: ", *found);
-
-                              if( auto socket = communication::tcp::socket::accept( found->socket))
-                              {
-                                 log::line( log::category::information, 
-                                    "connection established local: ", communication::tcp::socket::address::host( socket.descriptor()),
-                                    " - peer: ", communication::tcp::socket::address::peer( socket.descriptor()));
-
-                                 // the socket needs to be 'blocking'
-                                 socket.unset( communication::socket::option::File::no_block);
-
-                                 // start the connection phase against the other inbound
-                                 outbound::handle::connect( state, std::move( socket), found->configuration);
-                              }
-                              return true;
-                           }
-                           return false;
-                        };
-                     }
-                  } // dispatch
-               } // listener
-               
+             
             } // external
 
             auto condition( State& state)
@@ -268,6 +236,9 @@ namespace casual
                   gateway::group::outbound::handle::abort( state);
                });
 
+               // make sure we listen to the death of our children
+               common::signal::callback::registration< code::signal::child>( group::handle::signal::process::exit());
+
                // start the message dispatch
                communication::select::dispatch::pump( 
                   local::condition( state),
@@ -275,7 +246,7 @@ namespace casual
                   gateway::group::tcp::pending::send::dispatch( state),
                   external::dispatch::create( state),
                   ipc::dispatch::create( state, &internal::handler),
-                  external::listener::dispatch::create( state)
+                  tcp::listener::dispatch::create( state, tcp::connector::Bound::out)
                );
                
                abort_guard.release();

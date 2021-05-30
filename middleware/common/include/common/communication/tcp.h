@@ -116,7 +116,7 @@ namespace casual
             struct Blocking
             {
                cache_range_type receive( const Connector& tcp, cache_type& cache);
-               complete_type send( const Connector& tcp, complete_type&& complete);
+               strong::correlation::id send( const Connector& tcp, complete_type& complete);
             };
 
          } // non
@@ -132,10 +132,6 @@ namespace casual
 
          Connector() noexcept;
          Connector( Socket&& socket) noexcept;
-         Connector( const Socket& socket);
-
-         Connector( const Connector&) = delete;
-         Connector& operator = ( const Connector&) = delete;
 
          Connector( Connector&&) = default;
          Connector& operator = ( Connector&&) = default;
