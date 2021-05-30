@@ -6,6 +6,7 @@
 
 #include "gateway/group/outbound/state.h"
 #include "gateway/group/outbound/handle.h"
+#include "gateway/group/handle.h"
 #include "gateway/group/tcp.h"
 #include "gateway/group/ipc.h"
 #include "gateway/message.h"
@@ -87,12 +88,7 @@ namespace casual
                {
                   Trace trace{ "gateway::group::outbound::local::external::connect"};
 
-                  group::tcp::connect( state.unconnected, [&state]( auto&& socket, auto&& connection)
-                  {
-                     // start the connection phase against the other inbound
-                     outbound::handle::connect( state, std::move( socket), std::move( connection.configuration));
-                  });
-
+                  group::tcp::connect< group::tcp::connector::Bound::out>( state, state.unconnected);
                   log::line( verbose::log, "state: ", state);
                }
 
@@ -120,7 +116,7 @@ namespace casual
                         {
                            try
                            {
-                              state.external.last = descriptor;
+                              state.external.last( descriptor);
                               handler( connection->next());  
                            }
                            catch( ...)
@@ -215,11 +211,6 @@ namespace casual
                            Trace trace{ "gateway::group::outbound::local::internal::handle::shutdown::request"};
                            log::line( verbose::log, "message: ", message);
 
-                           log::line( log::category::information, "state: ", state);
-                           log::line( log::category::information, "ipc::inbound: ", ipc::inbound());
-                           log::line( log::category::information, "ipc::manager::service: ", ipc::manager::service());
-
-
                            // remove pending connections
                            state.unconnected.clear();
 
@@ -289,13 +280,16 @@ namespace casual
                Trace trace{ "gateway::group::outbound::local::run"};
                log::line( verbose::log, "state: ", state);
 
-               // register the alarm callback.
-               common::signal::callback::registration< code::signal::alarm>( signal::callback::timeout());
-
                auto abort_guard = execute::scope( [&state]()
                {
                   gateway::group::outbound::handle::abort( state);
                });
+
+               // register the alarm callback.
+               common::signal::callback::registration< code::signal::alarm>( signal::callback::timeout());
+
+               // make sure we listen to the death of our children
+               common::signal::callback::registration< code::signal::child>( group::handle::signal::process::exit());
 
                // start the message dispatch
                communication::select::dispatch::pump( 

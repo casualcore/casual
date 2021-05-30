@@ -21,6 +21,7 @@
 
 #include "common/message/domain.h"
 #include "common/algorithm/is.h"
+#include "common/result.h"
 
 #include "serviceframework/service/protocol/call.h"
 
@@ -546,7 +547,7 @@ domain:
 
          static constexpr auto configuration = R"(
 domain: 
-   name: gateway-domain
+   name: ${UNITTEST_DOMAIN_NAME}
    gateway:
       inbound: 
          groups:
@@ -567,14 +568,34 @@ domain:
                -  address: 127.0.0.1:6666
 )";
 
+         static int unittest_count{};
+         environment::variable::set( "UNITTEST_DOMAIN_NAME", string::compose( "unittest-", ++unittest_count));
 
          auto domain = local::domain::extended( configuration);
 
          EXPECT_TRUE( common::communication::instance::fetch::handle( common::communication::instance::identity::gateway::manager));
 
-         auto state = local::call::wait::ready::state();
+         auto state = local::call::state( []( auto& state)
+         {
+            return state.connections.size() == 2 * 10;
+         });
 
-         EXPECT_TRUE( state.connections.size() == 2 * 10) << state.connections;
+
+
+         using Bound = manager::admin::model::connection::Bound;
+
+         auto bound_count = [&state]( Bound bound)
+         {
+            return algorithm::accumulate( state.connections, platform::size::type{}, [bound]( auto count, auto& connection)
+            {
+               if( connection.bound == bound)
+                  ++count;
+               return count;
+            });
+         };
+
+         EXPECT_TRUE( bound_count( Bound::in) == 10) << "count: " << bound_count( Bound::in) << '\n' << CASUAL_NAMED_VALUE( state);
+         EXPECT_TRUE( bound_count( Bound::out) == 10) << "count: " << bound_count( Bound::out) << '\n' << CASUAL_NAMED_VALUE( state);
       }
 
       TEST( gateway_manager_tcp, connect_to_our_self__10_outbound_groups__one_connection_each)
@@ -619,9 +640,25 @@ domain:
 
          EXPECT_TRUE( common::communication::instance::fetch::handle( common::communication::instance::identity::gateway::manager));
 
-         auto state = local::call::wait::ready::state();
+         auto state = local::call::state( []( auto& state)
+         {
+            return state.connections.size() == 2 * 10;
+         });
 
-         EXPECT_TRUE( state.connections.size() == 2 * 10) << state.connections;
+         auto count_bound = []( auto bound)
+         {
+            return [bound]( auto count, auto& connection)
+            {
+               if( connection.bound == bound)
+                  ++count;
+               return count;
+            };
+         };
+
+         using Bound = manager::admin::model::connection::Bound;
+
+         EXPECT_TRUE( algorithm::accumulate( state.connections, platform::size::type{}, count_bound( Bound::in)) == 10);
+         EXPECT_TRUE( algorithm::accumulate( state.connections, platform::size::type{}, count_bound( Bound::out)) == 10);
       }
 
       TEST( gateway_manager_tcp, connect_to_our_self__kill_inbound__expect_restart)
@@ -895,6 +932,53 @@ domain:
 
       }
 
+      TEST( gateway_manager_tcp, native_tcp_connect__disconnect____expect_robust_connection_disconnect)
+      {
+         common::unittest::Trace trace;
+         constexpr auto configuration = R"(
+domain:
+   name: A
+   gateway:
+      inbound:
+         groups:
+            -  connections:
+                  -  address: 127.0.0.1:7001
+      outbound:
+         groups:
+            -  connections:
+                  -  address: 127.0.0.1:7001
+
+)";
+
+         auto domain = local::domain::extended( configuration);
+
+         EXPECT_TRUE( common::communication::instance::fetch::handle( common::communication::instance::identity::gateway::manager));
+
+         auto state = local::call::wait::ready::state();
+
+         ASSERT_TRUE( state.connections.size() == 2);
+
+         {
+            auto socket = communication::tcp::connect( communication::tcp::Address{ "127.0.0.1:7001"});
+            EXPECT_TRUE( socket);
+
+            // send two bytes
+            posix::result( 
+               ::send( socket.descriptor().value(), "AB", 2, 0));
+
+            auto sink = []( auto value) {};
+
+            process::sleep( std::chrono::milliseconds{ 200});
+
+            sink( std::move( domain));
+            
+
+            //state = local::call::state( );
+            //EXPECT_TRUE( state.connections.size() == 2) << CASUAL_NAMED_VALUE( state);
+
+         }
+
+      }
 
    } // gateway
 

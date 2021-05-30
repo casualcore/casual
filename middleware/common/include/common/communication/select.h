@@ -43,7 +43,13 @@ namespace casual
                algorithm::for_each( descriptors, [&]( auto descriptor){ remove( descriptor);});
             }
 
-            range_type descriptors() const noexcept { return range::make( m_descriptors);}
+            inline auto descriptors() const noexcept
+            { 
+               return range::make( m_descriptors);
+            }
+
+            //! @returns the highest value descriptor in the `Set`, 'nil' descriptor if empty.
+            inline auto highest() const noexcept { return m_highest;}
             
             CASUAL_LOG_SERIALIZE(
                CASUAL_SERIALIZE_NAME( m_descriptors, "descriptors");
@@ -52,10 +58,24 @@ namespace casual
          private:
             // mutable so we can 'filter' for ready - semantically we don't change the state
             mutable std::vector< strong::file::descriptor::id> m_descriptors;
+            strong::file::descriptor::id m_highest{};
          };
 
          struct Ready
          {
+            Ready( range_type read_ready, range_type write_ready)
+               : m_descriptors( read_ready.size() + write_ready.size()), 
+                  read{ range::make( std::begin( m_descriptors), read_ready.size())},
+                  write{ range::make( std::end( read), write_ready.size())} 
+            {
+               algorithm::copy( read_ready, std::begin( read));
+               algorithm::copy( write_ready, std::begin( write));
+            }
+
+         private:
+            std::vector< strong::file::descriptor::id> m_descriptors;
+
+         public:
             range_type read;
             range_type write;
 
@@ -65,6 +85,7 @@ namespace casual
                CASUAL_SERIALIZE( read);
                CASUAL_SERIALIZE( write);
             )
+
          };
 
       } // directive
@@ -74,6 +95,9 @@ namespace casual
       {
          directive::Set read;
          directive::Set write;
+
+         //! @returns the highest value descriptor in the `Directive`, 'nil' descriptor if empty.
+         inline auto highest() const noexcept { return std::max( read.highest(), write.highest());}
 
          CASUAL_LOG_SERIALIZE(
             CASUAL_SERIALIZE( read);
@@ -128,8 +152,8 @@ namespace casual
             namespace handle
             {
                //! blocking read handler
-               template< typename R, typename H> 
-               auto dispatch( R& ready, H& handler, traits::priority::tag< 2>)
+               template< typename H> 
+               auto dispatch( directive::Ready& ready, H& handler, traits::priority::tag< 2>)
                   -> decltype( void( handler( range::front( ready.read), tag::read{})))
                {
                   // keep the reads that did not find a handler.
@@ -140,8 +164,8 @@ namespace casual
                }
 
                //! blocking write handler
-               template< typename R, typename H> 
-               auto dispatch( R& ready, H& handler, traits::priority::tag< 1>)
+               template< typename H> 
+               auto dispatch( directive::Ready& ready, H& handler, traits::priority::tag< 1>)
                   -> decltype( void( handler( range::front( ready.write), tag::write{})))
                {
                   // keep the writes that did not find a handler.
@@ -152,15 +176,15 @@ namespace casual
                }
 
                //! 'consume' handler - no op
-               template< typename R, typename H> 
-               auto dispatch( R& ready, H& handler, traits::priority::tag< 0>) 
+               template< typename H> 
+               auto dispatch( directive::Ready& ready, H& handler, traits::priority::tag< 0>) 
                   -> decltype( void( handler( tag::consume{})))
                { 
                   // no-op.
                }
 
-               template< typename R, typename H> 
-               void dispatch( R& ready, H& handler)
+               template< typename H> 
+               void dispatch( directive::Ready& ready, H& handler)
                {
                   handle::dispatch( ready, handler, traits::priority::tag< 2>{});
                }
@@ -170,8 +194,8 @@ namespace casual
             template< typename F, typename R> 
             void iterate( F&& functor, R& ready) {}
 
-            template< typename F, typename R, typename H, typename... Hs> 
-            void iterate( F&& functor, R& ready, H& handler, Hs&... handlers)
+            template< typename F, typename H, typename... Hs> 
+            void iterate( F&& functor, directive::Ready& ready, H& handler, Hs&... handlers)
             {
                if( ! ready)
                   return;
@@ -180,8 +204,8 @@ namespace casual
                iterate( functor, ready, handlers...);
             }
 
-            template< typename R, typename... Hs> 
-            void dispatch( R&& ready, Hs&... handlers)
+            template< typename... Hs> 
+            void dispatch( directive::Ready ready, Hs&... handlers)
             {
                // 'iterate' over all handlers and dispatch on ready...
                // this might be done with fold expressions...

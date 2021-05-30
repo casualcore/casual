@@ -76,13 +76,13 @@ namespace casual
 
       } // state
 
-      state::external::Connection* State::consume( const common::Uuid& correlation)
+      tcp::Connection* State::consume( const common::Uuid& correlation)
       {
          if( auto found = algorithm::find( correlations, correlation))
          {
             auto descriptor = algorithm::extract( correlations, std::begin( found)).descriptor;
             
-            if( auto connector = algorithm::find( external.connections, descriptor))
+            if( auto connector = algorithm::find( external.connections(), descriptor))
                return connector.data();
          }
 

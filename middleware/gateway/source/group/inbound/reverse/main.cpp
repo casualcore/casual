@@ -6,6 +6,7 @@
 
 #include "gateway/group/inbound/state.h"
 #include "gateway/group/inbound/handle.h"
+#include "gateway/group/handle.h"
 #include "gateway/group/tcp.h"
 #include "gateway/group/ipc.h"
 #include "gateway/message.h"
@@ -57,18 +58,11 @@ namespace casual
                   )
                };
 
-               struct
-               {
-                  std::vector< Connection> connections;
-
-                  CASUAL_LOG_SERIALIZE( 
-                     CASUAL_SERIALIZE( connections);
-                  )
-               } reverse;
+               std::vector< Connection> unconnected;
 
                CASUAL_LOG_SERIALIZE(
                   inbound::State::serialize( archive);
-                  CASUAL_SERIALIZE( reverse);
+                  CASUAL_SERIALIZE( unconnected);
                )
             };
 
@@ -92,11 +86,7 @@ namespace casual
                {
                   Trace trace{ "gateway::group::inbound::reverse::local::external::connect"};
 
-                  group::tcp::connect( state.reverse.connections, [&state]( auto&& socket, auto&& connection)
-                  {
-                     state.external.add( state.directive, std::move( socket), std::move( connection.configuration));
-                  });
-
+                  group::tcp::connect< group::tcp::connector::Bound::in>( state, state.unconnected);
                   log::line( verbose::log, "state: ", state);
                }
 
@@ -107,7 +97,7 @@ namespace casual
                   if( state.runlevel == decltype( state.runlevel())::running)
                   {
                      log::line( log::category::information, code::casual::communication_unavailable, " lost connection ", configuration.address, " - action: try to reconnect");
-                     state.reverse.connections.emplace_back( std::move( configuration));
+                     state.unconnected.emplace_back( std::move( configuration));
                      external::connect( state);
                   }
                }
@@ -164,7 +154,7 @@ namespace casual
                            state.alias = message.model.alias;
                            state.pending.requests.limit( message.model.limit);
                            
-                           state.reverse.connections = algorithm::transform( message.model.connections, []( auto& configuration)
+                           state.unconnected = algorithm::transform( message.model.connections, []( auto& configuration)
                            {
                               return local::State::Connection{ std::move( configuration)};
                            });
@@ -192,7 +182,7 @@ namespace casual
                            auto reply = state.reply( message);
 
                            // add reverse connections
-                           algorithm::transform( state.reverse.connections, reply.state.connections, []( auto& pending)
+                           algorithm::transform( state.unconnected, reply.state.connections, []( auto& pending)
                            {
                               message::inbound::state::Connection result;
                               result.configuration = pending.configuration;
@@ -282,6 +272,9 @@ namespace casual
 
                // register the alarm callback.
                common::signal::callback::registration< code::signal::alarm>( signal::callback::timeout());
+
+               // make sure we listen to the death of our children
+               common::signal::callback::registration< code::signal::child>( group::handle::signal::process::exit());
 
                // start the message dispatch
                communication::select::dispatch::pump( 

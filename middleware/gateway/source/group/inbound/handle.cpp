@@ -35,7 +35,7 @@ namespace casual
                   {
                      if( auto connection = state.consume( message.correlation))
                      {
-                        connection->send( state, std::forward< M>( message));
+                        connection->send( state.directive, std::forward< M>( message));
                         return connection->descriptor();
                      }
                      
@@ -65,35 +65,6 @@ namespace casual
                   };
                }
 
-               namespace connect
-               {
-                  //! pushed/forward from the external side, to enable correlation
-                  auto request( State& state)
-                  {
-                     return [&state]( gateway::message::domain::connect::Request& message)
-                     {
-                        Trace trace{ "gateway::group::inbound::handle::local::internal::connect::request"};
-                        common::log::line( verbose::log, "message: ", message);
-
-                        auto reply = common::message::reverse::type( message);
-
-                        if( auto found = algorithm::find_first_of( message::domain::protocol::versions, message.versions))
-                           reply.version = *found;
-
-                        reply.domain = common::domain::identity();
-
-                        if( auto connection = state.external.connection( tcp::send( state, reply)))
-                        {
-                           connection->protocol = reply.version;
-                           if( auto found = algorithm::find( state.external.information, connection->descriptor()))
-                              found->domain = message.domain;
-
-                           common::log::line( verbose::log, "connection: ", *connection);
-                        }
-                     };
-                  }
-               } // connect
-
                namespace event
                {
                   namespace process
@@ -105,6 +76,10 @@ namespace casual
                            Trace trace{ "gateway::group::inbound::handle::local::internal::event::process::exit"};
                            common::log::line( verbose::log, "message: ", message);
 
+                           // the process might be from our spawned connector
+                           state.external.pending().exit( message.state);
+                           
+                           // it might be a process we've sent discovery to.
                            state.coordinate.discovery.failed( message.state.pid);
                         };
                      }
@@ -230,13 +205,27 @@ namespace casual
 
                namespace domain
                {
+                  auto connected( State& state)
+                  {
+                     return [&state]( const gateway::message::domain::Connected& message)
+                     {
+                        Trace trace{ "gateway::group::inbound::handle::local::internal::domain::connected"};
+                        common::log::line( verbose::log, "message: ", message);
+
+                        state.external.connected( state.directive, message);
+
+                        common::log::line( verbose::log, "state.external: ", state.external);
+       
+                     };
+                  }
+
                   namespace discover
                   {
                      auto reply( State& state)
                      {
                         return [&state]( common::message::gateway::domain::discover::Reply& message)
                         {
-                           Trace trace{ "gateway::group::inbound::handle::internal::domain::discover::Reply"};
+                           Trace trace{ "gateway::group::inbound::handle::local::internal::domain::discover::Reply"};
                            common::log::line( verbose::log, "message: ", message);
 
                            // Might send the accumulated message if all requested has replied.
@@ -271,24 +260,6 @@ namespace casual
 
             namespace external
             {
-               namespace connect
-               {
-                  auto request( State& state)
-                  {
-                     return []( gateway::message::domain::connect::Request&& message)
-                     {
-                        Trace trace{ "gateway::group::inbound::handle::local::external::connect::request"};
-                        common::log::line( verbose::log, "message: ", message);
-
-                        // we push it to the internal side, so it's possible to correlate the message.
-                        // We don't know which external socket has sent this message at this moment.
-                        // when we're done here, the 'external-dispatch' will correlate the socket descriptor
-                        // and the correlation id of the message, so we can access it from the internal part.
-                        ipc::inbound().push( std::move( message));
-                     };
-                  }
-               } // connect
-
                namespace disconnect
                {
                   auto reply( State& state)
@@ -551,8 +522,6 @@ namespace casual
          return {
             common::message::handle::defaults( communication::ipc::inbound::device()),
 
-            local::internal::connect::request( state),
-
             // service
             local::internal::service::lookup::reply( state),
             local::internal::service::call::reply( state),
@@ -569,6 +538,7 @@ namespace casual
 
             // domain discovery
             local::internal::domain::discover::reply( state),
+            local::internal::domain::connected( state),
 
             // events
             common::event::listener( local::internal::event::process::exit( state)),
@@ -580,8 +550,6 @@ namespace casual
       {
          return {
             
-            // just a forward to the internal connect::request
-            local::external::connect::request( state),
             local::external::disconnect::reply( state),
 
             // service call
@@ -645,12 +613,12 @@ namespace casual
             {
                log::line( verbose::log, "connection: ", *connection);
 
-               if( connection->protocol == decltype( connection->protocol)::version_1_1)
+               if( connection->protocol() == decltype( connection->protocol())::version_1_1)
                {
                   try 
                   {
                      state.correlations.emplace_back( 
-                        connection->send( state, message::domain::disconnect::Request{}),
+                        connection->send( state.directive, message::domain::disconnect::Request{}),
                         descriptor
                      );
                   }
@@ -668,6 +636,7 @@ namespace casual
          }
          
       } // connection
+
 
       void idle( State& state)
       {
@@ -693,7 +662,7 @@ namespace casual
          Trace trace{ "gateway::group::inbound::handle::shutdown"};
 
          // try to do a 'soft' disconnect. copy - connection::disconnect mutates external
-         for( auto descriptor : range::to_vector( state.external.descriptors))
+         for( auto descriptor : state.external.descriptors())
             handle::connection::disconnect( state, descriptor);
       }
 
@@ -704,7 +673,7 @@ namespace casual
          state.runlevel = decltype( state.runlevel())::error;
 
          // 'kill' all sockets, and try to take care of pending stuff. copy - connection::lost mutates external
-         for( auto descriptor : range::to_vector( state.external.descriptors))
+         for( auto descriptor : state.external.descriptors())
             handle::connection::lost( state, descriptor);
       }
       

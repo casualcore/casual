@@ -266,6 +266,9 @@ namespace casual
             gateway_domain_discover_reply     = 7301,
             gateway_domain_discover_accumulated_reply,
 
+            //! sent from the connector when the logical connected is established
+            gateway_domain_connected,
+
             CONFIGURATION_BASE = 8000,
             configuration_request = CONFIGURATION_BASE,
             configuration_reply,

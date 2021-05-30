@@ -51,6 +51,8 @@ namespace casual
             internal_out_of_bounds,
             internal_unexpected_value,
             internal_correlation,
+
+            fatal_terminate,
          };
 
          std::error_code make_error_code( code::casual code);

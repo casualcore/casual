@@ -39,95 +39,6 @@ namespace casual
 
          std::ostream& operator << ( std::ostream& out, Runlevel value);
 
-         namespace external
-         {
-            namespace connection
-            {
-               struct Information
-               {
-                  common::strong::file::descriptor::id connection;
-                  common::domain::Identity domain;
-                  configuration::model::gateway::outbound::Connection configuration;
-                  platform::time::point::type created{};
-
-                  inline friend bool operator == ( const Information& lhs, common::strong::file::descriptor::id rhs) { return lhs.connection == rhs;} 
-
-                  CASUAL_LOG_SERIALIZE( 
-                     CASUAL_SERIALIZE( connection);
-                     CASUAL_SERIALIZE( domain);
-                     CASUAL_SERIALIZE( configuration);
-                     CASUAL_SERIALIZE( created);
-                  )
-               };
-            } // connection
-
-         } // external
-
-         struct External
-         {
-            inline void add( 
-               common::communication::select::Directive& directive, 
-               common::communication::tcp::Duplex&& device, 
-               configuration::model::gateway::outbound::Connection configuration)
-            {
-               auto descriptor = device.connector().descriptor();
-
-               connections.emplace_back( std::move( device));
-               descriptors.push_back( descriptor);
-               information.push_back( [&](){
-                  state::external::connection::Information result;
-                  result.connection = descriptor;
-                  result.configuration = std::move( configuration);
-                  result.created = platform::time::clock::type::now();
-                  return result;
-               }());
-               directive.read.add( descriptor);
-               
-            }
-
-            inline group::tcp::Connection* connection( common::strong::file::descriptor::id descriptor)
-            {
-               if( auto found = common::algorithm::find( connections, descriptor))
-                  return found.data();
-               return nullptr;
-            }
-
-            inline std::optional< configuration::model::gateway::outbound::Connection> remove( 
-               common::communication::select::Directive& directive, 
-               common::strong::file::descriptor::id descriptor)
-            {
-               directive.read.remove( descriptor);
-               common::algorithm::trim( connections, common::algorithm::remove( connections, descriptor));
-               common::algorithm::trim( descriptors, common::algorithm::remove( descriptors, descriptor));
-               if( auto found = common::algorithm::find( information, descriptor))
-                  return common::algorithm::extract( information, std::begin( found)).configuration;
-               
-               return {};
-            }
-
-            inline void clear( common::communication::select::Directive& directive)
-            {
-               directive.read.remove( descriptors);
-               connections.clear();
-               descriptors.clear();
-               information.clear();
-            }
-
-            std::vector< group::tcp::Connection> connections;
-            std::vector< common::strong::file::descriptor::id> descriptors;
-            std::vector< state::external::connection::Information> information;
-
-            //! holds the last external connection that was used
-            common::strong::file::descriptor::id last;
-
-            CASUAL_LOG_SERIALIZE( 
-               CASUAL_SERIALIZE( connections);
-               CASUAL_SERIALIZE( descriptors);
-               CASUAL_SERIALIZE( information);
-               CASUAL_SERIALIZE( last);
-            )
-         };
-
          struct Lookup
          {
             struct Mapping
@@ -227,7 +138,7 @@ namespace casual
       {
          common::state::Machine< state::Runlevel, state::Runlevel::running> runlevel;
          common::communication::select::Directive directive;
-         state::External external;
+         group::tcp::External< configuration::model::gateway::outbound::Connection> external;
 
          struct 
          {
@@ -280,7 +191,7 @@ namespace casual
             reply.state.alias = alias;
             reply.state.order = order;
 
-            reply.state.connections = common::algorithm::transform( external.connections, [&]( auto& connection)
+            reply.state.connections = common::algorithm::transform( external.connections(), [&]( auto& connection)
             {
                auto descriptor = connection.descriptor();
                message::outbound::state::Connection result;
@@ -288,13 +199,20 @@ namespace casual
                result.address.local = common::communication::tcp::socket::address::host( descriptor);
                result.address.peer = common::communication::tcp::socket::address::peer( descriptor);
 
-               if( auto found = common::algorithm::find( external.information, descriptor))
+               if( auto found = common::algorithm::find( external.information(), descriptor))
                {
                   result.domain = found->domain;
                   result.configuration = found->configuration;
                   result.created = found->created;
                }
 
+               return result;
+            });
+
+            common::algorithm::transform( external.pending().connections(), std::back_inserter( reply.state.connections), []( auto& connection)
+            {
+               message::outbound::state::Connection result;
+               result.address.peer = connection.configuration.address;
                return result;
             });
 

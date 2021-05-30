@@ -81,11 +81,11 @@ domain:
                {
                   auto state = state::gateway::call();
 
-                  auto count = 1000;
+                  auto count = 500;
 
                   while( ! predicate( state) && count-- > 0)
                   {
-                     process::sleep( std::chrono::milliseconds{ 2});
+                     process::sleep( std::chrono::milliseconds{ 4});
                      state = state::gateway::call();
                   }
 
@@ -159,8 +159,7 @@ domain:
 
                auto len = tptypes( buffer, nullptr, nullptr);
 
-               tpcall( service.data(), buffer, len, &buffer, &len, 0);
-               EXPECT_TRUE( tperrno == 0) << "tperrno: " << tperrnostring( tperrno);
+               EXPECT_TRUE( tpcall( service.data(), buffer, len, &buffer, &len, 0) != -1) << "tperrno: " << tperrnostring( tperrno);
 
                return memory::guard( buffer, &tpfree);
             };

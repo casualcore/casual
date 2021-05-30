@@ -7,16 +7,16 @@
 #pragma once
 
 #include "gateway/group/inbound/state.h"
+#include "gateway/group/ipc.h"
 
 #include "common/message/dispatch.h"
-#include "common/communication/ipc.h"
 
 
 namespace casual
 {
    namespace gateway::group::inbound::handle
    {
-      using internal_handler = decltype( common::message::dispatch::handler( common::communication::ipc::inbound::device()));
+      using internal_handler = decltype( common::message::dispatch::handler( ipc::inbound()));
       internal_handler internal( State& state);
 
       using external_handler = decltype( common::message::dispatch::handler( std::declval< common::communication::tcp::Duplex&>()));

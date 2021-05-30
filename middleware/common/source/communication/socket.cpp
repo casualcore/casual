@@ -58,10 +58,14 @@ namespace casual
             }
          }
 
+         Socket::Socket( Socket&& other) noexcept
+            : m_descriptor{ std::exchange( other.m_descriptor, {})}
+         {}
 
-         Socket::Socket( const Socket& other)
-            : m_descriptor{ local::duplicate( other.m_descriptor)}
+         Socket& Socket::operator =( Socket&& other) noexcept
          {
+            m_descriptor = std::exchange( other.m_descriptor, m_descriptor);
+            return *this;
          }
 
 
@@ -77,14 +81,8 @@ namespace casual
             posix::result( ::fcntl( m_descriptor.value(), F_SETFL, flags & ~cast::underlying( option)), "fcntl");
          }
 
-         Socket& Socket::operator = ( const Socket& other)
-         {
-            Socket copy{ other};
-            return *this = std::move( copy);
-         }
 
-         Socket::Socket( Socket&&) noexcept = default;
-         Socket& Socket::operator =( Socket&&) noexcept = default;
+
 
 
          strong::socket::id Socket::descriptor() const noexcept

@@ -660,11 +660,14 @@ namespace casual
 
       Process::~Process() 
       {
-         Trace trace{ "common::Process::~Process"};
-         log::line( verbose::log, "this: ", *this);
-
          if( pid)
-            exception::guard( [&](){ process::terminate( *this);});
+            exception::guard( [&]()
+            {
+               Trace trace{ "common::Process::~Process"};
+               log::line( verbose::log, "this: ", *this);
+
+                process::terminate( *this);
+            });
       }
 
       void Process::handle( const process::Handle& handle)

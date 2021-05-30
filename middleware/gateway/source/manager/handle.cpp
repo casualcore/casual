@@ -231,14 +231,17 @@ namespace casual
                      {
                         Trace trace{ "gateway::manager::handle::local::process::exit"};
 
+                        if( ! message.state.deceased())
+                           return;
+
                         const auto pid = message.state.pid;
 
-                        auto restart = [&state, pid]( auto& group, auto information)
+                        auto restart = [&state, &message]( auto& group, auto information)
                         {
                            if( state.runlevel == decltype( state.runlevel())::running)
                            {
                               log::line( log::category::error, code::casual::invalid_semantics, ' ', information,  
-                                 " process exit - pid: ", pid, " alias: ", group.configuration.alias, " - action: restart");
+                                 message.state.reason, " - pid: ", message.state.pid, " alias: ", group.configuration.alias, " - action: restart");
 
                               group.process = {};
                               local::spawn::group()( group);

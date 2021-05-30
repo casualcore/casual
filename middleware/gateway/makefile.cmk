@@ -40,6 +40,7 @@ common_archive = LinkArchive( 'bin/casual-gateway-common',
         Compile( 'source/common.cpp'),
         Compile( 'source/manager/state.cpp'),
         Compile( 'source/manager/admin/model.cpp'),
+        Compile( 'source/group/tcp.cpp'),
     ])
         
 
@@ -140,6 +141,17 @@ target = LinkExecutable( 'bin/casual-gateway-inbound-reverse-group',
         'casual-common',  
     ])
      
+install_bin.append( target)
+
+target = LinkExecutable( 'bin/casual-gateway-group-tcp-connector',
+    [
+        Compile( 'source/group/tcp/connector/main.cpp')
+    ],
+    [
+        common_archive,
+        'casual-common',
+    ])
+
 install_bin.append( target)
 
 # protocol example

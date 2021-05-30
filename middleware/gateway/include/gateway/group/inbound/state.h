@@ -107,105 +107,6 @@ namespace casual
          } // pending
 
 
-         namespace external
-         {
-            struct Connection : group::tcp::Connection 
-            {
-               using group::tcp::Connection::Connection;
-
-               message::domain::protocol::Version protocol{};
-               
-               CASUAL_LOG_SERIALIZE( 
-                  group::tcp::Connection::serialize( archive);
-                  CASUAL_SERIALIZE( protocol);
-               )
-            };
-
-            namespace connection
-            {
-               struct Information
-               {
-                  common::strong::file::descriptor::id descriptor;
-                  common::domain::Identity domain;
-                  configuration::model::gateway::inbound::Connection configuration;
-                  platform::time::point::type created{};
-
-                  inline friend bool operator == ( const Information& lhs, common::strong::file::descriptor::id rhs) { return lhs.descriptor == rhs;} 
-
-                  CASUAL_LOG_SERIALIZE( 
-                     CASUAL_SERIALIZE( descriptor);
-                     CASUAL_SERIALIZE( domain);
-                     CASUAL_SERIALIZE( configuration);
-                     CASUAL_SERIALIZE( created);
-                  )
-               };
-            } // connection
-         } // external
-
-         struct External
-         {
-            inline void add( 
-               common::communication::select::Directive& directive,
-               common::communication::Socket&& socket, 
-               configuration::model::gateway::inbound::Connection configuration)
-            {
-               auto descriptor = socket.descriptor();
-
-               connections.emplace_back( std::move( socket));
-               descriptors.push_back( descriptor);
-               information.push_back( [&](){
-                  state::external::connection::Information result;
-                  result.descriptor = descriptor;
-                  result.configuration = std::move( configuration);
-                  result.created = platform::time::clock::type::now();
-                  return result;
-               }());
-
-               directive.read.add( descriptor);
-            }
-
-            inline auto empty() const noexcept { return connections.empty();}
-
-            inline std::optional< configuration::model::gateway::inbound::Connection> remove( 
-               common::communication::select::Directive& directive, 
-               common::strong::file::descriptor::id descriptor)
-            {
-               directive.read.remove( descriptor);
-               common::algorithm::trim( connections, common::algorithm::remove( connections, descriptor));
-               common::algorithm::trim( descriptors, common::algorithm::remove( descriptors, descriptor));
-               if( auto found = common::algorithm::find( information, descriptor))
-                  return common::algorithm::extract( information, std::begin( found)).configuration;
-               
-               return {};
-            }
-
-            inline void clear( common::communication::select::Directive& directive)
-            {
-               directive.read.remove( descriptors);
-               connections.clear();
-               descriptors.clear();
-               information.clear();
-            }
-
-            state::external::Connection* connection( common::strong::file::descriptor::id descriptor)
-            {
-               if( auto found = common::algorithm::find( connections, descriptor))
-                  return found.data();
-               return nullptr;
-            }
-
-            std::vector< state::external::Connection> connections;
-            std::vector< common::strong::file::descriptor::id> descriptors;
-            std::vector< state::external::connection::Information> information;
-
-            CASUAL_LOG_SERIALIZE( 
-               CASUAL_SERIALIZE( connections);
-               CASUAL_SERIALIZE( descriptors);
-               CASUAL_SERIALIZE( information);
-            )
-         };
-         
-
          struct Correlation
          {
             Correlation() = default;
@@ -224,19 +125,6 @@ namespace casual
             )
          };
 
-         struct Timeout
-         {
-            platform::time::point::type deadline;
-            common::strong::process::id pid;
-            common::Uuid correlation;
-
-            CASUAL_LOG_SERIALIZE( 
-               CASUAL_SERIALIZE( deadline);
-               CASUAL_SERIALIZE( pid);
-               CASUAL_SERIALIZE( correlation);
-            )
-
-         };
 
       } // state
 
@@ -245,7 +133,7 @@ namespace casual
          common::state::Machine< state::Runlevel, state::Runlevel::running> runlevel;
 
          common::communication::select::Directive directive;
-         state::External external;
+         group::tcp::External< configuration::model::gateway::inbound::Connection> external;
 
          struct
          {
@@ -273,14 +161,14 @@ namespace casual
 
 
          //! @return the correlated connection, and remove the correlation
-         state::external::Connection* consume( const common::Uuid& correlation);
+         tcp::Connection* consume( const common::Uuid& correlation);
 
          //! @return true if the state is ready to 'terminate'
          bool done() const noexcept;
 
          //! @returns a reply message to state `request` that is filled with what's possible
          template< typename M>
-         auto reply( M&& request)
+         auto reply( M&& request) const
          {
             auto reply = common::message::reverse::type( request, common::process::handle());
 
@@ -288,7 +176,7 @@ namespace casual
             reply.state.note = note;
             reply.state.limit = pending.requests.limit();
 
-            reply.state.connections = common::algorithm::transform( external.connections, [&]( auto& connection)
+            reply.state.connections = common::algorithm::transform( external.connections(), [&]( auto& connection)
             {
                auto descriptor = connection.descriptor();
                message::inbound::state::Connection result;
@@ -296,13 +184,20 @@ namespace casual
                result.address.local = common::communication::tcp::socket::address::host( descriptor);
                result.address.peer = common::communication::tcp::socket::address::peer( descriptor);
 
-               if( auto found = common::algorithm::find( external.information, descriptor))
+               if( auto found = common::algorithm::find( external.information(), descriptor))
                {
                   result.domain = found->domain;
                   result.configuration = found->configuration;
                   result.created = found->created;
                }
 
+               return result;
+            });
+
+            common::algorithm::transform( external.pending().connections(), reply.state.connections, []( auto& connection)
+            {
+               message::inbound::state::Connection result;
+               result.address.peer = connection.configuration.address;
                return result;
             });
 

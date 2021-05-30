@@ -6,6 +6,7 @@
 
 #include "gateway/group/inbound/handle.h"
 #include "gateway/group/inbound/state.h"
+#include "gateway/group/handle.h"
 #include "gateway/group/ipc.h"
 #include "gateway/message.h"
 
@@ -119,6 +120,7 @@ namespace casual
                      }
                   } // configuration::update
 
+
                   namespace state
                   {
                      auto request( State& state)
@@ -189,47 +191,7 @@ namespace casual
 
             namespace external
             {  
-               namespace listener
-               {
-                  namespace dispatch
-                  {
-                     auto create( State& state)
-                     {
-                        return [&state]( strong::file::descriptor::id descriptor, communication::select::tag::read)
-                        {
-                           Trace trace{ "gateway::group::inbound::local::external::listener::dispatch"};
-
-                           if( auto found = algorithm::find( state.listeners, descriptor))
-                           {
-                              log::line( verbose::log, "found: ", *found);
-
-                              if( auto socket = communication::tcp::socket::accept( found->socket))
-                              {
-                                 log::line( log::category::information, 
-                                    "connection established local: ", communication::tcp::socket::address::host( socket.descriptor()),
-                                    " - peer: ", communication::tcp::socket::address::peer( socket.descriptor()));
-
-                                 // the socket needs to be 'no block'
-                                 socket.set( communication::socket::option::File::no_block);
-
-                                 state.external.add( 
-                                    state.directive, 
-                                    std::move( socket),
-                                    found->configuration);
-
-
-                              }
-                              else 
-                                 log::line( log::category::error, code::casual::communication_protocol, " failed to accept connection: ", *found);
-
-                              return true;
-                           }
-                           return false;
-                        };
-                     }
-                  } // dispatch
-               } // listener
-
+  
                namespace dispatch
                {
                   auto create( State& state) 
@@ -237,14 +199,14 @@ namespace casual
                      return [&state, handler = inbound::handle::external( state)]
                         ( common::strong::file::descriptor::id descriptor, communication::select::tag::read) mutable
                      {
+                        Trace trace{ "gateway::group::inbound::local::external::dispatch"};
+
                         if( auto connection = state.external.connection( descriptor))
                         {
                            try
                            {
                               if( auto correlation = handler( connection->next()))
                                  state.correlations.emplace_back( std::move( correlation), descriptor);
-                              else
-                                 log::line( log::category::error, code::casual::invalid_semantics, " failed to handle next message for device: ", *connection);
                            }
                            catch( ...)
                            {
@@ -259,6 +221,7 @@ namespace casual
                      };
                   }
                } // dispatch
+
                
             } // external
 
@@ -280,17 +243,20 @@ namespace casual
                   gateway::group::inbound::handle::abort( state);
                });
 
+               // make sure we listen to the death of our children
+               common::signal::callback::registration< code::signal::child>( group::handle::signal::process::exit());
+
                {
                   Trace trace{ "gateway::group::inbound::local::run dispatch pump"};
 
                   // start the message dispatch
                   communication::select::dispatch::pump( 
                      local::condition( state),
-                     state.directive, 
+                     state.directive,
                      group::tcp::pending::send::dispatch( state),
                      ipc::dispatch::create( state, &internal::handler),
                      external::dispatch::create( state),
-                     external::listener::dispatch::create( state)
+                     tcp::listener::dispatch::create( state, tcp::connector::Bound::in)
                   );
                }
 

@@ -99,6 +99,8 @@ namespace casual
             case casual::internal_out_of_bounds: return "internal-out-of-bounds";
             case casual::internal_unexpected_value: return "internal-unexpected-value";
             case casual::internal_correlation: return "internal-correlation";
+
+            case casual::fatal_terminate: return "fatal-terminate";
          }
          return "unknown";
       }

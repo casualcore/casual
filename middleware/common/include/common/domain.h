@@ -36,6 +36,8 @@ namespace casual
                CASUAL_SERIALIZE( name);
             })
 
+            explicit operator bool() const noexcept { return predicate::boolean( id);}
+
             friend bool operator == ( const Identity& lhs, const Identity& rhs);
             inline friend bool operator != ( const Identity& lhs, const Identity& rhs) { return ! ( lhs == rhs);}
             friend bool operator < ( const Identity& lhs, const Identity& rhs);
