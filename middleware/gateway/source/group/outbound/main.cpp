@@ -154,7 +154,7 @@ namespace casual
                            // TODO maintainece - make sure we can handle runtime updates...
 
                            state.alias = message.model.alias;
-                           state.order = message.model.order;
+                           state.order = message.order;
 
                            state.unconnected = algorithm::transform( message.model.connections, []( auto& configuration)
                            {

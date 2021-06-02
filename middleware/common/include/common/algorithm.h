@@ -598,20 +598,22 @@ namespace casual
          }
 
 
-         template< typename R, typename T = traits::iterable::value_t< R>>
-         decltype( auto) accumulate( R&& range, T&& value)
+         template< typename R, typename T>
+         constexpr T accumulate( R&& range, T result)
          {
-            return std::accumulate( std::begin( range), std::end( range), std::forward< T>( value));
+            // TODO maintainence: use std::accumulate when c++20
+            for( auto& value : range)
+               result = std::move( result) + value;
+            return result;
          }
 
          template< typename R, typename T, typename F>
-         decltype( auto) accumulate( R&& range, T&& value, F&& functor)
+         constexpr T accumulate( R&& range, T result, F&& functor)
          {
-            return std::accumulate(
-                  std::begin( range),
-                  std::end( range),
-                  std::forward< T>( value),
-                  std::forward< F>( functor));
+            // TODO maintainence: use std::accumulate when c++20
+            for( auto& value : range)
+               result = functor( std::move( result), value);
+            return result;
          }
 
 

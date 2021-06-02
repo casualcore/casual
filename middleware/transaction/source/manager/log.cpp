@@ -22,16 +22,14 @@ namespace casual
    {
       namespace manager
       {
-         Log::Log( std::string database)
-               : m_connection( std::move( database))
+         Log::Log( std::filesystem::path file)
+            : m_connection( std::move( file))
          {
             
             // Make sure we set WAL-mode.
             m_connection.statement( "PRAGMA journal_mode=WAL;");
 
             common::log::line( log, "transaction log version: ",  sql::database::version::get( m_connection));
-
-            
 
             sql::database::version::set( m_connection, sql::database::Version{ 1, 0});
 

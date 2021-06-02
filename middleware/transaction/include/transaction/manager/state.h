@@ -38,12 +38,6 @@ namespace casual
 
          struct State;
 
-         //! argument settings
-         struct Settings
-         {
-            std::string log;
-         };
-
          namespace state
          {
             struct Metrics
@@ -103,33 +97,28 @@ namespace casual
                      inline friend bool operator == ( const Instance& lhs, common::strong::process::id rhs) { return lhs.process.pid == rhs;}
 
                      CASUAL_LOG_SERIALIZE(
-                     { 
                         CASUAL_SERIALIZE( id);
                         CASUAL_SERIALIZE( process);
                         CASUAL_SERIALIZE( metrics);
                         CASUAL_SERIALIZE_NAME( m_state, "state");
-                     })
+                     )
 
                   private:
                      State m_state = State::absent;
 
                   };
 
+                  inline Proxy( configuration::model::transaction::Resource configuration)
+                     : configuration{ std::move( configuration)} {}
+
                   id::type id = id::type::generate();
 
-                  std::string key;
-                  std::string openinfo;
-                  std::string closeinfo;
-                  size_type concurency = 0;
+                  std::vector< Instance> instances;
+                  configuration::model::transaction::Resource configuration;
 
                   //! This 'counter' keep track of metrics for removed
                   //! instances, so we can give a better view for the operator.
                   Metrics metrics;
-
-                  std::vector< Instance> instances;
-
-                  std::string name;
-                  std::string note;
 
                   //! @return true if all instances 'has connected'
                   bool booted() const;
@@ -141,17 +130,11 @@ namespace casual
                   friend bool operator == ( id::type lhs, const Proxy& rhs) { return lhs == rhs.id; }
 
                   CASUAL_LOG_SERIALIZE(
-                  { 
                      CASUAL_SERIALIZE( id);
-                     CASUAL_SERIALIZE( key);
-                     CASUAL_SERIALIZE( openinfo);
-                     CASUAL_SERIALIZE( closeinfo);
-                     CASUAL_SERIALIZE( concurency);
-                     CASUAL_SERIALIZE( metrics);
+                     CASUAL_SERIALIZE( configuration);
                      CASUAL_SERIALIZE( instances);
-                     CASUAL_SERIALIZE( name);
-                     CASUAL_SERIALIZE( note);
-                  })
+                     CASUAL_SERIALIZE( metrics);
+                  )
                };
 
                namespace external
@@ -170,6 +153,11 @@ namespace casual
 
                      friend bool operator == ( const Proxy& lhs, const common::process::Handle& rhs);
                      inline friend bool operator == ( const Proxy& lhs, id::type rhs) { return lhs.id == rhs;}
+
+                     CASUAL_LOG_SERIALIZE(
+                        CASUAL_SERIALIZE( process);
+                        CASUAL_SERIALIZE( id);
+                     )
                   };
 
                   namespace proxy
@@ -402,22 +390,20 @@ namespace casual
             inline friend bool operator == ( const Transaction& lhs, const global::ID& rhs) { return lhs.global == rhs;}
 
             CASUAL_LOG_SERIALIZE(
-            { 
                CASUAL_SERIALIZE( global);
                CASUAL_SERIALIZE( branches);
                CASUAL_SERIALIZE( started);
                CASUAL_SERIALIZE( deadline);
                CASUAL_SERIALIZE( correlation);
                CASUAL_SERIALIZE( resource);
-               
-            })
+            )
          };
 
 
          struct State
          {
-            State( manager::Settings settings, 
-               configuration::Model configuration,
+            State() = default;
+            State( configuration::model::transaction::Model configuration,
                std::vector< configuration::resource::Property> properties);
 
             State( State&&) = default;
@@ -427,15 +413,18 @@ namespace casual
             std::vector< state::resource::Proxy> resources;
             std::vector< state::resource::external::Proxy> externals;
 
-            struct Persistent
+            struct
             {
-               inline Persistent( std::string database) : log{ std::move( database)} {}
-
                //! Replies that will be sent after an atomic write to the log
                std::vector< common::message::pending::Message> replies;
 
                //! the persistent transaction log
                Log log;
+
+               CASUAL_LOG_SERIALIZE(
+                  CASUAL_SERIALIZE( replies);
+                  CASUAL_SERIALIZE( log);
+               )
 
             } persistent;
 
@@ -445,12 +434,30 @@ namespace casual
                //! that is, as soon as corresponding resources is done/idle
                std::vector< state::pending::Request> requests;
 
+               CASUAL_LOG_SERIALIZE(
+                  CASUAL_SERIALIZE( requests);
+               )
+
             } pending;
 
             struct
             {
                std::map< std::string, configuration::resource::Property> properties;
+
+               CASUAL_LOG_SERIALIZE(
+                  CASUAL_SERIALIZE( properties);
+               )
+
             } resource;
+
+            struct 
+            {
+               std::map< std::string, std::vector< state::resource::id::type>> configuration;
+
+               CASUAL_LOG_SERIALIZE(
+                  CASUAL_SERIALIZE( configuration);
+               )
+            } alias;
 
 
             //! @return true if there are pending stuff to do. We can't block
@@ -484,13 +491,16 @@ namespace casual
             common::message::transaction::configuration::alias::Reply configuration(
                const common::message::transaction::configuration::alias::Request& request);
 
-         private:
+            configuration::model::transaction::Model configuration() const;
 
-            struct
-            {
-               std::map< std::string, std::vector< state::resource::id::type>> configuration;
-            } m_alias;
-            
+            CASUAL_LOG_SERIALIZE(
+               CASUAL_SERIALIZE( transactions);
+               CASUAL_SERIALIZE( resources);
+               CASUAL_SERIALIZE( externals);
+               CASUAL_SERIALIZE( persistent);
+               CASUAL_SERIALIZE( resource);
+               CASUAL_SERIALIZE( alias);
+            )
          };
 
          namespace state

@@ -36,7 +36,9 @@ domain:
     executable:
       instances: 1
     service:
-      timeout: 90s
+      execution:
+         timeout:
+            duration: 90s
 
   environment:
       variables:
@@ -91,15 +93,15 @@ domain:
         - customer-group
 
   servers:
-    - path: customer-server-1
+    - path: /some/path/customer-server-1
       memberships:
         - customer-group
 
-    - path: customer-server-2
+    - path: /some/path/customer-server-2
       memberships:
         - customer-group
 
-    - path: sales-server
+    - path: /some/path/sales-server
       alias: sales-pre
       note: the only services that will be advertised are 'preSalesSaveService' and 'preSalesGetService'
       instances: 10
@@ -110,7 +112,7 @@ domain:
         - preSalesSaveService
         - preSalesGetService
 
-    - path: sales-server
+    - path: /some/path/sales-server
       alias: sales-post
       note: the only services that will be advertised are 'postSalesSaveService' and 'postSalesGetService'
       memberships:
@@ -120,7 +122,7 @@ domain:
         - postSalesSaveService
         - postSalesGetService
 
-    - path: sales-broker
+    - path: /some/path/sales-broker
       memberships:
         - sales-group
 
@@ -133,7 +135,7 @@ domain:
         - event-queue
 
   executables:
-    - path: mq-server
+    - path: /some/path/mq-server
       arguments:
         - --configuration
         - /path/to/configuration
@@ -143,13 +145,17 @@ domain:
 
   services:
     - name: postSalesSaveService
-      timeout: 2h
+      execution:
+         timeout:
+            duration: 2h
       routes:
         - postSalesSaveService
         - sales/post/save
 
     - name: postSalesGetService
-      timeout: 130ms
+      execution:
+         timeout:
+            duration: 130ms
 
   gateway:
 
@@ -280,7 +286,7 @@ queue:
             retry:
                count: 20
             note: after 20 rollbacked dequeues, message is moved to b2.error. retry.delay is 'inherited' from default, if any
-      -  name: C
+      -  alias: C
          queuebase: ":memory:"
          note: group is an in-memory queue, hence no persistence
          queues:

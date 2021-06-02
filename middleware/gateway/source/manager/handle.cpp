@@ -7,8 +7,11 @@
 
 #include "gateway/manager/handle.h"
 #include "gateway/manager/admin/server.h"
+#include "gateway/manager/transform.h"
 #include "gateway/environment.h"
 #include "gateway/common.h"
+
+#include "configuration/message.h"
 
 #include "common/server/handle/call.h"
 #include "common/message/handle.h"
@@ -242,6 +245,7 @@ namespace casual
                            found->process = message.process;
 
                            message::outbound::configuration::update::Request request{ common::process::handle()};
+                           request.order = found->order;
                            request.model = found->configuration;
                            communication::device::blocking::optional::send( message.process.ipc, request);                                 
                         }
@@ -306,6 +310,25 @@ namespace casual
 
                } // inbound
 
+               namespace configuration
+               {
+                  auto request( const State& state)
+                  {
+                     return [&state]( casual::configuration::message::Request& message)
+                     {
+                        Trace trace{ "gateway::manager::handle::local::configuration::request"};
+                        common::log::line( verbose::log, "message: ", message);
+
+                        auto reply = common::message::reverse::type( message);
+
+                        reply.model.gateway = transform::configuration( state);
+
+                        communication::device::blocking::optional::send( message.process.ipc, reply);
+                     };
+
+                  }
+               } // configuration
+
                namespace shutdown
                {
                   auto request( State& state)
@@ -338,7 +361,8 @@ namespace casual
             handle::local::outbound::configuration::update::reply( state),
             handle::local::inbound::connect( state),
             handle::local::inbound::configuration::update::reply( state),
-
+            
+            handle::local::configuration::request( state),
             handle::local::shutdown::request( state),
 
             std::ref( call));

@@ -19,7 +19,7 @@
 namespace casual
 {
    namespace configuration::resource
-{
+   {
       struct Property
       {
          std::string key;

@@ -5,6 +5,7 @@
 //!
 
 #include "common/unittest.h"
+#include "common/unittest/file.h"
 
 #include "gateway/unittest/utility.h"
 
@@ -26,9 +27,13 @@
 #include "serviceframework/service/protocol/call.h"
 
 #include "domain/manager/unittest/process.h"
+#include "domain/manager/unittest/configuration.h"
 #include "domain/discovery/api.h"
 
 #include "service/unittest/utility.h"
+
+#include "configuration/model/load.h"
+#include "configuration/model/transform.h"
 
 namespace casual
 {
@@ -42,7 +47,7 @@ namespace casual
          {
             namespace configuration
             {
-               constexpr auto base = R"(
+               constexpr auto servers = R"(
 domain: 
 
    groups: 
@@ -58,21 +63,8 @@ domain:
       - path: bin/casual-gateway-manager
         memberships: [ gateway]
 )";
-               
-            } // configuration
 
-            namespace domain
-            {
-               auto extended( std::string_view content)
-               {
-                  return casual::domain::manager::unittest::Process{ { 
-                     local::configuration::base,
-                     content}};
-               }
-
-               auto gateway()
-               {
-                  static constexpr auto configuration = R"(
+               constexpr auto gateway = R"(
 domain: 
    name: gateway-domain
 
@@ -80,20 +72,42 @@ domain:
       inbound:
          groups:
             -  alias: inbound-1
+               note: xxx
                connections: 
                   -  address: 127.0.0.1:6669
+                     note: yyy
       outbound:
          groups: 
             -  alias: outbound-1
                connections:
                   -  address: 127.0.0.1:6669
 )";
-                  return extended( configuration);
+               
+
+               template< typename... C>
+               auto load( C&&... contents)
+               {
+                  auto files = common::unittest::file::temporary::contents( ".yaml", std::forward< C>( contents)...);
+
+                  auto get_path = []( auto& file){ return static_cast< std::filesystem::path>( file);};
+
+                  return casual::configuration::model::load( common::algorithm::transform( files, get_path));
                }
 
-            } // domain
+            } // configuration
 
 
+            template< typename... C>
+            auto domain( C&&... configurations)
+            {
+               return casual::domain::manager::unittest::process( configuration::servers, std::forward< C>( configurations)...);
+            }
+
+            //! default domain
+            auto domain()
+            {
+               return domain( configuration::gateway);
+            }
 
             namespace call
             {
@@ -153,20 +167,34 @@ domain:
 
 
 
-      TEST( gateway_manager_tcp, listen_on_127_0_0_1__6666)
+      TEST( gateway_manager, boot_shutdown)
       {
          common::unittest::Trace trace;
 
          EXPECT_NO_THROW( {
-            auto domain = local::domain::gateway();
+            auto domain = local::domain(); 
          });
       }
 
-      TEST( gateway_manager_tcp, listen_on_127_0_0_1__6666__outbound__127_0_0_1__6666__expect_connection)
+      TEST( gateway_manager, configuration_get)
       {
          common::unittest::Trace trace;
 
-         auto domain = local::domain::gateway();
+         auto domain = local::domain();
+
+         auto origin = local::configuration::load( local::configuration::servers, local::configuration::gateway);
+
+         auto model = casual::configuration::model::transform( casual::domain::manager::unittest::configuration::get());
+
+         EXPECT_TRUE( origin.gateway == model.gateway) << CASUAL_NAMED_VALUE( origin.gateway) << "\n " << CASUAL_NAMED_VALUE( model.gateway);
+
+      }
+
+      TEST( gateway_manager, listen_on_127_0_0_1__6666__outbound__127_0_0_1__6666__expect_connection)
+      {
+         common::unittest::Trace trace;
+
+         auto domain = local::domain(); 
 
          EXPECT_TRUE( common::communication::instance::fetch::handle( common::communication::instance::identity::gateway::manager.id));
 
@@ -178,7 +206,7 @@ domain:
          }));
       }
 
-      TEST( gateway_manager_tcp, outbound_connect_non_existent__expect_keep_trying)
+      TEST( gateway_manager, outbound_connect_non_existent__expect_keep_trying)
       {
          common::unittest::Trace trace;
 
@@ -193,7 +221,7 @@ domain:
 
 )";
 
-         auto domain = local::domain::extended( configuration);
+         auto domain = local::domain( configuration);
 
          EXPECT_TRUE( common::communication::instance::fetch::handle( common::communication::instance::identity::gateway::manager.id));
 
@@ -206,7 +234,7 @@ domain:
          EXPECT_TRUE( state.connections.at( 0).bound == decltype( state.connections.at( 0).bound)::out);
       }
 
-      TEST( gateway_manager_tcp, outbound_connect_empty_address__expect_keep_trying)
+      TEST( gateway_manager, outbound_connect_empty_address__expect_keep_trying)
       {
          common::unittest::Trace trace;
 
@@ -221,7 +249,7 @@ domain:
 
 )";
 
-         auto domain = local::domain::extended( configuration);
+         auto domain = local::domain( configuration);
 
          EXPECT_TRUE( common::communication::instance::fetch::handle( common::communication::instance::identity::gateway::manager.id));
 
@@ -234,7 +262,7 @@ domain:
          EXPECT_TRUE( state.connections.at( 0).bound == decltype( state.connections.at( 0).bound)::out);
       }
 
-      TEST( gateway_manager_tcp, outbound_groups_3___expect_order)
+      TEST( gateway_manager, outbound_groups_3___expect_order)
       {
          common::unittest::Trace trace;
 
@@ -257,7 +285,7 @@ domain:
 
 )";
 
-         auto domain = local::domain::extended( configuration);
+         auto domain = local::domain( configuration);
 
          EXPECT_TRUE( common::communication::instance::fetch::handle( common::communication::instance::identity::gateway::manager.id));
 
@@ -311,12 +339,12 @@ domain:
          } // <unnamed>
       } // local
       
-      TEST( gateway_manager_tcp, connect_to_our_self__remote1_call__expect_service_remote1)
+      TEST( gateway_manager, connect_to_our_self__remote1_call__expect_service_remote1)
       {
          common::unittest::Trace trace;
 
          
-         auto domain = local::domain::gateway();
+         auto domain = local::domain(); 
 
          // we exposes service "remote1"
          casual::service::unittest::advertise( { "a"});
@@ -366,11 +394,11 @@ domain:
 
 
 
-      TEST( gateway_manager_tcp, connect_to_our_self__remote1_call_in_transaction___expect_same_transaction_in_reply)
+      TEST( gateway_manager, connect_to_our_self__remote1_call_in_transaction___expect_same_transaction_in_reply)
       {
          common::unittest::Trace trace;
 
-         auto domain = local::domain::gateway();
+         auto domain = local::domain(); 
 
          // we exposes service "a"
          casual::service::unittest::advertise( { "a"});
@@ -427,7 +455,7 @@ domain:
       }
 
 
-      TEST( gateway_manager_tcp,  connect_to_our_self__enqueue_dequeue___expect_message)
+      TEST( gateway_manager,  connect_to_our_self__enqueue_dequeue___expect_message)
       {
          common::unittest::Trace trace;
 
@@ -457,7 +485,7 @@ domain:
 )";
 
 
-         auto domain = local::domain::extended( configuration);
+         auto domain = local::domain( configuration);
 
          EXPECT_TRUE( common::communication::instance::fetch::handle( common::communication::instance::identity::gateway::manager.id));
 
@@ -511,11 +539,11 @@ domain:
          }
       }
 
-      TEST( gateway_manager_tcp, connect_to_our_self__kill_outbound__expect_restart)
+      TEST( gateway_manager, connect_to_our_self__kill_outbound__expect_restart)
       {
          common::unittest::Trace trace;
 
-         auto domain = local::domain::gateway();
+         auto domain = local::domain(); 
 
          EXPECT_TRUE( common::communication::instance::fetch::handle( common::communication::instance::identity::gateway::manager.id));
 
@@ -551,7 +579,7 @@ domain:
          }
       }
 
-      TEST( gateway_manager_tcp, connect_to_our_self__10_outbound_connections)
+      TEST( gateway_manager, connect_to_our_self__10_outbound_connections)
       {
          common::unittest::Trace trace;
 
@@ -581,7 +609,7 @@ domain:
          static int unittest_count{};
          environment::variable::set( "UNITTEST_DOMAIN_NAME", string::compose( "unittest-", ++unittest_count));
 
-         auto domain = local::domain::extended( configuration);
+         auto domain = local::domain( configuration);
 
          EXPECT_TRUE( common::communication::instance::fetch::handle( common::communication::instance::identity::gateway::manager.id));
 
@@ -608,7 +636,7 @@ domain:
          EXPECT_TRUE( bound_count( Bound::out) == 10) << "count: " << bound_count( Bound::out) << '\n' << CASUAL_NAMED_VALUE( state);
       }
 
-      TEST( gateway_manager_tcp, connect_to_our_self__10_outbound_groups__one_connection_each)
+      TEST( gateway_manager, connect_to_our_self__10_outbound_groups__one_connection_each)
       {
          common::unittest::Trace trace;
 
@@ -646,7 +674,7 @@ domain:
 )";
 
 
-         auto domain = local::domain::extended( configuration);
+         auto domain = local::domain( configuration);
 
          EXPECT_TRUE( common::communication::instance::fetch::handle( common::communication::instance::identity::gateway::manager.id));
 
@@ -671,11 +699,11 @@ domain:
          EXPECT_TRUE( algorithm::accumulate( state.connections, platform::size::type{}, count_bound( Bound::out)) == 10);
       }
 
-      TEST( gateway_manager_tcp, connect_to_our_self__kill_inbound__expect_restart)
+      TEST( gateway_manager, connect_to_our_self__kill_inbound__expect_restart)
       {
          common::unittest::Trace trace;
 
-         auto domain = local::domain::gateway();
+         auto domain = local::domain(); 
 
          EXPECT_TRUE( common::communication::instance::fetch::handle( common::communication::instance::identity::gateway::manager.id)); 
 
@@ -711,7 +739,7 @@ domain:
          }
       }
 
-      TEST( gateway_manager_tcp, outbound_to_non_existent_inbound)
+      TEST( gateway_manager, outbound_to_non_existent_inbound)
       {
          common::unittest::Trace trace;
 
@@ -727,7 +755,7 @@ domain:
 )";
 
 
-         auto domain = local::domain::extended( configuration);
+         auto domain = local::domain( configuration);
 
          auto state = local::call::state();
          ASSERT_TRUE( state.connections.size() == 1);
@@ -764,7 +792,7 @@ domain:
       } // local
 
 
-      TEST( gateway_manager_tcp, rediscover_to_not_connected_outbounds)
+      TEST( gateway_manager, rediscover_to_not_connected_outbounds)
       {
          common::unittest::Trace trace;
 
@@ -781,14 +809,14 @@ domain:
 )";
 
 
-         auto domain = local::domain::extended( configuration);
+         auto domain = local::domain( configuration);
 
          EXPECT_NO_THROW(
             casual::domain::discovery::rediscovery::blocking::request();
          );
       }
 
-      TEST( gateway_manager_tcp, rediscover_to_1_self_connected__1_not_connected__outbounds)
+      TEST( gateway_manager, rediscover_to_1_self_connected__1_not_connected__outbounds)
       {
          common::unittest::Trace trace;
 
@@ -809,7 +837,7 @@ domain:
 )";
 
 
-         auto domain = local::domain::extended( configuration);
+         auto domain = local::domain( configuration);
 
          local::wait_for_outbounds( 1);
 
@@ -818,13 +846,13 @@ domain:
          );
       }
 
-      TEST( gateway_manager_tcp, async_5_remote1_call__expect_pending_metric)
+      TEST( gateway_manager, async_5_remote1_call__expect_pending_metric)
       {
          common::unittest::Trace trace;
 
          constexpr auto count = 5;
          
-         auto domain = local::domain::gateway();
+         auto domain = local::domain(); 
 
          EXPECT_TRUE( common::communication::instance::fetch::handle( common::communication::instance::identity::gateway::manager.id)); 
 
@@ -923,7 +951,7 @@ domain:
 
       }
 
-      TEST( gateway_manager_tcp, native_tcp_connect__disconnect____expect_robust_connection_disconnect)
+      TEST( gateway_manager, native_tcp_connect__disconnect____expect_robust_connection_disconnect)
       {
          common::unittest::Trace trace;
          constexpr auto configuration = R"(
@@ -941,7 +969,7 @@ domain:
 
 )";
 
-         auto domain = local::domain::extended( configuration);
+         auto domain = local::domain( configuration);
 
          EXPECT_TRUE( common::communication::instance::fetch::handle( common::communication::instance::identity::gateway::manager.id));
 

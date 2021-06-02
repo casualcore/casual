@@ -7,7 +7,6 @@
 #include "transaction/manager/admin/server.h"
 #include "transaction/manager/admin/transform.h"
 #include "transaction/manager/state.h"
-#include "transaction/manager/manager.h"
 #include "transaction/manager/action.h"
 
 #include "serviceframework/service/protocol/call.h"

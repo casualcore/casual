@@ -168,6 +168,7 @@ namespace casual
             case Type::domain_discovery_reply: return out << "domain_discovery_reply";
             case Type::configuration_request: return out << "configuration_request";
             case Type::configuration_reply: return out << "configuration_reply";
+            case Type::configuration_supplier_registration: return out << "configuration_supplier_registration";
             case Type::configuration_update_request: return out << "configuration_update_request";
             case Type::configuration_update_reply: return out << "configuration_update_reply";
             case Type::configuration_put_request: return out << "configuration_put_request";

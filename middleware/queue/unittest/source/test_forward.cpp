@@ -5,6 +5,7 @@
 //!
 
 #include "common/unittest.h"
+#include "common/unittest/file.h"
 
 #include "queue/common/queue.h"
 #include "queue/api/queue.h"
@@ -20,17 +21,19 @@
 #include "common/transaction/context.h"
 #include "common/transaction/resource.h"
 
+#include "common/serialize/macro.h"
 #include "common/communication/instance.h"
 
 #include "serviceframework/service/protocol/call.h"
-#include "common/serialize/macro.h"
 
 #include "domain/manager/unittest/process.h"
+#include "domain/manager/unittest/configuration.h"
+
 #include "service/unittest/utility.h"
 
+#include "configuration/model/transform.h"
+#include "configuration/model/load.h"
 
-
-#include <fstream>
 
 namespace casual
 {
@@ -41,19 +44,10 @@ namespace casual
       {
          namespace
          {
-            struct Domain 
+            namespace configuration
             {
-               Domain( std::string configuration) 
-                  : domain{ { std::move( configuration)}} {}
-
-               Domain() : Domain{ Domain::configuration} {}
-
-               casual::domain::manager::unittest::Process domain;
-
-               static constexpr auto configuration = R"(
+               static constexpr auto servers = R"(
 domain: 
-   name: forward-domain
-
    groups: 
       - name: base
       - name: queue
@@ -66,8 +60,16 @@ domain:
         memberships: [ base]
       - path: bin/casual-queue-manager
         memberships: [ queue]
+)";
+               
+           
+
+               static constexpr auto queue = R"(
+domain: 
+   name: forward-domain
 
    queue:
+      note: some note...
       default:
          queue: 
             retry:
@@ -76,11 +78,13 @@ domain:
       groups:
          - alias: a
            queuebase: ":memory:"
+           note: alias-a
            queues:
-            - name: a1
-            - name: a2
-            - name: a3
-            - name: a4
+            -  name: a1
+               note: queue a1
+            -  name: a2
+            -  name: a3
+            -  name: a4
          - alias: b
            queuebase: ":memory:"
            queues:
@@ -100,6 +104,7 @@ domain:
       forward:
          groups:
             -  alias: forward-group-1
+               note: some note..
                services:
                   -  alias: foo
                      source: a1
@@ -108,6 +113,7 @@ domain:
                      instances: 4
                      reply:
                         queue: b1
+                     note: some note...
                   -  alias: bar
                      source: a2
                      target: 
@@ -152,7 +158,30 @@ domain:
                         queue: c4
                      instances: 1
 )";
-            };
+
+               template< typename... C>
+               auto load( C&&... contents)
+               {
+                  auto files = common::unittest::file::temporary::contents( ".yaml", std::forward< C>( contents)...);
+
+                  auto get_path = []( auto& file){ return static_cast< std::filesystem::path>( file);};
+
+                  return casual::configuration::model::load( common::algorithm::transform( files, get_path));
+               }
+
+             } // configuration
+
+            template< typename... C>
+            auto domain( C&&... configurations)
+            {
+               return casual::domain::manager::unittest::process( configuration::servers, std::forward< C>( configurations)...);
+            }
+
+            //! default domain
+            auto domain()
+            {
+               return domain( configuration::queue);
+            }
 
 
             namespace call
@@ -203,15 +232,29 @@ domain:
          common::unittest::Trace trace;
 
          EXPECT_NO_THROW(
-            local::Domain domain;
+            auto domain = local::domain();
          );
+      }
+
+      TEST( casual_queue_forward, configuration_get)
+      {
+         common::unittest::Trace trace;
+
+         auto domain = local::domain();
+
+         auto origin = local::configuration::load( local::configuration::servers, local::configuration::queue);
+
+         auto model = casual::configuration::model::transform( casual::domain::manager::unittest::configuration::get());
+
+         EXPECT_TRUE( origin.queue == model.queue) << CASUAL_NAMED_VALUE( origin.queue) << '\n' << CASUAL_NAMED_VALUE( model.queue);
+
       }
 
       TEST( casual_queue_forward, state)
       {
          common::unittest::Trace trace;
          
-         local::Domain domain;
+         auto domain = local::domain();
 
          auto state = local::call::state();
 
@@ -224,7 +267,7 @@ domain:
       {
          common::unittest::Trace trace;
          
-         local::Domain domain;
+         auto domain = local::domain();
 
          local::scale_all_forward_aliases( 5);
 
@@ -239,7 +282,7 @@ domain:
       {
          common::unittest::Trace trace;
          
-         local::Domain domain;
+         auto domain = local::domain();
 
          local::scale_all_forward_aliases( 0);
 
@@ -257,19 +300,6 @@ domain:
          constexpr auto configuration = R"(
 domain: 
    name: service-forward
-
-   groups: 
-      -  name: base
-      -  name: queue
-         dependencies: [ base]
-
-   servers:
-      - path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/service/bin/casual-service-manager
-        memberships: [ base]
-      - path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/transaction/bin/casual-transaction-manager
-        memberships: [ base]
-      - path: bin/casual-queue-manager
-        memberships: [ queue]
 
    queue:
       groups:
@@ -292,7 +322,7 @@ domain:
                         queue: a2
 )";
 
-         local::Domain domain{ configuration};
+         auto domain = local::domain( configuration);
 
          casual::service::unittest::advertise( { "queue/unittest/service"});
 
@@ -337,7 +367,7 @@ domain:
       {
          common::unittest::Trace trace;
 
-         local::Domain domain;
+         auto domain = local::domain();
 
          constexpr auto service = "queue/unittest/service";
 
@@ -387,7 +417,7 @@ domain:
       {
          common::unittest::Trace trace;
 
-         local::Domain domain;
+         auto domain = local::domain();
 
 
          const auto payload = common::unittest::random::binary( 1024);
@@ -418,7 +448,7 @@ domain:
       {
          common::unittest::Trace trace;
 
-         local::Domain domain;
+         auto domain = local::domain();
 
          const auto payload = common::unittest::random::binary( 1024);
 
@@ -447,19 +477,6 @@ domain:
          static constexpr auto configuration = R"(
 domain: 
    name: forward-domain
-
-   groups: 
-      -  name: base
-      -  name: queue
-         dependencies: [ base]
-
-   servers:
-      - path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/service/bin/casual-service-manager
-        memberships: [ base]
-      - path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/transaction/bin/casual-transaction-manager
-        memberships: [ base]
-      - path: bin/casual-queue-manager
-        memberships: [ queue]
 
    queue:
       groups:
@@ -503,7 +520,7 @@ domain:
                         queue: b1
 )";
 
-         local::Domain domain{ configuration};
+         auto domain = local::domain( configuration);
 
          casual::service::unittest::advertise( { "queue/unittest/service"});
 

@@ -8,10 +8,11 @@
 #include "domain/manager/admin/model.h"
 #include "domain/manager/handle.h"
 #include "domain/manager/configuration.h"
-#include "domain/transform.h"
+#include "domain/manager/transform.h"
 
 #include "configuration/model.h"
 #include "configuration/model/transform.h"
+#include "configuration/message.h"
 
 #include "serviceframework/service/protocol.h"
 
@@ -106,7 +107,7 @@ namespace casual
                   {
                      return serviceframework::service::user( 
                         serviceframework::service::protocol::deduce( std::move( parameter)), 
-                        []( auto& state){ return casual::domain::transform::state( state);}, 
+                        []( auto& state){ return transform::state( state);}, 
                         state);
                   };
                }
@@ -195,15 +196,24 @@ namespace casual
                   {
                      return [&state]( common::service::invoke::Parameter&& parameter)
                      {
-                        auto get_configuration = [&state]()
+                        auto get_configuration = []( auto& state)
                         {
+                           auto futures = algorithm::transform( state.configuration.suppliers, []( auto& process)
+                           {
+                              return communication::device::async::call( process.ipc, casual::configuration::message::Request{ common::process::handle()});
+                           });
+
                            return casual::configuration::model::transform( 
-                              casual::domain::manager::configuration::get( state));
+                              algorithm::accumulate( futures, casual::domain::manager::configuration::get( state), []( auto model, auto& future)
+                              {
+                                 return model += std::move( future.get( communication::ipc::inbound::device()).model);
+                              }));
                         };
 
                         return serviceframework::service::user( 
                            serviceframework::service::protocol::deduce( std::move( parameter)),
-                           get_configuration);
+                           get_configuration,
+                           state);
                      };
                   }
 

@@ -9,7 +9,7 @@
 #include "gateway/manager/admin/server.h"
 #include "gateway/manager/admin/model.h"
 #include "gateway/manager/handle.h"
-#include "gateway/transform.h"
+#include "gateway/manager/transform.h"
 
 
 #include "serviceframework/service/protocol.h"
@@ -55,7 +55,7 @@ namespace casual
 
                         auto get_reply = []( auto& future){ return future.get( manager::ipc::inbound());};
 
-                        return gateway::transform::state( state, 
+                        return transform::state( state, 
                            std::make_tuple( algorithm::transform( inbounds, get_reply), algorithm::transform( reverse_inbounds, get_reply)),
                            std::make_tuple( algorithm::transform( outbounds, get_reply), algorithm::transform( reverse_outbounds, get_reply)));
                      };

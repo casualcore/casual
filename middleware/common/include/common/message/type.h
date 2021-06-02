@@ -264,10 +264,6 @@ namespace casual
          gateway_reverse_outbound_state_request,
          gateway_reverse_outbound_state_reply, 
 
-         // redescover
-         //gateway_outbound_rediscover_request,
-         //gateway_outbound_rediscover_reply,
-
          // interdomain 
 
          gateway_domain_connect_request    = 7200,
@@ -286,6 +282,7 @@ namespace casual
          CONFIGURATION_BASE = 8000,
          configuration_request = CONFIGURATION_BASE,
          configuration_reply,
+         configuration_supplier_registration,
          configuration_update_request,
          configuration_update_reply,
          configuration_put_request,

@@ -21,14 +21,6 @@ namespace casual
          } // <unnamed>
       } // local
 
-      TEST( transaction_manager_state, instantiation)
-      {
-         common::unittest::Trace trace;
-
-         EXPECT_NO_THROW(({
-            manager::State state{ manager::Settings{ sql::database::memory::file}, {}, {}};
-         }));
-      }
 
       TEST( transaction_manager_state_transaction, instantiation)
       {

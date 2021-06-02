@@ -6,6 +6,7 @@
 
 
 #include "common/unittest.h"
+#include "common/unittest/file.h"
 
 #include "queue/common/queue.h"
 #include "queue/api/queue.h"
@@ -20,17 +21,14 @@
 #include "common/transaction/context.h"
 #include "common/transaction/resource.h"
 
-#include "common/communication/instance.h"
-
-#include "serviceframework/service/protocol/call.h"
-#include "common/serialize/macro.h"
-
-#include "domain/manager/unittest/process.h"
-
 #include "common/code/signal.h"
 #include "common/signal.h"
+#include "common/communication/instance.h"
+#include "common/serialize/macro.h"
 
+#include "serviceframework/service/protocol/call.h"
 
+#include "domain/manager/unittest/process.h"
 
 #include <fstream>
 #include <future>
@@ -44,27 +42,16 @@ namespace casual
       {
          namespace
          {
-
-            struct Domain 
+            namespace configuration
             {
-               Domain( std::string configuration) 
-                  : domain{ { std::move( configuration)}} {}
-
-               Domain() : Domain{ Domain::configuration} {}
-
-               domain::manager::unittest::Process domain;
-
-               static constexpr auto configuration = R"(
+               constexpr auto servers = R"(
 domain: 
    name: queue-domain
-
 
    groups: 
       - name: base
       - name: queue
         dependencies: [ base]
-      - name: forward
-        dependencies: [ queue]
    
    servers:
       - path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/service/bin/casual-service-manager
@@ -73,11 +60,12 @@ domain:
         memberships: [ base]
       - path: bin/casual-queue-manager
         memberships: [ queue]
-      - path: bin/casual-queue-forward-queue
-        arguments: [ --forward, queueA3, queueB3]
-        memberships: [ forward]
+)";
 
+               constexpr auto queue = R"(
+domain:
    queue:
+      note: some note...
       default:
          queue: 
             retry:
@@ -87,11 +75,12 @@ domain:
          - name: group_A
            queuebase: ":memory:"
            queues:
-            - name: queueA1
-            - name: queueA2
-            - name: queueA3
-            - name: delayed_100ms
-              retry: { count: 10, delay: 100ms}
+            -  name: queueA1
+               note: some note...
+            -  name: queueA2
+            -  name: queueA3
+            -  name: delayed_100ms
+               retry: { count: 10, delay: 100ms}
          - name: group_B
            queuebase: ":memory:"
            queues:
@@ -100,7 +89,21 @@ domain:
             - name: queueB3
 
 )";
-            };
+
+
+            } // configuration
+
+            template< typename... C>
+            auto domain( C&&... configurations)
+            {
+               return domain::manager::unittest::process( configuration::servers, std::forward< C>( configurations)...);
+            }
+
+            //! default domain
+            auto domain()
+            {
+               return domain( configuration::queue);
+            }
 
             namespace call
             {
@@ -139,7 +142,7 @@ domain:
       {
          common::unittest::Trace trace;
 
-         local::Domain domain;
+         auto domain = local::domain();
 
 
          auto state = local::call::state();
@@ -153,7 +156,7 @@ domain:
       {
          common::unittest::Trace trace;
 
-         local::Domain domain;
+         auto domain = local::domain();
 
          auto state = local::call::state();
 
@@ -191,7 +194,7 @@ domain:
       {
          common::unittest::Trace trace;
 
-         local::Domain domain;
+         auto domain = local::domain();
 
          {
             // Send request
@@ -216,7 +219,7 @@ domain:
       {
          common::unittest::Trace trace;
 
-         local::Domain domain;
+         auto domain = local::domain();
 
          {
             // Send request
@@ -242,7 +245,7 @@ domain:
       {
          common::unittest::Trace trace;
 
-         local::Domain domain;
+         auto domain = local::domain();
 
 
          const std::string payload{ "some message"};
@@ -260,7 +263,7 @@ domain:
       {
          common::unittest::Trace trace;
 
-         local::Domain domain;
+         auto domain = local::domain();
 
          queue::Message message;
 
@@ -275,7 +278,7 @@ domain:
       {
          common::unittest::Trace trace;
 
-         local::Domain domain;
+         auto domain = local::domain();
 
          auto count = 5;
          while( count-- > 0)
@@ -307,7 +310,7 @@ domain:
       {
          common::unittest::Trace trace;
 
-         local::Domain domain;
+         auto domain = local::domain();
 
          auto now = platform::time::clock::type::now();
 
@@ -348,7 +351,7 @@ domain:
       {
          common::unittest::Trace trace;
 
-         local::Domain domain;
+         auto domain = local::domain();
 
          auto now = platform::time::clock::type::now();
 
@@ -394,7 +397,7 @@ domain:
       {
          common::unittest::Trace trace;
 
-         local::Domain domain;
+         auto domain = local::domain();
 
          auto now = platform::time::clock::type::now();
 
@@ -439,7 +442,7 @@ domain:
       {
          common::unittest::Trace trace;
 
-         local::Domain domain;
+         auto domain = local::domain();
 
          // make sure casual-manager-queue knows about a "remote queue"
          {
@@ -463,7 +466,7 @@ domain:
       {
          common::unittest::Trace trace;
 
-         local::Domain domain;
+         auto domain = local::domain();
 
          const std::string payload{ "some message"};
 
@@ -491,7 +494,7 @@ domain:
       {
          common::unittest::Trace trace;
 
-         local::Domain domain;
+         auto domain = local::domain();
 
          const std::string payload{ "some message"};
 
@@ -522,7 +525,7 @@ domain:
       {
          common::unittest::Trace trace;
 
-         local::Domain domain;
+         auto domain = local::domain();
 
          const std::string payload{ "some message"};
 
@@ -588,7 +591,7 @@ domain:
       {
          common::unittest::Trace trace;
 
-         local::Domain domain;
+         auto domain = local::domain();
 
          common::communication::ipc::inbound::Device ipc1;
          common::communication::ipc::inbound::Device ipc2;
@@ -650,11 +653,25 @@ domain:
          }
       }
 
-      TEST( casual_queue, queue_forward__enqueue_A3__expect_forward_to_B3)
+      TEST( BACKWARD_casual_queue, queue_forward__enqueue_A3__expect_forward_to_B3)
       {
          common::unittest::Trace trace;
 
-         local::Domain domain;
+         constexpr auto configuration = R"(
+domain: 
+   name: deprecated-forward
+
+   groups: 
+      - name: forward
+        dependencies: [ queue]
+   
+   servers:
+      - path: bin/casual-queue-forward-queue
+        arguments: [ --forward, queueA3, queueB3]
+        memberships: [ forward]
+)";   
+
+         auto domain = local::domain( local::configuration::queue, configuration);
 
          const std::string payload{ "some message"};
 
@@ -676,7 +693,7 @@ domain:
       {
          common::unittest::Trace trace;
 
-         local::Domain domain;
+         auto domain = local::domain();
 
          const std::string payload{ "some message"};
          queue::Message message;
@@ -697,7 +714,7 @@ domain:
       {
          common::unittest::Trace trace;
 
-         local::Domain domain;
+         auto domain = local::domain();
 
          const std::string payload{ "some message"};
          {
@@ -728,7 +745,7 @@ domain:
 
          constexpr auto configuration = R"(
 domain: 
-   name: queue-domain
+   name: queue-environment
 
    environment:
       variables:
@@ -740,19 +757,6 @@ domain:
             value: "casual."
          -  key: Q_POSTFIX
             value: ".queue"
-
-   groups: 
-      - name: base
-      - name: queue
-        dependencies: [ base]
-   
-   servers:
-      - path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/service/bin/casual-service-manager
-        memberships: [ base]
-      - path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/transaction/bin/casual-transaction-manager
-        memberships: [ base]
-      - path: bin/casual-queue-manager
-        memberships: [ queue]
 
    queue:
       groups:
@@ -766,7 +770,7 @@ domain:
 )";
 
 
-         local::Domain domain{ configuration};
+         auto domain = local::domain( configuration);
 
          auto state = local::call::state();
 
@@ -792,7 +796,7 @@ domain:
       {
          common::unittest::Trace trace;
 
-         local::Domain domain;
+         auto domain = local::domain();
 
          auto& inbound = common::communication::ipc::inbound::device();
 
@@ -819,7 +823,7 @@ domain:
       {
          common::unittest::Trace trace;
 
-         local::Domain domain;
+         auto domain = local::domain();
 
          auto& inbound = common::communication::ipc::inbound::device();
 
@@ -842,7 +846,7 @@ domain:
       {
          common::unittest::Trace trace;
 
-         local::Domain domain;
+         auto domain = local::domain();
 
          {
             queue::Message message;
@@ -878,20 +882,6 @@ domain:
             {
                constexpr auto configuration_with_queue_B = R"(
 domain: 
-   name: queue-domain
-   groups: 
-      - name: base
-      - name: queue
-        dependencies: [ base]
-   
-   servers:
-      - path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/service/bin/casual-service-manager
-        memberships: [ base]
-      - path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/transaction/bin/casual-transaction-manager
-        memberships: [ base]
-      - path: bin/casual-queue-manager
-        memberships: [ queue]
-
    queue:
       groups:
          -  alias: "group_A"
@@ -904,20 +894,6 @@ domain:
 
                constexpr auto configuration_without_queue_B = R"(
 domain: 
-   name: queue-domain
-   groups: 
-      - name: base
-      - name: queue
-        dependencies: [ base]
-   
-   servers:
-      - path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/service/bin/casual-service-manager
-        memberships: [ base]
-      - path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/transaction/bin/casual-transaction-manager
-        memberships: [ base]
-      - path: bin/casual-queue-manager
-        memberships: [ queue]
-
    queue:
       groups:
          -  alias: "group_A"
@@ -940,7 +916,7 @@ domain:
          common::signal::callback::registration< common::code::signal::child>( [](){});
 
          {
-            local::Domain domain{ local::zombie::configuration_with_queue_B};
+            auto domain = local::domain( local::zombie::configuration_with_queue_B);
             auto state = local::call::state();
 
             EXPECT_TRUE( state.queues.size() == 2 * 2) << "state.queues.size(): " << state.queues.size();
@@ -948,7 +924,7 @@ domain:
          }
 
          {
-            local::Domain domain{ local::zombie::configuration_without_queue_B};
+            auto domain = local::domain( local::zombie::configuration_without_queue_B);
             auto state = local::call::state();
 
             EXPECT_TRUE( state.queues.size() == 1 * 2) << "state.queues.size(): " << state.queues.size();
@@ -965,7 +941,7 @@ domain:
          common::signal::callback::registration< common::code::signal::child>( [](){});
 
          {
-            local::Domain domain{ local::zombie::configuration_with_queue_B};
+            auto domain = local::domain( local::zombie::configuration_with_queue_B);
             auto state = local::call::state();
 
             EXPECT_TRUE( state.queues.size() == 2 * 2) << "state.queues.size(): " << state.queues.size();
@@ -980,7 +956,7 @@ domain:
          }
 
          {
-            local::Domain domain{ local::zombie::configuration_without_queue_B};
+            auto domain = local::domain( local::zombie::configuration_without_queue_B);
             auto state = local::call::state();
 
             EXPECT_TRUE( state.queues.size() == 1 * 2) << "state.queues.size(): " << state.queues.size();

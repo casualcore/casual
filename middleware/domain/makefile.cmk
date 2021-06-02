@@ -43,7 +43,7 @@ install_libs.append(common_library)
 
 manager_archive = make.LinkArchive( 'bin/casual-domain-manager', 
  [
-    make.Compile( 'source/transform.cpp'),
+    make.Compile( 'source/manager/transform.cpp'),
     make.Compile( 'source/manager/ipc.cpp'),
     make.Compile( 'source/manager/task.cpp'),
     make.Compile( 'source/manager/task/create.cpp'),
@@ -186,12 +186,13 @@ install_bins.append( pending_executable)
 domain_unittest_library = make.LinkLibrary( 'bin/casual-domain-unittest',
     [
         make.Compile( 'source/manager/unittest/process.cpp'),
+        make.Compile( 'source/manager/unittest/configuration.cpp'),
     ],
     [
         common_library,
         'casual-common',
-        'casual-unittest'
-        
+        'casual-unittest',
+        'casual-serviceframework',   
     ]
 )
 

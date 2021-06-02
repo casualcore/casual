@@ -7,7 +7,9 @@
 #include "common/unittest.h"
 #include "common/unittest/file.h"
 
-#include "configuration/user/load.h"
+#include "configuration/user.h"
+
+#include "common/serialize/create.h"
 
 namespace casual
 {
@@ -22,7 +24,16 @@ namespace casual
             auto load_configuration = []( auto content)
             {
                auto path = common::unittest::file::temporary::content( ".yaml", std::move( content));
-               return configuration::user::load( { path});
+               
+               user::Domain domain;
+
+               common::file::Input stream{ path};
+               auto archive = common::serialize::create::reader::consumed::from( stream);
+               archive >> CASUAL_NAMED_VALUE( domain);
+               archive.validate();
+               domain.normalize();
+
+               return domain;
             };
 
             namespace invalid::configuration

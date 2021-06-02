@@ -15,6 +15,23 @@ namespace casual
 {
    namespace configuration
    {
+      namespace alias
+      {
+         namespace generate
+         {
+            //! @returns a unique string used to correlate aliases that shall be generated later
+            //! to a more human suitable representation 
+            std::string placeholder();
+            
+         } // generate
+
+         namespace is
+         {
+            bool placeholder( const std::string& alias);
+         } // is
+      } // alias
+
+
       extern common::log::Stream log;
 
       namespace verbose

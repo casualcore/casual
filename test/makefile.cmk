@@ -48,6 +48,7 @@ target = make.LinkExecutable( 'bin/casual-test-mockup-string-server',
 make.Install( [ target], dsl.paths().install + '/test/bin')
 
 unittest_object = [
+    make.Compile( 'unittest/source/domain/test_configuration.cpp'),
     make.Compile( 'unittest/source/domain/test_basic.cpp'),
     make.Compile( 'unittest/source/domain/xatmi/test_call.cpp'),
     make.Compile( 'unittest/source/domain/xatmi/test_start.cpp'),
@@ -75,6 +76,7 @@ make.LinkUnittest( 'unittest/bin/test-casual',
       'casual-unittest',
       'casual-mockup-rm',
       'casual-domain-unittest',
+      'casual-configuration',
       'casual-domain-admin-cli',
       'casual-serviceframework',
    ])

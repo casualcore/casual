@@ -37,7 +37,6 @@ namespace casual
                friend inline bool operator == ( const basic_group& lhs, common::strong::process::id rhs) { return lhs.process == rhs;}
                inline explicit operator bool () const { return static_cast< bool>( process);}
 
-
                CASUAL_LOG_SERIALIZE(
                   CASUAL_SERIALIZE( process);
                   CASUAL_SERIALIZE( configuration);
@@ -51,7 +50,16 @@ namespace casual
 
             namespace outbound
             {
-                using Group = basic_group< configuration::model::gateway::outbound::Group>;
+               using base_group = basic_group< configuration::model::gateway::outbound::Group>;
+               struct Group : base_group
+               {
+                  platform::size::type order{};
+                  
+                  CASUAL_LOG_SERIALIZE(
+                     base_group::serialize( archive);
+                     CASUAL_SERIALIZE( configuration);
+                  )
+               };
             } // outbound
 
             namespace executable

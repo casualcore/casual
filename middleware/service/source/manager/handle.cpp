@@ -171,11 +171,8 @@ namespace casual
                algorithm::for_each( model.service.services, add_service);
 
                // accumulate restriction information
-               for( auto& server : model.domain.servers)
-               {
-                  if( ! server.restrictions.empty())
-                     algorithm::append_unique( server.restrictions, state.restrictions[ server.alias]);
-               }
+               for( auto& restriction : model.service.restrictions)
+                  state.restrictions.emplace( restriction.alias, restriction.services);
 
                log::line( verbose::log, "state: ", state);
 
@@ -924,6 +921,20 @@ namespace casual
                      }
                   } // update
 
+                  auto request( const State& state)
+                  {
+                     return [&state]( casual::configuration::message::Request& message)
+                     {
+                        Trace trace{ "service::manager::handle::local::configuration::request"};
+                        log::line( verbose::log, "message: ", message);
+
+                        auto reply = message::reverse::type( message);
+
+                        reply.model.service = transform::configuration( state);
+                        eventually::send( message.process, reply);
+                     };
+                  }
+
                } // configuration
 
                namespace shutdown
@@ -1028,6 +1039,7 @@ namespace casual
             handle::local::domain::discover::request( state),
             handle::local::domain::discover::reply( state),
             handle::local::configuration::update::request( state),
+            handle::local::configuration::request( state),
             handle::local::shutdown::request( state),
          };
       }

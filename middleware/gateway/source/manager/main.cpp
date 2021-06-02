@@ -8,9 +8,9 @@
 
 #include "gateway/manager/state.h"
 #include "gateway/manager/handle.h"
+#include "gateway/manager/transform.h"
 
 #include "gateway/environment.h"
-#include "gateway/transform.h"
 #include "gateway/common.h"
 
 #include "domain/configuration/fetch.h"
@@ -51,7 +51,7 @@ namespace casual
                   process::handle());
 
                // Ask domain manager for configuration
-               return gateway::transform::state( casual::domain::configuration::fetch().gateway);
+               return transform::state( casual::domain::configuration::fetch().gateway);
             }
 
 
@@ -76,6 +76,9 @@ namespace casual
 
                // Connect to domain
                communication::instance::whitelist::connect( communication::instance::identity::gateway::manager);
+
+               // we can supply configuration
+               casual::domain::configuration::supplier::registration();
 
                state.runlevel = manager::state::Runlevel::running;
 

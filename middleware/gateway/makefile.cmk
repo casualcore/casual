@@ -39,7 +39,6 @@ install_example_bin = []
 common_archive = make.LinkArchive( 'bin/casual-gateway-common',
     [
         make.Compile( 'source/environment.cpp'),
-        make.Compile( 'source/transform.cpp'),
         make.Compile( 'source/common.cpp'),
         make.Compile( 'source/manager/state.cpp'),
         make.Compile( 'source/group/tcp.cpp'),
@@ -52,11 +51,12 @@ target = make.LinkExecutable( 'bin/casual-gateway-manager',
         make.Compile( 'source/manager/main.cpp'),
         make.Compile( 'source/manager/handle.cpp'),
         make.Compile( 'source/manager/admin/server.cpp'),
+        make.Compile( 'source/manager/transform.cpp'),
     ],
     [ 
         common_archive,
         'casual-serviceframework', 
-        'casual-common', 
+        'casual-common',
         'casual-domain-utility',
     ])
 

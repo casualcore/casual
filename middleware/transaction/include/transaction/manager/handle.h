@@ -246,6 +246,8 @@ namespace casual
             } // startup
 
             dispatch_type handlers( State& state);
+
+            void abort( State& state);
             
 
          } // handle

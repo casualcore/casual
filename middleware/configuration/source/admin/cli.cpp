@@ -5,8 +5,8 @@
 //!
 
 #include "configuration/admin/cli.h"
-#include "configuration/user/load.h"
 #include "configuration/model/transform.h"
+#include "configuration/model/load.h"
 
 #include "common/argument.h"
 #include "common/file.h"
@@ -31,7 +31,7 @@ namespace casual
 
                auto load( std::vector< std::string> globs)
                {
-                  return user::load( file::find( std::move( globs)));
+                  return model::load( file::find( std::move( globs)));
                }
 
                auto validate()

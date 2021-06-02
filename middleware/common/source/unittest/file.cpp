@@ -15,75 +15,73 @@
 
 namespace casual
 {
-   namespace common
+   namespace common::unittest
    {
-      namespace unittest
+      namespace local
       {
-         namespace local
+         namespace
          {
-            namespace
+            auto prefix()
             {
-               auto prefix()
-               {
-                  return common::directory::temporary() / "unittest-";
-               }
-           } //
-         } // local
+               return common::directory::temporary() / "unittest-";
+            }
+         } //
+      } // local
 
-         namespace file
+      namespace file
+      {
+         namespace temporary
          {
-            namespace temporary
+            common::file::scoped::Path name( std::string_view extension)
             {
-               common::file::scoped::Path name( std::string_view extension)
-               {
-                  return { common::file::name::unique( local::prefix().string(), extension)};
-               }
+               return { common::file::name::unique( local::prefix().string(), extension)};
+            }
 
-               common::file::scoped::Path content( std::string_view extension, std::string_view content)
-               {
-                  auto path = temporary::name( extension);
-                  std::ofstream file{ path};
-                  file << content;
-                  return path;
-               }
-            } // temporary
-         } // file
+            common::file::scoped::Path content( std::string_view extension, std::string_view content)
+            {
+               auto path = temporary::name( extension);
+               std::ofstream file{ path};
+               file << content;
+               return path;
+            }
 
-         namespace directory
+         } // temporary
+      } // file
+
+      namespace directory
+      {
+         namespace temporary
          {
-            namespace temporary
+
+            Scoped::Scoped()
+               : m_path{ common::file::name::unique( local::prefix().string()) }
             {
+               common::directory::create( m_path);
+            }
 
-               Scoped::Scoped()
-                  : m_path{ common::file::name::unique( local::prefix().string()) }
-               {
-                  common::directory::create( m_path);
-               }
+            Scoped::~Scoped()
+            {
+               std::filesystem::remove_all( m_path);
+            }
 
-               Scoped::~Scoped()
-               {
-                  std::filesystem::remove_all( m_path);
-               }
+            Scoped::Scoped( Scoped&& rhs) noexcept
+               : m_path{ std::exchange( rhs.m_path, {})}
+            {
+            }
 
-               Scoped::Scoped( Scoped&& rhs) noexcept
-                  : m_path{ std::exchange( rhs.m_path, {})}
-               {
-               }
+            Scoped& Scoped::operator = ( Scoped&& rhs) noexcept
+            {
+               std::swap( m_path, rhs.m_path);
+               return *this;
+            }
 
-               Scoped& Scoped::operator = ( Scoped&& rhs) noexcept
-               {
-                  std::swap( m_path, rhs.m_path);
-                  return *this;
-               }
+            std::ostream& operator << ( std::ostream& out, const Scoped& value)
+            {
+               return out << value.path();
+            }
 
-               std::ostream& operator << ( std::ostream& out, const Scoped& value)
-               {
-                  return out << value.path();
-               }
+         } // temporary
+      } // directory
 
-            } // temporary
-         } // directory
-
-      } // unittest
-   } // common
+   } // common::unittest
 } // casual

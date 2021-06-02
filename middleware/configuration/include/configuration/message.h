@@ -17,7 +17,7 @@ namespace casual
       namespace message
       {
 
-         template< typename Model, common::message::Type type>
+         template< common::message::Type type>
          struct basic_model : common::message::basic_request< type>
          {
             using base_type = common::message::basic_request< type>;
@@ -31,19 +31,25 @@ namespace casual
             )
          };
 
+
          using Request = common::message::basic_request< common::message::Type::configuration_request>;
-         using Reply = basic_model< model::queue::Model, common::message::Type::configuration_reply>;
+         using Reply = basic_model< common::message::Type::configuration_reply>;
+
+         namespace supplier
+         {
+            using Registration = common::message::basic_request< common::message::Type::configuration_supplier_registration>;
+         } // supplier
 
          namespace update
          {
-            using Request = basic_model< model::gateway::Model, common::message::Type::configuration_update_request>;
+            using Request = basic_model< common::message::Type::configuration_update_request>;
             using Reply = common::message::basic_request< common::message::Type::configuration_update_reply>;
             
          } // update
 
          namespace put
          {
-            using Request = basic_model< model::gateway::Model, common::message::Type::configuration_put_request>;
+            using Request = basic_model< common::message::Type::configuration_put_request>;
             using Reply = common::message::basic_request< common::message::Type::configuration_put_reply>;
             
          } // put

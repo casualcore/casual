@@ -11,6 +11,8 @@
 
 #include "queue/common/ipc/message.h"
 
+#include "configuration/model.h"
+
 namespace casual
 {
    namespace queue::manager::transform
@@ -25,9 +27,11 @@ namespace casual
          {
             std::vector< admin::model::Message> meta( std::vector< ipc::message::group::message::meta::Reply> messages);
             
-         } // message  
+         } // message 
 
-         
-      } // admin
+      } // model
+
+      casual::configuration::model::queue::Model configuration( const State& state);
+
    } // queue::manager::transform
 } // casual

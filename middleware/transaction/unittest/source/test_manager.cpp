@@ -15,7 +15,6 @@
 #include "common/unittest.h"
 
 #include "transaction/manager/handle.h"
-#include "transaction/manager/manager.h"
 #include "transaction/manager/admin/server.h"
 #include "transaction/manager/admin/transform.h"
 
@@ -24,15 +23,22 @@
 #include "common/environment.h"
 #include "common/transcode.h"
 #include "common/functional.h"
+#include "common/environment/scoped.h"
 
 #include "common/communication/instance.h"
 
 #include "common/unittest/file.h"
 #include "common/unittest/rm.h"
+
+
 #include "domain/manager/unittest/process.h"
+#include "domain/manager/unittest/configuration.h"
 
 #include "serviceframework/service/protocol/call.h"
 #include "serviceframework/log.h"
+
+#include "configuration/model/load.h"
+#include "configuration/model/transform.h"
 
 #include <fstream>
 
@@ -46,28 +52,30 @@ namespace casual
       namespace local
       {
          namespace
-         {
-            
-            namespace environment
+         {  
+            namespace configuration
             {
-               constexpr auto rm1 = "CASUAL_UNITTEST_OPEN_INFO_RM1";
-               constexpr auto rm2 = "CASUAL_UNITTEST_OPEN_INFO_RM2";
-            } // environment
-            
-            struct Domain
-            {
-               struct Configuration
-               {
-                  std::string domain =  R"(
+               constexpr auto servers = R"(
 domain:
-   name: transaction-domain
-
    groups:
       - name: first
       - name: second
         dependencies: [ first]
 
+   servers:
+      - path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/service/bin/casual-service-manager
+        memberships: [ first]
+      - path: bin/casual-transaction-manager
+        memberships: [ second]
+         
+)";
+
+               constexpr auto base = R"(
+domain:
+   name: transaction-domain
+
    transaction:
+      log: ":memory:"
       resources:
          - key: rm-mockup
            name: rm1
@@ -77,16 +85,9 @@ domain:
            name: rm2
            instances: 2
            openinfo: "${CASUAL_UNITTEST_OPEN_INFO_RM2}"
-
-   servers:
-      - path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/service/bin/casual-service-manager
-        memberships: [ first]
-      - path: bin/casual-transaction-manager
-        arguments: [ --transaction-log, ":memory:"]
-        memberships: [ second]
-         
 )";
-                  std::string resource = R"(
+
+               constexpr auto resource = R"(
 resources:
   - key: rm-mockup
     server: bin/rm-proxy-casual-mockup
@@ -95,38 +96,45 @@ resources:
       - casual-mockup-rm
 )";
 
-               };
-
-               Domain( Configuration configuration) 
-                  : environment{ configuration.resource}, 
-                     process{ { std::move( configuration.domain)}} {}
-               Domain() : Domain{ Configuration{}} {}
-               
-               struct Environment 
+               template< typename... C>
+               auto load( C&&... contents)
                {
-                  Environment( const std::string& configuration) 
-                     : resource{ common::unittest::file::temporary::content( ".yaml", configuration)}
-                  {
-                     common::environment::variable::set( "CASUAL_RESOURCE_CONFIGURATION_FILE", resource.string());
+                  auto files = common::unittest::file::temporary::contents( ".yaml", std::forward< C>( contents)...);
 
-                     if( ! common::environment::variable::exists( environment::rm1))
-                        common::environment::variable::set( environment::rm1, "");
+                  auto get_path = []( auto& file){ return static_cast< std::filesystem::path>( file);};
 
-                     if( ! common::environment::variable::exists( environment::rm2))
-                        common::environment::variable::set( environment::rm2, "");
-                  }
+                  return casual::configuration::model::load( common::algorithm::transform( files, get_path));
+               }
 
-                  ~Environment() 
-                  {
-                     common::environment::variable::unset( environment::rm1);
-                     common::environment::variable::unset( environment::rm2);
-                  }
-                  
+
+
+            } // configuration
+
+            namespace detail
+            {
+               struct Domain
+               {
+                  decltype( common::environment::variable::scoped::set( "", std::string{})) environment;
                   common::file::scoped::Path resource;
-               } environment;
+                  casual::domain::manager::unittest::Process process;  
+               };
+            } // detail
 
-               casual::domain::manager::unittest::Process process;
-            };
+            template< typename... C>
+            auto domain( common::file::scoped::Path resource, C&&... configurations) 
+            {
+               return detail::Domain{ 
+                  common::environment::variable::scoped::set( "CASUAL_RESOURCE_CONFIGURATION_FILE", resource.string()),
+                  std::move( resource),
+                  casual::domain::manager::unittest::process( configuration::servers, std::forward< C>( configurations)...)};
+            }
+
+            template< typename... C>
+            auto domain( C&&... configurations) 
+            {
+               return domain( common::unittest::file::temporary::content( ".yaml", configuration::resource), std::forward< C>( configurations)...);
+            }
+
 
             namespace admin
             {
@@ -226,7 +234,7 @@ resources:
          common::unittest::Trace trace;
 
          EXPECT_NO_THROW({
-            local::Domain domain;
+            auto domain = local::domain( local::configuration::base);
          });
       }
 
@@ -234,10 +242,7 @@ resources:
       {
          common::unittest::Trace trace;
 
-         auto configuration = []()
-         {
-            local::Domain::Configuration result;
-            result.resource =  R"(
+         constexpr auto resources = R"(
 resources:
 
   - key: rm-mockup   
@@ -246,12 +251,9 @@ resources:
     libraries:
        - casual-mockup-rm
 )";
-            return result;
-         }();
-
 
          EXPECT_NO_THROW({
-            local::Domain domain( std::move( configuration));
+            auto domain = local::domain( common::unittest::file::temporary::content( ".yaml", resources), local::configuration::base);
          });
       }
 
@@ -261,11 +263,11 @@ resources:
          common::unittest::Trace trace;
 
          // we set unittest environment variable to set "error"
-         common::environment::variable::set( "CASUAL_UNITTEST_OPEN_INFO_RM1", 
-            "--open " + std::to_string( XAER_RMFAIL));
+         auto scope = common::environment::variable::scoped::set( "CASUAL_UNITTEST_OPEN_INFO_RM1", 
+            common::string::compose( "--open ", XAER_RMFAIL));
 
          EXPECT_NO_THROW({
-            local::Domain domain;
+            auto domain = local::domain( local::configuration::base);
          });
       }
 
@@ -274,19 +276,12 @@ resources:
       {
          common::unittest::Trace trace;
 
-         auto configuration = []()
-         {
-            local::Domain::Configuration result;
-            result.domain = R"(
+         constexpr auto configuration = R"(
 domain:
    name: transaction-domain
 
-   groups:
-      - name: first
-      - name: second
-        dependencies: [ first]
-
    transaction:
+      log: ':memory:'
       resources:
          - key: rm-mockup
            name: rm1
@@ -296,18 +291,9 @@ domain:
            instances: 2
            openinfo: openinfo2
 
-   servers:
-      - path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/service/bin/casual-service-manager
-        memberships: [ first]
-      - path: bin/casual-transaction-manager
-        arguments: [ --transaction-log, ":memory:"]
-        memberships: [ second]
-         
 )";
-            return result;
-         }();
 
-         local::Domain domain( std::move( configuration));
+         auto domain = local::domain( configuration);
 
          common::message::transaction::configuration::alias::Request request{ common::process::handle()};
          request.resources = { "rm2"};
@@ -319,12 +305,47 @@ domain:
          EXPECT_TRUE( reply.resources.at( 0).openinfo == "openinfo2");
       }
 
+      TEST( transaction_manager, configuration_get)
+      {
+         common::unittest::Trace trace;
+
+         constexpr auto configuration = R"(
+domain:
+   name: configuration_get
+
+   transaction:
+      log: ':memory:'
+      resources:
+         - key: rm-mockup
+           name: a
+           instances: 1
+           openinfo: "openinfo a"
+           note: a
+         - key: rm-mockup
+           name: b
+           instances: 2
+           openinfo: "openinfo b"
+           note: b
+)";
+         
+         auto domain = local::domain( configuration);
+
+         auto origin = local::configuration::load( local::configuration::servers, configuration).transaction;
+
+         auto model = casual::configuration::model::transform( casual::domain::manager::unittest::configuration::get()).transaction;
+
+         EXPECT_TRUE( origin == model) << CASUAL_NAMED_VALUE( origin) << '\n' << CASUAL_NAMED_VALUE( model);
+
+      }
+
+      
+
 
       TEST( transaction_manager, begin_transaction)
       {
          common::unittest::Trace trace;
 
-         local::Domain domain;
+         auto domain = local::domain( local::configuration::base);
 
          EXPECT_TRUE( local::begin() == common::code::tx::ok);
 
@@ -340,7 +361,7 @@ domain:
       {
          common::unittest::Trace trace;
 
-         local::Domain domain;
+         auto domain = local::domain( local::configuration::base);
 
          EXPECT_TRUE( local::begin() == common::code::tx::ok);
          EXPECT_TRUE( local::commit() == common::code::tx::ok);
@@ -362,7 +383,7 @@ domain:
       {
          common::unittest::Trace trace;
 
-         local::Domain domain;
+         auto domain = local::domain( local::configuration::base);
 
          EXPECT_TRUE( local::begin() == common::code::tx::ok);
 
@@ -399,7 +420,7 @@ domain:
       {
          common::unittest::Trace trace;
 
-         local::Domain domain;
+         auto domain = local::domain( local::configuration::base);
 
 
          EXPECT_TRUE( local::begin() == common::code::tx::ok);
@@ -462,11 +483,12 @@ domain:
       {
          common::unittest::Trace trace;
 
-         // we set unittest environment variable to set "error"
-         common::environment::variable::set( "CASUAL_UNITTEST_OPEN_INFO_RM1", 
-            "--commit " + std::to_string( XA_RBDEADLOCK));
 
-         local::Domain domain;
+         // we set unittest environment variable to set "error"
+         auto scope = common::environment::variable::scoped::set( "CASUAL_UNITTEST_OPEN_INFO_RM1", 
+            common::string::compose( "--commit ", XA_RBDEADLOCK));
+
+         auto domain = local::domain( local::configuration::base);
 
          EXPECT_TRUE( local::begin() == common::code::tx::ok);
 
@@ -497,10 +519,10 @@ domain:
          common::unittest::Trace trace;
 
          // we set unittest environment variable to set "error"
-         common::environment::variable::set( "CASUAL_UNITTEST_OPEN_INFO_RM1", 
-            "--commit " + std::to_string( XAER_NOTA));
+         auto scope = common::environment::variable::scoped::set( "CASUAL_UNITTEST_OPEN_INFO_RM1", 
+            common::string::compose( "--commit ", XAER_NOTA));
 
-         local::Domain domain;
+         auto domain = local::domain( local::configuration::base);
 
          EXPECT_TRUE( local::begin() == common::code::tx::ok);
 
@@ -526,10 +548,10 @@ domain:
          common::unittest::Trace trace;
 
          // we set unittest environment variable to set "error"
-         common::environment::variable::set( "CASUAL_UNITTEST_OPEN_INFO_RM1", 
-            "--commit " + std::to_string( XAER_NOTA));
+         auto scope = common::environment::variable::scoped::set( "CASUAL_UNITTEST_OPEN_INFO_RM1", 
+            common::string::compose( "--commit ", XAER_NOTA));
 
-         local::Domain domain;
+         auto domain = local::domain( local::configuration::base);
 
          EXPECT_TRUE( local::begin() == common::code::tx::ok);
 
@@ -555,7 +577,7 @@ domain:
       {
          common::unittest::Trace trace;
 
-         local::Domain domain;
+         auto domain = local::domain( local::configuration::base);
 
          EXPECT_TRUE( local::begin() == common::code::tx::ok);
 
@@ -593,7 +615,7 @@ domain:
       {
          common::unittest::Trace trace;
 
-         local::Domain domain;
+         auto domain = local::domain( local::configuration::base);
 
          EXPECT_TRUE( local::begin() == common::code::tx::ok);
 
@@ -635,7 +657,7 @@ domain:
       {
          common::unittest::Trace trace;
 
-         local::Domain domain;
+         auto domain = local::domain( local::configuration::base);
 
          EXPECT_TRUE( local::begin() == common::code::tx::ok);
 
@@ -692,7 +714,7 @@ domain:
       {
          common::unittest::Trace trace;
 
-         local::Domain domain;
+         auto domain = local::domain( local::configuration::base);
 
          EXPECT_TRUE( local::begin() == common::code::tx::ok);
 
@@ -731,7 +753,7 @@ domain:
       {
          common::unittest::Trace trace;
 
-         local::Domain domain;
+         auto domain = local::domain( local::configuration::base);
 
          auto trid = common::transaction::id::create();
 
@@ -761,7 +783,7 @@ domain:
       {
          common::unittest::Trace trace;
 
-         local::Domain domain;
+         auto domain = local::domain( local::configuration::base);
 
          auto trid = common::transaction::id::create();
 
@@ -790,7 +812,7 @@ domain:
       {
          common::unittest::Trace trace;
 
-         local::Domain domain;
+         auto domain = local::domain( local::configuration::base);
 
          auto trid = common::transaction::id::create();
 
@@ -821,7 +843,7 @@ domain:
       {
          common::unittest::Trace trace;
 
-         local::Domain domain;
+         auto domain = local::domain( local::configuration::base);
 
          auto trid = common::transaction::id::create();
 
@@ -861,7 +883,7 @@ domain:
       {
          common::unittest::Trace trace;
 
-         local::Domain domain;
+         auto domain = local::domain( local::configuration::base);
 
          auto trid = common::transaction::id::create();
 
@@ -900,7 +922,7 @@ domain:
       {
          common::unittest::Trace trace;
 
-         local::Domain domain;
+         auto domain = local::domain( local::configuration::base);
 
          auto trid = common::transaction::id::create();
 
@@ -977,7 +999,7 @@ domain:
       {
          common::unittest::Trace trace;
 
-         local::Domain domain;
+         auto domain = local::domain( local::configuration::base);
 
 
          local::involved::Process rm1;
@@ -1081,7 +1103,7 @@ domain:
       {
          common::unittest::Trace trace;
 
-         local::Domain domain;
+         auto domain = local::domain( local::configuration::base);
 
          local::involved::Process rm1;
          local::involved::Process rm2;
@@ -1149,7 +1171,7 @@ domain:
       {
          common::unittest::Trace trace;
 
-         local::Domain domain;
+         auto domain = local::domain( local::configuration::base);
 
          local::involved::Process rm1;
          local::involved::Process rm2;
@@ -1240,7 +1262,7 @@ domain:
       {
          common::unittest::Trace trace;
 
-         local::Domain domain;
+         auto domain = local::domain( local::configuration::base);
 
          local::involved::Process rm1;
          local::involved::Process rm2;
@@ -1333,7 +1355,7 @@ domain:
       {
          common::unittest::Trace trace;
 
-         local::Domain domain;
+         auto domain = local::domain( local::configuration::base);
 
          EXPECT_TRUE( local::begin() == common::code::tx::ok);
 
@@ -1372,7 +1394,7 @@ domain:
       {
          common::unittest::Trace trace;
 
-         local::Domain domain;
+         auto domain = local::domain( local::configuration::base);
 
 
          EXPECT_TRUE( local::begin() == common::code::tx::ok);
@@ -1422,7 +1444,7 @@ domain:
       {
          common::unittest::Trace trace;
 
-         local::Domain domain;
+         auto domain = local::domain( local::configuration::base);
 
          EXPECT_TRUE( local::begin() == common::code::tx::ok);
 
@@ -1470,7 +1492,7 @@ domain:
       {
          common::unittest::Trace trace;
 
-         local::Domain domain;
+         auto domain = local::domain( local::configuration::base);
 
          auto trid = common::transaction::id::create( process::handle());
 
@@ -1510,10 +1532,10 @@ domain:
          common::unittest::Trace trace;
 
          // we set unittest environment variable to set "error"
-         common::environment::variable::set( "CASUAL_UNITTEST_OPEN_INFO_RM1", 
-            "--start " + std::to_string( XAER_RMFAIL));
+         auto scope = common::environment::variable::scoped::set( "CASUAL_UNITTEST_OPEN_INFO_RM1", 
+            common::string::compose( "--start ", XAER_RMFAIL));
 
-         local::Domain domain;
+         auto domain = local::domain( local::configuration::base);
 
          // configure the local rm - will get XAER_RMFAIL on xa_start
          common::transaction::context().configure( { { "rm-mockup", "rm1", &casual_mockup_xa_switch_static}});
@@ -1532,7 +1554,7 @@ domain:
       {
          common::unittest::Trace trace;
 
-         local::Domain domain;
+         auto domain = local::domain( local::configuration::base);
 
          EXPECT_NO_THROW({
             common::transaction::context().configure( {}, { "rm1"});
@@ -1544,7 +1566,7 @@ domain:
       {
          common::unittest::Trace trace;
 
-         local::Domain domain;
+         auto domain = local::domain( local::configuration::base);
 
          ASSERT_NO_THROW({
             //common::transaction::context().configure( { local::xa_resource( "")}, {});

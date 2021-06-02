@@ -10,15 +10,18 @@
 
 namespace casual
 {
-   namespace domain
+   namespace domain::configuration
    {
-      namespace configuration
-      {
-         //! fetches the configuration model from domain-manager
-         //! and normalize the model regarding environment variables
-         casual::configuration::Model fetch();
+      //! fetches the configuration model from domain-manager
+      //! and normalize the model regarding environment variables
+      casual::configuration::Model fetch();
 
-      } // configuration
-   } // domain
+      namespace supplier
+      {
+         //! registrate that this _process_ can supply configuration
+         void registration();
+      } // supplier
+
+   } // domain::configuration
 
 } // casual

@@ -20,11 +20,6 @@ namespace casual
       namespace transform
       {
 
-         common::process::Handle Instance::operator () ( const manager::state::instance::Sequential& value) const
-         {
-            return value.process;
-         }
-
          namespace local
          {
             namespace
@@ -168,6 +163,56 @@ namespace casual
                   route.service = service;
                   return route;
                });
+            });
+
+            return result;
+         }
+
+
+         configuration::model::service::Model configuration( const manager::State& state)
+         {
+            configuration::model::service::Model result;
+
+            result.timeout = state.timeout;
+
+            result.restrictions = common::algorithm::transform( state.restrictions, []( auto& pair)
+            {
+               configuration::model::service::Restriction result;
+               result.alias = pair.first;
+               result.services = pair.second;
+               common::algorithm::sort( result.services);
+               return result;
+            });
+            common::algorithm::sort( result.restrictions);
+
+            result.services = common::algorithm::transform( state.routes, []( auto& pair)
+            {
+               configuration::model::service::Service result;
+               result.name = pair.first;
+               result.routes = pair.second;
+               return result;
+            });
+            common::algorithm::sort( result.restrictions);
+
+            common::algorithm::for_each( state.services, [&result]( auto& pair)
+            {
+               auto& service = pair.second;
+               if( service.information.category == ".admin")
+                  return;
+
+               if( ! service.timeout.duration)
+                  return;
+
+               auto& configured = [&result, &service]() -> configuration::model::service::Service&
+               {
+                  if( auto found = common::algorithm::find( result.services, service.information.name))
+                     return *found;
+
+                  return result.services.emplace_back();
+               }(); 
+               
+               configured.name = service.information.name;
+               configured.timeout = service.timeout;
             });
 
             return result;

@@ -7,8 +7,8 @@
 
 #include "domain/manager/state.h"
 #include "domain/manager/handle.h"
+#include "domain/manager/transform.h"
 #include "domain/common.h"
-#include "domain/transform.h"
 
 #include "configuration/model/load.h"
 
@@ -55,7 +55,7 @@ namespace casual
                {
                   const auto files = common::file::find( patterns);
 
-                  auto state = casual::domain::transform::model( casual::configuration::model::load( files));
+                  auto state = transform::model( casual::configuration::model::load( files));
 
                   //state.bare = settings.bare;
 
@@ -170,7 +170,7 @@ namespace casual
             }
 
 
-            int main( int argc, char** argv)
+            void main( int argc, char** argv)
             {
                common::strong::ipc::id ipc;
 
@@ -193,23 +193,21 @@ namespace casual
 
                   local::start( local::initialize( std::move( settings)));
 
-                  return 0;
                }
                catch( ...)
                {
-                  auto error = common::exception::capture();
-
                   if( ipc)
                   {
+                     auto error = common::exception::capture();
                      common::message::event::Error event;
-                     event.message = common::string::compose( "fatal abort");
+                     event.message = error.what();
                      event.severity = common::message::event::Error::Severity::fatal;
                      event.code = error.code();
 
                      common::communication::device::non::blocking::optional::send( ipc, event);
                   }
-               
-                  return error.code().value();
+
+                  throw;
                }
 
             }
@@ -223,5 +221,8 @@ namespace casual
 
 int main( int argc, char** argv)
 {
-   return casual::domain::manager::local::main( argc, argv);
+   casual::common::exception::main::log::guard( [=]()
+   {
+      casual::domain::manager::local::main( argc, argv);
+   });
 }

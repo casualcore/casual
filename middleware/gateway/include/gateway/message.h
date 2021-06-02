@@ -402,10 +402,12 @@ namespace casual
             {
                using base_request::base_request;
 
+               platform::size::type order{};
                casual::configuration::model::gateway::outbound::Group model;
 
                CASUAL_CONST_CORRECT_SERIALIZE(
                   base_request::serialize( archive);
+                  CASUAL_SERIALIZE( order);
                   CASUAL_SERIALIZE( model);
                )
             };
@@ -432,12 +434,6 @@ namespace casual
             };
             
          } // state
-
-         namespace rediscover
-         {
-            //using Request = common::message::basic_request< common::message::Type::gateway_outbound_rediscover_request>;
-            //using Reply = common::message::basic_reply< common::message::Type::gateway_outbound_rediscover_reply>;
-         } // rediscover
 
 
          //! different state for reverse

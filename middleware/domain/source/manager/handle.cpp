@@ -10,8 +10,8 @@
 #include "domain/manager/admin/server.h"
 #include "domain/manager/task/create.h"
 #include "domain/manager/task/event.h"
+#include "domain/manager/transform.h"
 #include "domain/common.h"
-#include "domain/transform.h"
 #include "domain/pending/message/message.h"
 
 #include "configuration/message.h"
@@ -216,10 +216,6 @@ namespace casual
                   tm.scale( 1);
                   tm.memberships.push_back( state.group_id.transaction);
                   tm.note = "manage transaction in this domain";
-                  tm.arguments = {
-                        "--transaction-log",
-                        state.configuration.transaction.log
-                  };
 
                   state.servers.push_back( std::move( tm));
                }
@@ -972,10 +968,27 @@ namespace casual
                      common::log::line( verbose::log, "message: ", message);
 
                      auto reply = common::message::reverse::type( message, common::process::handle());
-                     reply.model = state.configuration;
+                     reply.model = state.configuration.model;
+
                      manager::ipc::send( state, message.process, reply);
                   };
                }
+
+               namespace supplier
+               {
+                  auto registration( State& state)
+                  {
+                     return [&state]( const casual::configuration::message::supplier::Registration& message)
+                     {
+                        Trace trace{ "domain::manager::handle::configuration::supplier::registration"};
+                        common::log::line( verbose::log, "message: ", message);
+
+                        // make sure we can ask for configuration state later...
+                        // TODO semantics: might be implicit on handling casual::configuration::message::Request...
+                        algorithm::append_unique_value( message.process, state.configuration.suppliers);
+                     };
+                  }
+               } // supplier
 
             } // configuration
 
@@ -1042,6 +1055,7 @@ namespace casual
             handle::local::process::connect( state),
             handle::local::process::lookup( state),
             handle::local::configuration::request( state),
+            handle::local::configuration::supplier::registration( state),
             handle::local::server::Handle{
                manager::admin::services( state),
                state}

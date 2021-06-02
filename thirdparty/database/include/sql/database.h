@@ -492,6 +492,8 @@ namespace sql
             return sqlite3_sql( m_statement.get());
          } 
 
+         inline friend std::ostream& operator << ( std::ostream& out, const Statement& value) { return out << "{ statement: " << sqlite3_sql( value.m_statement.get()) << '}';}
+
       private:
          std::shared_ptr< sqlite3> m_handle;
          std::shared_ptr< sqlite3_stmt> m_statement;
@@ -539,7 +541,7 @@ namespace sql
 
          inline explicit operator bool() const noexcept { return m_handle && true;}
 
-         inline const std::filesystem::path& file() const
+         inline const std::filesystem::path& file() const noexcept
          {
             return m_file;
          }
@@ -611,6 +613,8 @@ namespace sql
          inline void exclusive_begin() const { sqlite3_exec( m_handle.get(), "BEGIN EXCLUSIVE", 0, 0, 0); }
          inline void rollback() const { sqlite3_exec( m_handle.get(), "ROLLBACK", 0, 0, 0); }
          inline void commit() const { sqlite3_exec( m_handle.get(), "COMMIT", 0, 0, 0); }
+
+         inline friend std::ostream& operator << ( std::ostream& out, const Connection& value) { return out << "{ file: " << value.m_file << '}';}
 
       private:
          

@@ -6,6 +6,7 @@
 
 
 #include "common/unittest.h"
+#include "common/unittest/file.h"
 
 #include "service/manager/admin/server.h"
 #include "service/manager/admin/model.h"
@@ -26,7 +27,12 @@
 #include "serviceframework/log.h"
 
 #include "domain/discovery/api.h"
+#include "domain/configuration/fetch.h"
 #include "domain/manager/unittest/process.h"
+#include "domain/manager/unittest/configuration.h"
+
+#include "configuration/model/load.h"
+#include "configuration/model/transform.h"
 
 namespace casual
 {
@@ -41,7 +47,9 @@ namespace casual
                auto& inbound() { return common::communication::ipc::inbound::device();}
             } // ipc
 
-            constexpr auto configuration = R"(
+            namespace configuration
+            {
+               constexpr auto base = R"(
 domain:
    name: service-domain
 
@@ -49,19 +57,26 @@ domain:
       - path: bin/casual-service-manager
 )";
 
-            struct Domain
-            {
-               Domain() = default;
-               Domain( const char* configuration) 
-                  : domain{ { configuration}} {}
 
-               domain::manager::unittest::Process domain{ { local::configuration}};
-
-               auto forward() const
+               template< typename... C>
+               auto load( C&&... contents)
                {
-                  return common::communication::instance::fetch::handle( forward::instance::identity.id);
+                  auto files = common::unittest::file::temporary::contents( ".yaml", std::forward< C>( contents)...);
+
+                  auto get_path = []( auto& file){ return static_cast< std::filesystem::path>( file);};
+
+                  return casual::configuration::model::load( common::algorithm::transform( files, get_path));
                }
-            };
+
+
+
+            } // configuration
+
+            template< typename... C>
+            auto domain( C&&... configurations)
+            {
+               return domain::manager::unittest::process( configuration::base, std::forward< C>( configurations)...);
+            }
 
             namespace call
             {
@@ -118,10 +133,51 @@ domain:
          common::unittest::Trace trace;
 
          EXPECT_NO_THROW({
-            local::Domain domain;
+            auto domain = local::domain();
          });
 
       }
+
+      TEST( service_manager, configuration_default___expect_same)
+      {
+         common::unittest::Trace trace;
+
+         auto domain = local::domain();
+
+         auto origin = local::configuration::load( local::configuration::base);
+
+         auto model = casual::configuration::model::transform( casual::domain::manager::unittest::configuration::get());
+
+         EXPECT_TRUE( origin.service == model.service) << CASUAL_NAMED_VALUE( origin) << '\n' << CASUAL_NAMED_VALUE( model);
+      }
+
+      TEST( service_manager, configuration_routes___expect_same)
+      {
+         common::unittest::Trace trace;
+
+         constexpr auto configuration = R"(
+domain:
+   services:
+      -  name: a
+         routes: [ b, c, d]
+         execution:
+            timeout: 
+               duration: 10ms
+               contract: kill
+
+
+
+)";
+
+         auto domain = local::domain( configuration);
+
+         auto origin = local::configuration::load( local::configuration::base, configuration);
+
+         auto model = casual::configuration::model::transform( casual::domain::manager::unittest::configuration::get());
+
+         EXPECT_TRUE( origin.service == model.service) << CASUAL_NAMED_VALUE( origin.service) << '\n' << CASUAL_NAMED_VALUE( model.service);
+      }
+
 
       namespace local
       {
@@ -139,11 +195,13 @@ domain:
          } // <unnamed>
       } // local
 
+      
+
       TEST( service_manager, startup___expect_1_service_in_state)
       {
          common::unittest::Trace trace;
 
-         local::Domain domain;
+         auto domain = local::domain();
 
          auto state = local::call::state();
 
@@ -156,7 +214,7 @@ domain:
       {
          common::unittest::Trace trace;
 
-         local::Domain domain;
+         auto domain = local::domain();
 
          service::unittest::advertise( { "service1", "service2"});
 
@@ -184,16 +242,13 @@ domain:
 
          constexpr auto configuration = R"(
 domain:
-   name: route-domain
-   servers:
-      - path: bin/casual-service-manager
    services:
       - name: A
         routes: [ B]
 
 )";
 
-         local::Domain domain{ configuration};
+         auto domain = local::domain( configuration);
 
          service::unittest::advertise( { "A"});
 
@@ -215,9 +270,6 @@ domain:
 
          constexpr auto configuration = R"(
 domain:
-   name: route-domain
-   servers:
-      -  path: bin/casual-service-manager
    services:
       -  name: a
          execution:
@@ -226,7 +278,7 @@ domain:
 
 )";
 
-         local::Domain domain{ configuration};
+         auto domain = local::domain( configuration);
 
          // setup subscription to verify event
          common::event::subscribe( common::process::handle(), { common::message::event::process::Assassination::type()});
@@ -259,7 +311,6 @@ domain:
 
          constexpr auto configuration = R"(
 domain:
-   name: route-domain
    default:
       environment:
          variables:
@@ -267,15 +318,13 @@ domain:
               value: A
             - key: SB
               value: B
-   servers:
-      - path: bin/casual-service-manager
    services:
       - name: ${SA}
         routes: [ "${SB}"]
 
 )";
 
-         local::Domain domain{ configuration};
+         auto domain = local::domain( configuration);
 
          service::unittest::advertise( { "A"});
 
@@ -294,17 +343,13 @@ domain:
 
          constexpr auto configuration = R"(
 domain:
-   name: route-domain
-
-   servers:
-      - path: bin/casual-service-manager
    services:
       - name: A
         routes: [ B]
 
 )";
 
-         local::Domain domain{ configuration};
+         auto domain = local::domain( configuration);
          service::unittest::advertise( { "A"});
 
          // discover
@@ -324,7 +369,7 @@ domain:
       {
          common::unittest::Trace trace;
 
-         local::Domain domain;
+         auto domain = local::domain();
 
          service::unittest::advertise( { "service1", "service2"});
 
@@ -343,7 +388,7 @@ domain:
       {
          common::unittest::Trace trace;
 
-         local::Domain domain;
+         auto domain = local::domain();
 
          service::unittest::advertise( { "service1", "service2"});
 
@@ -378,7 +423,7 @@ domain:
       {
          common::unittest::Trace trace;
 
-         local::Domain domain;
+         auto domain = local::domain();
 
          service::unittest::advertise( { "service1", "service2"});
 
@@ -405,7 +450,7 @@ domain:
       {
          common::unittest::Trace trace;
 
-         local::Domain domain;
+         auto domain = local::domain();
 
          service::unittest::advertise( { "service1", "service2"});
 
@@ -429,7 +474,7 @@ domain:
       {
          common::unittest::Trace trace;
 
-         local::Domain domain;
+         auto domain = local::domain();
 
          service::unittest::advertise( { "service1", "service2"});
          service::unittest::unadvertise( { "service2"});
@@ -447,7 +492,7 @@ domain:
       {
          common::unittest::Trace trace;
 
-         local::Domain domain;
+         auto domain = local::domain();
 
          service::unittest::advertise( { "service1", "service2"});
 
@@ -461,7 +506,7 @@ domain:
       {
          common::unittest::Trace trace;
 
-         local::Domain domain;
+         auto domain = local::domain();
 
          service::unittest::advertise( { "service1", "service2"});
 
@@ -504,11 +549,11 @@ domain:
       {
          common::unittest::Trace trace;
 
-         local::Domain domain;
+         auto domain = local::domain();
 
          service::unittest::advertise( { "service1"});
 
-         auto forward = domain.forward();
+         auto forward = common::communication::instance::fetch::handle( forward::instance::identity.id);
 
          {
             auto service = common::service::Lookup{ "service1"}();
@@ -534,7 +579,7 @@ domain:
       {
          common::unittest::Trace trace;
 
-         local::Domain domain;
+         auto domain = local::domain();
 
          service::unittest::advertise( { "service1", "service2"});
 
@@ -575,7 +620,7 @@ domain:
       {
          common::unittest::Trace trace;
 
-         local::Domain domain;
+         auto domain = local::domain();
 
          service::unittest::advertise( { "a"});
 
@@ -607,7 +652,7 @@ domain:
       {
          common::unittest::Trace trace;
 
-         local::Domain domain;
+         auto domain = local::domain();
 
          service::unittest::advertise( { "a"});
 
@@ -648,7 +693,7 @@ domain:
       {
          common::unittest::Trace trace;
 
-         local::Domain domain;
+         auto domain = local::domain();
 
          service::unittest::advertise( { "a", "b", "c", "d"});
 
@@ -713,15 +758,14 @@ domain:
 domain:
    name: route
 
-   servers:
-      - path: "./bin/casual-service-manager"
    services:
       - name: A
         routes: [ B]
 
 )";
 
-         local::Domain domain{ configuration};
+         auto domain = local::domain( configuration);
+
          service::unittest::advertise( { "A"});
 
          // we reserve (lock) our instance to the 'call', via the route
@@ -749,7 +793,7 @@ domain:
       {
          common::unittest::Trace trace;
 
-         local::Domain domain;
+         auto domain = local::domain();
 
          service::unittest::advertise( { "service1", "service2"});
 
@@ -803,7 +847,7 @@ domain:
       {
          common::unittest::Trace trace;
 
-         local::Domain domain;
+         auto domain = local::domain();
 
          common::algorithm::for_n< 3>( []()
          {

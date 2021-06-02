@@ -116,6 +116,14 @@ namespace casual
             return {};
          }
 
+         //! @return true if message with `type` exists in the cache, and is a complete message.
+         bool cached( common::message::Type type)
+         {
+            auto has_type = [type]( auto& message) { return message.complete() && message.type() == type;};
+
+            return predicate::boolean( algorithm::find_if( m_cache, has_type));
+         }
+
          //! Tries to find the first logic complete message with a specific type
          //!
          //! @return a logical complete message if there is one,

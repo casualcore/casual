@@ -22,42 +22,6 @@ namespace casual
       {
          namespace
          {
-            auto optional_empty = []( auto& value)
-            {
-               return ! value || value.value().empty();
-            };
-            namespace equal
-            {
-               auto name()
-               {
-                  return []( auto& l, auto& r){ return l.name == r.name;};
-               }
-
-               //! @note if both aliases ar _empty_ they ar not equal
-               auto alias()
-               {
-                  return []( auto& l, auto& r)
-                  { 
-                     if( optional_empty( l.alias) && optional_empty( r.alias))
-                        return false;
-                        
-                     return l.alias == r.alias;
-                  };
-               }
-
-               auto address()
-               {
-                  return []( auto& l, auto& r){ return l.address == r.address;};
-               }
-
-               auto environment()
-               {
-                  return []( auto& l, auto& r)
-                  { 
-                     return l.key == r.key;
-                  };
-               }
-            } // equal
 
             namespace validate
             {
@@ -70,88 +34,12 @@ namespace casual
 
             } // validate   
 
-            template< typename S, typename T, typename P>
-            auto add_or_replace( S&& source, T& target, P predicate)
-            {
-               // remove all occurencies that is found in source, if any
-               auto [ replaced, keep] = algorithm::intersection( target, source, predicate);
-               
-               if( replaced)
-                  log::line( verbose::log, "replaced: ", replaced);
-
-               algorithm::trim( target, keep);
-               // ... and add all from source
-               algorithm::move( std::forward< S>( source), target);
-            };
-
-            template< typename S, typename T, typename P>
-            auto add_or_accumulate( S&& source, T& target, P predicate)
-            {
-               algorithm::for_each( source, [&target, predicate]( auto&& value)
-               {
-                  auto equal = [&value, predicate]( auto& other)
-                  {
-                     return predicate( value, other);
-                  };
-
-                  if( auto found = algorithm::find_if( target, equal))
-                     (*found) += std::move( value);
-                  else
-                     target.push_back( std::move( value));
-               });
-               
-            };
-
-            template< typename S, typename T, typename P>
-            auto optional_add( S&& source, T& target, P&& predicate)
-            {
-               if( target && source)
-                  predicate( std::move( source.value()), target.value());
-               else if( source)
-                  target = coalesce( std::move( target), std::move( source));
-            }
-
-            template< typename S, typename T>
-            auto optional_add( S&& source, T& target)
-            {
-               optional_add( std::forward< S>( source), target, []( auto&& source, auto& target)
-               {  
-                  target += std::move( source);
-               });
-            };
-
          } // <unnamed>
       } // local
 
-      Environment& Environment::operator += ( Environment rhs)
-      {
-         local::optional_add( std::move( rhs.files), files, []( auto source, auto& target)
-         { 
-            local::add_or_replace( std::move( source), target, std::equal_to<>{});
-         });
-         local::optional_add( std::move( rhs.variables), variables, []( auto source, auto& target)
-         { 
-            local::add_or_replace( std::move( source), target, local::equal::environment());
-         });
-         return *this;
-      }
-
-      Service& Service::operator += ( Service rhs)
-      {
-         execution = coalesce( std::move( rhs.execution), std::move( execution));
-         return *this;
-      }
 
       namespace transaction
       {
-         Manager& Manager::operator += ( Manager rhs)
-         {
-            log = coalesce( std::move( rhs.log), std::move( log));
-            local::add_or_replace( std::move( rhs.resources), resources, local::equal::name());
-
-            return *this;
-         }
-
          void Manager::normalize()
          {
             if( ! defaults)
@@ -169,53 +57,6 @@ namespace casual
 
       namespace gateway
       {
-
-         namespace inbound
-         {
-            Connection& Connection::operator += ( Connection rhs)
-            {
-               note = coalesce( std::move( rhs.note), std::move( note));
-               discovery = coalesce( std::move( rhs.discovery ), std::move( discovery));
-               return *this;
-            }
-
-            Group& Group::operator += ( Group rhs)
-            {
-               local::add_or_replace( std::move( rhs.connections), connections, local::equal::address());
-               return *this;
-            }
-            
-         } // inbound
-
-         namespace outbound
-         {
-            Connection& Connection::operator += ( Connection rhs)
-            {
-               auto merge = []( auto&& source, auto& target)
-               {
-                  algorithm::append_unique( source, target);
-               };
-
-               local::optional_add( std::move( rhs.services), services, merge);
-               local::optional_add( std::move( rhs.queues), queues, merge);
-
-               note = coalesce( std::move( rhs.note), std::move( note));
-               return *this;
-            }
-
-            Group& Group::operator += ( Group rhs)
-            {
-               local::add_or_accumulate( std::move( rhs.connections), connections, local::equal::address());
-               note = coalesce( std::move( rhs.note), std::move( note));
-               return *this;
-            }
-         } // outbound
-
-         Inbound& Inbound::operator += ( Inbound rhs)
-         {
-            local::add_or_accumulate( std::move( rhs.groups), groups, local::equal::alias());
-            return *this;
-         }
 
          void Inbound::normalize()
          {
@@ -251,12 +92,6 @@ namespace casual
             }
          }
 
-         Outbound& Outbound::operator += ( Outbound rhs)
-         {
-            local::add_or_accumulate( std::move( rhs.groups), groups, local::equal::alias());
-            return *this;
-         }
-
          void Outbound::normalize()
          {
             Trace trace{ "configuration::user::gateway::Outbound::normalize"};
@@ -269,33 +104,6 @@ namespace casual
                });
             }
          }
-
-         Reverse& Reverse::operator += ( Reverse rhs)
-         {
-            local::optional_add( std::move( rhs.inbound), inbound);
-            local::optional_add( std::move( rhs.outbound), outbound);
-            
-            return *this;
-         }
-
-         Manager& Manager::operator += ( Manager rhs)
-         {
-            local::optional_add( std::move( rhs.listeners), listeners, []( auto source, auto& target)
-            {
-               local::add_or_replace( std::move( source), target, local::equal::address());
-            });
-            local::optional_add( std::move( rhs.connections), connections, []( auto source, auto& target)
-            {
-               local::add_or_replace( std::move( source), target, local::equal::address());
-            });
-
-            local::optional_add( std::move( rhs.inbound), inbound);
-            local::optional_add( std::move( rhs.outbound), outbound);
-
-            local::optional_add( std::move( rhs.reverse), reverse);
-
-            return *this;
-         }  
 
          void Manager::normalize()
          {
@@ -355,38 +163,6 @@ namespace casual
 
       namespace queue
       {
-         namespace forward
-         {
-            Group& Group::operator += ( Group rhs)
-            {
-               assert( alias == rhs.alias);
-
-               auto add_or_replace = []( auto&& source, auto& target)
-               {
-                  local::add_or_replace( std::move( source), target, local::equal::alias());
-               };
-
-               local::optional_add( std::move( rhs.services), services, add_or_replace);
-               local::optional_add( std::move( rhs.queues), queues, add_or_replace);
-               
-               note = coalesce( std::move( rhs.note), std::move( note));
-
-               return *this;
-            }
-
-         } // forward
-         Forward& Forward::operator += ( Forward rhs)
-         {
-            auto add_or_accumulate = []( auto&& source, auto& target)
-            {
-               local::add_or_accumulate( std::move( source), target, local::equal::alias());
-            };
-            
-            local::optional_add( std::move( rhs.groups), groups, add_or_accumulate);
-
-            return *this;
-         }
-
          void Forward::normalize()
          {
             if( ! defaults || ! groups)
@@ -422,21 +198,6 @@ namespace casual
             };
 
             algorithm::for_each( groups.value(), normalize);
-         }
-
-         Manager& Manager::operator += ( Manager rhs)
-         {
-            auto add_or_replace = []( auto&& source, auto& target)
-            {
-               local::add_or_replace( std::move( source), target, local::equal::alias());
-            };
-
-            local::optional_add( std::move( rhs.groups), groups, add_or_replace);
-            local::optional_add( std::move( rhs.forward), forward);
-
-            note = coalesce( std::move( rhs.note), std::move( note));
-
-            return *this;
          }
 
          void Manager::normalize()
@@ -504,48 +265,19 @@ namespace casual
          }
       } // queue
 
-      namespace domain
-      {
-         Default& Default::operator += ( Default rhs)
-         {
-            service = coalesce( std::move( rhs.service), std::move( service));
-            return *this;
-         }
-      } // domain
-
-      Domain& Domain::operator += ( Domain rhs)
-      {
-         name = coalesce( std::move( rhs.name), std::move( name));
-         note = coalesce( std::move( rhs.note), std::move( note));
-         
-         // we don't aggregate defaults.
-         // local::optional_add( std::move( rhs.defaults), defaults);
-         
-         local::optional_add( std::move( rhs.environment), environment);
-
-         local::optional_add( std::move( rhs.service), service);
-
-         local::add_or_replace( std::move( rhs.groups), groups, local::equal::name());
-         local::add_or_replace( std::move( rhs.servers), servers, local::equal::alias());
-         local::add_or_replace( std::move( rhs.executables), executables, local::equal::alias());
-         local::add_or_replace( std::move( rhs.services), services, local::equal::name());
-
-         local::optional_add( rhs.transaction, transaction);
-         local::optional_add( rhs.queue, queue);
-         local::optional_add( rhs.gateway, gateway);
-         
-         return *this;
-      }
-
-      Domain operator + ( Domain lhs, Domain rhs)
-      {
-         lhs += std::move( rhs);
-         return lhs;
-      }
-
       void Domain::normalize()
       {
          Trace trace{ "configuration::user::Domain::normalize"};
+
+
+         auto alias_placeholder = []( auto& entity)
+         {
+            if( ! entity.alias || entity.alias.value().empty())
+               entity.alias = alias::generate::placeholder();
+         };
+
+         algorithm::for_each( executables, alias_placeholder);
+         algorithm::for_each( servers, alias_placeholder);
 
          auto normalize = []( auto& manager)
          {
@@ -557,9 +289,7 @@ namespace casual
          normalize( gateway);
          normalize( queue);
 
-
          // validate? - no, we don't 'validate' user model
-
 
          if( ! defaults)
             return; // nothing to normalize

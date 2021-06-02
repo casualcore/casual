@@ -12,17 +12,14 @@
 
 namespace casual
 {
-   namespace configuration
+   namespace configuration::model
    {
-      namespace model
-      {
-         configuration::Model transform( user::Domain domain);
-         user::Domain transform( const configuration::Model& domain);
+      configuration::Model transform( user::Domain domain);
+      user::Domain transform( const configuration::Model& domain);
 
-         model::domain::Environment transform( user::Environment environment);
+      model::domain::Environment transform( user::Environment environment);
 
-      } // model
-   } // configuration
+   } // configuration::model
 
 } // casual
 

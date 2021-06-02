@@ -43,7 +43,6 @@ namespace casual
          std::optional< std::vector< std::filesystem::path>> files;
          std::optional< std::vector< environment::Variable>> variables;
 
-         Environment& operator += ( Environment rhs);
 
          CASUAL_CONST_CORRECT_SERIALIZE(
             CASUAL_SERIALIZE( files);
@@ -79,7 +78,6 @@ namespace casual
             CASUAL_SERIALIZE( execution);
          )
 
-         Service& operator += ( Service rhs);
       };
 
       namespace domain
@@ -290,7 +288,6 @@ namespace casual
             std::string log;
             std::vector< Resource> resources;
 
-            Manager& operator += ( Manager rhs);
 
             //! normalizes the 'manager', mostly to set default values
             void normalize();
@@ -335,7 +332,6 @@ namespace casual
                std::optional< Discovery> discovery;
                std::optional< std::string> note;
 
-               Connection& operator += ( Connection rhs);
 
                CASUAL_CONST_CORRECT_SERIALIZE(
                   CASUAL_SERIALIZE( address);
@@ -373,7 +369,6 @@ namespace casual
                std::vector< inbound::Connection> connections;
                std::optional< std::string> note;
 
-               Group& operator += ( Group rhs);
 
                CASUAL_CONST_CORRECT_SERIALIZE(
                   CASUAL_SERIALIZE( alias);
@@ -389,7 +384,6 @@ namespace casual
             std::optional< inbound::Default> defaults;
             std::vector< inbound::Group> groups;
 
-            Inbound& operator += ( Inbound rhs);
 
             //! normalizes the 'inbound', mostly to set default values
             void normalize();
@@ -409,7 +403,6 @@ namespace casual
                std::optional< std::vector< std::string>> queues;
                std::optional< std::string> note;
 
-               Connection& operator += ( Connection rhs);
 
                CASUAL_CONST_CORRECT_SERIALIZE(
                   CASUAL_SERIALIZE( address);
@@ -425,7 +418,6 @@ namespace casual
                std::optional< std::string> note;
                std::vector< outbound::Connection> connections;
 
-               Group& operator += ( Group rhs);
 
                CASUAL_CONST_CORRECT_SERIALIZE(
                   CASUAL_SERIALIZE( alias);
@@ -439,7 +431,6 @@ namespace casual
          {
             std::vector< outbound::Group> groups;
 
-            Outbound& operator += ( Outbound rhs);
 
             void normalize();
 
@@ -454,7 +445,6 @@ namespace casual
             std::optional< gateway::Inbound> inbound;
             std::optional< gateway::Outbound> outbound;
 
-            Reverse& operator += ( Reverse rhs);
 
             CASUAL_CONST_CORRECT_SERIALIZE(
                CASUAL_SERIALIZE( inbound);
@@ -559,7 +549,6 @@ namespace casual
             std::optional< std::vector< gateway::Connection>> connections;
             //! @}
 
-            Manager& operator += ( Manager rhs);
 
             //! normalizes the 'manager', mostly to set default values
             void normalize();
@@ -761,7 +750,6 @@ namespace casual
                std::optional< std::vector< forward::Queue>> queues;
                std::optional< std::string> note;
 
-               Group& operator += ( Group rhs);
 
                CASUAL_CONST_CORRECT_SERIALIZE(
                   CASUAL_SERIALIZE( alias);
@@ -777,7 +765,6 @@ namespace casual
             std::optional< forward::Default> defaults;
             std::optional< std::vector< forward::Group>> groups;
 
-            Forward& operator += ( Forward rhs);
 
             //! normalizes the 'forward', mostly to set default values
             void normalize();
@@ -807,7 +794,6 @@ namespace casual
 
             std::optional< std::string> note;
 
-            Manager& operator += ( Manager rhs);
 
             //! normalizes the 'manager', mostly to set default values
             void normalize();
@@ -831,7 +817,6 @@ namespace casual
             std::optional< executable::Default> executable;
             std::optional< service::Default> service;
 
-            Default& operator += ( Default rhs);
 
             //! @deprecated
             std::optional< Environment> environment;
@@ -865,9 +850,6 @@ namespace casual
 
          std::optional< gateway::Manager> gateway;
          std::optional< queue::Manager> queue;
-
-         Domain& operator += ( Domain rhs);
-         friend Domain operator + ( Domain lhs, Domain rhs);
 
          //! normalizes the 'manager', mostly to set default values
          void normalize();

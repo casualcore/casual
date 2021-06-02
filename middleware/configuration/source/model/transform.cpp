@@ -32,17 +32,27 @@ namespace casual
 
             namespace normalize
             {
+               struct State
+               {
+                  std::map< std::string, platform::size::type> count;
+                  std::map< std::string, std::string> placeholders;
+               };
+
                template< typename P>
-               auto mutator( std::map< std::string, std::size_t>& state, P&& prospect)
+               auto mutator( State& state, P&& prospect)
                {
                   return [ &state, prospect = std::forward< P>( prospect)]( auto& value)
                   {
+                     std::string placeholder;
+
                      if( value.alias.empty())
                         value.alias = prospect( value);
-                     
+                     else if( alias::is::placeholder( value.alias))
+                        placeholder = std::exchange( value.alias, prospect( value));
+                        
                      auto potentally_add_index = []( auto& state, auto& alias)
                      {
-                        auto count = ++state[ alias];
+                        auto count = ++state.count[ alias];
 
                         if( count == 1)
                            return false;
@@ -53,19 +63,24 @@ namespace casual
 
                      while( potentally_add_index( state, value.alias))
                         ; // no-op
+
+                     if( ! placeholder.empty())
+                        state.placeholders.emplace( placeholder, value.alias);
                   };
                }
+
                void aliases( configuration::Model& model)
                {
+                  State state;
+                  
                   {
-                     auto state = std::map< std::string, std::size_t>{};
                      auto normalizer = normalize::mutator( state, []( auto& value){ return value.path.filename();});
                      algorithm::for_each( model.domain.executables, normalizer);
                      algorithm::for_each( model.domain.servers, normalizer);
                   }
 
                   {
-                     auto state = std::map< std::string, std::size_t>{};
+                     state.count = {};
                      auto forward_alias = normalize::mutator( state, []( auto&){ return "forwrad";});
 
                      algorithm::for_each( model.queue.forward.groups, [&forward_alias, &state]( auto& group)
@@ -80,7 +95,7 @@ namespace casual
                   }
 
                   {
-                     auto state = std::map< std::string, std::size_t>{};
+                     state.count = {};
                      
                      {
                         auto normalizer = normalize::mutator( state, []( auto& value)
@@ -104,15 +119,20 @@ namespace casual
                         algorithm::for_each( model.gateway.outbound.groups, normalizer);
                      }
                   }
+
+                  // take care of alias placeholder mappings...
+                  {
+                     auto resolve_placeholders = [&state]( auto& value)
+                     {
+                        if( alias::is::placeholder( value.alias))
+                           value.alias = state.placeholders.at( value.alias);
+                     };
+
+                     algorithm::for_each( model.service.restrictions, resolve_placeholders);
+                     algorithm::for_each( model.transaction.mappings, resolve_placeholders);
+                  }
                }
 
-               auto order()
-               {
-                  return [ order = platform::size::type{ 0}]( auto& value) mutable
-                  {
-                     value.order = order++;
-                  };
-               }
             } // normalize
 
             auto environment( const user::Environment& environment)
@@ -149,6 +169,29 @@ namespace casual
                   return result;
                });
 
+               // extract all explicit resources for every server, if any
+               {
+                  auto server_resources = [&]( auto& server)
+                  {
+                     auto append_resources = [&]( auto& alias, auto&& resources)
+                     {
+                        if( auto found = algorithm::find( result.mappings, alias))
+                           algorithm::append( resources, found->resources);
+                        else 
+                        {
+                           auto& mapping = result.mappings.emplace_back();
+                           mapping.alias = alias;
+                           algorithm::append( resources, mapping.resources);
+                        }   
+                     };
+
+                     if( server.resources && ! server.resources.value().empty())
+                        append_resources( server.alias.value(), server.resources.value());
+                  };
+
+                  algorithm::for_each( domain.servers, server_resources);
+               }
+
                return result;
             }
 
@@ -174,39 +217,30 @@ namespace casual
                   return result;
                });
 
-               auto assign_executable = []( auto& entity, auto& result)
+               auto transform_executable = []( auto result)
                {
-                  result.alias = entity.alias.value_or( "");
-                  result.arguments = entity.arguments.value_or( result.arguments);
-                  result.instances = entity.instances.value_or( result.instances);
-                  result.note = entity.note.value_or( "");
-                  result.path = entity.path;
-                  result.lifetime.restart = entity.restart.value_or( result.lifetime.restart);
-                  result.memberships = entity.memberships.value_or( result.memberships);
+                  using result_type = decltype( result);
 
-                  // TOOD performance: worst case we'd read env-files a lot of times...
-                  if( entity.environment)
-                     result.environment = local::environment( entity.environment.value());
+                  return []( auto& value)
+                  {
+                     result_type result;
+                     result.alias = value.alias.value_or( "");
+                     result.arguments = value.arguments.value_or( result.arguments);
+                     result.instances = value.instances.value_or( result.instances);
+                     result.note = value.note.value_or( "");
+                     result.path = value.path;
+                     result.lifetime.restart = value.restart.value_or( result.lifetime.restart);
+                     result.memberships = value.memberships.value_or( result.memberships);
+
+                     // TOOD performance: worst case we'd read env-files a lot of times...
+                     if( value.environment)
+                        result.environment = local::environment( value.environment.value());
+                     return result;
+                  };
                };
 
-               result.executables = common::algorithm::transform( domain.executables, [&]( auto& value)
-               {
-                  domain::Executable result;
-                  assign_executable( value, result);
-                  return result;
-               });
-
-               result.servers = common::algorithm::transform( domain.servers, [&]( auto& value)
-               {
-                  domain::Server result;
-                  assign_executable( value, result);
-                  if( value.resources)
-                     result.resources = value.resources.value();
-                  if( value.restrictions)
-                     result.restrictions = value.restrictions.value();
-
-                  return result;
-               });
+               result.executables = common::algorithm::transform( domain.executables, transform_executable( domain::Executable{}));
+               result.servers = common::algorithm::transform( domain.servers, transform_executable( domain::Server{}));
 
                return result;
             }
@@ -274,6 +308,18 @@ namespace casual
                      result.timeout = detail::execution::timeout( service.execution);
 
                   return result;
+               });
+
+               result.restrictions = algorithm::transform_if( domain.servers, []( auto& service)
+               {
+                  service::Restriction result;
+                  result.alias = service.alias.value();
+                  result.services = service.restrictions.value();
+
+                  return result;
+               }, []( auto& service)
+               {
+                  return service.restrictions && ! service.restrictions.value().empty();
                });
 
                return result;
@@ -420,9 +466,6 @@ namespace casual
                   append_outbounds( gateway.reverse.value().outbound, result.outbound.groups, configuration::model::gateway::connect::Semantic::reversed);
                }
 
-               // make sure we keep track of the order.
-               algorithm::for_each( result.outbound.groups, normalize::order());
-
                return result;
             }
 
@@ -436,6 +479,8 @@ namespace casual
                   return result;
 
                auto& source = domain.queue.value();
+
+               result.note = source.note.value_or( "");
 
                if( source.groups)
                {
@@ -600,8 +645,11 @@ namespace casual
                      configuration::user::domain::Server result;
                      assign_executable( value, result);
                      
-                     result.resources = null_if_empty( value.resources);
-                     result.restrictions = null_if_empty( value.restrictions);
+                     if( auto found = algorithm::find( model.transaction.mappings, value.alias))
+                        result.resources = null_if_empty( found->resources);
+
+                     if( auto found = algorithm::find( model.service.restrictions, value.alias))
+                        result.restrictions = null_if_empty( found->services);
 
                      return result;
                   });
@@ -766,22 +814,21 @@ namespace casual
 
                   // outbounds
                   {
-                     auto less_order = []( auto& lhs, auto& rhs){ return lhs.order < rhs.order;};
-
                      auto [ reversed, regular] = algorithm::stable::partition( model.outbound.groups, is_reversed);
 
-                     if( reversed)
-                     {
-                        configuration::user::gateway::Outbound outbound;
-                        outbound.groups = algorithm::transform( algorithm::sort( reversed, less_order), transform_outbound);
-                        reverse.outbound = std::move( outbound);
-                     }
 
                      if( regular)
                      {
                         configuration::user::gateway::Outbound outbound;
-                        outbound.groups = algorithm::transform( algorithm::sort( regular, less_order), transform_outbound);
+                        outbound.groups = algorithm::transform( regular, transform_outbound);
                         result.outbound = std::move( outbound);
+                     }
+                     
+                     if( reversed)
+                     {
+                        configuration::user::gateway::Outbound outbound;
+                        outbound.groups = algorithm::transform( reversed, transform_outbound);
+                        reverse.outbound = std::move( outbound);
                      }
                   }
 
@@ -882,7 +929,9 @@ namespace casual
       configuration::Model transform( user::Domain domain)
       {
          Trace trace{ "configuration::model::transform domain"};
-         log::line( verbose::log, "domain: ", domain);
+
+         // make sure we normalize alias placeholders and such..
+         domain.normalize();
 
          configuration::Model result;
          result.domain = local::domain( domain);
@@ -893,6 +942,8 @@ namespace casual
 
          // make sure to normalize all aliases
          local::normalize::aliases( result);
+
+         log::line( verbose::log, "result: ", result);
 
          return result;
       }

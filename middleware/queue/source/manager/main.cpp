@@ -92,13 +92,15 @@ namespace casual
             void start( State state)
             {
                Trace trace( "queue::manager::local::start");
-               common::log::line( log, "queue manager start");
 
                auto abort = execute::scope( [&state](){ manager::handle::abort( state);});
 
                auto handler = manager::handlers( state);
 
                wait::running( state, handler);
+
+               // we can supply configuration
+               casual::domain::configuration::supplier::registration();
 
                common::log::line( common::log::category::information, "casual-queue-manager is on-line");
                common::log::line( verbose::log, "state: ", state);

@@ -6,10 +6,14 @@
 
 #include "queue/manager/handle.h"
 #include "queue/manager/admin/server.h"
+#include "queue/manager/transform.h"
 #include "queue/common/log.h"
 #include "queue/common/ipc/message.h"
 
+
 #include "domain/discovery/api.h"
+
+#include "configuration/message.h"
 
 #include "common/process.h"
 #include "common/server/lifetime.h"
@@ -390,7 +394,7 @@ namespace casual
                      {
                         return [&state]( casual::domain::message::discovery::Request& message)
                         {
-                           Trace trace{ "handle::domain::discover::Request"};
+                           Trace trace{ "queue::manager::handle::local::domain::discover::request"};
                            common::log::line( verbose::log, "message: ", message);
 
                            auto reply = common::message::reverse::type( message);
@@ -414,7 +418,7 @@ namespace casual
                      {
                         return [&state]( casual::domain::message::discovery::outbound::Reply& message)
                         {
-                           Trace trace{ "handle::domain::discover::Reply"};
+                           Trace trace{ "queue::manager::handle::local::domain::discover::reply"};
                            common::log::line( verbose::log, "message: ", message);
 
                            pending::lookups::check( state);
@@ -431,7 +435,26 @@ namespace casual
                         };
                      }
                   } // discover
-               } // domain  
+               } // domain 
+               namespace configuration
+               {
+                  auto request( State& state)
+                  {
+                     return [&state]( casual::configuration::message::Request& message)
+                     {
+                        Trace trace{ "handle::domain::handle::local::configuration::request"};
+                        common::log::line( verbose::log, "message: ", message);
+
+                        auto reply = common::message::reverse::type( message);
+
+                        reply.model.queue = transform::configuration( state);
+
+                        communication::device::blocking::optional::send( message.process.ipc, reply);
+                     };
+
+                  }
+
+               } // configuration
             } // <unnamed>
          } // local
 
@@ -443,6 +466,8 @@ namespace casual
                log::line( verbose::log, "model: ", model);
 
                // TODO maintainence: runtime configuration
+
+               state.note = model.note;
 
                state.groups = algorithm::transform( model.groups, []( auto& config){ return state::Group{ std::move( config)};});
                state.forward.groups = algorithm::transform( model.forward.groups, []( auto& config){ return state::forward::Group{ std::move( config)};});
@@ -490,6 +515,8 @@ namespace casual
 
             handle::local::forward::connect( state),
             handle::local::forward::configuration::update::reply( state),
+
+            handle::local::configuration::request( state),
             
             handle::local::lookup::request( state),
             handle::local::lookup::discard::request( state),

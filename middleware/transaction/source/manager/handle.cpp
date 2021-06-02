@@ -18,8 +18,9 @@
 #include "common/code/raise.h"
 #include "common/code/convert.h"
 #include "common/code/category.h"
-
 #include "common/communication/instance.h"
+
+#include "configuration/message.h"
 
 #include "domain/pending/message/send.h"
 
@@ -112,7 +113,7 @@ namespace casual
 
                void send( State& state)
                {
-                  Trace trace{ "transaction::handle::persist:send"};
+                  Trace trace{ "transaction::manager::handle::persist:send"};
 
                   // if we don't have any persistent replies, we don't need to persist
                   if( ! state.persistent.replies.empty())
@@ -229,7 +230,7 @@ namespace casual
                            Transaction::Resource::Stage new_stage, 
                            common::flag::xa::Flags flags = common::flag::xa::Flag::no_flags)
                         {
-                           Trace trace{ "transaction::handle::local::send::resource::request"};
+                           Trace trace{ "transaction::manager::handle::local::send::resource::request"};
 
                            auto branch_request = [&]( auto& branch)
                            {
@@ -406,7 +407,7 @@ namespace casual
                      {
                         bool prepare( State& state, common::message::transaction::resource::prepare::Reply& message, Transaction& transaction)
                         {
-                           Trace trace{ "transaction::handle::local::dispatch::localized::prepare"};
+                           Trace trace{ "transaction::manager::handle::local::dispatch::localized::prepare"};
 
                            using reply_type = common::message::transaction::commit::Reply;
 
@@ -491,7 +492,7 @@ namespace casual
 
                         bool commit( State& state, common::message::transaction::resource::commit::Reply& message, Transaction& transaction)
                         {
-                           Trace trace{ "transaction::handle::local::dispatch::localized::commit"};
+                           Trace trace{ "transaction::manager::handle::local::dispatch::localized::commit"};
 
                            using reply_type = common::message::transaction::commit::Reply;
 
@@ -557,7 +558,7 @@ namespace casual
 
                         bool rollback( State& state, common::message::transaction::resource::rollback::Reply& message, Transaction& transaction)
                         {
-                           Trace trace{ "transaction::handle::local::dispatch::localized::rollback"};
+                           Trace trace{ "transaction::manager::handle::local::dispatch::localized::rollback"};
 
                            using reply_type = common::message::transaction::rollback::Reply;
 
@@ -624,7 +625,7 @@ namespace casual
                      {
                         bool prepare( State& state, common::message::transaction::resource::prepare::Reply& message, Transaction& transaction) 
                         {
-                           Trace trace{ "transaction::handle::implementation::remote::prepare"};
+                           Trace trace{ "transaction::manager::handle::implementation::remote::prepare"};
 
                            // Transaction is owned by another domain, so we just act as a resource.
                            // This TM does not own the transaction, so we don't need to store
@@ -647,7 +648,7 @@ namespace casual
 
                         bool commit( State& state, common::message::transaction::resource::commit::Reply& message, Transaction& transaction)
                         {
-                           Trace trace{ "transaction::handle::implementation::remote::commit"};
+                           Trace trace{ "transaction::manager::handle::implementation::remote::commit"};
 
                            // Transaction is owned by another domain, so we just act as a resource.
                            // This TM does not own the transaction, so we don't need to store
@@ -670,7 +671,7 @@ namespace casual
 
                         bool rollback( State& state, common::message::transaction::resource::rollback::Reply& message, Transaction& transaction)
                         {
-                           Trace trace{ "transaction::handle::implementation::remote::rollback"};
+                           Trace trace{ "transaction::manager::handle::implementation::remote::rollback"};
 
                            // Transaction is owned by another domain, so we just act as a resource.
                            // This TM does not own the transaction, so we don't need to store
@@ -712,7 +713,7 @@ namespace casual
                               {
                                  bool prepare( State& state, common::message::transaction::resource::prepare::Reply& message, Transaction& transaction)
                                  {
-                                    Trace trace{ "transaction::handle::local::dispatch::one::phase::commit::remote::prepare"};
+                                    Trace trace{ "transaction::manager::handle::local::dispatch::one::phase::commit::remote::prepare"};
 
                                     // We're done with the prepare phase, start with commit or rollback
 
@@ -789,7 +790,7 @@ namespace casual
 
                                  bool rollback( State& state, common::message::transaction::resource::rollback::Reply& message, Transaction& transaction)
                                  {
-                                    Trace trace{ "transaction::handle::local::dispatch::one::phase::commit::remote::rollback"};
+                                    Trace trace{ "transaction::manager::handle::local::dispatch::one::phase::commit::remote::rollback"};
 
                                     using reply_type = common::message::transaction::resource::commit::Reply;
 
@@ -827,7 +828,7 @@ namespace casual
             {
                void exit( const common::process::lifetime::Exit& exit)
                {
-                  Trace trace{ "transaction::handle::process::exit"};
+                  Trace trace{ "transaction::manager::handle::process::exit"};
                   common::log::line( verbose::log, "exit: ", exit);
 
                   // push it to handle it later together with other process exit events
@@ -836,7 +837,7 @@ namespace casual
 
                void Exit::operator () ( common::message::event::process::Exit& message)
                {
-                  Trace trace{ "transaction::handle::process::Exit"};
+                  Trace trace{ "transaction::manager::handle::process::Exit"};
                   common::log::line( verbose::log, "message: ", message);
 
                   // Check if it's a resource proxy instance
@@ -876,7 +877,7 @@ namespace casual
 
                void Involved::operator () ( common::message::transaction::resource::involved::Request& message)
                {
-                  Trace trace{ "transaction::handle::resource::Involved"};
+                  Trace trace{ "transaction::manager::handle::resource::Involved"};
                   common::log::line( verbose::log, "message: ",  message);
 
                   auto& branch = local::branch::find_or_add( m_state, message);
@@ -913,7 +914,7 @@ namespace casual
                   template< typename H>
                   void Wrapper< H>::operator () ( message_type& message)
                   {
-                     Trace trace{ "transaction::handle::resource::reply::Wrapper"};
+                     Trace trace{ "transaction::manager::handle::resource::reply::Wrapper"};
                      common::log::line( verbose::log, "message: ", message);
 
                      if( state::resource::id::local( message.resource))
@@ -979,7 +980,7 @@ namespace casual
 
                   bool basic_prepare::operator () ( message_type& message, Transaction& transaction)
                   {
-                     Trace trace{ "transaction::handle::resource::prepare reply"};
+                     Trace trace{ "transaction::manager::handle::resource::prepare reply"};
 
                      // Are we in a prepared state? If not, we wait for more replies...
                      if( transaction.stage() < Transaction::Resource::Stage::prepare_replied)
@@ -991,7 +992,7 @@ namespace casual
 
                   bool basic_commit::operator () ( message_type& message, Transaction& transaction)
                   {
-                     Trace trace{ "transaction::handle::resource::commit reply"};
+                     Trace trace{ "transaction::manager::handle::resource::commit reply"};
 
                      // Are we in a committed state? If not, we wait for more replies...
                      if( transaction.stage() < Transaction::Resource::Stage::commit_replied)
@@ -1003,7 +1004,7 @@ namespace casual
 
                   bool basic_rollback::operator () ( message_type& message, Transaction& transaction)
                   {
-                     Trace trace{ "transaction::handle::resource::rollback reply"};
+                     Trace trace{ "transaction::manager::handle::resource::rollback reply"};
 
                      // Are we in a rolled back stage?
                      if( transaction.stage() < Transaction::Resource::Stage::rollback_replied)
@@ -1050,7 +1051,7 @@ namespace casual
 
             void basic_commit::operator () ( message_type& message)
             {
-               Trace trace{ "transaction::handle::Commit"};
+               Trace trace{ "transaction::manager::handle::Commit"};
                common::log::line( verbose::log, "message: ", message);
 
                auto position = local::transaction::find_or_add_and_involve( m_state, message);
@@ -1139,7 +1140,7 @@ namespace casual
 
             void basic_rollback::operator () ( message_type& message)
             {
-               Trace trace{ "transaction::handle::Rollback"};
+               Trace trace{ "transaction::manager::handle::Rollback"};
                common::log::line( log, "message: ", message);
 
                auto location = local::transaction::find_or_add_and_involve( m_state, message);
@@ -1188,7 +1189,7 @@ namespace casual
             {
                void Involved::operator () ( common::message::transaction::resource::external::Involved& message)
                {
-                  Trace trace{ "transaction::handle::external::Involved"};
+                  Trace trace{ "transaction::manager::handle::external::Involved"};
                   common::log::line( log, "message: ", message);
 
                   auto id = state::resource::external::proxy::id( m_state, message.process);
@@ -1232,7 +1233,7 @@ namespace casual
 
                void Prepare::operator () ( message_type& message)
                {
-                  Trace trace{ "transaction::handle::domain::prepare request"};
+                  Trace trace{ "transaction::manager::handle::domain::prepare request"};
                   common::log::line( log, "message: ", message);
 
                   // Find the transaction
@@ -1262,7 +1263,7 @@ namespace casual
 
                Directive Prepare::handle( message_type& message, Transaction& transaction)
                {
-                  Trace trace{ "transaction::handle::domain::Prepare::handle"};
+                  Trace trace{ "transaction::manager::handle::domain::Prepare::handle"};
 
                   common::log::line( log, "message: ", message);
                   common::log::line( verbose::log, "transaction: ", transaction);
@@ -1338,7 +1339,7 @@ namespace casual
 
                void Commit::operator () ( message_type& message)
                {
-                  Trace trace{ "transaction::handle::domain::commit request"};
+                  Trace trace{ "transaction::manager::handle::domain::commit request"};
                   common::log::line( log, "message: ", message);
 
                   if( auto found = common::algorithm::find( m_state.transactions, message.trid))
@@ -1367,7 +1368,7 @@ namespace casual
 
                Directive Commit::handle( message_type& message, Transaction& transaction)
                {
-                  Trace trace{ "transaction::handle::domain::Commit::handle"};
+                  Trace trace{ "transaction::manager::handle::domain::Commit::handle"};
                   common::log::line( verbose::log, "message: ", message);
 
                   transaction.correlation = message.correlation;
@@ -1450,7 +1451,7 @@ namespace casual
 
                void Rollback::operator () ( message_type& message)
                {
-                  Trace trace{ "transaction::handle::domain::rollback request"};
+                  Trace trace{ "transaction::manager::handle::domain::rollback request"};
                   common::log::line( verbose::log, "message: ", message);
 
                   if( auto found = common::algorithm::find( m_state.transactions, message.trid))
@@ -1467,7 +1468,7 @@ namespace casual
 
                Directive Rollback::handle( message_type& message, Transaction& transaction)
                {
-                  Trace trace{ "transaction::handle::domain::Rollback::handle"};
+                  Trace trace{ "transaction::manager::handle::domain::Rollback::handle"};
                   common::log::line( verbose::log, "message: ", message);
 
                   using Stage = Transaction::Resource::Stage;
@@ -1563,7 +1564,7 @@ namespace casual
                         {
                            return [&state]( const common::message::transaction::resource::configuration::Request& message)
                            {
-                              Trace trace{ "transaction::handle::local::resource::configuration::request"};
+                              Trace trace{ "transaction::manager::handle::local::resource::configuration::request"};
                               common::log::line( log, "message: ", message);
 
                               auto reply = common::message::reverse::type( message);
@@ -1571,9 +1572,9 @@ namespace casual
                               {
                                  auto& resource = state.get_resource( message.id);
                                  reply.resource.id = message.id;
-                                 reply.resource.key = resource.key;
-                                 reply.resource.openinfo = resource.openinfo;
-                                 reply.resource.closeinfo = resource.closeinfo;
+                                 reply.resource.key = resource.configuration.key;
+                                 reply.resource.openinfo = resource.configuration.openinfo;
+                                 reply.resource.closeinfo = resource.configuration.closeinfo;
                               }
 
                               common::communication::device::blocking::optional::send( message.process.ipc, reply);
@@ -1586,7 +1587,7 @@ namespace casual
                      {
                         return [&state]( const common::message::transaction::resource::Ready& message)
                         {
-                           Trace trace{ "transaction::handle::local::resource::ready"};
+                           Trace trace{ "transaction::manager::handle::local::resource::ready"};
                            common::log::line( log, "message: ", message);
 
                            auto& instance = state.get_instance( message.id, message.process.pid);
@@ -1605,7 +1606,7 @@ namespace casual
                         {
                            return [&state]( const common::message::transaction::configuration::alias::Request& message)
                            {
-                              Trace trace{ "transaction::handle::configuration::alias::request"};
+                              Trace trace{ "transaction::manager::handle::local::configuration::alias::request"};
                               common::log::line( verbose::log, "message: ", message);
 
                               auto reply = state.configuration( message);
@@ -1615,6 +1616,20 @@ namespace casual
                            };
                         }
                      } // alias
+
+                     auto request( State& state)
+                     {
+                        return [&state]( const casual::configuration::message::Request& message)
+                        {
+                           Trace trace{ "transaction::manager::handle::local::configuration::request"};
+                           common::log::line( verbose::log, "message: ", message);
+
+                           auto reply = common::message::reverse::type( message);
+                           reply.model.transaction = state.configuration();
+                           common::communication::device::blocking::optional::send( message.process.ipc, reply);
+                        };
+                     }
+
                   } // configuration
                } // <unnamed>
             } // local
@@ -1642,6 +1657,7 @@ namespace casual
                   handle::Rollback{ state},
                   handle::resource::Involved{ state},
                   local::configuration::alias::request( state),
+                  local::configuration::request( state),
                   local::resource::configuration::request( state),
                   local::resource::ready( state),
                   handle::resource::reply::Prepare{ state},
@@ -1654,6 +1670,25 @@ namespace casual
                   common::server::handle::admin::Call{
                      manager::admin::services( state)}
                );
+            }
+
+            void abort( State& state)
+            {
+               Trace trace{ "transaction::manager::handle::abort"};
+
+               auto scale_down = [&]( auto& resource)
+               { 
+                  common::exception::guard( [&](){
+                     resource.configuration.instances = 0;
+                     manager::action::resource::Instances{ state}( resource);
+                  }); 
+               };
+
+               common::algorithm::for_each( state.resources, scale_down);
+
+               auto processes = state.processes();
+               common::process::lifetime::wait( processes, std::chrono::milliseconds( processes.size() * 100));
+
             }
          } // handle
       } // manager

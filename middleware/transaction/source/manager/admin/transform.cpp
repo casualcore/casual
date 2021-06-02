@@ -128,11 +128,11 @@ namespace casual
                      admin::model::resource::Proxy result;
 
                      result.id = value.id;
-                     result.name = value.name;
-                     result.key = value.key;
-                     result.openinfo = value.openinfo;
-                     result.closeinfo = value.closeinfo;
-                     result.concurency = value.concurency;
+                     result.name = value.configuration.name;
+                     result.key = value.configuration.key;
+                     result.openinfo = value.configuration.openinfo;
+                     result.closeinfo = value.configuration.closeinfo;
+                     result.concurency = value.configuration.instances;
                      result.metrics = transform::metrics( value.metrics);
 
                      common::algorithm::transform( value.instances, result.instances, Instance{});

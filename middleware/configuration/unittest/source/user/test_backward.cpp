@@ -43,21 +43,18 @@ gateway:
       groups:
          -  alias: outbound
             connect: 1 # regular ( not reversed)
-            order: 0
             note: 7001
             connections:
                -  address: localhost:7001
                   note: 7001
          -  alias: outbound.2
             connect: 1 # regular ( not reversed)
-            order: 1 # generated order or each group
             note: 7002
             connections:
                -  address: localhost:7002
                   note: 7002
          -  alias: outbound.3
             connect: 1 # regular ( not reversed)
-            order: 2
             note: 7003
             connections:
                -  address: localhost:7003
@@ -65,7 +62,6 @@ gateway:
                   services: [ a, b, c]
          -  alias: outbound.4
             connect: 1 # regular ( not reversed)
-            order: 3
             note: 7004
             connections:
                -  address: localhost:7004

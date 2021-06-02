@@ -11,25 +11,21 @@
 #include "service/manager/state.h"
 #include "service/manager/admin/model.h"
 
+#include "configuration/model.h"
+
 #include "common/message/transaction.h"
 
 
 namespace casual
 {
-   namespace service
+   namespace service::transform
    {
-      namespace transform
-      {
 
-         struct Instance
-         {
-            common::process::Handle operator () ( const manager::state::instance::Sequential& value) const;
-         };
+      manager::admin::model::State state( const manager::State& state);
 
-         manager::admin::model::State state( const manager::State& state);
+      configuration::model::service::Model configuration( const manager::State& state);
 
-      } // transform
-   } // service
+   } // service::transform
 } // casual
 
 

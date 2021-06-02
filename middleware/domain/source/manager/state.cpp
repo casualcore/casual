@@ -320,10 +320,7 @@ namespace casual
          algorithm::trim( whitelisted, algorithm::remove( whitelisted, pid));
 
          // We remove from pending 
-         algorithm::trim( pending.lookup, algorithm::remove_if( pending.lookup, [pid]( auto& m)
-         {
-            return m.process == pid;
-         }));
+         algorithm::trim( pending.lookup, algorithm::remove( pending.lookup, pid));
 
          // Remove from singletons
          auto is_singleton = [pid]( auto& v){ return v.second == pid;};
@@ -333,6 +330,8 @@ namespace casual
             log::line( log, "remove singleton: ", found->second);
             singletons.erase( std::begin( found));
          }
+
+         algorithm::trim( configuration.suppliers, algorithm::remove( configuration.suppliers, pid));
 
          using result_type = std::tuple< state::Server*, state::Executable*>;
 
@@ -535,7 +534,7 @@ namespace casual
 
       std::vector< common::environment::Variable> State::variables( const std::vector< common::environment::Variable>& variables)
       {
-         auto result = configuration.domain.environment.variables;
+         auto result = configuration.model.domain.environment.variables;
          algorithm::append( variables, result);
          return result;
       }

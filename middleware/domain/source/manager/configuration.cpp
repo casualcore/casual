@@ -8,7 +8,7 @@
 #include "domain/manager/configuration.h"
 #include "domain/manager/state.h"
 #include "domain/manager/state/create.h"
-#include "domain/transform.h"
+#include "domain/manager/transform.h"
 #include "domain/manager/task/create.h"
 
 #include "configuration/model.h"
@@ -60,8 +60,8 @@ namespace casual
                   {
                      auto complement( State& state, const casual::configuration::Model& model)
                      {
-                        auto servers = casual::domain::transform::alias( model.domain.servers, state.groups);
-                        auto executables = casual::domain::transform::alias( model.domain.executables, state.groups);
+                        auto servers = transform::alias( model.domain.servers, state.groups);
+                        auto executables = transform::alias( model.domain.executables, state.groups);
 
                         algorithm::append( servers, state.servers);
                         algorithm::append( executables, state.executables);

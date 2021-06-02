@@ -358,6 +358,10 @@ namespace casual
                         if( error.code() != queue::code::no_queue)
                            throw;
 
+                        // check if we've got a shutdown...
+                        if( common::communication::ipc::inbound::device().cached( common::message::shutdown::Request::type()))
+                           common::code::raise::error( common::code::casual::shutdown);
+
                         common::log::line( verbose::log, error, " queue not available yet - ", queue); 
                      }
                      sleep();

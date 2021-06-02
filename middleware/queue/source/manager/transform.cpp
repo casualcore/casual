@@ -153,9 +153,25 @@ namespace casual
                });
             }
             
-         } // message  
+         } // message
+      } // model
 
-         
-      } // admin
+      casual::configuration::model::queue::Model configuration( const State& state)
+      {
+         casual::configuration::model::queue::Model result;
+
+         result.note = state.note;
+
+         auto configuration = []( auto& group)
+         {
+            return group.configuration;
+         };
+
+         result.groups = algorithm::transform( state.groups, configuration);
+         result.forward.groups = algorithm::transform( state.forward.groups, configuration);
+
+         return result;
+      }
+
    } // queue::manager::transform
 } // casual

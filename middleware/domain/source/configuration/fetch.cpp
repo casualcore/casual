@@ -17,21 +17,31 @@
 namespace casual
 {
    using namespace common;
-   namespace domain
+   namespace domain::configuration
    {
-      namespace configuration
-      {
-         casual::configuration::Model fetch()
-         {
-            Trace trace{ "configuration::model::fetch"};
 
-            return environment::normalize( communication::ipc::call( 
+      casual::configuration::Model fetch()
+      {
+         Trace trace{ "configuration::model::fetch"};
+
+         return environment::normalize( communication::ipc::call( 
+            communication::instance::outbound::domain::manager::device(),
+            casual::configuration::message::Request{ process::handle()})).model;
+
+      }
+
+      namespace supplier
+      {
+         void registration()
+         {
+            Trace trace{ "configuration::model::supplier::registration"};
+
+            communication::device::blocking::send( 
                communication::instance::outbound::domain::manager::device(),
-               casual::configuration::message::Request{ process::handle()})).model;
+               casual::configuration::message::supplier::Registration{ process::handle()});
 
          }
+      } // supplier
 
-      } // configuration
-   } // domain
-
+   } // domain::configuration
 } // casual

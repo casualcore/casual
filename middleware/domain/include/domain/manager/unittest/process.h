@@ -43,5 +43,14 @@ namespace casual
          common::move::basic_pimpl< Implementation> m_implementation;
       };
 
+      template< typename... C>
+      [[nodiscard]] auto process( C&&... configurations)
+      {
+         std::vector< std::string_view> views;
+         ( views.emplace_back( std::forward< C>( configurations)) , ... );
+
+         return domain::manager::unittest::Process{ std::move( views)};
+      }
+
    } // domain::manager::unittest
 } // casual

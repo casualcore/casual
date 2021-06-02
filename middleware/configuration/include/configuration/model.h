@@ -25,6 +25,8 @@ namespace casual::configuration
          {
             std::vector< common::environment::Variable> variables;
 
+            Environment& operator += ( Environment rhs);
+
             CASUAL_CONST_CORRECT_SERIALIZE(
                CASUAL_SERIALIZE( variables);
             )
@@ -65,9 +67,8 @@ namespace casual::configuration
 
          struct Executable : common::Compare< Executable>
          {
-            std::filesystem::path path;
             std::string alias;
-            std::string note;
+            std::filesystem::path path;
             std::vector< std::string> arguments;
 
             platform::size::type instances = 1;
@@ -75,33 +76,25 @@ namespace casual::configuration
             Environment environment;
 
             Lifetime lifetime;
+            std::string note;
             
             CASUAL_CONST_CORRECT_SERIALIZE(
-               CASUAL_SERIALIZE( path);
                CASUAL_SERIALIZE( alias);
-               CASUAL_SERIALIZE( note);
+               CASUAL_SERIALIZE( path);
                CASUAL_SERIALIZE( arguments);
                CASUAL_SERIALIZE( instances);
                CASUAL_SERIALIZE( memberships);
                CASUAL_SERIALIZE( environment);
                CASUAL_SERIALIZE( lifetime);
+               CASUAL_SERIALIZE( note);
             )
 
             inline auto tie() const { return std::tie( path, alias, note, arguments, instances, memberships, environment, lifetime);}
          };
 
-         struct Server : Executable, common::Compare< Server>
+         struct Server : Executable
          {
-            std::vector< std::string> resources;
-            std::vector< std::string> restrictions;
 
-            CASUAL_CONST_CORRECT_SERIALIZE(
-               Executable::serialize( archive);   
-               CASUAL_SERIALIZE( resources);
-               CASUAL_SERIALIZE( restrictions);
-            )
-
-            inline auto tie() const { return std::tuple_cat( Executable::tie(), std::tie( resources, restrictions));}
          };
 
          struct Model : common::Compare< Model>
@@ -111,6 +104,8 @@ namespace casual::configuration
             std::vector< domain::Group> groups;
             std::vector< domain::Server> servers;
             std::vector< domain::Executable> executables;
+
+            Model& operator += ( Model rhs);
             
             CASUAL_CONST_CORRECT_SERIALIZE(
                CASUAL_SERIALIZE( name);
@@ -131,6 +126,22 @@ namespace casual::configuration
 
       namespace service
       {
+         struct Restriction : common::Compare< Restriction>
+         {
+            std::string alias;
+            //! allowed services. If empty all advertised services are allowed for the alias
+            std::vector< std::string> services;
+
+            inline friend bool operator == ( const Restriction& lhs, const std::string& alias) { return lhs.alias == alias;} 
+
+            CASUAL_CONST_CORRECT_SERIALIZE(
+               CASUAL_SERIALIZE( alias);
+               CASUAL_SERIALIZE( services);
+            )
+
+            inline auto tie() const { return std::tie( alias, services);}
+         };
+
          struct Timeout : common::Compare< Timeout>
          {
             using Contract = common::service::execution::timeout::contract::Type;
@@ -152,6 +163,8 @@ namespace casual::configuration
             std::vector< std::string> routes;
             service::Timeout timeout;
 
+            inline friend bool operator == ( const Service& lhs, const std::string& name) { return lhs.name == name;} 
+
             CASUAL_CONST_CORRECT_SERIALIZE(
                CASUAL_SERIALIZE( name);
                CASUAL_SERIALIZE( routes);
@@ -165,15 +178,19 @@ namespace casual::configuration
          {  
             service::Timeout timeout;
             std::vector< service::Service> services;
+            std::vector< Restriction> restrictions;
+
+            Model& operator += ( Model rhs);
 
             CASUAL_CONST_CORRECT_SERIALIZE(
                CASUAL_SERIALIZE( timeout);
                CASUAL_SERIALIZE( services);
+               CASUAL_SERIALIZE( restrictions);
             )
 
             inline auto tie() const 
             { 
-               return std::tie( timeout, services);
+               return std::tie( timeout, services, restrictions);
             }
          };
       } // service
@@ -202,17 +219,37 @@ namespace casual::configuration
             inline auto tie() const { return std::tie( name, key, instances, note, openinfo, closeinfo);}
          };
 
+         //! TODO: maintainence - better name
+         struct Mapping : common::Compare< Mapping>
+         {
+            std::string alias;
+            std::vector< std::string> resources;
+
+            inline friend bool operator == ( const Mapping& lhs, const std::string& alias) { return lhs.alias == alias;} 
+
+            CASUAL_CONST_CORRECT_SERIALIZE(
+               CASUAL_SERIALIZE( alias);
+               CASUAL_SERIALIZE( resources);
+            )
+
+            inline auto tie() const { return std::tie( alias, resources);}
+         };
+
          struct Model : common::Compare< Model>
          {
             std::string log;
             std::vector< transaction::Resource> resources;
+            std::vector< Mapping> mappings;
+
+            Model& operator += ( Model rhs);
 
             CASUAL_CONST_CORRECT_SERIALIZE(
                CASUAL_SERIALIZE( log);
                CASUAL_SERIALIZE( resources);
+               CASUAL_SERIALIZE( mappings);
             )
 
-            inline auto tie() const { return std::tie( log, resources);}
+            inline auto tie() const { return std::tie( log, resources, mappings);}
          };
 
       } // transaction
@@ -227,7 +264,18 @@ namespace casual::configuration
                regular,
                reversed
             };
-         } // connection
+
+            inline std::ostream& operator << ( std::ostream& out, Semantic value)
+            {
+               switch( value)
+               {
+                  case Semantic::unknown: return out << "unknown";
+                  case Semantic::regular: return out << "regular";
+                  case Semantic::reversed: return out << "reversed";
+               }
+               return out << "<unknown>";
+            }
+         } // connect
 
 
          namespace inbound
@@ -249,6 +297,7 @@ namespace casual::configuration
                   }
                   return out << "<unknown>";
                }
+
             } // discovery
 
             struct Limit : common::Compare< Limit>
@@ -272,6 +321,8 @@ namespace casual::configuration
                discovery::Directive discovery{};
                std::string note;
 
+               Connection& operator += ( Connection rhs);
+
                CASUAL_CONST_CORRECT_SERIALIZE(
                   CASUAL_SERIALIZE( address);
                   CASUAL_SERIALIZE( discovery);
@@ -291,6 +342,8 @@ namespace casual::configuration
 
                inline bool empty() const { return connections.empty();}
 
+               Group& operator += ( Group rhs);
+
                CASUAL_CONST_CORRECT_SERIALIZE(
                   CASUAL_SERIALIZE( connect);
                   CASUAL_SERIALIZE( alias);
@@ -302,12 +355,15 @@ namespace casual::configuration
                inline auto tie() const { return std::tie( connect, alias, limit, connections, note);}
             };
 
-         }
+         } // inbound
+
          struct Inbound : common::Compare< Inbound>
          {
             std::vector< inbound::Group> groups;
 
             inline bool empty() const { return groups.empty();}
+
+            Inbound& operator += ( Inbound rhs);
 
             CASUAL_CONST_CORRECT_SERIALIZE(
                CASUAL_SERIALIZE( groups);
@@ -325,6 +381,8 @@ namespace casual::configuration
                std::vector< std::string> queues;
                std::string note;
 
+               Connection& operator += ( Connection rhs);
+
                CASUAL_CONST_CORRECT_SERIALIZE(
                   CASUAL_SERIALIZE( note);
                   CASUAL_SERIALIZE( address);
@@ -339,31 +397,34 @@ namespace casual::configuration
 
             struct Group : common::Compare< Group>
             {
-               connect::Semantic connect = connect::Semantic::unknown;
-               platform::size::type order{};
                std::string alias;
+               connect::Semantic connect = connect::Semantic::unknown;
                std::vector< outbound::Connection> connections;
                std::string note;
+
+               Group& operator += ( Group rhs);
 
                inline bool empty() const { return connections.empty();}
 
                CASUAL_CONST_CORRECT_SERIALIZE(
-                  CASUAL_SERIALIZE( connect);
-                  CASUAL_SERIALIZE( order);
                   CASUAL_SERIALIZE( alias);
+                  CASUAL_SERIALIZE( connect);
                   CASUAL_SERIALIZE( connections);
                   CASUAL_SERIALIZE( note);
                )
 
-               inline auto tie() const { return std::tie( connect, order, alias, connections, note);}
+               inline auto tie() const { return std::tie( alias, connect, connections, note);}
             };
-         }
+
+         } // outbound
 
          struct Outbound : common::Compare< Outbound>
          {
             std::vector< outbound::Group> groups;
 
             inline bool empty() const { return groups.empty();}
+
+            Outbound& operator += ( Outbound rhs);
 
             CASUAL_CONST_CORRECT_SERIALIZE(
                CASUAL_SERIALIZE( groups);
@@ -376,6 +437,8 @@ namespace casual::configuration
          {
             Inbound inbound;
             Outbound outbound;
+
+            Model& operator += ( Model rhs);
 
             CASUAL_CONST_CORRECT_SERIALIZE(
                CASUAL_SERIALIZE( inbound);
@@ -399,8 +462,7 @@ namespace casual::configuration
 
                inline auto empty() const { return count == 0 && delay == platform::time::unit::zero();}
 
-               CASUAL_CONST_CORRECT_SERIALIZE
-               (
+               CASUAL_CONST_CORRECT_SERIALIZE(
                   CASUAL_SERIALIZE( count);
                   CASUAL_SERIALIZE( delay);
                )
@@ -429,6 +491,8 @@ namespace casual::configuration
             std::vector< Queue> queues;
 
             inline friend bool operator == ( const Group& lhs, const std::string& alias) { return lhs.alias == alias;}
+
+            Group& operator += ( Group rhs);
 
             CASUAL_CONST_CORRECT_SERIALIZE(
                CASUAL_SERIALIZE( alias);
@@ -518,6 +582,8 @@ namespace casual::configuration
                std::vector< forward::Queue> queues;
                std::string note;
 
+               Group& operator += ( Group rhs);
+
                CASUAL_CONST_CORRECT_SERIALIZE(
                   CASUAL_SERIALIZE( alias);
                   CASUAL_SERIALIZE( services);
@@ -533,6 +599,8 @@ namespace casual::configuration
          {
             std::vector< forward::Group> groups;
 
+            Forward& operator += ( Forward rhs);
+
             CASUAL_CONST_CORRECT_SERIALIZE(
                CASUAL_SERIALIZE( groups);
             )
@@ -545,6 +613,8 @@ namespace casual::configuration
             std::vector< queue::Group> groups;
             Forward forward;
             std::string note;
+
+            Model& operator += ( Model rhs);
 
             CASUAL_CONST_CORRECT_SERIALIZE(
                CASUAL_SERIALIZE( groups);
@@ -566,8 +636,9 @@ namespace casual::configuration
       model::queue::Model queue;
       model::gateway::Model gateway;
 
-      CASUAL_CONST_CORRECT_SERIALIZE
-      (
+      Model& operator += ( Model rhs);
+
+      CASUAL_CONST_CORRECT_SERIALIZE(
          CASUAL_SERIALIZE( domain);
          CASUAL_SERIALIZE( transaction);
          CASUAL_SERIALIZE( service);

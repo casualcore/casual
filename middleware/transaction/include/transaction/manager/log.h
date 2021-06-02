@@ -37,7 +37,8 @@ namespace casual
                timeout
             };
 
-            Log( std::string database);
+            Log() = default;
+            Log( std::filesystem::path file);
             ~Log();
 
             void prepare( const Transaction& transaction);
@@ -50,14 +51,26 @@ namespace casual
             {
                struct
                {
-                  platform::size::type prepare = 0;
-                  platform::size::type remove = 0;
+                  platform::size::type prepare{};
+                  platform::size::type remove{};
+
+                  CASUAL_LOG_SERIALIZE(
+                     CASUAL_SERIALIZE( prepare);
+                     CASUAL_SERIALIZE( remove);
+                  )
                } update;
 
-               platform::size::type writes = 0;
+               platform::size::type writes{};
+
+               CASUAL_LOG_SERIALIZE(
+                  CASUAL_SERIALIZE( update);
+                  CASUAL_SERIALIZE( writes);
+               )
             };
 
             const Stats& stats() const;
+
+            inline auto& file() const noexcept { return m_connection.file();}
 
 
             //! Only for unittest purpose
@@ -74,6 +87,12 @@ namespace casual
             std::vector< Row> logged();
             //! @}
 
+            CASUAL_LOG_SERIALIZE(
+               CASUAL_SERIALIZE_NAME( m_connection, "connection");
+               CASUAL_SERIALIZE_NAME( m_statement, "statement");
+               CASUAL_SERIALIZE_NAME( m_stats, "stats");
+            )
+
          private:
 
             sql::database::Connection m_connection;
@@ -82,6 +101,11 @@ namespace casual
             {
                sql::database::Statement insert;
                sql::database::Statement remove;
+
+               CASUAL_LOG_SERIALIZE(
+                  CASUAL_SERIALIZE( insert);
+                  CASUAL_SERIALIZE( remove);  
+               )
 
             } m_statement;
 

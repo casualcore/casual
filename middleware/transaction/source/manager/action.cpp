@@ -35,16 +35,6 @@ namespace casual
    namespace transaction::manager::action
    {
 
-      State state( manager::Settings settings)
-      {
-         Trace trace{ "transaction::manager::action::state"};
-
-         return State{ 
-            std::move( settings), 
-            casual::domain::configuration::fetch(),
-            configuration::resource::property::get()};
-      }
-
       namespace resource
       {
          void Instances::operator () ( state::resource::Proxy& proxy)
@@ -53,13 +43,13 @@ namespace casual
 
             log::line( log, "update instances for resource: ", proxy);
          
-            auto count = proxy.concurency - range::size( proxy.instances);
+            auto count = proxy.configuration.instances - range::size( proxy.instances);
 
             if( count > 0)
             {
                while( count-- > 0)
                {
-                  auto& info = m_state.resource.properties.at( proxy.key);
+                  auto& info = m_state.resource.properties.at( proxy.configuration.key);
 
                   state::resource::Proxy::Instance instance;
                   instance.id = proxy.id;
@@ -71,7 +61,7 @@ namespace casual
                         {
                            "--id", std::to_string( proxy.id.value()),
                         },
-                        { common::instance::variable( { proxy.name, proxy.id.value()})}
+                        { common::instance::variable( { proxy.configuration.name, proxy.id.value()})}
                      );
 
                      instance.state( state::resource::Proxy::Instance::State::started);
@@ -136,7 +126,7 @@ namespace casual
             {
                if( auto resource = state.find_resource( directive.name))
                {
-                  resource->concurency = directive.instances;
+                  resource->configuration.instances = directive.instances;
                   Instances{ state}( *resource);
                   result.push_back( admin::transform::resource::Proxy{}( *resource));
                }

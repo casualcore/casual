@@ -52,6 +52,9 @@ namespace casual
                // We ask the domain manager for configuration, and 'comply' to it...
                handle::comply::configuration( state, casual::domain::configuration::fetch());
 
+               // register so domain-manager can fetch configuration from us.
+               casual::domain::configuration::supplier::registration();
+
                return state;
             }
 

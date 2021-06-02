@@ -112,8 +112,7 @@ namespace casual
 
             inline friend bool operator < ( const Process& l, const Process& r) { return l.id < r.id;}
 
-            CASUAL_LOG_SERIALIZE
-            (
+            CASUAL_LOG_SERIALIZE(
                CASUAL_SERIALIZE( id);
                CASUAL_SERIALIZE( alias);
                CASUAL_SERIALIZE( path);
@@ -331,14 +330,6 @@ namespace casual
          //! executable id of this domain manager
          state::Server::id_type manager_id;
 
-         struct
-         {
-            //! process for casual-domain-pending-message
-            //common::Process pending;
-
-            //! process for casual-domain-discovery
-            //common::Process discovery;
-         } process;
          
 
          //! Group id:s
@@ -381,8 +372,23 @@ namespace casual
 
          state::Parent parent;
 
-         //! this domain's original configuration.
-         casual::configuration::Model configuration;
+
+         struct
+         {
+            //! this domain's original configuration model.
+            casual::configuration::Model model;
+
+            //! The ones that has register to supply configuration.
+            std::vector< common::process::Handle> suppliers;
+
+            CASUAL_LOG_SERIALIZE(
+               CASUAL_SERIALIZE( model);
+               CASUAL_SERIALIZE( suppliers);
+            )
+
+         } configuration;
+
+
 
          //! the 'singleton' file for the domain
          common::file::scoped::Path singelton;

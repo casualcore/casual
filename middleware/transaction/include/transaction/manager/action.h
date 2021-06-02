@@ -22,8 +22,6 @@ namespace casual
       {
          namespace action
          {
-            State state( manager::Settings settings);
-
             namespace resource
             {
                struct Instances : state::Base

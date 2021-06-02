@@ -12,52 +12,58 @@
 
 namespace casual
 {
-   namespace common
+   namespace common::unittest
    {
-      namespace unittest
+      namespace file
       {
-
-         namespace file
+         namespace temporary
          {
-            namespace temporary
+            common::file::scoped::Path content( std::string_view extension, std::string_view content);
+
+            template< typename... C>
+            std::vector< common::file::scoped::Path> contents( std::string_view extension, C&&... contents)
             {
-               common::file::scoped::Path content( std::string_view extension, std::string_view content);
+               std::vector< common::file::scoped::Path> result;
+               ( result.push_back( temporary::content( extension, contents)) , ...);
+               return result;
+            }
 
-               common::file::scoped::Path name( std::string_view extension);
-            } // temporary
-         } // file
 
-         namespace directory
+            common::file::scoped::Path name( std::string_view extension);
+         } // temporary
+      } // file
+
+      namespace directory
+      {
+         namespace temporary
          {
-            namespace temporary
+            //! creates an unique directory
+            //! and deletes all content and the directory on destruction
+            struct Scoped 
             {
-               //! creates an unique directory
-               //! and deletes all content and the directory on destruction
-               struct Scoped 
-               {
-                  Scoped();
-                  ~Scoped();
+               Scoped();
+               ~Scoped();
 
-                  Scoped( Scoped&&) noexcept;
-                  Scoped& operator = ( Scoped&&) noexcept;
+               Scoped( Scoped&&) noexcept;
+               Scoped& operator = ( Scoped&&) noexcept;
 
-                  Scoped( const Scoped&) = delete;
-                  Scoped& operator =( const Scoped&) = delete;
+               Scoped( const Scoped&) = delete;
+               Scoped& operator =( const Scoped&) = delete;
 
-                  inline const std::string& path() const & { return m_path;}
-                  inline operator const std::string&() const & { return m_path;}
+               inline const std::string& path() const & { return m_path;}
+               inline operator const std::string&() const & { return m_path;}
 
-                  friend std::ostream& operator << ( std::ostream& out, const Scoped& value);
+               friend std::ostream& operator << ( std::ostream& out, const Scoped& value);
 
-               private:
-                  std::string m_path;
-               };
-               
-            } // temporary
-         } // directory
+            private:
+               std::string m_path;
+            };
+            
+         } // temporary
+      } // directory
 
-      } // unittest
-   } // common
+
+   } // common::unittest
 } // casual
 
 

@@ -104,17 +104,18 @@ domain:
 
          EXPECT_TRUE( model.domain.name == "model");
          ASSERT_TRUE( model.domain.servers.size() == 3) << CASUAL_NAMED_VALUE( model);
+         ASSERT_TRUE( model.service.restrictions.size() == 2) << CASUAL_NAMED_VALUE( model);
 
          {
-            auto& server = model.domain.servers.at( 0);
-            EXPECT_TRUE( server.alias == "a");
-            EXPECT_TRUE(( server.restrictions == std::vector< std::string>{ "a1", "a2", "a3"}));
+            auto& restriction = model.service.restrictions.at( 0);
+            EXPECT_TRUE( restriction.alias == "a");
+            EXPECT_TRUE(( restriction.services == std::vector< std::string>{ "a1", "a2", "a3"}));
          }
 
          {
-            auto& server = model.domain.servers.at( 2);
-            EXPECT_TRUE( server.alias == "c");
-            EXPECT_TRUE(( server.restrictions == std::vector< std::string>{ "c1", "c2"}));
+            auto& restriction = model.service.restrictions.at( 1);
+            EXPECT_TRUE( restriction.alias == "c");
+            EXPECT_TRUE(( restriction.services == std::vector< std::string>{ "c1", "c2"}));
          }
       }
 
@@ -173,10 +174,9 @@ domain:
             EXPECT_TRUE(( server.memberships == std::vector< std::string>{ "a", "b"}));
          }
          {
-            auto& server =  model.domain.servers.at( 4);
-            EXPECT_TRUE( server.path == "e");
-            EXPECT_TRUE( server.memberships.empty());
-            EXPECT_TRUE( server.resources == std::vector< std::string>{ "r1"});
+            auto found = algorithm::find( model.transaction.mappings, "e");
+            ASSERT_TRUE( found);
+            EXPECT_TRUE( found->resources == std::vector< std::string>{ "r1"});
          }
 
       }
