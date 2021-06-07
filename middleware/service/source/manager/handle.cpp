@@ -259,7 +259,10 @@ namespace casual
 
                            // we need to check if the dead process has anyone wating for a reply
                            if( auto found = common::algorithm::find( state.instances.sequential, event.state.pid))
-                              if( found->second.state() == decltype( found->second.state())::busy)
+                           {
+                              // if the callee (instance) is busy and the caller is not 'consumed' (due to a timeout and a 'timeout' reply has
+                              // allready been sent) we send error reply
+                              if( found->second.state() == decltype( found->second.state())::busy && found->second.caller())
                               {
                                  auto& instance = found->second;
                                  log::line( common::log::category::error, code::casual::invalid_semantics, 
@@ -270,6 +273,7 @@ namespace casual
 
                                  local::error::reply( instance.caller(), common::code::xatmi::service_error);
                               }
+                           }
 
                            state.pending.shutdown.failed( event.state.pid);
                            state.remove( event.state.pid);

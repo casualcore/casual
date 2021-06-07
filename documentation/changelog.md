@@ -5,7 +5,8 @@ This is the changelog for `casual` and all changes are listed in this document.
 
 ## [1.4.17] - to be released
 ### Fixes
-- gateway - tcp connect/accept errors might lead to inbound/outbound exit/restart 
+- gateway - tcp connect/accept errors might lead to inbound/outbound exit/restart
+- service - removed false error log when a timeout occur and the callee is killed
 
 ## [1.4.16] - 2021-05-29
 ### Fixes

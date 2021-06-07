@@ -1504,6 +1504,81 @@ domain:
 
       }
 
+      //! put in this TU to enable all helpers to check state
+      TEST( test_domain_assassinate, interdomain_call__timeout_1ms__call)
+      {
+         unittest::Trace trace;
+
+         constexpr auto base_configuration = R"(
+domain: 
+
+   groups: 
+      -  name: base
+      -  name: user
+         dependencies: [ base]
+      -  name: gateway
+         dependencies: [ user]
+   
+   servers:
+      -  path: "${CASUAL_REPOSITORY_ROOT}/middleware/service/bin/casual-service-manager"
+         memberships: [ base]
+      -  path: "${CASUAL_REPOSITORY_ROOT}/middleware/transaction/bin/casual-transaction-manager"
+         memberships: [ base]
+      -  path: "${CASUAL_REPOSITORY_ROOT}/middleware/gateway/bin/casual-gateway-manager"
+         memberships: [ gateway]
+)";
+
+         constexpr auto A = R"(
+domain: 
+   name: A
+   
+   service:
+      execution:
+         timeout:
+            duration: 2ms
+            contract: kill
+   servers:
+      -  path: "${CASUAL_REPOSITORY_ROOT}/middleware/example/server/bin/casual-example-server"
+         memberships: [ user]
+         arguments: [ --sleep, 1s]
+   gateway:
+      inbound:
+         groups:
+            -  connections:
+                  -  address: 127.0.0.1:7000
+   
+
+)";
+
+         constexpr auto B = R"(
+domain: 
+   name: B
+
+   gateway:
+      outbound:
+         groups:
+            -  connections:
+                  -  address: 127.0.0.1:7000
+   
+)";
+
+         local::Manager a{ { base_configuration, A}};
+         local::Manager b{ { base_configuration, B}};
+
+         local::state::gateway::until( local::state::gateway::predicate::outbound::connected());
+
+         auto start = platform::time::clock::type::now();
+
+         auto buffer = tpalloc( X_OCTET, nullptr, 128);
+         auto len = tptypes( buffer, nullptr, nullptr);
+
+         EXPECT_TRUE( tpcall( "casual/example/sleep", buffer, 128, &buffer, &len, 0) == -1);
+         EXPECT_TRUE( tperrno == TPETIME) << "tperrno: " << tperrnostring( tperrno);
+         EXPECT_TRUE( platform::time::clock::type::now() - start > std::chrono::milliseconds{ 2});
+
+         tpfree( buffer);
+
+      }
 
    } // test::domain
 } // casual
