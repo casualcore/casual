@@ -321,13 +321,24 @@ domain:
          // we exposes service "remote1"
          casual::service::unittest::advertise( { "a"});
 
-         auto state = local::call::wait::ready::state();
-         ASSERT_TRUE( state.connections.size() == 2);
-
-         algorithm::sort( state.connections);
+         {
+            auto state = local::call::wait::ready::state();
+            ASSERT_TRUE( state.connections.size() == 2);
+         }
 
          // discover to make sure outbound(s) knows about wanted services
          unittest::discover( { "a"}, {});
+
+         auto state = local::call::wait::ready::state();
+
+         algorithm::sort( state.connections);
+
+         auto count = algorithm::count_if( state.services, []( auto service)
+         {
+            return service.name == "a";
+         });
+
+         EXPECT_TRUE( count == 1);
 
          auto data = common::unittest::random::binary( 128);
 
@@ -450,12 +461,23 @@ domain:
 
          EXPECT_TRUE( common::communication::instance::fetch::handle( common::communication::instance::identity::gateway::manager.id));
 
-         auto state = local::call::wait::ready::state();
-         ASSERT_TRUE( state.connections.size() == 2);
-         algorithm::sort( state.connections);
+         {
+            auto state = local::call::wait::ready::state();
+            ASSERT_TRUE( state.connections.size() == 2);
+         }
 
          // discover to make sure outbound(s) knows about wanted queues
          unittest::discover( { }, { "a"});
+
+         auto state = local::call::wait::ready::state();
+         algorithm::sort( state.connections);
+
+         auto count = algorithm::count_if( state.queues, []( auto queue)
+         {
+            return queue.name == "a";
+         });
+
+         EXPECT_TRUE( count == 1);
 
          // Gateway is connected to it self. Hence we can send a request to the outbound, and it
          // will send it to the corresponding inbound, and back in the current (mockup) domain

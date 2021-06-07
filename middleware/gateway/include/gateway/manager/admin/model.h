@@ -85,6 +85,7 @@ namespace casual
             std::string group;
             connection::Phase connect{};
             connection::Bound bound{};
+            common::strong::file::descriptor::id descriptor{};
             common::domain::Identity remote;
             connection::Address address;
             platform::time::point::type created{};
@@ -103,6 +104,7 @@ namespace casual
                CASUAL_SERIALIZE( group);
                CASUAL_SERIALIZE( connect);
                CASUAL_SERIALIZE( bound);
+               CASUAL_SERIALIZE( descriptor);
                CASUAL_SERIALIZE( remote);
                CASUAL_SERIALIZE( address);
                CASUAL_SERIALIZE( created);
@@ -269,6 +271,34 @@ namespace casual
             inline auto tie() const noexcept { return std::tie( group, address);}
          };
 
+         namespace connection
+         {
+            struct Identifier
+            {
+               common::strong::process::id pid{};
+               common::strong::file::descriptor::id descriptor{};
+
+               CASUAL_CONST_CORRECT_SERIALIZE(
+                  CASUAL_SERIALIZE( pid);
+                  CASUAL_SERIALIZE( descriptor);
+               )
+            };
+         }
+
+         struct Routing
+         {
+            std::string name;
+            std::vector< connection::Identifier> connections;
+
+            CASUAL_CONST_CORRECT_SERIALIZE(
+               CASUAL_SERIALIZE( name);
+               CASUAL_SERIALIZE( connections);
+            )
+            inline auto tie() const noexcept { return std::tie( name);}
+
+         };
+
+
          struct State
          {
             struct
@@ -294,11 +324,16 @@ namespace casual
             std::vector< Connection> connections;
             std::vector< Listener> listeners;
 
+            std::vector< Routing> services;
+            std::vector< Routing> queues;
+
             CASUAL_CONST_CORRECT_SERIALIZE(
                CASUAL_SERIALIZE( inbound);
                CASUAL_SERIALIZE( outbound);
                CASUAL_SERIALIZE( connections);
                CASUAL_SERIALIZE( listeners);
+               CASUAL_SERIALIZE( services);
+               CASUAL_SERIALIZE( queues);
             )
          };
 

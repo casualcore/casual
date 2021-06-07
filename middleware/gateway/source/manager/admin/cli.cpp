@@ -8,6 +8,7 @@
 #include "gateway/manager/admin/model.h"
 #include "gateway/manager/admin/server.h"
 
+#include "common/algorithm.h"
 #include "common/argument.h"
 #include "common/terminal.h"
 #include "common/chronology.h"
@@ -49,8 +50,27 @@ namespace casual
 
             } // call
 
+
             namespace format
             {
+               struct Resource
+               {
+                  std::string resource;
+                  std::string name;
+                  common::Uuid id;
+                  std::string peer;
+
+                  inline auto tie() const noexcept { return std::tie( resource, name, id, peer);}
+
+                  CASUAL_CONST_CORRECT_SERIALIZE(
+                     CASUAL_SERIALIZE( resource);
+                     CASUAL_SERIALIZE( name);
+                     CASUAL_SERIALIZE( id);
+                     CASUAL_SERIALIZE( peer);
+                  )
+
+               };
+
                std::string_view dash_if_empty( const std::string& string)
                {
                   if( string.empty())
@@ -89,8 +109,6 @@ namespace casual
                      return "-";
                   };
 
-
-
                   auto format_bound = []( auto& value)
                   {
                      switch( value.bound)
@@ -102,7 +120,6 @@ namespace casual
                      }
                      return "<unknown>";
                   };
-
 
                   auto format_local_address = []( auto& value)
                   {
@@ -158,6 +175,49 @@ namespace casual
                         terminal::format::column( "peer", format_peer_address),
                         terminal::format::column( "group", format::group),
                         terminal::format::column( "created", format::created)
+                     );
+                  }
+               }
+
+               namespace resource
+               {
+                  using Formatter = terminal::format::formatter< format::Resource>;
+                  auto format_domain_name = []( auto& value)
+                  { 
+                     return dash_if_empty( value.name);
+                  };
+                  auto format_domain_id = []( auto& value) -> std::string
+                  {
+                     if( value.id) 
+                        return transcode::hex::encode( value.id.get());
+                     return "-";
+                  };
+                  auto format_resource_name = []( auto& value)
+                  { 
+                     return dash_if_empty( value.resource);
+                  };
+                  auto format_peer_address = []( auto& value)
+                  {
+                     return dash_if_empty( value.peer);
+                  };
+
+                  auto services()
+                  {
+                     return Formatter::construct( 
+                        terminal::format::column( "service", format_resource_name, terminal::color::yellow),
+                        terminal::format::column( "name", format_domain_name, terminal::color::blue),
+                        terminal::format::column( "id", format_domain_id, terminal::color::no_color),
+                        terminal::format::column( "peer", format_peer_address, terminal::color::white)
+                     );
+                  }
+
+                  auto queues()
+                  {
+                     return Formatter::construct( 
+                        terminal::format::column( "queue", format_resource_name, terminal::color::yellow),
+                        terminal::format::column( "name", format_domain_name, terminal::color::blue),
+                        terminal::format::column( "id", format_domain_id, terminal::color::no_color),
+                        terminal::format::column( "peer", format_peer_address, terminal::color::white)
                      );
                   }
                }
@@ -328,6 +388,77 @@ namespace casual
                            "list all outbound groups"};
                      }
                   } // groups
+
+                  namespace resource
+                  {
+                     auto process( std::vector< format::Resource>& resource_table, manager::admin::model::v2::State&& state)
+                     {
+                        return [ &resource_table, &state]( auto resource_entry)
+                        {
+                           auto find_connection = [ &state]( auto resource)
+                           {
+                              return [ &state, &resource]( auto connection)
+                              {
+                                 auto found = common::algorithm::find_if( state.connections, [&connection]( auto& item)
+                                 {
+                                    return item.process.pid == connection.pid && item.descriptor == connection.descriptor;
+                                 });
+
+                                 if (found)
+                                    return format::Resource{ resource, found->remote.name, found->remote.id, found->address.peer};
+                                 else
+                                    return format::Resource{ resource, "", common::uuid::empty(), ""};
+                              };
+                           };
+
+                           auto& resource = resource_entry.name;
+                           auto& connections = resource_entry.connections;
+
+                           common::algorithm::transform( connections, std::back_inserter( resource_table), find_connection( resource));
+
+                        };
+                     }
+
+                     auto services()
+                     {
+                        auto state = call::state();
+
+                        std::vector< format::Resource> service_table;
+
+                        common::algorithm::for_each( state.services, process( service_table, std::move( state)));
+
+                        auto invoke = [service_table]()
+                        {
+                           format::resource::services().print( std::cout, service_table);
+                        };
+
+                        return argument::Option{ 
+                           std::move( invoke), 
+                           { "-ls", "--list-services"}, 
+                           "list all services and connections"};
+                     }
+
+                     auto queues()
+                     {
+                        auto state = call::state();
+
+                        log::line( log::debug, "state: ", state);
+
+                        std::vector< format::Resource> queue_table;
+
+                        common::algorithm::for_each( state.queues, process( queue_table, std::move( state)));
+
+                        auto invoke = [queue_table]()
+                        {
+                           format::resource::queues().print( std::cout, queue_table);
+                        };
+
+                        return argument::Option{ 
+                           std::move( invoke), 
+                           { "-lq", "--list-queues"}, 
+                           "list all queues and connections"};
+                     }
+                  }
                } // list
                
                auto state()
@@ -379,6 +510,8 @@ namespace casual
             return { [](){}, { "gateway"}, "gateway related administration",
                local::option::list::connections(),
                local::option::list::listeners(),
+               local::option::list::resource::services(),
+               local::option::list::resource::queues(),
                local::option::list::groups::inbound(),
                local::option::list::groups::outbound(),
                local::option::state(),

@@ -77,6 +77,7 @@ namespace casual
                         result.group = reply.state.alias;
                         result.connect = connect;
                         result.bound = bound;
+                        result.descriptor = connection.descriptor;
                         result.address.local = connection.address.local;
                         result.address.peer = connection.address.peer;
                         result.remote = connection.domain;
@@ -177,6 +178,68 @@ namespace casual
                algorithm::for_each( std::get< 1>( outbounds), transform( manager::admin::model::connection::Bound::out));
 
                algorithm::sort( result.listeners);
+            }
+
+            // services
+            {
+               auto transform = [&result]( auto& reply)
+               {
+                  algorithm::for_each( reply.state.correlation.services, [&result]( auto& routing_entry)
+                  {
+                     auto name = routing_entry.name;
+                     auto connections = routing_entry.connections;
+
+                     decltype( typename decltype(result.services)::value_type().connections) transformed_connections;
+
+                     algorithm::transform( connections, transformed_connections,[]( auto& connection)
+                     {
+                        typename decltype(transformed_connections)::value_type value{ connection.pid, connection.descriptor};
+                        return value;
+                     });
+
+                     auto found = algorithm::find_if( result.services, [name]( auto service)
+                     {
+                        return name == service.name;
+                     });
+     
+                     if (found)
+                        algorithm::append( transformed_connections, found->connections);
+                     else
+                        result.services.push_back( typename decltype( result.services)::value_type{ name, transformed_connections});
+                  });
+               };
+               algorithm::for_each( std::get< 0>( outbounds), transform );
+            }
+
+            // queue
+            {
+               auto transform = [&result]( auto& reply)
+               {
+                  algorithm::for_each( reply.state.correlation.queues, [&result]( auto& routing_entry)
+                  {
+                     auto name = routing_entry.name;
+                     auto connections = routing_entry.connections;
+ 
+                     decltype( typename decltype(result.queues)::value_type().connections) transformed_connections;
+
+                     algorithm::transform( connections, transformed_connections,[]( auto& connection)
+                     {
+                        typename decltype( transformed_connections)::value_type value{ connection.pid, connection.descriptor};
+                        return value;
+                     });
+
+                     auto found = algorithm::find_if( result.queues, [name]( auto queue)
+                     {
+                        return name == queue.name;
+                     });
+
+                     if (found)
+                        algorithm::append( transformed_connections, found->connections);
+                     else
+                        result.queues.push_back( typename decltype( result.queues)::value_type{ name, transformed_connections});
+                  });
+               };
+               algorithm::for_each( std::get< 0>( outbounds), transform );
             }
 
             return result;

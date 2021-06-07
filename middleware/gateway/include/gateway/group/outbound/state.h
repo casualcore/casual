@@ -16,6 +16,8 @@
 #include "common/domain.h"
 #include "common/message/coordinate.h"
 #include "common/state/machine.h"
+#include "common/process.h"
+#include "common/algorithm.h"
 
 #include "configuration/model.h"
 
@@ -214,6 +216,24 @@ namespace casual
                result.address.peer = connection.configuration.address;
                return result;
             });
+
+            auto transform = []( auto resource)
+            {
+               using Identifier = message::outbound::state::connection::Identifier;
+               auto pid = common::process::id();
+               auto& name = resource.first;
+               auto& descriptors = resource.second;
+               std::vector< Identifier> identifiers;
+
+               common::algorithm::transform( descriptors, identifiers, [pid]( auto descriptor){
+                  return Identifier{ pid, descriptor};
+               });
+
+               return typename decltype(reply.state.correlation.services)::value_type{ name, identifiers};
+            };
+
+            common::algorithm::transform( lookup.services, reply.state.correlation.services, transform);
+            common::algorithm::transform( lookup.queues, reply.state.correlation.queues, transform);
 
             // pending
             {

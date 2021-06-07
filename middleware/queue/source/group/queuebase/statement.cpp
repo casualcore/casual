@@ -46,7 +46,7 @@ namespace casual
 
             result.dequeue.first = connection.precompile( 
                   "SELECT"
-                        " ROWID, id, properties, reply, redelivered, type, available, timestamp, payload"
+                     " ROWID, id, properties, reply, redelivered, type, available, timestamp, payload"
                   " FROM"
                      " message"
                   " WHERE queue = :queue AND state = 2 AND  available < :available ORDER BY timestamp ASC LIMIT 1;");
