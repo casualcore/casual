@@ -234,6 +234,13 @@ namespace casual
             constexpr int backlog = 10;               
          } // listen
 
+         namespace connect::attempts
+         {
+            //! threshhold when to start wating a longer time before next connect attempt
+            constexpr size::type threshhold = 100;
+
+         } // connect::attempts
+
       } // tcp
 
       namespace file

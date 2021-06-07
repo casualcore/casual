@@ -3,6 +3,10 @@ This is the changelog for `casual` and all changes are listed in this document.
 
 ## [Unreleased]
 
+## [1.4.17] - to be released
+### Fixes
+- gateway - tcp connect/accept errors might lead to inbound/outbound exit/restart 
+
 ## [1.4.16] - 2021-05-29
 ### Fixes
 - gateway - improved tcp connection phase robustness -> spawns a process that take cares of the logical connection phase
