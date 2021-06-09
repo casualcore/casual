@@ -115,8 +115,6 @@ namespace casual
                            {
                               if( auto correlation = handler( connection->next()))
                                  state.correlations.emplace_back( std::move( correlation), descriptor);
-                              else
-                                 log::line( log::category::error, code::casual::invalid_semantics, " failed to handle next message for *connection: ", *connection);
                            }
                            catch( ...)
                            {
