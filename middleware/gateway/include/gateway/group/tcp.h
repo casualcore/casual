@@ -110,7 +110,20 @@ namespace casual
                {
                   common::log::line( verbose::log, "found: ", *found);
 
-                  if( auto socket = common::communication::tcp::socket::accept( found->socket))
+                  auto accept = []( auto& socket)
+                  {
+                     try
+                     {
+                        return common::communication::tcp::socket::accept( socket);
+                     }
+                     catch( ...)
+                     {
+                        common::exception::sink();
+                        return common::communication::Socket{};
+                     }
+                  };
+
+                  if( auto socket = accept( found->socket))
                   {
                      // the socket needs to be 'no block'
                      socket.set( common::communication::socket::option::File::no_block);
@@ -291,8 +304,8 @@ namespace casual
          common::strong::file::descriptor::id m_last;
       };
      
-      //! Tries to connect the provided connections, if connect success, give
-      //! the socket and the connection to `functor`.
+      //! Tries to connect the provided connections, if connect success, add
+      //! to the state via `state.external.pending().add( ...)`
       //! used by outbound and reverse inbound 
       template< connector::Bound bound, typename State, typename C>
       void connect( State& state, C& connections)
@@ -320,14 +333,17 @@ namespace casual
 
                   return true;
                }
-               return false;
             }
             catch( ...)
             {
+               // make sure we don't try directly
+               connection.metric.attempts = std::max( connection.metric.attempts, platform::tcp::connect::attempts::threshhold);
+
                auto error = common::exception::capture();
-               common::log::line( common::log::category::error, error, " connect severely failed for address: '", connection.configuration.address, "' - action: discard connection");
-               return true;
+               common::log::line( common::log::category::warning, error, " connect severely failed for address: '", connection.configuration.address, "' - action: try later");
             }
+
+            return false;
          };
 
          common::algorithm::trim( connections, common::algorithm::remove_if( connections, connected));
@@ -338,7 +354,7 @@ namespace casual
 
          if( auto min = common::algorithm::min( connections, min_attempts))
          {
-            if( min->metric.attempts < 100)
+            if( min->metric.attempts < platform::tcp::connect::attempts::threshhold)
                common::signal::timer::set( std::chrono::milliseconds{ 10});
             else
                common::signal::timer::set( std::chrono::seconds{ 3});
