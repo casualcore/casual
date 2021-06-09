@@ -393,21 +393,21 @@ namespace casual
                   {
                      auto process( std::vector< format::Resource>& resource_table, manager::admin::model::v2::State&& state)
                      {
-                        return [ &resource_table, &state]( auto resource_entry)
+                        return [ &resource_table, &state]( const auto& resource_entry)
                         {
-                           auto find_connection = [ &state]( auto resource)
+                           auto find_connection = [ &state]( const auto& resource)
                            {
-                              return [ &state, &resource]( auto connection)
+                              return [ &state, &resource]( auto& connection)
                               {
                                  auto found = common::algorithm::find_if( state.connections, [&connection]( auto& item)
                                  {
                                     return item.process.pid == connection.pid && item.descriptor == connection.descriptor;
                                  });
 
-                                 if (found)
+                                 if( found)
                                     return format::Resource{ resource, found->remote.name, found->remote.id, found->address.peer};
                                  else
-                                    return format::Resource{ resource, "", common::uuid::empty(), ""};
+                                    return format::Resource{ resource, {}, {}, {}};
                               };
                            };
 
