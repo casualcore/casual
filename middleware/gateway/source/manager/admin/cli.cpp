@@ -421,14 +421,14 @@ namespace casual
 
                      auto services()
                      {
-                        auto state = call::state();
-
-                        std::vector< format::Resource> service_table;
-
-                        common::algorithm::for_each( state.services, process( service_table, std::move( state)));
-
-                        auto invoke = [service_table]()
+                        auto invoke = []()
                         {
+                           auto state = call::state();
+
+                           std::vector< format::Resource> service_table;
+
+                           common::algorithm::for_each( state.services, process( service_table, std::move( state)));
+
                            format::resource::services().print( std::cout, service_table);
                         };
 
@@ -440,16 +440,16 @@ namespace casual
 
                      auto queues()
                      {
-                        auto state = call::state();
-
-                        log::line( log::debug, "state: ", state);
-
-                        std::vector< format::Resource> queue_table;
-
-                        common::algorithm::for_each( state.queues, process( queue_table, std::move( state)));
-
-                        auto invoke = [queue_table]()
+                        auto invoke = []()
                         {
+                           auto state = call::state();
+
+                           log::line( log::debug, "state: ", state);
+
+                           std::vector< format::Resource> queue_table;
+
+                           common::algorithm::for_each( state.queues, process( queue_table, std::move( state)));
+
                            format::resource::queues().print( std::cout, queue_table);
                         };
 
