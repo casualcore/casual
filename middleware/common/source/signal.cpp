@@ -60,36 +60,19 @@ namespace casual
                   template< code::signal signal>
                   struct basic_pending
                   {
-                     static std::atomic< bool> pending;
+                     inline static std::atomic< bool> pending{ false};
                   };
-                  template< code::signal Signal>
-                  std::atomic< bool> basic_pending< Signal>::pending{ false};
 
-                  template< code::signal signal>
-                  void clear() 
-                  {
-                     basic_pending< signal>::pending = false;
-                  }
-
-                  template< code::signal signal, code::signal next, code::signal... signals>
+                  template< code::signal... signals>
                   void clear()
                   {
-                     clear< signal>();
-                     clear< next, signals...>();
+                     ( ( basic_pending< signals>::pending = false) , ...);
                   }
 
-                  template< code::signal signal>
+                  template< code::signal... signals>
                   bool pending( signal::Set mask)
                   {
-                     return basic_pending< signal>::pending.load() && ! mask.exists( signal);
-                  }
-
-
-                  template< code::signal signal, code::signal next, code::signal... signals>
-                  bool pending( signal::Set mask)
-                  {
-                     return pending< signal>( mask) || 
-                        pending< next, signals...>( mask);
+                     return ( ( basic_pending< signals>::pending.load() && ! mask.exists( signals)) || ...);
                   }
 
                   template< code::signal Signal>
@@ -154,18 +137,17 @@ namespace casual
 
                      void registration( code::signal signal, common::function< void()> callback)
                      {
-                       if( auto found = algorithm::find_if( m_handlers, [signal]( auto& handler){ return handler.signal == signal;}))
-                           found->callbacks.push_back( std::move( callback));
+                       if( auto found = algorithm::find( m_handlers, signal))
+                           found->callback = std::move( callback);
                         else 
                            code::raise::error( code::casual::invalid_argument, "failed to find signal handler for: ", signal);
                      }
 
                      callback::detail::Replace replace( callback::detail::Replace wanted)
                      {
-                        if( auto found = algorithm::find_if( m_handlers, [signal = wanted.signal]( auto& handler){ return handler.signal == signal;}))
-                        {
-                           std::swap( wanted.callbacks, found->callbacks);
-                        }
+                        if( auto found = algorithm::find( m_handlers, wanted.signal))
+                           std::swap( wanted.callback, found->callback);
+
                         return wanted;
                      }
 
@@ -198,23 +180,25 @@ namespace casual
 
                      struct Handler
                      {
-                        using callbacks_type = std::vector< common::function< void()>>;
+                        using callback_type = common::function< void()>;
 
                         bool operator () ( const signal::Set& current)
                         {
-                           return disptacher( current, callbacks);
+                           return disptacher( current, callback);
                         }
 
+                        friend bool operator == ( const Handler& lhs, code::signal rhs) { return lhs.signal == rhs;}
+
                         code::signal signal{};
-                        common::function< bool( const signal::Set&, callbacks_type&)> disptacher;
-                        callbacks_type callbacks;
+                        common::function< bool( const signal::Set&, callback_type&)> disptacher;
+                        callback_type callback;
                         
                      };
 
                      template< code::signal signal>
                      static auto create_dispatcher()
                      {
-                        return []( const signal::Set& current, Handler::callbacks_type& callbacks)
+                        return []( const signal::Set& current, auto& callback)
                         {
                            // check that: not masked and the signal was pending
                            if( ! current.exists( signal) && basic_pending< signal>::pending.exchange( false))
@@ -222,12 +206,12 @@ namespace casual
                               // Signal is not blocked
                               log::line( log::debug, "signal: handling signal: ", signal);
 
-                              // if we don't have any handlers we need to propagate the signal via exception.
-                              if( callbacks.empty())
+                              // if we don't have any handler we need to propagate the signal via exception.
+                              if( ! callback)
                                  code::raise::error( signal, "raise signal");
                               
-                              // execute the "callbacks"
-                              algorithm::for_each( callbacks, []( auto& callback){ callback();});
+                              // execute the "callback"
+                              callback();
 
                               return true;
                            }
@@ -251,7 +235,7 @@ namespace casual
                      static Handler create_handler( C&& callback, int flags = 0)
                      {
                         auto result = create_handler< signal>( flags);
-                        result.callbacks.push_back( std::move( callback));
+                        result.callback = std::forward< C>( callback);
                         return result;
                      }
 

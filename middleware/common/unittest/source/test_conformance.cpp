@@ -14,6 +14,7 @@
 #include "common/signal.h"
 #include "common/code/system.h"
 #include "common/strong/type.h"
+#include "common/environment.h"
 
 #include <type_traits>
 
@@ -53,6 +54,16 @@ namespace casual
       static_assert( traits::is_any< char, unsigned char, signed char, char>::value, "traits::is_any does not work...");
 
       static_assert( traits::is::tuple< std::pair< int, long>>::value, "traits::is::tuple does not work...");
+
+      template< int... values>
+      constexpr auto size_of_parameter_pack()
+      {
+         return sizeof...( values);
+      }
+
+      static_assert( size_of_parameter_pack<>() == 0);
+      static_assert( size_of_parameter_pack< 1, 2, 3>() == 3);
+      
 
       TEST( common_conformance, struct_with_pod_attributes__is_pod)
       {
@@ -164,61 +175,54 @@ namespace casual
       {
          common::unittest::Trace trace;
 
-         //
          // We don't want any sig-child
-         //
          signal::thread::scope::Block block{ { code::signal::child}};
 
-         const char* const arguments[] = { "sleep", "20", nullptr };
 
-         const std::size_t count = 30;
-         std::vector< pid_t> pids;
-
-         for( auto counter = count; counter > 0; --counter)
+         auto pids = algorithm::generate_n< 30>( []()
          {
-            pid_t pid;
+            pid_t pid{};
+            std::vector< const char*> arguments{ "sleep", "20", nullptr};
+
+            auto current = environment::variable::native::current();
+
+            auto environment = algorithm::transform( current, []( auto& value){ return value.data();});
+            environment.push_back( nullptr);
 
             if( posix_spawnp(
                   &pid,
                   "sleep",
                   nullptr,
                   nullptr,
-                  const_cast< char* const*>( arguments),
-                  nullptr) == 0)
+                  const_cast< char* const*>( arguments.data()),
+                  const_cast< char* const*>( environment.data())) == 0)
             {
-               pids.push_back( pid);
+               return strong::process::id{ pid};
             }
-         }
-
-         EXPECT_TRUE( pids.size() == count);
+            return strong::process::id{};
+         });
 
          {
-            std::vector< pid_t> signaled;
+            auto signaled = decltype( pids){};
 
             for( auto pid : pids)
-            {
-               if( kill( pid, SIGINT) == 0)
-               {
+               if( kill( pid.value(), SIGINT) == 0)
                   signaled.push_back( pid);
-               }
-            }
 
             EXPECT_TRUE( signaled == pids);
          }
 
          {
-            std::vector< pid_t> terminated;
+            auto terminated = decltype( pids){};
 
             for( auto pid : pids)
             {
-               auto result = waitpid( pid, nullptr, 0);
+               auto result = waitpid( pid.value(), nullptr, 0);
 
-               EXPECT_TRUE( result == pid) << "result: " << result << " - pid: " << pid << " - errno: " << common::code::system::last::error();
+               EXPECT_TRUE( result == pid.value()) << "result: " << result << " - pid: " << pid << " - errno: " << common::code::system::last::error();
 
-               if( result == pid)
-               {
+               if( result == pid.value())
                   terminated.push_back( pid);
-               }
             }
             EXPECT_TRUE( terminated == pids) << "terminated: " << terminated << ", pids: " << pids;
          }

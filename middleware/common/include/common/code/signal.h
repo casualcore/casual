@@ -22,7 +22,7 @@ namespace casual
       {
          enum class signal : platform::signal::native::type
          {
-            none = 0,
+            absent = 0,
             alarm = SIGALRM,
             interrupt = SIGINT,
             kill = SIGKILL,

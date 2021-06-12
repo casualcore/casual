@@ -56,7 +56,7 @@ namespace casual
          {
             switch( code)
             {
-               case signal::none : return "none";
+               case signal::absent : return "absent";
                case signal::alarm: return "alarm";
                case signal::child: return "child";
                case signal::interrupt: return "interupt";

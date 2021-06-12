@@ -202,7 +202,7 @@ namespace casual
             struct Replace
             {
                code::signal signal;
-               std::vector< common::function< void()>> callbacks;
+               common::function< void()> callback;
             };
             Replace replace( Replace wanted);
             
@@ -231,9 +231,7 @@ namespace casual
                   code::signal::user,
                   code::signal::child), "not a valid signal for callback");
 
-               detail::Replace value;
-               value.signal = signal;
-               value.callbacks.emplace_back( std::forward< T>( callback));
+               detail::Replace value{ signal, std::forward< T>( callback)};
 
                return execute::scope( [ old = detail::replace( std::move( value))]()
                {
