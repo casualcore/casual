@@ -21,7 +21,8 @@
 #include "common/execute.h"
 
 
-#include "xatmi.h"
+#include "casual/xatmi.h"
+#include "casual/xatmi/extended.h"
 
 
 #include <map>
@@ -528,6 +529,46 @@ domain:
 
          EXPECT_FALSE( local::call( "casual/example/error/TPESVCFAIL"));
          EXPECT_TRUE( tperrno == TPESVCFAIL) << "tperrno: " << tperrno;
+      }
+
+      namespace local
+      {
+         namespace
+         {
+            void service( TPSVCINFO *)
+            {
+
+            }
+
+            int callback( const casual_browsed_service* service, void* context)
+            {
+               auto services = static_cast< std::vector< std::string>*>( context);
+               services->emplace_back( service->name);
+               return 0;
+
+            }
+         } // <unnamed>
+      } // local
+
+      TEST( casual_xatmi_extended, casual_instance_browse_services)
+      {
+         common::unittest::Trace trace;
+
+         auto domain = local::domain();
+
+         tpadvertise( "a", &local::service);
+         tpadvertise( "b", &local::service);
+         tpadvertise( "c", &local::service);
+
+         std::vector< std::string> services;
+
+         casual_instance_browse_services( &local::callback, &services);
+
+         EXPECT_TRUE(( algorithm::sort( services) == std::vector< std::string>{ "a", "b", "c"})) << CASUAL_NAMED_VALUE( services);
+
+         tpunadvertise( "a");
+         tpunadvertise( "b");
+         tpunadvertise( "c");
       }
 
    } // xatmi

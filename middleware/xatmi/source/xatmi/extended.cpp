@@ -5,6 +5,7 @@
 //!
 
 #include "casual/xatmi/extended.h"
+#include "casual/xatmi/internal/log.h"
 
 #include "common/instance.h"
 #include "common/server/context.h"
@@ -131,4 +132,18 @@ void casual_execution_id_set( const uuid_t* id)
 const uuid_t* casual_execution_id_get()
 {
    return &casual::common::execution::id().underlaying().get();
+}
+
+void casual_instance_browse_services( casual_instance_browse_callback callback, void* context)
+{
+   using namespace casual;
+   xatmi::Trace trace{ "casual_instance_browse_services"};
+
+   const auto& services = common::server::context().state().services;
+
+   common::algorithm::for_each_while( services, [callback, context]( auto& service)
+   {
+      casual_browsed_service state{ service.first.data()};
+      return callback( &state, context) == 0;
+   });
 }

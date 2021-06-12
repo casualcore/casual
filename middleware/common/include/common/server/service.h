@@ -51,12 +51,11 @@ namespace casual
 
             // for logging only
             CASUAL_LOG_SERIALIZE(
-            {
                CASUAL_SERIALIZE( name);
                CASUAL_SERIALIZE( transaction);
                CASUAL_SERIALIZE( category);
                CASUAL_SERIALIZE( compare);
-            })
+            )
 
          };
 

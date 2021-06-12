@@ -56,6 +56,31 @@ extern const char* casual_instance_alias();
  */
 extern long casual_instance_index();
 
+/**
+ * properties for a given service given to the callback during browsing
+ */
+struct casual_browsed_service
+{
+   const char* name;
+};
+
+/**
+ *  callback declaration for casual_instance_browse_services
+ */
+typedef int( *casual_instance_browse_callback)( const casual_browsed_service* service, void* context);
+
+/**
+ * Browse all services that this instance has advertised, either automatically via 
+ * what the server is build with (casual-build-server) and/or what this instance
+ * has advertised explicitly via `tpadvertise`
+ * 
+ * The suplied `context` will be included in all callback calls, hence user can keep state.
+ * 
+ * Will browse all services. If `callback` returns other than `0`, the browsing will
+ * stop.
+ */
+extern void casual_instance_browse_services( casual_instance_browse_callback callback, void* context);
+
 
 #ifdef __cplusplus
 }
