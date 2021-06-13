@@ -55,12 +55,29 @@ namespace casual
 
                namespace handler
                {
-                  std::atomic< long> global_total_pending{ 0};
+                  namespace global::total
+                  {
+                     std::atomic< platform::size::type> pending{ 0};   
+                  } // global::total
+                  
 
                   template< code::signal signal>
                   struct basic_pending
                   {
                      inline static std::atomic< bool> pending{ false};
+                     inline static void handle() {}; // no-op default 
+                  };
+
+                  template<>
+                  struct basic_pending< code::signal::hangup>
+                  {
+                     inline static std::atomic< bool> pending{ false};
+
+                     inline static void handle()
+                     {
+                        // set state so the log will be reopen on the next write
+                        log::stream::reopen();
+                     }
                   };
 
                   template< code::signal... signals>
@@ -72,14 +89,17 @@ namespace casual
                   template< code::signal... signals>
                   bool pending( signal::Set mask)
                   {
-                     return ( ( basic_pending< signals>::pending.load() && ! mask.exists( signals)) || ...);
+                     return ( ( ( basic_pending< signals>::pending.load() && ! mask.exists( signals))) || ...);
                   }
 
                   template< code::signal Signal>
                   void signal_callback( platform::signal::native::type signal)
                   {
+                     // might do stuff, in a signal safe way...
+                     basic_pending< Signal>::handle();
+
                      if( ! basic_pending< Signal>::pending.exchange( true))
-                        ++global_total_pending;
+                        ++global::total::pending;
                   }
 
                   template< typename H>
@@ -109,22 +129,22 @@ namespace casual
                      {
                         // We only allow one thread at a time to actually handle the
                         // pending signals
-                        if( --handler::global_total_pending >= 0)
+                        if( --handler::global::total::pending >= 0)
                         {
                            // if no signal was consumed based on the mask, we need to restore the global
                            if( ! dispatch( mask))
-                              ++handler::global_total_pending;
+                              ++handler::global::total::pending;
                         }
                         else
                         {
                            // There was no pending signals, and we need to 'restore' the global
-                           ++handler::global_total_pending;
+                           ++handler::global::total::pending;
                         }
                      }
 
                      bool pending( signal::Set set)
                      {
-                        return handler::global_total_pending.load() > 0 
+                        return handler::global::total::pending.load() > 0 
                            && handler::pending<                            
                               code::signal::child,
                               code::signal::user,
@@ -153,7 +173,7 @@ namespace casual
 
                      void clear()
                      {
-                        global_total_pending = 0;
+                        global::total::pending = 0;
 
                         local::handler::clear< 
                            code::signal::child,
@@ -245,10 +265,10 @@ namespace casual
                         Handle::create_handler< code::signal::alarm>(),
                         Handle::create_handler< code::signal::user>(),
 
-                        // reopen 'casual.log' on hangup
                         Handle::create_handler< code::signal::hangup>( []()
                         {
-                           log::stream::reopen();
+                           // no-op. the signal handler takes care of setting state
+                           // for the log so it will be reopened on the next write.
                         }),
 
                         Handle::create_handler< code::signal::terminate>(),
@@ -290,7 +310,7 @@ namespace casual
          {
             long pending()
             {
-               return local::handler::global_total_pending.load();
+               return local::handler::global::total::pending.load();
             }
          } // current
 

@@ -28,6 +28,7 @@
 #include <iostream>
 #include <memory>
 #include <thread>
+#include <atomic>
 
 namespace casual
 {
@@ -39,6 +40,17 @@ namespace casual
          {
             namespace
             {
+               namespace global::file
+               {
+                  //! This is conceptually tied to `File` below, but we can't 
+                  //! keep it in that state, since this variable is set from a 
+                  //! signal-handler, and we have no guaranties when it will be 
+                  //! invoked and set. We cant instansiate the File singleton just
+                  //! to set the state from within a signal-handler.
+                  //! Hence, this has to be a 'global' outside `File`.
+                  std::atomic< bool> reopen{ false};
+               } // global::file
+
                class File
                {
                public:
@@ -48,9 +60,12 @@ namespace casual
                      return singleton;
                   }
 
-                  template< typename M>
-                  void log( const std::string& category, M&& message)
+                  template< typename C, typename M>
+                  void log( C&& category, M&& message)
                   {
+                     if( local::global::file::reopen.load())
+                        reopen();
+
                      m_output << platform::time::clock::type::now()
                         << '|' << common::domain::identity().name
                         << '|' << execution::id()
@@ -65,16 +80,18 @@ namespace casual
                         << std::endl; // we need to flush the line.
                   }
 
-                  void reopen() 
-                  {
-                     m_output = File::open();
-                  }
-
                private:
                   File() : m_output{ File::open()} {}
 
+                  void reopen() 
+                  {
+                     m_output = File::open();
+                     log( "casual.log", "logfile reopened");
+                  }
+
                   static std::ofstream open()
                   {
+                     local::global::file::reopen.store( false);
                      auto path = common::environment::log::path();
 
                      // make sure we got the directory
@@ -273,7 +290,7 @@ namespace casual
 
             void reopen()
             {
-               local::File::instance().reopen(); 
+               local::global::file::reopen.store( true);
             }
          } // stream
 
