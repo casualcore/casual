@@ -629,7 +629,8 @@ namespace sql
                if( std::filesystem::exists( file))
                   code::raise( code, result);
 
-               std::filesystem::create_directories( file.parent_path());;
+               if( ! std::filesystem::exists( file.parent_path()))
+                  std::filesystem::create_directories( file.parent_path());;
 
                return open( file);
             }

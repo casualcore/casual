@@ -225,7 +225,7 @@ namespace casual
                         return get_domain() / "casual.log";
                      }();
 
-                     std::filesystem::create_directories( file.parent_path());
+                     common::directory::create( file.parent_path());
                      return file;
                   }();
 
@@ -267,7 +267,7 @@ namespace casual
 
                   static std::filesystem::path create_path( std::filesystem::path path)
                   {
-                     std::filesystem::create_directories( path);
+                     common::directory::create( path);
                      return path;
                   }
                };

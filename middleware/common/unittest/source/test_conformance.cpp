@@ -7,6 +7,7 @@
 
 
 #include "common/unittest.h"
+#include "common/unittest/file.h"
 
 #include "common/stream.h"
 #include "common/algorithm.h"
@@ -15,6 +16,7 @@
 #include "common/code/system.h"
 #include "common/strong/type.h"
 #include "common/environment.h"
+#include "common/file.h"
 
 #include <type_traits>
 
@@ -276,6 +278,41 @@ namespace casual
          {
             EXPECT_TRUE( local::handle_exception() == 42);
          }
+      }
+
+
+      TEST( common_conformance_filesystem, directory_symlink)
+      {
+         common::unittest::Trace trace;
+
+         namespace fs = std::filesystem;
+         unittest::directory::temporary::Scoped base;
+         fs::path base_path{ base.path()};
+         ASSERT_TRUE( fs::create_directories( base_path / "origin"));
+
+         fs::create_directory_symlink( base_path / "origin", base_path / "link");
+
+         // already exists -> gives false
+         EXPECT_TRUE( ! fs::create_directories(  base_path / "origin"));
+
+         EXPECT_TRUE( fs::exists( base_path / "link"));
+         
+         // fails hard, since 'link' is a link... Why?!! 
+         // EXPECT_TRUE( fs::create_directories(  base_path / "link"));
+
+         EXPECT_NO_THROW({
+            // "helper" that takes care of corner cases
+            common::directory::create( base_path / "link");
+         });
+
+         // check if we can create a sub-directory in the linked directory
+         EXPECT_TRUE( fs::create_directories(  base_path / "link/subdir"));
+
+         {
+            std::ofstream out{ base_path / "link/file"};
+            EXPECT_TRUE( out);
+         }
+
       }
 
 

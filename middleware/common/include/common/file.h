@@ -112,6 +112,10 @@ namespace casual
 
       namespace directory
       {
+         //! creates all directories recursively if misissing.
+         //! takes soft links into account when creating the path, if any.
+         void create( const std::filesystem::path& path);
+
          //! @return the system temporary directory
          std::filesystem::path temporary();
       } // directory

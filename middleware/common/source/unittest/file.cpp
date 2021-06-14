@@ -57,7 +57,7 @@ namespace casual
                Scoped::Scoped()
                   : m_path{ common::file::name::unique( local::prefix().string()) }
                {
-                  std::filesystem::create_directories( m_path);
+                  common::directory::create( m_path);
                }
 
                Scoped::~Scoped()

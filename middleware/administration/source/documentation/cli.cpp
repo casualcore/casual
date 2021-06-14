@@ -6,6 +6,7 @@
 
 #include "casual/administration/cli.h"
 
+#include "common/file.h"
 #include "common/unittest.h"
 
 #include "common/argument.h"
@@ -39,7 +40,7 @@ namespace casual
                   terminal::output::directive().plain();
 
                   // make sure we create directories if not present
-                  std::filesystem::create_directories( std::filesystem::path{ path}.parent_path());
+                  common::directory::create( std::filesystem::path{ path}.parent_path());
                   std::ofstream out{ path};
                   header( out);
 

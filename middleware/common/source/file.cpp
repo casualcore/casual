@@ -150,6 +150,11 @@ namespace casual
 
       namespace directory
       {
+         void create( const std::filesystem::path& path)
+         {
+            if( ! std::filesystem::exists( path))
+               std::filesystem::create_directories( path);
+         }
 
          std::filesystem::path temporary()
          {

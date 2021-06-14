@@ -84,7 +84,7 @@ namespace casual
                   static common::file::Output open( std::filesystem::path path)
                   {
                      // make sure we got the directory
-                     std::filesystem::create_directories( path.parent_path());
+                     common::directory::create( path.parent_path());
 
                      return { std::move( path), std::ios::app};
                   }

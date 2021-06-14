@@ -14,7 +14,7 @@
 
 #include "common/serialize/create.h"
 #include "common/serialize/macro.h"
-
+#include "common/file.h"
 
 #include "common/argument.h"
 #include "common/exception/guard.h"
@@ -31,7 +31,8 @@ namespace casual
          auto file( const std::filesystem::path& root, const std::filesystem::path& name)
          {
             // make sure we create directories if not present
-            std::filesystem::create_directories( root);
+            common::directory::create( root);
+
             return std::ofstream{ root / name};
          }
 
