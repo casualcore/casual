@@ -8,24 +8,26 @@ make.IncludePaths( ['server/include',
     '../serviceframework/include'] + 
     make.optional_include_paths()
     )
-make.LibraryPaths( [ 'server/bin',
+
+
+library_paths = [ 'server/bin',
     '../common/bin',
     '../queue/bin',
     '../buffer/bin',
     '../configuration/bin',
     '../serviceframework/bin',
-    '../xatmi/bin'] + 
-    make.optional_library_paths()
-   )
+    '../xatmi/bin'] + make.optional_library_paths()
 
+make.LibraryPaths( library_paths)
 
 install_bin = []
 
-casual_repository_root = make.source_root()
+casual_middleware_path = make.source_root() + '/middleware'
 
 
 # make sure we use the tools we've built
-make.Environment( 'PATH', casual_repository_root + '/bin' + os.pathsep + os.getenv('PATH'))
+make.Environment( 'PATH', casual_middleware_path + '/tools/bin' + os.pathsep + os.getenv('PATH'))
+make.Environment( 'LD_LIBRARY_PATH', os.pathsep.join( library_paths) + os.getenv('LD_LIBRARY_PATH'))
 
 target = dsl.LinkServer( 'server/bin/casual-example-server',
     [ 
@@ -41,7 +43,7 @@ target = dsl.LinkServer( 'server/bin/casual-example-server',
 install_bin.append( target)
 
 # make sure we got a resource property file available when we build with a resource 
-make.Environment( 'CASUAL_RESOURCE_CONFIGURATION_FILE', casual_repository_root + '/middleware/example/resources/resources.yaml')
+make.Environment( 'CASUAL_RESOURCE_CONFIGURATION_FILE', casual_middleware_path + '/example/resources/resources.yaml')
 
 target = dsl.LinkServer( 'server/bin/casual-example-resource-server',
     [ 

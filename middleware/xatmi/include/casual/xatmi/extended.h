@@ -67,7 +67,7 @@ struct casual_browsed_service
 /**
  *  callback declaration for casual_instance_browse_services
  */
-typedef int( *casual_instance_browse_callback)( const casual_browsed_service* service, void* context);
+typedef int( *casual_instance_browse_callback)( const struct casual_browsed_service* service, void* context);
 
 /**
  * Browse all services that this instance has advertised, either automatically via 

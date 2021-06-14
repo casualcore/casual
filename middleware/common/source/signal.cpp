@@ -86,10 +86,20 @@ namespace casual
                      ( ( basic_pending< signals>::pending = false) , ...);
                   }
 
+                  namespace detail
+                  {
+                     //! TODO: remove and move this inline in the fold-expression when we don't need to support g++ 9.3.1
+                     template< code::signal signal>
+                     bool pending( signal::Set mask)
+                     {
+                        return basic_pending< signal>::pending.load() && ! mask.exists( signal);
+                     }
+                  } // detail
+
                   template< code::signal... signals>
                   bool pending( signal::Set mask)
                   {
-                     return ( ( ( basic_pending< signals>::pending.load() && ! mask.exists( signals))) || ...);
+                     return ( detail::pending< signals>( mask) || ...);
                   }
 
                   template< code::signal Signal>
