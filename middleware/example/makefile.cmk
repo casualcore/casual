@@ -27,7 +27,7 @@ casual_middleware_path = make.source_root() + '/middleware'
 
 # make sure we use the tools we've built
 make.Environment( 'PATH', casual_middleware_path + '/tools/bin' + os.pathsep + os.getenv('PATH'))
-make.Environment( 'LD_LIBRARY_PATH', os.pathsep.join( library_paths) + os.getenv('LD_LIBRARY_PATH'))
+make.Environment( 'LD_LIBRARY_PATH', os.pathsep.join( library_paths) + os.pathsep + os.getenv('LD_LIBRARY_PATH', ''))
 
 target = dsl.LinkServer( 'server/bin/casual-example-server',
     [ 
