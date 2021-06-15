@@ -49,7 +49,7 @@ namespace casual
                      " ROWID, id, properties, reply, redelivered, type, available, timestamp, payload"
                   " FROM"
                      " message"
-                  " WHERE queue = :queue AND state = 2 AND  available < :available ORDER BY timestamp ASC LIMIT 1;");
+                  " WHERE queue = :queue AND state = 2 AND available < :available ORDER BY timestamp ASC, available ASC LIMIT 1;");
 
             result.dequeue.first_id = connection.precompile(  
                   "SELECT"

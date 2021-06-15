@@ -3,6 +3,10 @@ This is the changelog for `casual` and all changes are listed in this document.
 
 ## [Unreleased]
 
+## [1.4.20] - 2021-06-15
+### Fixes
+- queue - improved performance while dequeuing messages
+
 ## [1.4.18] - 2021-06-09
 ### Fixes
 - gateway - tcp connect/accept errors might lead to inbound/outbound exit/restart
