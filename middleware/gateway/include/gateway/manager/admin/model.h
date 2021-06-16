@@ -285,7 +285,7 @@ namespace casual
             };
          }
 
-         struct Routing
+         struct Routing : common::Compare< Routing>
          {
             std::string name;
             std::vector< connection::Identifier> connections;

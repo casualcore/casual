@@ -205,10 +205,17 @@ namespace casual
                      if (found)
                         algorithm::append( transformed_connections, found->connections);
                      else
-                        result.services.push_back( typename decltype( result.services)::value_type{ name, transformed_connections});
+                     {
+                        typename decltype( result.services)::value_type value;
+                        value.name = name;
+                        value.connections = transformed_connections;
+                        result.services.push_back( std::move( value));
+                     }
                   });
                };
-               algorithm::for_each( std::get< 0>( outbounds), transform );
+               algorithm::for_each( std::get< 0>( outbounds), transform);
+               algorithm::for_each( std::get< 1>( outbounds), transform);
+               algorithm::sort( result.services);
             }
 
             // queue
@@ -236,10 +243,17 @@ namespace casual
                      if (found)
                         algorithm::append( transformed_connections, found->connections);
                      else
-                        result.queues.push_back( typename decltype( result.queues)::value_type{ name, transformed_connections});
+                     {
+                        typename decltype( result.queues)::value_type value;
+                        value.name = name;
+                        value.connections = transformed_connections;
+                        result.queues.push_back( std::move( value));
+                     }
                   });
                };
-               algorithm::for_each( std::get< 0>( outbounds), transform );
+               algorithm::for_each( std::get< 0>( outbounds), transform);
+               algorithm::for_each( std::get< 1>( outbounds), transform);
+               algorithm::sort( result.queues);
             }
 
             return result;
