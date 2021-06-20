@@ -46,10 +46,10 @@ host# casual --help domain
 
       --set-environment [0..*]  (<variable>, <value>, [<alias>*]) [2..*]
             set an environment variable for explicit aliases
-                                    
+                                 
             if 0 aliases are provided, the environment virable will be set 
             for all servers and executables 
-                                    
+                                 
 
       --configuration-get [0..1]  (json, yaml, xml, ini) [0..1]
             get configuration (as provided format)
@@ -58,8 +58,8 @@ host# casual --help domain
             reads configuration from stdin and update the domain
             
             The semantics are similar to http PUT:
-             * every key that is found is treated as an update of that _entity_
-             * every key that is NOT found is treated as a new _entity_ and added to the current state 
+            * every key that is found is treated as an update of that _entity_
+            * every key that is NOT found is treated as a new _entity_ and added to the current state 
 
       --ping [0..1]  (<alias>) [1..*]
             ping all instances of the provided server alias

@@ -10,6 +10,9 @@ host# casual --help queue
       -q, --list-queues [0..1]
             list information of all queues in current domain
 
+      -z, --list-zombies [0..1]
+            list information of all zombie queues in current domain
+
       -r, --list-remote [0..1]
             list all remote discovered queues
 
@@ -24,6 +27,9 @@ host# casual --help queue
 
       --list-forward-queues [0..1]
             list information of all queue forwards
+
+      --list-forward-groups [0..1]
+            list (aggregated) information of forward groups
 
       --restore [0..1]  (<queue>) [0..*]
             restores messages to queue
@@ -93,10 +99,10 @@ host# casual --help queue
             Example:
             casual queue --metric-reset a b
 
-      --legend [0..1]  (list-queues, list-messages) [1]
+      --legend [0..1]  (list-queues, list-messages, list-forward-groups, list-forward-services, list-forward-queues) [1]
             provide legend for the output for some of the options
             
-            to view legend for --list-queues use casual queue --legend list-queues.
+            to view legend for --list-queues use casual queue --legend list-queues, and so on.
             
             use auto-complete to help which options has legends
 
