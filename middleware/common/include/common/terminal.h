@@ -32,7 +32,7 @@ namespace casual
 
                bool color() const;
                inline auto porcelain() const { return m_porcelain;}
-               inline auto header() const { return m_header;}
+               bool header() const;
                inline auto precision() const { return m_precision;}
                inline auto block() const { return m_block;}
                inline auto verbose() const { return m_verbose;}
@@ -48,7 +48,7 @@ namespace casual
             private:
                std::string m_color;
                bool m_porcelain;
-               bool m_header;
+               std::string m_header;
                bool m_block;
                bool m_verbose;
                std::streamsize m_precision;

@@ -26,7 +26,7 @@ name                        | type                   | default | description
 ----------------------------|------------------------|---------|----------------------------------------------------------------------------
 `CASUAL_TERMINAL_PRECISION` | `integer`              |    `3`  | how many decimal points should be used on output to terminal
 `CASUAL_TERMINAL_COLOR`     | `[true, false, auto]`  | `true`  | if output should be color enhanced or not. If auto, colors are used if tty is bound to stdout
-`CASUAL_TERMINAL_HEADER`    | `bool`                 | `true`  | if output should print a header or not
+`CASUAL_TERMINAL_HEADER`    | `[true, false, auto]`  | `true`  | if output should print a header or not. If auto, headers are used if tty is bound to stdout
 `CASUAL_TERMINAL_BLOCK`     | `bool`                 | `true`  | if _invocations_ should block or not. If false, return control to user as soon as possible
 `CASUAL_TERMINAL_VERBOSE`   | `bool`                 | `false` | if verbose mode is on or not. If true, additional information will printed (were possible)
 `CASUAL_TERMINAL_PORCELAIN` | `bool`                 | `false` | if output should be in an easy to parse format (overrides `CASUAL_TERMINAL_COLOR` and `CASUAL_TERMINAL_HEADER`)
