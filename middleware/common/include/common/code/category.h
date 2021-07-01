@@ -13,44 +13,35 @@
 
 namespace casual
 {
-   namespace common
+   namespace common::code::is
    {
-      namespace code
+      namespace detail
       {
-         namespace is
+         template< typename Error, typename Enum>
+         auto category( const Error& error, Enum code, traits::priority::tag< 1>) noexcept
+            -> decltype( error.category() == std::error_condition{ code}.category())
          {
-            namespace detail
-            {
-               template< typename Error, typename Enum>
-               auto category( const Error& error, Enum code, traits::priority::tag< 1>) noexcept
-                  -> decltype( error.category() == std::error_condition{ code}.category())
-               {
-                  return error.category() == std::error_condition{ code}.category();
-               }
-               
-               template< typename Error, typename Enum>
-               auto category( const Error& error, Enum code, traits::priority::tag< 0>) noexcept
-                  -> decltype( error.category() == std::error_code{ code}.category())
-               {
-                  return error.category() == std::error_code{ code}.category();
-               }
-            } // detail
-            template< typename Enum>
-            bool category( const std::error_condition& error) noexcept
-            {
-               return detail::category( error, static_cast< Enum>( 0), traits::priority::tag< 1>{});
-            }
-
-            template< typename Enum>
-            bool category( const std::error_code& error) noexcept
-            {
-               return detail::category( error, static_cast< Enum>( 0), traits::priority::tag< 1>{});
-            }
-            
-         } // is
+            return error.category() == std::error_condition{ code}.category();
+         }
          
+         template< typename Error, typename Enum>
+         auto category( const Error& error, Enum code, traits::priority::tag< 0>) noexcept
+            -> decltype( error.category() == std::error_code{ code}.category())
+         {
+            return error.category() == std::error_code{ code}.category();
+         }
+      } // detail
+      template< typename Enum>
+      bool category( const std::error_condition& error) noexcept
+      {
+         return detail::category( error, static_cast< Enum>( 0), traits::priority::tag< 1>{});
+      }
 
- 
-      } // code
-   } // common
+      template< typename Enum>
+      bool category( const std::error_code& error) noexcept
+      {
+         return detail::category( error, static_cast< Enum>( 0), traits::priority::tag< 1>{});
+      }
+
+   } // common::code::is
 } // casual

@@ -16,123 +16,129 @@
 
 namespace casual
 {
-   namespace common
+   namespace common::service::header
    {
-      namespace service
+      inline namespace v1
       {
-         namespace header
+         namespace local
          {
-            inline namespace v1
+            namespace
             {
-               namespace local
+               template< typename F>
+               auto find( F& fields, std::string_view key)
                {
-                  namespace
-                  {
-                     template< typename F>
-                     auto find( F& fields, const std::string& key)
-                     {
-                        return algorithm::find_if( fields, [&]( const Field& f){
-                           return f.equal( key);
-                        });
-                     }
-
-                     template< typename F>
-                     decltype( auto) find_at( F& fields, const std::string& key)
-                     {  
-                        if( auto found = find( fields, key))
-                           return *found;
-                        
-                        code::raise::error( code::casual::invalid_argument, "service header key not found: ", key);
-                     }
-
-                  } // <unnamed>
-               } // local
-
-               bool operator == (  const Field& lhs, const Field& rhs)
-               {
-                  return lhs.equal( rhs.key);
+                  return algorithm::find( fields, key);
                }
 
-               bool Field::equal( const std::string& value) const
-               {
-                  return algorithm::equal( key, value, 
-                     []( auto a, auto b){ return std::tolower(a) == std::tolower(b);});
+               template< typename F>
+               decltype( auto) find_at( F& fields, std::string_view key)
+               {  
+                  if( auto found = find( fields, key))
+                     return *found;
+                  
+                  code::raise::error( code::casual::invalid_argument, "service header key not found: ", key);
                }
 
-               std::string Field::http() const
-               {
-                  return key + ": " + value;
-               }
+            } // <unnamed>
+         } // local
 
-               bool Fields::exists( const std::string& key) const
-               {
-                  return ! local::find( *this, key).empty();
-               }
+         Field::Field( std::string_view field)
+         {
 
-               const std::string& Fields::at( const std::string& key) const
-               {
-                  return local::find_at( *this, key).value;
-               }
+            if( auto found = algorithm::find( field, ':'))
+            {
+               auto key_range = string::trim( range::make( std::begin( field), std::begin( found)));
+               key.assign( std::begin( key_range), std::end( key_range));
+               auto value_range = string::trim( ++found);
+               value.assign( std::begin( value_range), std::end( value_range));
+            }
+            else 
+               code::raise::error( code::casual::invalid_argument, "requires format '<key>[ ]?:[ ]?<value>'");
+         }
 
-               std::string Fields::at( const std::string& key, const std::string& optional) const
-               {
-                  if( auto found = local::find( *this, key))
-                     return found->value;
-                
-                  return optional;
-               }
+         bool operator == (  const Field& lhs, const Field& rhs)
+         {
+            return lhs == rhs.key;
+         }
 
-	       std::optional< std::string> Fields::find( const std::string& key) const
-               {
-                  if( auto found = local::find( *this, key))
-                     return { found->value};
+         bool operator == (  const Field& lhs, std::string_view key)
+         {
+            return algorithm::equal( lhs.key, key, []( auto a, auto b)
+            { 
+               return std::tolower(a) == std::tolower(b);
+            });
+         }
 
-                  return {};
-               }
+         std::string Field::http() const
+         {
+            return string::compose( key, ": ", value);
+         }
 
-               std::string& Fields::operator[] ( const std::string& key )
-               {
-                  if( auto found = local::find( *this, key))
-                     return found->value;
+         bool Fields::exists( std::string_view key) const
+         {
+            return ! local::find( *this, key).empty();
+         }
 
-                  fields_type::emplace_back( key, "");
-                  return fields_type::back().value;
-               }
+         const std::string& Fields::at( std::string_view key) const
+         {
+            return local::find_at( *this, key).value;
+         }
 
-               const std::string& Fields::operator[]( const std::string& key ) const
-               {
-                  return at( key);
-               }
+         std::string Fields::at( std::string_view key, std::string_view optional) const
+         {
+            if( auto found = local::find( *this, key))
+               return found->value;
+            
+            return std::string{ optional};
+         }
 
-               Fields operator + ( const Fields& lhs, const Fields& rhs)
-               {
-                  auto result = lhs;
-                  algorithm::append( rhs, result);
-                  return result;
-               }
+         std::optional< std::string> Fields::find( std::string_view key) const
+         {
+            if( auto found = local::find( *this, key))
+               return { found->value};
 
-               Fields& operator += ( Fields& lhs, const Fields& rhs)
-               {
-                  algorithm::append( rhs, lhs);
-                  return lhs;
-               }
+            return {};
+         }
+
+         std::string& Fields::operator[] ( std::string_view key )
+         {
+            if( auto found = local::find( *this, key))
+               return found->value;
+
+            return fields_type::emplace_back( std::string{ key}, "").value;
+         }
+
+         const std::string& Fields::operator[]( std::string_view key ) const
+         {
+            return at( key);
+         }
+
+         Fields operator + ( Fields lhs, const Fields& rhs)
+         {
+            lhs += rhs;
+            return lhs;
+         }
+
+         Fields& operator += ( Fields& lhs, const Fields& rhs)
+         {
+            algorithm::append( rhs, lhs);
+            return lhs;
+         }
 
 
-               header::Fields& fields()
-               {
-                  static header::Fields fields;
-                  return fields;
-               }
+         header::Fields& fields()
+         {
+            static header::Fields fields;
+            return fields;
+         }
 
-               void fields( header::Fields header)
-               {
-                  log::line( verbose::log, "header: ", header);
-                  fields() = std::move( header);
-               }
+         void fields( header::Fields header)
+         {
+            log::line( verbose::log, "header: ", header);
+            fields() = std::move( header);
+         }
 
-            } // v1
-         } // header
-      } // service
-   } // common
+      } // v1
+   } // common::service::header
 } // casual
 

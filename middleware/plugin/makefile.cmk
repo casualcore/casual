@@ -1,12 +1,13 @@
 from casual.make.entity.target import Recipe
 import casual.make.entity.model as model
+import casual.make.api as make
 
 import subprocess
 import os
 
 def perform_build(dummy):
    print( "building and installing nginx")
-   filename = os.path.join( os.getenv("CASUAL_BUILD_HOME"), 'thirdparty/setup/install_nginx.py')
+   filename = os.path.join( os.getenv("CASUAL_MAKE_SOURCE_ROOT"), 'thirdparty/setup/install_nginx.py')
    try:
       out = subprocess.check_output(["python3", filename])
    except subprocess.CalledProcessError as e:
@@ -17,4 +18,34 @@ def perform_build(dummy):
 
 # main - register function
 model.register( 'nginx').execute(True).serial(True).add_recipe( Recipe( perform_build, None))
+
+
+make.IncludePaths([
+        '.',
+        '../http/include',
+    ]
+    + make.optional_include_paths()
+    )
+
+make.LibraryPaths(
+    [
+        'bin',
+        '../http/bin',
+        '../common/bin',
+        '../buffer/bin',
+        '../xatmi/bin'
+    ]
+    + make.optional_library_paths()
+   )
+
+make.LinkLibrary( 'bin/helper',
+    [ 
+        make.Compile( "helper.cpp"),
+    ],
+    [
+        'casual-http-inbound-common'
+    ]
+)
+
+
 

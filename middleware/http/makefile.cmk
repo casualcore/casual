@@ -33,6 +33,7 @@ install_headers = []
 common_archive = make.LinkArchive( 'bin/casual-http-common',
     [
        make.Compile( 'source/common.cpp'),
+       make.Compile( 'source/code.cpp'),
      ])
 
 common_outbound_archive = make.LinkArchive( 'bin/casual-http-outbound-common',
@@ -46,7 +47,8 @@ common_outbound_archive = make.LinkArchive( 'bin/casual-http-outbound-common',
 
 common_inbound_library = make.LinkLibrary( 'bin/casual-http-inbound-common',
    [
-       make.Compile( 'source/inbound/caller.cpp')
+       make.Compile( 'source/inbound/caller.cpp'),
+       make.Compile( 'source/inbound/call.cpp')
    ],
    [
        'casual-buffer', 
@@ -74,19 +76,22 @@ install_bin.append( target)
 # Unittest
 make.LinkUnittest( 'unittest/bin/test-http',
    [
-    make.Compile( 'unittest/source/outbound/test_model.cpp'),
-    make.Compile( 'unittest/source/outbound/test_transcode.cpp'),
-    make.Compile( 'unittest/source/outbound/test_state.cpp'),
-    make.Compile( 'unittest/source/test_outbound.cpp'),
+        make.Compile( 'unittest/source/outbound/test_model.cpp'),
+        make.Compile( 'unittest/source/outbound/test_transcode.cpp'),
+        make.Compile( 'unittest/source/outbound/test_state.cpp'),
+        make.Compile( 'unittest/source/inbound/test_call.cpp'),
+        make.Compile( 'unittest/source/test_outbound.cpp'),
+        make.Compile( 'unittest/source/test_code.cpp'),
    ],
    [ 
-      common_outbound_archive, 
-      common_archive,
-      'casual-common',
-      'casual-domain-unittest',
-      'casual-unittest',
-      'casual-xatmi',
-      'curl'
+        common_outbound_archive,
+        common_inbound_library,
+        common_archive,
+        'casual-common',
+        'casual-domain-unittest',
+        'casual-unittest',
+        'casual-xatmi',
+        'curl'
    ])  
    
 

@@ -36,34 +36,29 @@ namespace casual
 
       namespace header
       {
-         namespace name
+         namespace name::result
          {
-            namespace result
+            constexpr auto code = "casual-result-code";
+
+            namespace user
             {
-               constexpr auto code = "casual-result-code";
+               constexpr auto code = "casual-result-user-code";
+            } // user
 
-               namespace user
-               {
-                  constexpr auto code = "casual-result-user-code";
-               } // user
-
-            } // result
          } // name
 
-         namespace value
+         namespace value::result
          {
-            namespace result
-            {
-               common::code::xatmi code( const std::string& value);
-               const char* code( common::code::xatmi code);
+            common::code::xatmi code( std::string_view value);
+            const char* code( common::code::xatmi code);
 
-               namespace user
-               {
-                  long code( const std::string& value);
-                  std::string code( long code);
-               } // user
-            } // result            
-         } // value
+            namespace user
+            {
+               long code( const std::string& value);
+               std::string code( long code);
+            } // user
+
+         } // value::result
       } // header
 
       namespace protocol
@@ -91,24 +86,21 @@ namespace casual
          } // convert
       } //protocol
 
-      namespace buffer
+      namespace buffer::transcode
       {
-         namespace transcode
+         namespace from
          {
-            namespace from
-            {
-               //! might base64 decode, based on buffer.type
-               void wire( common::buffer::Payload& buffer);
-            } // from
+            //! might base64 decode, based on buffer.type
+            void wire( common::buffer::Payload& buffer);
+         } // from
 
-            namespace to
-            {
-               //! might base64 encode, based on buffer.type
-               void wire( common::buffer::Payload& buffer);
-            } // from 
+         namespace to
+         {
+            //! might base64 encode, based on buffer.type
+            void wire( common::buffer::Payload& buffer);
+         } // from 
 
-         } // transcode
-      } // buffer
+      } // buffer::transcode
 
    } // http
 } // casual

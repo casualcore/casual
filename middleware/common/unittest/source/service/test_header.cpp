@@ -17,6 +17,21 @@ namespace casual
       namespace service
       {
 
+         TEST( common_service_header, field_ctor)
+         {
+            {
+               auto field = header::Field{ "a:b"};
+               EXPECT_TRUE( field.key == "a");
+               EXPECT_TRUE( field.value == "b");
+            }
+            {
+               auto field = header::Field{ " a : b "};
+               EXPECT_TRUE( field.key == "a");
+               EXPECT_TRUE( field.value == "b");
+            }
+
+         }
+
          TEST( common_service_header, clear)
          {
             common::unittest::Trace trace;

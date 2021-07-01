@@ -40,10 +40,10 @@ namespace casual
          {
             namespace result
             {
-               code::xatmi code( const std::string& value)
+               code::xatmi code( std::string_view value)
                {
                   using code::xatmi;
-                  static const std::map< std::string, xatmi> mapping{
+                  static const std::map< std::string_view, xatmi> mapping{
                      { "", xatmi::ok},
                      { "OK", xatmi::ok},
                      { "TPEBADDESC" , xatmi::descriptor},
@@ -76,29 +76,7 @@ namespace casual
 
                const char* code( common::code::xatmi code)
                {
-                  using code::xatmi;
-                  switch( code)
-                  {
-                     case xatmi::ok: return "OK";
-                     case xatmi::descriptor: return "TPEBADDESC";
-                     case xatmi::no_message: return "TPEBLOCK";
-                     case xatmi::argument: return "TPEINVAL";
-                     case xatmi::limit: return "TPELIMIT";
-                     case xatmi::no_entry: return "TPENOENT";
-                     case xatmi::os: return "TPEOS";
-                     case xatmi::protocol: return "TPEPROTO";
-                     case xatmi::service_error: return "TPESVCERR";
-                     case xatmi::service_fail: return "TPESVCFAIL";
-                     case xatmi::system: return "TPESYSTEM";
-                     case xatmi::timeout: return "TPETIME";
-                     case xatmi::transaction: return "TPETRAN";
-                     case xatmi::signal: return "TPGOTSIG";
-                     case xatmi::buffer_input: return "TPEITYPE";
-                     case xatmi::buffer_output: return "TPEOTYPE";
-                     case xatmi::event: return "TPEEVENT";
-                     case xatmi::service_advertised: return "TPEMATCH";
-                  }
-                  return "unknown";
+                  return common::code::description( code);
                }
 
                namespace user
@@ -147,7 +125,7 @@ namespace casual
                      } // type
                   } // buffer
 
-                  const std::string generic_prefix{ "application/casual-generic/"};
+                  constexpr std::string_view generic_prefix = "application/casual-generic/";
 
                } // <unnamed>
             } // local
@@ -178,7 +156,7 @@ namespace casual
             {
                std::string buffer( const std::string& content)
                {
-                  static const std::map< std::string, std::string> mapping{
+                  static const std::map< std::string_view, std::string> mapping{
                      { protocol::x_octet, common::buffer::type::x_octet()},
                      { protocol::binary, common::buffer::type::binary()},
                      { protocol::json, common::buffer::type::json()},
@@ -270,6 +248,7 @@ namespace casual
                void wire( common::buffer::Payload& buffer)
                {
                   Trace trace{ "http::buffer::transcode::to::wire"};
+                  log::line( verbose::log, "buffer: ", buffer);
                   
                   auto encode_base64 = []( common::buffer::Payload& payload)
                   {
