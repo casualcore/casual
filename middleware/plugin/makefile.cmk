@@ -1,5 +1,6 @@
 from casual.make.entity.target import Recipe
 import casual.make.entity.model as model
+import casual.make.api as make
 
 import subprocess
 import os
@@ -17,4 +18,5 @@ def perform_build(dummy):
 
 # main - register function
 model.register( 'nginx').execute(True).serial(True).add_recipe( Recipe( perform_build, None))
+
 

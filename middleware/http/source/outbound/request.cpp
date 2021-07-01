@@ -33,7 +33,6 @@ namespace casual
       {
          namespace
          {
-            
             struct Configuration
             {
                const bool force_fresh_connect = common::environment::variable::get( "CASUAL_HTTP_CURL_FORCE_FRESH_CONNECT", false);

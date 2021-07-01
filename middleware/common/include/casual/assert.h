@@ -23,7 +23,7 @@ namespace casual
 
    //! logs `context` to error and terminates
    template< typename P, typename... Ts>
-   auto assertion( P&& predicate, Ts&&... context) noexcept
+   auto assertion( P&& predicate, Ts&&... context) noexcept -> decltype( std::forward< P>( predicate))
    {
       if( ! predicate)
          casual::terminate( std::forward< Ts>( context)...);
