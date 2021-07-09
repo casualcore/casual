@@ -8,6 +8,7 @@
 #include "configuration/common.h"
 
 #include "common/algorithm.h"
+#include "common/algorithm/coalesce.h"
 #include "common/string.h"
 #include "common/code/raise.h"
 #include "common/code/casual.h"
@@ -47,8 +48,8 @@ namespace casual
 
             auto update_resource = [&defaults = defaults.value().resource]( auto& resource)
             {
-               resource.key = coalesce( resource.key, defaults.key);
-               resource.instances = coalesce( resource.instances, defaults.instances);
+               resource.key = algorithm::coalesce( resource.key, defaults.key);
+               resource.instances = algorithm::coalesce( resource.instances, defaults.instances);
             };
 
             algorithm::for_each( resources, update_resource);
@@ -71,7 +72,7 @@ namespace casual
                {
                   algorithm::for_each( group.connections, [&default_connection]( auto& connection)
                   {
-                     connection.discovery = coalesce( connection.discovery, default_connection.discovery);
+                     connection.discovery = algorithm::coalesce( connection.discovery, default_connection.discovery);
                      local::validate::not_empty( connection.address, "inbound.groups[].address");
                   });
                }
@@ -85,8 +86,8 @@ namespace casual
                {
                   if( group.limit)
                   {
-                     group.limit.value().size = coalesce( group.limit.value().size, limit.size);
-                     group.limit.value().messages = coalesce( group.limit.value().messages, limit.messages);
+                     group.limit.value().size = algorithm::coalesce( group.limit.value().size, limit.size);
+                     group.limit.value().messages = algorithm::coalesce( group.limit.value().messages, limit.messages);
                   }
                }
             }
@@ -132,7 +133,7 @@ namespace casual
 
                auto update_connection = [&defaults = defaults.value().connection.value()]( auto& connection)
                {
-                  connection.address = coalesce( connection.address, defaults.address);
+                  connection.address = algorithm::coalesce( connection.address, defaults.address);
                   connection.restart = connection.restart.value_or( defaults.restart);
                };
                algorithm::for_each( connections.value(), update_connection);
@@ -151,8 +152,8 @@ namespace casual
                      return;
                   }
                   auto& limit = listener.limit.value();
-                  limit.size = coalesce( limit.size, defaults.limit.size);
-                  limit.messages = coalesce( limit.messages, defaults.limit.messages);
+                  limit.size = algorithm::coalesce( limit.size, defaults.limit.size);
+                  limit.messages = algorithm::coalesce( limit.messages, defaults.limit.messages);
                };
                algorithm::for_each( listeners.value(), update_listener);
             }
@@ -209,7 +210,7 @@ namespace casual
                   log::line( log::category::warning, "configuration - queue.retries is deprecated - use queue.retry.count instead");
                   
                   if( queue.retry)
-                     queue.retry.value().count = coalesce( std::move( queue.retry.value().count), std::move( queue.retries));
+                     queue.retry.value().count = algorithm::coalesce( std::move( queue.retry.value().count), std::move( queue.retries));
                   else
                      queue.retry = Queue::Retry{ std::move( queue.retries), std::nullopt};
                }
@@ -232,7 +233,7 @@ namespace casual
                   if( group.name)
                      log::line( log::category::warning, "configuration - domain.queue.groups[].name is deprecated - use domain.queue.groups[].alias instead");
 
-                  group.alias = coalesce( std::move( group.alias), std::move( group.name));
+                  group.alias = algorithm::coalesce( std::move( group.alias), std::move( group.name));
 
                   algorithm::for_each( group.queues, [&]( auto& queue)
                   {
@@ -245,11 +246,11 @@ namespace casual
                      {
                         if( queue.retry && defaults.value().queue.value().retry)
                         {
-                           queue.retry.value().count = coalesce( std::move( queue.retry.value().count), defaults.value().queue.value().retry.value().count);
-                           queue.retry.value().delay = coalesce( std::move( queue.retry.value().delay), defaults.value().queue.value().retry.value().delay);
+                           queue.retry.value().count = algorithm::coalesce( std::move( queue.retry.value().count), defaults.value().queue.value().retry.value().count);
+                           queue.retry.value().delay = algorithm::coalesce( std::move( queue.retry.value().delay), defaults.value().queue.value().retry.value().delay);
                         }
                         else
-                           queue.retry = coalesce( std::move( queue.retry), defaults.value().queue.value().retry);
+                           queue.retry = algorithm::coalesce( std::move( queue.retry), defaults.value().queue.value().retry);
                      }
                   });
                   
@@ -297,7 +298,7 @@ namespace casual
          if( defaults.value().environment)
          {
             log::line( log::category::warning, "configuration - domain.default.environment is deprecated - use domain.environment instead");
-            environment = coalesce( std::move( environment), std::move( defaults.value().environment));
+            environment = algorithm::coalesce( std::move( environment), std::move( defaults.value().environment));
          }
 
          
@@ -306,8 +307,8 @@ namespace casual
             auto normalize_entity = [&defaults]( auto& entity)
             {
                entity.instances = entity.instances.value_or( defaults.instances);
-               entity.memberships = coalesce( entity.memberships, defaults.memberships);
-               entity.environment = coalesce( entity.environment, defaults.environment);
+               entity.memberships = algorithm::coalesce( entity.memberships, defaults.memberships);
+               entity.environment = algorithm::coalesce( entity.environment, defaults.environment);
                entity.restart = entity.restart.value_or( defaults.restart);
             };
             algorithm::for_each( entities, normalize_entity);

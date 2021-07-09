@@ -14,6 +14,7 @@
 #include "common/code/casual.h"
 
 #include "common/algorithm.h"
+#include "common/algorithm/coalesce.h"
 #include "common/functional.h"
 
 #include "common/string.h"
@@ -909,7 +910,7 @@ namespace casual
                else 
                {
                   auto result =  m_content.completion( key, values);
-                  result.parent = common::coalesce( result.parent, detail::basic_keys::keys().canonical());
+                  result.parent = common::algorithm::coalesce( result.parent, detail::basic_keys::keys().canonical());
                   return result;
                }
             }

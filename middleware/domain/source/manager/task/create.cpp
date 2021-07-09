@@ -11,6 +11,7 @@
 #include "domain/common.h"
 
 #include "common/algorithm/compare.h"
+#include "common/algorithm/container.h"
 #include "common/log/stream.h"
 
 

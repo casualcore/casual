@@ -10,6 +10,7 @@
 #include "common/event/send.h"
 #include "common/environment.h"
 #include "common/environment/normalize.h"
+#include "common/algorithm/coalesce.h"
 
 namespace casual
 {
@@ -24,7 +25,7 @@ namespace casual
             auto initialize_log = []( auto&& configuration)
             {
                std::string file = environment::directory::domain() / "transaction" / "log.db";
-               return common::environment::string( common::coalesce(
+               return common::environment::string( common::algorithm::coalesce(
                   std::move( configuration), 
                   std::move( file)));
             };
@@ -39,7 +40,7 @@ namespace casual
                   state::resource::Proxy result{ configuration};
 
                   // make sure we've got a name
-                  result.configuration.name = common::coalesce( 
+                  result.configuration.name = common::algorithm::coalesce( 
                      std::move( result.configuration.name), 
                      common::string::compose( ".rm.", result.configuration.key, '.', result.id));
 

@@ -12,6 +12,8 @@
 #include "common/serialize/line.h"
 #include "common/file.h"
 
+#include "common/algorithm/coalesce.h"
+
 namespace casual
 {
 
@@ -33,8 +35,8 @@ namespace casual
                         {
                            if( ! service.function) service.function.emplace( service.name);
 
-                           service.transaction = common::coalesce( service.transaction, server.server_default.service.transaction);
-                           service.category = common::coalesce( service.category, server.server_default.service.category);
+                           service.transaction = common::algorithm::coalesce( service.transaction, server.server_default.service.transaction);
+                           service.category = common::algorithm::coalesce( service.category, server.server_default.service.category);
                         }
                      }
                   } // complement

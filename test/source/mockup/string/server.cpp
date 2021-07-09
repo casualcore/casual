@@ -7,6 +7,7 @@
 
 #include "common/buffer/type.h"
 #include "common/algorithm.h"
+#include "common/algorithm/sorted.h"
 #include "common/file.h"
 #include "common/argument.h"
 #include "common/exception/guard.h"

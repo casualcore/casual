@@ -20,6 +20,7 @@
 #include "common/service/lookup.h"
 #include "common/communication/instance.h"
 #include "common/event/listen.h"
+#include "common/algorithm/container.h"
 
 #include "common/code/xatmi.h"
 

@@ -14,6 +14,7 @@
 
 #include "common/message/domain.h"
 #include "common/algorithm/compare.h"
+#include "common/algorithm/sorted.h"
 #include "common/communication/instance.h"
 
 namespace casual

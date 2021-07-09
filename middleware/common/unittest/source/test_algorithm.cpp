@@ -9,6 +9,7 @@
 #include "common/unittest/log.h"
 #include "common/algorithm.h"
 #include "common/algorithm/compare.h"
+#include "common/algorithm/coalesce.h"
 #include "common/algorithm/is.h"
 
 namespace casual
@@ -578,7 +579,7 @@ namespace casual
          std::string first;
          std::string second;
 
-         EXPECT_TRUE( std::is_lvalue_reference< decltype( coalesce( first, second))>::value);
+         EXPECT_TRUE( std::is_lvalue_reference< decltype( algorithm::coalesce( first, second))>::value);
       }
 
       TEST( common_algorithm_coalesce, rvalue_string_first__expect_rvalue)
@@ -588,7 +589,7 @@ namespace casual
          std::string first;
          std::string second;
 
-         EXPECT_TRUE( ! std::is_lvalue_reference< decltype( coalesce( std::move( first), second))>::value);
+         EXPECT_TRUE( ! std::is_lvalue_reference< decltype( algorithm::coalesce( std::move( first), second))>::value);
       }
 
       TEST( common_algorithm_coalesce, lvalue_string_first__literal_string_second__expect_string_rvalue)
@@ -597,9 +598,9 @@ namespace casual
 
          std::string first;
 
-         EXPECT_TRUE( ! std::is_lvalue_reference< decltype( coalesce( first, "0"))>::value);
-         EXPECT_TRUE( ( std::is_same< decltype( coalesce( first, "0")), std::string>::value));
-         EXPECT_TRUE( coalesce( first, "0") == "0");
+         EXPECT_TRUE( ! std::is_lvalue_reference< decltype( algorithm::coalesce( first, "0"))>::value);
+         EXPECT_TRUE( ( std::is_same< decltype( algorithm::coalesce( first, "0")), std::string>::value));
+         EXPECT_TRUE( algorithm::coalesce( first, "0") == "0");
       }
 
       TEST( common_algorithm_coalesce, int_nullptr_first__int_pointer_second__expect_second)
@@ -610,8 +611,8 @@ namespace casual
          int temp = 42;
          int* second = &temp;
          
-         EXPECT_TRUE( coalesce( first, second) == second);
-         EXPECT_TRUE( *coalesce( first, second) == 42);
+         EXPECT_TRUE( algorithm::coalesce( first, second) == second);
+         EXPECT_TRUE( *algorithm::coalesce( first, second) == 42);
       }
 
 
@@ -622,7 +623,7 @@ namespace casual
          auto coalesce_strings = []() {
             std::vector< std::string> strings( 10);
 
-            return coalesce(
+            return algorithm::coalesce(
                   strings.at( 0),
                   strings.at( 1),
                   strings.at( 2),

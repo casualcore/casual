@@ -10,6 +10,7 @@
 #include "common/exception/handle.h"
 #include "common/argument.h"
 #include "common/algorithm.h"
+#include "common/algorithm/sorted.h"
 #include "common/execute.h"
 
 #include "sql/database.h"

@@ -9,6 +9,7 @@
 #include "casual/assert.h"
 
 #include "common/algorithm.h"
+#include "common/algorithm/coalesce.h"
 
 namespace casual
 {
@@ -91,7 +92,7 @@ namespace casual
 
             Model& Model::operator += ( Model rhs)
             {
-               name = coalesce( std::move( rhs.name), std::move( name));
+               name = algorithm::coalesce( std::move( rhs.name), std::move( name));
 
                environment += std::move( rhs.environment);
 
@@ -109,7 +110,7 @@ namespace casual
          {
             Model& Model::operator += ( Model rhs)
             {
-               log = coalesce( std::move( rhs.log), std::move( log));
+               log = algorithm::coalesce( std::move( rhs.log), std::move( log));
                local::range::replace( std::move( rhs.resources), resources, local::predicate::equal::name());
                local::range::replace( std::move( rhs.mappings), mappings, local::predicate::equal::alias());
                return *this;
@@ -136,7 +137,7 @@ namespace casual
          {
             Group& Group::operator += ( Group rhs)
             {
-               note = coalesce( std::move( rhs.note), std::move( note));
+               note = algorithm::coalesce( std::move( rhs.note), std::move( note));
                local::range::replace( std::move( rhs.queues), queues, local::predicate::equal::name());
                
                return *this;
@@ -147,7 +148,7 @@ namespace casual
 
                Group& Group::operator += ( Group rhs)
                {
-                  note = coalesce( std::move( rhs.note), std::move( note));
+                  note = algorithm::coalesce( std::move( rhs.note), std::move( note));
                   local::range::replace( std::move( rhs.services), services, local::predicate::equal::alias());
                   local::range::replace( std::move( rhs.queues), queues, local::predicate::equal::alias());
 
@@ -164,7 +165,7 @@ namespace casual
 
             Model& Model::operator += ( Model rhs)
             {
-               note = coalesce( std::move( rhs.note), std::move( note));
+               note = algorithm::coalesce( std::move( rhs.note), std::move( note));
 
                local::range::update( std::move( rhs.groups), groups, local::predicate::equal::alias());
                forward += std::move( rhs.forward);
@@ -181,7 +182,7 @@ namespace casual
 
                Connection& Connection::operator += ( Connection rhs)
                {
-                  note = coalesce( std::move( rhs.note), std::move( note));
+                  note = algorithm::coalesce( std::move( rhs.note), std::move( note));
                   discovery = rhs.discovery;
 
                   return *this;
@@ -189,7 +190,7 @@ namespace casual
 
                Group& Group::operator += ( Group rhs)
                {
-                  note = coalesce( std::move( rhs.note), std::move( note));
+                  note = algorithm::coalesce( std::move( rhs.note), std::move( note));
                   connect = rhs.connect;
                   limit = rhs.limit;
                   local::range::update( std::move( rhs.connections), connections, []( auto& l, auto& r){ return l.address == r.address;});
@@ -210,7 +211,7 @@ namespace casual
             {
                Connection& Connection::operator += ( Connection rhs)
                {
-                  note = coalesce( std::move( rhs.note), std::move( note));
+                  note = algorithm::coalesce( std::move( rhs.note), std::move( note));
 
                   algorithm::append_unique( rhs.services, services);
                   algorithm::append_unique( rhs.queues, queues);
@@ -220,7 +221,7 @@ namespace casual
 
                Group& Group::operator += ( Group rhs)
                {
-                  note = coalesce( std::move( rhs.note), std::move( note));
+                  note = algorithm::coalesce( std::move( rhs.note), std::move( note));
                   connect = rhs.connect;
                   local::range::update( std::move( rhs.connections), connections, []( auto& l, auto& r){ return l.address == r.address;});
 

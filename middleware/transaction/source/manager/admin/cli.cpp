@@ -18,6 +18,7 @@
 #include "common/communication/ipc.h"
 #include "common/message/handle.h"
 #include "common/range/adapter.h"
+#include "common/algorithm/sorted.h"
 
 #include "serviceframework/service/protocol/call.h"
 
