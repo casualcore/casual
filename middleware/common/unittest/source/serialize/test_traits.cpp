@@ -7,6 +7,7 @@
 #include "common/unittest.h"
 
 #include "common/serialize/traits.h"
+#include "common/serialize/macro.h"
 
 namespace casual
 {
@@ -33,8 +34,7 @@ namespace casual
             {
                struct Value
                {
-                  template< typename A>
-                  void serialize( A& archive) {}
+                  CASUAL_CONST_CORRECT_SERIALIZE()
                };
             } // <unnamed>
          } // local

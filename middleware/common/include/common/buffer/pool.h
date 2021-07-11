@@ -352,7 +352,7 @@ namespace casual
 
 
             template< typename P>
-            CASUAL_MAYBE_UNUSED P& Registration< P>::pool = Holder::instance().registration( P{});
+            [[maybe_unused]] P& Registration< P>::pool = Holder::instance().registration( P{});
 
          } // pool
       } // buffer

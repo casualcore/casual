@@ -53,11 +53,9 @@ namespace casual
             {
                std::vector<long> array;
 
-               template< typename A>
-               void serialize( A& archive)
-               {
+               CASUAL_CONST_CORRECT_SERIALIZE(
                   CASUAL_SERIALIZE( array);
-               }
+               )
 
             };
 

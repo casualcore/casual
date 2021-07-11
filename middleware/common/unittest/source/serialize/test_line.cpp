@@ -10,6 +10,8 @@
 #include "common/serialize/macro.h"
 #include "common/serialize/create.h"
 
+#include <filesystem>
+
 namespace casual
 {
    namespace common
@@ -26,10 +28,9 @@ namespace casual
                   short short_value{};
 
                   CASUAL_LOG_SERIALIZE(
-                  {
                      CASUAL_SERIALIZE( long_value);
                      CASUAL_SERIALIZE( short_value);
-                  })
+                  )
                };
 
                struct B
@@ -38,13 +39,24 @@ namespace casual
                   short short_value{};
 
                   CASUAL_LOG_SERIALIZE(
-                  {
                      CASUAL_SERIALIZE( long_value);
                      CASUAL_SERIALIZE( short_value);
-                  })
+                  )
 
                   friend std::ostream& operator << ( std::ostream& out, const B& value) { return out << "overridden";}
                };
+
+               struct C
+               {
+                  long id;
+                  std::filesystem::path path;
+
+                  CASUAL_CONST_CORRECT_SERIALIZE(
+                     CASUAL_SERIALIZE( id);
+                     CASUAL_SERIALIZE( path);
+                  )
+               };
+
             } // <unnamed>
          } // local
 
@@ -114,7 +126,7 @@ namespace casual
             EXPECT_TRUE( archive.consume< std::string>() == "value: { long_value: 42, short_value: 2}") << CASUAL_NAMED_VALUE( value);
          }
 
-         TEST( casual_serialize_line, log_tuple)
+         TEST( casual_serialize_line, write_tuple)
          {
             common::unittest::Trace trace;
 
@@ -125,6 +137,19 @@ namespace casual
             archive << CASUAL_NAMED_VALUE( tuple);
 
             EXPECT_TRUE( archive.consume< std::string>() == R"(tuple: [ 1, "foo", true])") << CASUAL_NAMED_VALUE( tuple);
+         }
+
+         TEST( casual_serialize_line, write_composit_with_path)
+         {
+            common::unittest::Trace trace;
+
+            local::C value{ 42, "/a/b/c/d.txt"};
+
+            std::ostringstream out;
+            out << CASUAL_NAMED_VALUE( value);
+         
+
+            EXPECT_TRUE( out.str() == R"(value: { id: 42, path: "/a/b/c/d.txt"})") << CASUAL_NAMED_VALUE( out.str());
          }
 
 

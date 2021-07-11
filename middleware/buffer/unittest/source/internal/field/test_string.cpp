@@ -60,7 +60,7 @@ namespace casual
                      {
                      }
                   };
-                  CASUAL_MAYBE_UNUSED auto registred = internal::field::string::convert::registration( "key_empty", std::move( action)); 
+                  [[maybe_unused]] auto registred = internal::field::string::convert::registration( "key_empty", std::move( action)); 
                   
                } // key_empty
 
@@ -79,7 +79,7 @@ namespace casual
                         output.add< local::fld::string_1>( view.data);
                      }
                   };
-                  CASUAL_MAYBE_UNUSED auto registred = internal::field::string::convert::registration( "key_copy", std::move( action)); 
+                  [[maybe_unused]] auto registred = internal::field::string::convert::registration( "key_copy", std::move( action)); 
                   
                } // key_copy
 
@@ -93,7 +93,7 @@ namespace casual
                         internal::field::string::format< local::fld::string_3, internal::field::string::Alignment::left>::string( input, output, 30, ' ');
                      }
                   };
-                  CASUAL_MAYBE_UNUSED auto registred = internal::field::string::convert::registration( "key_1", std::move( action)); 
+                  [[maybe_unused]] auto registred = internal::field::string::convert::registration( "key_1", std::move( action)); 
                   
                } // key_1
 
@@ -107,7 +107,7 @@ namespace casual
                         internal::field::string::format< local::fld::string_3, internal::field::string::Alignment::right>::string( input, output, 30, '3');
                      }
                   };
-                  CASUAL_MAYBE_UNUSED auto registred = internal::field::string::convert::registration( "key_2", std::move( action)); 
+                  [[maybe_unused]] auto registred = internal::field::string::convert::registration( "key_2", std::move( action)); 
                   
                } // key_2
 
@@ -121,7 +121,7 @@ namespace casual
                         internal::field::string::format< local::fld::long_3, internal::field::string::Alignment::right>::string( input, output, 30, ' ');
                      }
                   };
-                  CASUAL_MAYBE_UNUSED auto registred = internal::field::string::convert::registration( "key_3", std::move( action)); 
+                  [[maybe_unused]] auto registred = internal::field::string::convert::registration( "key_3", std::move( action)); 
                   
                } // key_3          
                

@@ -70,18 +70,26 @@ namespace casual
          void composite_end( const char*);
 
          template<typename T>
-         auto write( T&& value, const char* name)
+         auto write( T&& value, const char* name, common::traits::priority::tag< 1>) 
+            -> std::enable_if_t< traits::is::archive::write::type_v< common::traits::remove_cvref_t< T>>>
+         {
+            save( std::forward< T>( value), name);
+         }
+
+         template< typename T>
+         auto write( T&& value, const char* name, common::traits::priority::tag< 0>) 
             -> decltype( detail::write( std::declval< std::ostream&>(), std::forward< T>( value)))
          {
-            in_scope();
             detail::write( maybe_name( name), std::forward< T>( value));
          }
 
-         void write( bool value, const char* name);
-         void write( view::immutable::Binary value, const char* name);
-         void write( const platform::binary::type& value, const char* name);
-         void write( const std::string& value, const char* name);
-         void write( const string::immutable::utf8& value, const char* name);
+         template<typename T>
+         auto write( T&& value, const char* name)
+            -> decltype( write( std::forward< T>( value), name, common::traits::priority::tag< 1>{}))
+         {
+            in_scope();
+            write( std::forward< T>( value), name, common::traits::priority::tag< 1>{});
+         }
 
 
          template< typename T>
@@ -91,17 +99,24 @@ namespace casual
             serialize::value::write( *this, std::forward< T>( value), nullptr);
             return *this;
          }
-
-         template< typename T>
-         Writer& operator & ( T&& value)
-         {
-            return *this << std::forward< T>( value);
-         }
-
+         
          void consume( std::ostream& destination);
          std::string consume();
 
       private:
+
+
+         template< typename T>
+         auto save( T value, const char* name) -> std::enable_if_t< std::is_arithmetic_v< T>>
+         {
+             maybe_name( name) << value;
+         }
+
+         void save( bool value, const char* name);
+         void save( view::immutable::Binary value, const char* name);
+         void save( const platform::binary::type& value, const char* name);
+         void save( const std::string& value, const char* name);
+         void save( const string::immutable::utf8& value, const char* name);
 
          std::ostream& maybe_name( const char* name);
 

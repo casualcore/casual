@@ -230,30 +230,5 @@ namespace casual
          }
       }
 
-   /*
-      struct TinyVO
-      {
-         bool boolean = true;
-         long integer = 123;
-
-         template<typename A>
-         void serialize( A& archive)
-         {
-            CASUAL_SERIALIZE( boolean);
-            CASUAL_SERIALIZE( integer);
-         }
-      };
-
-      TEST( common_serialize_ini_archive, nested_stuff)
-      {
-         std::string ini;
-         //std::vector<std::vector<std::vector<long>>> source{ {{1, 3, 5}, {2, 4, 6, 8}}, {{4, 3, 2}} };
-         //std::map<long,TinyVO> source{ { 1, TinyVO()}, { 2, TinyVO()} };
-         std::map<long,TinyVO> source{ { 1, TinyVO()}, { 2, TinyVO()}, { 3, TinyVO()}};
-         //std::map<long,std::string> source{ { 1, "foo"}};
-         local::value_to_string( source, ini);
-         std::cout << ini << '\n';
-      }
-   */
    } // common
 } // casual

@@ -65,12 +65,6 @@ namespace casual
             }
 
             template< typename T>
-            basic_writer& operator & ( T&& value)
-            {
-               return *this << std::forward< T>( value);
-            }
-
-            template< typename T>
             basic_writer& operator << ( T&& value)
             {
                serialize::value::write( *this, std::forward< T>( value), nullptr);
@@ -152,12 +146,6 @@ namespace casual
                : m_buffer( buffer), m_offset{ offset} {}
 
             basic_reader( const platform::binary::type& buffer) : m_buffer( buffer){}
-
-            template< typename T>
-            basic_reader& operator & ( T&& value)
-            {
-               return *this >> value;
-            }
 
             template< typename T>
             basic_reader& operator >> ( T&& value)

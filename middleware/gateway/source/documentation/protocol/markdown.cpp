@@ -153,13 +153,6 @@ namespace casual
                   });
                }
 
-
-               template< typename T>
-               Printer& operator & ( T&& value)
-               {
-                  return *this << std::forward< T>( value);
-               }
-
                template< typename T>
                Printer& operator << ( T&& value)
                {

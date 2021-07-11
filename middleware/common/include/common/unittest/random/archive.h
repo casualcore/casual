@@ -142,12 +142,6 @@ namespace casual
                }
 
                template< typename T>
-               basic_archive& operator & ( T&& value)
-               {
-                  return *this >> value;
-               }
-
-               template< typename T>
                basic_archive& operator >> ( T&& value)
                {
                   serialize::value::read( *this, value, nullptr);

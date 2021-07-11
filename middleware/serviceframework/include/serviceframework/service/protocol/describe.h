@@ -41,11 +41,6 @@ namespace casual
                      return *this;
                   }
 
-                  template< typename T>
-                  Wrapper& operator & ( T&& value)
-                  {
-                     return *this << std::forward< T>( value);
-                  }
                private:
                   common::serialize::Reader m_prepare;
                   common::serialize::Writer m_writer;

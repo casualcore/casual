@@ -97,12 +97,6 @@ namespace casual
                return *this;
             }
 
-            template< typename T>
-            Writer& operator & ( T&& value)
-            {
-               return *this << std::forward< T>( value);
-            }
-
          private:
 
             template< typename T>

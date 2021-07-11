@@ -114,11 +114,11 @@ namespace casual
          struct Registration
          {
          private:
-            static CASUAL_MAYBE_UNUSED bool m_dummy;
+            [[maybe_unused]] static bool m_dummy;
          };
 
          template< typename I> 
-         CASUAL_MAYBE_UNUSED bool Registration< I>::m_dummy = reader::registration< I>();
+         [[maybe_unused]] bool Registration< I>::m_dummy = reader::registration< I>();
 
          namespace complete
          {
@@ -159,11 +159,11 @@ namespace casual
          struct Registration
          {
          private:
-            static CASUAL_MAYBE_UNUSED bool m_dummy;
+            [[maybe_unused]] static bool m_dummy;
          };
 
          template< typename I> 
-         CASUAL_MAYBE_UNUSED bool Registration< I>::m_dummy = writer::registration< I>();
+         [[maybe_unused]] bool Registration< I>::m_dummy = writer::registration< I>();
 
 
 

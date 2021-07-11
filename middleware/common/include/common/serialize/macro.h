@@ -13,13 +13,28 @@ namespace casual
 {
    namespace common::serialize::detail
    {
+
       template< typename A, typename V> 
-      auto dispatch( A& archive, V&& value, const char* name)
+      auto dispatch( A& archive, V&& value)
+         -> decltype( void( archive << std::forward< V>( value)))
+      {
+         archive << std::forward< V>( value);
+      }
+
+      template< typename A, typename V> 
+      auto dispatch( A& archive, V&& value)
+         -> decltype( void( archive >> std::forward< V>( value)))
+      {
+         archive >> std::forward< V>( value);
+      }
+
+      template< typename A, typename V> 
+      auto dispatch( A& archive, V&& value, [[maybe_unused]] const char* name)
       {
          if constexpr( traits::need::named_v< A>)
-            archive & named::value::make( std::forward< V>( value), name);
+            detail::dispatch( archive, named::value::make( std::forward< V>( value), name));
          else
-            archive & std::forward< V>( value);
+            detail::dispatch( archive, std::forward< V>( value));
       }
  
    } // common::serialize::detail

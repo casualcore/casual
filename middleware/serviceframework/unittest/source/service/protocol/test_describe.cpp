@@ -61,8 +61,8 @@ namespace casual
          std::vector< std::string> some_strings;
          std::vector< long> some_longs;
 
-         writer & CASUAL_NAMED_VALUE( some_strings);
-         writer & CASUAL_NAMED_VALUE( some_longs);
+         writer << CASUAL_NAMED_VALUE( some_strings);
+         writer << CASUAL_NAMED_VALUE( some_longs);
 
          ASSERT_TRUE( model.arguments.input.size() == 2);
          EXPECT_TRUE( model.arguments.input.at( 0).role == "some_strings");

@@ -27,11 +27,6 @@ namespace casual
             template< typename... Ts> 
             Traverser( Ts&&... ts) : m_policy{ std::forward< Ts>( ts)...} {}
 
-            template< typename T>
-            Traverser& operator & ( T&& value)
-            {
-               return *this >> value;
-            }
 
             template< typename T>
             Traverser& operator >> ( T&& value)

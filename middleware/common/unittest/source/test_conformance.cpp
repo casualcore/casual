@@ -65,6 +65,35 @@ namespace casual
 
       static_assert( size_of_parameter_pack<>() == 0);
       static_assert( size_of_parameter_pack< 1, 2, 3>() == 3);
+
+      namespace detail
+      {
+         template< typename F>
+         auto switch_fallthrough( int value, F&& function)
+         {
+            switch( value)
+            {
+               case 1: function( value); // case is doing stuff
+               [[fallthrough]];          // hence, need explict fallthrough
+               case 2:                   // case is not doing stuff, no fallthrough needed.
+               case 3: return 3;
+            }
+            return 0;
+         }
+         
+      } // detail
+
+      
+
+
+      TEST( common_conformance, fallthrough)
+      {
+         int value{};
+         auto function = [&value]( auto v){ value = v;};
+
+         EXPECT_TRUE( detail::switch_fallthrough( 1, function) == 3);
+         EXPECT_TRUE( value == 1);
+      }
       
 
       TEST( common_conformance, struct_with_pod_attributes__is_pod)
@@ -74,7 +103,7 @@ namespace casual
             int int_value;
          };
 
-         EXPECT_TRUE( std::is_pod< POD>::value);
+         EXPECT_TRUE( std::is_standard_layout< POD>::value);
       }
 
       TEST( common_conformance, struct_with_member_function__is_pod)
@@ -84,7 +113,7 @@ namespace casual
             int func1() { return 42;}
          };
 
-         EXPECT_TRUE( std::is_pod< POD>::value);
+         EXPECT_TRUE( std::is_standard_layout< POD>::value);
       }
 
 

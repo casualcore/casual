@@ -188,14 +188,14 @@ namespace casual
 
                auto output = output_type{}();
 
-               output & xid_source;
+               output << xid_source;
 
                auto buffer = output.consume();
                auto input = input_type{}( buffer);
 
                transaction::ID xid_target;
 
-               input & xid_target;
+               input >> xid_target;
 
                EXPECT_TRUE( ! xid_target.null());
                EXPECT_TRUE( xid_target == xid_source);

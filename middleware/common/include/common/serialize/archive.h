@@ -74,12 +74,6 @@ namespace casual
             return *this;
          }
 
-         template< typename V>
-         Reader& operator & ( V&& value)
-         {
-            return Reader::operator >> ( std::forward< V>( value));
-         }
-
       private:
 
          struct concept
@@ -188,10 +182,10 @@ namespace casual
          //! restricted write, so we don't consume convertable types by mistake
          //! binary types, such as char[16] that easily converts to const std::string& 
          template< typename T>
-         auto write( T&& value, const char* name) 
+         auto write( const T& value, const char* name)
             -> std::enable_if_t< traits::is::archive::write::type_v< common::traits::remove_cvref_t< T>>>
          {
-            save( std::forward< T>( value), name);
+            save( value, name);
          }
 
          //! consumes the writer
@@ -218,12 +212,6 @@ namespace casual
          {
             serialize::value::write( *this, std::forward< V>( value), nullptr);
             return *this;
-         }
-
-         template< typename V>
-         Writer& operator & ( V&& value)
-         {
-            return Writer::operator << ( std::forward< V>( value));
          }
 
       private:

@@ -8,9 +8,10 @@
 #include "configuration/model/transform.h"
 #include "configuration/user/environment.h"
 #include "configuration/common.h"
-#include "common/service/type.h"
 
+#include "common/service/type.h"
 #include "common/chronology.h"
+
 
 namespace casual
 {
