@@ -33,6 +33,7 @@ install_headers = []
 common_archive = make.LinkArchive( 'bin/casual-http-common',
     [
        make.Compile( 'source/common.cpp'),
+       make.Compile( 'source/code.cpp'),
      ])
 
 common_outbound_archive = make.LinkArchive( 'bin/casual-http-outbound-common',

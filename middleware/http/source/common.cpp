@@ -125,7 +125,7 @@ namespace casual
                      } // type
                   } // buffer
 
-                  const std::string generic_prefix{ "application/casual-generic/"};
+                  constexpr std::string_view generic_prefix = "application/casual-generic/";
 
                } // <unnamed>
             } // local
@@ -156,7 +156,7 @@ namespace casual
             {
                std::string buffer( const std::string& content)
                {
-                  static const std::map< std::string, std::string> mapping{
+                  static const std::map< std::string_view, std::string> mapping{
                      { protocol::x_octet, common::buffer::type::x_octet()},
                      { protocol::binary, common::buffer::type::binary()},
                      { protocol::json, common::buffer::type::json()},

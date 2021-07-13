@@ -44,7 +44,7 @@ namespace casual
                         {
                            auto source = state.range();
 
-                           log::line( verbose::log, "size: ", size, " - source-size: ", source.size());
+                           common::log::line( verbose::log, "size: ", size, " - source-size: ", source.size());
 
                            if( source.size() <= size)
                            {
@@ -87,7 +87,7 @@ namespace casual
                            {
                               auto content = protocol::convert::from::buffer( result.state().payload.type);
 
-                              log::line( verbose::log, "content: ", content);
+                              common::log::line( verbose::log, "content: ", content);
 
                               if( ! content.empty())
                                  result.state().header.request.add( "content-type: " + content);
@@ -110,7 +110,7 @@ namespace casual
 
                            algorithm::append( source, state.payload.memory);
 
-                           log::line( verbose::log, "wrote ", size, " bytes");
+                           common::log::line( verbose::log, "wrote ", size, " bytes");
 
                            return size;
                         }
