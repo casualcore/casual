@@ -7,9 +7,9 @@ import os
 
 def perform_build(dummy):
    print( "building and installing nginx")
-   filename = os.path.join( os.getenv("CASUAL_BUILD_HOME"), 'thirdparty/setup/install_nginx.py')
+   filename = os.path.join( os.getenv("CASUAL_MAKE_SOURCE_ROOT"), 'thirdparty/setup/install_nginx.py')
    try:
-      out = subprocess.check_output(["python2", filename])
+      out = subprocess.check_output(["python3", filename])
    except subprocess.CalledProcessError as e:
       print(e)
       raise
@@ -19,17 +19,5 @@ def perform_build(dummy):
 # main - register function
 model.register( 'nginx').execute(True).serial(True).add_recipe( Recipe( perform_build, None))
 
-make.IncludePaths([
-    'include',
-])
-
-make.LibraryPaths([
-    'bin',
-])
-
-archive = make.LinkArchive( 'bin/casual-plugin-archive',
-    [
-        make.Compile( 'source/call.cpp')
-    ])
 
 
