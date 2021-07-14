@@ -4,16 +4,12 @@ import os
 
 make.IncludePaths( ['server/include',
     '../xatmi/include',
-    '../common/include',
-    '../serviceframework/include'] + 
+    '../common/include'] + 
     make.optional_include_paths()
     )
 make.LibraryPaths( [ 'server/bin',
     '../common/bin',
-    '../queue/bin',
     '../buffer/bin',
-    '../configuration/bin',
-    '../serviceframework/bin',
     '../xatmi/bin'] + 
     make.optional_library_paths()
    )

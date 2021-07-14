@@ -248,6 +248,7 @@ namespace casual
                void wire( common::buffer::Payload& buffer)
                {
                   Trace trace{ "http::buffer::transcode::to::wire"};
+                  log::line( verbose::log, "buffer: ", buffer);
                   
                   auto encode_base64 = []( common::buffer::Payload& payload)
                   {

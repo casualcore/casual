@@ -23,7 +23,7 @@ namespace casual
          {
             namespace buffer
             {
-               auto type( const std::vector< common::service::header::Field>& header)
+               auto type( const std::vector< header::Field>& header)
                {
                   auto found = algorithm::find( header, "content-type");
 
@@ -48,6 +48,7 @@ namespace casual
                message.service = destination.service;
 
                http::buffer::transcode::from::wire( message.buffer);
+
 
                return communication::device::blocking::send( destination.process.ipc, message);
             }
@@ -75,6 +76,8 @@ namespace casual
                result.payload.header.emplace_back( "content-type", http::protocol::convert::from::buffer( message.buffer.type));
                result.payload.header.emplace_back( http::header::name::result::code, http::header::value::result::code( message.code.result));
                result.payload.header.emplace_back( http::header::name::result::user::code, http::header::value::result::user::code( message.code.user));
+
+               result.payload.body = std::move( message.buffer.memory);
 
                auto transform_http_code = []( auto code)
                {
@@ -145,6 +148,7 @@ namespace casual
             auto error = exception::capture();
 
             Reply result;
+            result.payload.header.emplace_back( "content-length:0");
 
             if( common::code::is::category< http::code>( error.code()))
                result.code = static_cast< http::code>( error.code().value());

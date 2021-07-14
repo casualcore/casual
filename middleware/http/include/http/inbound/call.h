@@ -22,9 +22,14 @@ namespace casual
 {
    namespace http::inbound::call
    {  
+      namespace header
+      {
+         using Field = common::service::header::Field;
+      } // header
+
       struct Payload
       {
-         std::vector< common::service::header::Field> header;
+         std::vector< header::Field> header;
          std::vector< char> body;
 
          CASUAL_LOG_SERIALIZE(

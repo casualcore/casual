@@ -7,6 +7,10 @@ make.Build( 'serviceframework/makefile.cmk')
 make.Build( 'buffer/makefile.cmk')
 make.Build( 'configuration/makefile.cmk')
 make.Build( 'tools/makefile.cmk')
+
+# examples 
+make.Build( 'example/makefile.cmk')
+
 make.Build( 'domain/makefile.cmk') 
 make.Build( 'service/makefile.cmk')
 make.Build( 'transaction/makefile.cmk')
@@ -19,8 +23,6 @@ make.Build( 'http/makefile.cmk')
 # depends on domain, queue, service
 make.Build( 'gateway/makefile.cmk')
 
-# examples 
-make.Build( 'example/makefile.cmk')
 
 # admin cli
 make.Build( 'tools/makefile.cli.cmk')

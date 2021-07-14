@@ -76,19 +76,21 @@ install_bin.append( target)
 # Unittest
 make.LinkUnittest( 'unittest/bin/test-http',
    [
-    make.Compile( 'unittest/source/outbound/test_model.cpp'),
-    make.Compile( 'unittest/source/outbound/test_transcode.cpp'),
-    make.Compile( 'unittest/source/outbound/test_state.cpp'),
-    make.Compile( 'unittest/source/test_outbound.cpp'),
+        make.Compile( 'unittest/source/outbound/test_model.cpp'),
+        make.Compile( 'unittest/source/outbound/test_transcode.cpp'),
+        make.Compile( 'unittest/source/outbound/test_state.cpp'),
+        make.Compile( 'unittest/source/test_outbound.cpp'),
+        make.Compile( 'unittest/source/inbound/test_call.cpp'),
    ],
    [ 
-      common_outbound_archive, 
-      common_archive,
-      'casual-common',
-      'casual-domain-unittest',
-      'casual-unittest',
-      'casual-xatmi',
-      'curl'
+        common_outbound_archive,
+        common_inbound_library,
+        common_archive,
+        'casual-common',
+        'casual-domain-unittest',
+        'casual-unittest',
+        'casual-xatmi',
+        'curl'
    ])  
    
 
