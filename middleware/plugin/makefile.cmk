@@ -20,4 +20,32 @@ def perform_build(dummy):
 model.register( 'nginx').execute(True).serial(True).add_recipe( Recipe( perform_build, None))
 
 
+make.IncludePaths([
+        '.',
+        '../http/include',
+    ]
+    + make.optional_include_paths()
+    )
+
+make.LibraryPaths(
+    [
+        'bin',
+        '../http/bin',
+        '../common/bin',
+        '../buffer/bin',
+        '../xatmi/bin'
+    ]
+    + make.optional_library_paths()
+   )
+
+make.LinkLibrary( 'bin/helper',
+    [ 
+        make.Compile( "helper.cpp"),
+    ],
+    [
+        'casual-http-inbound-common'
+    ]
+)
+
+
 
