@@ -290,6 +290,8 @@ namespace casual
             std::string name;
             std::vector< connection::Identifier> connections;
 
+            inline friend bool operator == ( const Routing& lhs, std::string_view name) { return lhs.name == name;}
+
             CASUAL_CONST_CORRECT_SERIALIZE(
                CASUAL_SERIALIZE( name);
                CASUAL_SERIALIZE( connections);

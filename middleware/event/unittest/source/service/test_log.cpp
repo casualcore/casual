@@ -16,6 +16,7 @@
 #include "common/signal.h"
 #include "common/result.h"
 #include "common/environment.h"
+#include "common/environment/scoped.h"
 
 namespace casual
 {
@@ -72,10 +73,11 @@ domain:
                {
                   auto content = []( auto& path)
                   {
-                     while( file::empty( path))
+                     auto count = 400;
+                     while( file::empty( path) && count-- > 0)
                         common::process::sleep( std::chrono::milliseconds{ 4});
 
-                     return true;
+                     return count > 0;
                   };
                } // has
 
@@ -98,7 +100,7 @@ domain:
 
          auto log_file = common::unittest::file::temporary::name( ".log");
 
-         common::environment::variable::set( "SERVICE_LOG_FILE", log_file.string());
+         auto guard = common::environment::variable::scoped::set( "SERVICE_LOG_FILE", log_file.string());
 
          local::Domain domain;
 
@@ -118,16 +120,23 @@ domain:
          auto rotated = common::unittest::file::temporary::name( ".log");
          common::file::rename( log_file, rotated);
 
-         
          // send hangup to service-log, to open the (new) file again
          common::signal::send( service_log_handle.pid, common::code::signal::hangup);
-         EXPECT_TRUE( local::ping_handle( service_log_handle));
 
-         // produce metric to log-file
-         casual::domain::manager::api::state();
+         {
+            // produce metric to log-file
+            casual::domain::manager::api::state();
 
-         // we wait until we got something, again to the same logfile-name
-         EXPECT_TRUE( local::file::wait::content( log_file)) << local::file::string( log_file);
+            // it's not deterministic when the signal arrives, so we need to "poll".
+            auto count = 1000;
+            while( local::file::empty( log_file) && count-- > 0)
+            {
+               casual::domain::manager::api::state();
+               common::process::sleep( std::chrono::milliseconds{ 2});
+            }
+
+            EXPECT_TRUE( count > 0);
+         }
       }
 
 
@@ -168,7 +177,10 @@ domain:
          // produce metric to log-file
          casual::domain::manager::api::state();
 
-         // the call should be discarded         
+         // give it some time for the metric to arrive.
+         common::process::sleep( std::chrono::milliseconds{ 1});
+
+         // the metric should be discarded.
          EXPECT_TRUE( local::file::empty( log_file)) << local::file::string( log_file);
       }
 
