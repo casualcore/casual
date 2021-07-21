@@ -39,7 +39,6 @@ namespace casual::configuration
             std::string name;
             std::string note;
 
-            std::vector< std::string> resources;
             std::vector< std::string> dependencies;
 
             inline friend bool operator == ( const Group& lhs, const std::string& rhs) { return lhs.name == rhs;}
@@ -47,11 +46,10 @@ namespace casual::configuration
             CASUAL_CONST_CORRECT_SERIALIZE(
                CASUAL_SERIALIZE( name);
                CASUAL_SERIALIZE( note);
-               CASUAL_SERIALIZE( resources);
                CASUAL_SERIALIZE( dependencies);
             )
 
-            inline auto tie() const { return std::tie( name, note, resources, dependencies);}
+            inline auto tie() const { return std::tie( name, note, dependencies);}
          };
 
          struct Lifetime : common::Compare< Lifetime>

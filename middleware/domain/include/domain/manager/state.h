@@ -53,10 +53,6 @@ namespace casual
             std::string note;
 
             std::vector< id_type> dependencies;
-            
-            //! only to help with TM configuration.
-            std::vector< std::string> resources;
-
 
             friend bool operator == ( const Group& lhs, Group::id_type id) { return lhs.id == id;}
             friend bool operator == ( Group::id_type id, const Group& rhs) { return id == rhs.id;}

@@ -32,16 +32,13 @@ namespace casual
             std::string note;
 
             std::vector< id_type> dependencies;
-            std::vector< std::string> resources;
 
             CASUAL_CONST_CORRECT_SERIALIZE(
                CASUAL_SERIALIZE( id);
                CASUAL_SERIALIZE( name);
                CASUAL_SERIALIZE( note);
-               CASUAL_SERIALIZE( resources);
                CASUAL_SERIALIZE( dependencies);
             )
-
          };
 
          struct Process

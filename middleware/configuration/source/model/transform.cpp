@@ -170,24 +170,44 @@ namespace casual
                   return result;
                });
 
-               // extract all explicit resources for every server, if any
+               // extract all explicit and implicit (via groups) resources for every server, if any
                {
+                  auto append_resources = [&]( auto& alias, auto resources)
+                  {
+                     if( resources.empty())
+                        return;
+
+                     if( auto found = algorithm::find( result.mappings, alias))
+                        algorithm::append_unique( std::move( resources), found->resources);
+                     else 
+                     {
+                        auto& mapping = result.mappings.emplace_back();
+                        mapping.alias = alias;
+                        mapping.resources = std::move( resources);
+                        algorithm::trim( mapping.resources, algorithm::unique( algorithm::sort( mapping.resources)));
+                     }   
+                  };
+
+                  auto extract_group_resources = [&]( auto& memberships)
+                  {
+                     return algorithm::accumulate( memberships, std::vector< std::string>{}, [&]( auto result, auto& membership)
+                     {
+                        if( auto found = algorithm::find( domain.groups, membership))
+                           if( found->resources)
+                              algorithm::append( found->resources.value(), result);
+                        
+                        return result;
+                     });
+                  };
+
                   auto server_resources = [&]( auto& server)
                   {
-                     auto append_resources = [&]( auto& alias, auto&& resources)
-                     {
-                        if( auto found = algorithm::find( result.mappings, alias))
-                           algorithm::append( resources, found->resources);
-                        else 
-                        {
-                           auto& mapping = result.mappings.emplace_back();
-                           mapping.alias = alias;
-                           algorithm::append( resources, mapping.resources);
-                        }   
-                     };
+                     auto& alias = server.alias.value();
+                     if( server.resources)
+                        append_resources( alias, server.resources.value());
 
-                     if( server.resources && ! server.resources.value().empty())
-                        append_resources( server.alias.value(), server.resources.value());
+                     if( server.memberships)
+                        append_resources( alias, extract_group_resources( server.memberships.value()));
                   };
 
                   algorithm::for_each( domain.servers, server_resources);
@@ -213,7 +233,6 @@ namespace casual
                   domain::Group result;
                   result.name = group.name;
                   result.note = group.note.value_or( "");
-                  result.resources = group.resources.value_or( result.resources);
                   result.dependencies = group.dependencies.value_or( result.dependencies);
                   return result;
                });
@@ -668,7 +687,6 @@ namespace casual
                      result.name = value.name;
                      result.note = null_if_empty( value.note);
                      result.dependencies = null_if_empty( value.dependencies);
-                     result.resources = null_if_empty( value.resources);
 
                      return result;
                   });

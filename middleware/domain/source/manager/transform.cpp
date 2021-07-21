@@ -95,7 +95,6 @@ namespace casual
 
                   manager::state::Group result{ group.name, { state.group_id.master}, group.note};
                   result.dependencies = algorithm::transform( group.dependencies, transform_id);
-                  result.resources = group.resources;
 
                   return result;
                };
@@ -167,11 +166,10 @@ namespace casual
                      result.name = value.name;
                      result.note = value.note;
 
-                     result.dependencies = algorithm::transform( value.dependencies, []( auto& id){
+                     result.dependencies = algorithm::transform( value.dependencies, []( auto& id)
+                     {
                         return id.value();
                      });
-
-                     result.resources = value.resources;
 
                      return result;
                   };
@@ -457,7 +455,6 @@ namespace casual
             configuration::model::domain::Group result;
             result.name = group.name;
             result.note = group.note;
-            result.resources = group.resources;
             result.dependencies = name_groups( group.dependencies);
             return result;
          }, []( auto& group)
